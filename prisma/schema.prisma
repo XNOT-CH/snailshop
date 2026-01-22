@@ -1,0 +1,158 @@
+// file: prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// --- ตารางผู้ใช้งาน (Users) ---
+model User {
+  id            String    @id @default(uuid())
+  username      String    @unique
+  email         String?   // Optional email
+  password      String
+  role          String    @default("USER") // USER, MODERATOR, SELLER, ADMIN
+  permissions   String?   @db.Text // JSON array of permission strings
+  creditBalance Decimal   @default(0.00) @db.Decimal(10, 2)
+  
+  orders        Order[]
+  topups        Topup[]
+  sessions      Session[]
+  apiKeys       ApiKey[]
+  auditLogs     AuditLog[]
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// --- ตาราง Session (สำหรับ Session Management) ---
+model Session {
+  id            String    @id @default(uuid())
+  token         String    @unique @db.VarChar(255)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt     DateTime
+  lastActivity  DateTime  @default(now())
+  userAgent     String?   @db.Text
+  ipAddress     String?   @db.VarChar(45)
+  
+  createdAt     DateTime  @default(now())
+}
+
+// --- ตาราง API Keys (สำหรับ External Access) ---
+model ApiKey {
+  id            String    @id @default(uuid())
+  name          String    // ชื่อ API Key (เช่น "Mobile App", "Partner Integration")
+  key           String    @unique @db.VarChar(64) // Hashed API key
+  keyPrefix     String    @db.VarChar(8) // First 8 chars for identification
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permissions   String?   @db.Text // JSON array of allowed permissions
+  expiresAt     DateTime?
+  lastUsedAt    DateTime?
+  isActive      Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  
+  @@index([keyPrefix])
+}
+
+// --- ตาราง Audit Log (บันทึกกิจกรรมสำคัญ) ---
+model AuditLog {
+  id            String    @id @default(uuid())
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action        String    // เช่น "LOGIN", "LOGOUT", "CREATE_PRODUCT", "DELETE_USER"
+  resource      String?   // เช่น "Product", "User", "Order"
+  resourceId    String?   // ID ของ resource ที่ถูกกระทำ
+  details       String?   @db.Text // JSON รายละเอียดเพิ่มเติม
+  ipAddress     String?   @db.VarChar(45)
+  userAgent     String?   @db.Text
+  status        String    @default("SUCCESS") // SUCCESS, FAILURE
+  
+  createdAt     DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// --- ตารางสินค้า (Products) ---
+model Product {
+  id            String    @id @default(uuid())
+  name          String
+  description   String?   @db.Text
+  price         Decimal   @db.Decimal(10, 2)
+  imageUrl      String?
+  category      String    // ROV, VALORANT
+  
+  secretData    String    @db.Text // ID:Pass เก็บตรงนี้
+  isSold        Boolean   @default(false)
+  
+  orderId       String?   @unique
+  order         Order?    @relation(fields: [orderId], references: [id])
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// --- ตารางคำสั่งซื้อ (Orders) ---
+model Order {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  product       Product?
+  totalPrice    Decimal   @db.Decimal(10, 2)
+  status        String    @default("COMPLETED")
+  purchasedAt   DateTime  @default(now())
+}
+
+// --- ตารางเติมเงิน (Topups / TopUpRequests) ---
+model Topup {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  amount          Decimal   @db.Decimal(10, 2)
+  proofImage      String?   @db.Text // Base64 or URL รูปสลิป
+  status          String    @default("PENDING") // PENDING, APPROVED, REJECTED
+  transactionRef  String?   @unique // EasySlip transaction reference
+  senderName      String?   // ชื่อผู้โอน
+  senderBank      String?   // ธนาคารผู้โอน
+  receiverName    String?   // ชื่อผู้รับ
+  receiverBank    String?   // ธนาคารผู้รับ
+  createdAt       DateTime  @default(now())
+}
+
+// --- ตารางตั้งค่าเว็บไซต์ (Site Settings) ---
+model SiteSettings {
+  id              String    @id @default(uuid())
+  heroTitle       String
+  heroDescription String    @db.Text
+  announcement    String?   @db.Text
+  
+  // Banner Images (External URLs)
+  bannerImage1    String?   @db.Text
+  bannerTitle1    String?
+  bannerSubtitle1 String?
+  
+  bannerImage2    String?   @db.Text
+  bannerTitle2    String?
+  bannerSubtitle2 String?
+  
+  bannerImage3    String?   @db.Text
+  bannerTitle3    String?
+  bannerSubtitle3 String?
+  
+  // Logo
+  logoUrl         String?   @db.Text
+  
+  // Background Image
+  backgroundImage String?   @db.Text
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
