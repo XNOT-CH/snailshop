@@ -62,6 +62,7 @@ export default async function AdminProductsPage() {
                                 imageUrl: p.imageUrl,
                                 category: p.category,
                                 isSold: p.isSold,
+                                isFeatured: p.isFeatured,
                             }))}
                         />
                     )}

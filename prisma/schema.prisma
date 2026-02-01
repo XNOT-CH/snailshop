@@ -87,11 +87,14 @@ model Product {
   name          String
   description   String?   @db.Text
   price         Decimal   @db.Decimal(10, 2)
+  discountPrice Decimal?  @db.Decimal(10, 2)
   imageUrl      String?
-  category      String    // ROV, VALORANT
+  category      String
   
-  secretData    String    @db.Text // ID:Pass เก็บตรงนี้
+  secretData    String    @db.Text
   isSold        Boolean   @default(false)
+  isFeatured    Boolean   @default(false)
+  sortOrder     Int       @default(0)
   
   orderId       String?   @unique
   order         Order?    @relation(fields: [orderId], references: [id])
@@ -155,4 +158,31 @@ model SiteSettings {
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+}
+
+// --- ศูนย์ช่วยเหลือ (Help Center) ---
+model HelpArticle {
+  id            String    @id @default(uuid())
+  question      String    @db.Text
+  answer        String    @db.Text
+  category      String    @default("general")
+  sortOrder     Int       @default(0)
+  isActive      Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// --- ข่าวสารและโปรโมชั่น (News & Promotions) ---
+model NewsArticle {
+  id            String    @id @default(uuid())
+  title         String
+  description   String    @db.Text
+  imageUrl      String?   @db.Text
+  link          String?   // URL สำหรับ "อ่านเพิ่มเติม"
+  sortOrder     Int       @default(0)
+  isActive      Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }

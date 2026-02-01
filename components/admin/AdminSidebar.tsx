@@ -10,11 +10,13 @@ import {
     Settings,
     LogOut,
     Gamepad2,
+    Newspaper,
 } from "lucide-react";
 
 const sidebarLinks = [
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/products", label: "Product Manager", icon: Package },
+    { href: "/admin/news", label: "News Manager", icon: Newspaper },
     { href: "/admin/users", label: "User Manager", icon: Users },
     { href: "/admin/slips", label: "Slip Verification", icon: FileCheck },
     { href: "/admin/settings", label: "Site Settings", icon: Settings },
@@ -47,8 +49,8 @@ export function AdminSidebar() {
                             key={link.href}
                             href={link.href}
                             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-                                    ? "bg-primary text-white"
-                                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                                ? "bg-primary text-white"
+                                : "text-slate-400 hover:bg-slate-800 hover:text-white"
                                 }`}
                         >
                             <Icon className="h-5 w-5" />

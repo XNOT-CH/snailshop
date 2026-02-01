@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { AlertModal } from "@/components/ui/AlertModal";
 import { ShoppingCart, Loader2 } from "lucide-react";
+import Swal from "sweetalert2";
 
 interface BuyButtonProps {
     productId: string;
@@ -15,29 +15,24 @@ interface BuyButtonProps {
 export function BuyButton({ productId, price, disabled }: BuyButtonProps) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
-    const [alertState, setAlertState] = useState<{
-        isOpen: boolean;
-        description: string;
-        variant: "success" | "error" | "warning" | "info";
-    }>({
-        isOpen: false,
-        description: "",
-        variant: "info",
-    });
-
-    const showAlert = (
-        description: string,
-        variant: "success" | "error" | "warning" | "info"
-    ) => {
-        setAlertState({ isOpen: true, description, variant });
-    };
-
-    const closeAlert = () => {
-        setAlertState((prev) => ({ ...prev, isOpen: false }));
-    };
 
     const handlePurchase = async () => {
         if (disabled || isLoading) return;
+
+        // Confirm before purchase
+        const confirmResult = await Swal.fire({
+            title: "ยืนยันการซื้อ?",
+            html: `คุณต้องการซื้อสินค้านี้ในราคา <strong>฿${price.toLocaleString()}</strong> ใช่หรือไม่?`,
+            icon: "question",
+            showCancelButton: true,
+            confirmButtonColor: "#3b82f6",
+            cancelButtonColor: "#6b7280",
+            confirmButtonText: "ซื้อเลย",
+            cancelButtonText: "ยกเลิก",
+            reverseButtons: true,
+        });
+
+        if (!confirmResult.isConfirmed) return;
 
         setIsLoading(true);
 
@@ -53,52 +48,54 @@ export function BuyButton({ productId, price, disabled }: BuyButtonProps) {
             const data = await response.json();
 
             if (data.success) {
-                showAlert(
-                    `ซื้อ ${data.productName} สำเร็จ!`,
-                    "success"
-                );
+                await Swal.fire({
+                    icon: "success",
+                    title: "ซื้อสำเร็จ! 🎉",
+                    html: `ซื้อ <strong>${data.productName}</strong> เรียบร้อยแล้ว<br><small>ดูข้อมูลบัญชีได้ที่ประวัติการสั่งซื้อ</small>`,
+                    confirmButtonColor: "#3b82f6",
+                    confirmButtonText: "ตกลง",
+                });
                 router.refresh();
             } else {
-                showAlert(data.message, "warning");
+                await Swal.fire({
+                    icon: "warning",
+                    title: "ไม่สามารถซื้อได้",
+                    text: data.message,
+                    confirmButtonColor: "#3b82f6",
+                    confirmButtonText: "ตกลง",
+                });
             }
         } catch (error) {
-            showAlert(
-                error instanceof Error ? error.message : "เกิดข้อผิดพลาด กรุณาลองใหม่",
-                "error"
-            );
+            await Swal.fire({
+                icon: "error",
+                title: "เกิดข้อผิดพลาด",
+                text: error instanceof Error ? error.message : "กรุณาลองใหม่อีกครั้ง",
+                confirmButtonColor: "#3b82f6",
+                confirmButtonText: "ตกลง",
+            });
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <>
-            <Button
-                size="lg"
-                className="mt-auto w-full gap-2 text-lg"
-                disabled={disabled || isLoading}
-                onClick={handlePurchase}
-            >
-                {isLoading ? (
-                    <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        Processing...
-                    </>
-                ) : (
-                    <>
-                        <ShoppingCart className="h-5 w-5" />
-                        {disabled ? "Unavailable" : `Buy Now - ฿${price.toLocaleString()}`}
-                    </>
-                )}
-            </Button>
-
-            {/* Alert Modal */}
-            <AlertModal
-                isOpen={alertState.isOpen}
-                onClose={closeAlert}
-                description={alertState.description}
-                variant={alertState.variant}
-            />
-        </>
+        <Button
+            size="lg"
+            className="mt-auto w-full gap-2 text-lg"
+            disabled={disabled || isLoading}
+            onClick={handlePurchase}
+        >
+            {isLoading ? (
+                <>
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                    กำลังดำเนินการ...
+                </>
+            ) : (
+                <>
+                    <ShoppingCart className="h-5 w-5" />
+                    {disabled ? "ไม่พร้อมขาย" : `ซื้อเลย - ฿${price.toLocaleString()}`}
+                </>
+            )}
+        </Button>
     );
 }

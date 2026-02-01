@@ -33,8 +33,9 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MoreHorizontal, Pencil, Trash2, Eye } from "lucide-react";
-import { toast } from "sonner";
+import { MoreHorizontal, Pencil, Trash2, Eye, Star, Copy } from "lucide-react";
+import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
+import { cn } from "@/lib/utils";
 
 interface Product {
     id: string;
@@ -43,6 +44,7 @@ interface Product {
     imageUrl: string | null;
     category: string;
     isSold: boolean;
+    isFeatured: boolean;
 }
 
 interface ProductTableProps {
@@ -52,6 +54,47 @@ interface ProductTableProps {
 export function ProductTable({ products }: ProductTableProps) {
     const router = useRouter();
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [togglingFeatured, setTogglingFeatured] = useState<string | null>(null);
+    const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+
+    const handleToggleFeatured = async (id: string, isFeatured: boolean) => {
+        setTogglingFeatured(id);
+        try {
+            const res = await fetch(`/api/admin/products/${id}/featured`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ isFeatured }),
+            });
+            if (res.ok) {
+                showSuccess(isFeatured ? "เพิ่มสินค้าแนะนำ" : "ยกเลิกสินค้าแนะนำ");
+                router.refresh();
+            } else {
+                showError("เกิดข้อผิดพลาด");
+            }
+        } catch (error) {
+            showError("เกิดข้อผิดพลาด");
+        } finally {
+            setTogglingFeatured(null);
+        }
+    };
+
+    const handleDuplicate = async (id: string) => {
+        setDuplicatingId(id);
+        try {
+            const res = await fetch(`/api/admin/products/${id}/duplicate`, { method: "POST" });
+            if (res.ok) {
+                const data = await res.json();
+                showSuccess(`คัดลอกสำเร็จ: ${data.product.name}`);
+                router.refresh();
+            } else {
+                showError("ไม่สามารถคัดลอกสินค้าได้");
+            }
+        } catch (error) {
+            showError("เกิดข้อผิดพลาด");
+        } finally {
+            setDuplicatingId(null);
+        }
+    };
 
     const handleDelete = async (id: string) => {
         setDeletingId(id);
@@ -62,13 +105,13 @@ export function ProductTable({ products }: ProductTableProps) {
             const data = await res.json();
 
             if (data.success) {
-                toast.success("ลบสินค้าสำเร็จ");
+                showSuccess("ลบสินค้าสำเร็จ");
                 router.refresh();
             } else {
-                toast.error(data.message || "เกิดข้อผิดพลาด");
+                showError(data.message || "เกิดข้อผิดพลาด");
             }
         } catch (error) {
-            toast.error("ไม่สามารถลบสินค้าได้");
+            showError("ไม่สามารถลบสินค้าได้");
         } finally {
             setDeletingId(null);
         }
@@ -84,6 +127,7 @@ export function ProductTable({ products }: ProductTableProps) {
                         <TableHead>หมวดหมู่</TableHead>
                         <TableHead className="text-right">ราคา</TableHead>
                         <TableHead className="text-center">สถานะ</TableHead>
+                        <TableHead className="text-center">แนะนำ</TableHead>
                         <TableHead className="w-[80px]"></TableHead>
                     </TableRow>
                 </TableHeader>
@@ -118,6 +162,17 @@ export function ProductTable({ products }: ProductTableProps) {
                                     <Badge variant="default" className="bg-green-600">พร้อมขาย</Badge>
                                 )}
                             </TableCell>
+                            <TableCell className="text-center">
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleToggleFeatured(product.id, !product.isFeatured)}
+                                    disabled={togglingFeatured === product.id}
+                                    className={cn("transition-colors", product.isFeatured && "text-amber-500 hover:text-amber-600")}
+                                >
+                                    <Star className={cn("h-5 w-5", product.isFeatured && "fill-current")} />
+                                </Button>
+                            </TableCell>
                             <TableCell>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
@@ -137,6 +192,14 @@ export function ProductTable({ products }: ProductTableProps) {
                                                 <Pencil className="h-4 w-4" />
                                                 แก้ไข
                                             </Link>
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem
+                                            onClick={() => handleDuplicate(product.id)}
+                                            disabled={duplicatingId === product.id}
+                                            className="cursor-pointer"
+                                        >
+                                            <Copy className="h-4 w-4 mr-2" />
+                                            {duplicatingId === product.id ? "กำลังคัดลอก..." : "คัดลอกสินค้า"}
                                         </DropdownMenuItem>
                                         <DropdownMenuSeparator />
                                         <AlertDialog>

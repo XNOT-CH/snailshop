@@ -1,6 +1,9 @@
 // app/page.tsx
 import { ProductCard } from "@/components/ProductCard";
 import { HeroBanner } from "@/components/HeroBanner";
+import { FeaturedProducts } from "@/components/FeaturedProducts";
+import { SaleProducts } from "@/components/SaleProducts";
+import { NewsSection } from "@/components/NewsSection";
 import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -15,9 +18,15 @@ export default async function Home() {
     <div className="animate-page-enter">
       <div className="py-8 bg-card/90 backdrop-blur-sm rounded-2xl px-6 shadow-xl shadow-primary/10 border border-border/50">
         {/* Hero Banner */}
-        <div className="mb-10">
+        <div className="mb-6">
           <HeroBanner />
         </div>
+
+        {/* Featured Products Carousel */}
+        <FeaturedProducts />
+
+        {/* Sale Products Carousel */}
+        <SaleProducts />
 
         {/* Section Header */}
         <div className="mb-8">
@@ -52,6 +61,9 @@ export default async function Home() {
             ))}
           </div>
         )}
+
+        {/* News and Promotions Section */}
+        <NewsSection />
       </div>
     </div>
   );

@@ -29,6 +29,7 @@ import {
     Wallet,
     User,
     Settings,
+    HelpCircle,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -49,6 +50,7 @@ export default async function Navbar() {
         { href: "/", label: "หน้าแรก", icon: Home },
         { href: "/shop", label: "ร้านค้า", icon: ShoppingBag },
         { href: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
+        { href: "/help", label: "ช่วยเหลือ", icon: HelpCircle },
     ];
 
     return (
