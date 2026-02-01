@@ -5,20 +5,20 @@ export function ProductCardSkeleton({ index = 0 }: { index?: number }) {
     return (
         <Card className={`overflow-hidden rounded-2xl glow-border animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 8)}`}>
             {/* Image Skeleton */}
-            <div className="relative aspect-video">
+            <div className="relative aspect-[4/3]">
                 <div className="h-full w-full animate-shimmer rounded-t-2xl" />
             </div>
 
             {/* Content Skeleton */}
-            <CardContent className="p-4 space-y-3">
-                <div className="h-5 w-3/4 animate-skeleton bg-slate-200 rounded-lg" />
-                <div className="h-7 w-1/3 animate-skeleton bg-slate-200 rounded-lg" />
+            <CardContent className="p-3 space-y-2">
+                <div className="h-5 w-3/4 animate-skeleton bg-slate-200 dark:bg-slate-700 rounded-lg" />
+                <div className="h-6 w-1/3 animate-skeleton bg-slate-200 dark:bg-slate-700 rounded-lg" />
             </CardContent>
 
             {/* Footer Skeleton */}
-            <CardFooter className="flex gap-2 p-4 pt-0">
-                <div className="h-9 flex-1 animate-skeleton bg-slate-200 rounded-xl" />
-                <div className="h-9 flex-1 animate-skeleton bg-slate-200 rounded-xl" />
+            <CardFooter className="flex gap-2 p-3 pt-0">
+                <div className="h-8 flex-1 animate-skeleton bg-slate-200 dark:bg-slate-700 rounded-xl" />
+                <div className="h-8 flex-1 animate-skeleton bg-slate-200 dark:bg-slate-700 rounded-xl" />
             </CardFooter>
         </Card>
     );

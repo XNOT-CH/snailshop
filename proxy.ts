@@ -1,10 +1,9 @@
-import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-export function middleware(request: NextRequest) {
-    // Only run in production
+export function proxy(request: NextRequest) {
+    // Only run redirect logic in production
     if (process.env.NODE_ENV !== "production") {
-        return NextResponse.next();
+        return undefined; // Pass through to the actual route
     }
 
     // Get the protocol from the request
@@ -14,13 +13,13 @@ export function middleware(request: NextRequest) {
     // If HTTP, redirect to HTTPS
     if (proto === "http" && host) {
         const httpsUrl = `https://${host}${request.nextUrl.pathname}${request.nextUrl.search}`;
-        return NextResponse.redirect(httpsUrl, 301);
+        return Response.redirect(httpsUrl, 301);
     }
 
-    return NextResponse.next();
+    return undefined; // Pass through to the actual route
 }
 
-// Configure which paths the middleware runs on
+// Configure which paths the proxy runs on
 export const config = {
     matcher: [
         /*
@@ -28,7 +27,8 @@ export const config = {
          * - _next/static (static files)
          * - _next/image (image optimization files)
          * - favicon.ico (favicon file)
-         * - public folder
+         * - public folder assets
+         * - api routes
          */
         "/((?!_next/static|_next/image|favicon.ico|.*\\..*|api).*)",
     ],

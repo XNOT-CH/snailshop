@@ -12,9 +12,11 @@ datasource db {
 // --- ตารางผู้ใช้งาน (Users) ---
 model User {
   id            String    @id @default(uuid())
+  name          String?   // Display name
   username      String    @unique
   email         String?   // Optional email
   password      String
+  image         String?   @db.Text // Profile image URL
   role          String    @default("USER") // USER, MODERATOR, SELLER, ADMIN
   permissions   String?   @db.Text // JSON array of permission strings
   creditBalance Decimal   @default(0.00) @db.Decimal(10, 2)

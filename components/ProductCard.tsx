@@ -107,7 +107,7 @@ export function ProductCard({
             >
                 <Link href={`/product/${id}`} className="block">
                     {/* Image Container with Overlay */}
-                    <div className="relative aspect-video overflow-hidden bg-muted">
+                    <div className="relative aspect-[4/3] overflow-hidden bg-muted">
                         <Image
                             src={image || "/placeholder.jpg"}
                             alt={title}
@@ -157,18 +157,18 @@ export function ProductCard({
                     </div>
 
                     {/* Content */}
-                    <CardContent className="p-4">
+                    <CardContent className="p-3">
                         <h3 className="line-clamp-1 font-medium text-card-foreground transition-colors duration-200 group-hover:text-primary">
                             {title}
                         </h3>
-                        <p className="mt-1.5 text-xl font-bold text-primary">
+                        <p className="mt-1 text-lg font-bold text-primary">
                             ฿{price.toLocaleString()}
                         </p>
                     </CardContent>
                 </Link>
 
                 {/* Footer */}
-                <CardFooter className="flex gap-2 p-4 pt-0">
+                <CardFooter className="flex gap-2 p-3 pt-0">
                     <Button
                         className="flex-1 gap-2 rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-primary/25"
                         size="sm"

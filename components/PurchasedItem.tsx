@@ -39,7 +39,7 @@ export function PurchasedItem({
     return (
         <Card className="overflow-hidden">
             {/* Image */}
-            <div className="relative aspect-video bg-muted">
+            <div className="relative aspect-[4/3] bg-muted">
                 <Image
                     src={image}
                     alt={title}
