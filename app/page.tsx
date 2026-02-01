@@ -16,11 +16,9 @@ export default async function Home() {
 
   return (
     <div className="animate-page-enter">
-      <div className="py-8 bg-card/90 backdrop-blur-sm rounded-2xl px-6 shadow-xl shadow-primary/10 border border-border/50">
+      <div className="py-6 bg-card/90 backdrop-blur-sm rounded-2xl px-6 shadow-xl shadow-primary/10 border border-border/50 space-y-6">
         {/* Hero Banner */}
-        <div className="mb-6">
-          <HeroBanner />
-        </div>
+        <HeroBanner />
 
         {/* Featured Products Carousel */}
         <FeaturedProducts />
@@ -28,8 +26,8 @@ export default async function Home() {
         {/* Sale Products Carousel */}
         <SaleProducts />
 
-        {/* Section Header */}
-        <div className="mb-8">
+        {/* Section Header - All Products */}
+        <div>
           <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
             สินค้าทั้งหมด
           </h2>
@@ -40,13 +38,13 @@ export default async function Home() {
 
         {/* Product Grid */}
         {products.length === 0 ? (
-          <div className="text-center py-20 rounded-2xl bg-card border border-border">
+          <div className="text-center py-12 rounded-2xl bg-card border border-border">
             <p className="text-muted-foreground text-lg">
               ยังไม่มีสินค้าในระบบ
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {products.map((product, index) => (
               <ProductCard
                 key={product.id}

@@ -67,7 +67,7 @@ export function FeaturedProducts() {
 
     if (loading) {
         return (
-            <div className="mb-4">
+            <div>
                 <div className="flex items-center gap-2 mb-4">
                     <Flame className="h-6 w-6 text-orange-500" />
                     <h2 className="text-2xl font-bold">สินค้าแนะนำ</h2>
@@ -90,7 +90,7 @@ export function FeaturedProducts() {
     }
 
     return (
-        <div className="mb-4">
+        <div>
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <Flame className="h-6 w-6 text-orange-500 animate-pulse" />

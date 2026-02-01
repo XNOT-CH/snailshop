@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { invalidateNewsCaches } from "@/lib/cache";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 
 // GET - ดึงข่าวสารทั้งหมด
 export async function GET(request: Request) {
@@ -47,6 +49,17 @@ export async function POST(request: Request) {
                 sortOrder: sortOrder || 0,
                 isActive: isActive !== undefined ? isActive : true,
             },
+        });
+
+        // Invalidate cache
+        await invalidateNewsCaches();
+
+        // Audit log
+        await auditFromRequest(request, {
+            action: AUDIT_ACTIONS.NEWS_CREATE,
+            resource: "NewsArticle",
+            resourceId: news.id,
+            details: { title },
         });
 
         return NextResponse.json(news, { status: 201 });

@@ -101,59 +101,61 @@
   --sidebar-ring: #60a5fa;
 }
 
-/* Dark Mode Theme */
+/* ========================================
+   DARK MODE THEME - Premium Gaming Style
+   ======================================== */
 .dark {
-  /* Background - Dark gradient */
-  --background: #0f172a;
-  --foreground: #e2e8f0;
+  /* Background - Deep navy */
+  --background: #0c1222;
+  --foreground: #f1f5f9;
 
-  /* Card - Dark with subtle styling */
-  --card: #1e293b;
+  /* Card - Solid dark with blue tint */
+  --card: #1a2332;
   --card-foreground: #e2e8f0;
 
   /* Popover */
-  --popover: #1e293b;
+  --popover: #1a2332;
   --popover-foreground: #e2e8f0;
 
-  /* Primary - Keep vibrant blue */
+  /* Primary - Vibrant Blue */
   --primary: #3b82f6;
   --primary-foreground: #ffffff;
 
   /* Secondary */
-  --secondary: #1e3a5f;
+  --secondary: #243348;
   --secondary-foreground: #93c5fd;
 
-  /* Muted */
-  --muted: #334155;
+  /* Muted - Better contrast */
+  --muted: #1e2d42;
   --muted-foreground: #94a3b8;
 
-  /* Accent */
-  --accent: #1e3a5f;
+  /* Accent - Highlight color */
+  --accent: #243348;
   --accent-foreground: #93c5fd;
 
   /* Destructive */
   --destructive: #ef4444;
 
-  /* Border */
-  --border: #334155;
-  --input: #334155;
+  /* Border - Visible but subtle */
+  --border: #2a3a50;
+  --input: #243348;
   --ring: #3b82f6;
 
-  /* Chart Colors */
-  --chart-1: #60a5fa;
-  --chart-2: #38bdf8;
+  /* Chart Colors - Vibrant */
+  --chart-1: #3b82f6;
+  --chart-2: #22d3ee;
   --chart-3: #a78bfa;
   --chart-4: #34d399;
   --chart-5: #fbbf24;
 
-  /* Sidebar - Keep dark */
-  --sidebar: #0f172a;
+  /* Sidebar */
+  --sidebar: #0f1729;
   --sidebar-foreground: #e2e8f0;
-  --sidebar-primary: #60a5fa;
+  --sidebar-primary: #3b82f6;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1e3a5f;
+  --sidebar-accent: #243348;
   --sidebar-accent-foreground: #93c5fd;
-  --sidebar-border: #334155;
+  --sidebar-border: #2a3a50;
   --sidebar-ring: #3b82f6;
 }
 
@@ -171,8 +173,89 @@
 
   /* Dark mode body background */
   html.dark body {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    background: linear-gradient(180deg, #0c1222 0%, #0f1729 50%, #0c1222 100%);
+    background-attachment: fixed;
   }
+}
+
+/* ========================================
+   DARK MODE ENHANCEMENTS
+   ======================================== */
+
+/* Glass effect cards in dark mode */
+html.dark .bg-card {
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(71, 85, 105, 0.3);
+}
+
+/* Subtle glow on card hover in dark mode */
+html.dark .bg-card:hover {
+  border-color: rgba(96, 165, 250, 0.3);
+  box-shadow: 0 0 30px -10px rgba(96, 165, 250, 0.2);
+}
+
+/* Input focus glow */
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+}
+
+/* Primary button glow in dark mode */
+html.dark .bg-primary {
+  box-shadow: 0 0 20px -5px rgba(96, 165, 250, 0.4);
+}
+
+html.dark .bg-primary:hover {
+  box-shadow: 0 0 25px -5px rgba(96, 165, 250, 0.6);
+}
+
+/* Badge glow effects */
+html.dark .bg-green-100,
+html.dark .bg-emerald-100 {
+  background: rgba(34, 197, 94, 0.15) !important;
+  box-shadow: 0 0 10px -3px rgba(34, 197, 94, 0.3);
+}
+
+html.dark .bg-red-100,
+html.dark .bg-rose-100 {
+  background: rgba(239, 68, 68, 0.15) !important;
+  box-shadow: 0 0 10px -3px rgba(239, 68, 68, 0.3);
+}
+
+html.dark .bg-amber-100,
+html.dark .bg-yellow-100 {
+  background: rgba(245, 158, 11, 0.15) !important;
+  box-shadow: 0 0 10px -3px rgba(245, 158, 11, 0.3);
+}
+
+html.dark .bg-blue-100 {
+  background: rgba(59, 130, 246, 0.15) !important;
+  box-shadow: 0 0 10px -3px rgba(59, 130, 246, 0.3);
+}
+
+html.dark .bg-purple-100 {
+  background: rgba(139, 92, 246, 0.15) !important;
+  box-shadow: 0 0 10px -3px rgba(139, 92, 246, 0.3);
+}
+
+/* Table enhancements */
+html.dark table {
+  background: rgba(15, 23, 42, 0.5);
+}
+
+html.dark thead {
+  background: rgba(30, 41, 59, 0.8);
+}
+
+html.dark tbody tr:hover {
+  background: rgba(59, 130, 246, 0.08);
+}
+
+/* Navbar glass effect */
+html.dark nav,
+html.dark header {
+  backdrop-filter: blur(12px);
 }
 
 /* ========================================
@@ -207,6 +290,12 @@
   box-shadow:
     0 20px 40px -12px rgba(0, 0, 0, 0.25),
     0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+html.dark .card-premium:hover {
+  box-shadow:
+    0 20px 40px -12px rgba(0, 0, 0, 0.5),
+    0 0 30px -10px rgba(96, 165, 250, 0.3);
 }
 
 /* Image Hover Overlay */
@@ -245,6 +334,13 @@
     0 0 20px rgba(59, 130, 246, 0.15);
 }
 
+html.dark .glow-border:hover {
+  border-color: rgba(96, 165, 250, 0.5);
+  box-shadow:
+    0 0 0 1px rgba(96, 165, 250, 0.2),
+    0 0 30px rgba(96, 165, 250, 0.2);
+}
+
 .glow-border:focus-within {
   border-color: rgba(59, 130, 246, 0.6);
   box-shadow:
@@ -262,6 +358,10 @@
 .btn-smooth:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(59, 130, 246, 0.25);
+}
+
+html.dark .btn-smooth:hover {
+  box-shadow: 0 4px 20px rgba(96, 165, 250, 0.3);
 }
 
 .btn-smooth:active {
@@ -303,6 +403,14 @@
       #e2e8f0 25%,
       #f1f5f9 50%,
       #e2e8f0 75%);
+  background-size: 200% 100%;
+}
+
+html.dark .animate-shimmer {
+  background: linear-gradient(90deg,
+      rgba(51, 65, 85, 0.5) 25%,
+      rgba(71, 85, 105, 0.5) 50%,
+      rgba(51, 65, 85, 0.5) 75%);
   background-size: 200% 100%;
 }
 
@@ -362,17 +470,19 @@ html {
   background: #3b82f6;
 }
 
-/* Dark mode scrollbar */
+/* Dark mode scrollbar - Glowing effect */
 html.dark ::-webkit-scrollbar-track {
-  background: #1e293b;
+  background: #0a0f1a;
 }
 
 html.dark ::-webkit-scrollbar-thumb {
-  background: #475569;
+  background: linear-gradient(180deg, #3b82f6 0%, #6366f1 100%);
+  border-radius: 4px;
 }
 
 html.dark ::-webkit-scrollbar-thumb:hover {
-  background: #3b82f6;
+  background: linear-gradient(180deg, #60a5fa 0%, #818cf8 100%);
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
 }
 
 /* ========================================
@@ -441,4 +551,36 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 
 .stagger-8 {
   animation-delay: 0.4s;
+}
+
+/* ========================================
+   NEON GLOW UTILITIES (Dark Mode)
+   ======================================== */
+html.dark .neon-blue {
+  text-shadow: 0 0 10px rgba(96, 165, 250, 0.8),
+    0 0 20px rgba(96, 165, 250, 0.5),
+    0 0 30px rgba(96, 165, 250, 0.3);
+}
+
+html.dark .neon-purple {
+  text-shadow: 0 0 10px rgba(167, 139, 250, 0.8),
+    0 0 20px rgba(167, 139, 250, 0.5),
+    0 0 30px rgba(167, 139, 250, 0.3);
+}
+
+html.dark .neon-green {
+  text-shadow: 0 0 10px rgba(52, 211, 153, 0.8),
+    0 0 20px rgba(52, 211, 153, 0.5),
+    0 0 30px rgba(52, 211, 153, 0.3);
+}
+
+/* Box neon glow */
+html.dark .box-glow-blue {
+  box-shadow: 0 0 20px -5px rgba(96, 165, 250, 0.4),
+    inset 0 0 20px -10px rgba(96, 165, 250, 0.1);
+}
+
+html.dark .box-glow-purple {
+  box-shadow: 0 0 20px -5px rgba(167, 139, 250, 0.4),
+    inset 0 0 20px -10px rgba(167, 139, 250, 0.1);
 }

@@ -55,13 +55,13 @@ export function NewsSection() {
     }
 
     return (
-        <section className="mt-12">
+        <section className="mt-6">
             {/* Section Header */}
-            <div className="mb-8 text-center">
+            <div className="mb-4 text-center">
                 <h2 className="text-xl sm:text-2xl font-bold text-foreground">
                     ข่าวสารและโปรโมชั่น
                 </h2>
-                <p className="text-sm text-slate-400 uppercase tracking-wider mt-1">
+                <p className="text-sm text-muted-foreground uppercase tracking-wider mt-1">
                     NEWS AND PROMOTIONS
                 </p>
             </div>
@@ -107,14 +107,14 @@ export function NewsSection() {
                                 </h3>
 
                                 {/* Description - 2 lines max */}
-                                <p className="text-slate-500 dark:text-muted-foreground text-sm line-clamp-2 mb-4">
+                                <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
                                     {article.description}
                                 </p>
 
                                 {/* Footer */}
                                 <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-border">
                                     {/* Date */}
-                                    <div className="flex items-center gap-1.5 text-slate-400 text-xs sm:text-sm">
+                                    <div className="flex items-center gap-1.5 text-muted-foreground text-xs sm:text-sm">
                                         <Calendar className="w-3.5 h-3.5" />
                                         <span>{formatDate(article.createdAt)}</span>
                                     </div>

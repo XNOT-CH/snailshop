@@ -127,19 +127,19 @@ export default async function Navbar() {
                                     </DropdownMenuLabel>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem asChild>
-                                        <Link href="/dashboard" className="flex items-center gap-2 cursor-pointer text-slate-700">
+                                        <Link href="/dashboard" className="flex items-center gap-2 cursor-pointer text-foreground">
                                             <User className="h-4 w-4" />
                                             แดชบอร์ด
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem asChild>
-                                        <Link href="/dashboard/topup" className="flex items-center gap-2 cursor-pointer text-slate-700">
+                                        <Link href="/dashboard/topup" className="flex items-center gap-2 cursor-pointer text-foreground">
                                             <Wallet className="h-4 w-4" />
                                             เติมเงิน
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem asChild>
-                                        <Link href="/dashboard/settings" className="flex items-center gap-2 cursor-pointer text-slate-700">
+                                        <Link href="/dashboard/settings" className="flex items-center gap-2 cursor-pointer text-foreground">
                                             <Settings className="h-4 w-4" />
                                             ตั้งค่า
                                         </Link>
@@ -218,7 +218,7 @@ export default async function Navbar() {
                                     {user && (
                                         <Link
                                             href="/dashboard/topup"
-                                            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-slate-600 hover:bg-blue-50 hover:text-primary transition-colors"
+                                            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent hover:text-primary transition-colors"
                                         >
                                             <Wallet className="h-5 w-5" />
                                             เติมเงิน
