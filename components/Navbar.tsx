@@ -28,6 +28,7 @@ import {
     LayoutDashboard,
     Wallet,
     User,
+    UserCog,
     Settings,
     HelpCircle,
 } from "lucide-react";
@@ -130,6 +131,12 @@ export default async function Navbar() {
                                         <Link href="/dashboard" className="flex items-center gap-2 cursor-pointer text-foreground">
                                             <User className="h-4 w-4" />
                                             แดชบอร์ด
+                                        </Link>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem asChild>
+                                        <Link href="/profile/settings" className="flex items-center gap-2 cursor-pointer text-foreground">
+                                            <UserCog className="h-4 w-4" />
+                                            แก้ไขโปรไฟล์
                                         </Link>
                                     </DropdownMenuItem>
                                     <DropdownMenuItem asChild>

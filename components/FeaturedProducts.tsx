@@ -3,8 +3,20 @@
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, Flame, ShoppingCart, Eye } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ChevronLeft, ChevronRight, Flame, ShoppingCart, Eye, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { AlertModal } from "@/components/ui/AlertModal";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface FeaturedProduct {
     id: string;
@@ -16,9 +28,67 @@ interface FeaturedProduct {
 }
 
 export function FeaturedProducts() {
+    const router = useRouter();
     const [products, setProducts] = useState<FeaturedProduct[]>([]);
     const [loading, setLoading] = useState(true);
+    const [buyingId, setBuyingId] = useState<string | null>(null);
+    const [confirmProduct, setConfirmProduct] = useState<FeaturedProduct | null>(null);
+    const [alertState, setAlertState] = useState<{
+        isOpen: boolean;
+        description: string;
+        variant: "success" | "error" | "warning" | "info";
+    }>({
+        isOpen: false,
+        description: "",
+        variant: "info",
+    });
     const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    const showAlert = (description: string, variant: "success" | "error" | "warning" | "info") => {
+        setAlertState({ isOpen: true, description, variant });
+    };
+
+    const closeAlert = () => {
+        setAlertState((prev) => ({ ...prev, isOpen: false }));
+    };
+
+    const handleBuyClick = (product: FeaturedProduct) => {
+        setConfirmProduct(product);
+    };
+
+    const handleBuyConfirm = async () => {
+        if (!confirmProduct) return;
+
+        setBuyingId(confirmProduct.id);
+        setConfirmProduct(null);
+
+        try {
+            const response = await fetch("/api/purchase", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ productId: confirmProduct.id }),
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                showAlert(`ซื้อ ${data.productName} สำเร็จ! 🎉`, "success");
+                router.refresh();
+                // Update local state
+                setProducts((prev) =>
+                    prev.map((p) =>
+                        p.id === confirmProduct.id ? { ...p, isSold: true } : p
+                    )
+                );
+            } else {
+                showAlert(data.message, "warning");
+            }
+        } catch {
+            showAlert("ไม่สามารถทำรายการได้ กรุณาลองใหม่", "error");
+        } finally {
+            setBuyingId(null);
+        }
+    };
 
     useEffect(() => {
         async function fetchFeatured() {
@@ -144,12 +214,18 @@ export function FeaturedProducts() {
                                             ขายแล้ว
                                         </Button>
                                     ) : (
-                                        <Link href={`/product/${product.id}`} className="flex-1">
-                                            <Button className="w-full">
+                                        <Button
+                                            className="w-full flex-1"
+                                            onClick={() => handleBuyClick(product)}
+                                            disabled={buyingId === product.id}
+                                        >
+                                            {buyingId === product.id ? (
+                                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                            ) : (
                                                 <ShoppingCart className="h-4 w-4 mr-2" />
-                                                ซื้อ
-                                            </Button>
-                                        </Link>
+                                            )}
+                                            ซื้อ
+                                        </Button>
                                     )}
                                     <Link href={`/product/${product.id}`}>
                                         <Button variant="outline" size="icon">
@@ -162,6 +238,36 @@ export function FeaturedProducts() {
                     </div>
                 ))}
             </div>
+
+            {/* Confirm Purchase Dialog */}
+            <AlertDialog open={!!confirmProduct} onOpenChange={() => setConfirmProduct(null)}>
+                <AlertDialogContent className="max-w-sm bg-white border-slate-200 shadow-2xl rounded-2xl">
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>ยืนยันการซื้อ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            คุณต้องการซื้อ <strong>{confirmProduct?.name}</strong> ในราคา{" "}
+                            <strong>฿{confirmProduct?.price.toLocaleString()}</strong> ใช่หรือไม่?
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel className="rounded-xl">ยกเลิก</AlertDialogCancel>
+                        <AlertDialogAction
+                            onClick={handleBuyConfirm}
+                            className="bg-primary hover:bg-primary/90 rounded-xl"
+                        >
+                            ซื้อเลย
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+
+            {/* Alert Modal */}
+            <AlertModal
+                isOpen={alertState.isOpen}
+                onClose={closeAlert}
+                description={alertState.description}
+                variant={alertState.variant}
+            />
         </div>
     );
 }
