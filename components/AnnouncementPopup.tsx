@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface PopupData {
     id: string;
@@ -19,7 +20,6 @@ export default function AnnouncementPopup() {
     const [popups, setPopups] = useState<PopupData[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
-    const [isClosing, setIsClosing] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
 
     // Check if popup should be shown based on localStorage
@@ -85,8 +85,6 @@ export default function AnnouncementPopup() {
 
     // Handle close with animation
     const handleClose = () => {
-        setIsClosing(true);
-
         // Get dismiss option from the first popup (all popups share the same setting)
         const dismissOption = popups[0]?.dismissOption || "show_always";
 
@@ -97,11 +95,7 @@ export default function AnnouncementPopup() {
         }
         // "show_always" means do nothing - popup will show again next visit
 
-        // Wait for exit animation to complete
-        setTimeout(() => {
-            setIsVisible(false);
-            setIsClosing(false);
-        }, 300);
+        setIsVisible(false);
     };
 
     // Handle image click (open link)
@@ -124,7 +118,7 @@ export default function AnnouncementPopup() {
     };
 
     // Don't render anything if not loaded or no popups
-    if (!isLoaded || popups.length === 0 || !isVisible) {
+    if (!isLoaded || popups.length === 0) {
         return null;
     }
 
@@ -132,92 +126,122 @@ export default function AnnouncementPopup() {
     const hasMultiple = popups.length > 1;
 
     return (
-        <div
-            className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-all duration-300 ease-out
-                ${isClosing ? "opacity-0" : "opacity-100"}
-            `}
-            onClick={handleClose}
-        >
-            {/* Backdrop */}
-            <div
-                className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300
-                    ${isClosing ? "opacity-0" : "opacity-100"}
-                `}
-            />
-
-            {/* Popup Content */}
-            <div
-                className={`relative max-w-[90vw] max-h-[90vh] w-full max-w-lg transition-all duration-300 ease-out
-                    ${isClosing
-                        ? "opacity-0 scale-95"
-                        : "opacity-100 scale-100"
-                    }
-                `}
-                onClick={(e) => e.stopPropagation()}
-            >
-                {/* Close Button */}
-                <button
+        <AnimatePresence>
+            {isVisible && (
+                <motion.div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
                     onClick={handleClose}
-                    className="absolute -top-3 -right-3 z-10 w-10 h-10 bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                    aria-label="ปิด"
                 >
-                    <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-                </button>
-
-                {/* Image Container */}
-                <div
-                    className={`relative w-full aspect-square rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-gray-800 ${currentPopup.linkUrl ? "cursor-pointer" : ""}`}
-                    onClick={currentPopup.linkUrl ? handleImageClick : undefined}
-                >
-                    <Image
-                        src={currentPopup.imageUrl}
-                        alt={currentPopup.title || "ประชาสัมพันธ์"}
-                        fill
-                        sizes="(max-width: 768px) 90vw, 500px"
-                        className="object-cover"
-                        priority
+                    {/* Backdrop */}
+                    <motion.div
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
                     />
 
-                    {/* Carousel Navigation */}
-                    {hasMultiple && (
-                        <>
-                            <button
-                                onClick={goToPrevious}
-                                className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-colors"
-                                aria-label="รูปก่อนหน้า"
-                            >
-                                <ChevronLeft className="w-6 h-6" />
-                            </button>
-                            <button
-                                onClick={goToNext}
-                                className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-colors"
-                                aria-label="รูปถัดไป"
-                            >
-                                <ChevronRight className="w-6 h-6" />
-                            </button>
+                    {/* Popup Content with Bounce Animation */}
+                    <motion.div
+                        className="relative max-w-[90vw] max-h-[90vh] w-full max-w-lg"
+                        initial={{ opacity: 0, scale: 0.3, y: 100 }}
+                        animate={{
+                            opacity: 1,
+                            scale: 1,
+                            y: 0,
+                        }}
+                        exit={{ opacity: 0, scale: 0.5, y: 50 }}
+                        transition={{
+                            type: "spring",
+                            stiffness: 400,
+                            damping: 15,
+                            mass: 1,
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Close Button */}
+                        <motion.button
+                            onClick={handleClose}
+                            className="absolute -top-3 -right-3 z-10 w-10 h-10 bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            aria-label="ปิด"
+                            initial={{ scale: 0, rotate: -180 }}
+                            animate={{ scale: 1, rotate: 0 }}
+                            transition={{
+                                type: "spring",
+                                stiffness: 500,
+                                damping: 20,
+                                delay: 0.2
+                            }}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                        >
+                            <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                        </motion.button>
 
-                            {/* Dot Indicators */}
-                            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
-                                {popups.map((_, index) => (
-                                    <button
-                                        key={index}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setCurrentIndex(index);
-                                        }}
-                                        className={`w-2.5 h-2.5 rounded-full transition-all ${index === currentIndex
-                                            ? "bg-white scale-110"
-                                            : "bg-white/50 hover:bg-white/75"
-                                            }`}
-                                        aria-label={`ไปที่รูปที่ ${index + 1}`}
-                                    />
-                                ))}
-                            </div>
-                        </>
-                    )}
-                </div>
-            </div>
-        </div>
+                        {/* Image Container */}
+                        <div
+                            className={`relative w-full aspect-square rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-gray-800 ${currentPopup.linkUrl ? "cursor-pointer" : ""}`}
+                            onClick={currentPopup.linkUrl ? handleImageClick : undefined}
+                        >
+                            <Image
+                                src={currentPopup.imageUrl}
+                                alt={currentPopup.title || "ประชาสัมพันธ์"}
+                                fill
+                                sizes="(max-width: 768px) 90vw, 500px"
+                                className="object-cover"
+                                priority
+                            />
+
+                            {/* Carousel Navigation */}
+                            {hasMultiple && (
+                                <>
+                                    <motion.button
+                                        onClick={goToPrevious}
+                                        className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-colors"
+                                        aria-label="รูปก่อนหน้า"
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.9 }}
+                                    >
+                                        <ChevronLeft className="w-6 h-6" />
+                                    </motion.button>
+                                    <motion.button
+                                        onClick={goToNext}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-colors"
+                                        aria-label="รูปถัดไป"
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.9 }}
+                                    >
+                                        <ChevronRight className="w-6 h-6" />
+                                    </motion.button>
+
+                                    {/* Dot Indicators */}
+                                    <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+                                        {popups.map((_, index) => (
+                                            <motion.button
+                                                key={index}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setCurrentIndex(index);
+                                                }}
+                                                className={`w-2.5 h-2.5 rounded-full transition-all ${index === currentIndex
+                                                    ? "bg-white"
+                                                    : "bg-white/50 hover:bg-white/75"
+                                                    }`}
+                                                aria-label={`ไปที่รูปที่ ${index + 1}`}
+                                                animate={{ scale: index === currentIndex ? 1.2 : 1 }}
+                                                whileHover={{ scale: 1.3 }}
+                                            />
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 }
-

@@ -268,9 +268,7 @@ export default function AdminRolesPage() {
                             <TableRow>
                                 <TableHead className="w-16">ไอคอน</TableHead>
                                 <TableHead>ชื่อยศ</TableHead>
-                                <TableHead>รหัส</TableHead>
                                 <TableHead className="hidden md:table-cell">คำอธิบาย</TableHead>
-                                <TableHead className="w-20 text-center">ลำดับ</TableHead>
                                 <TableHead className="w-24 text-center">จัดการ</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -302,16 +300,8 @@ export default function AdminRolesPage() {
                                             )}
                                         </div>
                                     </TableCell>
-                                    <TableCell>
-                                        <code className="text-xs bg-muted px-2 py-1 rounded">
-                                            {role.code}
-                                        </code>
-                                    </TableCell>
                                     <TableCell className="hidden md:table-cell text-muted-foreground">
                                         {role.description || "-"}
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        {role.sortOrder}
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center justify-center gap-1">

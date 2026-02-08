@@ -9,6 +9,7 @@ import {
     getProgressiveDelay,
     sleep,
 } from "@/lib/rateLimit";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 
 export async function POST(request: NextRequest) {
     try {
@@ -55,6 +56,18 @@ export async function POST(request: NextRequest) {
             recordFailedLogin(identifier);
             const remaining = checkLoginRateLimit(identifier);
 
+            // Audit log for failed login
+            await auditFromRequest(request, {
+                action: AUDIT_ACTIONS.LOGIN_FAILED,
+                resource: "User",
+                resourceName: username,
+                status: "FAILURE",
+                details: {
+                    resourceName: username,
+                    reason: "ไม่พบผู้ใช้",
+                },
+            });
+
             return NextResponse.json(
                 {
                     success: false,
@@ -73,6 +86,20 @@ export async function POST(request: NextRequest) {
             recordFailedLogin(identifier);
             const remaining = checkLoginRateLimit(identifier);
 
+            // Audit log for failed login
+            await auditFromRequest(request, {
+                action: AUDIT_ACTIONS.LOGIN_FAILED,
+                userId: user.id,
+                resource: "User",
+                resourceId: user.id,
+                resourceName: username,
+                status: "FAILURE",
+                details: {
+                    resourceName: username,
+                    reason: "รหัสผ่านไม่ถูกต้อง",
+                },
+            });
+
             return NextResponse.json(
                 {
                     success: false,
@@ -85,6 +112,18 @@ export async function POST(request: NextRequest) {
 
         // Login successful - clear rate limit
         clearLoginAttempts(identifier);
+
+        // Audit log for successful login
+        await auditFromRequest(request, {
+            action: AUDIT_ACTIONS.LOGIN,
+            userId: user.id,
+            resource: "User",
+            resourceId: user.id,
+            resourceName: username,
+            details: {
+                resourceName: username,
+            },
+        });
 
         // Return user info (client will handle cookie)
         return NextResponse.json({

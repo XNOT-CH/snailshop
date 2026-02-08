@@ -104,16 +104,29 @@ const ACTION_OPTIONS = [
     { value: "LOGIN", label: "เข้าสู่ระบบ" },
     { value: "REGISTER", label: "สมัครสมาชิก" },
     { value: "PURCHASE", label: "ซื้อสินค้า" },
-    { value: "PRODUCT_CREATE", label: "สร้างสินค้า" },
+    { value: "PRODUCT_CREATE", label: "เพิ่มสินค้า" },
     { value: "PRODUCT_UPDATE", label: "แก้ไขสินค้า" },
     { value: "PRODUCT_DELETE", label: "ลบสินค้า" },
-    { value: "NEWS_CREATE", label: "สร้างข่าว" },
+    { value: "NEWS_CREATE", label: "เพิ่มข่าว" },
     { value: "NEWS_UPDATE", label: "แก้ไขข่าว" },
     { value: "NEWS_DELETE", label: "ลบข่าว" },
+    { value: "POPUP_CREATE", label: "เพิ่ม Popup" },
+    { value: "POPUP_UPDATE", label: "แก้ไข Popup" },
+    { value: "POPUP_DELETE", label: "ลบ Popup" },
+    { value: "ROLE_CREATE", label: "เพิ่มยศ" },
+    { value: "ROLE_UPDATE", label: "แก้ไขยศ" },
+    { value: "ROLE_DELETE", label: "ลบยศ" },
     { value: "TOPUP_REQUEST", label: "คำขอเติมเงิน" },
     { value: "TOPUP_APPROVE", label: "อนุมัติเติมเงิน" },
     { value: "TOPUP_REJECT", label: "ปฏิเสธเติมเงิน" },
     { value: "SETTINGS_UPDATE", label: "แก้ไขตั้งค่า" },
+    { value: "USER_CREATE", label: "เพิ่มผู้ใช้" },
+    { value: "USER_UPDATE", label: "แก้ไขผู้ใช้" },
+    { value: "USER_DELETE", label: "ลบผู้ใช้" },
+    { value: "HELP_CREATE", label: "เพิ่มคำถาม" },
+    { value: "HELP_UPDATE", label: "แก้ไขคำถาม" },
+    { value: "HELP_DELETE", label: "ลบคำถาม" },
+    { value: "LOGIN_FAILED", label: "เข้าสู่ระบบไม่สำเร็จ" },
 ];
 
 const FIELD_LABELS: Record<string, string> = {
@@ -125,10 +138,35 @@ const FIELD_LABELS: Record<string, string> = {
     isActive: "สถานะ",
     sortOrder: "ลำดับ",
     link: "ลิงก์",
+    linkUrl: "ลิงก์",
     isFeatured: "แนะนำ",
     name: "ชื่อ",
     role: "บทบาท",
     credit: "เครดิต",
+    permissions: "สิทธิ์การใช้งาน",
+    iconUrl: "ไอคอน",
+    dismissOption: "ตัวเลือกการปิด",
+    username: "ชื่อผู้ใช้",
+    email: "อีเมล",
+    category: "หมวดหมู่",
+    stock: "สต็อก",
+    content: "เนื้อหา",
+};
+
+// Resource type labels in Thai
+const RESOURCE_LABELS: Record<string, string> = {
+    Product: "สินค้า",
+    NewsArticle: "ข่าวสาร",
+    AnnouncementPopup: "ป๊อปอัพ",
+    Role: "ยศ",
+    User: "ผู้ใช้",
+    TopupRequest: "เติมเงิน",
+    Settings: "ตั้งค่า",
+    HelpCategory: "หมวดหมู่คำถาม",
+    HelpArticle: "คำถามช่วยเหลือ",
+    HelpQuestion: "คำถาม",
+    Category: "หมวดหมู่",
+    Order: "รายการซื้อ",
 };
 
 export default function AdminAuditLogsPage() {
@@ -291,7 +329,7 @@ export default function AdminAuditLogsPage() {
                                     <TableHead>เวลา</TableHead>
                                     <TableHead>ผู้ใช้</TableHead>
                                     <TableHead>กิจกรรม</TableHead>
-                                    <TableHead>Target</TableHead>
+                                    <TableHead>รายการที่เกี่ยวข้อง</TableHead>
                                     <TableHead className="hidden lg:table-cell">IP</TableHead>
                                     <TableHead className="text-center">สถานะ</TableHead>
                                     <TableHead className="text-center">รายละเอียด</TableHead>
@@ -335,10 +373,7 @@ export default function AdminAuditLogsPage() {
                                                     )}
                                                     {log.resource && (
                                                         <p className="text-xs text-muted-foreground">
-                                                            {log.resource}
-                                                            {log.resourceId && (
-                                                                <span> ({log.resourceId.slice(0, 8)}...)</span>
-                                                            )}
+                                                            {RESOURCE_LABELS[log.resource] || log.resource}
                                                         </p>
                                                     )}
                                                 </div>
@@ -461,14 +496,14 @@ export default function AdminAuditLogsPage() {
                                 {/* Target */}
                                 {(selectedLog.resource || details?.resourceName) && (
                                     <div className="bg-muted/50 rounded-lg p-4">
-                                        <p className="text-sm text-muted-foreground mb-2">Target</p>
+                                        <p className="text-sm text-muted-foreground mb-2">รายการที่เกี่ยวข้อง</p>
                                         <div className="space-y-1">
                                             {details?.resourceName && (
                                                 <p className="font-medium">{details.resourceName}</p>
                                             )}
                                             {selectedLog.resource && (
                                                 <p className="text-sm text-muted-foreground">
-                                                    {selectedLog.resource}: {selectedLog.resourceId}
+                                                    ประเภท: {RESOURCE_LABELS[selectedLog.resource] || selectedLog.resource}
                                                 </p>
                                             )}
                                         </div>
@@ -511,15 +546,7 @@ export default function AdminAuditLogsPage() {
                                     </div>
                                 )}
 
-                                {/* User Agent */}
-                                {selectedLog.userAgent && (
-                                    <div>
-                                        <p className="text-sm text-muted-foreground mb-1">User Agent</p>
-                                        <p className="text-xs font-mono bg-muted p-2 rounded break-all">
-                                            {selectedLog.userAgent}
-                                        </p>
-                                    </div>
-                                )}
+
                             </div>
                         );
                     })()}

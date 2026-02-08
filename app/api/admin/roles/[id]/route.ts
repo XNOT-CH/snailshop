@@ -74,24 +74,50 @@ export async function PUT(
             }
         }
 
+        const newData = {
+            name,
+            code: code.toUpperCase(),
+            iconUrl: iconUrl || null,
+            description: description || null,
+            permissions: permissions ? JSON.stringify(permissions) : null,
+            sortOrder: sortOrder !== undefined ? sortOrder : existingRole.sortOrder,
+        };
+
         const role = await db.role.update({
             where: { id },
-            data: {
-                name,
-                code: code.toUpperCase(),
-                iconUrl: iconUrl || null,
-                description: description || null,
-                permissions: permissions ? JSON.stringify(permissions) : null,
-                sortOrder: sortOrder !== undefined ? sortOrder : existingRole.sortOrder,
-            },
+            data: newData,
         });
 
-        // Audit log
+        // Build changes array for audit log
+        const changes = [];
+        if (existingRole.name !== newData.name) {
+            changes.push({ field: "name", old: existingRole.name, new: newData.name });
+        }
+        if (existingRole.description !== newData.description) {
+            changes.push({ field: "description", old: existingRole.description || "ไม่มี", new: newData.description || "ไม่มี" });
+        }
+        if (existingRole.iconUrl !== newData.iconUrl) {
+            changes.push({ field: "iconUrl", old: existingRole.iconUrl || "ไม่มี", new: newData.iconUrl || "ไม่มี" });
+        }
+        if (existingRole.permissions !== newData.permissions) {
+            // Parse permissions to show readable changes
+            let oldPerms = [];
+            let newPerms = [];
+            try { oldPerms = existingRole.permissions ? JSON.parse(existingRole.permissions) : []; } catch { }
+            try { newPerms = permissions || []; } catch { }
+            changes.push({ field: "permissions", old: oldPerms.join(", ") || "ไม่มี", new: newPerms.join(", ") || "ไม่มี" });
+        }
+
+        // Audit log with changes
         await auditFromRequest(request, {
             action: AUDIT_ACTIONS.ROLE_UPDATE || "ROLE_UPDATE",
             resource: "Role",
             resourceId: role.id,
-            details: { name, code },
+            resourceName: name,
+            details: {
+                resourceName: name,
+                changes
+            },
         });
 
         return NextResponse.json(role);

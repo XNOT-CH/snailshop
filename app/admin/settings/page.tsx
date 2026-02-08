@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { showSuccess, showError } from "@/lib/swal";
-import { Save, Loader2, Image as ImageIcon, Type, Megaphone, Wallpaper, LayoutGrid } from "lucide-react";
+import { Save, Loader2, Image as ImageIcon, Type, Megaphone, Wallpaper, LayoutGrid, Upload, X } from "lucide-react";
 import Image from "next/image";
 import { Switch } from "@/components/ui/switch";
 
@@ -34,6 +34,10 @@ interface SiteSettings {
 export default function AdminSettingsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+    const [isUploadingBg, setIsUploadingBg] = useState(false);
+    const logoInputRef = useRef<HTMLInputElement>(null);
+    const bgInputRef = useRef<HTMLInputElement>(null);
     const [settings, setSettings] = useState<SiteSettings>({
         heroTitle: "",
         heroDescription: "",
@@ -111,6 +115,64 @@ export default function AdminSettingsPage() {
 
     const updateSetting = (key: keyof SiteSettings, value: string | boolean) => {
         setSettings(prev => ({ ...prev, [key]: value }));
+    };
+
+    // Handle file upload for logo
+    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploadingLogo(true);
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                updateSetting("logoUrl", data.url);
+                showSuccess("อัพโหลดโลโก้สำเร็จ!");
+            } else {
+                showError(data.message || "อัพโหลดไม่สำเร็จ");
+            }
+        } catch {
+            showError("เกิดข้อผิดพลาดในการอัพโหลด");
+        } finally {
+            setIsUploadingLogo(false);
+        }
+    };
+
+    // Handle file upload for background
+    const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploadingBg(true);
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                updateSetting("backgroundImage", data.url);
+                showSuccess("อัพโหลดรูปพื้นหลังสำเร็จ!");
+            } else {
+                showError(data.message || "อัพโหลดไม่สำเร็จ");
+            }
+        } catch {
+            showError("เกิดข้อผิดพลาดในการอัพโหลด");
+        } finally {
+            setIsUploadingBg(false);
+        }
     };
 
     if (isLoading) {
@@ -205,15 +267,60 @@ export default function AdminSettingsPage() {
                             rows={2}
                         />
                     </div>
-                    <div className="space-y-2">
-                        <Label>URL โลโก้</Label>
-                        <Input
-                            value={settings.logoUrl}
-                            onChange={(e) => updateSetting("logoUrl", e.target.value)}
-                            placeholder="https://example.com/logo.png"
-                        />
+                    <div className="space-y-3">
+                        <Label>โลโก้</Label>
+
+                        {/* File Upload */}
+                        <div className="flex gap-2">
+                            <input
+                                ref={logoInputRef}
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+                                className="hidden"
+                                onChange={handleLogoUpload}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                                onClick={() => logoInputRef.current?.click()}
+                                disabled={isUploadingLogo}
+                            >
+                                {isUploadingLogo ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Upload className="h-4 w-4" />
+                                )}
+                                {isUploadingLogo ? "กำลังอัพโหลด..." : "อัพโหลด"}
+                            </Button>
+                            <span className="text-sm text-muted-foreground self-center">หรือ</span>
+                        </div>
+
+                        {/* URL Input */}
+                        <div className="flex gap-2">
+                            <Input
+                                value={settings.logoUrl}
+                                onChange={(e) => updateSetting("logoUrl", e.target.value)}
+                                placeholder="วาง URL โลโก้..."
+                                className="flex-1"
+                            />
+                            {settings.logoUrl && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => updateSetting("logoUrl", "")}
+                                    className="text-red-500 hover:text-red-600"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            )}
+                        </div>
+
+                        {/* Preview */}
                         {settings.logoUrl && (
-                            <div className="mt-2 p-4 bg-slate-100 rounded-lg">
+                            <div className="mt-2 p-4 bg-slate-100 rounded-lg border">
                                 <Image
                                     src={settings.logoUrl}
                                     alt="Logo Preview"
@@ -227,21 +334,67 @@ export default function AdminSettingsPage() {
                             </div>
                         )}
                     </div>
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                         <Label className="flex items-center gap-2">
                             <Wallpaper className="h-4 w-4" />
-                            URL รูปพื้นหลัง
+                            รูปพื้นหลัง
                         </Label>
-                        <Input
-                            value={settings.backgroundImage}
-                            onChange={(e) => updateSetting("backgroundImage", e.target.value)}
-                            placeholder="https://example.com/background.jpg"
-                        />
+
+                        {/* File Upload */}
+                        <div className="flex gap-2">
+                            <input
+                                ref={bgInputRef}
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                className="hidden"
+                                onChange={handleBgUpload}
+                            />
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                                onClick={() => bgInputRef.current?.click()}
+                                disabled={isUploadingBg}
+                            >
+                                {isUploadingBg ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Upload className="h-4 w-4" />
+                                )}
+                                {isUploadingBg ? "กำลังอัพโหลด..." : "อัพโหลด"}
+                            </Button>
+                            <span className="text-sm text-muted-foreground self-center">หรือ</span>
+                        </div>
+
+                        {/* URL Input */}
+                        <div className="flex gap-2">
+                            <Input
+                                value={settings.backgroundImage}
+                                onChange={(e) => updateSetting("backgroundImage", e.target.value)}
+                                placeholder="วาง URL รูปพื้นหลัง..."
+                                className="flex-1"
+                            />
+                            {settings.backgroundImage && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => updateSetting("backgroundImage", "")}
+                                    className="text-red-500 hover:text-red-600"
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            )}
+                        </div>
+
                         <p className="text-xs text-muted-foreground">
                             รูปภาพจะแสดงเป็นพื้นหลังของเว็บไซต์ทั้งหมด (แนะนำ: 1920x1080 พิกเซล)
                         </p>
+
+                        {/* Preview */}
                         {settings.backgroundImage && (
-                            <div className="mt-2 relative aspect-video rounded-lg overflow-hidden bg-slate-100">
+                            <div className="mt-2 relative aspect-video rounded-lg overflow-hidden bg-slate-100 border">
                                 <img
                                     src={settings.backgroundImage}
                                     alt="Background Preview"
@@ -313,9 +466,14 @@ function BannerCard({
     onTitleChange: (v: string) => void;
     onSubtitleChange: (v: string) => void;
 }) {
-    // Check if image is a valid URL
+    const [isUploading, setIsUploading] = React.useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+    // Check if image is a valid URL or local path
     const isValidUrl = (url: string) => {
         if (!url || url.trim() === "") return false;
+        // Allow local uploads starting with /
+        if (url.startsWith("/")) return true;
         try {
             new URL(url);
             return url.startsWith("http://") || url.startsWith("https://");
@@ -325,6 +483,35 @@ function BannerCard({
     };
 
     const hasValidImage = isValidUrl(image);
+
+    // Handle file upload
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        try {
+            const formData = new FormData();
+            formData.append("file", file);
+
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                onImageChange(data.url);
+                showSuccess("อัพโหลดรูป Banner สำเร็จ!");
+            } else {
+                showError(data.message || "อัพโหลดไม่สำเร็จ");
+            }
+        } catch {
+            showError("เกิดข้อผิดพลาดในการอัพโหลด");
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     return (
         <Card>
@@ -336,15 +523,59 @@ function BannerCard({
             <CardContent className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>URL รูปภาพ</Label>
-                            <Input
-                                value={image}
-                                onChange={(e) => onImageChange(e.target.value)}
-                                placeholder="https://example.com/banner.jpg"
-                            />
+                        <div className="space-y-3">
+                            <Label>รูปภาพ</Label>
+
+                            {/* File Upload */}
+                            <div className="flex gap-2">
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp,image/gif"
+                                    className="hidden"
+                                    onChange={handleFileUpload}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isUploading}
+                                >
+                                    {isUploading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Upload className="h-4 w-4" />
+                                    )}
+                                    {isUploading ? "กำลังอัพโหลด..." : "อัพโหลด"}
+                                </Button>
+                                <span className="text-sm text-muted-foreground self-center">หรือ</span>
+                            </div>
+
+                            {/* URL Input */}
+                            <div className="flex gap-2">
+                                <Input
+                                    value={image}
+                                    onChange={(e) => onImageChange(e.target.value)}
+                                    placeholder="วาง URL รูปภาพ..."
+                                    className="flex-1"
+                                />
+                                {image && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => onImageChange("")}
+                                        className="text-red-500 hover:text-red-600"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
+
                             <p className="text-xs text-muted-foreground">
-                                แนะนำ: ขนาด 2000x500 พิกเซล
+                                รองรับไฟล์ JPG, PNG, WebP, GIF (สูงสุด 5MB) • แนะนำขนาด 2000x500px
                             </p>
                         </div>
                         <div className="space-y-2">
@@ -366,7 +597,7 @@ function BannerCard({
                     </div>
                     <div className="flex items-center justify-center">
                         {hasValidImage ? (
-                            <div className="relative w-full aspect-[4/1] rounded-xl overflow-hidden bg-slate-100">
+                            <div className="relative w-full aspect-[4/1] rounded-xl overflow-hidden bg-slate-100 border">
                                 {/* Using img tag to avoid next/image URL validation issues */}
                                 <img
                                     src={image}
@@ -382,8 +613,8 @@ function BannerCard({
                                 </div>
                             </div>
                         ) : (
-                            <div className="w-full aspect-[4/1] rounded-xl bg-slate-100 flex items-center justify-center">
-                                <p className="text-slate-400 text-sm">ใส่ URL รูปภาพเพื่อดูตัวอย่าง</p>
+                            <div className="w-full aspect-[4/1] rounded-xl bg-slate-100 flex items-center justify-center border">
+                                <p className="text-slate-400 text-sm">อัพโหลดหรือใส่ URL รูปภาพเพื่อดูตัวอย่าง</p>
                             </div>
                         )}
                     </div>

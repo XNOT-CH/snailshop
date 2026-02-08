@@ -107,12 +107,12 @@ export function ProductCard({
 
                         {/* Hover Overlay with Button */}
                         <div className={`
-                            absolute inset-0 bg-gradient-to-t from-primary/60 via-primary/20 to-transparent
-                            flex items-end justify-center pb-4
+                            absolute inset-0 bg-gray-900/50 backdrop-blur-[2px]
+                            flex items-center justify-center
                             transition-all duration-300 ease-out
                             ${isHovered && !isSold ? 'opacity-100' : 'opacity-0'}
                         `}>
-                            <span className="flex items-center gap-2 px-4 py-2 bg-card/95 rounded-full text-sm font-medium text-foreground shadow-lg">
+                            <span className="flex items-center gap-2 px-5 py-2.5 bg-white/95 dark:bg-gray-800/95 rounded-full text-sm font-semibold text-primary shadow-xl border-2 border-primary/30 hover:border-primary transition-all">
                                 ดูรายละเอียด
                                 <ArrowRight className="h-4 w-4" />
                             </span>

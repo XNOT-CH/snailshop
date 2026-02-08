@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
 import { encrypt, decrypt } from "@/lib/encryption";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -111,6 +112,39 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             },
         });
 
+        // Build changes array for audit log
+        const changes = [];
+        if (existingProduct.name !== title) {
+            changes.push({ field: "name", old: existingProduct.name, new: title });
+        }
+        if (existingProduct.price !== priceNumber) {
+            changes.push({ field: "price", old: String(existingProduct.price), new: String(priceNumber) });
+        }
+        if (existingProduct.discountPrice !== discountPriceNumber) {
+            changes.push({ field: "discountPrice", old: existingProduct.discountPrice ? String(existingProduct.discountPrice) : "ไม่มี", new: discountPriceNumber ? String(discountPriceNumber) : "ไม่มี" });
+        }
+        if (existingProduct.category !== category) {
+            changes.push({ field: "category", old: existingProduct.category || "ไม่มี", new: category || "ไม่มี" });
+        }
+        if (existingProduct.description !== description) {
+            changes.push({ field: "description", old: existingProduct.description || "ไม่มี", new: description || "ไม่มี" });
+        }
+        if (existingProduct.imageUrl !== image) {
+            changes.push({ field: "imageUrl", old: existingProduct.imageUrl || "ไม่มี", new: image || "ไม่มี" });
+        }
+
+        // Audit log with change tracking
+        await auditFromRequest(request, {
+            action: AUDIT_ACTIONS.PRODUCT_UPDATE,
+            resource: "Product",
+            resourceId: id,
+            resourceName: title,
+            details: {
+                resourceName: title,
+                changes,
+            },
+        });
+
         return NextResponse.json({
             success: true,
             message: "Product updated successfully",
@@ -165,6 +199,22 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         // Delete the product
         await db.product.delete({
             where: { id },
+        });
+
+        // Audit log for deletion
+        await auditFromRequest(request, {
+            action: AUDIT_ACTIONS.PRODUCT_DELETE,
+            resource: "Product",
+            resourceId: id,
+            resourceName: product.name,
+            details: {
+                resourceName: product.name,
+                deletedData: {
+                    name: product.name,
+                    price: product.price,
+                    category: product.category,
+                },
+            },
         });
 
         return NextResponse.json({

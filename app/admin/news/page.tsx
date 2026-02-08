@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { showWarning, showError } from "@/lib/swal";
+import React, { useState, useEffect, useRef } from "react";
+import { showWarning, showError, showSuccess } from "@/lib/swal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -30,6 +30,8 @@ import {
     Newspaper,
     ExternalLink,
     Image as ImageIcon,
+    Upload,
+    X,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -51,6 +53,8 @@ export default function AdminNewsPage() {
     const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
     const [selectedNews, setSelectedNews] = useState<NewsArticle | null>(null);
     const [saving, setSaving] = useState(false);
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -184,6 +188,35 @@ export default function AdminNewsPage() {
             }
         } catch (error) {
             console.error("Error toggling active:", error);
+        }
+    };
+
+    // Handle file upload
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        try {
+            const uploadFormData = new FormData();
+            uploadFormData.append("file", file);
+
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: uploadFormData,
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setFormData((prev) => ({ ...prev, imageUrl: data.url }));
+                showSuccess("อัพโหลดรูปสำเร็จ!");
+            } else {
+                showError(data.message || "อัพโหลดไม่สำเร็จ");
+            }
+        } catch {
+            showError("เกิดข้อผิดพลาดในการอัพโหลด");
+        } finally {
+            setIsUploading(false);
         }
     };
 
@@ -352,18 +385,63 @@ export default function AdminNewsPage() {
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="imageUrl">URL รูปภาพ</Label>
-                            <Input
-                                id="imageUrl"
-                                value={formData.imageUrl}
-                                onChange={(e) =>
-                                    setFormData({ ...formData, imageUrl: e.target.value })
-                                }
-                                placeholder="https://example.com/image.jpg"
-                            />
+                        <div className="space-y-3">
+                            <Label>รูปภาพ</Label>
+
+                            {/* File Upload */}
+                            <div className="flex gap-2">
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp,image/gif"
+                                    className="hidden"
+                                    onChange={handleFileUpload}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-2"
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isUploading}
+                                >
+                                    {isUploading ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Upload className="h-4 w-4" />
+                                    )}
+                                    {isUploading ? "กำลังอัพโหลด..." : "อัพโหลด"}
+                                </Button>
+                                <span className="text-sm text-muted-foreground self-center">หรือ</span>
+                            </div>
+
+                            {/* URL Input */}
+                            <div className="flex gap-2">
+                                <Input
+                                    id="imageUrl"
+                                    value={formData.imageUrl}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, imageUrl: e.target.value })
+                                    }
+                                    placeholder="วาง URL รูปภาพ..."
+                                    className="flex-1"
+                                />
+                                {formData.imageUrl && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => setFormData(prev => ({ ...prev, imageUrl: "" }))}
+                                        className="text-red-500 hover:text-red-600"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
+
+                            {/* Preview */}
                             {formData.imageUrl && (
-                                <div className="relative w-full h-32 rounded-lg overflow-hidden mt-2">
+                                <div className="relative w-full h-32 rounded-lg overflow-hidden mt-2 border">
                                     <Image
                                         src={formData.imageUrl}
                                         alt="Preview"
@@ -377,6 +455,10 @@ export default function AdminNewsPage() {
                                     />
                                 </div>
                             )}
+
+                            <p className="text-xs text-muted-foreground">
+                                รองรับไฟล์ JPG, PNG, WebP, GIF (สูงสุด 5MB)
+                            </p>
                         </div>
 
                         <div className="space-y-2">

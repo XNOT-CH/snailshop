@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { cookies } from "next/headers";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 
 async function isAdmin() {
     const cookieStore = await cookies();
@@ -39,6 +40,18 @@ export async function POST(request: NextRequest) {
             data: {
                 question,
                 answer,
+                category: category || "general",
+            },
+        });
+
+        // Audit log
+        await auditFromRequest(request, {
+            action: AUDIT_ACTIONS.HELP_CREATE,
+            resource: "HelpArticle",
+            resourceId: article.id,
+            resourceName: question,
+            details: {
+                resourceName: question,
                 category: category || "general",
             },
         });

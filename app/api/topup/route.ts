@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 
 // EasySlip API configuration
 const EASYSLIP_API_URL = "https://developer.easyslip.com/api/v1/verify";
@@ -224,6 +225,22 @@ export async function POST(request: NextRequest) {
                 },
             }),
         ]);
+
+        // Audit log for topup
+        await auditFromRequest(request, {
+            action: AUDIT_ACTIONS.TOPUP_REQUEST,
+            resource: "TopupRequest",
+            resourceId: topup.id,
+            resourceName: `฿${amount.toLocaleString()}`,
+            details: {
+                resourceName: `฿${amount.toLocaleString()}`,
+                amount: amount,
+                transRef: slipResult.data?.transRef,
+                senderName: slipResult.data?.sender?.account?.name?.th,
+                senderBank: slipResult.data?.sender?.bank?.name,
+                status: "APPROVED",
+            },
+        });
 
         return NextResponse.json({
             success: true,

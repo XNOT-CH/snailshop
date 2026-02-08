@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { Decimal } from "@prisma/client/runtime/library";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 
 // PATCH /api/admin/users/[id] - Update user credit/points
 export async function PATCH(
@@ -48,6 +49,9 @@ export async function PATCH(
             role?: string;
         } = {};
 
+        // Track changes for audit log
+        const changes: { field: string; old: string; new: string }[] = [];
+
         if (creditBalance !== undefined) {
             const value = parseFloat(creditBalance);
             if (isNaN(value) || value < 0) {
@@ -57,6 +61,11 @@ export async function PATCH(
                 );
             }
             updateData.creditBalance = new Decimal(value);
+            changes.push({
+                field: "creditBalance",
+                old: existingUser.creditBalance.toString(),
+                new: value.toString(),
+            });
         }
 
         if (totalTopup !== undefined) {
@@ -68,6 +77,11 @@ export async function PATCH(
                 );
             }
             updateData.totalTopup = new Decimal(value);
+            changes.push({
+                field: "totalTopup",
+                old: existingUser.totalTopup.toString(),
+                new: value.toString(),
+            });
         }
 
         if (pointBalance !== undefined) {
@@ -79,6 +93,11 @@ export async function PATCH(
                 );
             }
             updateData.pointBalance = value;
+            changes.push({
+                field: "pointBalance",
+                old: existingUser.pointBalance.toString(),
+                new: value.toString(),
+            });
         }
 
         if (lifetimePoints !== undefined) {
@@ -90,16 +109,38 @@ export async function PATCH(
                 );
             }
             updateData.lifetimePoints = value;
+            changes.push({
+                field: "lifetimePoints",
+                old: existingUser.lifetimePoints.toString(),
+                new: value.toString(),
+            });
         }
 
         if (role !== undefined && typeof role === 'string' && role.trim()) {
             updateData.role = role.trim().toUpperCase();
+            changes.push({
+                field: "role",
+                old: existingUser.role,
+                new: role.trim().toUpperCase(),
+            });
         }
 
         // Update user
         const updatedUser = await db.user.update({
             where: { id },
             data: updateData,
+        });
+
+        // Audit log with change tracking
+        await auditFromRequest(request, {
+            action: AUDIT_ACTIONS.USER_UPDATE,
+            resource: "User",
+            resourceId: id,
+            resourceName: existingUser.username,
+            details: {
+                resourceName: existingUser.username,
+                changes,
+            },
         });
 
         return NextResponse.json({

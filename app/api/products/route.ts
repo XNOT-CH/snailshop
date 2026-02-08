@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
 import { encrypt } from "@/lib/encryption";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 
 export async function POST(request: NextRequest) {
     // Check if user is admin
@@ -71,6 +72,19 @@ export async function POST(request: NextRequest) {
                 secretData: secretData ? encrypt(secretData) : "",
                 stockSeparator: stockSeparator || "newline",
                 isSold: false,
+            },
+        });
+
+        // Audit log for product creation
+        await auditFromRequest(request, {
+            action: AUDIT_ACTIONS.PRODUCT_CREATE,
+            resource: "Product",
+            resourceId: product.id,
+            resourceName: title,
+            details: {
+                resourceName: title,
+                price: priceNumber,
+                category: category,
             },
         });
 

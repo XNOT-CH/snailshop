@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/encryption";
 import { splitStock, getDelimiter } from "@/lib/stock";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 
 export async function POST(request: NextRequest) {
     try {
@@ -109,6 +110,21 @@ export async function POST(request: NextRequest) {
             });
 
             return { order, product, givenItem };
+        });
+
+        // Audit log for purchase
+        await auditFromRequest(request, {
+            action: AUDIT_ACTIONS.PURCHASE,
+            userId: user.id,
+            resource: "Order",
+            resourceId: result.order.id,
+            resourceName: result.product.name,
+            details: {
+                resourceName: result.product.name,
+                productId: productId,
+                orderId: result.order.id,
+                price: Number(result.product.price),
+            },
         });
 
         return NextResponse.json({

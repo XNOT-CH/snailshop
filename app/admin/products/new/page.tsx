@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Shield, Gem, Banknote, Package, Eye, Plus, Pencil, Trash2, Check, X } from "lucide-react";
+import { ArrowLeft, Loader2, Shield, Gem, Banknote, Package, Eye, Plus, Pencil, Trash2, Check, X, Upload, ImageIcon } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { showSuccess, showError } from "@/lib/swal";
 import { splitStock, type StockSeparatorType } from "@/lib/stock";
@@ -33,6 +33,10 @@ export default function AddProductPage() {
     const [showAddForm, setShowAddForm] = useState(false);
     const [singleUser, setSingleUser] = useState("");
     const [singlePass, setSinglePass] = useState("");
+
+    // Image upload
+    const [isUploading, setIsUploading] = useState(false);
+    const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     // Edit stock item
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -92,6 +96,35 @@ export default function AddProductPage() {
     const stockItems = useMemo(() => {
         return splitStock(formData.secretData, formData.stockSeparator);
     }, [formData.secretData, formData.stockSeparator]);
+
+    // Handle file upload
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploading(true);
+        try {
+            const uploadFormData = new FormData();
+            uploadFormData.append("file", file);
+
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: uploadFormData,
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                setFormData((prev) => ({ ...prev, image: data.url }));
+                showSuccess("อัพโหลดรูปสำเร็จ!");
+            } else {
+                showError(data.message || "อัพโหลดไม่สำเร็จ");
+            }
+        } catch {
+            showError("เกิดข้อผิดพลาดในการอัพโหลด");
+        } finally {
+            setIsUploading(false);
+        }
+    };
 
     const handleChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -268,18 +301,62 @@ export default function AddProductPage() {
                                 />
                             </div>
 
-                            {/* Image URL */}
-                            <div className="space-y-2">
-                                <Label htmlFor="image">URL รูปภาพ</Label>
-                                <Input
-                                    id="image"
-                                    name="image"
-                                    placeholder="https://images.unsplash.com/..."
-                                    value={formData.image}
-                                    onChange={handleChange}
-                                />
+                            {/* Image Upload/URL */}
+                            <div className="space-y-3">
+                                <Label>รูปภาพสินค้า</Label>
+
+                                {/* File Upload */}
+                                <div className="flex gap-2">
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp,image/gif"
+                                        className="hidden"
+                                        onChange={handleFileUpload}
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="gap-2"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={isUploading}
+                                    >
+                                        {isUploading ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Upload className="h-4 w-4" />
+                                        )}
+                                        {isUploading ? "กำลังอัพโหลด..." : "อัพโหลดจากเครื่อง"}
+                                    </Button>
+                                    <span className="text-sm text-muted-foreground self-center">หรือ</span>
+                                </div>
+
+                                {/* URL Input */}
+                                <div className="flex gap-2">
+                                    <Input
+                                        id="image"
+                                        name="image"
+                                        placeholder="วาง URL รูปภาพ..."
+                                        value={formData.image}
+                                        onChange={handleChange}
+                                        className="flex-1"
+                                    />
+                                    {formData.image && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => setFormData(prev => ({ ...prev, image: "" }))}
+                                            className="text-red-500 hover:text-red-600"
+                                        >
+                                            <X className="h-4 w-4" />
+                                        </Button>
+                                    )}
+                                </div>
+
+                                {/* Preview */}
                                 {formData.image && (
-                                    <div className="mt-2 relative aspect-video rounded-lg overflow-hidden bg-slate-100 max-w-xs">
+                                    <div className="mt-2 relative aspect-video rounded-lg overflow-hidden bg-slate-100 max-w-xs border">
                                         <img
                                             src={formData.image}
                                             alt="Preview"
@@ -290,6 +367,10 @@ export default function AddProductPage() {
                                         />
                                     </div>
                                 )}
+
+                                <p className="text-xs text-muted-foreground">
+                                    รองรับไฟล์ JPG, PNG, WebP, GIF (สูงสุด 5MB)
+                                </p>
                             </div>
 
                             {/* Description */}

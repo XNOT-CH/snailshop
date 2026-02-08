@@ -181,6 +181,14 @@ export function FeaturedProducts() {
                                         </span>
                                     </div>
                                 )}
+                                {/* Hover Overlay */}
+                                {!product.isSold && (
+                                    <Link href={`/product/${product.id}`} className="absolute inset-0 z-10 bg-gray-900/50 backdrop-blur-[2px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                        <span className="flex items-center gap-2 px-5 py-2.5 bg-white/95 dark:bg-gray-800/95 rounded-full text-sm font-semibold text-primary shadow-xl border-2 border-primary/30">
+                                            ดูรายละเอียด
+                                        </span>
+                                    </Link>
+                                )}
                                 <Image
                                     src={product.imageUrl || "/placeholder.jpg"}
                                     alt={product.name}

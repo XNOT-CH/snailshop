@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import bcrypt from "bcryptjs";
 import { checkRegisterRateLimit, getClientIp } from "@/lib/rateLimit";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 
 export async function POST(request: NextRequest) {
     try {
@@ -62,6 +63,18 @@ export async function POST(request: NextRequest) {
                 password: hashedPassword,
                 role: "USER",
                 creditBalance: 100, // Welcome bonus
+            },
+        });
+
+        // Audit log for registration
+        await auditFromRequest(request, {
+            action: AUDIT_ACTIONS.REGISTER,
+            userId: user.id,
+            resource: "User",
+            resourceId: user.id,
+            resourceName: username,
+            details: {
+                resourceName: username,
             },
         });
 
