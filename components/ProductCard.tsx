@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { showPurchaseSuccess, showError, showWarning } from "@/lib/swal";
+import { showPurchaseConfirm, showPurchaseSuccessModal, showError, showWarning } from "@/lib/swal";
 import { ShoppingCart, Eye, Loader2, ArrowRight } from "lucide-react";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 
@@ -45,6 +45,13 @@ export function ProductCard({
 
     const handleBuy = async () => {
         if (isSold || isLoading) return;
+        const confirmed = await showPurchaseConfirm({
+            productName: title,
+            priceText: `฿${price.toLocaleString()}`,
+        });
+
+        if (!confirmed) return;
+
         setIsLoading(true);
 
         try {
@@ -57,12 +64,14 @@ export function ProductCard({
             const data = await response.json();
 
             if (data.success) {
-                showPurchaseSuccess("สำเร็จ!", `ซื้อ ${data.productName} เรียบร้อยแล้ว`);
+                await showPurchaseSuccessModal({
+                    productName: data.productName,
+                });
                 router.refresh();
             } else {
                 showWarning(data.message);
             }
-        } catch (error) {
+        } catch {
             showError("ไม่สามารถทำรายการได้ กรุณาลองใหม่");
         } finally {
             setIsLoading(false);

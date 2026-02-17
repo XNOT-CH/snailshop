@@ -6,9 +6,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Flame, ShoppingCart, Eye, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { showPurchaseSuccess, showError, showWarning } from "@/lib/swal";
+import { showPurchaseConfirm, showPurchaseSuccessModal, showError, showWarning } from "@/lib/swal";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
-import Swal from "@/lib/swal";
 
 interface FeaturedProduct {
     id: string;
@@ -27,20 +26,13 @@ export function FeaturedProducts() {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const handleBuyClick = async (product: FeaturedProduct) => {
-        const result = await Swal.fire({
-            title: "ยืนยันการซื้อ?",
-            html: `คุณต้องการซื้อ <strong>${product.name}</strong> ในราคา <strong>฿${product.price.toLocaleString()}</strong> ใช่หรือไม่?`,
-            icon: "question",
-            showCancelButton: true,
-            confirmButtonColor: "#3b82f6",
-            cancelButtonColor: "#6b7280",
-            confirmButtonText: "ซื้อเลย",
-            cancelButtonText: "ยกเลิก",
-            reverseButtons: true,
+        const confirmed = await showPurchaseConfirm({
+            productName: product.name,
+            priceText: `฿${product.price.toLocaleString()}`,
         });
-        if (result.isConfirmed) {
-            handleBuyConfirm(product);
-        }
+        if (!confirmed) return;
+
+        handleBuyConfirm(product);
     };
 
     const handleBuyConfirm = async (product: FeaturedProduct) => {
@@ -56,7 +48,9 @@ export function FeaturedProducts() {
             const data = await response.json();
 
             if (data.success) {
-                showPurchaseSuccess("สำเร็จ!", `ซื้อ ${data.productName} เรียบร้อยแล้ว`);
+                await showPurchaseSuccessModal({
+                    productName: data.productName,
+                });
                 router.refresh();
                 // Update local state
                 setProducts((prev) =>
@@ -162,7 +156,7 @@ export function FeaturedProducts() {
 
             <div
                 ref={scrollContainerRef}
-                className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 -mx-2 px-2 snap-x snap-mandatory swipe-container"
+                className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 px-1 snap-x snap-mandatory swipe-container"
                 style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
                 {products.map((product) => (

@@ -16,22 +16,32 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Parse date param (default = today)
+        // Parse date range params
+        const startParam = request.nextUrl.searchParams.get("startDate");
+        const endParam = request.nextUrl.searchParams.get("endDate");
         const dateParam = request.nextUrl.searchParams.get("date");
-        const targetDate = dateParam ? new Date(dateParam) : new Date();
 
-        // Last 7 days range ending on target date
-        const endDate = new Date(targetDate);
-        endDate.setHours(23, 59, 59, 999);
+        let startDate: Date;
+        let endDate: Date;
 
-        const startDate = new Date(targetDate);
-        startDate.setDate(targetDate.getDate() - 6);
-        startDate.setHours(0, 0, 0, 0);
+        if (startParam && endParam) {
+            startDate = new Date(startParam);
+            startDate.setHours(0, 0, 0, 0);
+            endDate = new Date(endParam);
+            endDate.setHours(23, 59, 59, 999);
+        } else {
+            // Fallback: 7 days ending on target date
+            const targetDate = dateParam ? new Date(dateParam) : new Date();
+            endDate = new Date(targetDate);
+            endDate.setHours(23, 59, 59, 999);
+            startDate = new Date(targetDate);
+            startDate.setDate(targetDate.getDate() - 6);
+            startDate.setHours(0, 0, 0, 0);
+        }
 
-        // Fetch APPROVED topups in the range
+        // Fetch ALL topups in the range (all statuses for txn count)
         const topups = await db.topup.findMany({
             where: {
-                status: "APPROVED",
                 createdAt: {
                     gte: startDate,
                     lte: endDate,
@@ -39,35 +49,47 @@ export async function GET(request: NextRequest) {
             },
             select: {
                 amount: true,
+                status: true,
                 createdAt: true,
             },
         });
 
-        // Build a map for every day in the 7-day window
-        const dailyMap = new Map<string, number>();
-        for (let i = 0; i < 7; i++) {
+        // Build a map for every day in the range
+        const dailyMap = new Map<string, { amount: number; transactions: number }>();
+        const dayCount = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+        for (let i = 0; i < dayCount; i++) {
             const d = new Date(startDate);
             d.setDate(startDate.getDate() + i);
             const key = d.toISOString().slice(0, 10); // YYYY-MM-DD
-            dailyMap.set(key, 0);
+            dailyMap.set(key, { amount: 0, transactions: 0 });
         }
 
-        // Aggregate amounts by date
+        // Aggregate by date
         for (const t of topups) {
             const key = new Date(t.createdAt).toISOString().slice(0, 10);
-            if (dailyMap.has(key)) {
-                dailyMap.set(key, (dailyMap.get(key) || 0) + Number(t.amount));
+            const entry = dailyMap.get(key);
+            if (entry) {
+                entry.transactions++;
+                if (t.status === "APPROVED") {
+                    entry.amount += Number(t.amount);
+                }
             }
         }
 
         // Convert to array with Thai-formatted labels
-        const data = Array.from(dailyMap.entries()).map(([dateStr, amount]) => {
+        const data = Array.from(dailyMap.entries()).map(([dateStr, vals]) => {
             const d = new Date(dateStr);
             const label = d.toLocaleDateString("th-TH", {
                 day: "2-digit",
                 month: "short",
             });
-            return { date: label, amount };
+            return {
+                date: label,
+                rawDate: dateStr,
+                dayOfWeek: d.getDay(),
+                amount: vals.amount,
+                transactions: vals.transactions,
+            };
         });
 
         return NextResponse.json({ success: true, data });

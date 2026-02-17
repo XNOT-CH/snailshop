@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
+import { HideMainLayout } from "@/components/HideMainLayout";
 
 export default async function AdminLayout({
     children,
@@ -35,12 +36,15 @@ export default async function AdminLayout({
     // User is authenticated and is an admin - render the layout
     return (
         <div className="flex min-h-screen">
+            <HideMainLayout />
             {/* Fixed Sidebar */}
             <AdminSidebar />
 
             {/* Main Content */}
-            <main className="ml-0 md:ml-64 flex-1 bg-muted pt-14 md:pt-0 p-4 md:p-8 animate-page-enter">
-                {children}
+            <main className="ml-0 md:ml-64 flex-1 bg-muted pt-14 md:pt-0 p-4 md:p-6 lg:p-8 w-full min-h-screen animate-page-enter">
+                <div className="w-full max-w-screen-2xl mx-auto bg-card rounded-2xl border border-border/60 shadow-sm p-5 md:p-8">
+                    {children}
+                </div>
             </main>
         </div>
     );

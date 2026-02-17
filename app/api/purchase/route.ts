@@ -7,11 +7,19 @@ import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 
 export async function POST(request: NextRequest) {
     try {
-        const { productId } = await request.json();
+        const { productId, quantity } = await request.json();
 
         if (!productId) {
             return NextResponse.json(
                 { success: false, message: "Product ID is required" },
+                { status: 400 }
+            );
+        }
+
+        const qty = typeof quantity === "number" ? quantity : 1;
+        if (!Number.isFinite(qty) || qty < 1 || !Number.isInteger(qty)) {
+            return NextResponse.json(
+                { success: false, message: "Quantity must be a positive integer" },
                 { status: 400 }
             );
         }
@@ -55,12 +63,13 @@ export async function POST(request: NextRequest) {
                 throw new Error("สินค้านี้ถูกขายไปแล้ว");
             }
 
-            const productPrice = Number(product.price);
+            const unitPrice = product.discountPrice ? Number(product.discountPrice) : Number(product.price);
             const userBalance = Number(user.creditBalance);
 
             // Check if user has enough balance
-            if (userBalance < productPrice) {
-                throw new Error(`เครดิตไม่เพียงพอ (ต้องการ ฿${productPrice.toLocaleString()} แต่มี ฿${userBalance.toLocaleString()})`);
+            const totalPrice = unitPrice * qty;
+            if (userBalance < totalPrice) {
+                throw new Error(`เครดิตไม่เพียงพอ (ต้องการ ฿${totalPrice.toLocaleString()} แต่มี ฿${userBalance.toLocaleString()})`);
             }
 
             // Decrypt and split stock items
@@ -72,20 +81,26 @@ export async function POST(request: NextRequest) {
                 throw new Error("สินค้าหมดสต็อก");
             }
 
-            // Take the first stock item for this purchase
-            const givenItem = stockItems[0];
-            const remainingItems = stockItems.slice(1);
+            if (stockItems.length < qty) {
+                throw new Error(`สต็อกไม่เพียงพอ (เหลือ ${stockItems.length} รายการ)`);
+            }
+
+            // Take N stock items for this purchase
+            const givenItems = stockItems.slice(0, qty);
+            const remainingItems = stockItems.slice(qty);
             const delimiter = getDelimiter(separatorType);
             const remainingData = remainingItems.join(delimiter);
             const isLastStock = remainingItems.length === 0;
 
             // Create order first
+            const givenJoined = givenItems.join(delimiter);
+
             const order = await tx.order.create({
                 data: {
                     userId: user.id,
-                    totalPrice: product.price,
+                    totalPrice: totalPrice,
                     status: "COMPLETED",
-                    givenData: encrypt(givenItem), // Store the code given to customer
+                    givenData: encrypt(givenJoined), // Store the code(s) given to customer
                 },
             });
 
@@ -94,7 +109,7 @@ export async function POST(request: NextRequest) {
                 where: { id: user.id },
                 data: {
                     creditBalance: {
-                        decrement: product.price,
+                        decrement: totalPrice,
                     },
                 },
             });
@@ -103,13 +118,13 @@ export async function POST(request: NextRequest) {
             await tx.product.update({
                 where: { id: productId },
                 data: {
-                    secretData: isLastStock ? encrypt(givenItem) : encrypt(remainingData),
+                    secretData: isLastStock ? encrypt(givenJoined) : encrypt(remainingData),
                     isSold: isLastStock,
                     orderId: order.id,
                 },
             });
 
-            return { order, product, givenItem };
+            return { order, product };
         });
 
         // Audit log for purchase
@@ -123,7 +138,10 @@ export async function POST(request: NextRequest) {
                 resourceName: result.product.name,
                 productId: productId,
                 orderId: result.order.id,
-                price: Number(result.product.price),
+                unitPrice: result.product.discountPrice ? Number(result.product.discountPrice) : Number(result.product.price),
+                quantity: qty,
+                totalPrice:
+                    (result.product.discountPrice ? Number(result.product.discountPrice) : Number(result.product.price)) * qty,
             },
         });
 

@@ -258,7 +258,7 @@ export default function AdminPromoCodesPage() {
                             </div>
 
                             {/* Discount Type & Value */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label>ประเภทส่วนลด</Label>
                                     <Select
@@ -294,7 +294,7 @@ export default function AdminPromoCodesPage() {
                             </div>
 
                             {/* Min Purchase & Max Discount */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="minPurchase">ยอดขั้นต่ำ (฿)</Label>
                                     <Input
@@ -322,7 +322,7 @@ export default function AdminPromoCodesPage() {
                             </div>
 
                             {/* Usage Limit & Expires */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="usageLimit">จำกัดการใช้</Label>
                                     <Input

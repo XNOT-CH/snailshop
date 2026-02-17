@@ -428,7 +428,7 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
                     </DialogHeader>
 
                     <div className="space-y-4 py-4">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="creditBalance">เครดิตคงเหลือ (บาท)</Label>
                                 <Input
@@ -457,7 +457,7 @@ export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="pointBalance">พอยต์คงเหลือ</Label>
                                 <Input

@@ -6,9 +6,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Tag, ShoppingCart, Eye, Percent, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { showPurchaseSuccess, showError, showWarning } from "@/lib/swal";
+import { showPurchaseConfirm, showPurchaseSuccessModal, showError, showWarning } from "@/lib/swal";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
-import Swal from "@/lib/swal";
 
 interface SaleProduct {
     id: string;
@@ -28,20 +27,15 @@ export function SaleProducts() {
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const handleBuyClick = async (product: SaleProduct) => {
-        const result = await Swal.fire({
-            title: "ยืนยันการซื้อ?",
-            html: `คุณต้องการซื้อ <strong>${product.name}</strong> ในราคา <strong>฿${product.discountPrice.toLocaleString()}</strong> ใช่หรือไม่?<br><span class="text-sm text-gray-500 line-through">ราคาเดิม: ฿${product.price.toLocaleString()}</span>`,
-            icon: "question",
-            showCancelButton: true,
+        const confirmed = await showPurchaseConfirm({
+            productName: product.name,
+            priceText: `฿${product.discountPrice.toLocaleString()}`,
+            extraHtml: `<span class="text-sm text-gray-500 line-through">ราคาเดิม: ฿${product.price.toLocaleString()}</span>`,
             confirmButtonColor: "#ef4444",
-            cancelButtonColor: "#6b7280",
-            confirmButtonText: "ซื้อเลย",
-            cancelButtonText: "ยกเลิก",
-            reverseButtons: true,
         });
-        if (result.isConfirmed) {
-            handleBuyConfirm(product);
-        }
+        if (!confirmed) return;
+
+        handleBuyConfirm(product);
     };
 
     const handleBuyConfirm = async (product: SaleProduct) => {
@@ -57,7 +51,9 @@ export function SaleProducts() {
             const data = await response.json();
 
             if (data.success) {
-                showPurchaseSuccess("สำเร็จ!", `ซื้อ ${data.productName} เรียบร้อยแล้ว`);
+                await showPurchaseSuccessModal({
+                    productName: data.productName,
+                });
                 router.refresh();
                 // Update local state
                 setProducts((prev) =>
@@ -168,7 +164,7 @@ export function SaleProducts() {
 
             <div
                 ref={scrollContainerRef}
-                className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 -mx-2 px-2 snap-x snap-mandatory"
+                className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 px-1 snap-x snap-mandatory"
                 style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
                 {products.map((product) => (

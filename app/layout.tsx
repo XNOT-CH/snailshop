@@ -41,23 +41,31 @@ export default function RootLayout({
               <DynamicFavicon />
 
               {/* Navbar */}
-              <Navbar />
+              <div id="main-navbar">
+                <Navbar />
+              </div>
 
               {/* Main Content - Responsive Container with Page Transition */}
-              <div className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div id="main-container" className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <main className="animate-page-enter">
                   {children}
                 </main>
               </div>
 
               {/* Footer */}
-              <Footer />
+              <div id="main-footer">
+                <Footer />
+              </div>
 
               {/* Floating Chat Button */}
-              <FloatingChatButton href="https://m.me/61571169820803" />
+              <div id="main-chat">
+                <FloatingChatButton href="https://m.me/61571169820803" />
+              </div>
 
               {/* Announcement Popup - Client Side Only */}
-              <AnnouncementPopupWrapper />
+              <div id="main-popup">
+                <AnnouncementPopupWrapper />
+              </div>
             </CartProvider>
           </SweetAlertProvider>
         </ThemeProvider>

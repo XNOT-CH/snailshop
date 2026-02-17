@@ -8,6 +8,10 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PurchasedItem } from "@/components/PurchasedItem";
 import { DailyTopupSummary } from "@/components/DailyTopupSummary";
 import { DatePicker } from "@/components/DatePicker";
+import { DateRangePicker } from "@/components/DateRangePicker";
+import type { DateRange } from "react-day-picker";
+import { subDays, format } from "date-fns";
+import { th } from "date-fns/locale";
 import {
     Wallet,
     Package,
@@ -52,9 +56,11 @@ function toDateString(date: Date): string {
 
 // ─── Component ──────────────────────────────────────────
 export function DashboardClient({ username, initialCreditBalance }: DashboardClientProps) {
-    // Dates for each tab
     const [overviewDate, setOverviewDate] = useState<Date>(new Date());
-    const [topupDate, setTopupDate] = useState<Date>(new Date());
+    const [topupRange, setTopupRange] = useState<DateRange | undefined>({
+        from: subDays(new Date(), 6),
+        to: new Date(),
+    });
     const [purchasesDate, setPurchasesDate] = useState<Date>(new Date());
 
     // Overview data
@@ -235,20 +241,29 @@ export function DashboardClient({ username, initialCreditBalance }: DashboardCli
                 Tab 2: สรุปเติมเงิน (Topup Summary)
                ════════════════════════════════════════════ */}
             <TabsContent value="topup" className="animate-page-enter space-y-4">
-                {/* Date Picker */}
+                {/* Date Range Picker */}
                 <div className="flex items-center justify-between flex-wrap gap-2">
                     <div>
                         <h2 className="text-lg font-semibold text-foreground">💰 สรุปเติมเงิน</h2>
-                        <p className="text-sm text-muted-foreground">{formatThaiDate(topupDate)}</p>
+                        <p className="text-sm text-muted-foreground">
+                            {topupRange?.from
+                                ? topupRange.to && topupRange.from.toDateString() !== topupRange.to.toDateString()
+                                    ? `${format(topupRange.from, "d MMM yyyy", { locale: th })} – ${format(topupRange.to, "d MMM yyyy", { locale: th })}`
+                                    : format(topupRange.from, "d MMM yyyy", { locale: th })
+                                : "เลือกช่วงวันที่"}
+                        </p>
                     </div>
-                    <DatePicker
-                        value={topupDate}
-                        onChange={(d) => d && setTopupDate(d)}
-                        placeholder="เลือกวันที่"
+                    <DateRangePicker
+                        value={topupRange}
+                        onChange={(r) => r && setTopupRange(r)}
+                        placeholder="เลือกช่วงวันที่"
                     />
                 </div>
 
-                <DailyTopupSummary selectedDate={toDateString(topupDate)} />
+                <DailyTopupSummary
+                    startDate={topupRange?.from ? format(topupRange.from, "yyyy-MM-dd") : undefined}
+                    endDate={topupRange?.to ? format(topupRange.to, "yyyy-MM-dd") : undefined}
+                />
             </TabsContent>
 
             {/* ════════════════════════════════════════════

@@ -11,8 +11,10 @@ import {
 import { RevenueChart } from "@/components/admin/RevenueChart";
 import { SalesDistribution } from "@/components/admin/SalesDistribution";
 import { RecentTransactions } from "@/components/admin/RecentTransactions";
-import { DailyTopupSummary } from "@/components/DailyTopupSummary";
+import { TopupSummaryWithDateRange } from "@/components/TopupSummaryWithDateRange";
+import { MembersSummary } from "@/components/MembersSummary";
 import { DashboardTabs } from "@/components/DashboardTabs";
+import { AdminDashboardHeader } from "@/components/admin/AdminDashboardHeader";
 
 export const dynamic = "force-dynamic";
 
@@ -76,15 +78,8 @@ export default async function AdminDashboardPage() {
 
     return (
         <div className="space-y-6">
-            {/* Page Header */}
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">
-                    แดชบอร์ด
-                </h1>
-                <p className="text-muted-foreground">
-                    ภาพรวมข้อมูลธุรกิจของคุณ
-                </p>
-            </div>
+            {/* Page Header with Date Picker */}
+            <AdminDashboardHeader />
 
             {/* Tabbed Content */}
             <DashboardTabs
@@ -164,7 +159,10 @@ export default async function AdminDashboardPage() {
                     </div>
                 }
                 topupContent={
-                    <DailyTopupSummary />
+                    <TopupSummaryWithDateRange />
+                }
+                membersContent={
+                    <MembersSummary />
                 }
                 purchasesContent={
                     <div className="grid gap-4 grid-cols-1 lg:grid-cols-5">

@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { HideMainLayout } from "@/components/HideMainLayout";
 
 export default async function DashboardLayout({
     children,
@@ -36,13 +37,14 @@ export default async function DashboardLayout({
 
     return (
         <div className="flex min-h-screen bg-muted">
+            <HideMainLayout />
             {/* Sidebar */}
             <DashboardSidebar user={user} />
 
             {/* Main Content */}
-            <main className="ml-0 md:ml-64 flex-1 p-4 md:p-8 pb-20 md:pb-8 bg-background">
+            <main className="ml-0 md:ml-64 flex-1 p-4 md:p-6 lg:p-8 pb-20 md:pb-8 bg-muted min-h-screen">
                 <ScrollArea className="h-full">
-                    <div className="page-transition">
+                    <div className="page-transition w-full max-w-screen-2xl mx-auto bg-card rounded-2xl border border-border/60 shadow-sm p-5 md:p-8">
                         {children}
                     </div>
                 </ScrollArea>

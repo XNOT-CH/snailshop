@@ -193,7 +193,7 @@ export default function TopupPage() {
 
                         {/* Account Details */}
                         <div className="bg-muted/50 rounded-xl p-4 mb-6">
-                            <div className="grid grid-cols-2 gap-4 text-center">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-center">
                                 <div>
                                     <div className="flex items-center justify-center gap-1 text-muted-foreground text-xs mb-1">
                                         <User className="h-3 w-3" />

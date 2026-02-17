@@ -296,7 +296,7 @@ export default function AdminAuditLogsPage() {
                 <div className="flex items-center gap-2">
                     <Filter className="h-4 w-4 text-muted-foreground" />
                     <Select value={actionFilter} onValueChange={(v) => { setActionFilter(v); setPage(0); }}>
-                        <SelectTrigger className="w-48">
+                        <SelectTrigger className="w-full sm:w-48">
                             <SelectValue placeholder="เลือกประเภท" />
                         </SelectTrigger>
                         <SelectContent>
@@ -460,24 +460,17 @@ export default function AdminAuditLogsPage() {
                         const details = parseDetails(selectedLog.details);
                         return (
                             <div className="space-y-6">
-                                {/* Summary */}
-                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                                     <div>
                                         <p className="text-muted-foreground mb-1">ผู้ดำเนินการ</p>
-                                        <p className="font-medium">
-                                            {selectedLog.user?.username || "ไม่ทราบ"}
-                                        </p>
+                                        <p className="font-medium">{selectedLog.user?.username || "ระบบ"}</p>
                                         {selectedLog.user?.id && (
-                                            <p className="text-xs text-muted-foreground font-mono">
-                                                {selectedLog.user.id}
-                                            </p>
+                                            <p className="text-xs text-muted-foreground font-mono">{selectedLog.user.id}</p>
                                         )}
                                     </div>
                                     <div>
                                         <p className="text-muted-foreground mb-1">เวลา</p>
-                                        <p className="font-medium">
-                                            {formatDate(selectedLog.createdAt)}
-                                        </p>
+                                        <p className="font-medium">{formatDate(selectedLog.createdAt)}</p>
                                     </div>
                                     <div>
                                         <p className="text-muted-foreground mb-1">กิจกรรม</p>
@@ -487,13 +480,10 @@ export default function AdminAuditLogsPage() {
                                     </div>
                                     <div>
                                         <p className="text-muted-foreground mb-1">IP Address</p>
-                                        <p className="font-medium font-mono">
-                                            {selectedLog.ipAddress || "-"}
-                                        </p>
+                                        <p className="font-medium font-mono">{selectedLog.ipAddress || "-"}</p>
                                     </div>
                                 </div>
 
-                                {/* Target */}
                                 {(selectedLog.resource || details?.resourceName) && (
                                     <div className="bg-muted/50 rounded-lg p-4">
                                         <p className="text-sm text-muted-foreground mb-2">รายการที่เกี่ยวข้อง</p>
@@ -510,7 +500,6 @@ export default function AdminAuditLogsPage() {
                                     </div>
                                 )}
 
-                                {/* Changes */}
                                 {details?.changes && details.changes.length > 0 && (
                                     <div>
                                         <p className="text-sm text-muted-foreground mb-3">
@@ -528,16 +517,12 @@ export default function AdminAuditLogsPage() {
                                                     <div className="flex items-center gap-2 text-sm">
                                                         <div className="flex-1 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 px-2 py-1 rounded">
                                                             <span className="text-xs text-muted-foreground mr-1">เดิม:</span>
-                                                            <span className="font-mono break-all">
-                                                                {change.old || "null"}
-                                                            </span>
+                                                            <span className="font-mono break-all">{change.old || "null"}</span>
                                                         </div>
                                                         <ArrowRight className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                                                         <div className="flex-1 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 px-2 py-1 rounded">
                                                             <span className="text-xs text-muted-foreground mr-1">ใหม่:</span>
-                                                            <span className="font-mono break-all">
-                                                                {change.new || "null"}
-                                                            </span>
+                                                            <span className="font-mono break-all">{change.new || "null"}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -545,8 +530,6 @@ export default function AdminAuditLogsPage() {
                                         </div>
                                     </div>
                                 )}
-
-
                             </div>
                         );
                     })()}

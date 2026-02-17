@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Loader2 } from "lucide-react";
-import Swal from "@/lib/swal";
+import { showPurchaseConfirm, showPurchaseSuccessModal, showWarning, showErrorAlert } from "@/lib/swal";
 
 interface BuyButtonProps {
     productId: string;
@@ -19,20 +19,11 @@ export function BuyButton({ productId, price, disabled }: BuyButtonProps) {
     const handlePurchase = async () => {
         if (disabled || isLoading) return;
 
-        // Confirm before purchase
-        const confirmResult = await Swal.fire({
-            title: "ยืนยันการซื้อ?",
-            html: `คุณต้องการซื้อสินค้านี้ในราคา <strong>฿${price.toLocaleString()}</strong> ใช่หรือไม่?`,
-            icon: "question",
-            showCancelButton: true,
-            confirmButtonColor: "#3b82f6",
-            cancelButtonColor: "#6b7280",
-            confirmButtonText: "ซื้อเลย",
-            cancelButtonText: "ยกเลิก",
-            reverseButtons: true,
+        const confirmed = await showPurchaseConfirm({
+            priceText: `฿${price.toLocaleString()}`,
         });
 
-        if (!confirmResult.isConfirmed) return;
+        if (!confirmed) return;
 
         setIsLoading(true);
 
@@ -48,31 +39,18 @@ export function BuyButton({ productId, price, disabled }: BuyButtonProps) {
             const data = await response.json();
 
             if (data.success) {
-                await Swal.fire({
-                    icon: "success",
-                    title: "ซื้อสำเร็จ! 🎉",
-                    html: `ซื้อ <strong>${data.productName}</strong> เรียบร้อยแล้ว<br><small>ดูข้อมูลบัญชีได้ที่ประวัติการสั่งซื้อ</small>`,
-                    confirmButtonColor: "#3b82f6",
-                    confirmButtonText: "ตกลง",
+                await showPurchaseSuccessModal({
+                    productName: data.productName,
                 });
                 router.refresh();
             } else {
-                await Swal.fire({
-                    icon: "warning",
-                    title: "ไม่สามารถซื้อได้",
-                    text: data.message,
-                    confirmButtonColor: "#3b82f6",
-                    confirmButtonText: "ตกลง",
-                });
+                showWarning(data.message);
             }
         } catch (error) {
-            await Swal.fire({
-                icon: "error",
-                title: "เกิดข้อผิดพลาด",
-                text: error instanceof Error ? error.message : "กรุณาลองใหม่อีกครั้ง",
-                confirmButtonColor: "#3b82f6",
-                confirmButtonText: "ตกลง",
-            });
+            await showErrorAlert(
+                "เกิดข้อผิดพลาด",
+                error instanceof Error ? error.message : "กรุณาลองใหม่อีกครั้ง"
+            );
         } finally {
             setIsLoading(false);
         }

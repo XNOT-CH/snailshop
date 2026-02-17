@@ -161,6 +161,7 @@ model Topup {
   transactionRef  String?   @unique // EasySlip transaction reference
   senderName      String?   // ชื่อผู้โอน
   senderBank      String?   // ธนาคารผู้โอน
+  rejectReason    String?   // เหตุผลที่ปฏิเสธ
   receiverName    String?   // ชื่อผู้รับ
   receiverBank    String?   // ธนาคารผู้รับ
   createdAt       DateTime  @default(now())

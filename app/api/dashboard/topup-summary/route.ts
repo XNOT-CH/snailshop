@@ -37,15 +37,26 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Parse date param (default = today)
+        // Parse date range params (supports single "date" or "startDate"+"endDate")
+        const startParam = request.nextUrl.searchParams.get("startDate");
+        const endParam = request.nextUrl.searchParams.get("endDate");
         const dateParam = request.nextUrl.searchParams.get("date");
-        const targetDate = dateParam ? new Date(dateParam) : new Date();
 
-        const todayStart = new Date(targetDate);
-        todayStart.setHours(0, 0, 0, 0);
+        let todayStart: Date;
+        let todayEnd: Date;
 
-        const todayEnd = new Date(targetDate);
-        todayEnd.setHours(23, 59, 59, 999);
+        if (startParam && endParam) {
+            todayStart = new Date(startParam);
+            todayStart.setHours(0, 0, 0, 0);
+            todayEnd = new Date(endParam);
+            todayEnd.setHours(23, 59, 59, 999);
+        } else {
+            const targetDate = dateParam ? new Date(dateParam) : new Date();
+            todayStart = new Date(targetDate);
+            todayStart.setHours(0, 0, 0, 0);
+            todayEnd = new Date(targetDate);
+            todayEnd.setHours(23, 59, 59, 999);
+        }
 
         // Fetch ALL today's topups (all statuses)
         const topups = await db.topup.findMany({
@@ -90,11 +101,16 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // ── Total (APPROVED only for main KPI) ──────────
+        // ── Total KPI ────────────────────────────────────
         const totalAmount = statusSummary.approved.amount;
+        const allTransactions = topups.length;
         const uniqueUsers = new Set(
             topups.filter((t) => t.status === "APPROVED").map((t) => t.userId)
         );
+        const averagePerTransaction =
+            statusSummary.approved.count > 0
+                ? Math.round(totalAmount / statusSummary.approved.count)
+                : 0;
 
         // ── Hourly Breakdown (APPROVED only) ────────────
         const hourlyMap = new Map<number, number>();
@@ -139,6 +155,8 @@ export async function GET(request: NextRequest) {
                 totalAmount,
                 totalPeople: uniqueUsers.size,
                 totalTransactions: statusSummary.approved.count,
+                allTransactions,
+                averagePerTransaction,
                 statusSummary,
                 hourlyData,
                 paymentMethods,
@@ -150,6 +168,8 @@ export async function GET(request: NextRequest) {
                     status: t.status,
                     senderBank: t.senderBank,
                     proofImage: t.proofImage,
+                    transactionRef: t.transactionRef,
+                    rejectReason: t.rejectReason,
                 })),
             },
         });

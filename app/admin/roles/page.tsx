@@ -362,11 +362,11 @@ export default function AdminRolesPage() {
                                         <h4 className="font-medium text-sm text-muted-foreground mb-2">
                                             {group}
                                         </h4>
-                                        <div className="grid grid-cols-2 gap-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             {perms.map((perm) => (
                                                 <div
                                                     key={perm.key}
-                                                    className="flex items-center gap-2"
+                                                    className="flex items-center gap-2 p-2 rounded-lg hover:bg-muted/50 transition-colors"
                                                 >
                                                     <Checkbox
                                                         id={perm.key}
