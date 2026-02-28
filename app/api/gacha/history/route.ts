@@ -9,9 +9,7 @@ export async function GET() {
     }
 
     try {
-        const prisma = db as unknown as any;
-
-        const logs = await prisma.gachaRollLog.findMany({
+        const logs = await db.gachaRollLog.findMany({
             where: { userId: authCheck.userId },
             orderBy: { createdAt: "desc" },
             take: 20,
@@ -34,16 +32,16 @@ export async function GET() {
         const startOfDay = new Date(now);
         startOfDay.setHours(0, 0, 0, 0);
 
-        const todayCount = await prisma.gachaRollLog.count({
+        const todayCount = await db.gachaRollLog.count({
             where: { userId: authCheck.userId, createdAt: { gte: startOfDay } },
         });
 
-        const totalCount = await prisma.gachaRollLog.count({
+        const totalCount = await db.gachaRollLog.count({
             where: { userId: authCheck.userId },
         });
 
         // Find most common tier overall
-        const tierCounts = await prisma.gachaRollLog.groupBy({
+        const tierCounts = await db.gachaRollLog.groupBy({
             by: ["tier"],
             where: { userId: authCheck.userId },
             _count: { tier: true },

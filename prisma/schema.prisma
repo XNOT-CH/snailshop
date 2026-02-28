@@ -342,7 +342,9 @@ model GachaCategory {
 model GachaMachine {
   id            String   @id @default(uuid())
   name          String                                // ชื่อตู้กาชา
+  description   String?  @db.Text                     // คำอธิบายตู้กาชา
   imageUrl      String?  @db.Text                     // รูปปก
+  gameType      String   @default("SPIN_X")           // SPIN_X = สุ่มตัว X, GRID_3X3 = 3x3
   categoryId    String?
   category      GachaCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   costType      String   @default("FREE")             // FREE, CREDIT, POINT
@@ -389,8 +391,9 @@ model GachaReward {
   rewardAmount    Decimal? @db.Decimal(10, 2) // จำนวนเครดิต/พอยต์
   rewardImageUrl  String?  @db.Text  // URL รูปภาพแสดงในกริด
 
-  tier      String   @default("common") // common, rare, epic, legendary
-  isActive  Boolean  @default(true)
+  tier        String   @default("common") // common, rare, epic, legendary
+  probability Decimal  @default(1) @db.Decimal(6, 2) // โอกาสได้รับ (%)
+  isActive    Boolean  @default(true)
 
   // FK to GachaMachine (null = legacy global pool)
   gachaMachineId  String?

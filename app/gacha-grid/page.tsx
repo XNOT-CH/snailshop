@@ -33,7 +33,7 @@ export default async function GachaGridIndexPage() {
         }
 
         if (user && costType !== "FREE") {
-            const u = user as any;
+            const u = user;
             userBalance = Number(costType === "CREDIT" ? (u.creditBalance ?? 0) : (u.pointBalance ?? 0));
         }
     } catch { /* ignore */ }

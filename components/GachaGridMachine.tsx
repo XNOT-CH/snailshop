@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Loader2, Gift, RotateCcw, Gamepad2 } from "lucide-react";
+import { Loader2, Gift, RotateCcw, Gamepad2, Dices } from "lucide-react";
+import Image from "next/image";
 import { GachaResultModal } from "@/components/GachaResultModal";
 import { showError } from "@/lib/swal";
 
@@ -73,9 +74,15 @@ function RewardCard({
                     isWinner ? "scale-110 brightness-125" : "",
                     isSpinning && !isHighlighted ? "opacity-20 scale-90" : "",
                 ].join(" ")}>
-                    {reward.imageUrl ? (
-                        <div className="absolute inset-0 bg-zinc-950 flex items-center justify-center">
-                            <img src={reward.imageUrl} alt={reward.rewardName} className="w-full h-full object-contain" />
+                    {reward.imageUrl && (reward.imageUrl.startsWith("/") || reward.imageUrl.startsWith("http")) ? (
+                        <div className="absolute inset-0 bg-zinc-950">
+                            <Image
+                                src={reward.imageUrl}
+                                alt={reward.rewardName}
+                                fill
+                                sizes="120px"
+                                className="object-contain"
+                            />
                         </div>
                     ) : (
                         <div className={`w-full h-full ${bg} flex items-center justify-center`}>
@@ -120,6 +127,7 @@ export function GachaGridMachine({
     const [highlightIdx, setHighlightIdx] = useState<number | null>(null);
     const [wonIndex, setWonIndex] = useState<number | null>(null);
     const [wonReward, setWonReward] = useState<GridReward | null>(null);
+    const [balance, setBalance] = useState(userBalance);
     const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const fetchRewards = useCallback(async () => {
@@ -132,9 +140,10 @@ export function GachaGridMachine({
             const json = await res.json() as { success: boolean; data: GridReward[] };
             if (json.success) {
                 const data = (json.data ?? []).filter(Boolean) as GridReward[];
-                if (data.length === 0) { setRewards([]); return; }
-                const padded: GridReward[] = Array.from({ length: 9 }, (_, i) => data[i % data.length]);
-                setRewards(padded);
+                const limited = data.slice(0, 9);
+                // Fill remaining slots with null placeholders — do NOT repeat rewards
+                const padded = Array.from({ length: 9 }, (_, i) => limited[i] ?? null) as (GridReward | null)[];
+                setRewards(padded as unknown as GridReward[]);
             }
         } catch {/* ignore */ } finally { setLoading(false); }
     }, [machineId]);
@@ -143,7 +152,8 @@ export function GachaGridMachine({
     useEffect(() => () => { if (intervalRef.current) clearTimeout(intervalRef.current); }, []);
 
     const handleSpin = useCallback(async () => {
-        if (spinning || rewards.length === 0) return;
+        const actualRewards = rewards.filter(Boolean);
+        if (spinning || actualRewards.length === 0) return;
         setSpinning(true);
         setWonIndex(null);
         setWonReward(null);
@@ -165,6 +175,9 @@ export function GachaGridMachine({
                 setSpinning(false);
                 return;
             }
+
+            // Deduct cost immediately — no refresh needed
+            if (costAmount > 0) setBalance((prev) => Math.max(0, prev - costAmount));
 
             const wonIdx = json.data!.wonIndex;
             const wonRewardData: GridReward = {
@@ -222,7 +235,7 @@ export function GachaGridMachine({
                     <div className="flex items-center justify-center h-48">
                         <Loader2 className="w-10 h-10 animate-spin text-blue-500 opacity-60" />
                     </div>
-                ) : rewards.length === 0 ? (
+                ) : rewards.filter(Boolean).length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-40 text-muted-foreground gap-2">
                         <Gift className="w-10 h-10 opacity-20" />
                         <p className="text-sm">ยังไม่มีรางวัลในระบบ</p>
@@ -230,13 +243,23 @@ export function GachaGridMachine({
                 ) : (
                     <div className="grid grid-cols-3 gap-3">
                         {rewards.map((reward, idx) => (
-                            <RewardCard
-                                key={`${reward.id}-${idx}`}
-                                reward={reward}
-                                isHighlighted={highlightIdx === idx}
-                                isWinner={wonIndex === idx}
-                                isSpinning={spinning}
-                            />
+                            reward
+                                ? (
+                                    <RewardCard
+                                        key={`${reward.id}-${idx}`}
+                                        reward={reward}
+                                        isHighlighted={highlightIdx === idx}
+                                        isWinner={wonIndex === idx}
+                                        isSpinning={spinning}
+                                    />
+                                ) : (
+                                    /* Empty placeholder tile */
+                                    <div key={`empty-${idx}`} className="relative flex flex-col items-center rounded-xl overflow-hidden border border-border/20 bg-muted/20 aspect-square">
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            <div className="w-10 h-10 rounded-full border-2 border-dashed border-border/30" />
+                                        </div>
+                                    </div>
+                                )
                         ))}
                     </div>
                 )}
@@ -247,26 +270,17 @@ export function GachaGridMachine({
 
                 {/* Cost text — centered, matches สุ่มตัว X */}
                 <div className="w-full flex flex-col items-center mt-2">
-                    <div className="text-center mb-4 space-y-1">
-                        <h2 className="text-[18px] md:text-[22px] font-bold text-[#145de7]">{costLabel}</h2>
-                        {costType !== "FREE" && (
-                            <p className="text-[13px] md:text-[14px] font-medium text-gray-800 dark:text-gray-200">
-                                * เมื่อกดสุ่มแล้วไม่สามารถขอคืน{costType === "CREDIT" ? "เครดิต" : "พอยต์"}ได้ในทุกกรณี *
-                            </p>
+                    {/* Title + compact balance badge */}
+                    <div className="w-full flex items-center justify-between mb-4">
+                        <h2 className="text-[17px] md:text-[20px] font-bold text-[#145de7]">{costLabel}</h2>
+                        {balanceLabel && (
+                            <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#145de7] dark:text-[#7ba2f5] bg-[#d0e3ff] dark:bg-[#d0e3ff]/15 border border-[#145de7]/20 rounded-full px-3 py-1 whitespace-nowrap">
+                                💰 {balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {costType === "CREDIT" ? "เครดิต" : "พอยต์"}
+                            </span>
                         )}
                     </div>
 
-                    {/* Balance bar — same light blue as สุ่มตัว X */}
-                    {balanceLabel && (
-                        <div className="w-full bg-[#d0e3ff] dark:bg-[#d0e3ff]/10 text-[#145de7] dark:text-[#7ba2f5] font-bold text-sm md:text-base py-3.5 rounded-md text-center mb-6">
-                            {balanceLabel}:{" "}
-                            {userBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
-                            {costType === "CREDIT" ? "เครดิต" : "พอยต์"}{" "}
-                            <span className="font-normal opacity-90">(แนะนำให้รีเฟรชเพื่อดูยอดล่าสุด)</span>
-                        </div>
-                    )}
-
-                    {/* Buttons — same green full-width as สุ่มตัว X */}
+                    {/* Buttons */}
                     <div className="w-full">
                         {!wonReward ? (
                             <button
@@ -276,7 +290,7 @@ export function GachaGridMachine({
                             >
                                 {spinning
                                     ? <><Loader2 className="h-5 w-5 animate-spin" /> กำลังสุ่ม...</>
-                                    : <><Gamepad2 className="h-5 w-5" /> สุ่ม</>
+                                    : <><Gamepad2 className="h-5 w-5" /> สุ่ม 1 ครั้ง</>
                                 }
                             </button>
                         ) : (
@@ -296,6 +310,13 @@ export function GachaGridMachine({
                             </div>
                         )}
                     </div>
+
+                    {/* Disclaimer — muted, below buttons */}
+                    {costType !== "FREE" && (
+                        <p className="mt-3 text-[11px] text-muted-foreground text-center">
+                            * เมื่อกดสุ่มแล้วไม่สามารถขอคืน{costType === "CREDIT" ? "เครดิต" : "พอยต์"}ได้ในทุกกรณี *
+                        </p>
+                    )}
                 </div>
             </div>
 

@@ -5,6 +5,8 @@ import Link from "next/link";
 import { GachaRhombus } from "@/components/GachaRhombus";
 import { type GachaProductLite, type GachaTier } from "@/lib/gachaGrid";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
     title: "สุ่มตัว X | Manashop",
     description: "ลุ้นรับไอเท็มสุดพิเศษจากระบบสุ่มตัว X",
@@ -39,13 +41,17 @@ export default async function GachaPage() {
 
     let products: GachaProductLite[] = [];
     try {
-        const rewards = await (db as any).gachaReward.findMany({
+        const rewards = await db.gachaReward.findMany({
             where: {
                 isActive: true,
+                gachaMachineId: null, // only global (สุ่มตัว X) rewards
                 OR: [
                     { rewardType: "PRODUCT", product: { isSold: false } },
-                    { rewardType: "CREDIT" },
-                    { rewardType: "POINT" },
+                    {
+                        rewardType: { in: ["CREDIT", "POINT"] },
+                        rewardName: { not: null },
+                        rewardAmount: { not: null },
+                    },
                 ],
             },
             include: {
@@ -53,14 +59,15 @@ export default async function GachaPage() {
             },
         });
         products = rewards
-            .filter((r: any) => (r.rewardType === "PRODUCT" ? r.product && !r.product.isSold : true))
-            .map((r: any) => {
-                if (r.rewardType === "PRODUCT") {
+            .filter((r) => (r.rewardType === "PRODUCT" ? r.product && !r.product.isSold : (r.rewardName && r.rewardAmount)))
+            .map((r) => {
+                if (r.rewardType === "PRODUCT" && r.product) {
                     return { id: r.product.id, name: r.product.name, price: Number(r.product.price), imageUrl: r.product.imageUrl, tier: (r.tier as GachaTier) ?? "common" };
                 }
                 return { id: `reward:${r.id}`, name: r.rewardName ?? (r.rewardType === "CREDIT" ? "เครดิต" : "พอยต์"), price: Number(r.rewardAmount ?? 0), imageUrl: r.rewardImageUrl ?? null, tier: (r.tier as GachaTier) ?? "common" };
             });
     } catch { /* rewards not available */ }
+
 
     return (
         <div className="min-h-[calc(100vh-4rem)] bg-gray-50 dark:bg-zinc-950 overflow-x-hidden mb-8">
@@ -88,7 +95,7 @@ export default async function GachaPage() {
                 )}
             </div>
 
-            <div className="flex flex-col items-center gap-6 px-4 sm:px-6 md:px-10 py-8">
+            <div className="flex flex-col items-center gap-6 px-4 sm:px-6 md:px-10 pt-4 pb-8">
 
                 {/* Body */}
                 {!settings.isEnabled ? (

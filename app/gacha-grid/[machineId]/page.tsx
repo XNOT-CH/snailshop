@@ -14,7 +14,7 @@ export default async function GachaGridPage({
 }) {
     const { machineId } = await params;
 
-    const machine = await (db as any).gachaMachine.findUnique({
+    const machine = await db.gachaMachine.findUnique({
         where: { id: machineId },
     });
 

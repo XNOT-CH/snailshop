@@ -13,6 +13,8 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
     title: "กาชา | Manashop",
     description: "ลุ้นรับไอเท็มสุดพิเศษจากระบบสุ่มกาชา",
@@ -26,7 +28,14 @@ export default async function GachaPage() {
     let userBalance = 0;
 
     try {
-        const raw = await db.gachaSettings.findFirst();
+        // Parallel fetch: settings + user (no dependency between them)
+        const [raw, user] = await Promise.all([
+            db.gachaSettings.findFirst(),
+            userId
+                ? db.user.findUnique({ where: { id: userId }, select: { creditBalance: true, pointBalance: true } })
+                : Promise.resolve(null),
+        ]);
+
         if (raw) {
             settings = {
                 isEnabled: raw.isEnabled ?? true,
@@ -36,24 +45,24 @@ export default async function GachaPage() {
             };
         }
 
-        if (userId) {
-            const user = await db.user.findUnique({ where: { id: userId } }) as any;
-            if (user) {
-                userBalance = Number(settings.costType === "CREDIT" ? (user.creditBalance ?? 0) : (user.pointBalance ?? 0));
-            }
+        if (user) {
+            userBalance = Number(settings.costType === "CREDIT" ? (user.creditBalance ?? 0) : (user.pointBalance ?? 0));
         }
     } catch { /* table may not exist yet */ }
 
     let products: GachaProductLite[] = [];
     try {
-        const prisma = db as unknown as any;
-        const rewards = await prisma.gachaReward.findMany({
+        const rewards = await db.gachaReward.findMany({
             where: {
                 isActive: true,
+                gachaMachineId: null,
                 OR: [
                     { rewardType: "PRODUCT", product: { isSold: false } },
-                    { rewardType: "CREDIT" },
-                    { rewardType: "POINT" },
+                    {
+                        rewardType: { in: ["CREDIT", "POINT"] },
+                        rewardName: { not: null },
+                        rewardAmount: { not: null },
+                    },
                 ],
             },
             include: {
@@ -61,14 +70,15 @@ export default async function GachaPage() {
             },
         });
         products = rewards
-            .filter((r: any) => (r.rewardType === "PRODUCT" ? r.product && !r.product.isSold : true))
-            .map((r: any) => {
-                if (r.rewardType === "PRODUCT") {
+            .filter((r) => (r.rewardType === "PRODUCT" ? r.product && !r.product.isSold : (r.rewardName && r.rewardAmount)))
+            .map((r) => {
+                if (r.rewardType === "PRODUCT" && r.product) {
                     return { id: r.product.id, name: r.product.name, price: Number(r.product.price), imageUrl: r.product.imageUrl, tier: (r.tier as GachaTier) ?? "common" };
                 }
                 return { id: `reward:${r.id}`, name: r.rewardName ?? (r.rewardType === "CREDIT" ? "เครดิต" : "พอยต์"), price: Number(r.rewardAmount ?? 0), imageUrl: r.rewardImageUrl ?? null, tier: (r.tier as GachaTier) ?? "common" };
             });
     } catch { /* rewards not available */ }
+
 
     return (
         <div className="py-6 bg-card/90 backdrop-blur-sm rounded-2xl px-4 sm:px-6 md:px-10 shadow-xl shadow-primary/10 border border-border/50 min-h-[calc(100vh-8rem)] mb-8 overflow-x-hidden">
@@ -117,7 +127,7 @@ export default async function GachaPage() {
                     </div>
                 ) : (
                     <div className="w-full flex justify-center">
-                        <GachaRhombus products={products} settings={settings} userBalance={userBalance} />
+                        <GachaRhombus products={products} settings={settings} userBalance={userBalance} isLoggedIn={!!userId} />
                     </div>
                 )}
             </div>

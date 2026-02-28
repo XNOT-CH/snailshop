@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, RotateCcw, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { X, RotateCcw } from "lucide-react";
+import Image from "next/image";
 
 interface GachaProduct {
     id: string;
@@ -22,73 +20,33 @@ interface GachaResultModalProps {
 
 const tierConfig = {
     common: {
-        label: "ธรรมดา (Common)",
-        color: "bg-orange-500",
-        textColor: "text-orange-500",
-        borderColor: "border-orange-500",
-        glowColor: "shadow-orange-500/50",
-        emoji: "🟠",
+        label: "Common",
+        accent: "#f97316",           // orange
+        glow: "rgba(249,115,22,0.35)",
+        dot: "bg-orange-400",
     },
     rare: {
-        label: "หายาก (Rare)",
-        color: "bg-green-500",
-        textColor: "text-green-500",
-        borderColor: "border-green-500",
-        glowColor: "shadow-green-500/50",
-        emoji: "🟢",
+        label: "Rare",
+        accent: "#22c55e",           // green
+        glow: "rgba(34,197,94,0.35)",
+        dot: "bg-emerald-400",
     },
     epic: {
-        label: "หายากมาก (Epic)",
-        color: "bg-blue-500",
-        textColor: "text-blue-500",
-        borderColor: "border-blue-500",
-        glowColor: "shadow-blue-500/50",
-        emoji: "🔵",
+        label: "Epic",
+        accent: "#8b5cf6",           // violet
+        glow: "rgba(139,92,246,0.40)",
+        dot: "bg-violet-400",
     },
     legendary: {
-        label: "ตำนาน (Legendary)",
-        color: "bg-red-500",
-        textColor: "text-red-500",
-        borderColor: "border-red-500",
-        glowColor: "shadow-red-500/50",
-        emoji: "🔴",
+        label: "Legendary",
+        accent: "#ef4444",           // red
+        glow: "rgba(239,68,68,0.45)",
+        dot: "bg-red-400",
     },
 };
 
 export function GachaResultModal({ product, onClose, onSpinAgain }: GachaResultModalProps) {
     const tier = tierConfig[product.tier];
-
-    const [confetti, setConfetti] = useState<
-        Array<{
-            key: number;
-            left: string;
-            animationDelay: string;
-            animationDuration: string;
-            backgroundColor: string;
-        }>
-    >([]);
-
-    useEffect(() => {
-        const colors = [
-            "#f97316",
-            "#22c55e",
-            "#3b82f6",
-            "#ef4444",
-            "#a855f7",
-            "#eab308",
-            "#ec4899",
-        ];
-
-        setConfetti(
-            Array.from({ length: 30 }).map((_, i) => ({
-                key: i,
-                left: `${Math.random() * 100}%`,
-                animationDelay: `${Math.random() * 2}s`,
-                animationDuration: `${2 + Math.random() * 3}s`,
-                backgroundColor: colors[Math.floor(Math.random() * colors.length)],
-            }))
-        );
-    }, []);
 
     return (
         <AnimatePresence>
@@ -100,122 +58,105 @@ export function GachaResultModal({ product, onClose, onSpinAgain }: GachaResultM
             >
                 {/* Backdrop */}
                 <motion.div
-                    className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                    className="absolute inset-0 bg-black/70 backdrop-blur-md"
                     onClick={onClose}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                 />
 
-                {/* Confetti particles */}
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                    {confetti.map((c) => (
-                        <div
-                            key={c.key}
-                            className="gacha-confetti"
-                            style={{
-                                left: c.left,
-                                animationDelay: c.animationDelay,
-                                animationDuration: c.animationDuration,
-                                backgroundColor: c.backgroundColor,
-                            }}
-                        />
-                    ))}
-                </div>
-
-                {/* Modal Content */}
+                {/* Card */}
                 <motion.div
-                    className="relative z-10 w-full max-w-sm bg-card rounded-2xl border border-border shadow-2xl overflow-hidden"
-                    initial={{ scale: 0.5, opacity: 0, y: 30 }}
+                    className="relative z-10 w-full max-w-xs bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl"
+                    style={{ border: `1px solid ${tier.accent}22` }}
+                    initial={{ scale: 0.88, opacity: 0, y: 24 }}
                     animate={{ scale: 1, opacity: 1, y: 0 }}
-                    exit={{ scale: 0.8, opacity: 0 }}
-                    transition={{ type: "spring", damping: 20, stiffness: 300 }}
+                    exit={{ scale: 0.92, opacity: 0 }}
+                    transition={{ type: "spring", damping: 22, stiffness: 320 }}
                 >
-                    {/* Close button */}
+                    {/* Top accent line */}
+                    <div className="h-[2px] w-full" style={{ background: tier.accent }} />
+
+                    {/* Close */}
                     <button
                         onClick={onClose}
-                        className="absolute top-3 right-3 z-20 p-1.5 rounded-full bg-black/20 hover:bg-black/40 text-white transition-colors"
+                        className="absolute top-3 right-3 z-20 p-1.5 rounded-full text-zinc-500 hover:text-zinc-200 transition-colors"
                     >
                         <X className="h-4 w-4" />
                     </button>
 
-                    {/* Tier Banner */}
-                    <div className={`${tier.color} py-3 text-center text-white relative overflow-hidden`}>
-                        <motion.div
-                            className="absolute inset-0 bg-white/10"
-                            animate={{ x: ["-100%", "200%"] }}
-                            transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
-                            style={{ width: "50%", skewX: "-15deg" }}
-                        />
-                        <div className="flex items-center justify-center gap-2">
-                            <Sparkles className="h-5 w-5" />
-                            <span className="font-bold text-lg">{tier.emoji} {tier.label}</span>
-                            <Sparkles className="h-5 w-5" />
-                        </div>
+                    {/* Tier label */}
+                    <div className="px-6 pt-5 pb-1 flex items-center gap-2">
+                        <span className={`inline-block w-2 h-2 rounded-full ${tier.dot}`} />
+                        <span className="text-xs font-semibold uppercase tracking-widest" style={{ color: tier.accent }}>
+                            {tier.label}
+                        </span>
                     </div>
 
-                    {/* Product Image */}
-                    <div className="p-6 flex flex-col items-center">
+                    {/* Image */}
+                    <div className="flex justify-center py-6">
                         <motion.div
-                            className={`relative w-40 h-40 rounded-full overflow-hidden border-4 ${tier.borderColor} shadow-xl ${tier.glowColor}`}
-                            initial={{ rotate: -10, scale: 0.8 }}
-                            animate={{ rotate: 0, scale: 1 }}
-                            transition={{ type: "spring", delay: 0.2 }}
+                            className="relative w-36 h-36 rounded-full overflow-hidden"
+                            initial={{ scale: 0.75, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ type: "spring", delay: 0.15, damping: 18 }}
                         >
-                            {product.imageUrl ? (
-                                <img
+
+                            {product.imageUrl && (product.imageUrl.startsWith("/") || product.imageUrl.startsWith("http")) ? (
+                                <Image
                                     src={product.imageUrl}
                                     alt={product.name}
-                                    className="w-full h-full object-cover"
+                                    fill
+                                    sizes="144px"
+                                    className="object-cover"
                                 />
                             ) : (
-                                <div className="w-full h-full bg-muted flex items-center justify-center text-4xl">
+                                <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-4xl">
                                     🎁
                                 </div>
                             )}
-                            {/* Glow ring animation */}
-                            <motion.div
-                                className={`absolute inset-0 rounded-full border-4 ${tier.borderColor}`}
-                                animate={{ scale: [1, 1.15, 1], opacity: [0.8, 0, 0.8] }}
-                                transition={{ duration: 2, repeat: Infinity }}
-                            />
-                        </motion.div>
-
-                        {/* Product Info */}
-                        <motion.div
-                            className="mt-5 text-center space-y-2"
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3 }}
-                        >
-                            <h3 className="text-xl font-bold text-foreground">{product.name}</h3>
-                            <Badge className={`${tier.color} text-white text-sm px-3 py-1`}>
-                                ฿{product.price.toLocaleString()}
-                            </Badge>
-                        </motion.div>
-
-                        {/* Actions */}
-                        <motion.div
-                            className="flex gap-3 mt-6 w-full"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.5 }}
-                        >
-                            <Button
-                                variant="outline"
-                                className="flex-1 gap-2 rounded-xl"
-                                onClick={onClose}
-                            >
-                                ปิด
-                            </Button>
-                            <Button
-                                className="flex-1 gap-2 rounded-xl"
-                                onClick={onSpinAgain}
-                            >
-                                <RotateCcw className="h-4 w-4" />
-                                สุ่มอีกครั้ง
-                            </Button>
                         </motion.div>
                     </div>
+
+                    {/* Info */}
+                    <motion.div
+                        className="px-6 pb-6 text-center space-y-1"
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.25 }}
+                    >
+                        <p className="text-base font-semibold text-zinc-100 leading-snug">{product.name}</p>
+                        {product.price > 0 && (
+                            <p className="text-sm text-zinc-500">
+                                มูลค่า{" "}
+                                <span style={{ color: tier.accent }} className="font-medium">
+                                    ฿{product.price.toLocaleString()}
+                                </span>
+                            </p>
+                        )}
+                    </motion.div>
+
+                    {/* Actions */}
+                    <motion.div
+                        className="px-6 pb-6 flex gap-2"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.38 }}
+                    >
+                        <button
+                            onClick={onClose}
+                            className="flex-1 py-2.5 rounded-xl text-sm font-medium text-zinc-400 hover:text-zinc-200 border border-zinc-700 hover:border-zinc-500 transition-all"
+                        >
+                            ปิด
+                        </button>
+                        <button
+                            onClick={onSpinAgain}
+                            className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-1.5 transition-all hover:brightness-110"
+                            style={{ background: tier.accent }}
+                        >
+                            <RotateCcw className="h-3.5 w-3.5" />
+                            สุ่มอีกครั้ง
+                        </button>
+                    </motion.div>
                 </motion.div>
             </motion.div>
         </AnimatePresence>

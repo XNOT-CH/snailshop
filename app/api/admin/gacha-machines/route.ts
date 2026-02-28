@@ -5,8 +5,7 @@ import { db } from "@/lib/db";
 export async function GET() {
     const auth = await isAdmin();
     if (!auth.success) return NextResponse.json({ success: false }, { status: 401 });
-    const prisma = db as unknown as any;
-    const machines = await prisma.gachaMachine.findMany({
+    const machines = await db.gachaMachine.findMany({
         orderBy: { sortOrder: "asc" },
         include: { category: { select: { name: true } }, _count: { select: { rewards: true } } },
     });
@@ -16,16 +15,17 @@ export async function GET() {
 export async function POST(req: Request) {
     const auth = await isAdmin();
     if (!auth.success) return NextResponse.json({ success: false }, { status: 401 });
-    const prisma = db as unknown as any;
     const body = await req.json() as {
-        name: string; imageUrl?: string; categoryId?: string;
+        name: string; description?: string; imageUrl?: string; categoryId?: string;
         costType?: string; costAmount?: number; dailySpinLimit?: number;
-        tierMode?: string; sortOrder?: number;
+        gameType?: string; tierMode?: string; sortOrder?: number;
     };
-    const machine = await prisma.gachaMachine.create({
+    const machine = await db.gachaMachine.create({
         data: {
             name: body.name,
-            imageUrl: body.imageUrl,
+            description: body.description ?? null,
+            imageUrl: body.imageUrl ?? null,
+            gameType: body.gameType ?? "SPIN_X",
             categoryId: body.categoryId ?? null,
             costType: body.costType ?? "FREE",
             costAmount: body.costAmount ?? 0,

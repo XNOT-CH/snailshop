@@ -2,15 +2,18 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(request: Request) {
     const authCheck = await isAdmin();
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }
 
     try {
-        const prisma = db as unknown as any;
-        const rewards = await prisma.gachaReward.findMany({
+        const { searchParams } = new URL(request.url);
+        const machineId = searchParams.get("machineId");
+
+        const rewards = await db.gachaReward.findMany({
+            where: machineId ? { gachaMachineId: machineId } : undefined,
             orderBy: { createdAt: "desc" },
             include: {
                 product: {
@@ -39,6 +42,9 @@ export async function GET() {
                 rewardName: r.rewardName,
                 rewardAmount: r.rewardAmount ? Number(r.rewardAmount) : null,
                 rewardImageUrl: r.rewardImageUrl,
+                probability: (r as unknown as { probability?: number }).probability
+                    ? Number((r as unknown as { probability?: number }).probability)
+                    : 1,
                 product: r.product
                     ? {
                         ...r.product,
@@ -65,19 +71,20 @@ export async function POST(request: Request) {
     }
 
     try {
-        const prisma = db as unknown as any;
         const body = await request.json();
         const rewardType = (body.rewardType as string) ?? "PRODUCT";
         const tier = (body.tier as string) ?? "common";
         const isActive = (body.isActive as boolean) ?? true;
+        const gachaMachineId = (body.gachaMachineId as string | undefined) ?? null;
+        const probability = body.probability !== undefined ? Number(body.probability) : 1;
 
         if (rewardType === "PRODUCT") {
             const productId = body.productId as string | undefined;
             if (!productId) {
                 return NextResponse.json({ success: false, message: "กรุณาเลือกสินค้า" }, { status: 400 });
             }
-            const created = await prisma.gachaReward.create({
-                data: { productId, tier, isActive, rewardType: "PRODUCT" },
+            const created = await db.gachaReward.create({
+                data: { productId, tier, isActive, rewardType: "PRODUCT", gachaMachineId, probability } as never,
             });
             return NextResponse.json({ success: true, data: created });
         } else {
@@ -93,7 +100,7 @@ export async function POST(request: Request) {
                 return NextResponse.json({ success: false, message: "กรุณากรอกชื่อรางวัล" }, { status: 400 });
             }
 
-            const created = await prisma.gachaReward.create({
+            const created = await db.gachaReward.create({
                 data: {
                     rewardType,
                     rewardName,
@@ -101,7 +108,9 @@ export async function POST(request: Request) {
                     rewardImageUrl: rewardImageUrl ?? null,
                     tier,
                     isActive,
-                },
+                    gachaMachineId,
+                    probability,
+                } as never,
             });
             return NextResponse.json({ success: true, data: created });
         }

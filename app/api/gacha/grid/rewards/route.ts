@@ -7,19 +7,29 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const machineId = searchParams.get("machineId");
 
-    const prisma = db as unknown as any;
-
-    const rewards = await prisma.gachaReward.findMany({
+    const rewards = await db.gachaReward.findMany({
         where: {
             isActive: true,
             ...(machineId ? { gachaMachineId: machineId } : { gachaMachineId: null }),
+            // Only fully-configured rewards
+            OR: [
+                // PRODUCT rewards with a linked product
+                { rewardType: "PRODUCT", productId: { not: null } },
+                // CREDIT/POINT rewards with name + amount set
+                {
+                    rewardType: { in: ["CREDIT", "POINT"] },
+                    rewardName: { not: null },
+                    rewardAmount: { not: null },
+                },
+            ],
         },
         take: 9,
         orderBy: { createdAt: "asc" },
         include: { product: { select: { id: true, name: true, price: true, imageUrl: true } } },
     });
 
-    const mapped = rewards.map((r: any) => ({
+
+    const mapped = rewards.map((r) => ({
         id: r.id,
         tier: r.tier,
         rewardType: r.rewardType,

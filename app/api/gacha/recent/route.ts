@@ -5,9 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
     try {
-        const prisma = db as unknown as any;
-
-        const logs = await prisma.gachaRollLog.findMany({
+        const logs = await db.gachaRollLog.findMany({
             orderBy: { createdAt: "desc" },
             take: 10,
             select: {

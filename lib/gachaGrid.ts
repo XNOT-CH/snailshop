@@ -98,10 +98,9 @@ export function buildGrid(products: GachaProductLite[]): Tile[] {
         legendary: products.filter((p) => p.tier === "legendary"),
     };
 
-    // Fallback: if a tier has no products at all, use any available product
-    const allProducts = products.length > 0 ? products : [];
-    const fillPool = (tier: GachaTier): GachaProductLite[] =>
-        byTier[tier].length > 0 ? byTier[tier] : allProducts;
+    // No fallback: each tier only fills tiles of its own type.
+    // If a tier has no rewards, those tiles remain empty (no product).
+    const fillPool = (tier: GachaTier): GachaProductLite[] => byTier[tier];
 
     const tierIndex: Record<GachaTier, number> = { common: 0, rare: 0, epic: 0, legendary: 0 };
 

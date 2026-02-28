@@ -13,7 +13,6 @@ export async function PUT(request: Request, { params }: RouteParams) {
     }
 
     try {
-        const prisma = db as unknown as any;
         const { id } = await params;
         const body = await request.json();
 
@@ -23,8 +22,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
         if (body.rewardName !== undefined) updateData.rewardName = body.rewardName;
         if (body.rewardAmount !== undefined) updateData.rewardAmount = body.rewardAmount;
         if (body.rewardImageUrl !== undefined) updateData.rewardImageUrl = body.rewardImageUrl;
+        if (body.probability !== undefined) updateData.probability = body.probability;
 
-        const updated = await prisma.gachaReward.update({
+        const updated = await db.gachaReward.update({
             where: { id },
             data: updateData,
         });
@@ -46,9 +46,8 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     }
 
     try {
-        const prisma = db as unknown as any;
         const { id } = await params;
-        await prisma.gachaReward.delete({ where: { id } });
+        await db.gachaReward.delete({ where: { id } });
         return NextResponse.json({ success: true });
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";
