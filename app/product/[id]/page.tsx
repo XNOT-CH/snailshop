@@ -4,7 +4,8 @@ import { ProductActions } from "@/components/ProductActions";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { ShareButtons } from "@/components/ShareButtons";
 import { Info } from "lucide-react";
-import { db } from "@/lib/db";
+import { db, products } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { getStockCount } from "@/lib/stock";
 
 interface ProductDetailPageProps {
@@ -16,9 +17,7 @@ export default async function ProductDetailPage({
 }: ProductDetailPageProps) {
     const { id } = await params;
 
-    const product = await db.product.findUnique({
-        where: { id },
-    });
+    const product = await db.query.products.findFirst({ where: eq(products.id, id) });
 
     if (!product) {
         notFound();

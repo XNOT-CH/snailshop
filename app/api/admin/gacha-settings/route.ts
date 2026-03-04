@@ -1,80 +1,40 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, gachaSettings } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
 
-// GET - Fetch gacha settings
 export async function GET() {
     try {
-        let settings = await db.gachaSettings.findFirst();
-
+        let settings = await db.query.gachaSettings.findFirst();
         if (!settings) {
-            settings = await db.gachaSettings.create({
-                data: {
-                    id: "default",
-                    isEnabled: true,
-                    costType: "CREDIT",
-                    costAmount: 0,
-                    dailySpinLimit: 999,
-                    tierMode: "PRICE",
-                },
-            });
+            await db.insert(gachaSettings).values({ id: "default", isEnabled: true, costType: "CREDIT", costAmount: "0", dailySpinLimit: 999, tierMode: "PRICE" });
+            settings = await db.query.gachaSettings.findFirst();
         }
-
         return NextResponse.json({ success: true, data: settings });
     } catch (error) {
-        console.error("Error fetching gacha settings:", error);
-        return NextResponse.json(
-            { success: false, message: "เกิดข้อผิดพลาดในการโหลดการตั้งค่ากาชา" },
-            { status: 500 }
-        );
+        return NextResponse.json({ success: false, message: "เกิดข้อผิดพลาดในการโหลดการตั้งค่ากาชา" }, { status: 500 });
     }
 }
 
-// PUT - Update gacha settings (ADMIN ONLY)
 export async function PUT(request: Request) {
     const authCheck = await isAdmin();
-    if (!authCheck.success) {
-        return NextResponse.json(
-            { success: false, message: authCheck.error },
-            { status: 401 }
-        );
-    }
-
+    if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     try {
         const body = await request.json();
-
-        let settings = await db.gachaSettings.findFirst();
-
         const updateData = {
-            isEnabled: body.isEnabled ?? true,
-            costType: body.costType ?? "FREE",
-            costAmount: body.costAmount ?? 0,
-            dailySpinLimit: body.dailySpinLimit ?? 0,
+            isEnabled: body.isEnabled ?? true, costType: body.costType ?? "FREE",
+            costAmount: String(body.costAmount ?? 0), dailySpinLimit: body.dailySpinLimit ?? 0,
             tierMode: body.tierMode ?? "PRICE",
         };
-
-        if (settings) {
-            settings = await db.gachaSettings.update({
-                where: { id: settings.id },
-                data: updateData,
-            });
+        const existing = await db.query.gachaSettings.findFirst();
+        if (existing) {
+            await db.update(gachaSettings).set(updateData).where(eq(gachaSettings.id, existing.id));
         } else {
-            settings = await db.gachaSettings.create({
-                data: { id: "default", ...updateData },
-            });
+            await db.insert(gachaSettings).values({ id: "default", ...updateData });
         }
-
-        return NextResponse.json({
-            success: true,
-            message: "บันทึกการตั้งค่ากาชาสำเร็จ",
-            data: settings,
-        });
+        const updated = await db.query.gachaSettings.findFirst();
+        return NextResponse.json({ success: true, message: "บันทึกการตั้งค่ากาชาสำเร็จ", data: updated });
     } catch (error) {
-        console.error("Error updating gacha settings:", error);
-        const errorMessage = error instanceof Error ? error.message : "Unknown error";
-        return NextResponse.json(
-            { success: false, message: `เกิดข้อผิดพลาด: ${errorMessage}` },
-            { status: 500 }
-        );
+        return NextResponse.json({ success: false, message: `เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : "Unknown error"}` }, { status: 500 });
     }
 }

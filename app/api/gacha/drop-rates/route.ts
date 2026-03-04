@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, gachaRewards } from "@/lib/db";
+import { eq, and, isNull, isNotNull } from "drizzle-orm";
 
 /** GET /api/gacha/drop-rates?machineId=xxx
  *  Returns per-tier drop rates calculated from the probability weights
@@ -10,24 +11,12 @@ export async function GET(req: Request) {
     const machineId = searchParams.get("machineId");
 
     try {
-        const rewards = await db.gachaReward.findMany({
-            where: {
-                isActive: true,
-                ...(machineId ? { gachaMachineId: machineId } : { gachaMachineId: null }),
-                // Only rewards that are "complete" (have image/name)
-                OR: [
-                    { rewardType: "PRODUCT", productId: { not: null } },
-                    {
-                        rewardType: { in: ["CREDIT", "POINT"] },
-                        rewardName: { not: null },
-                        rewardAmount: { not: null },
-                    },
-                ],
-            },
-            select: {
-                tier: true,
-                probability: true,
-            },
+        const rewards = await db.query.gachaRewards.findMany({
+            where: and(
+                eq(gachaRewards.isActive, true),
+                machineId ? eq(gachaRewards.gachaMachineId, machineId) : isNull(gachaRewards.gachaMachineId),
+            ),
+            columns: { tier: true, probability: true },
         });
 
         if (rewards.length === 0) {

@@ -1,91 +1,49 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { db } from "@/lib/db";
+import { db, users, orders, topups } from "@/lib/db";
+import { eq, and, gte, lte, sum, count } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
+
+const toMySQLDatetime = (d: Date) => d.toISOString().slice(0, 19).replace("T", " ");
 
 export async function GET(request: NextRequest) {
     try {
         const cookieStore = await cookies();
         const userId = cookieStore.get("userId")?.value;
+        if (!userId) return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
 
-        if (!userId) {
-            return NextResponse.json(
-                { success: false, message: "กรุณาเข้าสู่ระบบก่อน" },
-                { status: 401 }
-            );
-        }
+        const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+        if (!user) return NextResponse.json({ success: false, message: "ไม่พบผู้ใช้งาน" }, { status: 404 });
 
-        const user = await db.user.findUnique({
-            where: { id: userId },
-        });
-
-        if (!user) {
-            return NextResponse.json(
-                { success: false, message: "ไม่พบผู้ใช้งาน" },
-                { status: 404 }
-            );
-        }
-
-        // Parse date param (default = today)
         const dateParam = request.nextUrl.searchParams.get("date");
         const targetDate = dateParam ? new Date(dateParam) : new Date();
-        const dayStart = new Date(targetDate);
-        dayStart.setHours(0, 0, 0, 0);
-        const dayEnd = new Date(targetDate);
-        dayEnd.setHours(23, 59, 59, 999);
+        const dayStart = new Date(targetDate); dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(targetDate); dayEnd.setHours(23, 59, 59, 999);
+        const start = toMySQLDatetime(dayStart);
+        const end = toMySQLDatetime(dayEnd);
 
-        // Count purchases on the selected date
-        const purchasesOnDate = await db.order.count({
-            where: {
-                userId: user.id,
-                purchasedAt: {
-                    gte: dayStart,
-                    lte: dayEnd,
-                },
-            },
-        });
+        const [{ count: purchasesOnDate }] = await db.select({ count: count() }).from(orders)
+            .where(and(eq(orders.userId, user.id), gte(orders.purchasedAt, start), lte(orders.purchasedAt, end)));
 
-        // Total spending on the selected date
-        const spendingAgg = await db.order.aggregate({
-            where: {
-                userId: user.id,
-                purchasedAt: {
-                    gte: dayStart,
-                    lte: dayEnd,
-                },
-            },
-            _sum: { totalPrice: true },
-        });
+        const [{ total: orderSum }] = await db.select({ total: sum(orders.totalPrice) }).from(orders)
+            .where(and(eq(orders.userId, user.id), gte(orders.purchasedAt, start), lte(orders.purchasedAt, end)));
 
-        // Total topup on the selected date (APPROVED)
-        const topupAgg = await db.topup.aggregate({
-            where: {
-                userId: user.id,
-                status: "APPROVED",
-                createdAt: {
-                    gte: dayStart,
-                    lte: dayEnd,
-                },
-            },
-            _sum: { amount: true },
-        });
+        const [{ total: topupSum }] = await db.select({ total: sum(topups.amount) }).from(topups)
+            .where(and(eq(topups.userId, user.id), eq(topups.status, "APPROVED"), gte(topups.createdAt, start), lte(topups.createdAt, end)));
 
         return NextResponse.json({
             success: true,
             data: {
                 creditBalance: Number(user.creditBalance),
-                purchasesOnDate,
-                totalSpending: Number(spendingAgg._sum.totalPrice || 0),
-                totalTopup: Number(topupAgg._sum.amount || 0),
+                purchasesOnDate: Number(purchasesOnDate),
+                totalSpending: Number(orderSum || 0),
+                totalTopup: Number(topupSum || 0),
                 date: dayStart.toISOString(),
             },
         });
     } catch (error) {
         console.error("Overview API error:", error);
-        return NextResponse.json(
-            { success: false, message: "เกิดข้อผิดพลาด" },
-            { status: 500 }
-        );
+        return NextResponse.json({ success: false, message: "เกิดข้อผิดพลาด" }, { status: 500 });
     }
 }

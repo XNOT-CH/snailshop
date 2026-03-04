@@ -1,4 +1,5 @@
-import { db } from "@/lib/db";
+import { db, users, gachaSettings, gachaRewards } from "@/lib/db";
+import { eq, and, isNull, or, isNotNull } from "drizzle-orm";
 import { Lock } from "lucide-react";
 import { cookies } from "next/headers";
 import Link from "next/link";
@@ -21,8 +22,8 @@ export default async function GachaPage() {
 
     try {
         const [raw, user] = await Promise.all([
-            db.gachaSettings.findFirst(),
-            userId ? db.user.findUnique({ where: { id: userId }, select: { creditBalance: true, pointBalance: true } }) : Promise.resolve(null),
+            db.query.gachaSettings.findFirst(),
+            userId ? db.query.users.findFirst({ where: eq(users.id, userId), columns: { creditBalance: true, pointBalance: true } }) : Promise.resolve(null),
         ]);
 
         if (raw) {
@@ -41,22 +42,12 @@ export default async function GachaPage() {
 
     let products: GachaProductLite[] = [];
     try {
-        const rewards = await db.gachaReward.findMany({
-            where: {
-                isActive: true,
-                gachaMachineId: null, // only global (สุ่มตัว X) rewards
-                OR: [
-                    { rewardType: "PRODUCT", product: { isSold: false } },
-                    {
-                        rewardType: { in: ["CREDIT", "POINT"] },
-                        rewardName: { not: null },
-                        rewardAmount: { not: null },
-                    },
-                ],
-            },
-            include: {
-                product: { select: { id: true, name: true, price: true, imageUrl: true, isSold: true } },
-            },
+        const rewards = await db.query.gachaRewards.findMany({
+            where: and(
+                eq(gachaRewards.isActive, true),
+                isNull(gachaRewards.gachaMachineId),
+            ),
+            with: { product: { columns: { id: true, name: true, price: true, imageUrl: true, isSold: true } } },
         });
         products = rewards
             .filter((r) => (r.rewardType === "PRODUCT" ? r.product && !r.product.isSold : (r.rewardName && r.rewardAmount)))

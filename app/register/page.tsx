@@ -3,8 +3,8 @@ import { db } from "@/lib/db";
 import { RegisterForm } from "./RegisterForm";
 
 export default async function RegisterPage() {
-    const settings = await db.siteSettings.findFirst({
-        select: { logoUrl: true },
+    const settings = await db.query.siteSettings.findFirst({
+        columns: { logoUrl: true },
     });
 
     return <RegisterForm logoUrl={settings?.logoUrl ?? null} />;

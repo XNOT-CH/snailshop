@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { db, gachaRollLogs } from "@/lib/db";
+import { eq, and, gte, lte, desc, count, sql } from "drizzle-orm";
+
+function toMySQLDatetime(d: Date) { return d.toISOString().slice(0, 19).replace("T", " "); }
 
 export async function GET() {
     const authCheck = await isAuthenticated();
@@ -9,64 +12,41 @@ export async function GET() {
     }
 
     try {
-        const logs = await db.gachaRollLog.findMany({
-            where: { userId: authCheck.userId },
-            orderBy: { createdAt: "desc" },
-            take: 20,
-            select: {
-                id: true,
-                tier: true,
-                rewardName: true,
-                rewardImageUrl: true,
-                costType: true,
-                costAmount: true,
-                createdAt: true,
-                product: {
-                    select: { name: true, imageUrl: true },
-                },
-            },
+        const logs = await db.query.gachaRollLogs.findMany({
+            where: eq(gachaRollLogs.userId, authCheck.userId),
+            orderBy: (t, { desc }) => desc(t.createdAt),
+            limit: 20,
+            columns: { id: true, tier: true, rewardName: true, rewardImageUrl: true, costType: true, costAmount: true, createdAt: true },
+            with: { product: { columns: { name: true, imageUrl: true } } },
         });
 
-        // Stats: today count and total count
-        const now = new Date();
-        const startOfDay = new Date(now);
-        startOfDay.setHours(0, 0, 0, 0);
+        const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
 
-        const todayCount = await db.gachaRollLog.count({
-            where: { userId: authCheck.userId, createdAt: { gte: startOfDay } },
-        });
+        const [{ count: todayCount }] = await db.select({ count: count() }).from(gachaRollLogs)
+            .where(and(eq(gachaRollLogs.userId, authCheck.userId), gte(gachaRollLogs.createdAt, toMySQLDatetime(startOfDay))));
 
-        const totalCount = await db.gachaRollLog.count({
-            where: { userId: authCheck.userId },
-        });
+        const [{ count: totalCount }] = await db.select({ count: count() }).from(gachaRollLogs)
+            .where(eq(gachaRollLogs.userId, authCheck.userId));
 
-        // Find most common tier overall
-        const tierCounts = await db.gachaRollLog.groupBy({
-            by: ["tier"],
-            where: { userId: authCheck.userId },
-            _count: { tier: true },
-            orderBy: { _count: { tier: "desc" } },
-            take: 1,
-        });
-        const topTier = tierCounts[0]?.tier ?? null;
+        // groupBy replacement: get tier counts using raw SQL aggregate
+        const tierCountsRaw = await db.select({ tier: gachaRollLogs.tier, cnt: count() })
+            .from(gachaRollLogs)
+            .where(eq(gachaRollLogs.userId, authCheck.userId))
+            .groupBy(gachaRollLogs.tier)
+            .orderBy(sql`count(*) desc`)
+            .limit(1);
+        const topTier = tierCountsRaw[0]?.tier ?? null;
 
-        // Normalise logs (fallback to product name/image if rewardName is null)
         const normalised = logs.map((log: any) => ({
-            id: log.id,
-            tier: log.tier,
+            id: log.id, tier: log.tier,
             rewardName: log.rewardName ?? log.product?.name ?? "รางวัล",
             rewardImageUrl: log.rewardImageUrl ?? log.product?.imageUrl ?? null,
-            costType: log.costType,
-            costAmount: Number(log.costAmount),
-            createdAt: log.createdAt,
+            costType: log.costType, costAmount: Number(log.costAmount), createdAt: log.createdAt,
         }));
 
         return NextResponse.json({
             success: true,
-            data: {
-                logs: normalised,
-                stats: { todayCount, totalCount, topTier },
-            },
+            data: { logs: normalised, stats: { todayCount: Number(todayCount), totalCount: Number(totalCount), topTier } },
         });
     } catch (error) {
         console.error("Gacha history error:", error);

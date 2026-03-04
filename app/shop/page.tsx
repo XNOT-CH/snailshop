@@ -9,9 +9,8 @@ import { ShoppingBag, Package, TrendingUp } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function ShopPage() {
-    // Fetch all products
-    const products = await db.product.findMany({
-        orderBy: { createdAt: "desc" },
+    const products = await db.query.products.findMany({
+        orderBy: (t, { desc }) => desc(t.createdAt),
     });
 
     // Get unique categories

@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { db } from "@/lib/db";
+import { db, users, orders } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { decrypt } from "@/lib/encryption";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,27 +13,17 @@ import { Package, ShoppingBag } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function InventoryPage() {
-    // Get logged-in user from cookie
     const cookieStore = await cookies();
     const userId = cookieStore.get("userId")?.value;
+    if (!userId) redirect("/login");
 
-    if (!userId) {
-        redirect("/login");
-    }
+    const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    if (!user) redirect("/login");
 
-    const user = await db.user.findUnique({
-        where: { id: userId },
-    });
-
-    if (!user) {
-        redirect("/login");
-    }
-
-    // Fetch orders with products
-    const orders = await db.order.findMany({
-        where: { userId: user.id },
-        include: { product: true },
-        orderBy: { purchasedAt: "desc" },
+    const orderList = await db.query.orders.findMany({
+        where: eq(orders.userId, user.id),
+        with: { product: true },
+        orderBy: (t, { desc }) => desc(t.purchasedAt),
     });
 
     return (
@@ -52,11 +43,11 @@ export default async function InventoryPage() {
                     คลังสินค้าของฉัน
                 </h1>
                 <p className="text-muted-foreground mt-1">
-                    รายการสินค้าที่คุณซื้อไปแล้ว ({orders.length} รายการ)
+                    รายการสินค้าที่คุณซื้อไปแล้ว ({orderList.length} รายการ)
                 </p>
             </div>
 
-            {orders.length === 0 ? (
+            {orderList.length === 0 ? (
                 /* Empty State */
                 <Card className="py-12">
                     <CardContent className="text-center">
@@ -78,7 +69,7 @@ export default async function InventoryPage() {
             ) : (
                 /* Inventory Grid */
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                    {orders.map(
+                    {orderList.map(
                         (order) =>
                             order.product && (
                                 <PurchasedItem

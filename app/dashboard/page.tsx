@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
-import { db } from "@/lib/db";
+import { db, users } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { DashboardClient } from "@/components/DashboardClient";
 
@@ -14,9 +15,7 @@ export default async function DashboardPage() {
         redirect("/login");
     }
 
-    const user = await db.user.findUnique({
-        where: { id: userId },
-    });
+    const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
 
     if (!user) {
         redirect("/login");

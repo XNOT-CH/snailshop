@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { db, gachaMachines, gachaRewards } from "@/lib/db";
+import { eq } from "drizzle-orm";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const auth = await isAdmin();
@@ -8,34 +9,33 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     try {
         const { id } = await params;
-        const original = await db.gachaMachine.findUnique({
-            where: { id },
-            include: { rewards: true }
+        const original = await db.query.gachaMachines.findFirst({
+            where: eq(gachaMachines.id, id),
+            with: { rewards: true },
         });
 
         if (!original) return NextResponse.json({ success: false, message: "ไม่พบข้อมูลเดิม" }, { status: 404 });
 
-        // Create duplicate
-        const duplicate = await db.gachaMachine.create({
-            data: {
-                name: original.name + " (Copy)",
-                description: original.description,
-                imageUrl: original.imageUrl,
-                gameType: original.gameType,
-                categoryId: original.categoryId,
-                costType: original.costType,
-                costAmount: original.costAmount,
-                dailySpinLimit: original.dailySpinLimit,
-                tierMode: original.tierMode,
-                isActive: false, // Inactive by default so admin can review
-                isEnabled: original.isEnabled,
-                sortOrder: original.sortOrder + 1,
-            }
+        const newId = crypto.randomUUID();
+        await db.insert(gachaMachines).values({
+            id: newId,
+            name: original.name + " (Copy)",
+            description: original.description,
+            imageUrl: original.imageUrl,
+            gameType: original.gameType,
+            categoryId: original.categoryId,
+            costType: original.costType,
+            costAmount: original.costAmount,
+            dailySpinLimit: original.dailySpinLimit,
+            tierMode: original.tierMode,
+            isActive: false,
+            isEnabled: original.isEnabled,
+            sortOrder: (original.sortOrder ?? 0) + 1,
         });
 
-        // Copy rewards (excluding productId for PRODUCT type because of @unique constraint)
         if (original.rewards && original.rewards.length > 0) {
-            const newRewards = original.rewards.map(r => ({
+            const newRewards = original.rewards.map((r) => ({
+                id: crypto.randomUUID(),
                 rewardType: r.rewardType,
                 tier: r.tier,
                 isActive: r.isActive,
@@ -43,17 +43,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
                 rewardName: r.rewardName,
                 rewardAmount: r.rewardAmount,
                 rewardImageUrl: r.rewardImageUrl,
-                gachaMachineId: duplicate.id,
-                // Do not copy productId
+                gachaMachineId: newId,
                 productId: null,
             }));
-
-            await db.gachaReward.createMany({
-                data: newRewards
-            });
+            await db.insert(gachaRewards).values(newRewards);
         }
 
-        return NextResponse.json({ success: true, data: duplicate });
+        return NextResponse.json({ success: true, data: { id: newId } });
     } catch (e: any) {
         return NextResponse.json({ success: false, message: e.message }, { status: 500 });
     }

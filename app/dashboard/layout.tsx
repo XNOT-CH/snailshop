@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
-import { db } from "@/lib/db";
+import { db, users } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { HideMainLayout } from "@/components/HideMainLayout";
@@ -16,13 +17,9 @@ export default async function DashboardLayout({
 
     let user = null;
     if (userId) {
-        const dbUser = await db.user.findUnique({
-            where: { id: userId },
-            select: {
-                username: true,
-                email: true,
-                creditBalance: true,
-            },
+        const dbUser = await db.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: { username: true, email: true, creditBalance: true },
         });
 
         // Convert Decimal to plain number for client component

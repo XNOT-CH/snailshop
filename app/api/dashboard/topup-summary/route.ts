@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { db } from "@/lib/db";
+import { db, topups } from "@/lib/db";
+import { and, gte, lte } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -58,23 +59,13 @@ export async function GET(request: NextRequest) {
             todayEnd.setHours(23, 59, 59, 999);
         }
 
-        // Fetch ALL today's topups (all statuses)
-        const topups = await db.topup.findMany({
-            where: {
-                createdAt: {
-                    gte: todayStart,
-                    lte: todayEnd,
-                },
-            },
-            include: {
-                user: {
-                    select: {
-                        username: true,
-                    },
-                },
-            },
-            orderBy: { createdAt: "desc" },
+        const topupList = await db.query.topups.findMany({
+            where: (t, { and, gte, lte }) => and(gte(t.createdAt, todayStart.toISOString().slice(0, 19).replace("T", " ")), lte(t.createdAt, todayEnd.toISOString().slice(0, 19).replace("T", " "))),
+            with: { user: { columns: { username: true } } },
+            orderBy: (t, { desc }) => desc(t.createdAt),
         });
+        // alias
+        const topups_data = topupList;
 
         // ── Status Summary ──────────────────────────────
         const statusSummary = {
@@ -83,7 +74,7 @@ export async function GET(request: NextRequest) {
             rejected: { count: 0, amount: 0 },
         };
 
-        for (const t of topups) {
+        for (const t of topups_data) {
             const amt = Number(t.amount);
             switch (t.status) {
                 case "APPROVED":
@@ -103,9 +94,9 @@ export async function GET(request: NextRequest) {
 
         // ── Total KPI ────────────────────────────────────
         const totalAmount = statusSummary.approved.amount;
-        const allTransactions = topups.length;
+        const allTransactions = topups_data.length;
         const uniqueUsers = new Set(
-            topups.filter((t) => t.status === "APPROVED").map((t) => t.userId)
+            topups_data.filter((t) => t.status === "APPROVED").map((t) => t.userId)
         );
         const averagePerTransaction =
             statusSummary.approved.count > 0
@@ -117,7 +108,7 @@ export async function GET(request: NextRequest) {
         for (let h = 0; h < 24; h++) {
             hourlyMap.set(h, 0);
         }
-        for (const t of topups) {
+        for (const t of topups_data) {
             if (t.status === "APPROVED") {
                 const hour = new Date(t.createdAt).getHours();
                 hourlyMap.set(hour, (hourlyMap.get(hour) || 0) + Number(t.amount));
@@ -130,7 +121,7 @@ export async function GET(request: NextRequest) {
 
         // ── Payment Method Distribution (APPROVED only) ─
         const methodMap = new Map<string, { count: number; amount: number }>();
-        for (const t of topups) {
+        for (const t of topups_data) {
             if (t.status === "APPROVED") {
                 const bank = t.senderBank || "ไม่ระบุ";
                 const existing = methodMap.get(bank) || { count: 0, amount: 0 };
@@ -160,11 +151,11 @@ export async function GET(request: NextRequest) {
                 statusSummary,
                 hourlyData,
                 paymentMethods,
-                records: topups.map((t) => ({
+                records: topups_data.map((t) => ({
                     id: t.id,
                     username: t.user.username,
                     amount: Number(t.amount),
-                    time: t.createdAt.toISOString(),
+                    time: typeof t.createdAt === "string" ? t.createdAt : new Date(t.createdAt as any).toISOString(),
                     status: t.status,
                     senderBank: t.senderBank,
                     proofImage: t.proofImage,

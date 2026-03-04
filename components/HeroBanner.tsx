@@ -9,7 +9,7 @@ function getNextImageUrl(src: string) {
 
 export async function HeroBanner() {
     // Fetch settings from database
-    const settings = await db.siteSettings.findFirst();
+    const settings = await db.query.siteSettings.findFirst();
 
     // Default banners if no settings
     const banners = [

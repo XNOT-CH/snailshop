@@ -1,53 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, users } from "@/lib/db";
+import { eq } from "drizzle-orm";
 
 export async function PATCH(request: NextRequest) {
     try {
         const { password } = await request.json();
 
         if (!password) {
-            return NextResponse.json(
-                { success: false, message: "Password is required" },
-                { status: 400 }
-            );
+            return NextResponse.json({ success: false, message: "Password is required" }, { status: 400 });
         }
 
         if (password.length < 6) {
-            return NextResponse.json(
-                { success: false, message: "Password must be at least 6 characters" },
-                { status: 400 }
-            );
+            return NextResponse.json({ success: false, message: "Password must be at least 6 characters" }, { status: 400 });
         }
 
-        // Find test user
-        const user = await db.user.findFirst({
-            where: { email: "test@gamestore.com" },
+        const user = await db.query.users.findFirst({
+            where: eq(users.email, "test@gamestore.com"),
+            columns: { id: true },
         });
 
         if (!user) {
-            return NextResponse.json(
-                { success: false, message: "User not found" },
-                { status: 404 }
-            );
+            return NextResponse.json({ success: false, message: "User not found" }, { status: 404 });
         }
 
-        // Update password (Note: In production, hash the password!)
-        await db.user.update({
-            where: { id: user.id },
-            data: { password: password },
-        });
+        await db.update(users).set({ password }).where(eq(users.id, user.id));
 
-        return NextResponse.json({
-            success: true,
-            message: "Password updated successfully!",
-        });
+        return NextResponse.json({ success: true, message: "Password updated successfully!" });
     } catch (error) {
         console.error("Update settings error:", error);
         return NextResponse.json(
-            {
-                success: false,
-                message: error instanceof Error ? error.message : "Failed to update",
-            },
+            { success: false, message: error instanceof Error ? error.message : "Failed to update" },
             { status: 500 }
         );
     }

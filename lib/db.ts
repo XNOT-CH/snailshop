@@ -1,9 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-const globalForPrisma = globalThis as unknown as {
-    prisma: PrismaClient | undefined;
-};
-
-export const db = globalForPrisma.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+// This file intentionally replaces the old PrismaClient export.
+// All db access now goes through Drizzle ORM (lib/db/index.ts).
+export { db } from "./db/index";
+export * from "./db/schema";

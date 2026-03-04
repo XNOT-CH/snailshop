@@ -1,4 +1,5 @@
-import { db } from "@/lib/db";
+import { db, orders, products, users } from "@/lib/db";
+import { sum, count } from "drizzle-orm";
 import {
     DollarSign,
     Users,
@@ -16,17 +17,14 @@ import { AdminDashboardHeader } from "@/components/admin/AdminDashboardHeader";
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-    const [ordersData, productsCount, usersCount] = await Promise.all([
-        db.order.aggregate({
-            _sum: { totalPrice: true },
-            _count: true,
-        }),
-        db.product.count(),
-        db.user.count(),
+    const [[{ totalRevenue: rawRevenue, salesCount: rawCount }], [{ count: rawProducts }], [{ count: rawUsers }]] = await Promise.all([
+        db.select({ totalRevenue: sum(orders.totalPrice), salesCount: count() }).from(orders),
+        db.select({ count: count() }).from(products),
+        db.select({ count: count() }).from(users),
     ]);
 
-    const totalRevenue = Number(ordersData._sum.totalPrice || 0);
-    const salesCount = ordersData._count;
+    const totalRevenue = Number(rawRevenue || 0);
+    const salesCount = Number(rawCount);
 
     const kpiCards = [
         {
@@ -39,7 +37,7 @@ export default async function AdminDashboardPage() {
         },
         {
             title: "ผู้ใช้งานทั้งหมด",
-            value: usersCount.toLocaleString(),
+            value: Number(rawUsers).toLocaleString(),
             icon: Users,
             gradient: "from-violet-500 to-purple-600",
             lightBg: "bg-violet-50 dark:bg-violet-950/30",
@@ -47,7 +45,7 @@ export default async function AdminDashboardPage() {
         },
         {
             title: "ผู้ใช้งานวันนี้",
-            value: Math.floor(usersCount * 0.3).toLocaleString(),
+            value: Math.floor(Number(rawUsers) * 0.3).toLocaleString(),
             icon: UserCheck,
             gradient: "from-emerald-500 to-teal-600",
             lightBg: "bg-emerald-50 dark:bg-emerald-950/30",

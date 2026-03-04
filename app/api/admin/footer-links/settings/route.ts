@@ -1,59 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { db, footerWidgetSettings } from "@/lib/db";
+import { eq } from "drizzle-orm";
 
-// GET - ดึง widget settings
 export async function GET() {
     try {
-        let settings = await prisma.footerWidgetSettings.findFirst();
+        let settings = await db.query.footerWidgetSettings.findFirst();
         if (!settings) {
-            settings = await prisma.footerWidgetSettings.create({
-                data: {
-                    isActive: true,
-                    title: "เมนูลัด",
-                },
-            });
+            const newId = crypto.randomUUID();
+            await db.insert(footerWidgetSettings).values({ id: newId, isActive: true, title: "เมนูลัด" });
+            settings = await db.query.footerWidgetSettings.findFirst();
         }
         return NextResponse.json(settings);
-    } catch (error) {
-        console.error("Error fetching footer settings:", error);
-        return NextResponse.json(
-            { error: "Failed to fetch footer settings" },
-            { status: 500 }
-        );
+    } catch {
+        return NextResponse.json({ error: "Failed to fetch footer settings" }, { status: 500 });
     }
 }
 
-// PUT - อัปเดต widget settings
 export async function PUT(request: NextRequest) {
     try {
         const body = await request.json();
         const { isActive, title } = body;
-
-        let settings = await prisma.footerWidgetSettings.findFirst();
-
+        let settings = await db.query.footerWidgetSettings.findFirst();
         if (!settings) {
-            settings = await prisma.footerWidgetSettings.create({
-                data: {
-                    isActive: isActive ?? true,
-                    title: title ?? "เมนูลัด",
-                },
-            });
+            const newId = crypto.randomUUID();
+            await db.insert(footerWidgetSettings).values({ id: newId, isActive: isActive ?? true, title: title ?? "เมนูลัด" });
         } else {
-            settings = await prisma.footerWidgetSettings.update({
-                where: { id: settings.id },
-                data: {
-                    ...(isActive !== undefined && { isActive }),
-                    ...(title !== undefined && { title }),
-                },
-            });
+            const set: Record<string, unknown> = {};
+            if (isActive !== undefined) set.isActive = isActive;
+            if (title !== undefined) set.title = title;
+            await db.update(footerWidgetSettings).set(set as any).where(eq(footerWidgetSettings.id, settings.id));
         }
-
-        return NextResponse.json(settings);
-    } catch (error) {
-        console.error("Error updating footer settings:", error);
-        return NextResponse.json(
-            { error: "Failed to update footer settings" },
-            { status: 500 }
-        );
+        const updated = await db.query.footerWidgetSettings.findFirst();
+        return NextResponse.json(updated);
+    } catch {
+        return NextResponse.json({ error: "Failed to update footer settings" }, { status: 500 });
     }
 }

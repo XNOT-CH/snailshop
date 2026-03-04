@@ -1,28 +1,31 @@
 // Script to fix admin password
-// Run: npx ts-node --skip-project scripts/fix-admin-password.ts
+// Run: npx tsx scripts/fix-admin-password.ts
 
-import { PrismaClient } from "@prisma/client";
+import { drizzle } from "drizzle-orm/mysql2";
+import mysql from "mysql2/promise";
+import { eq } from "drizzle-orm";
+import { users } from "../lib/db/schema";
 import bcrypt from "bcryptjs";
+import * as dotenv from "dotenv";
 
-const prisma = new PrismaClient();
+dotenv.config({ path: ".env.local" });
+
+const username = "REDACTED_USERNAME";
+const newPassword = "REDACTED_PASSWORD"; // Change this!
 
 async function main() {
-    const username = "REDACTED_USERNAME";
-    const newPassword = "REDACTED_PASSWORD"; // New password - change this!
+    const connection = await mysql.createConnection(process.env.DATABASE_URL!);
+    const db = drizzle(connection);
 
-    // Hash the password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update user
-    await prisma.user.update({
-        where: { username },
-        data: { password: hashedPassword },
-    });
+    await db.update(users)
+        .set({ password: hashedPassword })
+        .where(eq(users.username, username));
 
     console.log(`✅ Password updated for ${username}`);
     console.log(`New password: ${newPassword}`);
+    await connection.end();
 }
 
-main()
-    .catch(console.error)
-    .finally(() => prisma.$disconnect());
+main().catch((e) => { console.error(e); process.exit(1); });

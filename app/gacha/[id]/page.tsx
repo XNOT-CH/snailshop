@@ -1,4 +1,5 @@
-import { db } from "@/lib/db";
+import { db, users, gachaMachines, gachaRewards } from "@/lib/db";
+import { eq, and, isNull, isNotNull } from "drizzle-orm";
 import { Lock } from "lucide-react";
 import { cookies } from "next/headers";
 import Link from "next/link";
@@ -22,22 +23,14 @@ export default async function GachaPage({ params }: { params: Promise<{ id: stri
         gameType: string;
         isActive: boolean;
         costType: string;
-        costAmount: number | { toNumber: () => number };
+        costAmount: string | number;
         dailySpinLimit: number;
-    } | null = null;
+    } | null | undefined = null;
 
     try {
-        machine = await db.gachaMachine.findUnique({
-            where: { id },
-            select: {
-                id: true,
-                name: true,
-                gameType: true,
-                isActive: true,
-                costType: true,
-                costAmount: true,
-                dailySpinLimit: true,
-            },
+        machine = await db.query.gachaMachines.findFirst({
+            where: eq(gachaMachines.id, id),
+            columns: { id: true, name: true, gameType: true, isActive: true, costType: true, costAmount: true, dailySpinLimit: true },
         });
     } catch { /* ignore */ }
 
@@ -54,17 +47,15 @@ export default async function GachaPage({ params }: { params: Promise<{ id: stri
         );
     }
 
-    const costAmount = typeof machine.costAmount === "object"
-        ? machine.costAmount.toNumber()
-        : Number(machine.costAmount);
+    const costAmount = Number(machine.costAmount);
 
     // Fetch user balance
     let userBalance = 0;
     try {
         if (userId) {
-            const user = await db.user.findUnique({
-                where: { id: userId },
-                select: { creditBalance: true, pointBalance: true },
+            const user = await db.query.users.findFirst({
+                where: eq(users.id, userId),
+                columns: { creditBalance: true, pointBalance: true },
             });
             if (user) {
                 userBalance = Number(machine.costType === "CREDIT" ? (user.creditBalance ?? 0) : (user.pointBalance ?? 0));
@@ -76,22 +67,9 @@ export default async function GachaPage({ params }: { params: Promise<{ id: stri
     let products: GachaProductLite[] = [];
     if (machine.gameType === "SPIN_X") {
         try {
-            const rewards = await db.gachaReward.findMany({
-                where: {
-                    gachaMachineId: id,
-                    isActive: true,
-                    OR: [
-                        { rewardType: "PRODUCT", productId: { not: null } },
-                        {
-                            rewardType: { in: ["CREDIT", "POINT"] },
-                            rewardName: { not: null },
-                            rewardAmount: { not: null },
-                        },
-                    ],
-                },
-                include: {
-                    product: { select: { id: true, name: true, price: true, imageUrl: true, isSold: true } },
-                },
+            const rewards = await db.query.gachaRewards.findMany({
+                where: and(eq(gachaRewards.gachaMachineId, id), eq(gachaRewards.isActive, true)),
+                with: { product: { columns: { id: true, name: true, price: true, imageUrl: true, isSold: true } } },
             });
             products = rewards
                 .filter((r) => (r.rewardType === "PRODUCT" ? r.product && !r.product.isSold : (r.rewardName && r.rewardAmount)))

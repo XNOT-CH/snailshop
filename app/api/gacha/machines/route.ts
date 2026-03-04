@@ -1,21 +1,19 @@
 import { NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, gachaMachines } from "@/lib/db";
+import { eq, and, asc } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-    const machines = await db.gachaMachine.findMany({
-        where: { isActive: true, isEnabled: true },
-        orderBy: { sortOrder: "asc" },
-        select: {
-            id: true,
-            name: true,
-            imageUrl: true,
-            gameType: true,
-            costType: true,
-            costAmount: true,
-            categoryId: true,
-            category: { select: { id: true, name: true } },
+    const machines = await db.query.gachaMachines.findMany({
+        where: and(eq(gachaMachines.isActive, true), eq(gachaMachines.isEnabled, true)),
+        orderBy: (t, { asc }) => asc(t.sortOrder),
+        columns: {
+            id: true, name: true, imageUrl: true, gameType: true,
+            costType: true, costAmount: true, categoryId: true,
+        },
+        with: {
+            category: { columns: { id: true, name: true } },
         },
     });
     return NextResponse.json({ success: true, data: machines });

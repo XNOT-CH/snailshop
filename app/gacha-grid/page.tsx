@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
-import { db } from "@/lib/db";
+import { db, users, gachaSettings } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { GachaGridMachine } from "@/components/GachaGridMachine";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
@@ -23,8 +24,8 @@ export default async function GachaGridIndexPage() {
 
         // Parallel fetch: settings + user (no dependency between them)
         const [settings, user] = await Promise.all([
-            db.gachaSettings.findFirst(),
-            userId ? db.user.findUnique({ where: { id: userId } }) : Promise.resolve(null),
+            db.query.gachaSettings.findFirst(),
+            userId ? db.query.users.findFirst({ where: eq(users.id, userId) }) : Promise.resolve(null),
         ]);
 
         if (settings) {

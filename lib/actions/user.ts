@@ -1,7 +1,8 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { db } from "@/lib/db";
+import { db, users } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { createAuditLog, AUDIT_ACTIONS, getChanges } from "@/lib/auditLog";
 import { updateProfileSchema, UpdateProfileInput } from "@/lib/validations/profile";
 
@@ -48,33 +49,15 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
         const validatedData = validationResult.data;
 
         // ดึงข้อมูลผู้ใช้ปัจจุบัน
-        const currentUser = await db.user.findUnique({
-            where: { id: userId },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-                image: true,
-                password: true,
-                firstName: true,
-                lastName: true,
-                firstNameEn: true,
-                lastNameEn: true,
-                taxFullName: true,
-                taxPhone: true,
-                taxAddress: true,
-                taxProvince: true,
-                taxDistrict: true,
-                taxSubdistrict: true,
-                taxPostalCode: true,
-                shipFullName: true,
-                shipPhone: true,
-                shipAddress: true,
-                shipProvince: true,
-                shipDistrict: true,
-                shipSubdistrict: true,
-                shipPostalCode: true,
+        const currentUser = await db.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: {
+                id: true, name: true, email: true, phone: true, image: true, password: true,
+                firstName: true, lastName: true, firstNameEn: true, lastNameEn: true,
+                taxFullName: true, taxPhone: true, taxAddress: true, taxProvince: true,
+                taxDistrict: true, taxSubdistrict: true, taxPostalCode: true,
+                shipFullName: true, shipPhone: true, shipAddress: true, shipProvince: true,
+                shipDistrict: true, shipSubdistrict: true, shipPostalCode: true,
             },
         });
 
@@ -149,10 +132,7 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
         );
 
         // อัปเดตข้อมูลใน database
-        await db.user.update({
-            where: { id: userId },
-            data: updateData,
-        });
+        await db.update(users).set(updateData as any).where(eq(users.id, userId));
 
         // บันทึก Audit Log
         await createAuditLog({
@@ -195,38 +175,16 @@ export async function getCurrentUserProfile() {
             return null;
         }
 
-        const user = await db.user.findUnique({
-            where: { id: userId },
-            select: {
-                id: true,
-                name: true,
-                username: true,
-                email: true,
-                phone: true,
-                image: true,
-                role: true,
-                creditBalance: true,
-                phoneVerified: true,
-                emailVerified: true,
-                firstName: true,
-                lastName: true,
-                firstNameEn: true,
-                lastNameEn: true,
-                taxFullName: true,
-                taxPhone: true,
-                taxAddress: true,
-                taxProvince: true,
-                taxDistrict: true,
-                taxSubdistrict: true,
-                taxPostalCode: true,
-                shipFullName: true,
-                shipPhone: true,
-                shipAddress: true,
-                shipProvince: true,
-                shipDistrict: true,
-                shipSubdistrict: true,
-                shipPostalCode: true,
-                createdAt: true,
+        const user = await db.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: {
+                id: true, name: true, username: true, email: true, phone: true, image: true,
+                role: true, creditBalance: true, phoneVerified: true, emailVerified: true,
+                firstName: true, lastName: true, firstNameEn: true, lastNameEn: true,
+                taxFullName: true, taxPhone: true, taxAddress: true, taxProvince: true,
+                taxDistrict: true, taxSubdistrict: true, taxPostalCode: true,
+                shipFullName: true, shipPhone: true, shipAddress: true, shipProvince: true,
+                shipDistrict: true, shipSubdistrict: true, shipPostalCode: true, createdAt: true,
             },
         });
 

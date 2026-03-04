@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
-import { db } from "@/lib/db";
+import { db, users, gachaMachines } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { GachaGridMachine } from "@/components/GachaGridMachine";
 import Link from "next/link";
@@ -14,9 +15,7 @@ export default async function GachaGridPage({
 }) {
     const { machineId } = await params;
 
-    const machine = await db.gachaMachine.findUnique({
-        where: { id: machineId },
-    });
+    const machine = await db.query.gachaMachines.findFirst({ where: eq(gachaMachines.id, machineId) });
 
     if (!machine || !machine.isActive) notFound();
 
@@ -25,9 +24,9 @@ export default async function GachaGridPage({
     let userBalance = 0;
 
     if (userId && machine.costType !== "FREE") {
-        const user = await db.user.findUnique({
-            where: { id: userId },
-            select: { creditBalance: true, pointBalance: true },
+        const user = await db.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: { creditBalance: true, pointBalance: true },
         });
         if (user) {
             userBalance = Number(machine.costType === "CREDIT" ? (user.creditBalance ?? 0) : (user.pointBalance ?? 0));

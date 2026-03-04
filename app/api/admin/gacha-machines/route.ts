@@ -1,15 +1,17 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
-import { db } from "@/lib/db";
+import { db, gachaMachines, gachaRewards } from "@/lib/db";
+import { eq, asc, count } from "drizzle-orm";
 
 export async function GET() {
     const auth = await isAdmin();
     if (!auth.success) return NextResponse.json({ success: false }, { status: 401 });
-    const machines = await db.gachaMachine.findMany({
-        orderBy: { sortOrder: "asc" },
-        include: { category: { select: { name: true } }, _count: { select: { rewards: true } } },
+    const machines = await db.query.gachaMachines.findMany({
+        orderBy: (t, { asc }) => asc(t.sortOrder),
+        with: { category: { columns: { name: true } }, rewards: { columns: { id: true } } },
     });
-    return NextResponse.json({ success: true, data: machines });
+    const data = machines.map(m => ({ ...m, _count: { rewards: m.rewards.length }, rewards: undefined }));
+    return NextResponse.json({ success: true, data });
 }
 
 export async function POST(req: Request) {
@@ -20,19 +22,13 @@ export async function POST(req: Request) {
         costType?: string; costAmount?: number; dailySpinLimit?: number;
         gameType?: string; tierMode?: string; sortOrder?: number;
     };
-    const machine = await db.gachaMachine.create({
-        data: {
-            name: body.name,
-            description: body.description ?? null,
-            imageUrl: body.imageUrl ?? null,
-            gameType: body.gameType ?? "SPIN_X",
-            categoryId: body.categoryId ?? null,
-            costType: body.costType ?? "FREE",
-            costAmount: body.costAmount ?? 0,
-            dailySpinLimit: body.dailySpinLimit ?? 0,
-            tierMode: body.tierMode ?? "PRICE",
-            sortOrder: body.sortOrder ?? 0,
-        },
+    const newId = crypto.randomUUID();
+    await db.insert(gachaMachines).values({
+        id: newId, name: body.name, description: body.description ?? null, imageUrl: body.imageUrl ?? null,
+        gameType: body.gameType ?? "SPIN_X", categoryId: body.categoryId ?? null,
+        costType: body.costType ?? "FREE", costAmount: String(body.costAmount ?? 0),
+        dailySpinLimit: body.dailySpinLimit ?? 0, tierMode: body.tierMode ?? "PRICE", sortOrder: body.sortOrder ?? 0,
     });
+    const machine = await db.query.gachaMachines.findFirst({ where: eq(gachaMachines.id, newId) });
     return NextResponse.json({ success: true, data: machine });
 }

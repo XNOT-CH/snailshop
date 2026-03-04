@@ -3,8 +3,8 @@ import { db } from "@/lib/db";
 
 // Server Component — ไม่ต้องการ 'use client' เพราะ query DB ตรงๆ บน server
 export async function DynamicBackground() {
-    const settings = await db.siteSettings.findFirst({
-        select: { backgroundImage: true },
+    const settings = await db.query.siteSettings.findFirst({
+        columns: { backgroundImage: true },
     });
 
     if (!settings?.backgroundImage) return null;

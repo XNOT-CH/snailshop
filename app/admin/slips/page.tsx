@@ -1,15 +1,15 @@
-import { db } from "@/lib/db";
+import { db, topups } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { FileCheck, AlertCircle } from "lucide-react";
 import { SlipTable } from "@/components/admin/SlipTable";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSlipsPage() {
-    // Fetch all pending topup requests
-    const pendingSlips = await db.topup.findMany({
-        where: { status: "PENDING" },
-        include: { user: true },
-        orderBy: { createdAt: "desc" },
+    const pendingSlips = await db.query.topups.findMany({
+        where: eq(topups.status, "PENDING"),
+        with: { user: true },
+        orderBy: (t, { desc }) => desc(t.createdAt),
     });
 
     return (
@@ -43,7 +43,7 @@ export default async function AdminSlipsPage() {
                             id: slip.id,
                             amount: Number(slip.amount),
                             proofImage: slip.proofImage,
-                            createdAt: slip.createdAt.toISOString(),
+                            createdAt: typeof slip.createdAt === "string" ? slip.createdAt : new Date(slip.createdAt as any).toISOString(),
                             user: {
                                 email: slip.user.email,
                                 username: slip.user.username,

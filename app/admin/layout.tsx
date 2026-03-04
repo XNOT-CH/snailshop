@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
+import { db, users } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { HideMainLayout } from "@/components/HideMainLayout";
 
@@ -19,9 +20,9 @@ export default async function AdminLayout({
     }
 
     // Check if user exists and has ADMIN role
-    const user = await db.user.findUnique({
-        where: { id: userId },
-        select: { id: true, role: true },
+    const user = await db.query.users.findFirst({
+        where: eq(users.id, userId),
+        columns: { id: true, role: true },
     });
 
     // If user not found or not an admin, redirect to home

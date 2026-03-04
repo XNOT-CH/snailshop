@@ -1,4 +1,5 @@
-import { db } from "@/lib/db";
+import { db, helpArticles } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
@@ -21,9 +22,9 @@ const CATEGORIES: Record<string, string> = {
 };
 
 export default async function HelpPage() {
-    const articles = await db.helpArticle.findMany({
-        where: { isActive: true },
-        orderBy: [{ category: "asc" }, { sortOrder: "asc" }],
+    const articles = await db.query.helpArticles.findMany({
+        where: eq(helpArticles.isActive, true),
+        orderBy: (t, { asc }) => [asc(t.category), asc(t.sortOrder)],
     });
 
     // Group by category

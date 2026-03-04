@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { db } from "@/lib/db";
+import { db, products } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Package } from "lucide-react";
@@ -10,9 +10,8 @@ import { getStockCount } from "@/lib/stock";
 export const dynamic = "force-dynamic";
 
 export default async function AdminProductsPage() {
-    // Fetch all products from database
-    const products = await db.product.findMany({
-        orderBy: { createdAt: "desc" },
+    const productList = await db.query.products.findMany({
+        orderBy: (t, { desc }) => desc(t.createdAt),
     });
 
     return (
@@ -40,11 +39,11 @@ export default async function AdminProductsPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Package className="h-5 w-5" />
-                        สินค้าทั้งหมด ({products.length})
+                        สินค้าทั้งหมด ({productList.length})
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    {products.length === 0 ? (
+                    {productList.length === 0 ? (
                         <div className="py-12 text-center">
                             <Package className="mx-auto h-12 w-12 text-muted-foreground/50" />
                             <p className="mt-4 text-muted-foreground">ยังไม่มีสินค้า</p>
@@ -57,7 +56,7 @@ export default async function AdminProductsPage() {
                         </div>
                     ) : (
                         <ProductTable
-                            products={products.map((p) => {
+                            products={productList.map((p) => {
                                 let stockCount = 0;
                                 try {
                                     const decrypted = decrypt(p.secretData || "");

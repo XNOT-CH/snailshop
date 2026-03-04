@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { db } from "@/lib/db";
+import { db, topups } from "@/lib/db";
+import { and, gte, lte } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
@@ -39,20 +40,11 @@ export async function GET(request: NextRequest) {
             startDate.setHours(0, 0, 0, 0);
         }
 
-        // Fetch ALL topups in the range (all statuses for txn count)
-        const topups = await db.topup.findMany({
-            where: {
-                createdAt: {
-                    gte: startDate,
-                    lte: endDate,
-                },
-            },
-            select: {
-                amount: true,
-                status: true,
-                createdAt: true,
-            },
-        });
+        const topupList = await db.select({ amount: topups.amount, status: topups.status, createdAt: topups.createdAt })
+            .from(topups)
+            .where(and(gte(topups.createdAt, startDate.toISOString().slice(0, 19).replace("T", " "),), lte(topups.createdAt, endDate.toISOString().slice(0, 19).replace("T", " "))));
+        // alias for rest of logic
+        const topupItems = topupList;
 
         // Build a map for every day in the range
         const dailyMap = new Map<string, { amount: number; transactions: number }>();
@@ -65,7 +57,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Aggregate by date
-        for (const t of topups) {
+        for (const t of topupItems) {
             const key = new Date(t.createdAt).toISOString().slice(0, 10);
             const entry = dailyMap.get(key);
             if (entry) {

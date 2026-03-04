@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, users } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import {
     checkLoginRateLimit,
@@ -47,8 +48,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Find user by username
-        const user = await db.user.findUnique({
-            where: { username },
+        const user = await db.query.users.findFirst({
+            where: eq(users.username, username),
         });
 
         if (!user) {

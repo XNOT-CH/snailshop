@@ -1,119 +1,51 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, users, helpArticles } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 
-async function isAdmin() {
+async function isAdminCheck() {
     const cookieStore = await cookies();
     const userId = cookieStore.get("userId")?.value;
     if (!userId) return false;
-    const user = await db.user.findUnique({ where: { id: userId } });
+    const user = await db.query.users.findFirst({ where: eq(users.id, userId), columns: { role: true } });
     return user?.role === "ADMIN";
 }
 
-export async function PUT(
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    if (!(await isAdmin())) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+type RouteParams = { params: Promise<{ id: string }> };
 
+export async function PUT(request: NextRequest, { params }: RouteParams) {
+    if (!(await isAdminCheck())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { id } = await params;
         const body = await request.json();
         const { question, answer, category, isActive } = body;
-
-        // Get existing article for change tracking
-        const existingArticle = await db.helpArticle.findUnique({
-            where: { id },
-        });
-
-        if (!existingArticle) {
-            return NextResponse.json({ error: "Article not found" }, { status: 404 });
-        }
-
-        const article = await db.helpArticle.update({
-            where: { id },
-            data: {
-                ...(question && { question }),
-                ...(answer && { answer }),
-                ...(category && { category }),
-                ...(typeof isActive === "boolean" && { isActive }),
-            },
-        });
-
-        // Build changes array
+        const existing = await db.query.helpArticles.findFirst({ where: eq(helpArticles.id, id) });
+        if (!existing) return NextResponse.json({ error: "Article not found" }, { status: 404 });
+        const updateData: Record<string, unknown> = {};
+        if (question) updateData.question = question;
+        if (answer) updateData.answer = answer;
+        if (category) updateData.category = category;
+        if (typeof isActive === "boolean") updateData.isActive = isActive;
+        await db.update(helpArticles).set(updateData as any).where(eq(helpArticles.id, id));
         const changes: { field: string; old: string; new: string }[] = [];
-        if (question && existingArticle.question !== question) {
-            changes.push({ field: "question", old: existingArticle.question, new: question });
-        }
-        if (answer && existingArticle.answer !== answer) {
-            changes.push({ field: "answer", old: existingArticle.answer.substring(0, 50) + "...", new: answer.substring(0, 50) + "..." });
-        }
-        if (typeof isActive === "boolean" && existingArticle.isActive !== isActive) {
-            changes.push({ field: "isActive", old: existingArticle.isActive ? "เปิด" : "ปิด", new: isActive ? "เปิด" : "ปิด" });
-        }
-
-        // Audit log
-        await auditFromRequest(request, {
-            action: AUDIT_ACTIONS.HELP_UPDATE,
-            resource: "HelpArticle",
-            resourceId: id,
-            resourceName: existingArticle.question,
-            details: {
-                resourceName: existingArticle.question,
-                changes,
-            },
-        });
-
-        return NextResponse.json(article);
-    } catch (error) {
-        console.error("Error updating help article:", error);
-        return NextResponse.json({ error: "Failed to update article" }, { status: 500 });
-    }
+        if (question && existing.question !== question) changes.push({ field: "question", old: existing.question, new: question });
+        if (answer && existing.answer !== answer) changes.push({ field: "answer", old: existing.answer.substring(0, 50) + "...", new: answer.substring(0, 50) + "..." });
+        if (typeof isActive === "boolean" && existing.isActive !== isActive) changes.push({ field: "isActive", old: existing.isActive ? "เปิด" : "ปิด", new: isActive ? "เปิด" : "ปิด" });
+        await auditFromRequest(request, { action: AUDIT_ACTIONS.HELP_UPDATE, resource: "HelpArticle", resourceId: id, resourceName: existing.question, details: { resourceName: existing.question, changes } });
+        const updated = await db.query.helpArticles.findFirst({ where: eq(helpArticles.id, id) });
+        return NextResponse.json(updated);
+    } catch { return NextResponse.json({ error: "Failed to update article" }, { status: 500 }); }
 }
 
-export async function DELETE(
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-) {
-    if (!(await isAdmin())) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
+    if (!(await isAdminCheck())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { id } = await params;
-
-        // Get article before deletion for audit log
-        const article = await db.helpArticle.findUnique({
-            where: { id },
-        });
-
-        if (!article) {
-            return NextResponse.json({ error: "Article not found" }, { status: 404 });
-        }
-
-        await db.helpArticle.delete({ where: { id } });
-
-        // Audit log
-        await auditFromRequest(request, {
-            action: AUDIT_ACTIONS.HELP_DELETE,
-            resource: "HelpArticle",
-            resourceId: id,
-            resourceName: article.question,
-            details: {
-                resourceName: article.question,
-                deletedData: {
-                    question: article.question,
-                    category: article.category,
-                },
-            },
-        });
-
+        const article = await db.query.helpArticles.findFirst({ where: eq(helpArticles.id, id) });
+        if (!article) return NextResponse.json({ error: "Article not found" }, { status: 404 });
+        await db.delete(helpArticles).where(eq(helpArticles.id, id));
+        await auditFromRequest(request, { action: AUDIT_ACTIONS.HELP_DELETE, resource: "HelpArticle", resourceId: id, resourceName: article.question, details: { resourceName: article.question, deletedData: { question: article.question, category: article.category } } });
         return NextResponse.json({ success: true });
-    } catch (error) {
-        console.error("Error deleting help article:", error);
-        return NextResponse.json({ error: "Failed to delete article" }, { status: 500 });
-    }
+    } catch { return NextResponse.json({ error: "Failed to delete article" }, { status: 500 }); }
 }

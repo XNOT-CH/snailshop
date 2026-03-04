@@ -1,7 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { cookies } from "next/headers";
-import { db } from "@/lib/db";
+import { db, users, navItems } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -43,14 +44,14 @@ export default async function Navbar() {
 
     // Parallel fetch for better performance
     const [user, siteSettings, dbNavItems] = await Promise.all([
-        userId ? db.user.findUnique({
-            where: { id: userId },
-            select: { username: true, creditBalance: true },
+        userId ? db.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: { username: true, creditBalance: true },
         }) : Promise.resolve(null),
         getSiteSettings(),
-        db.navItem.findMany({
-            where: { isActive: true },
-            orderBy: { sortOrder: 'asc' },
+        db.query.navItems.findMany({
+            where: eq(navItems.isActive, true),
+            orderBy: (t, { asc }) => asc(t.sortOrder),
         }),
     ]);
 

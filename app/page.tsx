@@ -4,20 +4,18 @@ import { HeroBanner } from "@/components/HeroBanner";
 import { FeaturedProducts } from "@/components/FeaturedProducts";
 import { SaleProducts } from "@/components/SaleProducts";
 import { NewsSection } from "@/components/NewsSection";
-import { db } from "@/lib/db";
+import { db, siteSettings as siteSettingsTable, products } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  // Fetch site settings to check showAllProducts toggle
-  const siteSettings = await db.siteSettings.findFirst({
-    select: { showAllProducts: true },
+  const siteSettings = await db.query.siteSettings.findFirst({
+    columns: { showAllProducts: true },
   });
   const showAllProducts = siteSettings?.showAllProducts ?? true;
 
-  // Only fetch products if the section is enabled
-  const products = showAllProducts
-    ? await db.product.findMany({ orderBy: { createdAt: "desc" } })
+  const productList = showAllProducts
+    ? await db.query.products.findMany({ orderBy: (t, { desc }) => desc(t.createdAt) })
     : [];
 
   return (
@@ -46,7 +44,7 @@ export default async function Home() {
             </div>
 
             {/* Product Grid */}
-            {products.length === 0 ? (
+            {productList.length === 0 ? (
               <div className="text-center py-12 rounded-2xl bg-card border border-border">
                 <p className="text-muted-foreground text-lg">
                   ยังไม่มีสินค้าในระบบ
@@ -54,7 +52,7 @@ export default async function Home() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                {products.map((product, index) => (
+                {productList.map((product, index) => (
                   <ProductCard
                     key={product.id}
                     id={product.id}

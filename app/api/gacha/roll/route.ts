@@ -1,27 +1,41 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { db } from "@/lib/db";
+import { db, users, gachaMachines, gachaSettings, gachaRewards, gachaRollLogs, orders, products } from "@/lib/db";
+import { eq, and, or, isNotNull, isNull, gte, lte, inArray, sql, count } from "drizzle-orm";
 import { isAuthenticated } from "@/lib/auth";
 import { decrypt, encrypt } from "@/lib/encryption";
 import { takeFirstStock } from "@/lib/stock";
 import {
-    buildGrid,
-    getValidLSelectors,
-    getValidRSelectorsFor,
-    getIntersectionTile,
-    type GachaProductLite,
-    type GachaTier,
+    buildGrid, getValidLSelectors, getValidRSelectorsFor, getIntersectionTile,
+    type GachaProductLite, type GachaTier,
 } from "@/lib/gachaGrid";
 
 const COOKIE_NAME = "gacha_l_pending";
-const COOKIE_TTL = 300; // 5 minutes
+const COOKIE_TTL = 300;
+
+function toMySQLDatetime(d: Date) {
+    return d.toISOString().slice(0, 19).replace("T", " ");
+}
 
 function getDayRange(date: Date) {
-    const start = new Date(date);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(date);
-    end.setHours(23, 59, 59, 999);
-    return { start, end };
+    const start = new Date(date); start.setHours(0, 0, 0, 0);
+    const end = new Date(date); end.setHours(23, 59, 59, 999);
+    return { start: toMySQLDatetime(start), end: toMySQLDatetime(end) };
+}
+
+async function fetchRewards(machineId: string | null) {
+    const whereCondition = and(
+        eq(gachaRewards.isActive, true),
+        machineId ? eq(gachaRewards.gachaMachineId, machineId) : isNull(gachaRewards.gachaMachineId),
+        or(
+            and(eq(gachaRewards.rewardType, "PRODUCT"), isNotNull(gachaRewards.productId)),
+            and(inArray(gachaRewards.rewardType, ["CREDIT", "POINT"]), isNotNull(gachaRewards.rewardName), isNotNull(gachaRewards.rewardAmount))
+        )
+    );
+    return db.query.gachaRewards.findMany({
+        where: whereCondition,
+        with: { product: { columns: { id: true, name: true, price: true, imageUrl: true, secretData: true, stockSeparator: true, isSold: true, orderId: true } } },
+    });
 }
 
 export async function POST(req: Request) {
@@ -30,7 +44,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }
 
-    // Parse spin phase and machineId from body
     let spin = 1;
     let machineId: string | null = null;
     try {
@@ -40,17 +53,13 @@ export async function POST(req: Request) {
     } catch { /* no body */ }
 
     try {
-        let isEnabled = true;
-        let costType = "FREE";
-        let costAmount = 0;
-        let dailySpinLimit = 0;
+        let isEnabled = true, costType = "FREE", costAmount = 0, dailySpinLimit = 0;
 
         if (machineId) {
-            // Machine-specific settings
             try {
-                const machine = await db.gachaMachine.findUnique({
-                    where: { id: machineId },
-                    select: { isEnabled: true, isActive: true, costType: true, costAmount: true, dailySpinLimit: true },
+                const machine = await db.query.gachaMachines.findFirst({
+                    where: eq(gachaMachines.id, machineId),
+                    columns: { isEnabled: true, isActive: true, costType: true, costAmount: true, dailySpinLimit: true },
                 });
                 if (!machine || !machine.isActive) {
                     return NextResponse.json({ success: false, message: "ตู้กาชานี้ปิดอยู่ชั่วคราว" }, { status: 400 });
@@ -63,104 +72,63 @@ export async function POST(req: Request) {
                 return NextResponse.json({ success: false, message: "ไม่พบตู้กาชา" }, { status: 404 });
             }
         } else {
-            // Global settings
-            let settings: Awaited<ReturnType<typeof db.gachaSettings.findFirst>> | null = null;
-            try {
-                settings = await db.gachaSettings.findFirst();
-            } catch {
-                settings = null;
-            }
+            const settings = await db.query.gachaSettings.findFirst().catch(() => null);
             isEnabled = settings?.isEnabled ?? true;
             costType = settings?.costType ?? "FREE";
             costAmount = Number(settings?.costAmount ?? 0);
             dailySpinLimit = settings?.dailySpinLimit ?? 0;
         }
 
-        if (!isEnabled) {
-            return NextResponse.json({ success: false, message: "ระบบกาชาปิดอยู่ชั่วคราว" }, { status: 400 });
-        }
+        if (!isEnabled) return NextResponse.json({ success: false, message: "ระบบกาชาปิดอยู่ชั่วคราว" }, { status: 400 });
 
-        // ── SPIN 1: choose Left diagonal ─────────────────────────────────────
         if (spin === 1) {
-            const user = await db.user.findUnique({
-                where: { id: authCheck.userId },
-                select: { id: true, creditBalance: true, pointBalance: true },
+            const user = await db.query.users.findFirst({
+                where: eq(users.id, authCheck.userId),
+                columns: { id: true, creditBalance: true, pointBalance: true },
             });
             if (!user) return NextResponse.json({ success: false, message: "ไม่พบผู้ใช้งาน" }, { status: 404 });
 
-            if (costType === "CREDIT" && costAmount > 0 && Number(user.creditBalance) < costAmount) {
+            if (costType === "CREDIT" && costAmount > 0 && Number(user.creditBalance) < costAmount)
                 return NextResponse.json({ success: false, message: "เครดิตไม่เพียงพอ" }, { status: 400 });
-            }
-            if (costType === "POINT" && costAmount > 0 && user.pointBalance < costAmount) {
+            if (costType === "POINT" && costAmount > 0 && (user.pointBalance ?? 0) < costAmount)
                 return NextResponse.json({ success: false, message: "พอยต์ไม่เพียงพอ" }, { status: 400 });
-            }
 
-            // Check daily limit
-            const now = new Date();
-            const { start, end } = getDayRange(now);
             if (dailySpinLimit > 0) {
-                const todayCount = await db.gachaRollLog.count({
-                    where: { userId: authCheck.userId, createdAt: { gte: start, lte: end } },
-                });
-                if (todayCount >= dailySpinLimit) {
-                    return NextResponse.json(
-                        { success: false, message: `คุณสุ่มครบ ${dailySpinLimit} ครั้ง/วันแล้ว` },
-                        { status: 400 }
-                    );
-                }
+                const { start, end } = getDayRange(new Date());
+                const [{ count: todayCount }] = await db.select({ count: count() }).from(gachaRollLogs)
+                    .where(and(eq(gachaRollLogs.userId, authCheck.userId), gte(gachaRollLogs.createdAt, start), lte(gachaRollLogs.createdAt, end)));
+                if (Number(todayCount) >= dailySpinLimit)
+                    return NextResponse.json({ success: false, message: `คุณสุ่มครบ ${dailySpinLimit} ครั้ง/วันแล้ว` }, { status: 400 });
             }
 
-            // Build grid, pick valid L
-            const allRewards = await db.gachaReward.findMany({
-                where: {
-                    isActive: true,
-                    // Use machine-specific rewards if machineId provided, otherwise global
-                    gachaMachineId: machineId ?? null,
-                    OR: [
-                        { rewardType: "PRODUCT", productId: { not: null } },
-                        {
-                            rewardType: { in: ["CREDIT", "POINT"] },
-                            rewardName: { not: null },
-                            rewardAmount: { not: null },
-                        },
-                    ],
-                },
-                include: { product: { select: { id: true, name: true, price: true, imageUrl: true, secretData: true, stockSeparator: true, isSold: true, orderId: true } } },
-            });
+            const allRewards = await fetchRewards(machineId);
             type RewardRow = (typeof allRewards)[number];
             const tieredProducts: GachaProductLite[] = allRewards
-                .filter((r: RewardRow) => (r.rewardType === "PRODUCT" ? r.product && !r.product.isSold : (r.rewardName && r.rewardAmount)))
+                .filter((r: RewardRow) => r.rewardType === "PRODUCT" ? r.product && !r.product.isSold : (r.rewardName && r.rewardAmount))
                 .map((r: RewardRow) => r.rewardType === "PRODUCT" && r.product
                     ? { id: r.product.id, name: r.product.name, price: Number(r.product.price), imageUrl: r.product.imageUrl, tier: (r.tier as GachaTier) ?? "common" }
                     : { id: `reward:${r.id}`, name: r.rewardName ?? (r.rewardType === "CREDIT" ? "เครดิต" : "พอยต์"), price: Number(r.rewardAmount ?? 0), imageUrl: r.rewardImageUrl ?? null, tier: (r.tier as GachaTier) ?? "common" }
                 );
 
-            if (tieredProducts.length === 0) {
+            if (tieredProducts.length === 0)
                 return NextResponse.json({ success: false, message: "ไม่มีรางวัลสำหรับกาชาในขณะนี้" }, { status: 400 });
-            }
 
             const tiles = buildGrid(tieredProducts);
             const validLSelectors = getValidLSelectors(tiles);
-            if (validLSelectors.length === 0) {
+            if (validLSelectors.length === 0)
                 return NextResponse.json({ success: false, message: "ไม่มีแถวซ้ายที่สุ่มได้" }, { status: 400 });
-            }
 
             const lLabel = validLSelectors[Math.floor(Math.random() * validLSelectors.length)];
-
-            // Store in encrypted cookie
             const payload = encrypt(JSON.stringify({ userId: authCheck.userId, lLabel, iat: Date.now() }));
             const cookieStore = await cookies();
             cookieStore.set(COOKIE_NAME, payload, { httpOnly: true, maxAge: COOKIE_TTL, path: "/" });
-
             return NextResponse.json({ success: true, data: { lLabel } });
         }
 
-        // ── SPIN 2: choose Right diagonal, resolve intersection ───────────────
+        // SPIN 2
         const cookieStore = await cookies();
         const rawCookie = cookieStore.get(COOKIE_NAME)?.value;
-        if (!rawCookie) {
-            return NextResponse.json({ success: false, message: "กรุณากดสุ่มครั้งที่ 1 ก่อน" }, { status: 400 });
-        }
+        if (!rawCookie) return NextResponse.json({ success: false, message: "กรุณากดสุ่มครั้งที่ 1 ก่อน" }, { status: 400 });
 
         let lLabel: string;
         try {
@@ -172,148 +140,102 @@ export async function POST(req: Request) {
             cookieStore.delete(COOKIE_NAME);
             return NextResponse.json({ success: false, message: "เซสชันสุ่มหมดอายุ กรุณาเริ่มใหม่" }, { status: 400 });
         }
-
-        // Clear cookie immediately
         cookieStore.delete(COOKIE_NAME);
 
-        // Daily limit (definitive check on spin 2)
-        const now = new Date();
-        const { start, end } = getDayRange(now);
         if (dailySpinLimit > 0) {
-            const todayCount = await db.gachaRollLog.count({
-                where: { userId: authCheck.userId, createdAt: { gte: start, lte: end } },
-            });
-            if (todayCount >= dailySpinLimit) {
-                return NextResponse.json(
-                    { success: false, message: `คุณสุ่มครบ ${dailySpinLimit} ครั้ง/วันแล้ว` },
-                    { status: 400 }
-                );
-            }
+            const { start, end } = getDayRange(new Date());
+            const [{ count: todayCount }] = await db.select({ count: count() }).from(gachaRollLogs)
+                .where(and(eq(gachaRollLogs.userId, authCheck.userId), gte(gachaRollLogs.createdAt, start), lte(gachaRollLogs.createdAt, end)));
+            if (Number(todayCount) >= dailySpinLimit)
+                return NextResponse.json({ success: false, message: `คุณสุ่มครบ ${dailySpinLimit} ครั้ง/วันแล้ว` }, { status: 400 });
         }
 
-        const user = await db.user.findUnique({
-            where: { id: authCheck.userId },
-            select: { id: true, creditBalance: true, pointBalance: true },
+        const user = await db.query.users.findFirst({
+            where: eq(users.id, authCheck.userId),
+            columns: { id: true, creditBalance: true, pointBalance: true },
         });
         if (!user) return NextResponse.json({ success: false, message: "ไม่พบผู้ใช้งาน" }, { status: 404 });
 
-        if (costType === "CREDIT" && costAmount > 0 && Number(user.creditBalance) < costAmount) {
+        if (costType === "CREDIT" && costAmount > 0 && Number(user.creditBalance) < costAmount)
             return NextResponse.json({ success: false, message: "เครดิตไม่เพียงพอ" }, { status: 400 });
-        }
-        if (costType === "POINT" && costAmount > 0 && user.pointBalance < costAmount) {
+        if (costType === "POINT" && costAmount > 0 && (user.pointBalance ?? 0) < costAmount)
             return NextResponse.json({ success: false, message: "พอยต์ไม่เพียงพอ" }, { status: 400 });
-        }
 
-        // Rebuild grid
-        const allRewards = await db.gachaReward.findMany({
-            where: {
-                isActive: true,
-                // Use machine-specific rewards if machineId provided, otherwise global
-                gachaMachineId: machineId ?? null,
-                OR: [
-                    { rewardType: "PRODUCT", productId: { not: null } },
-                    {
-                        rewardType: { in: ["CREDIT", "POINT"] },
-                        rewardName: { not: null },
-                        rewardAmount: { not: null },
-                    },
-                ],
-            },
-            include: { product: { select: { id: true, name: true, price: true, imageUrl: true, secretData: true, stockSeparator: true, isSold: true, orderId: true } } },
-        });
+        const allRewards = await fetchRewards(machineId);
         type RewardRow = (typeof allRewards)[number];
         const tieredProducts: GachaProductLite[] = allRewards
-            .filter((r: RewardRow) => (r.rewardType === "PRODUCT" ? r.product && !r.product.isSold : (r.rewardName && r.rewardAmount)))
+            .filter((r: RewardRow) => r.rewardType === "PRODUCT" ? r.product && !r.product.isSold : (r.rewardName && r.rewardAmount))
             .map((r: RewardRow) => r.rewardType === "PRODUCT" && r.product
                 ? { id: r.product.id, name: r.product.name, price: Number(r.product.price), imageUrl: r.product.imageUrl, tier: (r.tier as GachaTier) ?? "common" }
                 : { id: `reward:${r.id}`, name: r.rewardName ?? (r.rewardType === "CREDIT" ? "เครดิต" : "พอยต์"), price: Number(r.rewardAmount ?? 0), imageUrl: r.rewardImageUrl ?? null, tier: (r.tier as GachaTier) ?? "common" }
             );
 
-        if (tieredProducts.length === 0) {
-            return NextResponse.json({ success: false, message: "ไม่มีรางวัลสำหรับกาชาในขณะนี้" }, { status: 400 });
-        }
+        if (tieredProducts.length === 0) return NextResponse.json({ success: false, message: "ไม่มีรางวัลสำหรับกาชาในขณะนี้" }, { status: 400 });
 
         const tiles = buildGrid(tieredProducts);
-
-        // Pick valid R for this L
         const validRSelectors = getValidRSelectorsFor(tiles, lLabel);
-        if (validRSelectors.length === 0) {
-            return NextResponse.json({ success: false, message: "ไม่มีแถวขวาที่สุ่มได้" }, { status: 400 });
-        }
+        if (validRSelectors.length === 0) return NextResponse.json({ success: false, message: "ไม่มีแถวขวาที่สุ่มได้" }, { status: 400 });
+
         const rLabel = validRSelectors[Math.floor(Math.random() * validRSelectors.length)];
         const selectorLabel = `${lLabel}+${rLabel}`;
-
-        // Resolve intersection tile
         const intersectionTile = getIntersectionTile(tiles, lLabel, rLabel);
-        if (!intersectionTile?.product) {
-            return NextResponse.json({ success: false, message: "ไม่พบรางวัลที่จุดตัด กรุณาสุ่มใหม่" }, { status: 400 });
-        }
+        if (!intersectionTile?.product) return NextResponse.json({ success: false, message: "ไม่พบรางวัลที่จุดตัด กรุณาสุ่มใหม่" }, { status: 400 });
 
         const chosenId = intersectionTile.product.id;
         const rewardMeta = tieredProducts.find((p) => p.id === chosenId);
         const tier: GachaTier = rewardMeta?.tier ?? "common";
 
-        // Currency reward path
         const isCurrencyReward = chosenId.startsWith("reward:");
         const rewardRowId = isCurrencyReward ? chosenId.replace("reward:", "") : null;
-        const chosenRewardRow: RewardRow | undefined = rewardRowId
-            ? allRewards.find((r: RewardRow) => r.id === rewardRowId)
-            : undefined;
+        const chosenRewardRow = rewardRowId ? allRewards.find((r: RewardRow) => r.id === rewardRowId) : undefined;
 
         if (isCurrencyReward) {
             const rewardType = chosenRewardRow?.rewardType as "CREDIT" | "POINT";
             const rewardAmount = Number(chosenRewardRow?.rewardAmount ?? 0);
-
-            await db.$transaction(async (tx) => {
-                if (costType === "CREDIT" && costAmount > 0) await tx.user.update({ where: { id: user.id }, data: { creditBalance: { decrement: costAmount } } });
-                if (costType === "POINT" && costAmount > 0) await tx.user.update({ where: { id: user.id }, data: { pointBalance: { decrement: costAmount } } });
-                if (rewardType === "CREDIT" && rewardAmount > 0) await tx.user.update({ where: { id: user.id }, data: { creditBalance: { increment: rewardAmount } } });
-                if (rewardType === "POINT" && rewardAmount > 0) await tx.user.update({ where: { id: user.id }, data: { pointBalance: { increment: rewardAmount } } });
-                await tx.gachaRollLog.create({ data: { userId: user.id, productId: null, rewardName: rewardMeta?.name ?? null, rewardImageUrl: rewardMeta?.imageUrl ?? null, tier, selectorLabel, costType, costAmount } });
+            await db.transaction(async (tx) => {
+                if (costType === "CREDIT" && costAmount > 0) await tx.update(users).set({ creditBalance: sql`creditBalance - ${costAmount}` }).where(eq(users.id, user.id));
+                if (costType === "POINT" && costAmount > 0) await tx.update(users).set({ pointBalance: sql`pointBalance - ${costAmount}` }).where(eq(users.id, user.id));
+                if (rewardType === "CREDIT" && rewardAmount > 0) await tx.update(users).set({ creditBalance: sql`creditBalance + ${rewardAmount}` }).where(eq(users.id, user.id));
+                if (rewardType === "POINT" && rewardAmount > 0) await tx.update(users).set({ pointBalance: sql`pointBalance + ${rewardAmount}` }).where(eq(users.id, user.id));
+                await tx.insert(gachaRollLogs).values({
+                    id: crypto.randomUUID(), userId: user.id, productId: null, rewardName: rewardMeta?.name ?? null,
+                    rewardImageUrl: rewardMeta?.imageUrl ?? null, tier, selectorLabel, costType, costAmount: String(costAmount),
+                    gachaMachineId: machineId,
+                });
             });
-
             return NextResponse.json({
                 success: true,
-                data: {
-                    lLabel, rLabel, selectorLabel, tier, orderId: null,
-                    product: { id: chosenId, name: rewardMeta?.name ?? "รางวัล", price: rewardMeta?.price ?? 0, imageUrl: rewardMeta?.imageUrl ?? null, tier, rewardType, rewardAmount },
-                },
+                data: { lLabel, rLabel, selectorLabel, tier, orderId: null, product: { id: chosenId, name: rewardMeta?.name ?? "รางวัล", price: rewardMeta?.price ?? 0, imageUrl: rewardMeta?.imageUrl ?? null, tier, rewardType, rewardAmount } },
             });
         }
 
-        // Product reward path
-        const result = await db.$transaction(async (tx) => {
-            const product = await tx.product.findUnique({
-                where: { id: chosenId },
-                select: { id: true, name: true, price: true, imageUrl: true, isSold: true, orderId: true, secretData: true, stockSeparator: true },
+        // Product reward
+        const result = await db.transaction(async (tx) => {
+            const product = await tx.query.products.findFirst({
+                where: eq(products.id, chosenId),
+                columns: { id: true, name: true, price: true, imageUrl: true, isSold: true, orderId: true, secretData: true, stockSeparator: true },
             });
-
             if (!product || product.isSold || product.orderId) throw new Error("รางวัลนี้ถูกใช้ไปแล้ว กรุณาสุ่มใหม่");
 
-            const decrypted = decrypt(product.secretData || "");
-            const [taken, remainingData] = takeFirstStock(decrypted, product.stockSeparator || "newline");
+            const [taken, remainingData] = takeFirstStock(decrypt(product.secretData || ""), product.stockSeparator || "newline");
             if (!taken) throw new Error("สต็อกของรางวัลหมดแล้ว");
 
             const isLastStock = !remainingData || remainingData.trim().length === 0;
-            const order = await tx.order.create({ data: { userId: user.id, totalPrice: costAmount, status: "COMPLETED", givenData: encrypt(taken) } });
+            const orderId = crypto.randomUUID();
+            await tx.insert(orders).values({ id: orderId, userId: user.id, totalPrice: String(costAmount), status: "COMPLETED", givenData: encrypt(taken) });
 
-            if (costType === "CREDIT" && costAmount > 0) await tx.user.update({ where: { id: user.id }, data: { creditBalance: { decrement: costAmount } } });
-            if (costType === "POINT" && costAmount > 0) await tx.user.update({ where: { id: user.id }, data: { pointBalance: { decrement: costAmount } } });
-
-            await tx.product.update({
-                where: { id: product.id },
-                data: { secretData: isLastStock ? encrypt(taken) : encrypt(remainingData), isSold: isLastStock, orderId: order.id },
+            if (costType === "CREDIT" && costAmount > 0) await tx.update(users).set({ creditBalance: sql`creditBalance - ${costAmount}` }).where(eq(users.id, user.id));
+            if (costType === "POINT" && costAmount > 0) await tx.update(users).set({ pointBalance: sql`pointBalance - ${costAmount}` }).where(eq(users.id, user.id));
+            await tx.update(products).set({ secretData: isLastStock ? encrypt(taken) : encrypt(remainingData), isSold: isLastStock, orderId }).where(eq(products.id, product.id));
+            await tx.insert(gachaRollLogs).values({
+                id: crypto.randomUUID(), userId: user.id, productId: product.id, rewardName: product.name,
+                rewardImageUrl: product.imageUrl ?? null, tier, selectorLabel, costType, costAmount: String(costAmount),
+                gachaMachineId: machineId,
             });
-
-            await tx.gachaRollLog.create({ data: { userId: user.id, productId: product.id, rewardName: product.name, rewardImageUrl: product.imageUrl ?? null, tier, selectorLabel, costType, costAmount } });
-
-            return { orderId: order.id, product: { id: product.id, name: product.name, price: Number(product.price), imageUrl: product.imageUrl, tier } };
+            return { orderId, product: { id: product.id, name: product.name, price: Number(product.price), imageUrl: product.imageUrl, tier } };
         });
 
-        return NextResponse.json({
-            success: true,
-            data: { lLabel, rLabel, selectorLabel, tier, orderId: result.orderId, product: result.product },
-        });
+        return NextResponse.json({ success: true, data: { lLabel, rLabel, selectorLabel, tier, orderId: result.orderId, product: result.product } });
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : "Unknown error";

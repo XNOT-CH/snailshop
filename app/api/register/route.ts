@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/db";
+import { db, users } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { checkRegisterRateLimit, getClientIp } from "@/lib/rateLimit";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
@@ -42,8 +43,8 @@ export async function POST(request: NextRequest) {
         }
 
         // Check if username already exists
-        const existingUser = await db.user.findUnique({
-            where: { username },
+        const existingUser = await db.query.users.findFirst({
+            where: eq(users.username, username),
         });
 
         if (existingUser) {
@@ -57,14 +58,15 @@ export async function POST(request: NextRequest) {
         const hashedPassword = await bcrypt.hash(password, 10);
 
         // Create user
-        const user = await db.user.create({
-            data: {
-                username,
-                password: hashedPassword,
-                role: "USER",
-                creditBalance: 100, // Welcome bonus
-            },
+        const newId = crypto.randomUUID();
+        await db.insert(users).values({
+            id: newId,
+            username,
+            password: hashedPassword,
+            role: "USER",
+            creditBalance: "100", // Welcome bonus
         });
+        const user = { id: newId, username };
 
         // Audit log for registration
         await auditFromRequest(request, {
