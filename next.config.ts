@@ -27,9 +27,15 @@ const nextConfig: NextConfig = {
       "recharts",
     ],
   },
+  allowedDevOrigins: ['127.0.0.1'],
   images: {
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
+    formats: ['image/avif', 'image/webp'],   // ✅ serve avif/webp ก่อน
+    minimumCacheTTL: 3600,                    // ✅ cache ภาพ 1 ชั่วโมง
+    qualities: [70, 75],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     remotePatterns: [
       {
         protocol: "https",

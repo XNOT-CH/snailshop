@@ -2,8 +2,12 @@ import { NextResponse } from "next/server";
 import { db, gachaSettings } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
+import { validateBody } from "@/lib/validations/validate";
+import { gachaSettingsSchema } from "@/lib/validations/gacha";
 
 export async function GET() {
+    const authCheck = await isAdmin();
+    if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     try {
         let settings = await db.query.gachaSettings.findFirst();
         if (!settings) {
@@ -20,11 +24,16 @@ export async function PUT(request: Request) {
     const authCheck = await isAdmin();
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     try {
-        const body = await request.json();
+        const result = await validateBody(request, gachaSettingsSchema);
+        if ("error" in result) return result.error;
+        const body = result.data;
+
         const updateData = {
-            isEnabled: body.isEnabled ?? true, costType: body.costType ?? "FREE",
-            costAmount: String(body.costAmount ?? 0), dailySpinLimit: body.dailySpinLimit ?? 0,
-            tierMode: body.tierMode ?? "PRICE",
+            isEnabled: body.isEnabled,
+            costType: body.costType,
+            costAmount: String(body.costAmount),
+            dailySpinLimit: body.dailySpinLimit,
+            tierMode: body.tierMode,
         };
         const existing = await db.query.gachaSettings.findFirst();
         if (existing) {

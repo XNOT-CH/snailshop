@@ -1,21 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { z } from "zod";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
+import { isAdmin } from "@/lib/auth";
+
+// Admin user update: เลือกส่งได้อย่างน้อย 1 ฟิลด์
+const adminUserUpdateSchema = z.object({
+    creditBalance: z.coerce.number().min(0, "เครดิตต้องไม่ติดลบ").optional(),
+    totalTopup: z.coerce.number().min(0, "ยอดเติมสะสมต้องไม่ติดลบ").optional(),
+    pointBalance: z.coerce.number().int().min(0, "พอยต์ต้องเป็นจำนวนเต็มที่ไม่ติดลบ").optional(),
+    lifetimePoints: z.coerce.number().int().min(0, "พอยต์สะสมต้องเป็นจำนวนเต็มที่ไม่ติดลบ").optional(),
+    role: z.string().trim().min(1).optional(),
+}).refine(
+    (data) => Object.values(data).some((v) => v !== undefined),
+    { message: "ต้องระบุข้อมูลที่ต้องการแก้ไขอย่างน้อย 1 ฟิลด์" }
+);
 
 export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const authCheck = await isAdmin();
+    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { id } = await params;
-        const body = await request.json();
-        const { creditBalance, totalTopup, pointBalance, lifetimePoints, role } = body;
 
-        if (creditBalance === undefined && totalTopup === undefined &&
-            pointBalance === undefined && lifetimePoints === undefined && role === undefined) {
-            return NextResponse.json({ error: "ต้องระบุข้อมูลที่ต้องการแก้ไขอย่างน้อย 1 ฟิลด์" }, { status: 400 });
+        let raw: unknown;
+        try { raw = await request.json(); } catch {
+            return NextResponse.json({ error: "ข้อมูลไม่ถูกต้อง (invalid JSON)" }, { status: 400 });
         }
+        const parsed = adminUserUpdateSchema.safeParse(raw);
+        if (!parsed.success) {
+            return NextResponse.json(
+                { error: parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง", errors: parsed.error.flatten().fieldErrors },
+                { status: 400 }
+            );
+        }
+        const { creditBalance, totalTopup, pointBalance, lifetimePoints, role } = parsed.data;
 
         const existingUser = await db.query.users.findFirst({ where: eq(users.id, id) });
         if (!existingUser) return NextResponse.json({ error: "ไม่พบผู้ใช้" }, { status: 404 });
@@ -24,32 +46,24 @@ export async function PATCH(
         const changes: { field: string; old: string; new: string }[] = [];
 
         if (creditBalance !== undefined) {
-            const value = parseFloat(creditBalance);
-            if (isNaN(value) || value < 0) return NextResponse.json({ error: "เครดิตคงเหลือต้องเป็นตัวเลขที่ไม่ติดลบ" }, { status: 400 });
-            updateData.creditBalance = String(value);
-            changes.push({ field: "creditBalance", old: String(existingUser.creditBalance), new: String(value) });
+            updateData.creditBalance = String(creditBalance);
+            changes.push({ field: "creditBalance", old: String(existingUser.creditBalance), new: String(creditBalance) });
         }
         if (totalTopup !== undefined) {
-            const value = parseFloat(totalTopup);
-            if (isNaN(value) || value < 0) return NextResponse.json({ error: "ยอดเติมสะสมต้องเป็นตัวเลขที่ไม่ติดลบ" }, { status: 400 });
-            updateData.totalTopup = String(value);
-            changes.push({ field: "totalTopup", old: String(existingUser.totalTopup), new: String(value) });
+            updateData.totalTopup = String(totalTopup);
+            changes.push({ field: "totalTopup", old: String(existingUser.totalTopup), new: String(totalTopup) });
         }
         if (pointBalance !== undefined) {
-            const value = parseInt(pointBalance);
-            if (isNaN(value) || value < 0) return NextResponse.json({ error: "พอยต์คงเหลือต้องเป็นจำนวนเต็มที่ไม่ติดลบ" }, { status: 400 });
-            updateData.pointBalance = value;
-            changes.push({ field: "pointBalance", old: String(existingUser.pointBalance), new: String(value) });
+            updateData.pointBalance = pointBalance;
+            changes.push({ field: "pointBalance", old: String(existingUser.pointBalance), new: String(pointBalance) });
         }
         if (lifetimePoints !== undefined) {
-            const value = parseInt(lifetimePoints);
-            if (isNaN(value) || value < 0) return NextResponse.json({ error: "พอยต์สะสมต้องเป็นจำนวนเต็มที่ไม่ติดลบ" }, { status: 400 });
-            updateData.lifetimePoints = value;
-            changes.push({ field: "lifetimePoints", old: String(existingUser.lifetimePoints), new: String(value) });
+            updateData.lifetimePoints = lifetimePoints;
+            changes.push({ field: "lifetimePoints", old: String(existingUser.lifetimePoints), new: String(lifetimePoints) });
         }
-        if (role !== undefined && typeof role === "string" && role.trim()) {
-            updateData.role = role.trim().toUpperCase();
-            changes.push({ field: "role", old: existingUser.role, new: role.trim().toUpperCase() });
+        if (role !== undefined) {
+            updateData.role = role.toUpperCase();
+            changes.push({ field: "role", old: existingUser.role, new: role.toUpperCase() });
         }
 
         await db.update(users).set(updateData as any).where(eq(users.id, id));

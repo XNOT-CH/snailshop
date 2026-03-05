@@ -11,41 +11,31 @@ import {
     sleep,
 } from "@/lib/rateLimit";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
+import { parseBody } from "@/lib/api";
+import { loginSchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
     try {
-        const { username, password } = await request.json();
-        const clientIp = getClientIp(request);
+        // Validate inputs with Zod (before rate limit so we get clean username)
+        const parsed = await parseBody(request, loginSchema);
+        if ("error" in parsed) return parsed.error;
+        const { username, password } = parsed.data;
 
-        // Use combined identifier (IP + username) for rate limiting
-        const identifier = `${clientIp}:${username || "unknown"}`;
+        const clientIp = getClientIp(request);
+        const identifier = `${clientIp}:${username}`;
 
         // Check rate limit before processing
         const rateLimit = checkLoginRateLimit(identifier);
         if (rateLimit.blocked) {
             return NextResponse.json(
-                {
-                    success: false,
-                    message: rateLimit.message,
-                    lockoutRemaining: rateLimit.lockoutRemaining,
-                },
+                { success: false, message: rateLimit.message, lockoutRemaining: rateLimit.lockoutRemaining },
                 { status: 429 }
             );
         }
 
-        // Apply progressive delay based on previous failed attempts
+        // Apply progressive delay
         const delay = getProgressiveDelay(identifier);
-        if (delay > 0) {
-            await sleep(delay);
-        }
-
-        // Validate inputs
-        if (!username || !password) {
-            return NextResponse.json(
-                { success: false, message: "กรุณากรอกชื่อผู้ใช้และรหัสผ่าน" },
-                { status: 400 }
-            );
-        }
+        if (delay > 0) await sleep(delay);
 
         // Find user by username
         const user = await db.query.users.findFirst({

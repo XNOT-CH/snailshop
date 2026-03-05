@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
 import { db, gachaMachines } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { validateBody } from "@/lib/validations/validate";
+import { gachaMachineSchema } from "@/lib/validations/gacha";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -21,12 +23,11 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     const auth = await isAdmin();
     if (!auth.success) return NextResponse.json({ success: false }, { status: 401 });
     const { id } = await params;
-    const body = await req.json() as {
-        name?: string; imageUrl?: string; categoryId?: string | null;
-        costType?: string; costAmount?: number; dailySpinLimit?: number;
-        tierMode?: string; isActive?: boolean; isEnabled?: boolean; sortOrder?: number;
-        description?: string; gameType?: string;
-    };
+
+    const result = await validateBody(req, gachaMachineSchema.partial());
+    if ("error" in result) return result.error;
+    const body = result.data;
+
     const set: Record<string, unknown> = {};
     for (const [k, v] of Object.entries(body)) {
         if (v !== undefined) set[k] = k === "costAmount" ? String(v) : v;

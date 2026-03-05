@@ -4,6 +4,8 @@ import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { checkRegisterRateLimit, getClientIp } from "@/lib/rateLimit";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
+import { parseBody } from "@/lib/api";
+import { registerSchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
     try {
@@ -18,29 +20,10 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { username, password } = await request.json();
-
-        // Validate inputs
-        if (!username || !password) {
-            return NextResponse.json(
-                { success: false, message: "กรุณากรอกชื่อผู้ใช้และรหัสผ่าน" },
-                { status: 400 }
-            );
-        }
-
-        if (username.length < 3) {
-            return NextResponse.json(
-                { success: false, message: "Username must be at least 3 characters" },
-                { status: 400 }
-            );
-        }
-
-        if (password.length < 6) {
-            return NextResponse.json(
-                { success: false, message: "Password must be at least 6 characters" },
-                { status: 400 }
-            );
-        }
+        // Validate inputs with Zod
+        const parsed = await parseBody(request, registerSchema);
+        if ("error" in parsed) return parsed.error;
+        const { username, password } = parsed.data;
 
         // Check if username already exists
         const existingUser = await db.query.users.findFirst({
@@ -49,7 +32,7 @@ export async function POST(request: NextRequest) {
 
         if (existingUser) {
             return NextResponse.json(
-                { success: false, message: "Username already taken" },
+                { success: false, message: "ชื่อผู้ใช้นี้ถูกใช้งานแล้ว" },
                 { status: 400 }
             );
         }
@@ -82,7 +65,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            message: "Account created successfully! You can now login.",
+            message: "สมัครสมาชิกสำเร็จ! เข้าสู่ระบบได้เลย",
             userId: user.id,
         });
     } catch (error) {

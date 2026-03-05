@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
 import { db, gachaMachines, gachaRewards } from "@/lib/db";
-import { eq, asc, count } from "drizzle-orm";
+import { eq, asc } from "drizzle-orm";
+import { validateBody } from "@/lib/validations/validate";
+import { gachaMachineSchema } from "@/lib/validations/gacha";
 
 export async function GET() {
     const auth = await isAdmin();
@@ -17,17 +19,24 @@ export async function GET() {
 export async function POST(req: Request) {
     const auth = await isAdmin();
     if (!auth.success) return NextResponse.json({ success: false }, { status: 401 });
-    const body = await req.json() as {
-        name: string; description?: string; imageUrl?: string; categoryId?: string;
-        costType?: string; costAmount?: number; dailySpinLimit?: number;
-        gameType?: string; tierMode?: string; sortOrder?: number;
-    };
+
+    const result = await validateBody(req, gachaMachineSchema);
+    if ("error" in result) return result.error;
+    const body = result.data;
+
     const newId = crypto.randomUUID();
     await db.insert(gachaMachines).values({
-        id: newId, name: body.name, description: body.description ?? null, imageUrl: body.imageUrl ?? null,
-        gameType: body.gameType ?? "SPIN_X", categoryId: body.categoryId ?? null,
-        costType: body.costType ?? "FREE", costAmount: String(body.costAmount ?? 0),
-        dailySpinLimit: body.dailySpinLimit ?? 0, tierMode: body.tierMode ?? "PRICE", sortOrder: body.sortOrder ?? 0,
+        id: newId,
+        name: body.name,
+        description: body.description || null,
+        imageUrl: body.imageUrl || null,
+        gameType: body.gameType,
+        categoryId: body.categoryId ?? null,
+        costType: body.costType,
+        costAmount: String(body.costAmount),
+        dailySpinLimit: body.dailySpinLimit,
+        tierMode: body.tierMode,
+        sortOrder: body.sortOrder,
     });
     const machine = await db.query.gachaMachines.findFirst({ where: eq(gachaMachines.id, newId) });
     return NextResponse.json({ success: true, data: machine });

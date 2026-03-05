@@ -2,8 +2,11 @@ import { NextResponse } from "next/server";
 import { getAuditLogs, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { db, auditLogs } from "@/lib/db";
 import { and, eq, gte, lte, count } from "drizzle-orm";
+import { isAdmin } from "@/lib/auth";
 
 export async function GET(request: Request) {
+    const authCheck = await isAdmin();
+    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get("userId") || undefined;

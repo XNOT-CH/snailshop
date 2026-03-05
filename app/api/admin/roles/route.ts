@@ -1,11 +1,14 @@
-"use server";
-
 import { NextResponse } from "next/server";
 import { db, roles } from "@/lib/db";
 import { eq, asc } from "drizzle-orm";
+import { isAdmin } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
+import { validateBody } from "@/lib/validations/validate";
+import { roleSchema } from "@/lib/validations/content";
 
 export async function GET() {
+    const authCheck = await isAdmin();
+    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const roleList = await db.query.roles.findMany({ orderBy: (t, { asc }) => [asc(t.sortOrder), asc(t.createdAt)] });
         return NextResponse.json(roleList);
@@ -16,20 +19,23 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+    const authCheck = await isAdmin();
+    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
-        const body = await request.json();
-        const { name, code, iconUrl, description, permissions, sortOrder } = body;
-        if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
+        const result = await validateBody(request, roleSchema);
+        if ("error" in result) return result.error;
+        const { name, description, permissions } = result.data;
 
-        const roleCode = code ? code.toUpperCase() : name.toUpperCase().replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, "");
+        // Derive code from name
+        const roleCode = name.toUpperCase().replace(/\s+/g, "_").replace(/[^A-Z0-9_]/g, "");
         const existing = await db.query.roles.findFirst({ where: eq(roles.code, roleCode) });
         if (existing) return NextResponse.json({ error: "Role code already exists" }, { status: 400 });
 
         const newId = crypto.randomUUID();
         await db.insert(roles).values({
-            id: newId, name, code: roleCode, iconUrl: iconUrl || null, description: description || null,
-            permissions: permissions ? JSON.stringify(permissions) : null,
-            sortOrder: sortOrder || 0, isSystem: false,
+            id: newId, name, code: roleCode, description: description || null,
+            permissions: permissions.length > 0 ? JSON.stringify(permissions) : null,
+            sortOrder: 0, isSystem: false,
         });
         const role = await db.query.roles.findFirst({ where: eq(roles.id, newId) });
 

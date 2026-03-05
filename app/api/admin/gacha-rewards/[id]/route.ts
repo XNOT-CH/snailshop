@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db, gachaRewards } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
+import { validateBody } from "@/lib/validations/validate";
+import { gachaRewardSchema } from "@/lib/validations/gacha";
 
 interface RouteParams { params: Promise<{ id: string }> }
 
@@ -10,7 +12,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     try {
         const { id } = await params;
-        const body = await request.json();
+        const result = await validateBody(request, gachaRewardSchema.partial());
+        if ("error" in result) return result.error;
+        const body = result.data;
+
         const updateData: Record<string, unknown> = {};
         if (body.tier !== undefined) updateData.tier = body.tier;
         if (body.isActive !== undefined) updateData.isActive = body.isActive;

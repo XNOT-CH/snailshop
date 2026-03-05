@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { db, siteSettings } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
+import { validateBody } from "@/lib/validations/validate";
+import { siteSettingsSchema } from "@/lib/validations/settings";
 
 export async function GET() {
+    const authCheck = await isAdmin();
+    if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     try {
         let settings = await db.query.siteSettings.findFirst();
 
@@ -40,25 +44,17 @@ export async function PUT(request: Request) {
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
 
     try {
-        const body = await request.json();
+        const result = await validateBody(request, siteSettingsSchema.partial());
+        if ("error" in result) return result.error;
+        const body = result.data;
+
         const existing = await db.query.siteSettings.findFirst();
-
-        const updateData: Record<string, unknown> = {
-            heroTitle: body.heroTitle || "GameStore",
-            heroDescription: body.heroDescription || "Game ID Marketplace",
-        };
-        const optionalFields = ["announcement", "bannerImage1", "bannerTitle1", "bannerSubtitle1", "bannerImage2", "bannerTitle2",
-            "bannerSubtitle2", "bannerImage3", "bannerTitle3", "bannerSubtitle3", "logoUrl", "backgroundImage", "showAllProducts"];
-        for (const field of optionalFields) {
-            if (body[field] !== undefined) updateData[field] = body[field];
-        }
-
         if (existing) {
-            await db.update(siteSettings).set(updateData as any).where(
+            await db.update(siteSettings).set(body as any).where(
                 (await import("drizzle-orm")).eq(siteSettings.id, existing.id)
             );
         } else {
-            await db.insert(siteSettings).values({ id: crypto.randomUUID(), ...updateData } as any);
+            await db.insert(siteSettings).values({ id: crypto.randomUUID(), ...body } as any);
         }
 
         const updated = await db.query.siteSettings.findFirst();

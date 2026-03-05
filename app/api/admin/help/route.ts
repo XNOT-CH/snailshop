@@ -1,16 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, users, helpArticles } from "@/lib/db";
+import { db, helpArticles } from "@/lib/db";
 import { eq, asc } from "drizzle-orm";
-import { cookies } from "next/headers";
+import { isAdmin } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
-
-async function isAdminCheck() {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
-    if (!userId) return false;
-    const user = await db.query.users.findFirst({ where: eq(users.id, userId), columns: { role: true } });
-    return user?.role === "ADMIN";
-}
+import { validateBody } from "@/lib/validations/validate";
+import { helpItemSchema } from "@/lib/validations/content";
 
 export async function GET() {
     try {
@@ -24,15 +18,24 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-    if (!(await isAdminCheck())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const authCheck = await isAdmin();
+    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
-        const body = await request.json();
-        const { question, answer, category } = body;
-        if (!question || !answer) return NextResponse.json({ error: "Question and answer are required" }, { status: 400 });
+        const result = await validateBody(request, helpItemSchema);
+        if ("error" in result) return result.error;
+        const { title, content, category, sortOrder, isActive } = result.data;
+
         const newId = crypto.randomUUID();
-        await db.insert(helpArticles).values({ id: newId, question, answer, category: category || "general" });
+        await db.insert(helpArticles).values({
+            id: newId,
+            question: title,
+            answer: content,
+            category: category || "general",
+            sortOrder,
+            isActive,
+        });
         const article = await db.query.helpArticles.findFirst({ where: eq(helpArticles.id, newId) });
-        await auditFromRequest(request, { action: AUDIT_ACTIONS.HELP_CREATE, resource: "HelpArticle", resourceId: newId, resourceName: question, details: { resourceName: question, category: category || "general" } });
+        await auditFromRequest(request, { action: AUDIT_ACTIONS.HELP_CREATE, resource: "HelpArticle", resourceId: newId, resourceName: title, details: { resourceName: title, category: category || "general" } });
         return NextResponse.json(article);
     } catch {
         return NextResponse.json({ error: "Failed to create article" }, { status: 500 });

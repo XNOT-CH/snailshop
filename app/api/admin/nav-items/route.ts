@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, navItems } from "@/lib/db";
 import { asc, max, count } from "drizzle-orm";
+import { isAdmin } from "@/lib/auth";
+import { validateBody } from "@/lib/validations/validate";
+import { navItemSchema } from "@/lib/validations/content";
 
 const DEFAULT_NAV_ITEMS = [
     { label: "หน้าแรก", href: "/", icon: "home", sortOrder: 0 },
@@ -24,15 +27,17 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+    const authCheck = await isAdmin();
+    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
-        const body = await request.json();
-        const { label, href, icon } = body;
-        if (!label || !href) return NextResponse.json({ error: "Label and href are required" }, { status: 400 });
+        const result = await validateBody(request, navItemSchema);
+        if ("error" in result) return result.error;
+        const body = result.data;
 
         const [{ maxSort }] = await db.select({ maxSort: max(navItems.sortOrder) }).from(navItems);
-        const nextSortOrder = (maxSort ?? -1) + 1;
+        const nextSortOrder = body.sortOrder ?? (maxSort ?? -1) + 1;
         const newId = crypto.randomUUID();
-        await db.insert(navItems).values({ id: newId, label, href, icon: icon || null, sortOrder: nextSortOrder });
+        await db.insert(navItems).values({ id: newId, label: body.label, href: body.href, icon: body.icon || null, sortOrder: nextSortOrder });
         const item = await db.query.navItems.findFirst({ where: (t, { eq }) => eq(t.id, newId) });
         return NextResponse.json(item, { status: 201 });
     } catch (error) {

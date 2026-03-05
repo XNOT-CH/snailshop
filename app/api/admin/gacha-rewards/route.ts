@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { db, gachaRewards } from "@/lib/db";
 import { eq, desc } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
+import { validateBody } from "@/lib/validations/validate";
+import { gachaRewardSchema } from "@/lib/validations/gacha";
 
 export async function GET(request: Request) {
     const authCheck = await isAdmin();
@@ -36,21 +38,27 @@ export async function POST(request: Request) {
     const authCheck = await isAdmin();
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     try {
-        const body = await request.json();
-        const rewardType = (body.rewardType as string) ?? "PRODUCT";
-        const tier = (body.tier as string) ?? "common";
-        const isActive = (body.isActive as boolean) ?? true;
-        const gachaMachineId = (body.gachaMachineId as string | undefined) ?? null;
-        const probability = body.probability !== undefined ? Number(body.probability) : 1;
-        const newId = crypto.randomUUID();
+        const result = await validateBody(request, gachaRewardSchema);
+        if ("error" in result) return result.error;
+        const body = result.data;
 
-        if (rewardType === "PRODUCT") {
+        const newId = crypto.randomUUID();
+        if (body.rewardType === "PRODUCT") {
             if (!body.productId) return NextResponse.json({ success: false, message: "กรุณาเลือกสินค้า" }, { status: 400 });
-            await db.insert(gachaRewards).values({ id: newId, productId: body.productId, tier, isActive, rewardType: "PRODUCT", gachaMachineId, probability: String(probability) });
+            await db.insert(gachaRewards).values({
+                id: newId, productId: body.productId, tier: body.tier, isActive: body.isActive,
+                rewardType: "PRODUCT", gachaMachineId: body.gachaMachineId ?? null,
+                probability: String(body.probability),
+            });
         } else {
             if (!body.rewardAmount || body.rewardAmount <= 0) return NextResponse.json({ success: false, message: "กรุณากรอกจำนวนรางวัล" }, { status: 400 });
             if (!body.rewardName) return NextResponse.json({ success: false, message: "กรุณากรอกชื่อรางวัล" }, { status: 400 });
-            await db.insert(gachaRewards).values({ id: newId, rewardType, rewardName: body.rewardName, rewardAmount: String(body.rewardAmount), rewardImageUrl: body.rewardImageUrl ?? null, tier, isActive, gachaMachineId, probability: String(probability) });
+            await db.insert(gachaRewards).values({
+                id: newId, rewardType: body.rewardType, rewardName: body.rewardName,
+                rewardAmount: String(body.rewardAmount), rewardImageUrl: body.rewardImageUrl || null,
+                tier: body.tier, isActive: body.isActive, gachaMachineId: body.gachaMachineId ?? null,
+                probability: String(body.probability),
+            });
         }
         const created = await db.query.gachaRewards.findFirst({ where: eq(gachaRewards.id, newId) });
         return NextResponse.json({ success: true, data: created });

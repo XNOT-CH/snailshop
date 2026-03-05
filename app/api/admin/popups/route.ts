@@ -1,12 +1,15 @@
-"use server";
-
 import { NextResponse } from "next/server";
 import { db, announcementPopups } from "@/lib/db";
 import { eq, asc, desc } from "drizzle-orm";
+import { isAdmin } from "@/lib/auth";
 import { invalidatePopupCaches } from "@/lib/cache";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
+import { validateBody } from "@/lib/validations/validate";
+import { popupSchema } from "@/lib/validations/content";
 
 export async function GET(request: Request) {
+    const authCheck = await isAdmin();
+    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { searchParams } = new URL(request.url);
         const activeOnly = searchParams.get("active") === "true";
@@ -21,12 +24,18 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+    const authCheck = await isAdmin();
+    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
-        const body = await request.json();
-        const { title, imageUrl, linkUrl, sortOrder, isActive, dismissOption } = body;
-        if (!imageUrl) return NextResponse.json({ error: "Image URL is required" }, { status: 400 });
+        const result = await validateBody(request, popupSchema);
+        if ("error" in result) return result.error;
+        const { title, imageUrl, linkUrl, sortOrder, isActive, dismissOption } = result.data;
+
         const newId = crypto.randomUUID();
-        await db.insert(announcementPopups).values({ id: newId, title: title || null, imageUrl, linkUrl: linkUrl || null, sortOrder: sortOrder ?? 0, isActive: isActive !== undefined ? isActive : true, dismissOption: dismissOption || "show_always" });
+        await db.insert(announcementPopups).values({
+            id: newId, title: title || null, imageUrl, linkUrl: linkUrl || null,
+            sortOrder, isActive, dismissOption,
+        });
         const popup = await db.query.announcementPopups.findFirst({ where: eq(announcementPopups.id, newId) });
         await invalidatePopupCaches();
         await auditFromRequest(request, { action: AUDIT_ACTIONS.POPUP_CREATE, resource: "AnnouncementPopup", resourceId: newId, details: { title: title || "Untitled" } });
