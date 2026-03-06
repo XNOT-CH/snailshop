@@ -11,6 +11,8 @@ const pool = globalForDb.pool ?? mysql.createPool({
     uri: process.env.DATABASE_URL!,
     waitForConnections: true,
     connectionLimit: 10,
+    charset: "utf8mb4",
+    timezone: "+00:00",
 });
 
 if (process.env.NODE_ENV !== "production") globalForDb.pool = pool;
