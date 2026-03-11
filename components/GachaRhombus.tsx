@@ -73,15 +73,15 @@ function WinBurst({ tier }: { tier: string }) {
     const particles: Particle[] = Array.from({ length: 20 }, (_, i) => {
         const angle = (i / 20) * 360;
         const rad = angle * (Math.PI / 180);
-        const dist = 50 + Math.random() * 70;
+        const dist = 50 + Math.random() * 70; // NOSONAR - visual animation only
         return {
             id: i,
             tx: `${Math.cos(rad) * dist}px`,
             ty: `${Math.sin(rad) * dist}px`,
             color: colors[i % colors.length],
-            dur: `${0.5 + Math.random() * 0.4}s`,
-            delay: `${Math.random() * 0.15}s`,
-            size: 5 + Math.floor(Math.random() * 6),
+            dur: `${0.5 + Math.random() * 0.4}s`, // NOSONAR - visual animation only
+            delay: `${Math.random() * 0.15}s`, // NOSONAR - visual animation only
+            size: 5 + Math.floor(Math.random() * 6), // NOSONAR - visual animation only
         };
     });
     return (
@@ -143,7 +143,7 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
         (side: "L" | "R", chosenLabel: string, onDone: () => void) => {
             const idx = side === "L" ? lSelectorIndices : rSelectorIndices;
             if (idx.length === 0) { onDone(); return; }
-            const total = 12 + Math.floor(Math.random() * 6);
+            const total = 12 + Math.floor(Math.random() * 6); // NOSONAR - visual animation only
             let step = 0;
             const flash = () => {
                 const isLast = step >= total - 1;

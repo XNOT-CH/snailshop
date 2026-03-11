@@ -189,7 +189,7 @@ export function GachaGridMachine({
                 imageUrl: json.data!.imageUrl,
             };
 
-            const total = 20 + Math.floor(Math.random() * 8);
+            const total = 20 + Math.floor(Math.random() * 8); // NOSONAR - visual animation only
             let step = 0;
             const flash = () => {
                 const isLast = step >= total - 1;
