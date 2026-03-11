@@ -366,7 +366,7 @@ export default function NavItemsAdminPage() {
                                 id="editSortOrder"
                                 type="number"
                                 value={editSortOrder}
-                                onChange={(e) => setEditSortOrder(parseInt(e.target.value) || 0)}
+                                onChange={(e) => setEditSortOrder(Number.parseInt(e.target.value) || 0)}
                             />
                         </div>
                     </div>

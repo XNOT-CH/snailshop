@@ -78,6 +78,9 @@ export function HeroBannerClient({ banners }: HeroBannerClientProps) {
             className="relative w-full group"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
+            onFocus={() => setIsHovered(true)}
+            onBlur={() => setIsHovered(false)}
+            tabIndex={0}
         >
             {/* Embla Carousel Container */}
             <div className="overflow-hidden rounded-2xl shadow-sm" ref={emblaRef}>

@@ -28,7 +28,7 @@ export default function AnnouncementPopup() {
 
         const dismissedUntil = localStorage.getItem(DISMISS_STORAGE_KEY);
         if (dismissedUntil) {
-            const dismissedTime = parseInt(dismissedUntil, 10);
+            const dismissedTime = Number.parseInt(dismissedUntil, 10);
             if (Date.now() < dismissedTime) {
                 return false; // Still dismissed
             }

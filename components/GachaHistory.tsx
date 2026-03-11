@@ -64,7 +64,7 @@ export function GachaHistory({ refreshKey }: { refreshKey: number }) {
     if (loading) {
         return (
             <div className="animate-pulse space-y-2 mt-4">
-                {[...Array(3)].map((_, i) => (
+                {[...new Array(3)].map((_, i) => (
                     <div key={i} className="h-12 rounded-xl bg-muted/40" />
                 ))}
             </div>

@@ -35,10 +35,10 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (!existingProduct) return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
 
         let discountPriceNumber: number | null = null;
-        const priceNumber = parseFloat(price);
+        const priceNumber = Number.parseFloat(price);
         if (discountPrice !== undefined && discountPrice !== "" && discountPrice !== null) {
-            discountPriceNumber = parseFloat(discountPrice);
-            if (isNaN(discountPriceNumber) || discountPriceNumber < 0) {
+            discountPriceNumber = Number.parseFloat(discountPrice);
+            if (Number.isNaN(discountPriceNumber) || discountPriceNumber < 0) {
                 return NextResponse.json({ success: false, message: "Discount price must be a positive number" }, { status: 400 });
             }
             if (discountPriceNumber >= priceNumber) {

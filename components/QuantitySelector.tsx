@@ -37,13 +37,13 @@ export function QuantitySelector({
 
     const handleInputChange = useCallback(
         (e: React.ChangeEvent<HTMLInputElement>) => {
-            const raw = e.target.value.replace(/\D/g, "");
+            const raw = e.target.value.replaceAll(/\D/g, "");
             if (raw === "") {
                 onChange(min);
                 return;
             }
-            const num = parseInt(raw, 10);
-            if (!isNaN(num)) {
+            const num = Number.parseInt(raw, 10);
+            if (!Number.isNaN(num)) {
                 onChange(Math.min(Math.max(num, min), max));
             }
         },

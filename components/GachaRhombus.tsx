@@ -545,20 +545,15 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
                     </div>
 
                     {/* Skip animation toggle */}
-                    <label className="flex items-center gap-2 cursor-pointer select-none mt-1">
-                        <div
+                    <div className="flex items-center gap-2 mt-1">
+                        <button
+                            type="button"
                             onClick={() => setSkipAnimation((v) => !v)}
                             role="switch"
                             aria-checked={skipAnimation}
-                            tabIndex={0}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' || e.key === ' ') {
-                                    e.preventDefault();
-                                    setSkipAnimation((v) => !v);
-                                }
-                            }}
+                            aria-label="ข้ามเอฟเฟกต์การสุ่ม"
                             className={[
-                                "relative w-9 h-5 rounded-full transition-colors duration-200 flex-shrink-0",
+                                "relative w-9 h-5 rounded-full transition-colors duration-200 flex-shrink-0 cursor-pointer",
                                 skipAnimation ? "bg-[#145de7]" : "bg-zinc-300 dark:bg-zinc-600",
                             ].join(" ")}
                         >
@@ -566,11 +561,11 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
                                 "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200",
                                 skipAnimation ? "translate-x-4" : "translate-x-0.5",
                             ].join(" ")} />
-                        </div>
-                        <span className="text-[13px] text-muted-foreground">
+                        </button>
+                        <span className="text-[13px] text-muted-foreground select-none pointer-events-none">
                             ⏩ ข้ามเอฟเฟกต์การสุ่ม
                         </span>
-                    </label>
+                    </div>
 
                     {/* Disclaimer — small, below toggle */}
                     <p className="text-[11px] text-muted-foreground/70 text-center">

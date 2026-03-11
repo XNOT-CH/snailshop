@@ -19,15 +19,15 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: "Missing required fields: title, price, category" }, { status: 400 });
         }
 
-        const priceNumber = parseFloat(price);
-        if (isNaN(priceNumber) || priceNumber <= 0) {
+        const priceNumber = Number.parseFloat(price);
+        if (Number.isNaN(priceNumber) || priceNumber <= 0) {
             return NextResponse.json({ success: false, message: "Price must be a positive number" }, { status: 400 });
         }
 
         let discountPriceNumber: number | null = null;
         if (discountPrice !== undefined && discountPrice !== "" && discountPrice !== null) {
-            discountPriceNumber = parseFloat(discountPrice);
-            if (isNaN(discountPriceNumber) || discountPriceNumber < 0) {
+            discountPriceNumber = Number.parseFloat(discountPrice);
+            if (Number.isNaN(discountPriceNumber) || discountPriceNumber < 0) {
                 return NextResponse.json({ success: false, message: "Discount price must be a positive number" }, { status: 400 });
             }
             if (discountPriceNumber >= priceNumber) {

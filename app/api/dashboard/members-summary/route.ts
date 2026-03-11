@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         const totalCount = Number(totalResult.count);
 
         const daysParam = request.nextUrl.searchParams.get("days");
-        const trendDays = Math.min(Math.max(parseInt(daysParam || "7", 10) || 7, 1), 365);
+        const trendDays = Math.min(Math.max(Number.parseInt(daysParam || "7", 10) || 7, 1), 365);
 
         const trendStart = new Date(now);
         trendStart.setDate(now.getDate() - (trendDays - 1));

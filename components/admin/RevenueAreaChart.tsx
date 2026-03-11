@@ -27,7 +27,7 @@ interface RevenueAreaChartProps {
 // ─── Date Formatter ─────────────────────────────────────
 function formatXAxis(dateStr: string, granularity: Granularity): string {
     const d = new Date(dateStr);
-    if (isNaN(d.getTime())) return dateStr; // already formatted, pass through
+    if (Number.isNaN(d.getTime())) return dateStr; // already formatted, pass through
 
     switch (granularity) {
         case "day":

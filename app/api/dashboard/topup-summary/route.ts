@@ -21,7 +21,7 @@ const BANK_COLORS: Record<string, string> = {
 
 function getBankColor(bank: string | null): string {
     if (!bank) return "#9ca3af";
-    const key = bank.toUpperCase().replace(/\s+/g, "");
+    const key = bank.toUpperCase().replaceAll(/\s+/g, "");
     return BANK_COLORS[key] || "#6366f1";
 }
 

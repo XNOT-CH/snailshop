@@ -126,9 +126,9 @@ export default async function Footer() {
                             <span>สงวนลิขสิทธิ์</span>
                         </div>
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1.5">
+                            <span className="flex items-center gap-1.5" title="Server Status">
                                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                ระบบพร้อมให้บริการ
+                                <span>ระบบพร้อมให้บริการ</span>
                             </span>
                         </div>
                     </div>

@@ -85,6 +85,9 @@ export function GachaRecentFeed({ refreshKey }: { refreshKey: number }) {
                 className="relative w-full overflow-hidden bg-white dark:bg-zinc-900/50"
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
+                onFocus={() => setIsHovered(true)}
+                onBlur={() => setIsHovered(false)}
+                tabIndex={0}
             >
                 <div className="flex py-4 items-start px-2">
                     <AnimatePresence mode="popLayout">
