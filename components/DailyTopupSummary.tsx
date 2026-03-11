@@ -146,13 +146,14 @@ function DetailModal({ record, onClose }: { record: TopupRecord; onClose: () => 
     return (
         <button
             type="button"
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-            onClick={onClose}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 cursor-default"
+            onClick={(e) => {
+                if (e.target === e.currentTarget) onClose();
+            }}
             aria-label="ปิด modal"
         >
             <div
-                className="relative max-w-xl w-full bg-card rounded-2xl shadow-2xl overflow-hidden animate-page-enter"
-                onClick={(e) => e.stopPropagation()}
+                className="relative max-w-xl w-full bg-card rounded-2xl shadow-2xl overflow-hidden animate-page-enter cursor-auto"
             >
                 {/* Header */}
                 <div className="relative px-6 py-5 bg-gradient-to-r from-sky-500 to-blue-500">
