@@ -221,7 +221,7 @@ export default function TopupPage() {
                                         {BANK_INFO.accountNumber}
                                     </span>
                                     <button
-                                        onClick={() => copyToClipboard(BANK_INFO.accountNumber.replace(/-/g, ""))}
+                                        onClick={() => copyToClipboard(BANK_INFO.accountNumber.replaceAll(/-/g, ""))}
                                         className="p-1 rounded hover:bg-muted transition-colors"
                                         title="คัดลอก"
                                     >

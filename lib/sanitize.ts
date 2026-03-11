@@ -50,7 +50,7 @@ export function escapeHtml(input: string): string {
         "=": "&#x3D;",
     };
 
-    return input.replace(/[&<>"'`=/]/g, (char) => htmlEntities[char] || char);
+    return input.replaceAll(/[&<>"'`=/]/g, (char) => htmlEntities[char] || char);
 }
 
 /**
@@ -91,9 +91,9 @@ export function sanitizeUrl(url: string): string {
 
     // Remove any dangerous protocols
     const sanitized = url
-        .replace(/javascript:/gi, "")
-        .replace(/data:/gi, "")
-        .replace(/vbscript:/gi, "")
+        .replaceAll(/javascript:/gi, "")
+        .replaceAll(/data:/gi, "")
+        .replaceAll(/vbscript:/gi, "")
         .trim();
 
     // Validate the URL

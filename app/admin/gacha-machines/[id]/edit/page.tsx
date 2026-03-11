@@ -483,7 +483,7 @@ export default function EditGachaMachinePage() {
 
                     {/* Add — รูปภาพ */}
                     <div className="mt-4">
-                        <label className={labelCls}>รูปภาพรางวัล</label>
+                        <label htmlFor="addRewardImageFile" className={labelCls}>รูปภาพรางวัล</label>
                         <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF (สูงสุด 5MB)</p>
                         <input
                             ref={addFileInputRef}

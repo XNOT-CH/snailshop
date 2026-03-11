@@ -81,7 +81,7 @@ export function isValidString(value: unknown, minLength: number = 1): boolean {
 // Check if value is a positive number
 export function isValidNumber(value: unknown, min: number = 0): boolean {
     const num = Number(value);
-    return !isNaN(num) && num >= min;
+    return !Number.isNaN(num) && num >= min;
 }
 
 // Check if value is a valid email

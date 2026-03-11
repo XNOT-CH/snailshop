@@ -393,8 +393,9 @@ export default function GachaMachinesAdminPage() {
 
                 {/* ── รายละเอียด ── */}
                 <div className="mt-4">
-                    <label className={labelCls}>รายละเอียด</label>
+                    <label htmlFor="addMachineDescription" className={labelCls}>รายละเอียด</label>
                     <textarea
+                        id="addMachineDescription"
                         value={machineForm.description}
                         onChange={e => setMachineForm(f => ({ ...f, description: e.target.value }))}
                         placeholder="อธิบายตู้กาชานี้ เช่น ประเภทรางวัล โอกาสชนะ หรือกติกาพิเศษ..."
