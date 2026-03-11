@@ -92,7 +92,7 @@ const tables: TableConfig[] = [
 // ── helpers ────────────────────────────────────────────────────────────────
 
 function buildUrl(key: TableKey, from: string, to: string) {
-    const url = new URL(`/api/admin/export`, window.location.origin);
+    const url = new URL(`/api/admin/export`, globalThis.location.origin);
     url.searchParams.set("table", key);
     if (from) url.searchParams.set("from", from);
     if (to) url.searchParams.set("to", to);
@@ -107,7 +107,7 @@ async function downloadCsv(key: TableKey, from: string, to: string): Promise<voi
     }
     const blob = await res.blob();
     const disposition = res.headers.get("Content-Disposition") ?? "";
-    const match = disposition.match(/filename="([^"]+)"/);
+    const match = /filename="([^"]+)"/.exec(disposition);
     const filename = match?.[1] ?? `${key}_export.csv`;
     const blobUrl = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -125,11 +125,11 @@ function ExportCard({
     config,
     from,
     to,
-}: {
+}: Readonly<{
     config: TableConfig;
     from: string;
     to: string;
-}) {
+}>) {
     const [state, setState] = useState<DownloadState>("idle");
     const [errMsg, setErrMsg] = useState("");
     const Icon = config.icon;
@@ -184,10 +184,10 @@ function ExportCard({
                     onClick={handleDownload}
                     disabled={state === "loading"}
                     className={`w-full gap-2 font-medium ${state === "done"
-                            ? "bg-emerald-600 hover:bg-emerald-700"
-                            : state === "error"
-                                ? "bg-red-600 hover:bg-red-700"
-                                : "bg-[#1a56db] hover:bg-[#1448c0]"
+                        ? "bg-emerald-600 hover:bg-emerald-700"
+                        : state === "error"
+                            ? "bg-red-600 hover:bg-red-700"
+                            : "bg-[#1a56db] hover:bg-[#1448c0]"
                         }`}
                 >
                     {state === "loading" ? (

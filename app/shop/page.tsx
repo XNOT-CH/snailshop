@@ -9,13 +9,13 @@ import { ShoppingBag, Package, TrendingUp } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
-export default async function ShopPage(props: {
+export default async function ShopPage(props: Readonly<{
     searchParams: Promise<{ category?: string; sort?: string; page?: string }>;
-}) {
+}>) {
     const searchParams = await props.searchParams;
     const currentCategory = searchParams.category || "all";
     const currentSort = searchParams.sort || "latest";
-    const currentPage = Math.max(1, parseInt(searchParams.page || "1", 10) || 1);
+    const currentPage = Math.max(1, Number.parseInt(searchParams.page || "1", 10) || 1);
     const ITEMS_PER_PAGE = 12;
 
     const allProducts = await db.query.products.findMany();

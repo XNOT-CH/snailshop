@@ -14,8 +14,8 @@ export async function GET(request: Request) {
         const resource = searchParams.get("resource") || undefined;
         const startDate = searchParams.get("startDate") ? new Date(searchParams.get("startDate")!) : undefined;
         const endDate = searchParams.get("endDate") ? new Date(searchParams.get("endDate")!) : undefined;
-        const limit = Math.min(parseInt(searchParams.get("limit") || "50"), 200);
-        const offset = Math.max(parseInt(searchParams.get("offset") || "0"), 0);
+        const limit = Math.min(Number.parseInt(searchParams.get("limit") || "50"), 200);
+        const offset = Math.max(Number.parseInt(searchParams.get("offset") || "0"), 0);
 
         const logs = await getAuditLogs({
             userId, action: action ? AUDIT_ACTIONS[action] : undefined,

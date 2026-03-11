@@ -19,7 +19,7 @@ export const registerSchema = z.object({
         .string()
         .min(3, "Username ต้องมีอย่างน้อย 3 ตัวอักษร")
         .max(50, "Username ต้องไม่เกิน 50 ตัวอักษร")
-        .regex(/^[a-zA-Z0-9_]+$/, "Username ใช้ได้เฉพาะ a-z, 0-9, _"),
+        .regex(/^\w+$/, "Username ใช้ได้เฉพาะ a-z, 0-9, _"),
     email: z
         .string()
         .email("กรุณากรอกอีเมลให้ถูกต้อง")

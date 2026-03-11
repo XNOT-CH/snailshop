@@ -6,9 +6,9 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface ShopControlsProps {
-    currentPage: number;
-    totalPages: number;
-    currentSort: string;
+    readonly currentPage: number;
+    readonly totalPages: number;
+    readonly currentSort: string;
 }
 
 export function ShopControls({ currentPage, totalPages, currentSort }: ShopControlsProps) {

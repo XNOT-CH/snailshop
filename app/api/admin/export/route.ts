@@ -11,7 +11,7 @@ function escapeCell(value: unknown): string {
     const str = String(value);
     // Wrap in quotes if it contains comma, newline, or double-quote
     if (str.includes(",") || str.includes("\n") || str.includes('"')) {
-        return `"${str.replace(/"/g, '""')}"`;
+        return `"${str.replaceAll('"', '""')}"`;
     }
     return str;
 }

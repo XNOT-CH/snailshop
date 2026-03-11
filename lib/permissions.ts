@@ -96,9 +96,11 @@ export function roleHasPermission(role: string, permission: Permission): boolean
 /**
  * Get all permissions for a user (role permissions + custom permissions)
  */
+type CustomPermissionsInput = string[] | string | null;
+
 export function getUserPermissions(
     role: string,
-    customPermissions?: string[] | string | null
+    customPermissions?: CustomPermissionsInput
 ): Permission[] {
     const rolePerms = ROLE_PERMISSIONS[role] || [];
     const custom = normalisePermissions(customPermissions);

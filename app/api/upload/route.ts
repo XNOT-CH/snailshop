@@ -4,7 +4,7 @@ import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { existsSync } from "fs";
 
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 export async function POST(request: NextRequest) {
     // Check if user is admin
