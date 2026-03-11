@@ -252,6 +252,14 @@ export default function TopupPage() {
                                     onDragLeave={handleDragLeave}
                                     onDrop={handleDrop}
                                     onClick={() => fileInputRef.current?.click()}
+                                    role="button"
+                                    tabIndex={0}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter' || e.key === ' ') {
+                                            e.preventDefault();
+                                            fileInputRef.current?.click();
+                                        }
+                                    }}
                                     className={`
                                             border-2 border-dashed rounded-xl p-8 text-center cursor-pointer
                                             transition-all duration-200

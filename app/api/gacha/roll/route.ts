@@ -9,6 +9,7 @@ import {
     buildGrid, getValidLSelectors, getValidRSelectorsFor, getIntersectionTile,
     type GachaProductLite, type GachaTier,
 } from "@/lib/gachaGrid";
+import crypto from "node:crypto";
 
 const COOKIE_NAME = "gacha_l_pending";
 const COOKIE_TTL = 300;
@@ -118,7 +119,7 @@ export async function POST(req: Request) {
             if (validLSelectors.length === 0)
                 return NextResponse.json({ success: false, message: "ไม่มีแถวซ้ายที่สุ่มได้" }, { status: 400 });
 
-            const lLabel = validLSelectors[Math.floor(Math.random() * validLSelectors.length)];
+            const lLabel = validLSelectors[crypto.randomInt(0, validLSelectors.length)];
             const payload = encrypt(JSON.stringify({ userId: authCheck.userId, lLabel, iat: Date.now() }));
             const cookieStore = await cookies();
             cookieStore.set(COOKIE_NAME, payload, { httpOnly: true, maxAge: COOKIE_TTL, path: "/" });
@@ -176,7 +177,7 @@ export async function POST(req: Request) {
         const validRSelectors = getValidRSelectorsFor(tiles, lLabel);
         if (validRSelectors.length === 0) return NextResponse.json({ success: false, message: "ไม่มีแถวขวาที่สุ่มได้" }, { status: 400 });
 
-        const rLabel = validRSelectors[Math.floor(Math.random() * validRSelectors.length)];
+        const rLabel = validRSelectors[crypto.randomInt(0, validRSelectors.length)];
         const selectorLabel = `${lLabel}+${rLabel}`;
         const intersectionTile = getIntersectionTile(tiles, lLabel, rLabel);
         if (!intersectionTile?.product) return NextResponse.json({ success: false, message: "ไม่พบรางวัลที่จุดตัด กรุณาสุ่มใหม่" }, { status: 400 });

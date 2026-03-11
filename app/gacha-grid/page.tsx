@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import { db, users, gachaSettings } from "@/lib/db";
+import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { GachaGridMachine } from "@/components/GachaGridMachine";
 import Link from "next/link";

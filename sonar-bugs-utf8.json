@@ -1,0 +1,866 @@
+﻿{
+    "total":  14,
+    "p":  1,
+    "ps":  100,
+    "paging":  {
+                   "pageIndex":  1,
+                   "pageSize":  100,
+                   "total":  14
+               },
+    "effortTotal":  83,
+    "issues":  [
+                   {
+                       "key":  "cc2cf3e0-39ca-4b7d-8ead-4c69554d8c27",
+                       "rule":  "typescript:S2871",
+                       "severity":  "CRITICAL",
+                       "component":  "my-game-store:components/Navbar.tsx",
+                       "project":  "my-game-store",
+                       "hash":  "8fd5f59693396d8ee7637cbb2afc8fb9",
+                       "textRange":  {
+                                         "startLine":  64,
+                                         "endLine":  64,
+                                         "startOffset":  92,
+                                         "endOffset":  96
+                                     },
+                       "flows":  [
+
+                                 ],
+                       "resolution":  "FIXED",
+                       "status":  "CLOSED",
+                       "message":  "Provide a compare function that depends on \"String.localeCompare\", to reliably sort elements alphabetically.",
+                       "effort":  "10min",
+                       "debt":  "10min",
+                       "author":  "",
+                       "tags":  [
+                                    "type-dependent",
+                                    "bad-practice"
+                                ],
+                       "creationDate":  "2026-03-10T17:43:09+0000",
+                       "updateDate":  "2026-03-10T17:59:36+0000",
+                       "closeDate":  "2026-03-10T17:59:36+0000",
+                       "type":  "BUG",
+                       "scope":  "MAIN",
+                       "quickFixAvailable":  true,
+                       "messageFormattings":  [
+
+                                              ],
+                       "codeVariants":  [
+
+                                        ],
+                       "cleanCodeAttribute":  "CLEAR",
+                       "cleanCodeAttributeCategory":  "INTENTIONAL",
+                       "impacts":  [
+                                       {
+                                           "softwareQuality":  "RELIABILITY",
+                                           "severity":  "HIGH"
+                                       }
+                                   ],
+                       "issueStatus":  "FIXED",
+                       "prioritizedRule":  false,
+                       "fromSonarQubeUpdate":  false,
+                       "internalTags":  [
+
+                                        ],
+                       "linkedTicketStatus":  "NOT_LINKED"
+                   },
+                   {
+                       "key":  "735c723b-0a1c-45ff-88d5-ddc7327465cb",
+                       "rule":  "typescript:S2871",
+                       "severity":  "CRITICAL",
+                       "component":  "my-game-store:app/admin/gacha-machines/[id]/edit/page.tsx",
+                       "project":  "my-game-store",
+                       "hash":  "f5e52ff10dae82b63f370c1fe2c0a93f",
+                       "textRange":  {
+                                         "startLine":  415,
+                                         "endLine":  415,
+                                         "startOffset":  81,
+                                         "endOffset":  85
+                                     },
+                       "flows":  [
+
+                                 ],
+                       "resolution":  "FIXED",
+                       "status":  "CLOSED",
+                       "message":  "Provide a compare function that depends on \"String.localeCompare\", to reliably sort elements alphabetically.",
+                       "effort":  "10min",
+                       "debt":  "10min",
+                       "author":  "xnot001@xnotportfolio",
+                       "tags":  [
+                                    "type-dependent",
+                                    "bad-practice"
+                                ],
+                       "creationDate":  "2026-03-04T02:08:36+0000",
+                       "updateDate":  "2026-03-10T17:59:36+0000",
+                       "closeDate":  "2026-03-10T17:59:36+0000",
+                       "type":  "BUG",
+                       "scope":  "MAIN",
+                       "quickFixAvailable":  true,
+                       "messageFormattings":  [
+
+                                              ],
+                       "codeVariants":  [
+
+                                        ],
+                       "cleanCodeAttribute":  "CLEAR",
+                       "cleanCodeAttributeCategory":  "INTENTIONAL",
+                       "impacts":  [
+                                       {
+                                           "softwareQuality":  "RELIABILITY",
+                                           "severity":  "HIGH"
+                                       }
+                                   ],
+                       "issueStatus":  "FIXED",
+                       "prioritizedRule":  false,
+                       "fromSonarQubeUpdate":  false,
+                       "internalTags":  [
+
+                                        ],
+                       "linkedTicketStatus":  "NOT_LINKED"
+                   },
+                   {
+                       "key":  "c508470d-24f1-47e5-bc5c-6afb12cdf490",
+                       "rule":  "typescript:S2871",
+                       "severity":  "CRITICAL",
+                       "component":  "my-game-store:app/admin/gacha-machines/[id]/edit/page.tsx",
+                       "project":  "my-game-store",
+                       "hash":  "f5e52ff10dae82b63f370c1fe2c0a93f",
+                       "textRange":  {
+                                         "startLine":  581,
+                                         "endLine":  581,
+                                         "startOffset":  85,
+                                         "endOffset":  89
+                                     },
+                       "flows":  [
+
+                                 ],
+                       "resolution":  "FIXED",
+                       "status":  "CLOSED",
+                       "message":  "Provide a compare function that depends on \"String.localeCompare\", to reliably sort elements alphabetically.",
+                       "effort":  "10min",
+                       "debt":  "10min",
+                       "author":  "xnot001@xnotportfolio",
+                       "tags":  [
+                                    "type-dependent",
+                                    "bad-practice"
+                                ],
+                       "creationDate":  "2026-03-04T02:08:36+0000",
+                       "updateDate":  "2026-03-10T17:59:36+0000",
+                       "closeDate":  "2026-03-10T17:59:36+0000",
+                       "type":  "BUG",
+                       "scope":  "MAIN",
+                       "quickFixAvailable":  true,
+                       "messageFormattings":  [
+
+                                              ],
+                       "codeVariants":  [
+
+                                        ],
+                       "cleanCodeAttribute":  "CLEAR",
+                       "cleanCodeAttributeCategory":  "INTENTIONAL",
+                       "impacts":  [
+                                       {
+                                           "softwareQuality":  "RELIABILITY",
+                                           "severity":  "HIGH"
+                                       }
+                                   ],
+                       "issueStatus":  "FIXED",
+                       "prioritizedRule":  false,
+                       "fromSonarQubeUpdate":  false,
+                       "internalTags":  [
+
+                                        ],
+                       "linkedTicketStatus":  "NOT_LINKED"
+                   },
+                   {
+                       "key":  "5d2c159e-0b5f-4691-8a71-a16ca6787030",
+                       "rule":  "typescript:S1082",
+                       "severity":  "MINOR",
+                       "component":  "my-game-store:app/admin/roles/page.tsx",
+                       "project":  "my-game-store",
+                       "hash":  "d90c26198ff23a5c54f81269ceed5c01",
+                       "textRange":  {
+                                         "startLine":  327,
+                                         "endLine":  331,
+                                         "startOffset":  52,
+                                         "endOffset":  53
+                                     },
+                       "flows":  [
+
+                                 ],
+                       "resolution":  "FIXED",
+                       "status":  "CLOSED",
+                       "message":  "Visible, non-interactive elements with click handlers must have at least one keyboard listener.",
+                       "effort":  "5min",
+                       "debt":  "5min",
+                       "author":  "xnot001@xnotportfolio",
+                       "tags":  [
+                                    "accessibility",
+                                    "react"
+                                ],
+                       "creationDate":  "2026-03-04T02:08:36+0000",
+                       "updateDate":  "2026-03-10T17:59:36+0000",
+                       "closeDate":  "2026-03-10T17:59:36+0000",
+                       "type":  "BUG",
+                       "scope":  "MAIN",
+                       "quickFixAvailable":  false,
+                       "messageFormattings":  [
+
+                                              ],
+                       "codeVariants":  [
+
+                                        ],
+                       "cleanCodeAttribute":  "COMPLETE",
+                       "cleanCodeAttributeCategory":  "INTENTIONAL",
+                       "impacts":  [
+                                       {
+                                           "softwareQuality":  "RELIABILITY",
+                                           "severity":  "LOW"
+                                       }
+                                   ],
+                       "issueStatus":  "FIXED",
+                       "prioritizedRule":  false,
+                       "fromSonarQubeUpdate":  false,
+                       "internalTags":  [
+
+                                        ],
+                       "linkedTicketStatus":  "NOT_LINKED"
+                   },
+                   {
+                       "key":  "d3beeb50-e79b-4580-90a8-6b75ebee0bc6",
+                       "rule":  "typescript:S1082",
+                       "severity":  "MINOR",
+                       "component":  "my-game-store:app/admin/roles/page.tsx",
+                       "project":  "my-game-store",
+                       "hash":  "d90c26198ff23a5c54f81269ceed5c01",
+                       "textRange":  {
+                                         "startLine":  279,
+                                         "endLine":  282,
+                                         "startOffset":  20,
+                                         "endOffset":  22
+                                     },
+                       "flows":  [
+
+                                 ],
+                       "resolution":  "FIXED",
+                       "status":  "CLOSED",
+                       "message":  "Visible, non-interactive elements with click handlers must have at least one keyboard listener.",
+                       "effort":  "5min",
+                       "debt":  "5min",
+                       "author":  "xnot001@xnotportfolio",
+                       "tags":  [
+                                    "accessibility",
+                                    "react"
+                                ],
+                       "creationDate":  "2026-03-04T02:08:36+0000",
+                       "updateDate":  "2026-03-10T17:59:36+0000",
+                       "closeDate":  "2026-03-10T17:59:36+0000",
+                       "type":  "BUG",
+                       "scope":  "MAIN",
+                       "quickFixAvailable":  false,
+                       "messageFormattings":  [
+
+                                              ],
+                       "codeVariants":  [
+
+                                        ],
+                       "cleanCodeAttribute":  "COMPLETE",
+                       "cleanCodeAttributeCategory":  "INTENTIONAL",
+                       "impacts":  [
+                                       {
+                                           "softwareQuality":  "RELIABILITY",
+                                           "severity":  "LOW"
+                                       }
+                                   ],
+                       "issueStatus":  "FIXED",
+                       "prioritizedRule":  false,
+                       "fromSonarQubeUpdate":  false,
+                       "internalTags":  [
+
+                                        ],
+                       "linkedTicketStatus":  "NOT_LINKED"
+                   },
+                   {
+                       "key":  "5b6c1b83-effe-4a6c-b1a4-7867c281749e",
+                       "rule":  "typescript:S1082",
+                       "severity":  "MINOR",
+                       "component":  "my-game-store:components/GachaRhombus.tsx",
+                       "project":  "my-game-store",
+                       "hash":  "d90c26198ff23a5c54f81269ceed5c01",
+                       "textRange":  {
+                                         "startLine":  549,
+                                         "endLine":  555,
+                                         "startOffset":  24,
+                                         "endOffset":  25
+                                     },
+                       "flows":  [
+
+                                 ],
+                       "resolution":  "FIXED",
+                       "status":  "CLOSED",
+                       "message":  "Visible, non-interactive elements with click handlers must have at least one keyboard listener.",
+                       "effort":  "5min",
+                       "debt":  "5min",
+                       "author":  "xnot001@xnotportfolio",
+                       "tags":  [
+                                    "accessibility",
+                                    "react"
+                                ],
+                       "creationDate":  "2026-02-28T06:18:58+0000",
+                       "updateDate":  "2026-03-10T17:59:36+0000",
+                       "closeDate":  "2026-03-10T17:59:36+0000",
+                       "type":  "BUG",
+                       "scope":  "MAIN",
+                       "quickFixAvailable":  false,
+                       "messageFormattings":  [
+
+                                              ],
+                       "codeVariants":  [
+
+                                        ],
+                       "cleanCodeAttribute":  "COMPLETE",
+                       "cleanCodeAttributeCategory":  "INTENTIONAL",
+                       "impacts":  [
+                                       {
+                                           "softwareQuality":  "RELIABILITY",
+                                           "severity":  "LOW"
+                                       }
+                                   ],
+                       "issueStatus":  "FIXED",
+                       "prioritizedRule":  false,
+                       "fromSonarQubeUpdate":  false,
+                       "internalTags":  [
+
+                                        ],
+                       "linkedTicketStatus":  "NOT_LINKED"
+                   },
+                   {
+                       "key":  "d10cf182-c635-413a-b1e4-87a6390e6938",
+                       "rule":  "typescript:S2137",
+                       "severity":  "MAJOR",
+                       "component":  "my-game-store:app/error.tsx",
+                       "project":  "my-game-store",
+                       "hash":  "d0c938b11a6c67860ed0711da6abe545",
+                       "textRange":  {
+                                         "startLine":  8,
+                                         "endLine":  8,
+                                         "startOffset":  24,
+                                         "endOffset":  29
+                                     },
+                       "flows":  [
+
+                                 ],
+                       "resolution":  "FIXED",
+                       "status":  "CLOSED",
+                       "message":  "Do not use \"Error\" to declare a function - use another name.",
+                       "effort":  "10min",
+                       "debt":  "10min",
+                       "author":  "xnot001@xnotportfolio",
+                       "tags":  [
+                                    "pitfall"
+                                ],
+                       "creationDate":  "2026-02-23T15:14:30+0000",
+                       "updateDate":  "2026-03-10T17:59:36+0000",
+                       "closeDate":  "2026-03-10T17:59:36+0000",
+                       "type":  "BUG",
+                       "scope":  "MAIN",
+                       "quickFixAvailable":  false,
+                       "messageFormattings":  [
+
+                                              ],
+                       "codeVariants":  [
+
+                                        ],
+                       "cleanCodeAttribute":  "CONVENTIONAL",
+                       "cleanCodeAttributeCategory":  "CONSISTENT",
+                       "impacts":  [
+                                       {
+                                           "softwareQuality":  "RELIABILITY",
+                                           "severity":  "MEDIUM"
+                                       }
+                                   ],
+                       "issueStatus":  "FIXED",
+                       "prioritizedRule":  false,
+                       "fromSonarQubeUpdate":  false,
+                       "internalTags":  [
+
+                                        ],
+                       "linkedTicketStatus":  "NOT_LINKED"
+                   },
+                   {
+                       "key":  "421e203f-0c16-408c-aa1e-72074f0ded26",
+                       "rule":  "typescript:S1082",
+                       "severity":  "MINOR",
+                       "component":  "my-game-store:components/DailyTopupSummary.tsx",
+                       "project":  "my-game-store",
+                       "hash":  "d90c26198ff23a5c54f81269ceed5c01",
+                       "textRange":  {
+                                         "startLine":  151,
+                                         "endLine":  154,
+                                         "startOffset":  12,
+                                         "endOffset":  13
+                                     },
+                       "flows":  [
+
+                                 ],
+                       "resolution":  "FIXED",
+                       "status":  "CLOSED",
+                       "message":  "Visible, non-interactive elements with click handlers must have at least one keyboard listener.",
+                       "effort":  "5min",
+                       "debt":  "5min",
+                       "author":  "xnot001@xnotportfolio",
+                       "tags":  [
+                                    "accessibility",
+                                    "react"
+                                ],
+                       "creationDate":  "2026-02-19T10:09:35+0000",
+                       "updateDate":  "2026-03-10T17:59:36+0000",
+                       "closeDate":  "2026-03-10T17:59:36+0000",
+                       "type":  "BUG",
+                       "scope":  "MAIN",
+                       "quickFixAvailable":  false,
+                       "messageFormattings":  [
+
+                                              ],
+                       "codeVariants":  [
+
+                                        ],
+                       "cleanCodeAttribute":  "COMPLETE",
+                       "cleanCodeAttributeCategory":  "INTENTIONAL",
+                       "impacts":  [
+                                       {
+                                           "softwareQuality":  "RELIABILITY",
+                                           "severity":  "LOW"
+                                       }
+                                   ],
+                       "issueStatus":  "FIXED",
+                       "prioritizedRule":  false,
+                       "fromSonarQubeUpdate":  false,
+                       "internalTags":  [
+
+                                        ],
+                       "linkedTicketStatus":  "NOT_LINKED"
+                   },
+                   {
+                       "key":  "edc8f5ad-c05c-44e9-b442-9ea11d0bb6c0",
+                       "rule":  "typescript:S1082",
+                       "severity":  "MINOR",
+                       "component":  "my-game-store:components/DailyTopupSummary.tsx",
+                       "project":  "my-game-store",
+                       "hash":  "d90c26198ff23a5c54f81269ceed5c01",
+                       "textRange":  {
+                                         "startLine":  147,
+                                         "endLine":  150,
+                                         "startOffset":  8,
+                                         "endOffset":  9
+                                     },
+                       "flows":  [
+
+                                 ],
+                       "resolution":  "FIXED",
+                       "status":  "CLOSED",
+                       "message":  "Visible, non-interactive elements with click handlers must have at least one keyboard listener.",
+                       "effort":  "5min",
+                       "debt":  "5min",
+                       "author":  "xnot001@xnotportfolio",
+                       "tags":  [
+                                    "accessibility",
+                                    "react"
+                                ],
+                       "creationDate":  "2026-02-19T10:09:35+0000",
+                       "updateDate":  "2026-03-10T17:59:36+0000",
+                       "closeDate":  "2026-03-10T17:59:36+0000",
+                       "type":  "BUG",
+                       "scope":  "MAIN",
+                       "quickFixAvailable":  false,
+                       "messageFormattings":  [
+
+                                              ],
+                       "codeVariants":  [
+
+                                        ],
+                       "cleanCodeAttribute":  "COMPLETE",
+                       "cleanCodeAttributeCategory":  "INTENTIONAL",
+                       "impacts":  [
+                                       {
+                                           "softwareQuality":  "RELIABILITY",
+                                           "severity":  "LOW"
+                                       }
+                                   ],
+                       "issueStatus":  "FIXED",
+                       "prioritizedRule":  false,
+                       "fromSonarQubeUpdate":  false,
+                       "internalTags":  [
+
+                                        ],
+                       "linkedTicketStatus":  "NOT_LINKED"
+                   },
+                   {
+                       "key":  "fcb2d0dc-e04c-4a46-ab02-6a0f9f0f76f9",
+                       "rule":  "typescript:S1082",
+                       "severity":  "MINOR",
+                       "component":  "my-game-store:app/dashboard/topup/page.tsx",
+                       "project":  "my-game-store",
+                       "hash":  "d90c26198ff23a5c54f81269ceed5c01",
+                       "textRange":  {
+                                         "startLine":  250,
+                                         "endLine":  263,
+                                         "startOffset":  32,
+                                         "endOffset":  33
+                                     },
+                       "flows":  [
+
+                                 ],
+                       "resolution":  "FIXED",
+                       "status":  "CLOSED",
+                       "message":  "Visible, non-interactive elements with click handlers must have at least one keyboard listener.",
+                       "effort":  "5min",
+                       "debt":  "5min",
+                       "author":  "xnot001@xnotportfolio",
+                       "tags":  [
+                                    "accessibility",
+                                    "react"
+                                ],
+                       "creationDate":  "2026-02-12T18:05:32+0000",
+                       "updateDate":  "2026-03-10T17:59:36+0000",
+                       "closeDate":  "2026-03-10T17:59:36+0000",
+                       "type":  "BUG",
+                       "scope":  "MAIN",
+                       "quickFixAvailable":  false,
+                       "messageFormattings":  [
+
+                                              ],
+                       "codeVariants":  [
+
+                                        ],
+                       "cleanCodeAttribute":  "COMPLETE",
+                       "cleanCodeAttributeCategory":  "INTENTIONAL",
+                       "impacts":  [
+                                       {
+                                           "softwareQuality":  "RELIABILITY",
+                                           "severity":  "LOW"
+                                       }
+                                   ],
+                       "issueStatus":  "FIXED",
+                       "prioritizedRule":  false,
+                       "fromSonarQubeUpdate":  false,
+                       "internalTags":  [
+
+                                        ],
+                       "linkedTicketStatus":  "NOT_LINKED"
+                   },
+                   {
+                       "key":  "3541cfd0-f07d-4ad6-9dfc-c1c5614d7229",
+                       "rule":  "typescript:S1082",
+                       "severity":  "MINOR",
+                       "component":  "my-game-store:components/AnnouncementPopup.tsx",
+                       "project":  "my-game-store",
+                       "hash":  "d90c26198ff23a5c54f81269ceed5c01",
+                       "textRange":  {
+                                         "startLine":  185,
+                                         "endLine":  188,
+                                         "startOffset":  24,
+                                         "endOffset":  25
+                                     },
+                       "flows":  [
+
+                                 ],
+                       "resolution":  "FIXED",
+                       "status":  "CLOSED",
+                       "message":  "Visible, non-interactive elements with click handlers must have at least one keyboard listener.",
+                       "effort":  "5min",
+                       "debt":  "5min",
+                       "author":  "xnot001@xnotportfolio",
+                       "tags":  [
+                                    "accessibility",
+                                    "react"
+                                ],
+                       "creationDate":  "2026-02-08T13:40:36+0000",
+                       "updateDate":  "2026-03-10T17:59:36+0000",
+                       "closeDate":  "2026-03-10T17:59:36+0000",
+                       "type":  "BUG",
+                       "scope":  "MAIN",
+                       "quickFixAvailable":  false,
+                       "messageFormattings":  [
+
+                                              ],
+                       "codeVariants":  [
+
+                                        ],
+                       "cleanCodeAttribute":  "COMPLETE",
+                       "cleanCodeAttributeCategory":  "INTENTIONAL",
+                       "impacts":  [
+                                       {
+                                           "softwareQuality":  "RELIABILITY",
+                                           "severity":  "LOW"
+                                       }
+                                   ],
+                       "issueStatus":  "FIXED",
+                       "prioritizedRule":  false,
+                       "fromSonarQubeUpdate":  false,
+                       "internalTags":  [
+
+                                        ],
+                       "linkedTicketStatus":  "NOT_LINKED"
+                   },
+                   {
+                       "key":  "fd138d26-21e1-4370-9b1c-127619ccad62",
+                       "rule":  "css:S4662",
+                       "severity":  "MAJOR",
+                       "component":  "my-game-store:app/globals.css",
+                       "project":  "my-game-store",
+                       "hash":  "d01821e9c2938a121c6da9c0038b7981",
+                       "textRange":  {
+                                         "startLine":  7,
+                                         "endLine":  7,
+                                         "startOffset":  0,
+                                         "endOffset":  37
+                                     },
+                       "flows":  [
+
+                                 ],
+                       "resolution":  "FIXED",
+                       "status":  "CLOSED",
+                       "message":  "Unexpected unknown at-rule \"@custom-variant\"",
+                       "effort":  "1min",
+                       "debt":  "1min",
+                       "author":  "xnot001@xnotportfolio",
+                       "tags":  [
+
+                                ],
+                       "creationDate":  "2026-01-22T06:45:34+0000",
+                       "updateDate":  "2026-03-10T17:59:36+0000",
+                       "closeDate":  "2026-03-10T17:59:36+0000",
+                       "type":  "BUG",
+                       "scope":  "MAIN",
+                       "quickFixAvailable":  false,
+                       "messageFormattings":  [
+
+                                              ],
+                       "codeVariants":  [
+
+                                        ],
+                       "cleanCodeAttribute":  "LOGICAL",
+                       "cleanCodeAttributeCategory":  "INTENTIONAL",
+                       "impacts":  [
+                                       {
+                                           "softwareQuality":  "RELIABILITY",
+                                           "severity":  "MEDIUM"
+                                       }
+                                   ],
+                       "issueStatus":  "FIXED",
+                       "prioritizedRule":  false,
+                       "fromSonarQubeUpdate":  false,
+                       "internalTags":  [
+
+                                        ],
+                       "linkedTicketStatus":  "NOT_LINKED"
+                   },
+                   {
+                       "key":  "70f9fd2f-20c8-42ba-a92b-60b62b8e05b5",
+                       "rule":  "typescript:S1082",
+                       "severity":  "MINOR",
+                       "component":  "my-game-store:components/ui/input-group.tsx",
+                       "project":  "my-game-store",
+                       "hash":  "d90c26198ff23a5c54f81269ceed5c01",
+                       "textRange":  {
+                                         "startLine":  66,
+                                         "endLine":  78,
+                                         "startOffset":  4,
+                                         "endOffset":  6
+                                     },
+                       "flows":  [
+
+                                 ],
+                       "resolution":  "FIXED",
+                       "status":  "CLOSED",
+                       "message":  "Visible, non-interactive elements with click handlers must have at least one keyboard listener.",
+                       "effort":  "5min",
+                       "debt":  "5min",
+                       "author":  "xnot001@xnotportfolio",
+                       "tags":  [
+                                    "accessibility",
+                                    "react"
+                                ],
+                       "creationDate":  "2026-01-22T06:45:34+0000",
+                       "updateDate":  "2026-03-10T17:59:36+0000",
+                       "closeDate":  "2026-03-10T17:59:36+0000",
+                       "type":  "BUG",
+                       "scope":  "MAIN",
+                       "quickFixAvailable":  false,
+                       "messageFormattings":  [
+
+                                              ],
+                       "codeVariants":  [
+
+                                        ],
+                       "cleanCodeAttribute":  "COMPLETE",
+                       "cleanCodeAttributeCategory":  "INTENTIONAL",
+                       "impacts":  [
+                                       {
+                                           "softwareQuality":  "RELIABILITY",
+                                           "severity":  "LOW"
+                                       }
+                                   ],
+                       "issueStatus":  "FIXED",
+                       "prioritizedRule":  false,
+                       "fromSonarQubeUpdate":  false,
+                       "internalTags":  [
+
+                                        ],
+                       "linkedTicketStatus":  "NOT_LINKED"
+                   },
+                   {
+                       "key":  "f73b020c-5589-4978-b7eb-2fb1550683cf",
+                       "rule":  "typescript:S5256",
+                       "severity":  "MAJOR",
+                       "component":  "my-game-store:components/ui/table.tsx",
+                       "project":  "my-game-store",
+                       "line":  13,
+                       "hash":  "e2874e8e0fdc613d154ecc1ffa50bef1",
+                       "textRange":  {
+                                         "startLine":  13,
+                                         "endLine":  17,
+                                         "startOffset":  6,
+                                         "endOffset":  8
+                                     },
+                       "flows":  [
+
+                                 ],
+                       "status":  "OPEN",
+                       "message":  "Add a valid header row or column to this \"\u003ctable\u003e\".",
+                       "effort":  "2min",
+                       "debt":  "2min",
+                       "author":  "xnot001@xnotportfolio",
+                       "tags":  [
+                                    "accessibility",
+                                    "wcag2-a"
+                                ],
+                       "creationDate":  "2026-01-22T06:45:34+0000",
+                       "updateDate":  "2026-03-10T17:43:09+0000",
+                       "type":  "BUG",
+                       "scope":  "MAIN",
+                       "quickFixAvailable":  false,
+                       "messageFormattings":  [
+
+                                              ],
+                       "codeVariants":  [
+
+                                        ],
+                       "cleanCodeAttribute":  "COMPLETE",
+                       "cleanCodeAttributeCategory":  "INTENTIONAL",
+                       "impacts":  [
+                                       {
+                                           "softwareQuality":  "RELIABILITY",
+                                           "severity":  "MEDIUM"
+                                       }
+                                   ],
+                       "issueStatus":  "OPEN",
+                       "prioritizedRule":  false,
+                       "fromSonarQubeUpdate":  false,
+                       "internalTags":  [
+
+                                        ],
+                       "linkedTicketStatus":  "NOT_LINKED"
+                   }
+               ],
+    "components":  [
+                       {
+                           "key":  "my-game-store:app/globals.css",
+                           "enabled":  true,
+                           "qualifier":  "FIL",
+                           "name":  "globals.css",
+                           "longName":  "app/globals.css",
+                           "path":  "app/globals.css"
+                       },
+                       {
+                           "key":  "my-game-store:components/DailyTopupSummary.tsx",
+                           "enabled":  true,
+                           "qualifier":  "FIL",
+                           "name":  "DailyTopupSummary.tsx",
+                           "longName":  "components/DailyTopupSummary.tsx",
+                           "path":  "components/DailyTopupSummary.tsx"
+                       },
+                       {
+                           "key":  "my-game-store",
+                           "enabled":  true,
+                           "qualifier":  "TRK",
+                           "name":  "My Game Store",
+                           "longName":  "My Game Store"
+                       },
+                       {
+                           "key":  "my-game-store:app/admin/gacha-machines/[id]/edit/page.tsx",
+                           "enabled":  true,
+                           "qualifier":  "FIL",
+                           "name":  "page.tsx",
+                           "longName":  "app/admin/gacha-machines/[id]/edit/page.tsx",
+                           "path":  "app/admin/gacha-machines/[id]/edit/page.tsx"
+                       },
+                       {
+                           "key":  "my-game-store:components/Navbar.tsx",
+                           "enabled":  true,
+                           "qualifier":  "FIL",
+                           "name":  "Navbar.tsx",
+                           "longName":  "components/Navbar.tsx",
+                           "path":  "components/Navbar.tsx"
+                       },
+                       {
+                           "key":  "my-game-store:app/error.tsx",
+                           "enabled":  true,
+                           "qualifier":  "FIL",
+                           "name":  "error.tsx",
+                           "longName":  "app/error.tsx",
+                           "path":  "app/error.tsx"
+                       },
+                       {
+                           "key":  "my-game-store:components/AnnouncementPopup.tsx",
+                           "enabled":  true,
+                           "qualifier":  "FIL",
+                           "name":  "AnnouncementPopup.tsx",
+                           "longName":  "components/AnnouncementPopup.tsx",
+                           "path":  "components/AnnouncementPopup.tsx"
+                       },
+                       {
+                           "key":  "my-game-store:app/admin/roles/page.tsx",
+                           "enabled":  true,
+                           "qualifier":  "FIL",
+                           "name":  "page.tsx",
+                           "longName":  "app/admin/roles/page.tsx",
+                           "path":  "app/admin/roles/page.tsx"
+                       },
+                       {
+                           "key":  "my-game-store:app/dashboard/topup/page.tsx",
+                           "enabled":  true,
+                           "qualifier":  "FIL",
+                           "name":  "page.tsx",
+                           "longName":  "app/dashboard/topup/page.tsx",
+                           "path":  "app/dashboard/topup/page.tsx"
+                       },
+                       {
+                           "key":  "my-game-store:components/ui/input-group.tsx",
+                           "enabled":  true,
+                           "qualifier":  "FIL",
+                           "name":  "input-group.tsx",
+                           "longName":  "components/ui/input-group.tsx",
+                           "path":  "components/ui/input-group.tsx"
+                       },
+                       {
+                           "key":  "my-game-store:components/GachaRhombus.tsx",
+                           "enabled":  true,
+                           "qualifier":  "FIL",
+                           "name":  "GachaRhombus.tsx",
+                           "longName":  "components/GachaRhombus.tsx",
+                           "path":  "components/GachaRhombus.tsx"
+                       },
+                       {
+                           "key":  "my-game-store:components/ui/table.tsx",
+                           "enabled":  true,
+                           "qualifier":  "FIL",
+                           "name":  "table.tsx",
+                           "longName":  "components/ui/table.tsx",
+                           "path":  "components/ui/table.tsx"
+                       }
+                   ],
+    "facets":  [
+
+               ]
+}

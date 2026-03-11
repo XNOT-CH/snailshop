@@ -1,7 +1,7 @@
 import { mysqlNow } from "@/lib/utils/date";
 import crypto from "crypto";
 import { cookies } from "next/headers";
-import { db, sessions, users } from "@/lib/db";
+import { db, sessions } from "@/lib/db";
 import { eq } from "drizzle-orm";
 
 const SESSION_COOKIE_NAME = "session_token";

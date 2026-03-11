@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/auth";
 import { db, gachaRollLogs } from "@/lib/db";
-import { eq, and, gte, lte, desc, count, sql } from "drizzle-orm";
+import { eq, and, gte, count, sql } from "drizzle-orm";
 
 function toMySQLDatetime(d: Date) { return d.toISOString().slice(0, 19).replace("T", " "); }
 

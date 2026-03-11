@@ -11,7 +11,6 @@ import { db, products } from "@/lib/db";
 import { eq, and, ne, desc } from "drizzle-orm";
 import { getStockCount } from "@/lib/stock";
 import { decrypt } from "@/lib/encryption";
-import { Button } from "@/components/ui/button";
 import Image from "next/image";
 import Link from "next/link";
 

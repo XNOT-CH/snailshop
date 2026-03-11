@@ -1,7 +1,7 @@
 import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, promoCodes } from "@/lib/db";
-import { eq, desc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { promoCodeSchema } from "@/lib/validations/promoCode";

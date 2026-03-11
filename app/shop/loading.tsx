@@ -2,7 +2,7 @@ import { ProductGridSkeleton } from "@/components/ProductCardSkeleton";
 
 export default function ShopLoading() {
     return (
-        <div className="py-8 animate-page-enter">
+        <div className="py-8">
             {/* Header Skeleton */}
             <div className="mb-8 space-y-3">
                 <div className="h-9 w-48 skeleton-wave"></div>

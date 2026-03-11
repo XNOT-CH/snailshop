@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { db, topups } from "@/lib/db";
-import { and, gte, lte } from "drizzle-orm";
+import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 

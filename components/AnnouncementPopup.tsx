@@ -185,6 +185,14 @@ export default function AnnouncementPopup() {
                         <div
                             className={`relative w-full aspect-square rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-gray-800 ${currentPopup.linkUrl ? "cursor-pointer" : ""}`}
                             onClick={currentPopup.linkUrl ? handleImageClick : undefined}
+                            role={currentPopup.linkUrl ? "button" : undefined}
+                            tabIndex={currentPopup.linkUrl ? 0 : undefined}
+                            onKeyDown={currentPopup.linkUrl ? (e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    handleImageClick();
+                                }
+                            } : undefined}
                         >
                             <Image
                                 src={currentPopup.imageUrl}

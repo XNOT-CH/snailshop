@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { Loader2, Gift, RotateCcw, Gamepad2, Dices } from "lucide-react";
+import { Loader2, Gift, RotateCcw, Gamepad2 } from "lucide-react";
 import Image from "next/image";
 import { GachaResultModal } from "@/components/GachaResultModal";
 import { showError } from "@/lib/swal";

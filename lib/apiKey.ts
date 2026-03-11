@@ -1,6 +1,6 @@
 import { mysqlNow } from "@/lib/utils/date";
 import crypto from "crypto";
-import { db, apiKeys, users } from "@/lib/db";
+import { db, apiKeys } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { hasPermission, Permission } from "@/lib/permissions";
 

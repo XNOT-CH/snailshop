@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db, gachaRollLogs } from "@/lib/db";
-import { desc } from "drizzle-orm";
+
 
 export const dynamic = "force-dynamic";
 

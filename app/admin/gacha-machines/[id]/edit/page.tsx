@@ -412,7 +412,7 @@ export default function EditGachaMachinePage() {
                                     className={inputCls + " mb-2"}
                                 >
                                     <option value="">— เลือกหมวดหมู่ —</option>
-                                    {[...new Set(products.map(p => p.category))].sort().map(cat => (
+                                    {[...new Set(products.map(p => p.category))].sort((a, b) => a.localeCompare(b)).map(cat => (
                                         <option key={cat} value={cat}>{cat}</option>
                                     ))}
                                 </select>
@@ -578,7 +578,7 @@ export default function EditGachaMachinePage() {
                                         className={inputCls + " mb-2"}
                                     >
                                         <option value="">— เลือกหมวดหมู่ —</option>
-                                        {[...new Set(products.map(p => p.category))].sort().map(cat => (
+                                        {[...new Set(products.map(p => p.category))].sort((a, b) => a.localeCompare(b)).map(cat => (
                                             <option key={cat} value={cat}>{cat}</option>
                                         ))}
                                     </select>

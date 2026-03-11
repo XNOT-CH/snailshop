@@ -87,7 +87,8 @@ export function isValidNumber(value: unknown, min: number = 0): boolean {
 // Check if value is a valid email
 export function isValidEmail(value: unknown): boolean {
     if (typeof value !== "string") return false;
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    // Safer regex for email that doesn't suffer from catastrophic backtracking
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     return emailRegex.test(value);
 }
 

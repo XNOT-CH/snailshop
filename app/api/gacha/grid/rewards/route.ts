@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { isAuthenticated } from "@/lib/auth";
+
 import { db, gachaRewards } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
 

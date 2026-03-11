@@ -1,13 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { FileQuestion, Home, ArrowLeft } from "lucide-react";
 
-export const metadata = {
-    title: "ไม่พบหน้านี้ | Manashop",
-    description: "ไม่พบหน้าที่คุณกำลังมองหา",
-};
-
 export default function NotFound() {
+    const router = useRouter();
+
     return (
         <div className="min-h-[60vh] flex items-center justify-center px-4">
             <div className="max-w-md w-full text-center space-y-6">
@@ -34,11 +34,9 @@ export default function NotFound() {
                             กลับหน้าหลัก
                         </Link>
                     </Button>
-                    <Button variant="outline" asChild className="gap-2">
-                        <Link href="javascript:history.back()">
-                            <ArrowLeft className="w-4 h-4" />
-                            ย้อนกลับ
-                        </Link>
+                    <Button variant="outline" onClick={() => router.back()} className="gap-2">
+                        <ArrowLeft className="w-4 h-4" />
+                        ย้อนกลับ
                     </Button>
                 </div>
             </div>

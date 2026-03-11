@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { auth } from "@/auth";
-import { db, users, navItems, products } from "@/lib/db";
+import { db, users, navItems } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { Button } from "@/components/ui/button";
@@ -60,8 +60,8 @@ export default async function Navbar() {
         }),
     ]);
 
-    // Get unique categories from available products
-    const shopCategories = [...new Set(allProducts.map((p) => p.category))].filter(Boolean).sort();
+    // Get unique categories from available products only (don't show empty categories)
+    const shopCategories = [...new Set(allProducts.map((p) => p.category))].filter(Boolean).sort((a, b) => a.localeCompare(b));
 
     // Icon mapping for dynamic nav items
     const iconMap: Record<string, typeof Home> = {

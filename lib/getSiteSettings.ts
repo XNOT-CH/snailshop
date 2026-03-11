@@ -1,5 +1,5 @@
 import { cache } from "react";
-import { db, siteSettings } from "@/lib/db";
+import { db } from "@/lib/db";
 
 // React cache for siteSettings - deduplicates calls within a single request
 export const getSiteSettings = cache(async () => {

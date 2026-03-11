@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db, gachaMachines } from "@/lib/db";
-import { eq, and, asc } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 

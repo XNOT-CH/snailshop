@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db, newsArticles } from "@/lib/db";
-import { eq, asc, desc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { cacheOrFetch, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
 
 export async function GET() {

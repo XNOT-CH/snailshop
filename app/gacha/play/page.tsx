@@ -1,4 +1,4 @@
-import { db, users, gachaSettings, gachaRewards } from "@/lib/db";
+import { db, users, gachaRewards } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { Lock, Home } from "lucide-react";
 import { cookies } from "next/headers";

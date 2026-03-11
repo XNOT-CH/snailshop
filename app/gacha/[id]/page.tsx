@@ -1,5 +1,5 @@
 import { db, users, gachaMachines, gachaRewards } from "@/lib/db";
-import { eq, and, isNull, isNotNull } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { Lock } from "lucide-react";
 import { cookies } from "next/headers";
 import Link from "next/link";

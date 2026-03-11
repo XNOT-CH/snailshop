@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db, users, products, orders } from "@/lib/db";
 import { eq, inArray, sql } from "drizzle-orm";
+import { sendEmail } from "@/lib/mail";
+import { PurchaseReceiptEmail } from "@/components/emails/PurchaseReceiptEmail";
 
 export async function POST(request: NextRequest) {
     try {
@@ -105,6 +107,25 @@ export async function POST(request: NextRequest) {
 
             return { orders: orderResults, totalTHB, totalPoints };
         });
+
+        // Send an email receipt asynchronously
+        if (session?.user?.email) {
+            console.log("Sending receipt to:", session.user.email);
+            const emailResult = await sendEmail({
+                to: session.user.email,
+                subject: `ใบเสร็จรับเงิน SnailShop - คำสั่งซื้อ ${result.orders.length} รายการ`,
+                react: PurchaseReceiptEmail({
+                    userName: session?.user?.name || "ลูกค้า",
+                    orderCount: result.orders.length,
+                    totalTHB: result.totalTHB,
+                    totalPoints: result.totalPoints,
+                    items: result.orders,
+                }),
+            });
+            console.log("Email Result:", emailResult);
+        } else {
+            console.log("No user email found to send receipt");
+        }
 
         return NextResponse.json({
             success: true,

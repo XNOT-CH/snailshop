@@ -71,7 +71,8 @@ export async function POST(req: Request) {
         );
         if (eligible.length === 0) return NextResponse.json({ success: false, message: "ไม่มีรางวัลในขณะนี้" }, { status: 400 });
 
-        const chosen = eligible[Math.floor(Math.random() * eligible.length)];
+        const randomIndex = crypto.randomInt(0, eligible.length);
+        const chosen = eligible[randomIndex];
         const wonIndex = rewardList.findIndex((r: any) => r.id === chosen.id);
         const rewardName = chosen.rewardType === "PRODUCT" ? chosen.product?.name ?? "รางวัล" : chosen.rewardName ?? (chosen.rewardType === "CREDIT" ? "เครดิต" : "พอยต์");
         const imageUrl = chosen.rewardType === "PRODUCT" ? chosen.product?.imageUrl : chosen.rewardImageUrl;

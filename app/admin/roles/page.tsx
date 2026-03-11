@@ -279,6 +279,14 @@ export default function AdminRolesPage() {
                     <div
                         className="absolute inset-0 bg-black/50 backdrop-blur-sm"
                         onClick={closePanel}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                closePanel();
+                            }
+                        }}
                     />
                     {/* Modal */}
                     <div className="relative w-full max-w-lg bg-white dark:bg-zinc-900 shadow-2xl rounded-2xl flex flex-col max-h-[90vh] overflow-hidden">
@@ -328,6 +336,14 @@ export default function AdminRolesPage() {
                                                         key={perm.key}
                                                         className="flex items-center gap-2 py-1.5 cursor-pointer"
                                                         onClick={() => togglePermission(perm.key)}
+                                                        role="button"
+                                                        tabIndex={0}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter' || e.key === ' ') {
+                                                                e.preventDefault();
+                                                                togglePermission(perm.key);
+                                                            }
+                                                        }}
                                                     >
                                                         <Checkbox
                                                             id={`panel-${perm.key}`}

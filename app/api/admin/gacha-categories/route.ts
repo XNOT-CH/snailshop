@@ -1,8 +1,8 @@
 import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
-import { db, gachaCategories, gachaMachines } from "@/lib/db";
-import { eq, count } from "drizzle-orm";
+import { db, gachaCategories } from "@/lib/db";
+import { eq } from "drizzle-orm";
 
 export async function GET() {
     const auth = await isAdmin();

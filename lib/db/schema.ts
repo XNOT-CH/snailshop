@@ -7,8 +7,6 @@ import {
     decimal,
     datetime,
     index,
-    unique,
-    primaryKey,
     json,
 } from "drizzle-orm/mysql-core";
 import { relations, sql } from "drizzle-orm";

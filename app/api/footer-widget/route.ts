@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { db, footerWidgetSettings, footerLinks } from "@/lib/db";
+import { db, footerLinks } from "@/lib/db";
 import { eq } from "drizzle-orm";
 
 export async function GET() {

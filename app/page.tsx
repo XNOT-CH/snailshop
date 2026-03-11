@@ -4,7 +4,7 @@ import { HeroBanner } from "@/components/HeroBanner";
 import { FeaturedProducts } from "@/components/FeaturedProducts";
 import { SaleProducts } from "@/components/SaleProducts";
 import { NewsSection } from "@/components/NewsSection";
-import { db, siteSettings as siteSettingsTable, products } from "@/lib/db";
+import { db } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 

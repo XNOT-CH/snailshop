@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutGrid, Loader2 } from "lucide-react";
+import { LayoutGrid, Loader2, ChevronLeft } from "lucide-react";
 
 interface GachaCategory {
     id: string;
@@ -98,6 +98,13 @@ export default function GachaHubPage() {
                                 {cat.name}
                             </button>
                         ))}
+                        <button
+                            className="ml-auto hidden sm:flex items-center text-sm text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-accent"
+                            onClick={() => setSelectedCatId(null)}
+                        >
+                            <ChevronLeft className="h-4 w-4 mr-1" />
+                            ย้อนกลับ
+                        </button>
                     </div>
 
                     {loading ? (

@@ -548,6 +548,15 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
                     <label className="flex items-center gap-2 cursor-pointer select-none mt-1">
                         <div
                             onClick={() => setSkipAnimation((v) => !v)}
+                            role="switch"
+                            aria-checked={skipAnimation}
+                            tabIndex={0}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    setSkipAnimation((v) => !v);
+                                }
+                            }}
                             className={[
                                 "relative w-9 h-5 rounded-full transition-colors duration-200 flex-shrink-0",
                                 skipAnimation ? "bg-[#145de7]" : "bg-zinc-300 dark:bg-zinc-600",

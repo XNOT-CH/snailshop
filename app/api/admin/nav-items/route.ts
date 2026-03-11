@@ -1,7 +1,7 @@
 import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, navItems } from "@/lib/db";
-import { asc, max, count } from "drizzle-orm";
+import { max, count } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { navItemSchema } from "@/lib/validations/content";

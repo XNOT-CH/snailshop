@@ -3,6 +3,7 @@ import { isAdmin } from "@/lib/auth";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
 import { existsSync } from "fs";
+import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
     const authCheck = await isAdmin();
@@ -37,7 +38,7 @@ export async function POST(request: NextRequest) {
         }
 
         const timestamp = Date.now();
-        const randomStr = Math.random().toString(36).substring(2, 8);
+        const randomStr = crypto.randomBytes(4).toString('hex');
         const extension = file.name.split(".").pop() || "jpg";
         const filename = `${timestamp}-${randomStr}.${extension}`;
 

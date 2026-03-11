@@ -20,7 +20,6 @@ import {
     Zap,
     BarChart3,
     Loader2,
-    DollarSign,
     TrendingUp,
 } from "lucide-react";
 

@@ -1,7 +1,7 @@
 import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
 import { db, newsArticles } from "@/lib/db";
-import { eq, asc, desc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
 import { invalidateNewsCaches } from "@/lib/cache";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";

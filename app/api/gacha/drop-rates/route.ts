@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db, gachaRewards } from "@/lib/db";
-import { eq, and, isNull, isNotNull } from "drizzle-orm";
+import { eq, and, isNull } from "drizzle-orm";
 
 /** GET /api/gacha/drop-rates?machineId=xxx
  *  Returns per-tier drop rates calculated from the probability weights

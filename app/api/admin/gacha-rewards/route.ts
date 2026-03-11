@@ -1,7 +1,7 @@
 import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
 import { db, gachaRewards } from "@/lib/db";
-import { eq, desc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { gachaRewardSchema } from "@/lib/validations/gacha";

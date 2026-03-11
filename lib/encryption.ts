@@ -26,18 +26,21 @@ function getEncryptionKey(): string {
 }
 
 /**
- * Encrypt sensitive data
+ * Encrypt sensitive data using AES-256-GCM (Authenticated Encryption)
  */
 export function encrypt(text: string): string {
     const iv = crypto.randomBytes(IV_LENGTH);
     const cipher = crypto.createCipheriv(
-        "aes-256-cbc",
+        "aes-256-gcm",
         Buffer.from(getEncryptionKey()),
         iv
     );
-    let encrypted = cipher.update(text);
-    encrypted = Buffer.concat([encrypted, cipher.final()]);
-    return iv.toString("hex") + ":" + encrypted.toString("hex");
+    let encrypted = cipher.update(text, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    const authTag = cipher.getAuthTag().toString('hex');
+
+    // Format: iv:encrypted_data:auth_tag
+    return `${iv.toString("hex")}:${encrypted}:${authTag}`;
 }
 
 /**
@@ -46,20 +49,38 @@ export function encrypt(text: string): string {
 export function decrypt(text: string): string {
     try {
         const parts = text.split(":");
-        if (parts.length !== 2) {
-            // Data is not encrypted, return as-is (for backward compatibility)
-            return text;
+        if (parts.length === 3) {
+            // New GCM format: iv:encrypted:authTag
+            const iv = Buffer.from(parts[0], "hex");
+            const encryptedText = parts[1];
+            const authTag = Buffer.from(parts[2], "hex");
+
+            const decipher = crypto.createDecipheriv(
+                "aes-256-gcm",
+                Buffer.from(getEncryptionKey()),
+                iv
+            );
+            decipher.setAuthTag(authTag);
+
+            let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
+            decrypted += decipher.final('utf8');
+            return decrypted;
+        } else if (parts.length === 2) {
+            // Legacy CBC format for backward compatibility
+            const iv = Buffer.from(parts[0], "hex");
+            const encryptedText = Buffer.from(parts[1], "hex");
+            const decipher = crypto.createDecipheriv(
+                "aes-256-cbc",
+                Buffer.from(getEncryptionKey()),
+                iv
+            );
+            let decrypted = decipher.update(encryptedText);
+            decrypted = Buffer.concat([decrypted, decipher.final()]);
+            return decrypted.toString('utf8');
         }
-        const iv = Buffer.from(parts[0], "hex");
-        const encryptedText = Buffer.from(parts[1], "hex");
-        const decipher = crypto.createDecipheriv(
-            "aes-256-cbc",
-            Buffer.from(getEncryptionKey()),
-            iv
-        );
-        let decrypted = decipher.update(encryptedText);
-        decrypted = Buffer.concat([decrypted, decipher.final()]);
-        return decrypted.toString();
+
+        // Data is not encrypted, return as-is
+        return text;
     } catch (error) {
         // If decryption fails, return original text (backward compatibility)
         return text;

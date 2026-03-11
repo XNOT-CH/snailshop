@@ -1,7 +1,7 @@
 import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, helpArticles } from "@/lib/db";
-import { eq, asc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";

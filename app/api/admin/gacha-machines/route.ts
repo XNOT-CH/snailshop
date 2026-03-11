@@ -1,8 +1,8 @@
 import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
-import { db, gachaMachines, gachaRewards } from "@/lib/db";
-import { eq, asc } from "drizzle-orm";
+import { db, gachaMachines } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { validateBody } from "@/lib/validations/validate";
 import { gachaMachineSchema } from "@/lib/validations/gacha";
 

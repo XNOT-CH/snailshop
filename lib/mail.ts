@@ -13,7 +13,7 @@ export const sendEmail = async ({
 }) => {
     try {
         const { data, error } = await resend.emails.send({
-            from: "SnailShop <noreply@yourdomain.com>", // Replace with your verified domain
+            from: "onboarding@resend.dev", // Resend default test address
             to,
             subject,
             react,

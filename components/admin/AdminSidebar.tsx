@@ -26,11 +26,8 @@ import {
     Megaphone,
     Shield,
     Menu,
-    Dices,
-    Grid3X3,
     ChevronDown,
     Layers,
-    Sliders,
     FileSpreadsheet,
 } from "lucide-react";
 

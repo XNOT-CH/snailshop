@@ -1,5 +1,5 @@
 import { mysqlNow } from "@/lib/utils/date";
-import { db, auditLogs, users } from "@/lib/db";
+import { db, auditLogs } from "@/lib/db";
 import { eq, lt, and, gte, lte } from "drizzle-orm";
 import { getClientIp } from "@/lib/rateLimit";
 import { cookies } from "next/headers";

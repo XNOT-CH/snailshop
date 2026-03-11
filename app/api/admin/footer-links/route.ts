@@ -1,7 +1,7 @@
 import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, footerWidgetSettings, footerLinks } from "@/lib/db";
-import { asc, max } from "drizzle-orm";
+import { max } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { footerLinkSchema } from "@/lib/validations/content";

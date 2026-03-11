@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { GachaGridMachine } from "@/components/GachaGridMachine";
 import Link from "next/link";
-import { Home, ChevronRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
