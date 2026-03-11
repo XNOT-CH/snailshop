@@ -30,7 +30,7 @@ interface SlipTableProps {
     slips: Slip[];
 }
 
-export function SlipTable({ slips }: SlipTableProps) {
+export function SlipTable({ slips }: Readonly<SlipTableProps>) {
     const router = useRouter();
     const [processingId, setProcessingId] = useState<string | null>(null);
 

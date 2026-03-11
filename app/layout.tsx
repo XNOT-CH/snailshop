@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata } from "next";
 import { Prompt } from "next/font/google";
+import { Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { DynamicBackground } from "@/components/DynamicBackground";
@@ -29,9 +30,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="th" className={prompt.variable} suppressHydrationWarning data-scroll-behavior="smooth">
       <body className="font-sans antialiased min-h-screen bg-background flex flex-col">
@@ -45,7 +46,9 @@ export default function RootLayout({
               <DynamicFavicon />
 
               {/* Global Navigation Loading Screen */}
-              <GlobalLoading />
+              <Suspense fallback={null}>
+                <GlobalLoading />
+              </Suspense>
 
               {/* Navbar */}
               <Navbar />

@@ -45,7 +45,7 @@ interface AdminUsersClientProps {
     initialUsers: User[];
 }
 
-export default function AdminUsersClient({ initialUsers }: AdminUsersClientProps) {
+export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersClientProps>) {
     const [users, setUsers] = useState<User[]>(initialUsers);
     const [roles, setRoles] = useState<Role[]>([]);
     const [searchQuery, setSearchQuery] = useState("");

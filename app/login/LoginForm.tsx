@@ -14,7 +14,7 @@ interface LoginFormProps {
     readonly logoUrl: string | null;
 }
 
-export function LoginForm({ logoUrl }: LoginFormProps) {
+export function LoginForm({ logoUrl }: Readonly<LoginFormProps>) {
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);

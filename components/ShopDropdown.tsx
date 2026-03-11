@@ -8,7 +8,7 @@ interface ShopDropdownProps {
     readonly categories: readonly string[];
 }
 
-export function ShopDropdown({ categories }: ShopDropdownProps) {
+export function ShopDropdown({ categories }: Readonly<ShopDropdownProps>) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
 

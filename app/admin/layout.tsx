@@ -8,9 +8,9 @@ import { HideMainLayout } from "@/components/HideMainLayout";
 
 export default async function AdminLayout({
     children,
-}: {
+}: Readonly<{
     children: React.ReactNode;
-}) {
+}>) {
     // Get user ID from NextAuth session
     const session = await auth();
     const userId = session?.user?.id;

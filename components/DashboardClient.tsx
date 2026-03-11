@@ -54,7 +54,7 @@ function toDateString(date: Date): string {
 }
 
 // ─── Component ──────────────────────────────────────────
-export function DashboardClient({ username, initialCreditBalance }: DashboardClientProps) {
+export function DashboardClient({ username, initialCreditBalance }: Readonly<DashboardClientProps>) {
     const [overviewDate, setOverviewDate] = useState<Date>(new Date());
     const [topupRange, setTopupRange] = useState<DateRange | undefined>({
         from: subDays(new Date(), 6),

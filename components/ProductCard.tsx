@@ -29,7 +29,7 @@ export function ProductCard({
     category,
     isSold,
     index = 0,
-}: ProductCardProps) {
+}: Readonly<ProductCardProps>) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [isVisible, setIsVisible] = useState(false);

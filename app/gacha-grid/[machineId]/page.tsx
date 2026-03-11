@@ -10,9 +10,9 @@ export const dynamic = "force-dynamic";
 
 export default async function GachaGridPage({
     params,
-}: {
+}: Readonly<{
     params: Promise<{ machineId: string }>;
-}) {
+}>) {
     const { machineId } = await params;
 
     const machine = await db.query.gachaMachines.findFirst({ where: eq(gachaMachines.id, machineId) });

@@ -23,7 +23,7 @@ interface ProductDetailPageProps {
     params: Promise<{ id: string }>;
 }
 
-export async function generateMetadata({ params }: ProductDetailPageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: Readonly<ProductDetailPageProps>): Promise<Metadata> {
     const { id } = await params;
     const product = await getProduct(id);
     if (!product) return { title: "ไม่พบสินค้า" };
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: ProductDetailPageProps): Prom
 
 export default async function ProductDetailPage({
     params,
-}: ProductDetailPageProps) {
+}: Readonly<ProductDetailPageProps>) {
     const { id } = await params;
 
     const product = await getProduct(id);

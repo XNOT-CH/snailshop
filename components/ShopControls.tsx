@@ -11,7 +11,7 @@ interface ShopControlsProps {
     readonly currentSort: string;
 }
 
-export function ShopControls({ currentPage, totalPages, currentSort }: ShopControlsProps) {
+export function ShopControls({ currentPage, totalPages, currentSort }: Readonly<ShopControlsProps>) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();

@@ -20,7 +20,7 @@ interface TierRate {
     textCls: string;
 }
 
-export function DropRateModal({ open, onClose, machineId }: DropRateModalProps) {
+export function DropRateModal({ open, onClose, machineId }: Readonly<DropRateModalProps>) {
     const [tiers, setTiers] = useState<TierRate[]>([]);
     const [loading, setLoading] = useState(false);
 

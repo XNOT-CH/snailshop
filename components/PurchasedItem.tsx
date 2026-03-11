@@ -45,7 +45,7 @@ export function PurchasedItem({
     image,
     date,
     secretData,
-}: PurchasedItemProps) {
+}: Readonly<PurchasedItemProps>) {
     const [isOpen, setIsOpen] = useState(false);
     const [copiedField, setCopiedField] = useState<"username" | "password" | "all" | null>(null);
 

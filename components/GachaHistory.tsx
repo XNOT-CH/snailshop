@@ -36,7 +36,7 @@ function timeAgo(iso: string): string {
     return `${Math.floor(h / 24)} วันที่แล้ว`;
 }
 
-export function GachaHistory({ refreshKey }: { refreshKey: number }) {
+export function GachaHistory({ refreshKey }: Readonly<{ refreshKey: number }>) {
     const [logs, setLogs] = useState<RollLog[]>([]);
     const [stats, setStats] = useState<Stats | null>(null);
     const [loading, setLoading] = useState(true);

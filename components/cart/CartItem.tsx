@@ -12,7 +12,7 @@ interface CartItemProps {
     onUpdateQuantity: (id: string, quantity: number) => void;
 }
 
-export function CartItem({ item, onRemove, onUpdateQuantity }: CartItemProps) {
+export function CartItem({ item, onRemove, onUpdateQuantity }: Readonly<CartItemProps>) {
     const displayPrice = item.discountPrice ?? item.price;
     const hasDiscount = item.discountPrice !== null && item.discountPrice !== undefined && item.discountPrice < item.price;
     const quantity = item.quantity || 1;

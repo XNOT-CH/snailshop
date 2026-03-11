@@ -4,6 +4,7 @@ import { db, gachaMachines, gachaSettings, gachaRewards, gachaRollLogs, users, o
 import { eq, and, isNull, gte, lte, count, sql } from "drizzle-orm";
 import { decrypt, encrypt } from "@/lib/encryption";
 import { takeFirstStock } from "@/lib/stock";
+import crypto from "node:crypto";
 
 export async function POST(req: Request) {
     const auth = await isAuthenticated();

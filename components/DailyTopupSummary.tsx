@@ -114,7 +114,7 @@ const DAY_FULL_LABELS: Record<number, string> = {
 };
 
 // ─── Status Badge ───────────────────────────────────────
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status }: Readonly<{ status: string }>) {
     const config: Record<string, { icon: React.ReactNode; label: string; className: string }> = {
         APPROVED: {
             icon: <CheckCircle className="h-3 w-3" />,
@@ -142,7 +142,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // ─── Detail Modal ───────────────────────────────────────
-function DetailModal({ record, onClose }: { record: TopupRecord; onClose: () => void }) {
+function DetailModal({ record, onClose }: Readonly<{ record: TopupRecord; onClose: () => void }>) {
     return (
         <button
             type="button"
@@ -246,11 +246,11 @@ function AmountTooltip({
     active,
     payload,
     label,
-}: {
+}: Readonly<{
     active?: boolean;
     payload?: Array<{ value: number }>;
     label?: string;
-}) {
+}>) {
     if (!active || !payload?.length) return null;
     return (
         <div className="rounded-xl border border-border/60 bg-card px-4 py-3 shadow-xl" style={{ minWidth: 150 }}>
@@ -266,11 +266,11 @@ function TxnTooltip({
     active,
     payload,
     label,
-}: {
+}: Readonly<{
     active?: boolean;
     payload?: Array<{ value: number }>;
     label?: string;
-}) {
+}>) {
     if (!active || !payload?.length) return null;
     return (
         <div className="rounded-xl border border-border/60 bg-card px-4 py-3 shadow-xl" style={{ minWidth: 140 }}>
@@ -286,11 +286,11 @@ function HourlyTooltip({
     active,
     payload,
     label,
-}: {
+}: Readonly<{
     active?: boolean;
     payload?: Array<{ value: number }>;
     label?: string;
-}) {
+}>) {
     if (!active || !payload?.length) return null;
     return (
         <div className="rounded-xl border border-border/60 bg-card px-4 py-3 shadow-xl" style={{ minWidth: 140 }}>
@@ -304,7 +304,7 @@ function HourlyTooltip({
 
 // ─── Sort Arrow ─────────────────────────────────────────
 type SortDir = "asc" | "desc" | null;
-function SortIcon({ dir }: { dir: SortDir }) {
+function SortIcon({ dir }: Readonly<{ dir: SortDir }>) {
     if (!dir) return <ChevronUp className="h-3 w-3 opacity-20" />;
     return dir === "asc" ? (
         <ChevronUp className="h-3 w-3 text-primary" />
@@ -320,7 +320,7 @@ interface DailyTopupSummaryProps {
     endDate?: string;
 }
 
-export function DailyTopupSummary({ selectedDate, startDate, endDate }: DailyTopupSummaryProps) {
+export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly<DailyTopupSummaryProps>) {
     const [data, setData] = useState<TopupSummary | null>(null);
     const [weeklyData, setWeeklyData] = useState<WeeklyDataPoint[]>([]);
     const [isLoading, setIsLoading] = useState(true);

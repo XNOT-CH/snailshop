@@ -19,7 +19,7 @@ interface ProductDetailAddToCartProps {
     maxQuantity?: number;
 }
 
-export function ProductDetailAddToCart({ product, disabled = false, maxQuantity = 99 }: ProductDetailAddToCartProps) {
+export function ProductDetailAddToCart({ product, disabled = false, maxQuantity = 99 }: Readonly<ProductDetailAddToCartProps>) {
     const { addToCart, isInCart, isLoading: cartLoading } = useCart();
     const [isAdding, setIsAdding] = useState(false);
     const [quantity, setQuantity] = useState(1);

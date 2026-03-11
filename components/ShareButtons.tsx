@@ -9,7 +9,7 @@ interface ShareButtonsProps {
     className?: string;
 }
 
-export function ShareButtons({ title, className }: ShareButtonsProps) {
+export function ShareButtons({ title, className }: Readonly<ShareButtonsProps>) {
     const [copied, setCopied] = useState(false);
 
     const getUrl = () => typeof window !== "undefined" ? window.location.href : "";

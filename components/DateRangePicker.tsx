@@ -63,7 +63,7 @@ export function DateRangePicker({
     onChange,
     placeholder = "เลือกช่วงวันที่",
     className,
-}: DateRangePickerProps) {
+}: Readonly<DateRangePickerProps>) {
     const [open, setOpen] = React.useState(false);
 
     // Draft state — only committed on "ยืนยัน"

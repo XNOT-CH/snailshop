@@ -17,7 +17,7 @@ interface HeroBannerClientProps {
     banners: Banner[];
 }
 
-export function HeroBannerClient({ banners }: HeroBannerClientProps) {
+export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
     const autoplayPlugin = useRef(
         Autoplay({ delay: 5000, stopOnInteraction: false, stopOnMouseEnter: true })
     );

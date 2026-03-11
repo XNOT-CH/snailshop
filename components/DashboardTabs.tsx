@@ -15,7 +15,7 @@ export function DashboardTabs({
     topupContent,
     purchasesContent,
     membersContent,
-}: DashboardTabsProps) {
+}: Readonly<DashboardTabsProps>) {
     const hasMembersTab = !!membersContent;
 
     return (

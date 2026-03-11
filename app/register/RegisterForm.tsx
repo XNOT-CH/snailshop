@@ -13,7 +13,7 @@ interface RegisterFormProps {
     logoUrl: string | null;
 }
 
-export function RegisterForm({ logoUrl }: RegisterFormProps) {
+export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);

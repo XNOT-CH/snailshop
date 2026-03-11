@@ -9,7 +9,7 @@ interface CartIconProps {
     onClick?: () => void;
 }
 
-export function CartIcon({ onClick }: CartIconProps) {
+export function CartIcon({ onClick }: Readonly<CartIconProps>) {
     const { itemCount } = useCart();
 
     return (

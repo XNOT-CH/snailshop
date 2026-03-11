@@ -49,7 +49,7 @@ export function ThaiAddressSelector({
     onChange,
     idPrefix = "address",
     disabled = false,
-}: ThaiAddressSelectorProps) {
+}: Readonly<ThaiAddressSelectorProps>) {
     const [data, setData] = useState<RawGeography[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);

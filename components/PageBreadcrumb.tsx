@@ -25,7 +25,7 @@ interface PageBreadcrumbProps {
     showBackButton?: boolean;
 }
 
-export function PageBreadcrumb({ items, className, showBackButton = true }: PageBreadcrumbProps) {
+export function PageBreadcrumb({ items, className, showBackButton = true }: Readonly<PageBreadcrumbProps>) {
     const router = useRouter();
 
     return (

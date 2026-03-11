@@ -37,7 +37,7 @@ interface TopupTableProps {
 }
 
 // ─── Status Badge ───────────────────────────────────────
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status }: Readonly<{ status: string }>) {
     const config: Record<string, { icon: React.ReactNode; label: string; className: string }> = {
         PENDING: {
             icon: <Clock className="h-3.5 w-3.5" />,
@@ -72,7 +72,7 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 // ─── Component ──────────────────────────────────────────
-export function TopupTable({ topups }: TopupTableProps) {
+export function TopupTable({ topups }: Readonly<TopupTableProps>) {
     const router = useRouter();
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [filter, setFilter] = useState<"ALL" | "PENDING" | "APPROVED" | "REJECTED">("ALL");

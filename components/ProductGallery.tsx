@@ -14,7 +14,7 @@ interface ProductGalleryProps {
     mainImage: string;
 }
 
-export function ProductGallery({ mainImage }: ProductGalleryProps) {
+export function ProductGallery({ mainImage }: Readonly<ProductGalleryProps>) {
     // Since DB has only 1 image, simulate multiple angles
     const images = [mainImage, mainImage, mainImage, mainImage];
     const [selectedImage, setSelectedImage] = useState(0);

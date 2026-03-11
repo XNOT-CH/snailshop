@@ -22,7 +22,7 @@ export function QuantitySelector({
     disabled = false,
     size = "md",
     label,
-}: QuantitySelectorProps) {
+}: Readonly<QuantitySelectorProps>) {
     const handleDecrement = useCallback(() => {
         if (value > min) {
             onChange(value - 1);

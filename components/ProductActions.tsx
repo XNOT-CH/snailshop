@@ -22,7 +22,7 @@ interface ProductActionsProps {
     maxQuantity?: number;
 }
 
-export function ProductActions({ product, disabled = false, maxQuantity = 99 }: ProductActionsProps) {
+export function ProductActions({ product, disabled = false, maxQuantity = 99 }: Readonly<ProductActionsProps>) {
     const router = useRouter();
     const { addToCart, isInCart, isLoading: cartLoading } = useCart();
     const [quantity, setQuantity] = useState(1);

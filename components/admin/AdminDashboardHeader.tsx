@@ -14,7 +14,7 @@ interface AdminDashboardHeaderProps {
 export function AdminDashboardHeader({
     title = "แดชบอร์ด",
     subtitle = "ภาพรวมข้อมูลธุรกิจของคุณ",
-}: AdminDashboardHeaderProps) {
+}: Readonly<AdminDashboardHeaderProps>) {
     const today = new Date();
     const [dateRange, setDateRange] = useState<DateRange | undefined>({
         from: subDays(today, 6),

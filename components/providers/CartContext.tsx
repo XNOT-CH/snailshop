@@ -36,7 +36,7 @@ interface CartProviderProps {
     children: ReactNode;
 }
 
-export function CartProvider({ children }: CartProviderProps) {
+export function CartProvider({ children }: Readonly<CartProviderProps>) {
     const [items, setItems] = useState<CartItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);

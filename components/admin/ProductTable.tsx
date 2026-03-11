@@ -43,7 +43,7 @@ interface ProductTableProps {
     products: Product[];
 }
 
-export function ProductTable({ products }: ProductTableProps) {
+export function ProductTable({ products }: Readonly<ProductTableProps>) {
     const router = useRouter();
     const [deletingId, setDeletingId] = useState<string | null>(null);
     const [togglingFeatured, setTogglingFeatured] = useState<string | null>(null);

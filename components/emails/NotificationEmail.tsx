@@ -17,7 +17,7 @@ interface NotificationEmailProps {
 export const NotificationEmail = ({
     title,
     message,
-}: NotificationEmailProps) => {
+}: Readonly<NotificationEmailProps>) => {
     return (
         <Html>
             <Head />

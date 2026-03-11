@@ -486,7 +486,7 @@ function BannerCard({
     onImageChange,
     onTitleChange,
     onSubtitleChange,
-}: {
+}: Readonly<{
     number: number;
     image: string;
     title: string;
@@ -494,7 +494,7 @@ function BannerCard({
     onImageChange: (v: string) => void;
     onTitleChange: (v: string) => void;
     onSubtitleChange: (v: string) => void;
-}) {
+}>) {
     const [isUploading, setIsUploading] = React.useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
     const [showUrlInput, setShowUrlInput] = React.useState(false);

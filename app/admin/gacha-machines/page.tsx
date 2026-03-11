@@ -440,7 +440,7 @@ function SortableRow({
     handleDuplicate,
     onDelete,
     gameTypeLabel,
-}: {
+}: Readonly<{
     m: GachaMachine;
     i: number;
     page: number;
@@ -451,7 +451,7 @@ function SortableRow({
     handleDuplicate: (id: string, name: string) => void;
     onDelete: (id: string) => void;
     gameTypeLabel: (gt: string) => string;
-}) {
+}>) {
     const router = useRouter();
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: m.id });
 
@@ -551,13 +551,13 @@ function MachineTable({
     onToggle,
     onDelete,
     onRefresh,
-}: {
+}: Readonly<{
     machines: GachaMachine[];
     categories: GachaCategory[];
     onToggle: (id: string, field: "isActive" | "isEnabled", val: boolean) => void;
     onDelete: (id: string) => void;
     onRefresh: () => void;
-}) {
+}>) {
     const [search, setSearch] = useState("");
     const [filterCategory, setFilterCategory] = useState("");
     const [perPage, setPerPage] = useState(10);

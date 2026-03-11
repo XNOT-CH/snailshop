@@ -31,7 +31,7 @@ export const PurchaseReceiptEmail = ({
     totalTHB = 0,
     totalPoints = 0,
     items = [],
-}: PurchaseReceiptEmailProps) => {
+}: Readonly<PurchaseReceiptEmailProps>) => {
     return (
         <Html>
             <Head />

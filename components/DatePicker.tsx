@@ -26,7 +26,7 @@ export function DatePicker({
     onChange,
     placeholder = "เลือกวันที่",
     className,
-}: DatePickerProps) {
+}: Readonly<DatePickerProps>) {
     const [open, setOpen] = React.useState(false);
 
     return (

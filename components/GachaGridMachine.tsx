@@ -120,7 +120,7 @@ export function GachaGridMachine({
     costType = "FREE",
     costAmount = 0,
     userBalance = 0,
-}: GachaGridMachineProps) {
+}: Readonly<GachaGridMachineProps>) {
     const [rewards, setRewards] = useState<GridReward[]>([]);
     const [loading, setLoading] = useState(true);
     const [spinning, setSpinning] = useState(false);

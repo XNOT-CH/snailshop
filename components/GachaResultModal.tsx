@@ -45,7 +45,7 @@ const tierConfig = {
     },
 };
 
-export function GachaResultModal({ product, onClose, onSpinAgain }: GachaResultModalProps) {
+export function GachaResultModal({ product, onClose, onSpinAgain }: Readonly<GachaResultModalProps>) {
     const tier = tierConfig[product.tier];
 
     return (

@@ -9,9 +9,9 @@ import { HideMainLayout } from "@/components/HideMainLayout";
 
 export default async function DashboardLayout({
     children,
-}: {
+}: Readonly<{
     children: React.ReactNode;
-}) {
+}>) {
     // Get logged-in user from NextAuth session
     const session = await auth();
     const userId = session?.user?.id;

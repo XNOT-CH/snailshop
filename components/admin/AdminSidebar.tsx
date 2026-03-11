@@ -60,10 +60,10 @@ const navigation: NavEntry[] = [
 ];
 
 // ── Single nav item ────────────────────────────────────────────────────────
-function NavLink({ href, label, icon: Icon, active, onClick, sub = false }: {
+function NavLink({ href, label, icon: Icon, active, onClick, sub = false }: Readonly<{
     href: string; label: string; icon: React.ElementType;
     active: boolean; onClick?: () => void; sub?: boolean;
-}) {
+}>) {
     return (
         <Link
             href={href}
@@ -83,9 +83,9 @@ function NavLink({ href, label, icon: Icon, active, onClick, sub = false }: {
 }
 
 // ── Collapsible group ──────────────────────────────────────────────────────
-function NavGroup({ group, pathname, onLinkClick }: {
+function NavGroup({ group, pathname, onLinkClick }: Readonly<{
     group: NavGroup; pathname: string; onLinkClick?: () => void;
-}) {
+}>) {
     const anyActive = group.items.some(
         (i) => pathname === i.href || pathname.startsWith(i.href)
     );
@@ -134,7 +134,7 @@ function NavGroup({ group, pathname, onLinkClick }: {
 }
 
 // ── Sidebar nav contents ───────────────────────────────────────────────────
-function SidebarNav({ onLinkClick }: { onLinkClick?: () => void }) {
+function SidebarNav({ onLinkClick }: Readonly<{ onLinkClick?: () => void }>) {
     const pathname = usePathname();
 
     return (

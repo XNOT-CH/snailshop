@@ -107,7 +107,7 @@ interface GachaRhombusProps {
     machineId?: string; // undefined = global (สุ่มตัว X)
 }
 
-export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn = true, machineId }: GachaRhombusProps) {
+export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn = true, machineId }: Readonly<GachaRhombusProps>) {
     const tiles = useMemo(() => buildGrid(products), [products]);
 
     const [phase, setPhase] = useState<Phase>("idle");

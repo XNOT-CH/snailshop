@@ -35,7 +35,7 @@ const sidebarLinks = [
     { href: "/dashboard/settings", label: "ตั้งค่า", icon: Settings },
 ];
 
-export function DashboardSidebar({ user }: DashboardSidebarProps) {
+export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
     const pathname = usePathname();
 
     return (

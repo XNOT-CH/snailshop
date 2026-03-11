@@ -64,11 +64,11 @@ function CustomTooltip({
     active,
     payload,
     label,
-}: {
+}: Readonly<{
     active?: boolean;
     payload?: Array<{ value: number; name: string }>;
     label?: string;
-}) {
+}>) {
     if (!active || !payload?.length) return null;
 
     return (
@@ -94,7 +94,7 @@ function CustomTooltip({
 }
 
 // ─── Component ──────────────────────────────────────────
-export function RevenueAreaChart({ data, granularity }: RevenueAreaChartProps) {
+export function RevenueAreaChart({ data, granularity }: Readonly<RevenueAreaChartProps>) {
     return (
         <ResponsiveContainer width="100%" height={350}>
             <AreaChart

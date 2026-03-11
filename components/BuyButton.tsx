@@ -12,7 +12,7 @@ interface BuyButtonProps {
     disabled?: boolean;
 }
 
-export function BuyButton({ productId, price, disabled }: BuyButtonProps) {
+export function BuyButton({ productId, price, disabled }: Readonly<BuyButtonProps>) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
 

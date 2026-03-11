@@ -8,10 +8,10 @@ import Link from "next/link";
 export default function ErrorPage({
     error,
     reset,
-}: {
+}: Readonly<{
     error: Error & { digest?: string };
     reset: () => void;
-}) {
+}>) {
     useEffect(() => {
         console.error("[app/error]", error);
     }, [error]);

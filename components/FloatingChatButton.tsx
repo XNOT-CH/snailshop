@@ -15,7 +15,7 @@ interface FloatingChatButtonProps {
 
 export function FloatingChatButton({
     href = "https://www.facebook.com/profile.php?id=61571169820803",
-}: FloatingChatButtonProps) {
+}: Readonly<FloatingChatButtonProps>) {
     const [isVisible, setIsVisible] = useState(false);
 
     // Entrance animation - show after mount

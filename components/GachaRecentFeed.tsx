@@ -14,7 +14,7 @@ interface RecentLog {
     createdAt: string;
 }
 
-export function GachaRecentFeed({ refreshKey }: { refreshKey: number }) {
+export function GachaRecentFeed({ refreshKey }: Readonly<{ refreshKey: number }>) {
     const [logs, setLogs] = useState<RecentLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [isHovered, setIsHovered] = useState(false);

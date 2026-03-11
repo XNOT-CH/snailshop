@@ -10,7 +10,7 @@ import { type GachaProductLite, type GachaTier } from "@/lib/gachaGrid";
 
 export const dynamic = "force-dynamic";
 
-export default async function GachaPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function GachaPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
     const { id } = await params;
 
     const cookieStore = await cookies();
