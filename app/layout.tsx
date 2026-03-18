@@ -1,5 +1,5 @@
 import "./globals.css";
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Prompt } from "next/font/google";
 import { Suspense } from "react";
 import Navbar from "@/components/Navbar";
@@ -20,6 +20,12 @@ const prompt = Prompt({
   display: "swap",
 });
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
+
 export const metadata: Metadata = {
   title: {
     default: "Manashop - Game ID Marketplace",
@@ -35,7 +41,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="th" className={prompt.variable} suppressHydrationWarning data-scroll-behavior="smooth">
-      <body className="font-sans antialiased min-h-screen bg-background flex flex-col">
+      <body className="font-sans antialiased min-h-screen bg-background flex flex-col overflow-x-hidden">
         <ThemeProvider>
           <SweetAlertProvider>
             <CartProvider>
@@ -54,7 +60,7 @@ export default function RootLayout({
               <Navbar />
 
               {/* Main Content - Responsive Container with Page Transition */}
-              <div id="main-container" className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div id="main-container" className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-hidden">
                 <main className="animate-page-enter">
                   {children}
                 </main>

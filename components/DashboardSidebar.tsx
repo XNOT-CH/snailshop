@@ -13,7 +13,6 @@ import {
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-    LayoutDashboard,
     Wallet,
     Package,
     Settings,
@@ -29,7 +28,6 @@ interface DashboardSidebarProps {
 }
 
 const sidebarLinks = [
-    { href: "/dashboard", label: "ภาพรวม", icon: LayoutDashboard },
     { href: "/dashboard/topup", label: "เติมเงิน", icon: Wallet },
     { href: "/dashboard/inventory", label: "สินค้าของฉัน", icon: Package },
     { href: "/dashboard/settings", label: "ตั้งค่า", icon: Settings },

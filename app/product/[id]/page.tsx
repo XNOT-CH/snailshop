@@ -178,7 +178,7 @@ export default async function ProductDetailPage({
 
                             return (
                                 <Link href={`/product/${related.id}`} key={related.id} className="group cursor-pointer">
-                                    <div className="bg-white rounded-xl border border-gray-100 p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] flex flex-col h-full">
+                                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,0,0,0.12)] flex flex-col h-full">
 
                                         {/* Image */}
                                         <div className="group relative h-28 w-full rounded-lg overflow-hidden bg-gray-50 mb-4">

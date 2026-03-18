@@ -29,8 +29,9 @@ async function fetchIssues() {
             type: i.type
         })) || [];
         
-        fs.writeFileSync("sonar-current-issues.json", JSON.stringify(simplified, null, 2));
-        console.log(`Saved ${simplified.length} issues to sonar-current-issues.json`);
+        const outPath = require("path").join(__dirname, "sonar-current-issues.json");
+        fs.writeFileSync(outPath, JSON.stringify(simplified, null, 2));
+        console.log(`Saved ${simplified.length} issues to scripts/sonar/sonar-current-issues.json`);
     } catch (err) {
         console.error("Error:", err);
     }

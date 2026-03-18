@@ -950,7 +950,7 @@ html[data-scroll-behavior="smooth"] {
 
 ::-webkit-scrollbar-track {
 
-  background: #e0e7ff;
+  background: transparent;
 
 }
 
@@ -958,11 +958,13 @@ html[data-scroll-behavior="smooth"] {
 
 ::-webkit-scrollbar-thumb {
 
-  background: #93c5fd;
+  background: #60a5fa;
 
-  border-radius: 4px;
+  border-radius: 6px;
 
-  transition: background 0.3s ease;
+  border: 2px solid transparent;
+
+  background-clip: padding-box;
 
 }
 
@@ -972,6 +974,10 @@ html[data-scroll-behavior="smooth"] {
 
   background: #3b82f6;
 
+  border: 1px solid transparent;
+
+  background-clip: padding-box;
+
 }
 
 
@@ -980,7 +986,7 @@ html[data-scroll-behavior="smooth"] {
 
 html.dark ::-webkit-scrollbar-track {
 
-  background: #0a0f1a;
+  background: transparent;
 
 }
 
@@ -990,7 +996,11 @@ html.dark ::-webkit-scrollbar-thumb {
 
   background: linear-gradient(180deg, #3b82f6 0%, #6366f1 100%);
 
-  border-radius: 4px;
+  border-radius: 6px;
+
+  border: 2px solid transparent;
+
+  background-clip: padding-box;
 
 }
 
@@ -1001,6 +1011,30 @@ html.dark ::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(180deg, #60a5fa 0%, #818cf8 100%);
 
   box-shadow: 0 0 10px rgba(96, 165, 250, 0.5);
+
+  border: 1px solid transparent;
+
+  background-clip: padding-box;
+
+}
+
+
+
+html {
+
+  scrollbar-width: thin;
+
+  scrollbar-color: #60a5fa transparent;
+
+}
+
+
+
+html.dark {
+
+  scrollbar-width: thin;
+
+  scrollbar-color: #3b82f6 transparent;
 
 }
 
@@ -1702,17 +1736,13 @@ html.dark .box-glow-purple {
 
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 
-  transform-style: preserve-3d;
-
-  perspective: 1000px;
-
 }
 
 
 
 .card-tilt:hover {
 
-  transform: perspective(1000px) rotateX(-2deg) rotateY(2deg) translateY(-4px);
+  transform: translateY(-4px);
 
   box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.15);
 
@@ -2089,3 +2119,41 @@ body.admin-layout #main-container {
 .gacha-history-item {
   animation: historySlideIn 0.25s ease-out both;
 }
+
+/* ========================================
+   RESPONSIVE UTILITIES — Mobile Enhancements
+   ======================================== */
+
+/* Ensure carousels are swipeable on iOS */
+.swipe-container {
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
+}
+
+/* Bigger tap targets on mobile */
+@media (hover: none) and (pointer: coarse) {
+  /* Touch device: show hero arrows by default */
+  .hero-arrow {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* Larger touch targets for interactive elements */
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+}
+
+/* Readable text on all screen sizes */
+@media (max-width: 375px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+/* Prevent horizontal overflow on the root */
+body {
+  overflow-x: hidden;
+}

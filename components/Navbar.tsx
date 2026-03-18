@@ -107,31 +107,33 @@ export default async function Navbar() {
 
     return (
         <header id="main-navbar" className="sticky top-0 z-50 w-full border-b border-border/50 bg-card/90 backdrop-blur-lg shadow-sm">
-            <div className="max-w-7xl mx-auto flex h-16 items-center justify-between px-4 sm:px-6 lg:px-8">
-                {/* Logo */}
-                <Link href="/" className="flex items-center gap-2.5 font-semibold text-lg text-primary">
+            <div className="max-w-7xl mx-auto grid grid-cols-3 h-16 items-center px-4 sm:px-6 lg:px-8">
+
+                {/* Left: Logo */}
+                <Link href="/" className="flex items-center gap-2.5 font-semibold text-lg text-primary justify-self-start">
                     {siteSettings?.logoUrl ? (
                         <Image
                             src={siteSettings.logoUrl}
                             alt="Logo"
-                            width={48}
-                            height={48}
+                            width={36}
+                            height={36}
                             priority
-                            className="rounded-xl object-contain h-12 w-12"
+                            className="rounded-lg object-contain h-9 w-9"
                         />
                     ) : (
-                        <div className="h-12 w-12 rounded-xl bg-primary flex items-center justify-center">
-                            <Gamepad2 className="h-6 w-6 text-white" />
+                        <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
+                            <Gamepad2 className="h-5 w-5 text-white" />
                         </div>
                     )}
-                    <span className="hidden sm:inline">{siteSettings?.heroTitle || "GameStore"}</span>
+                    <span className="hidden sm:inline font-bold tracking-tight text-foreground">
+                        {siteSettings?.heroTitle || "GameStore"}
+                    </span>
                 </Link>
 
-                {/* Navigation - Desktop */}
-                <nav className="hidden md:flex items-center gap-0.5">
+                {/* Center: Navigation - Desktop */}
+                <nav className="hidden md:flex items-center justify-center gap-1">
                     {navLinks.map((link) => {
                         const Icon = link.icon;
-                        // Replace /shop link with ShopDropdown
                         if (link.href === "/shop") {
                             return (
                                 <ShopDropdown
@@ -144,7 +146,7 @@ export default async function Navbar() {
                             <Link
                                 key={link.href}
                                 href={link.href}
-                                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary rounded-xl hover:bg-accent whitespace-nowrap"
+                                className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:text-primary rounded-lg hover:bg-accent whitespace-nowrap"
                             >
                                 <Icon className="h-4 w-4 flex-shrink-0" />
                                 {link.label}
@@ -153,8 +155,8 @@ export default async function Navbar() {
                     })}
                 </nav>
 
-                {/* Right Side */}
-                <div className="flex items-center gap-2">
+                {/* Right: Actions */}
+                <div className="flex items-center gap-1.5 justify-self-end">
                     {/* Theme Toggle */}
                     <ThemeToggle />
 

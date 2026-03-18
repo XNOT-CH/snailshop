@@ -61,7 +61,7 @@ export default async function ShopPage(props: Readonly<{
     const paginatedProducts = categoryProducts.slice((validPage - 1) * ITEMS_PER_PAGE, validPage * ITEMS_PER_PAGE);
 
     return (
-        <div className="py-6 sm:py-8 bg-card/90 backdrop-blur-sm rounded-2xl px-4 sm:px-6 shadow-xl shadow-primary/10">
+        <div className="py-6 sm:py-8 bg-card/90 backdrop-blur-sm px-4 sm:px-6 shadow-xl shadow-primary/10">
             {/* Breadcrumb */}
             <PageBreadcrumb items={[{ label: "ร้านค้า" }]} className="mb-4" />
 
@@ -69,7 +69,7 @@ export default async function ShopPage(props: Readonly<{
             <div className="mb-8">
                 <div className="flex items-center gap-3 mb-2">
                     <ShoppingBag className="h-8 w-8 text-primary" />
-                    <h1 className="text-3xl font-bold text-foreground">ร้านค้า</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground">ร้านค้า</h1>
                 </div>
                 <p className="text-muted-foreground">
                     ค้นหาและซื้อไอดีเกมที่คุณต้องการ
@@ -90,40 +90,47 @@ export default async function ShopPage(props: Readonly<{
 
             <Separator className="mb-8" />
 
-            {/* Category Filters & Controls */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                <div className="flex flex-wrap gap-2">
-                    <Link
-                        href={`/shop?category=all&sort=${currentSort}`}
-                        scroll={false}
-                        className={`inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-4 flex-shrink-0 rounded-full ${currentCategory === 'all' ? 'bg-[#2563eb] text-white shadow-sm' : 'text-foreground hover:text-primary'}`}
-                    >
-                        ทั้งหมด ({availableProducts.length})
-                    </Link>
-                    {categories
-                        .filter(category => availableProducts.some(p => p.category === category))
-                        .map((category) => {
-                            const count = availableProducts.filter((p) => p.category === category).length;
-                            return (
-                                <Link
-                                    key={category}
-                                    href={`/shop?category=${encodeURIComponent(category)}&sort=${currentSort}`}
-                                    scroll={false}
-                                    className={`inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 h-9 px-4 flex-shrink-0 rounded-full ${currentCategory === category ? 'bg-[#2563eb] text-white shadow-sm' : 'text-foreground hover:text-primary'}`}
-                                >
-                                    {category} ({count})
-                                </Link>
-                            );
-                        })}
-                </div>
+            {/* Category Filters */}
+            <div className="flex flex-wrap gap-2 mb-4">
+                <Link
+                    href={`/shop?category=all&sort=${currentSort}`}
+                    scroll={false}
+                    className={`inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-150 h-8 px-4 rounded-full flex-shrink-0 ${
+                        currentCategory === 'all'
+                            ? 'bg-primary text-primary-foreground shadow-sm'
+                            : 'bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80'
+                    }`}
+                >
+                    ทั้งหมด ({availableProducts.length})
+                </Link>
+                {categories
+                    .filter(category => availableProducts.some(p => p.category === category))
+                    .map((category) => {
+                        const count = availableProducts.filter((p) => p.category === category).length;
+                        return (
+                            <Link
+                                key={category}
+                                href={`/shop?category=${encodeURIComponent(category)}&sort=${currentSort}`}
+                                scroll={false}
+                                className={`inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-150 h-8 px-4 rounded-full flex-shrink-0 ${
+                                    currentCategory === category
+                                        ? 'bg-primary text-primary-foreground shadow-sm'
+                                        : 'bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80'
+                                }`}
+                            >
+                                {category} ({count})
+                            </Link>
+                        );
+                    })}
+            </div>
 
-                <div className="flex-shrink-0">
-                    <ShopControls
-                        currentPage={currentPage}
-                        totalPages={totalPages}
-                        currentSort={currentSort}
-                    />
-                </div>
+            {/* Sort & Pagination Controls */}
+            <div className="w-full mb-6">
+                <ShopControls
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    currentSort={currentSort}
+                />
             </div>
 
             {/* Products Grid */}

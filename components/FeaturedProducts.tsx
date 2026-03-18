@@ -88,7 +88,9 @@ export function FeaturedProducts() {
     const scroll = (direction: "left" | "right") => {
         if (scrollContainerRef.current) {
             const container = scrollContainerRef.current;
-            const scrollAmount = 224;
+            // Dynamically scroll by one card width
+            const firstCard = container.querySelector<HTMLElement>(":scope > div");
+            const scrollAmount = firstCard ? firstCard.offsetWidth + 16 : 200;
 
             if (direction === "right") {
                 const maxScroll = container.scrollWidth - container.clientWidth;
@@ -122,7 +124,7 @@ export function FeaturedProducts() {
                 </div>
                 <div className="flex gap-4 overflow-hidden">
                     {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className="flex-shrink-0 w-52">
+                        <div key={i} className="flex-shrink-0 w-[calc(50%-8px)] sm:w-52">
                             <div className="h-52 skeleton-wave rounded-xl"></div>
                             <div className="h-4 skeleton-wave rounded mt-3 w-3/4"></div>
                             <div className="h-4 skeleton-wave rounded mt-2 w-1/2"></div>
@@ -160,7 +162,7 @@ export function FeaturedProducts() {
                 style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
                 {products.map((product) => (
-                    <div key={product.id} className="flex-shrink-0 w-52 snap-start swipe-item">
+                    <div key={product.id} className="flex-shrink-0 w-40 sm:w-52 snap-start swipe-item">
                         <div className="group relative bg-card rounded-2xl border border-border/50 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
                             <div className="relative aspect-square overflow-hidden bg-muted">
                                 <div className="absolute top-3 left-3 z-10">
@@ -194,7 +196,7 @@ export function FeaturedProducts() {
                                     src={product.imageUrl || "/placeholder.jpg"}
                                     alt={product.name}
                                     fill
-                                    sizes="208px"
+                                    sizes="(max-width: 640px) calc(50vw - 24px), 208px"
                                     className="object-cover group-hover:grayscale-[50%] group-hover:blur-[1px] transition-all duration-300 ease-out"
                                 />
                             </div>

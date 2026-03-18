@@ -76,7 +76,7 @@ export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
     return (
         <section
             aria-label="Featured Banners Carosuel"
-            className="relative w-full group"
+            className="relative w-full max-w-[2000px] mx-auto group"
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
             onFocus={() => setIsHovered(true)}
@@ -84,41 +84,42 @@ export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
             /* NOSONAR */ tabIndex={0}
         >
             {/* Embla Carousel Container */}
-            <div className="overflow-hidden rounded-2xl shadow-sm" ref={emblaRef}>
+            <div className="overflow-hidden" ref={emblaRef}>
                 <div className="flex">
                     {banners.map((banner) => (
                         <div
                             key={banner.id}
                             className="flex-[0_0_100%] min-w-0"
                         >
-                            <div className="relative w-full overflow-hidden aspect-[2/1] sm:aspect-[3/1] lg:aspect-[4/1]">
+                            {/* Natural responsive image: scales with page width, maintains original aspect ratio */}
+                            <div className="relative w-full overflow-hidden rounded-xl">
                                 <Image
                                     src={banner.image}
                                     alt={banner.title}
-                                    fill
+                                    width={2000}
+                                    height={500}
                                     sizes="100vw"
-                                    className="object-cover"
+                                    className="w-full h-auto block rounded-xl"
                                     priority
                                     onError={(e) => {
                                         (e.target as HTMLImageElement).src =
                                             "https://placehold.co/2000x500/1e293b/f1f5f9?text=Banner";
                                     }}
                                 />
-                                {/* Gradient Overlay - only when there's text */}
+                                {/* Gradient Overlay */}
                                 {(banner.title || banner.subtitle) && (
-                                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-transparent" />
+                                    <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/30 to-transparent" />
                                 )}
-
                                 {/* Text Content */}
                                 {(banner.title || banner.subtitle) && (
-                                    <div className="absolute inset-0 flex flex-col justify-center px-6 sm:px-12 lg:px-16">
+                                    <div className="absolute inset-0 flex flex-col justify-center px-5 sm:px-12 lg:px-16">
                                         {banner.title && (
-                                            <h2 className="text-xl sm:text-3xl lg:text-5xl font-bold text-white mb-2 sm:mb-3">
+                                            <h2 className="text-base sm:text-3xl lg:text-5xl font-bold text-white mb-1 sm:mb-3 max-w-[50%] sm:max-w-none drop-shadow-lg">
                                                 {banner.title}
                                             </h2>
                                         )}
                                         {banner.subtitle && (
-                                            <p className="text-sm sm:text-lg lg:text-xl text-white/90 max-w-lg font-medium">
+                                            <p className="text-[10px] sm:text-lg lg:text-xl text-white/90 max-w-[45%] sm:max-w-lg font-medium drop-shadow">
                                                 {banner.subtitle}
                                             </p>
                                         )}
@@ -130,49 +131,51 @@ export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
                 </div>
             </div>
 
-            {/* Navigation Arrows - Show on Hover */}
+            {/* Navigation Arrows - Always visible on mobile, hover-reveal on desktop */}
             {banners.length > 1 && (
                 <>
                     {/* Previous Button */}
                     <button
                         onClick={scrollPrev}
                         className={`
-                            absolute left-4 top-1/2 -translate-y-1/2 z-10
-                            w-10 h-10 sm:w-12 sm:h-12 
+                            absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10
+                            w-9 h-9 sm:w-12 sm:h-12 
                             flex items-center justify-center
-                            bg-white/20 hover:bg-white/40 
+                            bg-white/30 hover:bg-white/50 active:bg-white/60
                             backdrop-blur-sm
                             rounded-full
                             text-white
                             transition-all duration-300 ease-out
-                            ${isHovered ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-4"}
+                            opacity-100 sm:opacity-0 sm:group-hover:opacity-100
+                            sm:${isHovered ? "opacity-100 translate-x-0" : "-translate-x-4"}
                             focus:outline-none focus:ring-2 focus:ring-white/50
-                            shadow-lg
+                            shadow-lg touch-manipulation
                         `}
                         aria-label="Previous slide"
                     >
-                        <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <ChevronLeft className="w-4 h-4 sm:w-6 sm:h-6" />
                     </button>
 
                     {/* Next Button */}
                     <button
                         onClick={scrollNext}
                         className={`
-                            absolute right-4 top-1/2 -translate-y-1/2 z-10
-                            w-10 h-10 sm:w-12 sm:h-12 
+                            absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10
+                            w-9 h-9 sm:w-12 sm:h-12 
                             flex items-center justify-center
-                            bg-white/20 hover:bg-white/40 
+                            bg-white/30 hover:bg-white/50 active:bg-white/60
                             backdrop-blur-sm
                             rounded-full
                             text-white
                             transition-all duration-300 ease-out
-                            ${isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"}
+                            opacity-100 sm:opacity-0 sm:group-hover:opacity-100
+                            sm:${isHovered ? "opacity-100 translate-x-0" : "translate-x-4"}
                             focus:outline-none focus:ring-2 focus:ring-white/50
-                            shadow-lg
+                            shadow-lg touch-manipulation
                         `}
                         aria-label="Next slide"
                     >
-                        <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+                        <ChevronRight className="w-4 h-4 sm:w-6 sm:h-6" />
                     </button>
                 </>
             )}

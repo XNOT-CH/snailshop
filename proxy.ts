@@ -28,7 +28,6 @@ export async function proxy(request: NextRequest) {
         // Not logged in
         if (!session?.user) {
             if (isApiRoute) {
-                // Return 401 JSON for API routes (not HTML redirect)
                 return new Response(
                     JSON.stringify({ success: false, message: "ไม่ได้เข้าสู่ระบบ" }),
                     { status: 401, headers: { "Content-Type": "application/json" } }
@@ -57,8 +56,6 @@ export async function proxy(request: NextRequest) {
             }
         }
     }
-
-    return undefined; // Pass through to the actual route
 }
 
 export const config = {

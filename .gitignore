@@ -48,3 +48,10 @@ next-env.d.ts
 
 # Drizzle migrations snapshot (local only)
 drizzle/meta
+
+# SonarQube output files (generated, do not commit)
+scripts/sonar/sonar-current-issues.json
+eslint_report.txt
+
+# Database backup files (may contain sensitive data)
+*.sql

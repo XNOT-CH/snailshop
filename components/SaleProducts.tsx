@@ -91,7 +91,8 @@ export function SaleProducts() {
     const scroll = (direction: "left" | "right") => {
         if (scrollContainerRef.current) {
             const container = scrollContainerRef.current;
-            const scrollAmount = 224;
+            const firstCard = container.querySelector<HTMLElement>(":scope > div");
+            const scrollAmount = firstCard ? firstCard.offsetWidth + 16 : 200;
 
             if (direction === "right") {
                 const maxScroll = container.scrollWidth - container.clientWidth;
@@ -129,7 +130,7 @@ export function SaleProducts() {
                 </div>
                 <div className="flex gap-4 overflow-hidden">
                     {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className="flex-shrink-0 w-52 animate-pulse">
+                        <div key={i} className="flex-shrink-0 w-[calc(50%-8px)] sm:w-52 animate-pulse">
                             <div className="h-52 bg-muted rounded-xl"></div>
                             <div className="h-4 bg-muted rounded mt-3 w-3/4"></div>
                             <div className="h-4 bg-muted rounded mt-2 w-1/2"></div>
@@ -168,7 +169,7 @@ export function SaleProducts() {
                 style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
                 {products.map((product) => (
-                    <div key={product.id} className="flex-shrink-0 w-52 snap-start">
+                    <div key={product.id} className="flex-shrink-0 w-40 sm:w-52 snap-start">
                         <div className="group relative bg-card rounded-2xl border border-border/50 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
                             <div className="relative aspect-square overflow-hidden bg-muted">
                                 <div className="absolute top-3 left-3 z-10">
@@ -208,7 +209,7 @@ export function SaleProducts() {
                                     src={product.imageUrl || "/placeholder.jpg"}
                                     alt={product.name}
                                     fill
-                                    sizes="208px"
+                                    sizes="(max-width: 640px) calc(50vw - 24px), 208px"
                                     className="object-cover group-hover:grayscale-[30%] group-hover:blur-[1px] transition-all duration-300 ease-out"
                                 />
                             </div>

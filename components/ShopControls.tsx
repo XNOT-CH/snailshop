@@ -1,9 +1,8 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
 
 interface ShopControlsProps {
     readonly currentPage: number;
@@ -33,82 +32,71 @@ export function ShopControls({ currentPage, totalPages, currentSort }: Readonly<
         router.push(`${pathname}?${createQueryString("page", newPage.toString())}`, { scroll: false });
     };
 
+    const sortOptions = [
+        { value: "latest", label: "ล่าสุด" },
+        { value: "popular", label: "ยอดนิยม" },
+        { value: "best_selling", label: "ขายดี" },
+        { value: "price_asc", label: "ราคา ↑" },
+        { value: "price_desc", label: "ราคา ↓" },
+    ];
+
+    const activeSort = currentSort === "all" ? "latest" : currentSort;
+
     return (
-        <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-                <Button
-                    variant={currentSort === 'popular' ? 'default' : 'outline'}
-                    size="sm"
-                    className={`h-9 rounded-md font-normal border ${currentSort === 'popular' ? 'bg-[#eff6ff] hover:bg-[#dbeafe] text-[#2563eb] border-[#bfdbfe]' : 'bg-card hover:bg-accent text-foreground border-border'}`}
-                    onClick={() => handleSortChange('popular')}
-                >
-                    ยอดนิยม
-                </Button>
-                <Button
-                    variant={currentSort === 'latest' || currentSort === 'all' ? 'default' : 'outline'}
-                    size="sm"
-                    className={`h-9 rounded-md font-normal border ${currentSort === 'latest' || currentSort === 'all' ? 'bg-[#eff6ff] hover:bg-[#dbeafe] text-[#2563eb] border-[#bfdbfe]' : 'bg-card hover:bg-accent text-foreground border-border'}`}
-                    onClick={() => handleSortChange('latest')}
-                >
-                    ล่าสุด
-                </Button>
-                <Button
-                    variant={currentSort === 'best_selling' ? 'default' : 'outline'}
-                    size="sm"
-                    className={`h-9 rounded-md font-normal border ${currentSort === 'best_selling' ? 'bg-[#eff6ff] hover:bg-[#dbeafe] text-[#2563eb] border-[#bfdbfe]' : 'bg-card hover:bg-accent text-foreground border-border'}`}
-                    onClick={() => handleSortChange('best_selling')}
-                >
-                    สินค้าขายดี
-                </Button>
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 w-full min-w-0">
 
-                <Select value={currentSort.startsWith('price') ? currentSort : ''} onValueChange={handleSortChange}>
-                    <SelectTrigger className="w-[180px] h-9 rounded-sm font-normal text-xs sm:text-sm bg-card border-border hover:bg-accent transition-colors">
-                        <SelectValue placeholder="ราคา: จากมากไปน้อย" />
-                    </SelectTrigger>
-                    <SelectContent position="popper" sideOffset={4}>
-                        <SelectItem value="price_asc">ราคา: จากน้อยไปมาก</SelectItem>
-                        <SelectItem value="price_desc">ราคา: จากมากไปน้อย</SelectItem>
-                    </SelectContent>
-                </Select>
+            {/* ─── Sort pill bar ─── */}
+            <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                {sortOptions.map((opt) => {
+                    const isActive = activeSort === opt.value;
+                    return (
+                        <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => handleSortChange(opt.value)}
+                            className={`inline-flex items-center h-8 px-3 rounded-full text-xs font-medium transition-all duration-150 whitespace-nowrap flex-shrink-0 ${
+                                isActive
+                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                    : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                            }`}
+                        >
+                            {opt.label}
+                        </button>
+                    );
+                })}
             </div>
 
-            <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-muted-foreground min-w-[36px] text-center">
-                        <span className="text-primary">{currentPage}</span><span className="opacity-50">/{totalPages}</span>
-                    </span>
-                    <div className="flex gap-1">
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-9 w-9 rounded-full border-border bg-card hover:bg-accent hover:text-primary transition-colors"
-                            disabled={currentPage <= 1}
-                            onClick={() => handlePageChange(currentPage - 1)}
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-9 w-9 rounded-full border-border bg-card hover:bg-accent hover:text-primary transition-colors"
-                            disabled={currentPage >= totalPages}
-                            onClick={() => handlePageChange(currentPage + 1)}
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </Button>
-                    </div>
+            {/* ─── Pagination ─── */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-xs text-muted-foreground tabular-nums">
+                    <span className="font-semibold text-foreground">{currentPage}</span>
+                    <span className="opacity-40"> / {totalPages}</span>
+                </span>
+                <div className="flex gap-1">
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 rounded-full border-border bg-card hover:bg-accent hover:text-primary transition-colors disabled:opacity-30"
+                        disabled={currentPage <= 1}
+                        onClick={() => handlePageChange(currentPage - 1)}
+                        aria-label="หน้าก่อนหน้า"
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-8 w-8 rounded-full border-border bg-card hover:bg-accent hover:text-primary transition-colors disabled:opacity-30"
+                        disabled={currentPage >= totalPages}
+                        onClick={() => handlePageChange(currentPage + 1)}
+                        aria-label="หน้าถัดไป"
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </Button>
                 </div>
-
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-9 text-muted-foreground hover:text-foreground hidden sm:flex"
-                    onClick={() => router.push('/shop', { scroll: false })}
-                >
-                    <ChevronLeft className="h-4 w-4 mr-1" />
-                    ย้อนกลับ
-                </Button>
             </div>
+
         </div>
     );
 }

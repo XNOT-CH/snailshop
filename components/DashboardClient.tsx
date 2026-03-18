@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { PurchasedItem } from "@/components/PurchasedItem";
@@ -16,21 +16,10 @@ import {
     Wallet,
     Package,
     ShoppingBag,
-    ArrowRight,
-    Zap,
-    BarChart3,
     Loader2,
-    TrendingUp,
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────
-interface OverviewData {
-    creditBalance: number;
-    purchasesOnDate: number;
-    totalSpending: number;
-    totalTopup: number;
-}
-
 interface PurchaseItem {
     id: string;
     title: string;
@@ -42,7 +31,7 @@ interface PurchaseItem {
 
 interface DashboardClientProps {
     username: string;
-    initialCreditBalance: number;
+    initialCreditBalance?: number;
 }
 
 // ─── Helper ─────────────────────────────────────────────
@@ -54,37 +43,16 @@ function toDateString(date: Date): string {
 }
 
 // ─── Component ──────────────────────────────────────────
-export function DashboardClient({ initialCreditBalance }: Readonly<DashboardClientProps>) {
-    const [overviewDate, setOverviewDate] = useState<Date>(new Date());
+export function DashboardClient({ }: Readonly<DashboardClientProps>) {
     const [topupRange, setTopupRange] = useState<DateRange | undefined>({
         from: subDays(new Date(), 6),
         to: new Date(),
     });
     const [purchasesDate, setPurchasesDate] = useState<Date>(new Date());
 
-    // Overview data
-    const [overview, setOverview] = useState<OverviewData | null>(null);
-    const [overviewLoading, setOverviewLoading] = useState(true);
-
     // Purchases data
     const [purchases, setPurchases] = useState<PurchaseItem[]>([]);
     const [purchasesLoading, setPurchasesLoading] = useState(true);
-
-    // ── Fetch Overview ──────────────────────────────────
-    const fetchOverview = useCallback(async () => {
-        setOverviewLoading(true);
-        try {
-            const res = await fetch(`/api/dashboard/overview?date=${toDateString(overviewDate)}`);
-            const json = await res.json();
-            if (json.success) setOverview(json.data);
-        } catch (err) {
-            console.error("Failed to fetch overview:", err);
-        } finally {
-            setOverviewLoading(false);
-        }
-    }, [overviewDate]);
-
-    useEffect(() => { fetchOverview(); }, [fetchOverview]);
 
     // ── Fetch Purchases ─────────────────────────────────
     const fetchPurchases = useCallback(async () => {
@@ -121,16 +89,8 @@ export function DashboardClient({ initialCreditBalance }: Readonly<DashboardClie
     }
 
     return (
-        <Tabs defaultValue="overview" className="w-full">
-            <TabsList className="w-full grid grid-cols-3 h-11 mb-6 bg-muted/80 backdrop-blur-sm rounded-xl p-1">
-                <TabsTrigger
-                    value="overview"
-                    className="gap-1.5 rounded-lg text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 transition-all duration-200"
-                >
-                    <BarChart3 className="h-4 w-4" />
-                    <span className="hidden sm:inline">ภาพรวม</span>
-                    <span className="sm:hidden">รวม</span>
-                </TabsTrigger>
+        <Tabs defaultValue="topup" className="w-full">
+            <TabsList className="w-full grid grid-cols-2 h-11 mb-6 bg-muted/80 backdrop-blur-sm rounded-xl p-1">
                 <TabsTrigger
                     value="topup"
                     className="gap-1.5 rounded-lg text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 transition-all duration-200"
@@ -150,103 +110,7 @@ export function DashboardClient({ initialCreditBalance }: Readonly<DashboardClie
             </TabsList>
 
             {/* ════════════════════════════════════════════
-                Tab 1: ภาพรวม (Overview)
-               ════════════════════════════════════════════ */}
-            <TabsContent value="overview" className="animate-page-enter space-y-4">
-                {/* Date Picker */}
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                    <div>
-                        <h2 className="text-lg font-semibold text-foreground">📊 ภาพรวม</h2>
-                        <p className="text-sm text-muted-foreground">{formatThaiDate(overviewDate)}</p>
-                    </div>
-                    <DatePicker
-                        value={overviewDate}
-                        onChange={(d) => d && setOverviewDate(d)}
-                        placeholder="เลือกวันที่"
-                    />
-                </div>
-
-                {overviewLoading ? (
-                    <Card className="bg-card">
-                        <CardContent className="py-12 flex items-center justify-center">
-                            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                            <span className="ml-2 text-muted-foreground">กำลังโหลด...</span>
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                        {/* Credit Balance */}
-                        <Card className="bg-primary text-primary-foreground overflow-hidden animate-card-up stagger-1 card-tilt">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-medium opacity-90">
-                                    ยอดเครดิตปัจจุบัน
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-baseline justify-between">
-                                    <span className="text-4xl font-bold">
-                                        ฿{(overview?.creditBalance ?? initialCreditBalance).toLocaleString()}
-                                    </span>
-                                    <Wallet className="h-8 w-8 opacity-50" />
-                                </div>
-                                <Link href="/dashboard/topup">
-                                    <Button size="sm" variant="secondary" className="mt-4 gap-1 w-full">
-                                        <Zap className="h-4 w-4" />
-                                        เติมเงิน
-                                        <ArrowRight className="h-4 w-4" />
-                                    </Button>
-                                </Link>
-                            </CardContent>
-                        </Card>
-
-                        {/* Purchases on date */}
-                        <Card className="bg-card animate-card-up stagger-2 card-tilt">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">
-                                    สินค้าที่ซื้อ (วันนี้)
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-baseline justify-between">
-                                    <span className="text-4xl font-bold text-foreground">
-                                        {overview?.purchasesOnDate ?? 0}
-                                    </span>
-                                    <Package className="h-8 w-8 text-muted-foreground/50" />
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-2">
-                                    ยอดใช้จ่าย ฿{(overview?.totalSpending ?? 0).toLocaleString()}
-                                </p>
-                            </CardContent>
-                        </Card>
-
-                        {/* Topup on date */}
-                        <Card className="bg-card animate-card-up stagger-3 card-tilt">
-                            <CardHeader className="pb-2">
-                                <CardTitle className="text-sm font-medium text-muted-foreground">
-                                    ยอดเติมเงิน (วันนี้)
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-baseline justify-between">
-                                    <span className="text-4xl font-bold text-foreground">
-                                        ฿{(overview?.totalTopup ?? 0).toLocaleString()}
-                                    </span>
-                                    <TrendingUp className="h-8 w-8 text-muted-foreground/50" />
-                                </div>
-                                <Link href="/shop">
-                                    <Button variant="outline" className="mt-4 w-full gap-2">
-                                        <ShoppingBag className="h-4 w-4" />
-                                        ไปร้านค้า
-                                    </Button>
-                                </Link>
-                            </CardContent>
-                        </Card>
-                    </div>
-                )}
-            </TabsContent>
-
-            {/* ════════════════════════════════════════════
-                Tab 2: สรุปเติมเงิน (Topup Summary)
+                Tab 1: สรุปเติมเงิน (Topup Summary)
                ════════════════════════════════════════════ */}
             <TabsContent value="topup" className="animate-page-enter space-y-4">
                 {/* Date Range Picker */}

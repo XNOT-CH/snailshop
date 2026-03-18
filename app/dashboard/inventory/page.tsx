@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { db, users, orders } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { decrypt } from "@/lib/encryption";
@@ -13,8 +13,8 @@ import { Package, ShoppingBag } from "lucide-react";
 export const dynamic = "force-dynamic";
 
 export default async function InventoryPage() {
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
+    const session = await auth();
+    const userId = session?.user?.id;
     if (!userId) redirect("/login");
 
     const user = await db.query.users.findFirst({ where: eq(users.id, userId) });

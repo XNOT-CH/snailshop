@@ -27,7 +27,7 @@ export function ShopDropdown({ categories }: Readonly<ShopDropdownProps>) {
         <div ref={ref} className="relative">
             <button
                 onClick={() => setOpen((v) => !v)}
-                className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-primary rounded-xl hover:bg-accent whitespace-nowrap"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:text-primary rounded-lg hover:bg-accent whitespace-nowrap"
                 aria-expanded={open}
                 aria-haspopup="true"
             >
