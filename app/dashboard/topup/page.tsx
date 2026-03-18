@@ -266,12 +266,14 @@ export default function TopupPage() {
                                     </p>
                                 </div>
                             ) : (
-                                <button
-                                    type="button"
+                                <div
+                                    role="button"
+                                    tabIndex={0}
                                     onDragOver={handleDragOver}
                                     onDragLeave={handleDragLeave}
                                     onDrop={handleDrop}
                                     onClick={() => fileInputRef.current?.click()}
+                                    onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
                                     className={`w-full
                                             border-2 border-dashed rounded-xl p-8 text-center cursor-pointer
                                             transition-all duration-200
@@ -283,7 +285,7 @@ export default function TopupPage() {
                                 >
                                     <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
                                     <p className="text-muted-foreground font-medium">
-                                        ลาก & วาง เพื่ออัปโหลด
+                                        ลาก &amp; วาง เพื่ออัปโหลด
                                     </p>
                                     <p className="text-muted-foreground text-sm mt-1">หรือ</p>
                                     <Button
@@ -297,7 +299,7 @@ export default function TopupPage() {
                                     >
                                         อัปโหลดไฟล์
                                     </Button>
-                                </button>
+                                </div>
                             )}
 
                             {/* Warning */}
