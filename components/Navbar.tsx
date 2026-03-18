@@ -7,13 +7,7 @@ import { getSiteSettings } from "@/lib/getSiteSettings";
 import { Button } from "@/components/ui/button";
 import { ShopDropdown } from "@/components/ShopDropdown";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
-} from "@/components/ui/sheet";
+import { NavigationDrawer } from "@/components/NavigationDrawer";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -24,7 +18,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { LogoutButton } from "@/components/LogoutButton";
 import {
-    Menu,
     Gamepad2,
     Home,
     ShoppingBag,
@@ -240,91 +233,14 @@ export default async function Navbar() {
                         </div>
                     )}
 
-                    {/* Mobile Menu */}
-                    <Sheet>
-                        <SheetTrigger asChild>
-                            <Button variant="ghost" size="icon" className="md:hidden rounded-xl text-muted-foreground hover:text-primary hover:bg-accent" aria-label="เปิดเมนู">
-                                <Menu className="h-5 w-5" />
-                            </Button>
-                        </SheetTrigger>
-                        <SheetContent side="right" className="w-80 bg-card border-l border-border">
-                            <SheetHeader>
-                                <SheetTitle className="flex items-center gap-2 text-primary">
-                                    <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
-                                        <Gamepad2 className="h-4 w-4 text-white" />
-                                    </div>
-                                    {siteSettings?.heroTitle || "GameStore"}
-                                </SheetTitle>
-                            </SheetHeader>
-                            <div className="flex flex-col gap-4 mt-6">
-                                {/* User Info (Mobile) */}
-                                {user && (
-                                    <div className="flex items-center gap-3 p-4 rounded-2xl bg-accent">
-                                        <Avatar>
-                                            <AvatarFallback className="bg-primary text-primary-foreground">
-                                                {user.username.charAt(0).toUpperCase()}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div>
-                                            <p className="font-medium text-foreground">{user.username}</p>
-                                            <p className="text-sm text-muted-foreground">
-                                                ฿{Number(user.creditBalance).toLocaleString()}
-                                            </p>
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Nav Links (Mobile) */}
-                                <nav className="flex flex-col gap-1">
-                                    {navLinks.map((link) => {
-                                        const Icon = link.icon;
-                                        return (
-                                            <Link
-                                                key={link.href}
-                                                href={link.href}
-                                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent hover:text-primary transition-colors"
-                                            >
-                                                <Icon className="h-5 w-5" />
-                                                {link.label}
-                                            </Link>
-                                        );
-                                    })}
-                                    {user && (
-                                        <Link
-                                            href="/dashboard/topup"
-                                            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent hover:text-primary transition-colors"
-                                        >
-                                            <Wallet className="h-5 w-5" />
-                                            เติมเงิน
-                                        </Link>
-                                    )}
-                                </nav>
-
-                                {/* Auth Buttons (Mobile) */}
-                                {!user && (
-                                    <div className="flex flex-col gap-2 pt-4 border-t border-border">
-                                        <Link href="/login">
-                                            <Button variant="outline" className="w-full rounded-xl border-border text-muted-foreground hover:bg-accent">
-                                                เข้าสู่ระบบ
-                                            </Button>
-                                        </Link>
-                                        <Link href="/register">
-                                            <Button className="w-full rounded-xl">
-                                                สมัครสมาชิก
-                                            </Button>
-                                        </Link>
-                                    </div>
-                                )}
-
-                                {/* Logout (Mobile) */}
-                                {user && (
-                                    <div className="pt-4 border-t border-border">
-                                        <LogoutButton />
-                                    </div>
-                                )}
-                            </div>
-                        </SheetContent>
-                    </Sheet>
+                    {/* Mobile Navigation Drawer */}
+                    <NavigationDrawer
+                        navLinks={navLinks}
+                        user={user ? { username: user.username, creditBalance: user.creditBalance } : null}
+                        siteName={siteSettings?.heroTitle || "GameStore"}
+                        logoUrl={siteSettings?.logoUrl || undefined}
+                        categories={shopCategories}
+                    />
                 </div>
             </div>
         </header>
