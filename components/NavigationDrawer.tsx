@@ -2,30 +2,30 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
-    Menu,
     X,
     Home,
     ShoppingBag,
     LayoutDashboard,
     HelpCircle,
+    Dices,
     Wallet,
     User,
-    UserCog,
-    Settings,
-    Dices,
-    LogOut,
+    Share2,
     ChevronRight,
     Gamepad2,
+    Lock,
+    UserPlus,
+    Menu,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 interface NavLink {
     href: string;
     label: string;
     icon: React.ElementType;
+    hasChildren?: boolean;
 }
 
 interface NavigationDrawerProps {
@@ -43,17 +43,17 @@ export function NavigationDrawer({
     navLinks,
     user,
     siteName = "GameStore",
+    logoUrl,
     categories = [],
 }: NavigationDrawerProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [expandedItems, setExpandedItems] = useState<string[]>([]);
     const pathname = usePathname();
 
-    // Close drawer on route change
     useEffect(() => {
         setIsOpen(false);
     }, [pathname]);
 
-    // Prevent body scroll when drawer is open
     useEffect(() => {
         if (isOpen) {
             document.body.style.overflow = "hidden";
@@ -65,208 +65,222 @@ export function NavigationDrawer({
         };
     }, [isOpen]);
 
+    const toggleExpand = (href: string) => {
+        setExpandedItems((prev) =>
+            prev.includes(href) ? prev.filter((h) => h !== href) : [...prev, href]
+        );
+    };
+
     const iconMap: Record<string, React.ElementType> = {
         "/": Home,
         "/shop": ShoppingBag,
         "/dashboard": LayoutDashboard,
         "/help": HelpCircle,
         "/gachapons": Dices,
+        "/dashboard/topup": Wallet,
+        "/profile": User,
+        "/share": Share2,
     };
+
+    const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
     return (
         <>
             {/* Hamburger Button */}
-            <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden rounded-xl text-muted-foreground hover:text-primary hover:bg-accent"
-                aria-label="เปิดเมนู Navigation Drawer"
+            <button
+                className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
+                aria-label="เปิดเมนู"
                 onClick={() => setIsOpen(true)}
             >
                 <Menu className="h-5 w-5" />
-            </Button>
+            </button>
 
             {/* Backdrop */}
             <div
-                className={`fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity duration-300 md:hidden ${
+                className={`fixed inset-0 z-[60] bg-black/70 transition-opacity duration-300 md:hidden ${
                     isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
                 }`}
                 onClick={() => setIsOpen(false)}
-                aria-hidden="true"
             />
 
             {/* Drawer Panel */}
             <aside
-                className={`fixed top-0 left-0 z-50 h-full w-[300px] bg-card border-r border-border shadow-2xl flex flex-col transition-transform duration-300 ease-in-out md:hidden ${
+                style={{ background: "#0c1929" }}
+                className={`fixed top-0 left-0 z-[70] h-full w-[300px] flex flex-col transition-transform duration-300 ease-in-out md:hidden ${
                     isOpen ? "translate-x-0" : "-translate-x-full"
                 }`}
-                aria-label="Navigation Drawer"
             >
-                {/* Drawer Header */}
-                <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-card">
-                    <Link
-                        href="/"
-                        className="flex items-center gap-2.5 font-bold text-primary"
-                        onClick={() => setIsOpen(false)}
-                    >
-                        <div className="h-9 w-9 rounded-xl bg-primary flex items-center justify-center shadow-md">
-                            <Gamepad2 className="h-5 w-5 text-white" />
-                        </div>
-                        <span className="text-lg tracking-tight text-foreground">{siteName}</span>
+                {/* Header */}
+                <div
+                    style={{ background: "#0f2035", borderBottom: "1px solid #1e3a5f" }}
+                    className="flex items-center justify-between px-5 py-4"
+                >
+                    <Link href="/" className="flex items-center gap-2.5" onClick={() => setIsOpen(false)}>
+                        {logoUrl ? (
+                            <Image
+                                src={logoUrl}
+                                alt={siteName}
+                                width={36}
+                                height={36}
+                                className="rounded-lg object-contain h-9 w-9"
+                            />
+                        ) : (
+                            <div className="h-9 w-9 rounded-lg bg-blue-600 flex items-center justify-center">
+                                <Gamepad2 className="h-5 w-5 text-white" />
+                            </div>
+                        )}
+                        <span className="text-white font-bold text-base tracking-tight">{siteName}</span>
                     </Link>
-                    <Button
-                        variant="ghost"
-                        size="icon"
-                        className="rounded-xl text-muted-foreground hover:text-primary hover:bg-accent"
+                    <button
                         onClick={() => setIsOpen(false)}
+                        className="text-gray-400 hover:text-white transition-colors"
                         aria-label="ปิดเมนู"
                     >
-                        <X className="h-5 w-5" />
-                    </Button>
+                        <X className="h-6 w-6" />
+                    </button>
                 </div>
 
-                {/* Scrollable Content */}
-                <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
-                    {/* User Card */}
-                    {user && (
-                        <div className="flex items-center gap-3 p-4 rounded-2xl bg-accent/60 border border-border">
-                            <Avatar className="h-11 w-11 border-2 border-primary shadow">
-                                <AvatarFallback className="bg-primary text-primary-foreground text-base font-bold">
-                                    {user.username.charAt(0).toUpperCase()}
-                                </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                                <p className="font-semibold text-foreground truncate">{user.username}</p>
-                                <p className="text-sm text-muted-foreground">
-                                    ฿{Number(user.creditBalance).toLocaleString()}
-                                </p>
+                {/* Auth Buttons / User Card */}
+                <div className="px-4 py-4" style={{ borderBottom: "1px solid #1e3a5f" }}>
+                    {user ? (
+                        <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: "#1a3050" }}>
+                            <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white text-lg flex-shrink-0">
+                                {user.username.charAt(0).toUpperCase()}
                             </div>
-                            <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <div className="flex-1 min-w-0">
+                                <p className="text-white font-semibold truncate">{user.username}</p>
+                                <p className="text-blue-300 text-sm">฿{Number(user.creditBalance).toLocaleString()}</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-2">
+                            <Link
+                                href="/login"
+                                onClick={() => setIsOpen(false)}
+                                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border border-blue-500 text-white text-sm font-medium hover:bg-blue-600 transition-colors"
+                            >
+                                <Lock className="h-4 w-4" />
+                                เข้าสู่ระบบ
+                            </Link>
+                            <Link
+                                href="/register"
+                                onClick={() => setIsOpen(false)}
+                                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg border border-gray-500 text-white text-sm font-medium hover:bg-gray-700 transition-colors"
+                            >
+                                <UserPlus className="h-4 w-4" />
+                                สมัครสมาชิก
+                            </Link>
                         </div>
                     )}
+                </div>
 
-                    {/* Main Nav Links */}
-                    <div>
-                        <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                            เมนูหลัก
-                        </p>
-                        <nav className="flex flex-col gap-1">
-                            {navLinks.map((link) => {
-                                const Icon = iconMap[link.href] || link.icon || Home;
-                                const isActive = pathname === link.href;
-                                return (
+                {/* Nav Links */}
+                <nav className="flex-1 overflow-y-auto py-2">
+                    {/* Main nav from DB */}
+                    {navLinks.map((link) => {
+                        const Icon = iconMap[link.href] || link.icon || Home;
+                        const active = isActive(link.href) && link.href !== "/";
+                        const exactActive = pathname === link.href;
+                        const showActive = link.href === "/" ? exactActive : active;
+                        const isShop = link.href === "/shop";
+                        const isExpanded = expandedItems.includes(link.href);
+
+                        return (
+                            <div key={link.href}>
+                                {isShop && categories.length > 0 ? (
+                                    <>
+                                        <button
+                                            onClick={() => toggleExpand(link.href)}
+                                            className={`w-full flex items-center gap-4 px-5 py-3.5 text-sm font-medium transition-colors ${
+                                                showActive
+                                                    ? "bg-blue-600 text-white border-l-4 border-blue-300"
+                                                    : "text-gray-300 hover:bg-white/5 border-l-4 border-transparent"
+                                            }`}
+                                        >
+                                            <Icon className="h-5 w-5 flex-shrink-0" />
+                                            <span className="flex-1 text-left">{link.label}</span>
+                                            <ChevronRight
+                                                className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`}
+                                            />
+                                        </button>
+                                        {isExpanded && (
+                                            <div style={{ background: "#0a1623" }} className="pb-1">
+                                                {categories.map((cat) => (
+                                                    <Link
+                                                        key={cat}
+                                                        href={`/shop?category=${encodeURIComponent(cat)}`}
+                                                        className="flex items-center gap-4 pl-14 pr-5 py-2.5 text-sm text-gray-400 hover:text-white hover:bg-white/5 transition-colors"
+                                                        onClick={() => setIsOpen(false)}
+                                                    >
+                                                        {cat}
+                                                    </Link>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
                                     <Link
-                                        key={link.href}
                                         href={link.href}
-                                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 ${
-                                            isActive
-                                                ? "bg-primary text-primary-foreground shadow-sm"
-                                                : "text-muted-foreground hover:bg-accent hover:text-primary"
+                                        className={`flex items-center gap-4 px-5 py-3.5 text-sm font-medium transition-colors ${
+                                            showActive
+                                                ? "bg-blue-600 text-white border-l-4 border-blue-300"
+                                                : "text-gray-300 hover:bg-white/5 border-l-4 border-transparent"
                                         }`}
                                         onClick={() => setIsOpen(false)}
                                     >
                                         <Icon className="h-5 w-5 flex-shrink-0" />
-                                        <span>{link.label}</span>
-                                        {isActive && <ChevronRight className="h-4 w-4 ml-auto" />}
+                                        <span className="flex-1">{link.label}</span>
                                     </Link>
-                                );
-                            })}
-                        </nav>
-                    </div>
+                                )}
+                            </div>
+                        );
+                    })}
 
-                    {/* Shop Categories */}
-                    {categories.length > 0 && (
-                        <div>
-                            <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                หมวดหมู่สินค้า
-                            </p>
-                            <nav className="flex flex-col gap-1">
-                                {categories.map((cat) => (
-                                    <Link
-                                        key={cat}
-                                        href={`/shop?category=${encodeURIComponent(cat)}`}
-                                        className="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm text-muted-foreground hover:bg-accent hover:text-primary transition-all duration-200"
-                                        onClick={() => setIsOpen(false)}
-                                    >
-                                        <ShoppingBag className="h-4 w-4 flex-shrink-0" />
-                                        <span className="truncate">{cat}</span>
-                                    </Link>
-                                ))}
-                            </nav>
-                        </div>
-                    )}
-
-                    {/* Quick Links for logged-in users */}
+                    {/* Extra links for logged-in users */}
                     {user && (
-                        <div>
-                            <p className="px-3 mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                                บัญชีของฉัน
-                            </p>
-                            <nav className="flex flex-col gap-1">
-                                <Link
-                                    href="/dashboard/topup"
-                                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent hover:text-primary transition-all duration-200"
-                                    onClick={() => setIsOpen(false)}
-                                >
-                                    <Wallet className="h-5 w-5" />
-                                    เติมเงิน
-                                </Link>
-                                <Link
-                                    href="/dashboard"
-                                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent hover:text-primary transition-all duration-200"
-                                    onClick={() => setIsOpen(false)}
-                                >
-                                    <User className="h-5 w-5" />
-                                    แดชบอร์ด
-                                </Link>
-                                <Link
-                                    href="/profile/settings"
-                                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent hover:text-primary transition-all duration-200"
-                                    onClick={() => setIsOpen(false)}
-                                >
-                                    <UserCog className="h-5 w-5" />
-                                    แก้ไขโปรไฟล์
-                                </Link>
-                                <Link
-                                    href="/dashboard/settings"
-                                    className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:bg-accent hover:text-primary transition-all duration-200"
-                                    onClick={() => setIsOpen(false)}
-                                >
-                                    <Settings className="h-5 w-5" />
-                                    ตั้งค่า
-                                </Link>
-                            </nav>
-                        </div>
+                        <>
+                            <div className="my-2 mx-4" style={{ height: "1px", background: "#1e3a5f" }} />
+                            <Link
+                                href="/dashboard/topup"
+                                className={`flex items-center gap-4 px-5 py-3.5 text-sm font-medium transition-colors ${
+                                    pathname === "/dashboard/topup"
+                                        ? "bg-blue-600 text-white border-l-4 border-blue-300"
+                                        : "text-gray-300 hover:bg-white/5 border-l-4 border-transparent"
+                                }`}
+                                onClick={() => setIsOpen(false)}
+                            >
+                                <Wallet className="h-5 w-5 flex-shrink-0" />
+                                <span>เติมเงิน</span>
+                            </Link>
+                            <Link
+                                href="/profile/settings"
+                                className={`flex items-center gap-4 px-5 py-3.5 text-sm font-medium transition-colors ${
+                                    pathname.startsWith("/profile")
+                                        ? "bg-blue-600 text-white border-l-4 border-blue-300"
+                                        : "text-gray-300 hover:bg-white/5 border-l-4 border-transparent"
+                                }`}
+                                onClick={() => setIsOpen(false)}
+                            >
+                                <User className="h-5 w-5 flex-shrink-0" />
+                                <span>โปรไฟล์</span>
+                            </Link>
+                        </>
                     )}
-                </div>
+                </nav>
 
-                {/* Drawer Footer */}
-                <div className="px-3 py-4 border-t border-border">
-                    {user ? (
+                {/* Footer */}
+                {user && (
+                    <div className="px-4 py-4" style={{ borderTop: "1px solid #1e3a5f" }}>
                         <form action="/api/auth/signout" method="POST">
                             <button
                                 type="submit"
-                                className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-destructive hover:bg-destructive/10 transition-all duration-200"
+                                className="w-full py-2.5 rounded-lg text-sm font-medium text-red-400 border border-red-800 hover:bg-red-900/30 transition-colors"
                             >
-                                <LogOut className="h-5 w-5" />
                                 ออกจากระบบ
                             </button>
                         </form>
-                    ) : (
-                        <div className="flex flex-col gap-2">
-                            <Link href="/login" onClick={() => setIsOpen(false)}>
-                                <Button variant="outline" className="w-full rounded-xl border-border text-muted-foreground hover:bg-accent">
-                                    เข้าสู่ระบบ
-                                </Button>
-                            </Link>
-                            <Link href="/register" onClick={() => setIsOpen(false)}>
-                                <Button className="w-full rounded-xl">
-                                    สมัครสมาชิก
-                                </Button>
-                            </Link>
-                        </div>
-                    )}
-                </div>
+                    </div>
+                )}
             </aside>
         </>
     );
