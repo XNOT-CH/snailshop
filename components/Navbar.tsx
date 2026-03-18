@@ -235,8 +235,8 @@ export default async function Navbar() {
 
                     {/* Mobile Navigation Drawer */}
                     <NavigationDrawer
-                        navLinks={navLinks}
-                        user={user ? { username: user.username, creditBalance: user.creditBalance } : null}
+                        navLinks={navLinks.map(({ href, label }) => ({ href, label }))}
+                        user={user ? { username: user.username, creditBalance: Number(user.creditBalance) } : null}
                         siteName={siteSettings?.heroTitle || "GameStore"}
                         logoUrl={siteSettings?.logoUrl || undefined}
                         categories={shopCategories}
