@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Loader2, Pencil, Gem, Banknote, Package, Upload, X } from "lucide-react";
+import { ArrowLeft, Loader2, Pencil, Gem, Banknote, Package, Upload, X, Timer, Clock } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { showSuccess, showError } from "@/lib/swal";
 import { compressImage } from "@/lib/compressImage";
@@ -32,7 +33,9 @@ export default function EditProductPage() {
         secretData: "",
         currency: "THB",
         stockSeparator: "newline",
+        autoDeleteAfterSale: "",
     });
+    const [autoDeleteEnabled, setAutoDeleteEnabled] = useState(false);
 
     // Fetch product data on mount
     useEffect(() => {
@@ -53,7 +56,9 @@ export default function EditProductPage() {
                         secretData: product.secretData || "",
                         currency: product.currency || "THB",
                         stockSeparator: product.stockSeparator || "newline",
+                        autoDeleteAfterSale: product.autoDeleteAfterSale?.toString() || "",
                     });
+                    if (product.autoDeleteAfterSale) setAutoDeleteEnabled(true);
                 } else {
                     showError("ไม่พบสินค้า");
                     router.push("/admin/products");
@@ -116,7 +121,10 @@ export default function EditProductPage() {
             const response = await fetch(`/api/products/${productId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    ...formData,
+                    autoDeleteAfterSale: autoDeleteEnabled && formData.autoDeleteAfterSale ? Number(formData.autoDeleteAfterSale) : null,
+                }),
             });
 
             const data = await response.json();
@@ -360,6 +368,96 @@ export default function EditProductPage() {
                                 onChange={handleChange}
                             />
                         </div>
+                    </CardContent>
+                </Card>
+
+                {/* Auto-Delete Card */}
+                <Card className="border-orange-200">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                            <Timer className="h-5 w-5 text-orange-500" />
+                            ลบอัตโนมัติหลังซื้อ
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="font-medium text-sm">เปิดใช้งาน</p>
+                                <p className="text-xs text-muted-foreground">สินค้าจะถูกลบออกอัตโนมัติหลังถูกซื้อตามเวลาที่ตั้ง</p>
+                            </div>
+                            <Switch
+                                checked={autoDeleteEnabled}
+                                onCheckedChange={setAutoDeleteEnabled}
+                            />
+                        </div>
+
+                        {autoDeleteEnabled && (
+                            <div className="space-y-3 pt-2 border-t">
+                                {/* Quick presets */}
+                                <div>
+                                    <Label className="text-sm">เลือกเวลาด่วน</Label>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                        {[
+                                            { label: "30 นาที", value: "30" },
+                                            { label: "1 ชม.", value: "60" },
+                                            { label: "6 ชม.", value: "360" },
+                                            { label: "12 ชม.", value: "720" },
+                                            { label: "1 วัน", value: "1440" },
+                                            { label: "3 วัน", value: "4320" },
+                                            { label: "7 วัน", value: "10080" },
+                                        ].map((preset) => (
+                                            <button
+                                                key={preset.value}
+                                                type="button"
+                                                onClick={() => setFormData(prev => ({ ...prev, autoDeleteAfterSale: preset.value }))}
+                                                className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                                                    formData.autoDeleteAfterSale === preset.value
+                                                        ? "bg-orange-500 text-white border-orange-500"
+                                                        : "border-orange-300 text-orange-600 hover:bg-orange-50"
+                                                }`}
+                                            >
+                                                {preset.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Custom input */}
+                                <div className="space-y-1">
+                                    <Label htmlFor="autoDeleteAfterSale" className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        หรือกรอกจำนวนนาทีเอง
+                                    </Label>
+                                    <div className="flex items-center gap-2">
+                                        <Input
+                                            id="autoDeleteAfterSale"
+                                            name="autoDeleteAfterSale"
+                                            type="number"
+                                            min="1"
+                                            placeholder="เช่น 60"
+                                            value={formData.autoDeleteAfterSale}
+                                            onChange={handleChange}
+                                            className="w-40 border-orange-300"
+                                        />
+                                        <span className="text-sm text-muted-foreground">นาที</span>
+                                        {formData.autoDeleteAfterSale && (
+                                            <span className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded-full">
+                                                ≈ {Number(formData.autoDeleteAfterSale) >= 1440
+                                                    ? `${(Number(formData.autoDeleteAfterSale) / 1440).toFixed(1)} วัน`
+                                                    : Number(formData.autoDeleteAfterSale) >= 60
+                                                    ? `${(Number(formData.autoDeleteAfterSale) / 60).toFixed(1)} ชั่วโมง`
+                                                    : `${formData.autoDeleteAfterSale} นาที`}
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <p className="text-xs text-muted-foreground bg-orange-50 p-2 rounded-lg border border-orange-200">
+                                    ⚠️ เมื่อสินค้าถูกซื้อ ระบบจะตั้งเวลาลบสินค้านี้ออกอัตโนมัติตามเวลาที่กำหนด
+                                    โดยจะลบเมื่อ Cron Job ทำงาน (เรียก <code className="text-xs bg-orange-100 px-1 rounded">/api/admin/auto-delete/run</code>)
+                                </p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 

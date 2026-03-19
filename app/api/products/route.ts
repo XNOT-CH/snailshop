@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json();
-        const { title, price, discountPrice, image, category, description, secretData, currency, stockSeparator } = body;
+        const { title, price, discountPrice, image, category, description, secretData, currency, stockSeparator, autoDeleteAfterSale } = body;
 
         if (!title || !price || !category) {
             return NextResponse.json({ success: false, message: "Missing required fields: title, price, category" }, { status: 400 });
@@ -48,6 +48,7 @@ export async function POST(request: NextRequest) {
             secretData: secretData ? encrypt(secretData) : "",
             stockSeparator: stockSeparator || "newline",
             isSold: false,
+            autoDeleteAfterSale: autoDeleteAfterSale ? Number(autoDeleteAfterSale) : null,
             createdAt: mysqlNow(),
             updatedAt: mysqlNow(),
         });

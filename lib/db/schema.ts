@@ -153,6 +153,8 @@ export const products = mysqlTable("Product", {
     isFeatured: boolean("isFeatured").default(false).notNull(),
     sortOrder: int("sortOrder").default(0).notNull(),
     orderId: varchar("orderId", { length: 36 }).unique().references(() => orders.id, { onDelete: "set null" }),
+    autoDeleteAfterSale: int("autoDeleteAfterSale"),
+    scheduledDeleteAt: datetime("scheduledDeleteAt", { mode: "string" }),
     createdAt: now(),
     updatedAt: updatedAt(),
 }, (t) => [

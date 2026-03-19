@@ -1,7 +1,6 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { Prompt } from "next/font/google";
-import { Suspense } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { DynamicBackground } from "@/components/DynamicBackground";
@@ -11,7 +10,7 @@ import { CartProvider } from "@/components/providers/CartContext";
 import { FloatingChatButton } from "@/components/FloatingChatButton";
 import { SweetAlertProvider } from "@/components/SweetAlertProvider";
 import { AnnouncementPopupWrapper } from "@/components/AnnouncementPopupWrapper";
-import { GlobalLoading } from "@/components/GlobalLoading";
+import { GlobalLoadingWrapper } from "@/components/GlobalLoadingWrapper";
 
 const prompt = Prompt({
   subsets: ["thai", "latin"],
@@ -51,10 +50,8 @@ export default function RootLayout({
               {/* Dynamic Favicon from Settings */}
               <DynamicFavicon />
 
-              {/* Global Navigation Loading Screen */}
-              <Suspense fallback={null}>
-                <GlobalLoading />
-              </Suspense>
+              {/* Global Navigation Loading Screen - client-only, no SSR to avoid hydration mismatch */}
+              <GlobalLoadingWrapper />
 
               {/* Navbar */}
               <Navbar />

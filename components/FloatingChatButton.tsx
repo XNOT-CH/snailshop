@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { MessageCircle } from "lucide-react";
 import {
     Tooltip,
@@ -13,10 +14,13 @@ interface FloatingChatButtonProps {
     href?: string;
 }
 
+const HIDDEN_PATHS = ["/login", "/register"];
+
 export function FloatingChatButton({
     href = "https://www.facebook.com/profile.php?id=61571169820803",
 }: Readonly<FloatingChatButtonProps>) {
     const [isVisible, setIsVisible] = useState(false);
+    const pathname = usePathname();
 
     // Entrance animation - show after mount
     useEffect(() => {
@@ -25,6 +29,9 @@ export function FloatingChatButton({
         }, 500);
         return () => clearTimeout(timer);
     }, []);
+
+    // Hide on login / register pages (after hooks)
+    if (HIDDEN_PATHS.includes(pathname)) return null;
 
     return (
         <TooltipProvider delayDuration={100}>

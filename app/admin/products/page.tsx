@@ -2,14 +2,22 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus, Package } from "lucide-react";
+import { Plus, Package, Trash2 } from "lucide-react";
 import { ProductTable } from "@/components/admin/ProductTable";
 import { decrypt } from "@/lib/encryption";
 import { getStockCount } from "@/lib/stock";
+import { runAutoDelete } from "@/lib/autoDelete";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminProductsPage() {
+    // Auto-run cleanup on every page load (silent - no throw on error)
+    try {
+        await runAutoDelete();
+    } catch (err) {
+        console.error("[AdminProductsPage] Auto-delete failed:", err);
+    }
+
     const productList = await db.query.products.findMany({
         orderBy: (t, { desc }) => desc(t.createdAt),
     });
@@ -26,12 +34,20 @@ export default async function AdminProductsPage() {
                         จัดการสินค้าเกมของคุณ
                     </p>
                 </div>
-                <Link href="/admin/products/new">
-                    <Button className="gap-2 w-full sm:w-auto">
-                        <Plus className="h-4 w-4" />
-                        เพิ่มสินค้าใหม่
-                    </Button>
-                </Link>
+                <div className="flex items-center gap-2 flex-wrap">
+                    <Link href="/admin/products/trash">
+                        <Button variant="outline" size="sm" className="gap-2 border-orange-300 text-orange-600 hover:bg-orange-50">
+                            <Trash2 className="h-4 w-4" />
+                            ถังขยะสินค้า
+                        </Button>
+                    </Link>
+                    <Link href="/admin/products/new">
+                        <Button className="gap-2 w-full sm:w-auto">
+                            <Plus className="h-4 w-4" />
+                            เพิ่มสินค้าใหม่
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
             {/* Product Table Card */}
@@ -72,6 +88,7 @@ export default async function AdminProductsPage() {
                                     isSold: p.isSold,
                                     isFeatured: p.isFeatured,
                                     stockCount,
+                                    autoDeleteAfterSale: p.autoDeleteAfterSale,
                                 };
                             })}
                         />

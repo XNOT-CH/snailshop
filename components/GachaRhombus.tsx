@@ -16,7 +16,6 @@ import {
     INTERSECTION_MAP,
     type TileType,
     type GachaProductLite,
-    type Tile,
 } from "@/lib/gachaGrid";
 
 type Phase = "idle" | "rolling1" | "waitSpin2" | "rolling2" | "revealing" | "result";
@@ -28,6 +27,13 @@ const tierRing: Record<TileType, string> = {
     rare: "ring-2 ring-emerald-400/80 shadow-[0_0_12px_rgba(52,211,153,0.4)]",
     epic: "ring-2 ring-violet-500/90 shadow-[0_0_15px_rgba(139,92,246,0.6)]",
     legendary: "ring-[3px] ring-red-500 shadow-[0_0_20px_rgba(239,68,68,0.8)] animate-pulse",
+};
+
+const tierDot: Record<string, string> = {
+    common: "bg-amber-400",
+    rare: "bg-emerald-400",
+    epic: "bg-violet-400",
+    legendary: "bg-red-500",
 };
 
 const tierBg: Record<TileType, string> = {
@@ -48,31 +54,30 @@ const tierParticles: Record<string, string[]> = {
 
 interface Particle { id: number; tx: string; ty: string; color: string; dur: string; delay: string; size: number }
 
-// Cache particles per tier at module level เนโฌโ€ outside React เนโฌโ€ to avoid react-hooks/purity and react-hooks/refs
 const _particleCache = new Map<string, Particle[]>();
 function getParticles(tier: string): Particle[] {
     const cached = _particleCache.get(tier);
     if (cached) return cached;
     const colors = tierParticles[tier] ?? tierParticles.common;
-    const particles = Array.from({ length: 20 }, (_, i) => {
+    const particles: Particle[] = Array.from({ length: 20 }, (_, i) => {
         const angle = (i / 20) * 360;
         const rad = angle * (Math.PI / 180);
-        const dist = 50 + Math.random() * 70; // NOSONAR - visual animation only
+        const dist = 50 + Math.random() * 70; // NOSONAR
         return {
             id: i,
             tx: `${Math.cos(rad) * dist}px`,
             ty: `${Math.sin(rad) * dist}px`,
             color: colors[i % colors.length],
-            dur: `${0.5 + Math.random() * 0.4}s`, // NOSONAR - visual animation only
-            delay: `${Math.random() * 0.15}s`, // NOSONAR - visual animation only
-            size: 5 + Math.floor(Math.random() * 6), // NOSONAR - visual animation only
+            dur: `${0.5 + Math.random() * 0.4}s`, // NOSONAR
+            delay: `${Math.random() * 0.15}s`, // NOSONAR
+            size: 5 + Math.floor(Math.random() * 6), // NOSONAR
         };
     });
     _particleCache.set(tier, particles);
     return particles;
 }
 
-function WinBurst({ tier }: Readonly<{ tier: string }>) {
+function WinBurst({ tier }: { tier: string }) {
     const particles = getParticles(tier);
     return (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-20">
@@ -90,173 +95,16 @@ function WinBurst({ tier }: Readonly<{ tier: string }>) {
 }
 
 interface GachaRhombusProps {
-    readonly products: GachaProductLite[];
-    readonly settings: { readonly isEnabled: boolean; readonly costType: string; readonly costAmount: number; readonly dailySpinLimit: number };
-    readonly userBalance?: number;
-    readonly isLoggedIn?: boolean;
-    readonly machineId?: string; // undefined = global (เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธโ€ขเน€เธเธ‘เน€เธเธ X)
+    products: GachaProductLite[];
+    settings: { isEnabled: boolean; costType: string; costAmount: number; dailySpinLimit: number };
+    userBalance?: number;
 }
 
-function getTileClasses(
-    tile: { type: string; label?: string; side?: string },
-    phase: string,
-    opts: {
-        isItem: boolean;
-        isHL: boolean;
-        isLSel: boolean;
-        isRSel: boolean;
-        onL: boolean;
-        onR: boolean;
-        onBoth: boolean;
-        isPathGlowSpin1: boolean;
-        isPathGlowSpin2: boolean;
-        fade: boolean;
-    }
-): string {
-    return [
-        "relative w-full h-full rounded-full overflow-hidden transition-all duration-150",
-        tierRing[tile.type as keyof typeof tierRing],
-        opts.isHL && !opts.onBoth ? "ring-2 ring-white/80 scale-110 brightness-125" : "",
-        opts.onBoth ? "ring-2 ring-white scale-115 brightness-125" : "",
-        opts.isLSel && phase !== "rolling2" && phase !== "revealing" ? "ring-2 ring-violet-400" : "",
-        opts.isRSel ? "ring-2 ring-emerald-400" : "",
-        opts.onL && !opts.onBoth && phase === "revealing" ? "ring-2 ring-violet-400/50" : "",
-        opts.onR && !opts.onBoth && phase === "revealing" ? "ring-2 ring-emerald-400/50" : "",
-        opts.fade ? "opacity-90 scale-100  grayscale-[45%]" : "",
-        opts.isPathGlowSpin1 && opts.isItem ? "scale-105" : "",
-        opts.isPathGlowSpin2 && opts.isItem ? "scale-106" : "",
-    ].filter(Boolean).join(" ");
-}
-
-function getTileBoxShadow(isPathGlowSpin1: boolean, isPathGlowSpin2: boolean, isItem: boolean): React.CSSProperties | undefined {
-    if (isPathGlowSpin2 && isItem) {
-        return { boxShadow: "0 0 20px 8px rgba(239,68,68,0.7), 0 0 6px 2px rgba(239,68,68,0.9), 0 0 40px 12px rgba(239,68,68,0.25)" };
-    } else if (isPathGlowSpin1 && isItem) {
-        return { boxShadow: "0 0 14px 5px rgba(251,191,36,0.65), 0 0 4px 1px rgba(251,191,36,0.5)" };
-    }
-    return undefined;
-}
-
-// Context object to avoid too many parameters (S107)
-interface TileStateContext {
-    readonly phase: string;
-    readonly highlightedTile: number | null;
-    readonly selectedLLabel: string | null;
-    readonly selectedRLabel: string | null;
-    readonly lPathTiles: number[];
-    readonly rPathTiles: number[];
-    readonly activePathTiles: number[];
-    readonly lockedPathTiles: number[];
-}
-
-// Helper extracted to reduce Cognitive Complexity (S3776)
-function getTileVisualState(tile: Tile, index: number, ctx: TileStateContext) {
-    const { phase, highlightedTile, selectedLLabel, selectedRLabel,
-        lPathTiles, rPathTiles, activePathTiles, lockedPathTiles } = ctx;
-    const isItem = tile.type !== "start" && tile.type !== "selector";
-    const isHL = highlightedTile === index;
-    const isLSel = tile.label === selectedLLabel;
-    const isRSel = tile.label === selectedRLabel;
-    const onL = lPathTiles.includes(index);
-    const onR = rPathTiles.includes(index);
-    const onBoth = onL && onR;
-
-    const isActiveOrLocked = activePathTiles.includes(index) || lockedPathTiles.includes(index);
-    const isRolling1OrWait = phase === "rolling1" || phase === "waitSpin2";
-    const isPathGlowSpin1 = isActiveOrLocked && isRolling1OrWait;
-
-    const isPathGlowSpin2 = phase === "rolling2" && activePathTiles.includes(index);
-    const isPathGlow = isPathGlowSpin1 || isPathGlowSpin2;
-    const isSpinningPhase = isRolling1OrWait || phase === "rolling2";
-
-    let fade = false;
-    if (phase === "revealing") {
-        if (isItem && !onL && !onR) { fade = true; }
-    } else if (isSpinningPhase) {
-        if (!isPathGlow && !lockedPathTiles.includes(index) && !isHL && tile.type !== "start") { fade = true; }
-    }
-
-    return { isItem, isHL, isLSel, isRSel, onL, onR, onBoth, isPathGlowSpin1, isPathGlowSpin2, fade };
-}
-
-interface TileCardProps {
-    readonly tile: Tile;
-    readonly index: number;
-    readonly tileSize: number;
-    readonly phase: string;
-    readonly flipKey: Record<number, number>;
-    readonly ctx: TileStateContext;
-    readonly getTilePos: (row: number, col: number) => { x: number; y: number };
-}
-
-function TileCard({ tile, index, tileSize, phase, flipKey, ctx, getTilePos }: TileCardProps) {
-    const pos = getTilePos(tile.row, tile.col);
-    const state = getTileVisualState(tile, index, ctx);
-    const boxShadowStyle = getTileBoxShadow(state.isPathGlowSpin1, state.isPathGlowSpin2, state.isItem);
-    const tileClasses = getTileClasses(tile, phase, state);
-
-    return (
-        <motion.div className="absolute"
-            style={{ left: pos.x, top: pos.y, width: tileSize, height: tileSize }}
-            initial={{ opacity: 0, scale: 0.6 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: index * 0.015, type: "spring", stiffness: 280 }}>
-            <div
-                key={`f-${flipKey[index] ?? 0}`}
-                className={tileClasses}
-                style={boxShadowStyle}
-            >
-                {tile.type === "start" && (
-                    <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
-                        <Dices className="h-5 w-5 text-zinc-400" />
-                    </div>
-                )}
-                {tile.type === "selector" && (
-                    <div className={["w-full h-full flex items-center justify-center bg-zinc-800",
-                        state.isLSel && phase !== "rolling2" && phase !== "revealing" ? "bg-violet-500/20" : "",
-                        state.isRSel ? "bg-emerald-500/20" : "",
-                    ].join(" ")}>
-                        <span className={["text-[10px] font-bold tracking-wide",
-                            "text-zinc-300",
-                            state.isLSel && !state.isHL ? "text-violet-400" : "",
-                            state.isRSel && !state.isHL ? "text-emerald-400" : "",
-                        ].join(" ")}>{tile.label}</span>
-                    </div>
-                )}
-                {state.isItem && tile.product && (
-                    tile.product.imageUrl && (tile.product.imageUrl.startsWith("/") || tile.product.imageUrl.startsWith("http")) ? (
-                        <div className="absolute inset-0 bg-zinc-950">
-                            <Image src={tile.product.imageUrl} alt={tile.product.name} fill sizes="64px" className="object-contain" />
-                        </div>
-                    ) : (
-                        <div className={`w-full h-full ${tierBg[tile.type]} flex items-center justify-center`} />
-                    )
-                )}
-                {state.isItem && !tile.product && (
-                    <div className={`w-full h-full ${tierBg[tile.type]}`} />
-                )}
-                {state.isHL && (
-                    <motion.div className="absolute inset-0 rounded-full border border-zinc-500/60"
-                        animate={{ scale: [1, 1.35, 1], opacity: [0.7, 0, 0.7] }}
-                        transition={{ duration: 0.65, repeat: Infinity }} />
-                )}
-            </div>
-            {state.isItem && tile.product && (
-                <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 z-50">
-                    <span className="text-[9px] text-zinc-500 drop-shadow-md">{tile.product.name.substring(0, 14)}</span>
-                </div>
-            )}
-        </motion.div>
-    );
-}
-
-export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn = true, machineId }: Readonly<GachaRhombusProps>) {
+export function GachaRhombus({ products, settings, userBalance = 0 }: GachaRhombusProps) {
     const tiles = useMemo(() => buildGrid(products), [products]);
 
     const [phase, setPhase] = useState<Phase>("idle");
     const [highlightedTile, setHighlightedTile] = useState<number | null>(null);
-    const [activePathTiles, setActivePathTiles] = useState<number[]>([]);
-    const [lockedPathTiles, setLockedPathTiles] = useState<number[]>([]);
     const [selectedLLabel, setSelectedLLabel] = useState<string | null>(null);
     const [selectedRLabel, setSelectedRLabel] = useState<string | null>(null);
     const [lPathTiles, setLPathTiles] = useState<number[]>([]);
@@ -267,8 +115,6 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
     const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
     const [flipKey, setFlipKey] = useState<Record<number, number>>({});
     const [showDropRate, setShowDropRate] = useState(false);
-    const [balance, setBalance] = useState(userBalance);
-    const [skipAnimation, setSkipAnimation] = useState(false);
 
     const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => () => { if (intervalRef.current) clearTimeout(intervalRef.current); }, []);
@@ -286,38 +132,17 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
         (side: "L" | "R", chosenLabel: string, onDone: () => void) => {
             const idx = side === "L" ? lSelectorIndices : rSelectorIndices;
             if (idx.length === 0) { onDone(); return; }
-            const total = 12 + Math.floor(Math.random() * 6); // NOSONAR - visual animation only
+            const total = 12 + Math.floor(Math.random() * 6);
             let step = 0;
             const flash = () => {
                 const isLast = step >= total - 1;
                 const tileIdx = isLast
                     ? tiles.findIndex(t => t.type === "selector" && t.label === chosenLabel)
                     : idx[step % idx.length];
-                const resolvedIdx = tileIdx >= 0 ? tileIdx : idx[0];
-                setHighlightedTile(resolvedIdx);
-
-                // Glow all tiles along the diagonal path of the currently flashing selector
-                const flashingLabel = tiles[resolvedIdx]?.label;
-                if (flashingLabel && SELECTOR_PATHS[flashingLabel]) {
-                    const pathIndices = SELECTOR_PATHS[flashingLabel]
-                        .map(([r, c]) => findTileIndex(tiles, r, c))
-                        .filter(i => i >= 0);
-                    setActivePathTiles(pathIndices);
-                } else {
-                    setActivePathTiles([]);
-                }
-
+                setHighlightedTile(tileIdx >= 0 ? tileIdx : idx[0]);
                 step++;
-                if (isLast) {
-                    setTimeout(() => {
-                        setActivePathTiles([]);
-                        onDone();
-                    }, 400);
-                    return;
-                }
-                let delay = 200 + (step - 8) * 30;
-                if (step < 4) delay = 280;
-                else if (step < 8) delay = 160;
+                if (isLast) { setTimeout(onDone, 400); return; }
+                const delay = step < 4 ? 280 : step < 8 ? 160 : 200 + (step - 8) * 30;
                 intervalRef.current = setTimeout(flash, delay);
             };
             intervalRef.current = setTimeout(flash, 200);
@@ -325,30 +150,28 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
         [tiles, lSelectorIndices, rSelectorIndices]
     );
 
-    const delay = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
-
     const revealIntersection = useCallback(
-        async (lLabel: string, rLabel: string, product: GachaProductLite) => {
+        (lLabel: string, rLabel: string, product: GachaProductLite) => {
             const lPath = (SELECTOR_PATHS[lLabel] || []).map(([r, c]) => findTileIndex(tiles, r, c)).filter(i => i >= 0);
             const rPath = (SELECTOR_PATHS[rLabel] || []).map(([r, c]) => findTileIndex(tiles, r, c)).filter(i => i >= 0);
             setLPathTiles(lPath);
             setRPathTiles(rPath);
             const intersPos = INTERSECTION_MAP[lLabel]?.[rLabel];
             const intersIdx = intersPos ? findTileIndex(tiles, intersPos[0], intersPos[1]) : -1;
-            
-            await delay(500);
-            if (intersIdx >= 0) {
-                setHighlightedTile(intersIdx);
-                setFlipKey(prev => ({ ...prev, [intersIdx]: (prev[intersIdx] ?? 0) + 1 }));
-            }
-
-            await delay(900);
-            setWinTier(product.tier ?? "common");
-            setShowBurst(true);
-            setTimeout(() => setShowBurst(false), 1200);
-            setResultProduct(product);
-            setPhase("result");
-            setHistoryRefreshKey(k => k + 1);
+            setTimeout(() => {
+                if (intersIdx >= 0) {
+                    setHighlightedTile(intersIdx);
+                    setFlipKey(prev => ({ ...prev, [intersIdx]: (prev[intersIdx] ?? 0) + 1 }));
+                }
+                setTimeout(() => {
+                    setWinTier(product.tier ?? "common");
+                    setShowBurst(true);
+                    setTimeout(() => setShowBurst(false), 1200);
+                    setResultProduct(product);
+                    setPhase("result");
+                    setHistoryRefreshKey(k => k + 1);
+                }, 900);
+            }, 500);
         },
         [tiles]
     );
@@ -357,130 +180,49 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
         const res = await fetch("/api/gacha/roll", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ spin: spinNum, machineId: machineId ?? null }),
+            body: JSON.stringify({ spin: spinNum }),
         });
         try { return await res.json(); }
-        catch { return { success: false, message: res.status === 401 ? "เน€เธยเน€เธเธเน€เธเธเน€เธโ€เน€เธเธ’เน€เธโฌเน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธเธเน€เธยเน€เธยเน€เธยเน€เธยเน€เธเธเน€เธย" : "เน€เธโฌเน€เธยเน€เธเธ”เน€เธโ€เน€เธยเน€เธยเน€เธเธเน€เธยเน€เธเธ”เน€เธโ€เน€เธยเน€เธเธ…เน€เธเธ’เน€เธโ€" }; }
+        catch { return { success: false, message: res.status === 401 ? "กรุณาเข้าสู่ระบบก่อน" : "เกิดข้อผิดพลาด" }; }
     }
 
     const reset = () => {
         setResultProduct(null); setPhase("idle"); setHighlightedTile(null);
-        setActivePathTiles([]); setLockedPathTiles([]);
         setSelectedLLabel(null); setSelectedRLabel(null);
         setLPathTiles([]); setRPathTiles([]);
     };
 
     const handleFirstSpin = useCallback(async () => {
         if (phase !== "idle") return;
-
-        if (!isLoggedIn) {
-            showError("เน€เธยเน€เธเธเน€เธเธเน€เธโ€เน€เธเธ’เน€เธโฌเน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธเธเน€เธยเน€เธยเน€เธยเน€เธยเน€เธเธเน€เธยเน€เธโ€”เน€เธเธ“เน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธเธเน€เธเธ’เน€เธยเน€เธเธเน€เธเธ‘เน€เธเธ…");
-            return;
-        }
-
-        if (settings.costAmount > 0 && balance < settings.costAmount) {
-            showError(`${settings.costType === "CREDIT" ? "เน€เธโฌเน€เธยเน€เธเธเน€เธโ€เน€เธเธ”เน€เธโ€ข" : "เน€เธโฌเน€เธยเน€เธยเน€เธเธ"} เน€เธยเน€เธเธเน€เธยเน€เธโฌเน€เธยเน€เธเธ•เน€เธเธเน€เธยเน€เธยเน€เธเธ`);
-            return;
-        }
-
         setPhase("rolling1"); setResultProduct(null); setSelectedLLabel(null);
         setSelectedRLabel(null); setLPathTiles([]); setRPathTiles([]);
         setShowBurst(false); setHighlightedTile(null);
         try {
-            const [data] = await Promise.all([callRollApi(1), delay(1200)]);
-            if (!data.success) { showError(data.message || "เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธเธ“เน€เธโฌเน€เธเธเน€เธยเน€เธย"); reset(); return; }
+            const data = await callRollApi(1);
+            if (!data.success) { showError(data.message || "สุ่มไม่สำเร็จ"); reset(); return; }
             const lLabel = data.data?.lLabel;
-            if (!lLabel) { showError("เน€เธยเน€เธยเน€เธเธเน€เธเธเน€เธเธเน€เธเธ…เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธยเน€เธเธเน€เธยเน€เธโ€“เน€เธยเน€เธเธเน€เธย"); reset(); return; }
-            runRoulette("L", lLabel, () => {
-                // Keep the chosen L path (+ the selector ball itself) visible during waitSpin2
-                const pathIndices = (SELECTOR_PATHS[lLabel] || [])
-                    .map(([r, c]) => findTileIndex(tiles, r, c))
-                    .filter(i => i >= 0);
-                const lBallIdx = tiles.findIndex(t => t.type === "selector" && t.label === lLabel);
-                if (lBallIdx >= 0) pathIndices.push(lBallIdx);
-                setActivePathTiles(pathIndices);
-                setSelectedLLabel(lLabel);
-                setPhase("waitSpin2");
-            });
-        } catch { showError("เน€เธโฌเน€เธยเน€เธเธ”เน€เธโ€เน€เธยเน€เธยเน€เธเธเน€เธยเน€เธเธ”เน€เธโ€เน€เธยเน€เธเธ…เน€เธเธ’เน€เธโ€เน€เธยเน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธเธเน€เธยเน€เธเธ"); reset(); }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [phase, isLoggedIn, balance, settings, runRoulette]);
-
-    const handleFastRoll = useCallback(async () => {
-        if (phase !== "idle") return;
-
-        if (!isLoggedIn) {
-            showError("เน€เธยเน€เธเธเน€เธเธเน€เธโ€เน€เธเธ’เน€เธโฌเน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธเธเน€เธยเน€เธยเน€เธยเน€เธยเน€เธเธเน€เธยเน€เธโ€”เน€เธเธ“เน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธเธเน€เธเธ’เน€เธยเน€เธเธเน€เธเธ‘เน€เธเธ…");
-            return;
-        }
-
-        if (settings.costAmount > 0 && balance < settings.costAmount) {
-            showError(`${settings.costType === "CREDIT" ? "เน€เธโฌเน€เธยเน€เธเธเน€เธโ€เน€เธเธ”เน€เธโ€ข" : "เน€เธโฌเน€เธยเน€เธยเน€เธเธ"} เน€เธยเน€เธเธเน€เธยเน€เธโฌเน€เธยเน€เธเธ•เน€เธเธเน€เธยเน€เธยเน€เธเธ`);
-            return;
-        }
-
-        setPhase("rolling1"); setResultProduct(null); setSelectedLLabel(null);
-        setSelectedRLabel(null); setLPathTiles([]); setRPathTiles([]);
-        setShowBurst(false); setHighlightedTile(null);
-
-        try {
-            // Spin 1
-            const spin1 = await callRollApi(1);
-            if (!spin1.success) { showError(spin1.message || "เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธเธ“เน€เธโฌเน€เธเธเน€เธยเน€เธย"); reset(); return; }
-            const lLabel = spin1.data?.lLabel;
-            if (!lLabel) { showError("เน€เธยเน€เธยเน€เธเธเน€เธเธเน€เธเธเน€เธเธ…เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธยเน€เธเธเน€เธยเน€เธโ€“เน€เธยเน€เธเธเน€เธย"); reset(); return; }
-
-            // Spin 2 immediately
-            setPhase("rolling2");
-            const spin2 = await callRollApi(2);
-            if (!spin2.success) { showError(spin2.message || "เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธเธ“เน€เธโฌเน€เธเธเน€เธยเน€เธย"); reset(); return; }
-            const { rLabel, product } = spin2.data ?? {};
-            if (!rLabel || !product) { showError("เน€เธยเน€เธยเน€เธเธเน€เธเธเน€เธเธเน€เธเธ…เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธยเน€เธเธเน€เธยเน€เธโ€“เน€เธยเน€เธเธเน€เธย"); reset(); return; }
-
-            if (settings.costAmount > 0) setBalance((prev) => Math.max(0, prev - settings.costAmount));
-
-            // Skip all animation เนโฌโ€ go straight to result
-            setWinTier(product.tier ?? "common");
-            setShowBurst(true);
-            setTimeout(() => setShowBurst(false), 1200);
-            setResultProduct(product);
-            setPhase("result");
-            setHistoryRefreshKey((k) => k + 1);
-        } catch { showError("เน€เธโฌเน€เธยเน€เธเธ”เน€เธโ€เน€เธยเน€เธยเน€เธเธเน€เธยเน€เธเธ”เน€เธโ€เน€เธยเน€เธเธ…เน€เธเธ’เน€เธโ€เน€เธยเน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธเธเน€เธยเน€เธเธ"); reset(); }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [phase, isLoggedIn, balance, settings]);
+            if (!lLabel) { showError("ข้อมูลสุ่มไม่ครบถ้วน"); reset(); return; }
+            runRoulette("L", lLabel, () => { setSelectedLLabel(lLabel); setPhase("waitSpin2"); });
+        } catch { showError("เกิดข้อผิดพลาดในการสุ่ม"); reset(); }
+    }, [phase, runRoulette]);
 
     const handleSecondSpin = useCallback(async () => {
         if (phase !== "waitSpin2") return;
         setPhase("rolling2"); setLPathTiles([]); setRPathTiles([]);
-        // Lock the L path (+ selector ball) so it stays visible during rolling2
-        if (selectedLLabel && SELECTOR_PATHS[selectedLLabel]) {
-            const locked = SELECTOR_PATHS[selectedLLabel]
-                .map(([r, c]) => findTileIndex(tiles, r, c))
-                .filter(i => i >= 0);
-            const lBallIdx = tiles.findIndex(t => t.type === "selector" && t.label === selectedLLabel);
-            if (lBallIdx >= 0) locked.push(lBallIdx);
-            setLockedPathTiles(locked);
-        }
         try {
-            const [data] = await Promise.all([callRollApi(2), delay(1200)]);
-            if (!data.success) { showError(data.message || "เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธเธ“เน€เธโฌเน€เธเธเน€เธยเน€เธย"); reset(); return; }
+            const data = await callRollApi(2);
+            if (!data.success) { showError(data.message || "สุ่มไม่สำเร็จ"); reset(); return; }
             const { rLabel, product } = data.data ?? {};
-            if (!rLabel || !product) { showError("เน€เธยเน€เธยเน€เธเธเน€เธเธเน€เธเธเน€เธเธ…เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธยเน€เธเธเน€เธยเน€เธโ€“เน€เธยเน€เธเธเน€เธย"); reset(); return; }
-
-            // Deduct cost immediately เนโฌโ€ no refresh needed
-            if (settings.costAmount > 0) setBalance((prev) => Math.max(0, prev - settings.costAmount));
-
+            if (!rLabel || !product) { showError("ข้อมูลสุ่มไม่ครบถ้วน"); reset(); return; }
             runRoulette("R", rLabel, () => {
                 setSelectedRLabel(rLabel);
                 setPhase("revealing");
                 revealIntersection(selectedLLabel!, rLabel, product);
             });
-        } catch { showError("เน€เธโฌเน€เธยเน€เธเธ”เน€เธโ€เน€เธยเน€เธยเน€เธเธเน€เธยเน€เธเธ”เน€เธโ€เน€เธยเน€เธเธ…เน€เธเธ’เน€เธโ€เน€เธยเน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธเธเน€เธยเน€เธเธ"); reset(); }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+        } catch { showError("เกิดข้อผิดพลาดในการสุ่ม"); reset(); }
     }, [phase, selectedLLabel, runRoulette, revealIntersection]);
 
-    // เนโ€โฌเนโ€โฌ Layout เนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌเนโ€โฌ
+    // ── Layout ─────────────────────────────────────────────────────────────────
     const spacingX = 110, spacingY = 44, tileSize = 52;
     const maxRowSize = Math.max(...GRID_DEFINITION.map(r => r.length));
     const gridWidth = (maxRowSize - 1) * spacingX + tileSize + 4;
@@ -492,7 +234,7 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
         return { x: offsetX + col * spacingX + 2, y: row * spacingY + 2 };
     }
 
-    // Responsive scaling เนโฌโ€ measure the card container's real width via ResizeObserver
+    // Responsive scaling — measure the card container's real width via ResizeObserver
     const [scale, setScale] = useState(1);
     const cardRef = useRef<HTMLDivElement>(null);
     useEffect(() => {
@@ -507,7 +249,8 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
     }, [gridWidth]);
 
     return (
-        <div className="flex flex-col items-center gap-4 w-full max-w-[640px]">
+        <div className="flex flex-col items-center gap-8 w-full max-w-[640px]">
+
             {/* ── Grid (framed) ── */}
             <div ref={cardRef} className="rounded-2xl border border-border/60 bg-card/40 backdrop-blur-sm p-4 sm:p-8 md:p-10 shadow-sm w-full flex justify-center overflow-hidden relative">
                 {/* Drop rate button — top-left corner of grid card */}
@@ -515,6 +258,11 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
                     className="absolute top-3 left-3 z-10 flex items-center gap-1 text-[11px] font-medium text-muted-foreground bg-background/80 hover:bg-background border border-border/60 rounded-full px-2.5 py-1 shadow-sm hover:text-[#145de7] transition-all">
                     ℹ️ อัตราดรอป
                 </button>
+                {/*
+                  Outer wrapper is sized to the SCALED visual footprint (gridWidth*scale × gridHeight*scale)
+                  so the flex container doesn't see the full native gridWidth causing right-side clipping.
+                  The inner div sits at position:absolute top-left, scaled to fit perfectly inside.
+                */}
                 <div style={{ width: gridWidth * scale, height: gridHeight * scale, position: "relative", flexShrink: 0 }}>
                     <div
                         className="absolute top-0 left-0"
@@ -528,96 +276,158 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
                                 </motion.div>
                             )}
                         </AnimatePresence>
-                        {tiles.map((t, i) => (
-                            <TileCard
-                                key={`tile-${t.row}-${t.col}`}
-                                tile={t}
-                                index={i}
-                                tileSize={tileSize}
-                                phase={phase}
-                                flipKey={flipKey}
-                                getTilePos={getTilePos}
-                                ctx={{ phase, highlightedTile, selectedLLabel, selectedRLabel, lPathTiles, rPathTiles, activePathTiles, lockedPathTiles }}
-                            />
-                        ))}
+
+                        {tiles.map((tile, index) => {
+                            const pos = getTilePos(tile.row, tile.col);
+                            const isItem = tile.type !== "start" && tile.type !== "selector";
+                            const isHL = highlightedTile === index;
+                            const isLSel = tile.label === selectedLLabel;
+                            const isRSel = tile.label === selectedRLabel;
+                            const onL = lPathTiles.includes(index);
+                            const onR = rPathTiles.includes(index);
+                            const onBoth = onL && onR;
+
+                            const fade =
+                                (phase === "rolling1" && (isItem || tile.side === "right")) ||
+                                (phase === "rolling2" && (isItem || tile.side === "left")) ||
+                                (phase === "revealing" && isItem && !onL && !onR);
+
+                            return (
+                                <motion.div key={index} className="absolute"
+                                    style={{ left: pos.x, top: pos.y, width: tileSize, height: tileSize }}
+                                    initial={{ opacity: 0, scale: 0.6 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: index * 0.015, type: "spring", stiffness: 280 }}>
+                                    <div
+                                        key={`f-${flipKey[index] ?? 0}`}
+                                        className={[
+                                            "relative w-full h-full rounded-full overflow-hidden transition-all duration-150",
+                                            tierRing[tile.type],
+                                            isHL && !onBoth ? "ring-2 ring-white/80 scale-110 brightness-125" : "",
+                                            onBoth ? "ring-2 ring-white scale-115 brightness-125" : "",
+                                            isLSel && phase !== "rolling2" && phase !== "revealing" ? "ring-2 ring-violet-400" : "",
+                                            isRSel ? "ring-2 ring-emerald-400" : "",
+                                            onL && !onBoth && phase === "revealing" ? "ring-2 ring-violet-400/50" : "",
+                                            onR && !onBoth && phase === "revealing" ? "ring-2 ring-emerald-400/50" : "",
+                                            fade ? "opacity-10 scale-90" : "",
+                                        ].join(" ")}
+                                    >
+                                        {tile.type === "start" && (
+                                            <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
+                                                <Dices className="h-5 w-5 text-zinc-400" />
+                                            </div>
+                                        )}
+                                        {tile.type === "selector" && (
+                                            <div className={["w-full h-full flex items-center justify-center bg-zinc-800",
+                                                isHL ? "bg-white/90" : "",
+                                                isLSel && phase !== "rolling2" && phase !== "revealing" ? "bg-violet-500/20" : "",
+                                                isRSel ? "bg-emerald-500/20" : "",
+                                            ].join(" ")}>
+                                                <span className={["text-[10px] font-bold tracking-wide",
+                                                    isHL ? "text-zinc-900" : "text-zinc-300",
+                                                    isLSel && !isHL ? "text-violet-400" : "",
+                                                    isRSel && !isHL ? "text-emerald-400" : "",
+                                                ].join(" ")}>{tile.label}</span>
+                                            </div>
+                                        )}
+                                        {isItem && (
+                                            tile.product?.imageUrl ? (
+                                                <div className="absolute inset-0 bg-zinc-950 flex items-center justify-center">
+                                                    <Image src={tile.product.imageUrl} alt={tile.product.name} fill sizes="64px" className="object-contain" />
+                                                </div>
+                                            ) : (
+                                                <div className={`w-full h-full ${tierBg[tile.type]} flex items-center justify-center`}>
+                                                    {tile.product
+                                                        ? <span className={`w-2 h-2 rounded-full ${tierDot[tile.type] ?? "bg-zinc-500"}`} />
+                                                        : <span className="text-[10px] text-zinc-600">—</span>
+                                                    }
+                                                </div>
+                                            )
+                                        )}
+                                        {isHL && (
+                                            <motion.div className="absolute inset-0 rounded-full border border-white/60"
+                                                animate={{ scale: [1, 1.35, 1], opacity: [0.7, 0, 0.7] }}
+                                                transition={{ duration: 0.65, repeat: Infinity }} />
+                                        )}
+                                    </div>
+                                    {isItem && tile.product && (
+                                        <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100">
+                                            <span className="text-[9px] text-zinc-500">{tile.product.name.substring(0, 14)}</span>
+                                        </div>
+                                    )}
+                                </motion.div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
 
-            {/* เนโ€โฌเนโ€โฌ Controls เนโ€โฌเนโ€โฌ */}
+            {/* ── Controls ── */}
             <div className="flex flex-col gap-4 w-full">
 
-                {/* Spin CTA panel */}
-                <div className="w-full flex flex-col items-center gap-2">
-                    {/* Title เนโฌโ€ centered */}
-                    <h2 className="text-[20px] md:text-[24px] font-bold text-[#145de7] text-center">
-                        เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธเธเน€เธเธ’เน€เธยเน€เธเธเน€เธเธ‘เน€เธเธ…เน€เธยเน€เธเธเน€เธเธ‘เน€เธยเน€เธยเน€เธเธ…เน€เธเธ {settings.costAmount.toLocaleString()} {settings.costType === "CREDIT" ? "เน€เธโฌเน€เธยเน€เธเธเน€เธโ€เน€เธเธ”เน€เธโ€ข" : "เน€เธโฌเน€เธยเน€เธยเน€เธเธ"}
-                    </h2>
+                {/* Status line */}
+                <div className="min-h-[20px]">
+                    <AnimatePresence mode="wait">
+                        {phase === "waitSpin2" && selectedLLabel && (
+                            <motion.p key="wait2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                className="text-xs text-muted-foreground text-center">
+                                เลือกแล้ว{" "}
+                                <span className="text-violet-400 font-semibold">{selectedLLabel}</span>
+                                {" — กดสุ่มครั้งที่ 2 เพื่อเลือกแถวขวา"}
+                            </motion.p>
+                        )}
+                        {phase === "revealing" && selectedLLabel && selectedRLabel && (
+                            <motion.p key="reveal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                className="text-xs text-muted-foreground text-center">
+                                <span className="text-violet-400 font-semibold">{selectedLLabel}</span>
+                                {" × "}
+                                <span className="text-emerald-400 font-semibold">{selectedRLabel}</span>
+                                {" → "}
+                                <span className="text-white font-semibold">จุดตัด</span>
+                            </motion.p>
+                        )}
+                    </AnimatePresence>
+                </div>
 
-                    {/* Balance row เนโฌโ€ full width, light blue box */}
-                    <div className="w-full rounded-lg bg-[#eef4ff] dark:bg-[#d0e3ff]/10 border border-[#145de7]/20 px-4 py-3 text-center">
-                        <span className="text-[15px] font-bold text-foreground">
-                            เน€เธเธเน€เธเธเน€เธโ€{settings.costType === "CREDIT" ? "เน€เธโฌเน€เธยเน€เธเธเน€เธโ€เน€เธเธ”เน€เธโ€ข" : "เน€เธโฌเน€เธยเน€เธยเน€เธเธ"}เน€เธเธเน€เธเธเน€เธเธเน€เธเธ:{" "}
-                            {balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {settings.costType === "CREDIT" ? "เน€เธโฌเน€เธยเน€เธเธเน€เธโ€เน€เธเธ”เน€เธโ€ข" : "เน€เธโฌเน€เธยเน€เธยเน€เธเธ"}
-                        </span>
-                        {" "}
-                        <span className="text-[13px] text-[#145de7] dark:text-[#7ba2f5]">
-                            (เน€เธยเน€เธโ€ เน€เธเธเน€เธเธ•เน€เธโฌเน€เธยเน€เธเธเน€เธย เน€เธโฌเน€เธยเน€เธเธ—เน€เธยเน€เธเธเน€เธเธเน€เธเธ‘เน€เธยเน€เธโฌเน€เธโ€เน€เธโ€ขเน€เธเธเน€เธเธเน€เธโ€)
-                        </span>
+                {/* Spin CTA panel */}
+                <div className="w-full flex flex-col items-center mt-6">
+                    <div className="text-center mb-4 space-y-1">
+                        <h2 className="text-[18px] md:text-[22px] font-bold text-[#145de7]">
+                            สุ่มรางวัลครั้งละ {settings.costAmount.toLocaleString()} {settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}
+                        </h2>
+                        <p className="text-[13px] md:text-[14px] font-medium text-gray-800 dark:text-gray-200">
+                            * เมื่อกดสุ่มแล้วไม่สามารถขอคืน{settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}ได้ในทุกกรณี *
+                        </p>
                     </div>
 
-                    {/* Buttons */}
+                    <div className="w-full bg-[#d0e3ff] dark:bg-[#d0e3ff]/10 text-[#145de7] dark:text-[#7ba2f5] font-bold text-sm md:text-base py-3.5 rounded-md text-center mb-6">
+                        ยอด{settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}สะสม:{" "}
+                        {userBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+                        {settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}{" "}
+                        <span className="font-normal opacity-90">(แนะนำให้รีเฟรชเพื่อดูยอดล่าสุด)</span>
+                    </div>
+
                     <div className="w-full">
                         {phase === "idle" && (
-                            <button onClick={() => { if (skipAnimation) { handleFastRoll(); } else { handleFirstSpin(); } }} disabled={!settings.isEnabled}
+                            <button onClick={() => void handleFirstSpin()} disabled={!settings.isEnabled}
                                 className="w-full py-3 md:py-3.5 rounded-md bg-[#158e4d] hover:bg-[#117640] text-white font-bold text-[15px] md:text-base shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <Gamepad2 className="h-5 w-5" /> เน€เธเธเน€เธเธเน€เธยเน€เธเธ
+                                <Gamepad2 className="h-5 w-5" /> สุ่ม
                             </button>
                         )}
                         {(phase === "rolling1" || phase === "rolling2" || phase === "revealing") && (
                             <button disabled
                                 className="w-full py-3 md:py-3.5 rounded-md bg-[#158e4d]/60 text-white/80 font-bold text-[15px] md:text-base cursor-not-allowed flex items-center justify-center gap-2">
                                 <Loader2 className="h-5 w-5 animate-spin" />
-                                {phase === "rolling1" && "เน€เธยเน€เธเธ“เน€เธเธ…เน€เธเธ‘เน€เธยเน€เธเธเน€เธเธเน€เธยเน€เธเธ..."}
-                                {phase === "rolling2" && "เน€เธยเน€เธเธ“เน€เธเธ…เน€เธเธ‘เน€เธยเน€เธโฌเน€เธเธ…เน€เธเธ—เน€เธเธเน€เธย..."}
-                                {phase === "revealing" && "เน€เธยเน€เธเธ“เน€เธเธ…เน€เธเธ‘เน€เธยเน€เธโฌเน€เธยเน€เธเธ”เน€เธโ€..."}
+                                {phase === "rolling1" ? "กำลังสุ่ม..." : phase === "rolling2" ? "กำลังเลือก..." : "กำลังเปิด..."}
                             </button>
                         )}
-                        {phase === "waitSpin2" && !skipAnimation && (
-                            <button onClick={() => handleSecondSpin()}
+                        {phase === "waitSpin2" && (
+                            <button onClick={() => void handleSecondSpin()}
                                 className="w-full py-3 md:py-3.5 rounded-md bg-[#158e4d] hover:bg-[#117640] text-white font-bold text-[15px] md:text-base shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2">
-                                <Gamepad2 className="h-5 w-5" /> เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธเธ‘เน€เธยเน€เธยเน€เธโ€”เน€เธเธ•เน€เธย 2
+                                <Gamepad2 className="h-5 w-5" /> สุ่มครั้งที่ 2
                             </button>
                         )}
                     </div>
-
-                    {/* Skip animation toggle */}
-                    <div className="flex items-center gap-2 mt-1">
-                        <button
-                            type="button"
-                            onClick={() => setSkipAnimation((v) => !v)}
-                            role="switch"
-                            aria-checked={skipAnimation}
-                            aria-label="เน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธโฌเน€เธเธเน€เธยเน€เธโฌเน€เธยเน€เธยเน€เธโ€ขเน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธเธเน€เธยเน€เธเธ"
-                            className={[
-                                "relative w-9 h-5 rounded-full transition-colors duration-200 flex-shrink-0 cursor-pointer",
-                                skipAnimation ? "bg-[#145de7]" : "bg-zinc-300 dark:bg-zinc-600",
-                            ].join(" ")}
-                        >
-                            <div className={[
-                                "absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200",
-                                skipAnimation ? "translate-x-4" : "translate-x-0.5",
-                            ].join(" ")} />
-                        </button>
-                        <span className="text-[13px] text-muted-foreground select-none pointer-events-none">
-                            เนยเธ เน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธโฌเน€เธเธเน€เธยเน€เธโฌเน€เธยเน€เธยเน€เธโ€ขเน€เธยเน€เธยเน€เธเธ’เน€เธเธเน€เธเธเน€เธเธเน€เธยเน€เธเธ
-                        </span>
-                    </div>
-
-                    {/* Disclaimer เนโฌโ€ small, below toggle */}
-                    <p className="text-[11px] text-muted-foreground/70 text-center">
-                        * เน€เธโฌเน€เธเธเน€เธเธ—เน€เธยเน€เธเธเน€เธยเน€เธโ€เน€เธเธเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธ…เน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธยเน€เธเธเน€เธเธ’เน€เธเธเน€เธเธ’เน€เธเธเน€เธโ€“เน€เธยเน€เธเธเน€เธยเน€เธเธ—เน€เธย{settings.costType === "CREDIT" ? "เน€เธโฌเน€เธยเน€เธเธเน€เธโ€เน€เธเธ”เน€เธโ€ข" : "เน€เธโฌเน€เธยเน€เธยเน€เธเธ"}เน€เธยเน€เธโ€เน€เธยเน€เธยเน€เธยเน€เธโ€”เน€เธเธเน€เธยเน€เธยเน€เธเธเน€เธโ€เน€เธเธ• *
-                    </p>
                 </div>
             </div>
 
@@ -627,14 +437,14 @@ export function GachaRhombus({ products, settings, userBalance = 0, isLoggedIn =
             </div>
 
             {/* Drop rate modal */}
-            <DropRateModal open={showDropRate} onClose={() => setShowDropRate(false)} machineId={machineId} />
+            <DropRateModal open={showDropRate} onClose={() => setShowDropRate(false)} />
 
             {/* Result modal */}
             {phase === "result" && resultProduct && (
                 <GachaResultModal
                     product={resultProduct}
                     onClose={reset}
-                    onSpinAgain={() => { reset(); setTimeout(() => { if (skipAnimation) { handleFastRoll(); } else { handleFirstSpin(); } }, 200); }}
+                    onSpinAgain={() => { reset(); setTimeout(() => void handleFirstSpin(), 200); }}
                 />
             )}
         </div>

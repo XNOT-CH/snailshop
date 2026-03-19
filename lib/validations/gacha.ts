@@ -3,8 +3,8 @@ import { z } from "zod";
 // ── Gacha Machine ────────────────────────────────────────
 export const gachaMachineSchema = z.object({
     name: z.string().min(1, "กรุณากรอกชื่อตู้กาชา").max(200),
-    description: z.string().max(1000).optional().or(z.literal("")),
-    imageUrl: z.url({ error: "URL รูปภาพไม่ถูกต้อง" }).optional().or(z.literal("")),
+    description: z.string().max(1000).nullish().or(z.literal("")),
+    imageUrl: z.string().nullish().or(z.literal("")),
     categoryId: z.uuid({ error: "Invalid UUID" }).optional().nullable(),
     gameType: z.enum(["SPIN_X", "GRID_3X3"]).default("SPIN_X"),
     costType: z.enum(["FREE", "CREDIT", "POINT"]).default("FREE"),

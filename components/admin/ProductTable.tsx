@@ -22,7 +22,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MoreHorizontal, Pencil, Trash2, Eye, Star, Copy, Gem, Package } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Eye, Star, Copy, Gem, Package, Timer } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +36,7 @@ interface Product {
     isSold: boolean;
     isFeatured: boolean;
     stockCount?: number;
+    autoDeleteAfterSale?: number | null;
 }
 
 interface ProductTableProps {
@@ -137,6 +138,17 @@ export function ProductTable({ products }: Readonly<ProductTableProps>) {
                             statusBadge = <Badge variant="default" className="bg-green-600">พร้อมขาย</Badge>;
                         }
 
+                        const autoDeleteBadge = product.autoDeleteAfterSale ? (
+                            <Badge variant="outline" className="gap-1 text-orange-600 border-orange-300 text-xs">
+                                <Timer className="h-3 w-3" />
+                                {product.autoDeleteAfterSale >= 1440
+                                    ? `${Math.round(product.autoDeleteAfterSale / 1440)}ว.`
+                                    : product.autoDeleteAfterSale >= 60
+                                    ? `${Math.round(product.autoDeleteAfterSale / 60)}ชม.`
+                                    : `${product.autoDeleteAfterSale}น.`}
+                            </Badge>
+                        ) : null;
+
                         return (
                             <TableRow key={product.id}>
                             <TableCell>
@@ -178,7 +190,10 @@ export function ProductTable({ products }: Readonly<ProductTableProps>) {
                                 )}
                             </TableCell>
                             <TableCell className="text-center">
-                                {statusBadge}
+                                <div className="flex flex-col items-center gap-1">
+                                    {statusBadge}
+                                    {autoDeleteBadge}
+                                </div>
                             </TableCell>
                             <TableCell className="text-center hidden md:table-cell">
                                 <Button

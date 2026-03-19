@@ -142,9 +142,17 @@ async function executePurchaseTransaction(conn: any, productId: string, qty: num
             [totalPrice, user.id]
         );
 
+        // Calculate scheduledDeleteAt if autoDeleteAfterSale is configured
+        let scheduledDeleteAt: string | null = null;
+        if (isLastStock && prod.autoDeleteAfterSale) {
+            const deleteAt = new Date();
+            deleteAt.setMinutes(deleteAt.getMinutes() + Number(prod.autoDeleteAfterSale));
+            scheduledDeleteAt = deleteAt.toISOString().slice(0, 19).replace("T", " ");
+        }
+
         await conn.execute(
-            "UPDATE Product SET secretData = ?, isSold = ?, orderId = ? WHERE id = ?",
-            [isLastStock ? encrypt(givenJoined) : encrypt(remainingData), isLastStock ? 1 : 0, orderId, productId]
+            "UPDATE Product SET secretData = ?, isSold = ?, orderId = ?, scheduledDeleteAt = ? WHERE id = ?",
+            [isLastStock ? encrypt(givenJoined) : encrypt(remainingData), isLastStock ? 1 : 0, orderId, scheduledDeleteAt, productId]
         );
 
         if (promoData) {

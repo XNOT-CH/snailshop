@@ -40,7 +40,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params;
         const body = await request.json();
-        const { title, price, discountPrice, image, category, description, secretData, currency, stockSeparator } = body;
+        const { title, price, discountPrice, image, category, description, secretData, currency, stockSeparator, autoDeleteAfterSale } = body;
 
         const existingProduct = await db.query.products.findFirst({ where: eq(products.id, id) });
         if (!existingProduct) return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
@@ -60,6 +60,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             description: description || null,
             secretData: encrypt(secretData),
             stockSeparator: stockSeparator || "newline",
+            autoDeleteAfterSale: autoDeleteAfterSale != null && autoDeleteAfterSale !== "" ? Number(autoDeleteAfterSale) : null,
         }).where(eq(products.id, id));
 
         const changes = [];

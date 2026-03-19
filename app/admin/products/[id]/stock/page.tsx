@@ -34,6 +34,9 @@ export default function StockManagementPage() {
     const [secretData, setSecretData] = useState("");
     const [originalData, setOriginalData] = useState("");
 
+    // Cross-product duplicate guard: { [username]: productName }
+    const [takenUsers, setTakenUsers] = useState<Record<string, string>>({});
+
     // Single stock add form
     const [singleUser, setSingleUser] = useState("");
     const [singlePass, setSinglePass] = useState("");
@@ -50,12 +53,15 @@ export default function StockManagementPage() {
 
     const hasChanges = secretData !== originalData;
 
-    // Fetch product data
+    // Fetch product data + taken usernames from other products
     useEffect(() => {
         const fetchProduct = async () => {
             try {
-                const response = await fetch(`/api/products/${productId}`);
-                const data = await response.json();
+                const [productRes, takenRes] = await Promise.all([
+                    fetch(`/api/products/${productId}`),
+                    fetch(`/api/products/${productId}/stock`),
+                ]);
+                const data = await productRes.json();
                 if (data.success && data.data) {
                     setProductName(data.data.name || "");
                     setSecretData(data.data.secretData || "");
@@ -64,6 +70,8 @@ export default function StockManagementPage() {
                     showError("ไม่พบสินค้า");
                     router.push("/admin/products");
                 }
+                const takenData = await takenRes.json();
+                if (takenData.success) setTakenUsers(takenData.takenUsers ?? {});
             } catch {
                 showError("เกิดข้อผิดพลาดในการโหลดข้อมูล");
                 router.push("/admin/products");
@@ -83,7 +91,19 @@ export default function StockManagementPage() {
             showError("กรุณากรอก User และ Pass");
             return;
         }
-        const newEntry = `${singleUser.trim()} / ${singlePass.trim()}`;
+        const newUser = singleUser.trim();
+        // Check within this product
+        const isDuplicate = stockItems.some((item) => item.split(" / ")[0]?.trim() === newUser);
+        if (isDuplicate) {
+            showError(`User "${newUser}" มีในสต็อกอยู่แล้ว`);
+            return;
+        }
+        // Check across all other products
+        if (takenUsers[newUser]) {
+            showError(`User "${newUser}" มีอยู่ในสต็อกของสินค้า "${takenUsers[newUser]}" แล้ว`);
+            return;
+        }
+        const newEntry = `${newUser} / ${singlePass.trim()}`;
         setSecretData((prev) => (prev ? prev + "\n" + newEntry : newEntry));
         setSingleUser("");
         setSinglePass("");
@@ -103,8 +123,22 @@ export default function StockManagementPage() {
             showError("กรุณากรอก User และ Pass");
             return;
         }
+        const updatedUser = editUser.trim();
+        // Check within this product (skip current index)
+        const isDuplicate = stockItems.some((item, i) =>
+            i !== editingIndex && item.split(" / ")[0]?.trim() === updatedUser
+        );
+        if (isDuplicate) {
+            showError(`User "${updatedUser}" มีในสต็อกอยู่แล้ว`);
+            return;
+        }
+        // Check across all other products
+        if (takenUsers[updatedUser]) {
+            showError(`User "${updatedUser}" มีอยู่ในสต็อกของสินค้า "${takenUsers[updatedUser]}" แล้ว`);
+            return;
+        }
         const items = [...stockItems];
-        items[editingIndex] = `${editUser.trim()} / ${editPass.trim()}`;
+        items[editingIndex] = `${updatedUser} / ${editPass.trim()}`;
         rebuildSecretData(items);
         setEditingIndex(null);
         setEditUser("");

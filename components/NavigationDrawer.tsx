@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 import {
     X, Home, ShoppingBag, LayoutDashboard, HelpCircle,
     Dices, Wallet, User, ChevronRight, Gamepad2,
@@ -60,6 +61,11 @@ export function NavigationDrawer({
     const [shopExpanded, setShopExpanded] = useState(false);
     const pathname = usePathname();
     const links = navLinks && navLinks.length > 0 ? navLinks : DEFAULT_NAV;
+
+    const handleLogout = async () => {
+        setIsOpen(false);
+        await signOut({ callbackUrl: "/" });
+    };
 
     useEffect(() => { setMounted(true); }, []);
     useEffect(() => { setIsOpen(false); }, [pathname]);
@@ -227,13 +233,14 @@ export function NavigationDrawer({
                 {/* ── Footer ── */}
                 {user && (
                     <div className="px-4 py-4 flex-shrink-0" style={{ borderTop: `1px solid ${BORDER}`, background: HEADER_BG }}>
-                        <form action="/api/auth/signout" method="POST">
-                            <button type="submit"
-                                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition-all"
-                                style={{ border: `1px solid ${BORDER}` }}>
-                                <LogOut className="h-4 w-4" /> ออกจากระบบ
-                            </button>
-                        </form>
+                        <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition-all"
+                            style={{ border: `1px solid ${BORDER}` }}
+                        >
+                            <LogOut className="h-4 w-4" /> ออกจากระบบ
+                        </button>
                     </div>
                 )}
             </aside>
