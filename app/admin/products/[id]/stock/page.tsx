@@ -64,8 +64,11 @@ export default function StockManagementPage() {
                 const data = await productRes.json();
                 if (data.success && data.data) {
                     setProductName(data.data.name || "");
-                    setSecretData(data.data.secretData || "");
-                    setOriginalData(data.data.secretData || "");
+                    // If product is sold (last item was purchased), show 0 stock
+                    // The secretData still holds the sold item for reference, but we don't show it as available
+                    const displayData = data.data.isSold ? "" : (data.data.secretData || "");
+                    setSecretData(displayData);
+                    setOriginalData(displayData);
                 } else {
                     showError("ไม่พบสินค้า");
                     router.push("/admin/products");

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db, users, products, orders } from "@/lib/db";
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
+import { decrypt, encrypt } from "@/lib/encryption";
+import { splitStock, getDelimiter } from "@/lib/stock";
 import { sendEmail } from "@/lib/mail";
 import { PurchaseReceiptEmail } from "@/components/emails/PurchaseReceiptEmail";
 
@@ -13,7 +15,6 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: "กรุณาเลือกสินค้าอย่างน้อย 1 รายการ" }, { status: 400 });
         }
 
-        // ✅ Limit cap: prevent oversized requests that could overload the DB
         if (productIds.length > 50) {
             return NextResponse.json({ success: false, message: "ไม่สามารถซื้อสินค้ามากกว่า 50 รายการในครั้งเดียว" }, { status: 400 });
         }
@@ -28,119 +29,153 @@ export async function POST(request: NextRequest) {
         });
         if (!user) return NextResponse.json({ success: false, message: "ไม่พบผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่" }, { status: 404 });
 
-        const result = await db.transaction(async (tx) => {
-            const productList = await tx.select({
-                id: products.id,
-                name: products.name,
-                price: products.price,
-                discountPrice: products.discountPrice,
-                currency: products.currency,
-                isSold: products.isSold,
-            }).from(products).where(inArray(products.id, productIds));
+        // Use raw connection for FOR UPDATE locking (same as single purchase)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const conn = await (db as any).$client.getConnection();
 
-            if (productList.length !== productIds.length) throw new Error("บางสินค้าไม่พบในระบบ");
+        try {
+            await conn.beginTransaction();
 
+            // Lock and fetch all products with their secretData
+            const [rows] = await conn.execute(
+                `SELECT id, name, price, discountPrice, currency, isSold, secretData, stockSeparator, autoDeleteAfterSale
+                 FROM Product WHERE id IN (${productIds.map(() => "?").join(",")}) FOR UPDATE`,
+                productIds
+            );
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const productList = rows as any[];
+
+            if (productList.length !== productIds.length) {
+                throw new Error("บางสินค้าไม่พบในระบบ");
+            }
+
+            // Check sold
             const soldProducts = productList.filter((p) => p.isSold);
             if (soldProducts.length > 0) {
-                const error: Error & { soldProductIds?: string[] } = new Error(
+                const err: Error & { soldProductIds?: string[] } = new Error(
                     `สินค้าบางรายการถูกขายไปแล้ว: ${soldProducts.map((p) => p.name).join(", ")}`
                 );
-                error.soldProductIds = soldProducts.map((p) => p.id);
-                throw error;
+                err.soldProductIds = soldProducts.map((p) => p.id);
+                throw err;
             }
 
-            const thbProducts = productList.filter((p) => p.currency === "THB" || !p.currency);
-            const pointProducts = productList.filter((p) => p.currency === "POINT");
+            // Calculate totals
+            const totalTHB = productList
+                .filter((p) => p.currency === "THB" || !p.currency)
+                .reduce((s, p) => s + Number(p.discountPrice ?? p.price), 0);
+            const totalPoints = productList
+                .filter((p) => p.currency === "POINT")
+                .reduce((s, p) => s + Number(p.discountPrice ?? p.price), 0);
 
-            const totalTHB = thbProducts.reduce((sum, p) => sum + Number(p.discountPrice ?? p.price), 0);
-            const totalPoints = pointProducts.reduce((sum, p) => sum + Number(p.discountPrice ?? p.price), 0);
+            if (totalTHB > 0 && Number(user.creditBalance) < totalTHB)
+                throw new Error(`เครดิตไม่เพียงพอ (ต้องการ ฿${totalTHB.toLocaleString()} แต่มี ฿${Number(user.creditBalance).toLocaleString()})`);
+            if (totalPoints > 0 && Number(user.pointBalance ?? 0) < totalPoints)
+                throw new Error(`Point ไม่เพียงพอ (ต้องการ 💎${totalPoints.toLocaleString()} แต่มี 💎${Number(user.pointBalance ?? 0).toLocaleString()})`);
 
-            const userCreditBalance = Number(user.creditBalance);
-            const userPointBalance = Number(user.pointBalance ?? 0);
+            // Process each product: decrypt → take 1 stock item → build order
+            const orderResults = [];
+            for (const prod of productList) {
+                const decrypted = decrypt(prod.secretData || "");
+                const separatorType = prod.stockSeparator || "newline";
+                const stockItems = splitStock(decrypted, separatorType);
 
-            if (totalTHB > 0 && userCreditBalance < totalTHB)
-                throw new Error(`เครดิตไม่เพียงพอ (ต้องการ ฿${totalTHB.toLocaleString()} แต่มี ฿${userCreditBalance.toLocaleString()})`);
-            if (totalPoints > 0 && userPointBalance < totalPoints)
-                throw new Error(`Point ไม่เพียงพอ (ต้องการ 💎${totalPoints.toLocaleString()} แต่มี 💎${userPointBalance.toLocaleString()})`);
+                if (stockItems.length === 0) throw new Error(`สินค้าหมดสต็อก: ${prod.name}`);
 
-            // ✅ สร้าง order records ทั้งหมดพร้อมกัน (batch) — ลด N×2 queries เหลือ 2 queries
-            const orderValues = productList.map((product) => ({
-                id: crypto.randomUUID(),
-                userId: user.id,
-                totalPrice: String(product.discountPrice ?? product.price),
-                status: "COMPLETED" as const,
-            }));
+                const [givenItem, ...remaining] = stockItems;
+                const delimiter = getDelimiter(separatorType);
+                const remainingData = remaining.join(delimiter);
+                const isLastStock = remaining.length === 0;
 
-            // map productId → orderId เพื่อ update products ด้วย
-            const productOrderMap = new Map(productList.map((p, i) => [p.id, orderValues[i].id]));
+                const orderId = crypto.randomUUID();
+                const unitPrice = Number(prod.discountPrice ?? prod.price);
 
-            // Batch insert: orders ทั้งหมดใน 1 query
-            await tx.insert(orders).values(orderValues);
+                // Insert order WITH givenData (encrypted)
+                await conn.execute(
+                    "INSERT INTO `Order` (id, userId, totalPrice, status, givenData) VALUES (?, ?, ?, 'COMPLETED', ?)",
+                    [orderId, userId, String(unitPrice), encrypt(givenItem)]
+                );
 
-            // Batch update: products ทั้งหมดด้วย CASE WHEN (1 query)
-            const caseExpr = sql.join(
-                productList.map((p) => sql`WHEN ${products.id} = ${p.id} THEN ${productOrderMap.get(p.id)!}`),
-                sql` `
-            );
-            await tx
-                .update(products)
-                .set({
-                    isSold: true,
-                    orderId: sql`CASE ${caseExpr} END`,
-                })
-                .where(inArray(products.id, productIds));
+                // Update product stock
+                let scheduledDeleteAt: string | null = null;
+                if (isLastStock && prod.autoDeleteAfterSale) {
+                    const deleteAt = new Date();
+                    deleteAt.setMinutes(deleteAt.getMinutes() + Number(prod.autoDeleteAfterSale));
+                    scheduledDeleteAt = deleteAt.toISOString().slice(0, 19).replace("T", " ");
+                }
 
-            // Batch update balances (เหมือนเดิม — ทำได้สูงสุด 2 queries)
+                await conn.execute(
+                    "UPDATE Product SET secretData = ?, isSold = ?, orderId = ?, scheduledDeleteAt = ? WHERE id = ?",
+                    [isLastStock ? encrypt(givenItem) : encrypt(remainingData), isLastStock ? 1 : 0, orderId, scheduledDeleteAt, prod.id]
+                );
+
+                orderResults.push({
+                    orderId,
+                    productName: prod.name,
+                    price: unitPrice,
+                    currency: prod.currency || "THB",
+                });
+            }
+
+            // Deduct balances
             if (totalTHB > 0) {
-                await tx.update(users).set({ creditBalance: sql`${users.creditBalance} - ${totalTHB}` }).where(eq(users.id, user.id));
+                await conn.execute(
+                    "UPDATE User SET creditBalance = creditBalance - ? WHERE id = ?",
+                    [totalTHB, userId]
+                );
             }
             if (totalPoints > 0) {
-                await tx.update(users).set({ pointBalance: sql`${users.pointBalance} - ${totalPoints}` }).where(eq(users.id, user.id));
+                await conn.execute(
+                    "UPDATE User SET pointBalance = pointBalance - ? WHERE id = ?",
+                    [totalPoints, userId]
+                );
             }
 
-            const orderResults = productList.map((product, i) => ({
-                orderId: orderValues[i].id,
-                productName: product.name,
-                price: Number(product.discountPrice ?? product.price),
-                currency: product.currency || "THB",
-            }));
+            await conn.commit();
 
-            return { orders: orderResults, totalTHB, totalPoints };
-        });
+            // Send email receipt async
+            if (session?.user?.email) {
+                void sendEmail({
+                    to: session.user.email,
+                    subject: `ใบเสร็จรับเงิน SnailShop - คำสั่งซื้อ ${orderResults.length} รายการ`,
+                    react: PurchaseReceiptEmail({
+                        userName: session?.user?.name || "ลูกค้า",
+                        orderCount: orderResults.length,
+                        totalTHB,
+                        totalPoints,
+                        items: orderResults,
+                    }),
+                }).catch((e) => console.error("Failed to send email:", e));
+            }
 
-        // Send an email receipt asynchronously
-        if (session?.user?.email) {
-            console.log("Sending receipt to:", session.user.email);
-            const emailResult = await sendEmail({
-                to: session.user.email,
-                subject: `ใบเสร็จรับเงิน SnailShop - คำสั่งซื้อ ${result.orders.length} รายการ`,
-                react: PurchaseReceiptEmail({
-                    userName: session?.user?.name || "ลูกค้า",
-                    orderCount: result.orders.length,
-                    totalTHB: result.totalTHB,
-                    totalPoints: result.totalPoints,
-                    items: result.orders,
-                }),
+            return NextResponse.json({
+                success: true,
+                message: "ซื้อสำเร็จ! 🎉",
+                purchasedCount: orderResults.length,
+                totalTHB,
+                totalPoints,
+                orders: orderResults,
             });
-            console.log("Email Result:", emailResult);
-        } else {
-            console.log("No user email found to send receipt");
+
+        } catch (txError) {
+            await conn.rollback();
+            const soldProductIds = (txError as Error & { soldProductIds?: string[] }).soldProductIds;
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: txError instanceof Error ? txError.message : "เกิดข้อผิดพลาดในการซื้อ",
+                    soldProductIds: soldProductIds || [],
+                },
+                { status: 400 }
+            );
+        } finally {
+            conn.release();
         }
 
-        return NextResponse.json({
-            success: true,
-            message: "ซื้อสำเร็จ! 🎉",
-            purchasedCount: result.orders.length,
-            totalTHB: result.totalTHB,
-            totalPoints: result.totalPoints,
-            orders: result.orders,
-        });
     } catch (error) {
         console.error("Cart checkout error:", error);
-        const soldProductIds = (error as Error & { soldProductIds?: string[] }).soldProductIds;
         return NextResponse.json(
-            { success: false, message: error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการซื้อ", soldProductIds: soldProductIds || [] },
-            { status: 400 }
+            { success: false, message: error instanceof Error ? error.message : "เกิดข้อผิดพลาด" },
+            { status: 500 }
         );
     }
 }

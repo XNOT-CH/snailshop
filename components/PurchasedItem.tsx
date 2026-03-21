@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,10 +11,11 @@ import {
     CollapsibleContent,
     CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Lock, Eye, EyeOff, Calendar, Copy, Check, User, KeyRound } from "lucide-react";
-import { showSuccess } from "@/lib/swal";
+import { Lock, Eye, EyeOff, Calendar, Copy, Check, User, KeyRound, Trash2 } from "lucide-react";
+import { showSuccess, showDeleteConfirm, showError } from "@/lib/swal";
 
 interface PurchasedItemProps {
+    orderId: string;
     title: string;
     image: string;
     date: string;
@@ -22,9 +24,7 @@ interface PurchasedItemProps {
 
 // Parse secret data to extract username and password
 function parseSecretData(data: string): { username: string; password: string } | null {
-    // Try common formats: "username / password", "username:password", "username|password"
     const separators = [' / ', '/', ':', '|', ' | '];
-
     for (const sep of separators) {
         if (data.includes(sep)) {
             const parts = data.split(sep);
@@ -36,18 +36,20 @@ function parseSecretData(data: string): { username: string; password: string } |
             }
         }
     }
-
     return null;
 }
 
 export function PurchasedItem({
+    orderId,
     title,
     image,
     date,
     secretData,
 }: Readonly<PurchasedItemProps>) {
+    const router = useRouter();
     const [isOpen, setIsOpen] = useState(false);
     const [copiedField, setCopiedField] = useState<"username" | "password" | "all" | null>(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     const parsed = parseSecretData(secretData);
 
@@ -56,6 +58,27 @@ export function PurchasedItem({
         setCopiedField(field);
         showSuccess("คัดลอกแล้ว!");
         setTimeout(() => setCopiedField(null), 2000);
+    };
+
+    const handleDelete = async () => {
+        const confirmed = await showDeleteConfirm(title);
+        if (!confirmed) return;
+
+        setIsDeleting(true);
+        try {
+            const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
+            const data = await res.json();
+            if (data.success) {
+                showSuccess("ลบรายการเรียบร้อยแล้ว");
+                router.refresh();
+            } else {
+                showError(data.message || "เกิดข้อผิดพลาด");
+            }
+        } catch {
+            showError("เกิดข้อผิดพลาด กรุณาลองใหม่");
+        } finally {
+            setIsDeleting(false);
+        }
     };
 
     return (
@@ -76,23 +99,32 @@ export function PurchasedItem({
             </div>
 
             <CardHeader className="pb-2">
-                <h3 className="font-semibold text-foreground line-clamp-1">
-                    {title}
-                </h3>
-                <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    {date}
+                <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                        <h3 className="font-semibold text-foreground line-clamp-1">{title}</h3>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                            <Calendar className="h-3 w-3" />
+                            {date}
+                        </div>
+                    </div>
+                    {/* Delete button */}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 flex-shrink-0 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                        aria-label="ลบรายการ"
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
                 </div>
             </CardHeader>
 
             <CardContent className="pb-3">
                 <Collapsible open={isOpen} onOpenChange={setIsOpen}>
                     <CollapsibleTrigger asChild>
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full gap-2"
-                        >
+                        <Button variant="outline" size="sm" className="w-full gap-2">
                             {isOpen ? (
                                 <>
                                     <EyeOff className="h-4 w-4" />
@@ -134,7 +166,6 @@ export function PurchasedItem({
                             </div>
 
                             {parsed ? (
-                                // Show parsed username and password format
                                 <div className="space-y-2">
                                     {/* Username */}
                                     <div className="flex items-center gap-2 p-2 rounded-md bg-background border">
@@ -183,7 +214,6 @@ export function PurchasedItem({
                                     </div>
                                 </div>
                             ) : (
-                                // Show raw data if not parseable
                                 <pre className="text-sm text-foreground whitespace-pre-wrap font-mono break-all p-2 bg-background rounded-md border">
                                     {secretData}
                                 </pre>

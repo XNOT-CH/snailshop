@@ -27,15 +27,7 @@ export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
         [autoplayPlugin.current]
     );
 
-    const [selectedIndex, setSelectedIndex] = useState(0);
-    const [scrollSnaps, setScrollSnaps] = useState<number[]>([]);
     const [isHovered, setIsHovered] = useState(false);
-
-    // Scroll to specific slide
-    const scrollTo = useCallback(
-        (index: number) => emblaApi?.scrollTo(index),
-        [emblaApi]
-    );
 
     // Scroll to previous slide
     const scrollPrev = useCallback(() => {
@@ -46,28 +38,6 @@ export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
     const scrollNext = useCallback(() => {
         emblaApi?.scrollNext();
     }, [emblaApi]);
-
-    // Handle selection change
-    const onSelect = useCallback(() => {
-        if (!emblaApi) return;
-        setSelectedIndex(emblaApi.selectedScrollSnap());
-    }, [emblaApi]);
-
-    // Initialize and setup listeners
-    useEffect(() => {
-        if (!emblaApi) return;
-
-        setScrollSnaps(emblaApi.scrollSnapList());
-        onSelect();
-
-        emblaApi.on("select", onSelect);
-        emblaApi.on("reInit", onSelect);
-
-        return () => {
-            emblaApi.off("select", onSelect);
-            emblaApi.off("reInit", onSelect);
-        };
-    }, [emblaApi, onSelect]);
 
     if (banners.length === 0) {
         return null;
@@ -180,28 +150,7 @@ export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
                 </>
             )}
 
-            {/* Pagination Dots */}
-            {banners.length > 1 && (
-                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
-                    {scrollSnaps.map((_, index) => (
-                        <button
-                            key={banners[index]?.id ?? `dot-${index}`}
-                            onClick={() => scrollTo(index)}
-                            className={`
-                                w-2.5 h-2.5 sm:w-3 sm:h-3 
-                                rounded-full 
-                                transition-all duration-300 ease-out
-                                focus:outline-none focus:ring-2 focus:ring-white/50
-                                ${index === selectedIndex
-                                    ? "bg-white w-6 sm:w-8"
-                                    : "bg-white/50 hover:bg-white/80"
-                                }
-                            `}
-                            aria-label={`Go to slide ${index + 1}`}
-                        />
-                    ))}
-                </div>
-            )}
+
         </section>
     );
 }

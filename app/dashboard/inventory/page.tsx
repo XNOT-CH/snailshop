@@ -74,6 +74,7 @@ export default async function InventoryPage() {
                             order.product && (
                                 <PurchasedItem
                                     key={order.id}
+                                    orderId={order.id}
                                     title={order.product.name}
                                     image={order.product.imageUrl || "/placeholder.jpg"}
                                     date={new Date(order.purchasedAt).toLocaleDateString(

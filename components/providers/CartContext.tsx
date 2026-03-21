@@ -12,6 +12,7 @@ export interface CartItem {
     imageUrl: string | null;
     category: string;
     quantity: number;
+    stock?: number; // actual available stock count
 }
 
 // Cart context type
@@ -72,9 +73,13 @@ export function CartProvider({ children }: Readonly<CartProviderProps>) {
     const updateQuantity = useCallback((productId: string, quantity: number) => {
         if (quantity < 1) return;
         setItems((prev) =>
-            prev.map((item) =>
-                item.id === productId ? { ...item, quantity } : item
-            )
+            prev.map((item) => {
+                if (item.id !== productId) return item;
+                // Cap quantity at available stock if known
+                const maxQty = item.stock != null && item.stock > 0 ? item.stock : 99;
+                const clampedQty = Math.min(quantity, maxQty);
+                return { ...item, quantity: clampedQty };
+            })
         );
     }, []);
 
@@ -86,23 +91,27 @@ export function CartProvider({ children }: Readonly<CartProviderProps>) {
             return false;
         }
 
-        // Validate stock (check if product is still available)
+        // Validate stock via public availability API
         setIsLoading(true);
         try {
-            const response = await fetch(`/api/products/${product.id}`);
+            const response = await fetch(`/api/products/${product.id}/availability`);
             if (!response.ok) {
                 showError("ไม่พบสินค้านี้");
                 return false;
             }
 
             const data = await response.json();
-            if (data.isSold) {
-                showError(`สินค้านี้ถูกขายไปแล้ว: ${product.name}`);
+            if (!data.found) {
+                showError("ไม่พบสินค้านี้");
+                return false;
+            }
+            if (data.isSold || data.stockCount === 0) {
+                showError(`สินค้านี้หมดแล้ว: ${product.name}`);
                 return false;
             }
 
-            // Add to cart
-            setItems((prev) => [...prev, { ...product, quantity: product.quantity || 1 }]);
+            // Add to cart with actual stock count so QuantitySelector can cap correctly
+            setItems((prev) => [...prev, { ...product, quantity: product.quantity || 1, stock: data.stockCount }]);
             showSuccess(`เพิ่มลงตะกร้าแล้ว: ${product.name}`);
             return true;
         } catch (error) {
