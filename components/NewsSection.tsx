@@ -45,7 +45,7 @@ export function NewsSection() {
         ];
         const day = date.getDate();
         const month = thaiMonths[date.getMonth()];
-        const year = date.getFullYear() + 543; // Convert to Buddhist Era
+        const year = date.getFullYear() + 543;
         return `${day} ${month} ${year}`;
     };
 
@@ -57,11 +57,11 @@ export function NewsSection() {
     return (
         <section className="mt-6">
             {/* Section Header */}
-            <div className="mb-4 text-center">
+            <div className="mb-5 text-center">
                 <h2 className="text-xl sm:text-2xl font-bold text-foreground">
                     ข่าวสารและโปรโมชั่น
                 </h2>
-                <p className="text-sm text-muted-foreground uppercase tracking-wider mt-1">
+                <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">
                     NEWS AND PROMOTIONS
                 </p>
             </div>
@@ -73,49 +73,49 @@ export function NewsSection() {
                 </div>
             ) : (
                 /* News Grid */
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                     {news.map((article) => (
                         <article
                             key={article.id}
-                            className="bg-white dark:bg-card border border-slate-100 dark:border-border rounded-xl sm:rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden group"
+                            className="bg-card border border-border rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-300 group flex flex-col"
                         >
                             {/* Image */}
-                            <div className="relative w-full aspect-video overflow-hidden">
+                            <div className="relative w-full aspect-video overflow-hidden bg-muted">
                                 {article.imageUrl ? (
                                     <Image
                                         src={article.imageUrl}
                                         alt={article.title}
                                         fill
-                                        sizes="(max-width: 768px) 100vw, 33vw"
-                                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                        className="object-cover"
                                         onError={(e) => {
                                             (e.target as HTMLImageElement).src =
-                                                "https://placehold.co/800x450/3b82f6/ffffff?text=News";
+                                                "https://placehold.co/800x450/1e293b/94a3b8?text=News";
                                         }}
                                     />
                                 ) : (
-                                    <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                                        <Newspaper className="h-12 w-12 text-primary/40" />
+                                    <div className="w-full h-full flex items-center justify-center bg-muted">
+                                        <Newspaper className="h-10 w-10 text-muted-foreground/30" />
                                     </div>
                                 )}
                             </div>
 
                             {/* Content */}
-                            <div className="p-4 sm:p-5">
+                            <div className="flex flex-col flex-1 p-4 sm:p-5">
                                 {/* Title */}
-                                <h3 className="font-bold text-foreground text-lg mb-2 group-hover:text-primary transition-colors">
+                                <h3 className="font-semibold text-foreground text-base leading-snug mb-2 group-hover:text-primary transition-colors line-clamp-2">
                                     {article.title}
                                 </h3>
 
-                                {/* Description - 2 lines max */}
-                                <p className="text-muted-foreground text-sm line-clamp-2 mb-4">
+                                {/* Description */}
+                                <p className="text-muted-foreground text-sm line-clamp-2 flex-1 mb-4">
                                     {article.description}
                                 </p>
 
                                 {/* Footer */}
-                                <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-border">
+                                <div className="flex items-center justify-between pt-3 border-t border-border">
                                     {/* Date */}
-                                    <div className="flex items-center gap-1.5 text-muted-foreground text-xs sm:text-sm">
+                                    <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
                                         <Calendar className="w-3.5 h-3.5" />
                                         <span>{formatDate(article.createdAt)}</span>
                                     </div>
@@ -124,10 +124,12 @@ export function NewsSection() {
                                     {article.link && (
                                         <Link
                                             href={article.link}
-                                            className="flex items-center gap-1 text-primary hover:text-primary/80 text-xs sm:text-sm font-medium transition-colors group/link"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="flex items-center gap-1 text-primary hover:text-primary/80 text-xs font-medium transition-colors group/link"
                                         >
                                             <span>อ่านเพิ่มเติม</span>
-                                            <ArrowRight className="w-3.5 h-3.5 group-hover/link:translate-x-1 transition-transform" />
+                                            <ArrowRight className="w-3.5 h-3.5 group-hover/link:translate-x-0.5 transition-transform" />
                                         </Link>
                                     )}
                                 </div>

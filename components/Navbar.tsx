@@ -160,9 +160,9 @@ export default async function Navbar() {
                         <>
                             {/* Credit Balance */}
                             <Link href="/dashboard/topup" className="hidden sm:block">
-                                <Button variant="outline" size="sm" className="gap-2 rounded-xl border-border bg-accent text-primary hover:bg-accent/80">
-                                    <Wallet className="h-4 w-4" />
-                                    ฿{Number(user.creditBalance).toLocaleString()}
+                                <Button variant="ghost" size="sm" className="gap-1.5 rounded-xl text-muted-foreground hover:text-primary hover:bg-accent font-medium">
+                                    <Wallet className="h-4 w-4 shrink-0 text-primary" />
+                                    <span className="text-foreground font-semibold">฿{Number(user.creditBalance).toLocaleString()}</span>
                                 </Button>
                             </Link>
 

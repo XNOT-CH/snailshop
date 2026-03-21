@@ -232,6 +232,7 @@ export const siteSettings = mysqlTable("SiteSettings", {
     bannerImage3: text("bannerImage3"),
     bannerTitle3: varchar("bannerTitle3", { length: 255 }),
     bannerSubtitle3: varchar("bannerSubtitle3", { length: 255 }),
+    bannersJson: text("bannersJson"),
     logoUrl: text("logoUrl"),
     backgroundImage: text("backgroundImage"),
     backgroundBlur: boolean("backgroundBlur").default(true).notNull(),

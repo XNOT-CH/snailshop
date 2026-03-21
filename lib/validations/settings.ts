@@ -40,6 +40,7 @@ export const siteSettingsSchema = z.object({
     bannerImage3: imageUrl,
     bannerTitle3: z.string().max(200).optional().or(z.literal("")),
     bannerSubtitle3: z.string().max(300).optional().or(z.literal("")),
+    bannersJson: z.string().optional().or(z.literal("")),
     // Social
     lineUrl: z.url({ error: "URL ไม่ถูกต้อง" }).optional().or(z.literal("")),
     facebookUrl: z.url({ error: "URL ไม่ถูกต้อง" }).optional().or(z.literal("")),

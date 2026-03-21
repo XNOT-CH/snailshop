@@ -67,7 +67,7 @@ export default function AdminNewsPage() {
                 const input = document.createElement("input");
                 input.type = "file";
                 input.accept = "image/jpeg,image/png,image/webp,image/gif";
-                input.onchange = () => handleNewsImageUpload(input, urlInput, preview, previewImg);
+                input.onchange = () => handleNewsImageUpload(input, urlInput, preview, previewImg, uploadBtn);
                 input.click();
             });
         }
@@ -93,34 +93,39 @@ export default function AdminNewsPage() {
         fetchNews();
     }, [fetchNews]);
 
-    // Handle image upload within Swal
-    const handleFileUploadInSwal = async (file: File): Promise<string | null> => {
+    // Handle image upload within Swal (must NOT call showSuccess/showError — they replace the modal)
+    const handleFileUploadInSwal = async (file: File, uploadBtn?: HTMLElement): Promise<string | null> => {
         try {
-            showLoading("กำลังอัพโหลดรูป...");
+            if (uploadBtn) {
+                uploadBtn.textContent = "⏳ กำลังอัพโหลด...";
+                (uploadBtn as HTMLButtonElement).disabled = true;
+            }
             const compressed = await compressImage(file);
             const uploadFormData = new FormData();
             uploadFormData.append("file", compressed);
             const res = await fetch("/api/upload", { method: "POST", body: uploadFormData });
             const data = await res.json();
-            hideLoading();
             if (data.success) {
-                showSuccess("อัพโหลดรูปสำเร็จ!");
                 return data.url as string;
             } else {
-                showError(data.message || "อัพโหลดไม่สำเร็จ");
+                Swal.showValidationMessage(data.message || "อัพโหลดไม่สำเร็จ");
                 return null;
             }
         } catch {
-            hideLoading();
-            showError("เกิดข้อผิดพลาดในการอัพโหลด");
+            Swal.showValidationMessage("เกิดข้อผิดพลาดในการอัพโหลด");
             return null;
+        } finally {
+            if (uploadBtn) {
+                uploadBtn.textContent = "📷 อัพโหลดรูป";
+                (uploadBtn as HTMLButtonElement).disabled = false;
+            }
         }
     };
 
-    const handleNewsImageUpload = async (input: HTMLInputElement, urlInput: HTMLInputElement | null, preview: HTMLElement | null, previewImg: HTMLImageElement | null | undefined) => {
+    const handleNewsImageUpload = async (input: HTMLInputElement, urlInput: HTMLInputElement | null, preview: HTMLElement | null, previewImg: HTMLImageElement | null | undefined, uploadBtn?: HTMLElement) => {
         const file = input.files?.[0];
         if (!file) return;
-        const url = await handleFileUploadInSwal(file);
+        const url = await handleFileUploadInSwal(file, uploadBtn);
         if (url) {
             uploadedUrlRef.current = url;
             if (urlInput) urlInput.value = url;
@@ -170,7 +175,7 @@ export default function AdminNewsPage() {
                         <div id="swal-img-preview" class="mt-2 ${article?.imageUrl ? "" : "hidden"}">
                             <img src="${article?.imageUrl || ""}" class="w-full h-28 object-cover rounded-lg border" onerror="this.src='https://placehold.co/400x200/ef4444/ffffff?text=Invalid+URL'">
                         </div>
-                        <p class="text-xs text-gray-400 mt-1">รองรับไฟล์ JPG, PNG, WebP, GIF (สูงสุด 5MB)</p>
+                        <p class="text-xs text-gray-400 mt-1">รองรับไฟล์ JPG, PNG, WebP, GIF (สูงสุด 5MB) · แนะนำขนาด 1280×720px (16:9)</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ลิงก์ (อ่านเพิ่มเติม)</label>
@@ -231,7 +236,8 @@ export default function AdminNewsPage() {
                 showSuccess(article ? "แก้ไขข่าวสารสำเร็จ!" : "เพิ่มข่าวสารสำเร็จ!");
                 fetchNews();
             } else {
-                showError("เกิดข้อผิดพลาดในการบันทึก");
+                const errData = await res.json().catch(() => ({}));
+                showError(errData?.message || "เกิดข้อผิดพลาดในการบันทึก");
             }
         } catch {
             hideLoading();

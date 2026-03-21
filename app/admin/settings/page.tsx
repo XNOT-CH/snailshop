@@ -9,9 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { showSuccess, showError } from "@/lib/swal";
 import { compressImage } from "@/lib/compressImage";
-import { Save, Loader2, Image as ImageIcon, Type, Megaphone, Wallpaper, LayoutGrid, Upload, X } from "lucide-react";
+import { Save, Loader2, Image as ImageIcon, Type, Megaphone, Wallpaper, LayoutGrid, Upload, X, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { Switch } from "@/components/ui/switch";
+
+interface ExtraBanner {
+    image: string;
+    title: string;
+    subtitle: string;
+}
 
 interface SiteSettings {
     heroTitle: string;
@@ -26,6 +32,7 @@ interface SiteSettings {
     bannerImage3: string;
     bannerTitle3: string;
     bannerSubtitle3: string;
+    bannersJson: string;
     logoUrl: string;
     backgroundImage: string;
     backgroundBlur: boolean;
@@ -39,6 +46,7 @@ export default function AdminSettingsPage() {
     const [isUploadingBg, setIsUploadingBg] = useState(false);
     const logoInputRef = useRef<HTMLInputElement>(null);
     const bgInputRef = useRef<HTMLInputElement>(null);
+    const [extraBanners, setExtraBanners] = useState<ExtraBanner[]>([]);
     const [settings, setSettings] = useState<SiteSettings>({
         heroTitle: "",
         heroDescription: "",
@@ -52,6 +60,7 @@ export default function AdminSettingsPage() {
         bannerImage3: "",
         bannerTitle3: "",
         bannerSubtitle3: "",
+        bannersJson: "",
         logoUrl: "",
         backgroundImage: "",
         backgroundBlur: true,
@@ -81,11 +90,19 @@ export default function AdminSettingsPage() {
                     bannerImage3: data.data.bannerImage3 || "",
                     bannerTitle3: data.data.bannerTitle3 || "",
                     bannerSubtitle3: data.data.bannerSubtitle3 || "",
+                    bannersJson: data.data.bannersJson || "",
                     logoUrl: data.data.logoUrl || "",
                     backgroundImage: data.data.backgroundImage || "",
                     backgroundBlur: data.data.backgroundBlur ?? true,
                     showAllProducts: data.data.showAllProducts ?? true,
                 });
+                // Parse extra banners
+                try {
+                    const parsed = data.data.bannersJson ? JSON.parse(data.data.bannersJson) : [];
+                    setExtraBanners(Array.isArray(parsed) ? parsed : []);
+                } catch {
+                    setExtraBanners([]);
+                }
             }
         } catch (error) {
             console.error("[SETTINGS_FETCH]", error);
@@ -98,10 +115,14 @@ export default function AdminSettingsPage() {
     const handleSave = async () => {
         setIsSaving(true);
         try {
+            const payload = {
+                ...settings,
+                bannersJson: JSON.stringify(extraBanners),
+            };
             const res = await fetch("/api/admin/settings", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(settings),
+                body: JSON.stringify(payload),
             });
             const data = await res.json();
 
@@ -116,6 +137,18 @@ export default function AdminSettingsPage() {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const addExtraBanner = () => {
+        setExtraBanners(prev => [...prev, { image: "", title: "", subtitle: "" }]);
+    };
+
+    const removeExtraBanner = (index: number) => {
+        setExtraBanners(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const updateExtraBanner = (index: number, field: keyof ExtraBanner, value: string) => {
+        setExtraBanners(prev => prev.map((b, i) => i === index ? { ...b, [field]: value } : b));
     };
 
     const updateSetting = (key: keyof SiteSettings, value: string | boolean) => {
@@ -462,6 +495,30 @@ export default function AdminSettingsPage() {
                                     onSubtitleChange={(v) => updateSetting(`bannerSubtitle${num}` as keyof SiteSettings, v)}
                                 />
                             ))}
+                            {extraBanners.map((banner, idx) => (
+                                <BannerCard
+                                    key={`extra-${idx}`}
+                                    number={4 + idx}
+                                    image={banner.image}
+                                    title={banner.title}
+                                    subtitle={banner.subtitle}
+                                    onImageChange={(v) => updateExtraBanner(idx, "image", v)}
+                                    onTitleChange={(v) => updateExtraBanner(idx, "title", v)}
+                                    onSubtitleChange={(v) => updateExtraBanner(idx, "subtitle", v)}
+                                    onRemove={() => removeExtraBanner(idx)}
+                                />
+                            ))}
+                        </div>
+                        <div className="mt-4">
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="gap-2 border-dashed"
+                                onClick={addExtraBanner}
+                            >
+                                <Plus className="h-4 w-4" />
+                                เพิ่มป้าย
+                            </Button>
                         </div>
                     </div>
 
@@ -491,6 +548,7 @@ function BannerCard({
     onImageChange,
     onTitleChange,
     onSubtitleChange,
+    onRemove,
 }: Readonly<{
     number: number;
     image: string;
@@ -499,6 +557,7 @@ function BannerCard({
     onImageChange: (v: string) => void;
     onTitleChange: (v: string) => void;
     onSubtitleChange: (v: string) => void;
+    onRemove?: () => void;
 }>) {
     const [isUploading, setIsUploading] = React.useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -552,8 +611,20 @@ function BannerCard({
 
     return (
         <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
-            <div className="border-b border-border py-2.5 px-4 flex items-center gap-2">
+            <div className="border-b border-border py-2.5 px-4 flex items-center justify-between gap-2">
                 <Badge variant="secondary" className="bg-blue-100 text-[#1a56db] font-semibold">Banner {number}</Badge>
+                {onRemove && (
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                        onClick={onRemove}
+                        title="ลบป้ายนี้"
+                    >
+                        <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                )}
             </div>
             <div className="p-4 space-y-4">
                 <div className="space-y-2">

@@ -71,9 +71,9 @@ export default async function ProductDetailPage({
     });
 
     return (
-        <div className="min-h-screen bg-[#e5e7eb] py-8 sm:py-12 px-4 sm:px-6 lg:px-8 animate-page-enter">
+        <div className="min-h-screen bg-muted/60 dark:bg-background py-8 sm:py-12 px-4 sm:px-6 lg:px-8 animate-page-enter">
             {/* Outer card */}
-            <div className="relative max-w-screen-2xl mx-auto bg-white rounded-2xl border border-gray-200 overflow-hidden" style={{ boxShadow: '0 24px 80px rgba(0,0,0,0.14)' }}>
+            <div className="relative max-w-screen-2xl mx-auto bg-card rounded-2xl border border-border overflow-hidden" style={{ boxShadow: '0 24px 80px rgba(0,0,0,0.14)' }}>
 
 
                 <div className="p-6 sm:p-8">
@@ -130,7 +130,7 @@ export default async function ProductDetailPage({
                                         <Info className="h-3.5 w-3.5" />
                                         รายละเอียดสินค้า
                                     </p>
-                                    <div className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-foreground leading-relaxed whitespace-pre-line min-h-[60px]">
+                                    <div className="w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-foreground leading-relaxed whitespace-pre-line min-h-[60px]">
                                         {product.description}
                                     </div>
                                 </div>
@@ -159,7 +159,7 @@ export default async function ProductDetailPage({
 
             {/* Related Products Section */}
             {relatedProducts.length > 0 && (
-                <div className="max-w-screen-2xl mx-auto mt-16 mb-8 bg-white rounded-2xl border border-gray-200 p-6" style={{ boxShadow: '0 12px 48px rgba(0,0,0,0.10)' }}>
+                <div className="max-w-screen-2xl mx-auto mt-16 mb-8 bg-card rounded-2xl border border-border p-6" style={{ boxShadow: '0 12px 48px rgba(0,0,0,0.10)' }}>
                     <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
                         รายการสินค้าอื่นๆ
                     </h2>
@@ -178,10 +178,10 @@ export default async function ProductDetailPage({
 
                             return (
                                 <Link href={`/product/${related.id}`} key={related.id} className="group cursor-pointer">
-                                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,0,0,0.12)] flex flex-col h-full">
+                                    <div className="bg-card rounded-xl border border-border shadow-sm p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,0,0,0.18)] flex flex-col h-full">
 
                                         {/* Image */}
-                                        <div className="group relative h-28 w-full rounded-lg overflow-hidden bg-gray-50 mb-4">
+                                        <div className="group relative h-28 w-full rounded-lg overflow-hidden bg-muted mb-4">
                                             <Image
                                                 src={related.imageUrl || "/placeholder.jpg"}
                                                 alt={related.name}
@@ -231,13 +231,13 @@ export default async function ProductDetailPage({
                                             </div>
 
                                             {/* Stock / Button */}
-                                            <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                                            <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
                                                 <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">
                                                     คงเหลือ {relStock} ชิ้น
                                                 </span>
                                                 <div className={`text-[10px] px-2 py-1 rounded-full font-semibold ${relAvailable
-                                                    ? "bg-blue-50 text-blue-600"
-                                                    : "bg-red-50 text-red-500"
+                                                    ? "bg-primary/10 text-primary"
+                                                    : "bg-destructive/10 text-destructive"
                                                     }`}>
                                                     {relAvailable ? "พร้อมขาย" : "สินค้าหมด"}
                                                 </div>
