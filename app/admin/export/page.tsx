@@ -153,7 +153,7 @@ function ExportCard({
     else if (state === "error") btnClass = "bg-red-600 hover:bg-red-700";
 
     return (
-        <div className="relative overflow-hidden bg-white rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col">
+        <div className="relative overflow-hidden bg-card rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow duration-300 flex flex-col">
             {/* Color bar */}
             <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config.gradient}`} />
 
@@ -163,11 +163,11 @@ function ExportCard({
                         <Icon className={`h-5 w-5 ${config.color}`} />
                     </div>
                     <div className="min-w-0 flex-1">
-                        <p className="text-base font-semibold text-slate-800">{config.label}</p>
-                        <p className="mt-1 text-xs text-slate-500 leading-relaxed">{config.description}</p>
+                        <p className="text-base font-semibold text-foreground">{config.label}</p>
+                        <p className="mt-1 text-xs text-muted-foreground leading-relaxed">{config.description}</p>
 
                         {!config.supportsDateRange && (
-                            <p className="mt-2 inline-flex items-center gap-1 text-[11px] text-amber-600 bg-amber-50 rounded-md px-2 py-0.5 border border-amber-200">
+                            <p className="mt-2 inline-flex items-center gap-1 text-[11px] text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 rounded-md px-2 py-0.5 border border-amber-200 dark:border-amber-700">
                                 <Calendar className="h-3 w-3" />
                                 ส่งออกทั้งหมด (ไม่รองรับช่วงวันที่)
                             </p>
@@ -178,7 +178,7 @@ function ExportCard({
 
             <div className="px-5 pb-5">
                 {state === "error" && (
-                    <div className="mb-2 flex items-center gap-1.5 text-xs text-red-600 bg-red-50 rounded-lg px-3 py-2 border border-red-200">
+                    <div className="mb-2 flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 rounded-lg px-3 py-2 border border-red-200 dark:border-red-800">
                         <AlertCircle className="h-3.5 w-3.5 shrink-0" />
                         {errMsg}
                     </div>
@@ -221,15 +221,15 @@ export default function AdminExportPage() {
                     <FileSpreadsheet className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                    <h1 className="text-xl font-bold text-slate-800">ส่งออกข้อมูล (CSV)</h1>
-                    <p className="text-sm text-slate-500">
+                    <h1 className="text-xl font-bold text-foreground">ส่งออกข้อมูล (CSV)</h1>
+                    <p className="text-sm text-muted-foreground">
                         ดาวน์โหลดข้อมูลพร้อม BOM — เปิดใน Excel ได้ทันทีโดยดับเบิลคลิก
                     </p>
                 </div>
             </div>
 
             {/* BOM info banner */}
-            <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+            <div className="flex items-start gap-3 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 px-4 py-3 text-sm text-blue-800 dark:text-blue-300">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
                 <div>
                     <span className="font-semibold">UTF-8 BOM ถูกเพิ่มอัตโนมัติ</span>{" "}
@@ -239,15 +239,15 @@ export default function AdminExportPage() {
             </div>
 
             {/* Date range filter */}
-            <div className="rounded-xl border border-border bg-white p-5 shadow-sm">
+            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
                 <div className="flex items-center gap-2 mb-4">
-                    <Calendar className="h-4 w-4 text-slate-500" />
-                    <span className="text-sm font-semibold text-slate-700">กรองตามช่วงวันที่</span>
-                    <span className="text-xs text-slate-400">(ใช้กับ: คำสั่งซื้อ, เติมเงิน, กาชา)</span>
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-semibold text-foreground">กรองตามช่วงวันที่</span>
+                    <span className="text-xs text-muted-foreground">(ใช้กับ: คำสั่งซื้อ, เติมเงิน, กาชา)</span>
                 </div>
                 <div className="flex flex-wrap gap-4">
                     <div className="flex-1 min-w-[160px]">
-                        <Label className="text-xs text-slate-500 mb-1 block">วันที่เริ่มต้น</Label>
+                        <Label className="text-xs text-muted-foreground mb-1 block">วันที่เริ่มต้น</Label>
                         <Input
                             type="date"
                             value={from}
@@ -256,7 +256,7 @@ export default function AdminExportPage() {
                         />
                     </div>
                     <div className="flex-1 min-w-[160px]">
-                        <Label className="text-xs text-slate-500 mb-1 block">วันที่สิ้นสุด</Label>
+                        <Label className="text-xs text-muted-foreground mb-1 block">วันที่สิ้นสุด</Label>
                         <Input
                             type="date"
                             value={to}
@@ -285,7 +285,7 @@ export default function AdminExportPage() {
             </div>
 
             {/* Footer note */}
-            <p className="text-center text-xs text-slate-400">
+            <p className="text-center text-xs text-muted-foreground">
                 สูงสุด 50,000 แถวต่อการส่งออก • ข้อมูลเรียงจากใหม่ไปเก่า
             </p>
         </div>

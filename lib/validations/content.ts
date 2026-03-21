@@ -20,11 +20,19 @@ export const currencySettingsSchema = z.object({
 export type CurrencySettingsInput = z.infer<typeof currencySettingsSchema>;
 
 // ── News Item ─────────────────────────────────────────────
+const optionalUrl = z
+    .string()
+    .optional()
+    .refine(
+        (v) => !v || v === "" || v.startsWith("/") || /^https?:\/\/.+/.test(v),
+        { message: "URL ไม่ถูกต้อง (ต้องขึ้นต้นด้วย / หรือ http:// หรือ https://)" }
+    );
+
 export const newsItemSchema = z.object({
     title: z.string().min(1, "กรุณากรอกหัวข้อข่าว").max(300),
     description: z.string().min(1, "กรุณากรอกรายละเอียด").max(5000),
-    imageUrl: z.url({ error: "URL รูปภาพไม่ถูกต้อง" }).optional().or(z.literal("")),
-    link: z.url({ error: "URL ลิงก์ไม่ถูกต้อง" }).optional().or(z.literal("")),
+    imageUrl: optionalUrl,
+    link: optionalUrl,
     sortOrder: z.coerce.number().int().min(0).default(0),
     isActive: z.boolean().default(true),
 });

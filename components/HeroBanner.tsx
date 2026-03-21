@@ -33,6 +33,27 @@ export async function HeroBanner() {
         },
     ].filter(b => b.image); // Only show banners with images
 
+    // Parse extra banners from bannersJson
+    if (settings?.bannersJson) {
+        try {
+            const extra = JSON.parse(settings.bannersJson);
+            if (Array.isArray(extra)) {
+                extra.forEach((b: { image?: string; title?: string; subtitle?: string }, i: number) => {
+                    if (b.image) {
+                        banners.push({
+                            id: 4 + i,
+                            image: b.image,
+                            title: b.title ?? "",
+                            subtitle: b.subtitle ?? "",
+                        });
+                    }
+                });
+            }
+        } catch {
+            // invalid JSON — ignore
+        }
+    }
+
     // Preload the first (LCP) banner image so fetchpriority=high is set in the HTML head
     // This makes the LCP image discoverable from the initial document even though
     // the carousel is a client component
