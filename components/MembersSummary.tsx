@@ -102,6 +102,7 @@ export function MembersSummary() {
                 const json = await res.json();
                 if (json.success) {
                     setData(json.data);
+                    setHistoryData(json.data.dailyTrend);
                 }
             } catch (err) {
                 console.error("Failed to fetch members summary:", err);
@@ -114,6 +115,10 @@ export function MembersSummary() {
 
     // Fetch historical data based on selected period
     useEffect(() => {
+        if (selectedPeriod === 0) {
+            return;
+        }
+
         async function fetchHistory() {
             setHistoryLoading(true);
             try {

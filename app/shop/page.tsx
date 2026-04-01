@@ -1,11 +1,12 @@
+import { and, asc, count, desc, eq } from "drizzle-orm";
+import Link from "next/link";
+import { ShoppingBag, Package, TrendingUp } from "lucide-react";
 import { ProductCard } from "@/components/ProductCard";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
+import { ShopControls } from "@/components/ShopControls";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import Link from "next/link";
-import { ShopControls } from "@/components/ShopControls";
-import { db } from "@/lib/db";
-import { ShoppingBag, Package, TrendingUp } from "lucide-react";
+import { db, products } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -18,54 +19,66 @@ export default async function ShopPage(props: Readonly<{
     const currentPage = Math.max(1, Number.parseInt(searchParams.page || "1", 10) || 1);
     const ITEMS_PER_PAGE = 12;
 
-    const allProducts = await db.query.products.findMany();
+    const availableFilter = eq(products.isSold, false);
+    const categoryFilter = currentCategory === "all"
+        ? availableFilter
+        : and(availableFilter, eq(products.category, currentCategory));
 
-    // Get unique categories (before any filtering)
-    const categories = [...new Set(allProducts.map((p) => p.category))];
-
-    // Filter available products
-    const availableProducts = allProducts.filter((p) => !p.isSold);
-
-    // Apply Sorting
-    availableProducts.sort((a, b) => {
-        if (currentSort === "price_asc") {
-            return Number(a.price) - Number(b.price);
-        } else if (currentSort === "price_desc") {
-            return Number(b.price) - Number(a.price);
-        } else if (currentSort === "best_selling") {
-            // Since we don't have a direct 'sales' count on the product model easily accessible here without a join,
-            // we'll fallback to latest for now, or keep it as a placeholder.
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-        } else {
-            // latest
-            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    const productOrder = (() => {
+        switch (currentSort) {
+            case "price_asc":
+                return [asc(products.price), desc(products.createdAt)];
+            case "price_desc":
+                return [desc(products.price), desc(products.createdAt)];
+            case "best_selling":
+                return [desc(products.createdAt)];
+            default:
+                return [desc(products.createdAt)];
         }
-    });
+    })();
 
-    // We don't filter by category here for the whole `availableProducts` array because
-    // the Tabs component handles category filtering on the client side conceptually
-    // However, for pagination, we MIGHT need to know the active category.
-    // If the active category is "all", we paginate all. If a specific category, we paginate that subset.
+    const [
+        [{ count: totalProductCount }],
+        [{ count: availableProductCount }],
+        [{ count: filteredProductCount = 0 } = { count: 0 }],
+        categoryCounts,
+    ] = await Promise.all([
+        db.select({ count: count() }).from(products),
+        db.select({ count: count() }).from(products).where(availableFilter),
+        db.select({ count: count() }).from(products).where(categoryFilter),
+        db.select({
+            category: products.category,
+            count: count(),
+        })
+            .from(products)
+            .where(availableFilter)
+            .groupBy(products.category)
+            .orderBy(asc(products.category)),
+    ]);
 
-    // Apply Category Filter for Pagination Logic
-    const categoryProducts = currentCategory === "all"
-        ? availableProducts
-        : availableProducts.filter(p => p.category === currentCategory);
-
-    // Calculate pagination info
-    const totalItems = categoryProducts.length;
+    const totalItems = Number(filteredProductCount);
     const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
     const validPage = Math.min(currentPage, totalPages);
 
-    // Apply Pagination slice
-    const paginatedProducts = categoryProducts.slice((validPage - 1) * ITEMS_PER_PAGE, validPage * ITEMS_PER_PAGE);
+    const paginatedProducts = await db.query.products.findMany({
+        where: categoryFilter,
+        orderBy: productOrder,
+        limit: ITEMS_PER_PAGE,
+        offset: (validPage - 1) * ITEMS_PER_PAGE,
+        columns: {
+            id: true,
+            name: true,
+            price: true,
+            imageUrl: true,
+            category: true,
+            isSold: true,
+        },
+    });
 
     return (
         <div className="py-6 sm:py-8 bg-card/90 backdrop-blur-sm px-4 sm:px-6 shadow-xl shadow-primary/10">
-            {/* Breadcrumb */}
             <PageBreadcrumb items={[{ label: "ร้านค้า" }]} className="mb-4" />
 
-            {/* Header */}
             <div className="mb-8">
                 <div className="flex items-center gap-3 mb-2">
                     <ShoppingBag className="h-8 w-8 text-primary" />
@@ -75,65 +88,56 @@ export default async function ShopPage(props: Readonly<{
                     ค้นหาและซื้อไอดีเกมที่คุณต้องการ
                 </p>
 
-                {/* Stats */}
                 <div className="flex items-center gap-4 mt-4">
                     <Badge variant="secondary" className="gap-1">
                         <Package className="h-3 w-3" />
-                        ทั้งหมด {allProducts.length} รายการ
+                        ทั้งหมด {Number(totalProductCount)} รายการ
                     </Badge>
                     <Badge variant="default" className="gap-1 bg-green-600">
                         <TrendingUp className="h-3 w-3" />
-                        พร้อมขาย {availableProducts.length} รายการ
+                        พร้อมขาย {Number(availableProductCount)} รายการ
                     </Badge>
                 </div>
             </div>
 
             <Separator className="mb-8" />
 
-            {/* Category Filters */}
             <div className="flex flex-wrap gap-2 mb-4">
                 <Link
                     href={`/shop?category=all&sort=${currentSort}`}
                     scroll={false}
                     className={`inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-150 h-8 px-4 rounded-full flex-shrink-0 ${
-                        currentCategory === 'all'
-                            ? 'bg-primary text-primary-foreground shadow-sm'
-                            : 'bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80'
+                        currentCategory === "all"
+                            ? "bg-primary text-primary-foreground shadow-sm"
+                            : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
                     }`}
                 >
-                    ทั้งหมด ({availableProducts.length})
+                    ทั้งหมด ({Number(availableProductCount)})
                 </Link>
-                {categories
-                    .filter(category => availableProducts.some(p => p.category === category))
-                    .map((category) => {
-                        const count = availableProducts.filter((p) => p.category === category).length;
-                        return (
-                            <Link
-                                key={category}
-                                href={`/shop?category=${encodeURIComponent(category)}&sort=${currentSort}`}
-                                scroll={false}
-                                className={`inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-150 h-8 px-4 rounded-full flex-shrink-0 ${
-                                    currentCategory === category
-                                        ? 'bg-primary text-primary-foreground shadow-sm'
-                                        : 'bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80'
-                                }`}
-                            >
-                                {category} ({count})
-                            </Link>
-                        );
-                    })}
+                {categoryCounts.map((category) => (
+                    <Link
+                        key={category.category}
+                        href={`/shop?category=${encodeURIComponent(category.category)}&sort=${currentSort}`}
+                        scroll={false}
+                        className={`inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-150 h-8 px-4 rounded-full flex-shrink-0 ${
+                            currentCategory === category.category
+                                ? "bg-primary text-primary-foreground shadow-sm"
+                                : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                        }`}
+                    >
+                        {category.category} ({Number(category.count)})
+                    </Link>
+                ))}
             </div>
 
-            {/* Sort & Pagination Controls */}
             <div className="w-full mb-6">
                 <ShopControls
-                    currentPage={currentPage}
+                    currentPage={validPage}
                     totalPages={totalPages}
                     currentSort={currentSort}
                 />
             </div>
 
-            {/* Products Grid */}
             {paginatedProducts.length === 0 ? (
                 <EmptyState />
             ) : (

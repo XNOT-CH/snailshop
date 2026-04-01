@@ -4,22 +4,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Package, Trash2 } from "lucide-react";
 import { ProductTable } from "@/components/admin/ProductTable";
-import { decrypt } from "@/lib/encryption";
-import { getStockCount } from "@/lib/stock";
-import { runAutoDelete } from "@/lib/autoDelete";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminProductsPage() {
-    // Auto-run cleanup on every page load (silent - no throw on error)
-    try {
-        await runAutoDelete();
-    } catch (err) {
-        console.error("[AdminProductsPage] Auto-delete failed:", err);
-    }
-
     const productList = await db.query.products.findMany({
         orderBy: (t, { desc }) => desc(t.createdAt),
+        columns: {
+            id: true,
+            name: true,
+            price: true,
+            imageUrl: true,
+            category: true,
+            isSold: true,
+            isFeatured: true,
+            autoDeleteAfterSale: true,
+        },
     });
 
     return (
@@ -72,25 +72,17 @@ export default async function AdminProductsPage() {
                         </div>
                     ) : (
                         <ProductTable
-                            products={productList.map((p) => {
-                                let stockCount = 0;
-                                try {
-                                    const decrypted = decrypt(p.secretData || "");
-                                    const sep = (p as unknown as { stockSeparator: string }).stockSeparator || "newline";
-                                    stockCount = p.isSold ? 0 : getStockCount(decrypted, sep);
-                                } catch { }
-                                return {
-                                    id: p.id,
-                                    name: p.name,
-                                    price: Number(p.price),
-                                    imageUrl: p.imageUrl,
-                                    category: p.category,
-                                    isSold: p.isSold,
-                                    isFeatured: p.isFeatured,
-                                    stockCount,
-                                    autoDeleteAfterSale: p.autoDeleteAfterSale,
-                                };
-                            })}
+                            products={productList.map((p) => ({
+                                id: p.id,
+                                name: p.name,
+                                price: Number(p.price),
+                                imageUrl: p.imageUrl,
+                                category: p.category,
+                                isSold: p.isSold,
+                                isFeatured: p.isFeatured,
+                                stockCount: p.isSold ? 0 : undefined,
+                                autoDeleteAfterSale: p.autoDeleteAfterSale,
+                            }))}
                         />
                     )}
                 </CardContent>

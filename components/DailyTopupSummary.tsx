@@ -81,6 +81,12 @@ interface TopupSummary {
     hourlyData: HourlyDataPoint[];
     paymentMethods: PaymentMethod[];
     records: TopupRecord[];
+    recordsPagination: {
+        page: number;
+        pageSize: number;
+        totalRecords: number;
+        totalPages: number;
+    };
 }
 
 interface WeeklyDataPoint {
@@ -352,6 +358,10 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly
     const selectAllDays = () => setSelectedDays(new Set(ALL_DAYS));
     const clearAllDays = () => setSelectedDays(new Set());
     const allDaysSelected = selectedDays.size === ALL_DAYS.length;
+    const selectedDaysKey = useMemo(
+        () => Array.from(selectedDays).sort((a, b) => a - b).join(","),
+        [selectedDays]
+    );
 
     // Filtered weekly data by selected days
     const filteredWeeklyData = useMemo(
@@ -363,21 +373,36 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly
         async function fetchData() {
             setIsLoading(true);
             try {
-                // Build query string supporting range or single date
-                let queryParams = "";
+                const trendParams = new URLSearchParams();
                 if (startDate && endDate) {
-                    queryParams = `?startDate=${startDate}&endDate=${endDate}`;
+                    trendParams.set("startDate", startDate);
+                    trendParams.set("endDate", endDate);
                 } else if (selectedDate) {
-                    queryParams = `?date=${selectedDate}`;
+                    trendParams.set("date", selectedDate);
                 }
+
+                const summaryParams = new URLSearchParams(trendParams);
+                summaryParams.set("page", String(currentPage));
+                summaryParams.set("pageSize", String(PAGE_SIZE));
+                summaryParams.set("status", statusFilter);
+                summaryParams.set("sortKey", sortKey || "time");
+                summaryParams.set("sortDir", sortDir || "desc");
+                if (searchTerm.trim()) {
+                    summaryParams.set("search", searchTerm.trim());
+                }
+                if (!allDaysSelected) {
+                    summaryParams.set("days", selectedDaysKey);
+                }
+
                 const [summaryRes, trendRes] = await Promise.all([
-                    fetch(`/api/dashboard/topup-summary${queryParams}`),
-                    fetch(`/api/dashboard/topup-trend${queryParams}`),
+                    fetch(`/api/dashboard/topup-summary?${summaryParams.toString()}`),
+                    fetch(`/api/dashboard/topup-trend?${trendParams.toString()}`),
                 ]);
                 const summaryJson = await summaryRes.json();
                 const trendJson = await trendRes.json();
                 if (summaryJson.success) {
                     setData(summaryJson.data);
+                    setCurrentPage(summaryJson.data.recordsPagination.page);
                 }
                 if (trendJson.success) {
                     setWeeklyData(trendJson.data);
@@ -389,7 +414,7 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly
             }
         }
         fetchData();
-    }, [selectedDate, startDate, endDate]);
+    }, [selectedDate, startDate, endDate, currentPage, searchTerm, statusFilter, sortKey, sortDir, allDaysSelected, selectedDaysKey]);
 
     // Reset page when filter/search changes
     useEffect(() => {
@@ -397,72 +422,10 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly
     }, [searchTerm, statusFilter, selectedDays]);
 
     // ── Filtered & Sorted records ───────────────────────
-    const processedRecords = useMemo(() => {
-        if (!data?.records) return [];
-        let records = [...data.records];
-
-        // Search
-        if (searchTerm) {
-            const q = searchTerm.toLowerCase();
-            records = records.filter(
-                (r) =>
-                    r.username.toLowerCase().includes(q) ||
-                    r.transactionRef?.toLowerCase().includes(q)
-            );
-        }
-
-        // Filter by status
-        if (statusFilter !== "ALL") {
-            records = records.filter((r) => r.status === statusFilter);
-        }
-
-        // Filter by day of week
-        if (selectedDays.size < ALL_DAYS.length) {
-            records = records.filter((r) => selectedDays.has(new Date(r.time).getDay()));
-        }
-
-        // Sort
-        if (sortKey && sortDir) {
-            records.sort((a, b) => {
-                let va: string | number = "";
-                let vb: string | number = "";
-                switch (sortKey) {
-                    case "time":
-                        va = a.time;
-                        vb = b.time;
-                        break;
-                    case "username":
-                        va = a.username.toLowerCase();
-                        vb = b.username.toLowerCase();
-                        break;
-                    case "amount":
-                        va = a.amount;
-                        vb = b.amount;
-                        break;
-                    case "status":
-                        va = a.status;
-                        vb = b.status;
-                        break;
-                    case "senderBank":
-                        va = (a.senderBank || "").toLowerCase();
-                        vb = (b.senderBank || "").toLowerCase();
-                        break;
-                }
-                if (va < vb) return sortDir === "asc" ? -1 : 1;
-                if (va > vb) return sortDir === "asc" ? 1 : -1;
-                return 0;
-            });
-        }
-
-        return records;
-    }, [data?.records, searchTerm, statusFilter, sortKey, sortDir, selectedDays]);
-
-    // Pagination
-    const totalPages = Math.max(1, Math.ceil(processedRecords.length / PAGE_SIZE));
-    const paginatedRecords = processedRecords.slice(
-        (currentPage - 1) * PAGE_SIZE,
-        currentPage * PAGE_SIZE
-    );
+    const totalPages = data?.recordsPagination.totalPages ?? 1;
+    const totalRecords = data?.recordsPagination.totalRecords ?? 0;
+    const paginatedRecords = data?.records ?? [];
+    const processedRecords = { length: totalRecords };
 
     // Toggle sort
     const handleSort = (key: string) => {
@@ -936,7 +899,7 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    {processedRecords.length > 0 ? (
+                    {paginatedRecords.length > 0 ? (
                         <>
                             <div className="overflow-x-auto">
                                 <table className="w-full text-sm">

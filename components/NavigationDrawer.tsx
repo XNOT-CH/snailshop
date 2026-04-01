@@ -5,12 +5,12 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
 import {
     X, Home, ShoppingBag, LayoutDashboard, HelpCircle,
     Dices, Wallet, User, ChevronRight, Gamepad2,
     Lock, UserPlus, Menu, LogOut, CircleDollarSign,
 } from "lucide-react";
+import { useLogout } from "@/components/useLogout";
 
 interface SerializableNavLink { href: string; label: string; }
 
@@ -19,6 +19,7 @@ interface NavigationDrawerProps {
     user?: { username: string; creditBalance: number; } | null;
     siteName?: string;
     logoUrl?: string;
+    walletIconUrl?: string;
     categories?: string[];
 }
 
@@ -54,17 +55,25 @@ function NavIcon({ href }: { href: string }) {
 }
 
 export function NavigationDrawer({
-    navLinks, user, siteName = "GameStore", logoUrl, categories = [],
+    navLinks, user, siteName = "GameStore", logoUrl, walletIconUrl, categories = [],
 }: NavigationDrawerProps) {
     const [isOpen, setIsOpen]             = useState(false);
     const [mounted, setMounted]           = useState(false);
     const [shopExpanded, setShopExpanded] = useState(false);
+    const [logoutPending, setLogoutPending] = useState(false);
     const pathname = usePathname();
+    const logout = useLogout();
     const links = navLinks && navLinks.length > 0 ? navLinks : DEFAULT_NAV;
 
     const handleLogout = async () => {
+        if (logoutPending) return;
+        setLogoutPending(true);
         setIsOpen(false);
-        await signOut({ callbackUrl: "/" });
+        try {
+            await logout();
+        } finally {
+            setLogoutPending(false);
+        }
     };
 
     useEffect(() => { setMounted(true); }, []);
@@ -147,7 +156,11 @@ export function NavigationDrawer({
                                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
                                 style={{ background: ACTIVE_BG }}
                             >
-                                <Wallet className="h-4 w-4" />
+                                {walletIconUrl ? (
+                                    <Image src={walletIconUrl} alt="wallet" width={16} height={16} className="h-4 w-4 object-contain" />
+                                ) : (
+                                    <Wallet className="h-4 w-4" />
+                                )}
                                 เติมเครดิต
                             </Link>
                         </div>
@@ -236,6 +249,7 @@ export function NavigationDrawer({
                         <button
                             type="button"
                             onClick={handleLogout}
+                            disabled={logoutPending}
                             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition-all"
                             style={{ border: `1px solid ${BORDER}` }}
                         >
