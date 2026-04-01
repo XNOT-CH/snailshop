@@ -372,6 +372,7 @@
     @apply text-foreground bg-background;
 
     min-height: 100vh;
+    width: 100%;
 
   }
 
@@ -2153,7 +2154,15 @@ body.admin-layout #main-container {
   }
 }
 
-/* Prevent horizontal overflow on the root */
+/* Keep the root width stable without clipping intended scrollable regions. */
+html,
 body {
-  overflow-x: hidden;
-}
+  max-width: 100%;
+}
+
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+}

@@ -182,7 +182,7 @@ export default function AdminRolesPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
                         <Shield className="h-6 w-6 text-[#1a56db]" />
@@ -190,7 +190,7 @@ export default function AdminRolesPage() {
                     </h1>
                     <p className="text-muted-foreground mt-1">เพิ่ม แก้ไข หรือลบยศของผู้ดูแลระบบ</p>
                 </div>
-                <Button onClick={() => openPanel()} className="bg-[#1a56db] hover:bg-[#1e40af]">
+                <Button onClick={() => openPanel()} className="w-full bg-[#1a56db] hover:bg-[#1e40af] sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     เพิ่มยศ
                 </Button>
@@ -219,7 +219,8 @@ export default function AdminRolesPage() {
                     </div>
                 )}
                 {!loading && roles.length > 0 && (
-                    <Table>
+                    <div className="overflow-x-auto">
+                    <Table className="min-w-[680px]">
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-16">ไอคอน</TableHead>
@@ -253,7 +254,7 @@ export default function AdminRolesPage() {
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center justify-center gap-1">
-                                            <Button variant="ghost" size="icon" onClick={() => openPanel(role)}>
+                                            <Button variant="ghost" size="icon" onClick={() => openPanel(role)} aria-label={`แก้ไขยศ ${role.name}`}>
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
                                             <Button
@@ -262,6 +263,7 @@ export default function AdminRolesPage() {
                                                 className="text-destructive hover:text-destructive"
                                                 onClick={() => handleDelete(role)}
                                                 disabled={role.isSystem}
+                                                aria-label={`ลบยศ ${role.name}`}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -271,6 +273,7 @@ export default function AdminRolesPage() {
                             ))}
                         </TableBody>
                     </Table>
+                    </div>
                 )}
             </div>
 

@@ -108,7 +108,7 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
             </aside>
 
             {/* Mobile Bottom Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 z-40 flex md:hidden items-center justify-around bg-card border-t border-border py-2 px-1">
+            <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around bg-card border-t border-border px-1 py-2 md:hidden">
                 {sidebarLinks.map((link) => {
                     const isActive =
                         pathname === link.href ||
@@ -125,7 +125,7 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
                                 }`}
                         >
                             <Icon className={`h-5 w-5 ${isActive ? "text-primary" : ""}`} />
-                            <span className="truncate max-w-[4rem]">{link.label}</span>
+                            <span className="max-w-[4.75rem] truncate text-center leading-tight">{link.label}</span>
                         </Link>
                     );
                 })}

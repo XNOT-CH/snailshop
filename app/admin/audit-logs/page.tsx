@@ -331,7 +331,7 @@ export default function AdminAuditLogsPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
                         <FileText className="h-6 w-6 text-[#1a56db]" />
@@ -339,7 +339,7 @@ export default function AdminAuditLogsPage() {
                     </h1>
                     <p className="text-muted-foreground mt-1">ประวัติกิจกรรมทั้งหมดในระบบ</p>
                 </div>
-                <Button onClick={fetchLogs} variant="outline" disabled={loading}>
+                <Button onClick={fetchLogs} variant="outline" disabled={loading} className="w-full sm:w-auto">
                     <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
                     รีเฟรช
                 </Button>
@@ -356,7 +356,7 @@ export default function AdminAuditLogsPage() {
                         className="pl-9"
                     />
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex w-full items-center gap-2 sm:w-auto">
                     <Filter className="h-4 w-4 text-muted-foreground" />
                     <Select value={actionFilter} onValueChange={(v) => { setActionFilter(v); setPage(0); }}>
                         <SelectTrigger className="w-full sm:w-48">

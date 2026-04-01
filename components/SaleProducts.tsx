@@ -130,7 +130,7 @@ export function SaleProducts() {
                 </div>
                 <div className="flex gap-4 overflow-hidden">
                     {[1, 2, 3, 4, 5].map((i) => (
-                        <div key={i} className="flex-shrink-0 w-[calc(50%-8px)] sm:w-52 animate-pulse">
+                        <div key={i} className="flex-shrink-0 w-40 sm:w-52 animate-pulse">
                             <div className="h-52 bg-muted rounded-xl"></div>
                             <div className="h-4 bg-muted rounded mt-3 w-3/4"></div>
                             <div className="h-4 bg-muted rounded mt-2 w-1/2"></div>
@@ -147,17 +147,17 @@ export function SaleProducts() {
 
     return (
         <div>
-            <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-2">
                     <Tag className="h-6 w-6 text-red-500" />
                     <h2 className="text-2xl font-bold">สินค้าลดราคา</h2>
                     <span className="px-2 py-1 text-xs font-bold bg-red-500 text-white rounded-full animate-pulse">SALE</span>
                 </div>
-                <div className="flex gap-2">
-                    <Button variant="outline" size="icon" className="rounded-full" onClick={() => scroll("left")}>
+                <div className="flex shrink-0 gap-2">
+                    <Button variant="outline" size="icon" className="rounded-full" onClick={() => scroll("left")} aria-label="เลื่อนสินค้าลดราคาไปทางซ้าย">
                         <ChevronLeft className="h-5 w-5" />
                     </Button>
-                    <Button variant="outline" size="icon" className="rounded-full" onClick={() => scroll("right")}>
+                    <Button variant="outline" size="icon" className="rounded-full" onClick={() => scroll("right")} aria-label="เลื่อนสินค้าลดราคาไปทางขวา">
                         <ChevronRight className="h-5 w-5" />
                     </Button>
                 </div>
@@ -219,16 +219,16 @@ export function SaleProducts() {
                                     <p className="text-lg font-bold text-red-500">฿{Number(product.discountPrice).toLocaleString()}</p>
                                     <p className="text-sm text-muted-foreground line-through">฿{Number(product.price).toLocaleString()}</p>
                                 </div>
-                                <div className="flex justify-center gap-2 mt-3">
+                                <div className="grid grid-cols-2 gap-2 mt-3">
                                     {product.isSold ? (
-                                        <Button variant="outline" className="flex-1" disabled>
+                                        <Button variant="outline" className="col-span-2 w-full" disabled>
                                             <ShoppingCart className="h-4 w-4 mr-2" />
                                             ขายแล้ว
                                         </Button>
                                     ) : (
                                         <>
                                             <Button
-                                                className="flex-1 bg-red-500 hover:bg-red-600"
+                                                className="col-span-2 w-full bg-red-500 hover:bg-red-600"
                                                 onClick={() => handleBuyClick(product)}
                                                 disabled={buyingId === product.id}
                                             >
@@ -254,13 +254,14 @@ export function SaleProducts() {
                                                     category: product.category,
                                                     quantity: 1,
                                                 }}
+                                                className="w-full"
                                                 showText={false}
                                                 size="icon"
                                             />
                                         </>
                                     )}
-                                    <Link href={`/product/${product.id}`}>
-                                        <Button variant="outline" size="icon">
+                                    <Link href={`/product/${product.id}`} className="block">
+                                        <Button variant="outline" size="icon" className="w-full" aria-label={`ดูรายละเอียด ${product.name}`}>
                                             <Eye className="h-4 w-4" />
                                         </Button>
                                     </Link>

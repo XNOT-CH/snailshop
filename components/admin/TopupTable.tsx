@@ -130,21 +130,23 @@ export function TopupTable({ topups }: Readonly<TopupTableProps>) {
     return (
         <div className="space-y-4">
             {/* Search + Filters */}
-            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 {/* Filter Tabs */}
-                <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
-                    {filterTabs.map((tab) => (
-                        <button
-                            key={tab.key}
-                            onClick={() => setFilter(tab.key)}
-                            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${filter === tab.key
-                                    ? "bg-primary text-primary-foreground shadow-sm"
-                                    : "text-muted-foreground hover:text-foreground"
-                                }`}
-                        >
-                            {tab.label} ({tab.count})
-                        </button>
-                    ))}
+                <div className="w-full overflow-x-auto pb-1 sm:w-auto sm:pb-0">
+                    <div className="flex min-w-max items-center gap-1 rounded-lg bg-muted p-1">
+                        {filterTabs.map((tab) => (
+                            <button
+                                key={tab.key}
+                                onClick={() => setFilter(tab.key)}
+                                className={`whitespace-nowrap px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${filter === tab.key
+                                        ? "bg-primary text-primary-foreground shadow-sm"
+                                        : "text-muted-foreground hover:text-foreground"
+                                    }`}
+                            >
+                                {tab.label} ({tab.count})
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Search */}
@@ -169,7 +171,7 @@ export function TopupTable({ topups }: Readonly<TopupTableProps>) {
                 </Card>
             ) : (
                 <div className="overflow-x-auto rounded-xl border border-border">
-                    <table className="w-full text-sm">
+                    <table className="min-w-[720px] w-full text-sm">
                         <thead>
                             <tr className="border-b border-border bg-muted/50">
                                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">
@@ -275,7 +277,7 @@ export function TopupTable({ topups }: Readonly<TopupTableProps>) {
                                     {/* Actions */}
                                     <td className="py-3 px-4 text-right">
                                         {topup.status === "PENDING" ? (
-                                            <div className="flex justify-end gap-1.5">
+                                            <div className="flex flex-col items-stretch justify-end gap-1.5 sm:flex-row">
                                                 <Button
                                                     size="sm"
                                                     className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white"

@@ -40,7 +40,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="th" className={prompt.variable} suppressHydrationWarning data-scroll-behavior="smooth">
-      <body className="font-sans antialiased min-h-screen bg-background flex flex-col overflow-x-hidden">
+      <body className="font-sans antialiased min-h-screen bg-background flex flex-col">
         <ThemeProvider>
           <SweetAlertProvider>
             <CartProvider>
@@ -57,8 +57,8 @@ export default function RootLayout({
               <Navbar />
 
               {/* Main Content - Responsive Container with Page Transition */}
-              <div id="main-container" className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 overflow-x-hidden">
-                <main className="animate-page-enter">
+              <div id="main-container" className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+                <main className="animate-page-enter min-w-0">
                   {children}
                 </main>
               </div>

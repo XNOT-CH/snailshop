@@ -223,7 +223,7 @@ export default function AdminPromoCodesPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
                         โค้ดส่วนลด <span className="text-3xl">🎟️</span>
@@ -232,7 +232,7 @@ export default function AdminPromoCodesPage() {
                 </div>
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger asChild>
-                        <Button onClick={handleOpenCreate} className="gap-2">
+                        <Button onClick={handleOpenCreate} className="w-full gap-2 sm:w-auto">
                             <Plus className="h-4 w-4" />
                             สร้างโค้ดใหม่
                         </Button>
@@ -399,7 +399,8 @@ export default function AdminPromoCodesPage() {
                             </Button>
                         </div>
                     ) : (
-                        <Table>
+                        <div className="overflow-x-auto">
+                        <Table className="min-w-[760px]">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>โค้ด</TableHead>
@@ -423,6 +424,7 @@ export default function AdminPromoCodesPage() {
                                                     size="icon"
                                                     className="h-6 w-6"
                                                     onClick={() => copyCode(code.code)}
+                                                    aria-label={`คัดลอกโค้ด ${code.code}`}
                                                 >
                                                     <Copy className="h-3 w-3" />
                                                 </Button>
@@ -467,6 +469,7 @@ export default function AdminPromoCodesPage() {
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={() => handleOpenEdit(code)}
+                                                aria-label={`แก้ไขโค้ด ${code.code}`}
                                             >
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
@@ -474,6 +477,7 @@ export default function AdminPromoCodesPage() {
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={() => handleDelete(code.id)}
+                                                aria-label={`ลบโค้ด ${code.code}`}
                                             >
                                                 <Trash2 className="h-4 w-4 text-red-500" />
                                             </Button>
@@ -482,6 +486,7 @@ export default function AdminPromoCodesPage() {
                                 ))}
                             </TableBody>
                         </Table>
+                        </div>
                     )}
                 </CardContent>
             </Card>

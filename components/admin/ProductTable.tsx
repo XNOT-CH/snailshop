@@ -202,6 +202,7 @@ export function ProductTable({ products }: Readonly<ProductTableProps>) {
                                     onClick={() => handleToggleFeatured(product.id, !product.isFeatured)}
                                     disabled={togglingFeatured === product.id}
                                     className={cn("transition-colors", product.isFeatured && "text-amber-500 hover:text-amber-600")}
+                                    aria-label={product.isFeatured ? `ยกเลิกสินค้าแนะนำ ${product.name}` : `ตั้ง ${product.name} เป็นสินค้าแนะนำ`}
                                 >
                                     <Star className={cn("h-5 w-5", product.isFeatured && "fill-current")} />
                                 </Button>
@@ -209,7 +210,7 @@ export function ProductTable({ products }: Readonly<ProductTableProps>) {
                             <TableCell>
                                 <DropdownMenu>
                                     <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon">
+                                        <Button variant="ghost" size="icon" aria-label={`เปิดเมนูจัดการ ${product.name}`}>
                                             <MoreHorizontal className="h-4 w-4" />
                                         </Button>
                                     </DropdownMenuTrigger>

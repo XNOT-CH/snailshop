@@ -153,7 +153,7 @@ export default function TopupPage() {
     };
 
     return (
-        <div className="py-8 bg-card/90 backdrop-blur-sm rounded-2xl px-6 shadow-xl shadow-primary/10 animate-page-enter">
+        <div className="animate-page-enter rounded-2xl bg-card/90 px-4 py-6 shadow-xl shadow-primary/10 backdrop-blur-sm sm:px-5 sm:py-8">
             {/* Breadcrumb */}
             <PageBreadcrumb
                 items={[
@@ -177,7 +177,7 @@ export default function TopupPage() {
                 <Card className="border-0 shadow-lg">
                     <CardContent className="p-6">
                         {/* Bank Info Section */}
-                        <div className="flex items-center justify-center gap-4 mb-6">
+                        <div className="mb-6 flex flex-wrap items-center justify-center gap-4">
                             {/* Bank Logos */}
                             <div className="flex items-center gap-2">
                                 <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">

@@ -154,7 +154,7 @@ export default function EditProductPage() {
     return (
         <div className="space-y-6">
             {/* Navigation */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <Link
                     href="/admin/products"
                     className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
@@ -201,7 +201,7 @@ export default function EditProductPage() {
                                 onValueChange={(value) =>
                                     setFormData((prev) => ({ ...prev, currency: value }))
                                 }
-                                className="flex gap-4"
+                                className="grid gap-3 sm:grid-cols-2"
                             >
                                 <div className="flex items-center space-x-2">
                                     <RadioGroupItem value="THB" id="currency-thb" />
@@ -288,7 +288,7 @@ export default function EditProductPage() {
                             <Label>รูปภาพสินค้า</Label>
 
                             {/* File Upload */}
-                            <div className="flex gap-2">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                 <input
                                     ref={fileInputRef}
                                     type="file"
@@ -314,7 +314,7 @@ export default function EditProductPage() {
                             </div>
 
                             {/* URL Input */}
-                            <div className="flex gap-2">
+                            <div className="flex flex-col gap-2 sm:flex-row">
                                 <Input
                                     id="image"
                                     name="image"

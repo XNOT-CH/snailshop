@@ -22,6 +22,7 @@ import {
 // ─── Types ──────────────────────────────────────────────
 interface PurchaseItem {
     id: string;
+    orderId?: string;
     title: string;
     image: string;
     date: string;
@@ -90,7 +91,8 @@ export function DashboardClient({ }: Readonly<DashboardClientProps>) {
 
     return (
         <Tabs defaultValue="topup" className="w-full">
-            <TabsList className="w-full grid grid-cols-2 h-11 mb-6 bg-muted/80 backdrop-blur-sm rounded-xl p-1">
+            <div className="mb-6 overflow-x-auto pb-1">
+                <TabsList className="grid h-11 min-w-max grid-cols-2 rounded-xl bg-muted/80 p-1 backdrop-blur-sm w-full">
                 <TabsTrigger
                     value="topup"
                     className="gap-1.5 rounded-lg text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 transition-all duration-200"
@@ -107,7 +109,8 @@ export function DashboardClient({ }: Readonly<DashboardClientProps>) {
                     <span className="hidden sm:inline">สินค้าล่าสุด</span>
                     <span className="sm:hidden">สินค้า</span>
                 </TabsTrigger>
-            </TabsList>
+                </TabsList>
+            </div>
 
             {/* ════════════════════════════════════════════
                 Tab 1: สรุปเติมเงิน (Topup Summary)
@@ -183,6 +186,7 @@ export function DashboardClient({ }: Readonly<DashboardClientProps>) {
                         {purchases.map((item) => (
                             <PurchasedItem
                                 key={item.id}
+                                orderId={item.orderId ?? item.id}
                                 title={item.title}
                                 image={item.image}
                                 date={item.date}

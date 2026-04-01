@@ -199,7 +199,7 @@ export default function AddProductPage() {
                                     onValueChange={(value) =>
                                         setFormData((prev) => ({ ...prev, currency: value }))
                                     }
-                                    className="flex gap-4"
+                                    className="grid gap-3 sm:grid-cols-2"
                                 >
                                     <div className="flex items-center space-x-2">
                                         <RadioGroupItem value="THB" id="currency-thb" />
@@ -286,7 +286,7 @@ export default function AddProductPage() {
                                 <Label>รูปภาพสินค้า</Label>
 
                                 {/* File Upload */}
-                                <div className="flex gap-2">
+                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                     <input
                                         ref={fileInputRef}
                                         type="file"
@@ -312,7 +312,7 @@ export default function AddProductPage() {
                                 </div>
 
                                 {/* URL Input */}
-                                <div className="flex gap-2">
+                                <div className="flex flex-col gap-2 sm:flex-row">
                                     <Input
                                         id="image"
                                         name="image"

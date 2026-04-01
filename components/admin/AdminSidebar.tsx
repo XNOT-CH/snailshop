@@ -211,11 +211,11 @@ export function AdminSidebar() {
 
                 <Sheet open={open} onOpenChange={setOpen}>
                     <SheetTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-slate-500 hover:text-slate-800 hover:bg-slate-100">
+                        <Button variant="ghost" size="icon" className="text-slate-500 hover:text-slate-800 hover:bg-slate-100" aria-label="เปิดเมนูผู้ดูแลระบบ">
                             <Menu className="h-5 w-5" />
                         </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="w-64 p-0 bg-white border-slate-200">
+                    <SheetContent side="left" className="w-[min(18rem,85vw)] p-0 bg-white border-slate-200 sm:w-72">
                         <SheetHeader className="h-14 flex-row items-center border-b border-slate-200 px-5 gap-3 shrink-0 space-y-0">
                             <div className="h-7 w-7 rounded-lg bg-[#145de7] flex items-center justify-center">
                                 <Gamepad2 className="h-3.5 w-3.5 text-white" />

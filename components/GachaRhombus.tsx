@@ -98,9 +98,10 @@ interface GachaRhombusProps {
     products: GachaProductLite[];
     settings: { isEnabled: boolean; costType: string; costAmount: number; dailySpinLimit: number };
     userBalance?: number;
+    machineId?: string;
 }
 
-export function GachaRhombus({ products, settings, userBalance = 0 }: GachaRhombusProps) {
+export function GachaRhombus({ products, settings, userBalance = 0, machineId }: GachaRhombusProps) {
     const tiles = useMemo(() => buildGrid(products), [products]);
 
     const [phase, setPhase] = useState<Phase>("idle");
@@ -176,15 +177,15 @@ export function GachaRhombus({ products, settings, userBalance = 0 }: GachaRhomb
         [tiles]
     );
 
-    async function callRollApi(spinNum: 1 | 2) {
+    const callRollApi = useCallback(async (spinNum: 1 | 2) => {
         const res = await fetch("/api/gacha/roll", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ spin: spinNum }),
+            body: JSON.stringify({ spin: spinNum, machineId }),
         });
         try { return await res.json(); }
         catch { return { success: false, message: res.status === 401 ? "กรุณาเข้าสู่ระบบก่อน" : "เกิดข้อผิดพลาด" }; }
-    }
+    }, [machineId]);
 
     const reset = () => {
         setResultProduct(null); setPhase("idle"); setHighlightedTile(null);
@@ -204,7 +205,7 @@ export function GachaRhombus({ products, settings, userBalance = 0 }: GachaRhomb
             if (!lLabel) { showError("ข้อมูลสุ่มไม่ครบถ้วน"); reset(); return; }
             runRoulette("L", lLabel, () => { setSelectedLLabel(lLabel); setPhase("waitSpin2"); });
         } catch { showError("เกิดข้อผิดพลาดในการสุ่ม"); reset(); }
-    }, [phase, runRoulette]);
+    }, [callRollApi, phase, runRoulette]);
 
     const handleSecondSpin = useCallback(async () => {
         if (phase !== "waitSpin2") return;
@@ -220,7 +221,7 @@ export function GachaRhombus({ products, settings, userBalance = 0 }: GachaRhomb
                 revealIntersection(selectedLLabel!, rLabel, product);
             });
         } catch { showError("เกิดข้อผิดพลาดในการสุ่ม"); reset(); }
-    }, [phase, selectedLLabel, runRoulette, revealIntersection]);
+    }, [callRollApi, phase, selectedLLabel, runRoulette, revealIntersection]);
 
     // ── Layout ─────────────────────────────────────────────────────────────────
     const spacingX = 110, spacingY = 44, tileSize = 52;

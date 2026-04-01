@@ -133,7 +133,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
             html: `
                 <p class="text-sm text-gray-500 mb-4">แก้ไขเครดิตและพอยต์ของผู้ใช้</p>
                 <div class="space-y-4 text-left">
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">เครดิตคงเหลือ (บาท)</label>
                             <input id="swal-credit" type="number" min="0" step="0.01" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${Number(user.creditBalance)}">
@@ -143,7 +143,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                             <input id="swal-topup" type="number" min="0" step="0.01" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${Number(user.totalTopup)}">
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-3">
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">พอยต์คงเหลือ</label>
                             <input id="swal-point" type="number" min="0" step="1" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${user.pointBalance}">
@@ -195,7 +195,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 {statCards.map(({ label, value, icon: Icon, iconBg, iconColor }) => (
                     <div key={label} className="bg-white dark:bg-zinc-900 rounded-xl border border-border p-4 flex items-center gap-3 shadow-sm">
                         <div className={`p-2.5 rounded-lg shrink-0 ${iconBg}`}>
@@ -243,7 +243,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                     </div>
                 ) : (
                     <div className="overflow-x-auto">
-                        <Table>
+                        <Table className="min-w-[980px]">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>ข้อมูลสมาชิก</TableHead>
@@ -268,7 +268,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
 
                                     return (
                                         <TableRow key={user.id}>
-                                            <TableCell>
+                                            <TableCell className="min-w-[240px]">
                                                 <div className="flex items-center gap-3">
                                                     <Avatar className={`h-10 w-10 ${hasGoldBorder ? "ring-2 ring-amber-400 ring-offset-2" : ""}`}>
                                                         {user.image ? <AvatarImage src={user.image} alt={user.username} /> : null}
@@ -330,7 +330,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                                                     variant="outline"
                                                     size="sm"
                                                     onClick={() => openEditDialog(user)}
-                                                    className="border-[#1a56db] text-[#1a56db] hover:bg-blue-50 dark:hover:bg-blue-950"
+                                                    className="whitespace-nowrap border-[#1a56db] text-[#1a56db] hover:bg-blue-50 dark:hover:bg-blue-950"
                                                 >
                                                     <Pencil className="h-4 w-4 mr-1" />
                                                     แก้ไข

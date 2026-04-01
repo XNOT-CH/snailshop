@@ -181,6 +181,7 @@ export function PurchasedItem({
                                             size="icon"
                                             className="h-8 w-8 flex-shrink-0"
                                             onClick={() => handleCopy(parsed.username, "username")}
+                                            aria-label="คัดลอกชื่อผู้ใช้"
                                         >
                                             {copiedField === "username" ? (
                                                 <Check className="h-4 w-4 text-green-500" />
@@ -204,6 +205,7 @@ export function PurchasedItem({
                                             size="icon"
                                             className="h-8 w-8 flex-shrink-0"
                                             onClick={() => handleCopy(parsed.password, "password")}
+                                            aria-label="คัดลอกรหัสผ่าน"
                                         >
                                             {copiedField === "password" ? (
                                                 <Check className="h-4 w-4 text-green-500" />

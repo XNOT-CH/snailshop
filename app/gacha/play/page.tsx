@@ -72,7 +72,7 @@ export default async function GachaPage() {
 
 
     return (
-        <div className="py-6 bg-card/90 backdrop-blur-sm rounded-2xl px-4 sm:px-6 md:px-10 shadow-xl shadow-primary/10 border border-border/50 min-h-[calc(100vh-8rem)] mb-8 overflow-x-hidden">
+        <div className="mb-8 min-h-[calc(100vh-8rem)] rounded-2xl border border-border/50 bg-card/90 px-3 py-6 shadow-xl shadow-primary/10 backdrop-blur-sm sm:px-5 md:px-8">
             <div className="flex flex-col items-center gap-6">
 
                 {/* Header — centered to align with grid */}
@@ -95,7 +95,7 @@ export default async function GachaPage() {
                         </Breadcrumb>
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 pb-4 border-b border-border/40">
+                    <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-4">
                         <h1 className="text-3xl font-bold tracking-tight text-foreground">กาชา</h1>
                         {settings.dailySpinLimit > 0 && (
                             <div className="flex flex-wrap gap-2 items-center">
@@ -109,8 +109,8 @@ export default async function GachaPage() {
 
                 {/* Body */}
                 {settings.isEnabled ? (
-                    <div className="w-full flex justify-center">
-                        <GachaRhombus products={products} settings={settings} userBalance={userBalance} isLoggedIn={Boolean(userId)} />
+                    <div className="flex w-full justify-center">
+                        <GachaRhombus products={products} settings={settings} userBalance={userBalance} />
                     </div>
                 ) : (
                     <div className="flex flex-col items-center gap-3 py-20 text-center">

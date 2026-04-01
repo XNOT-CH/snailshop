@@ -36,6 +36,15 @@ interface NewsArticle {
     createdAt: string;
 }
 
+interface NewsFormValue {
+    title: string;
+    description: string;
+    imageUrl: string;
+    link: string;
+    sortOrder: number;
+    isActive: boolean;
+}
+
 export default function AdminNewsPage() {
     const [news, setNews] = useState<NewsArticle[]>([]);
     const [loading, setLoading] = useState(true);
@@ -214,13 +223,10 @@ export default function AdminNewsPage() {
         }).then(result => handleDialogResult(result, article));
     };
 
-    const handleDialogResult = async (result: any, article?: NewsArticle) => {
+    const handleDialogResult = async (result: { isConfirmed: boolean; value?: NewsFormValue }, article?: NewsArticle) => {
         if (!result.isConfirmed || !result.value) return;
 
-        const formData = result.value as {
-            title: string; description: string; imageUrl: string;
-            link: string; sortOrder: number; isActive: boolean;
-        };
+        const formData = result.value;
 
         showLoading("กำลังบันทึก...");
         try {
@@ -288,7 +294,7 @@ export default function AdminNewsPage() {
             <input ref={fileInputRef} type="file" className="hidden" />
 
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
                         <Newspaper className="h-6 w-6" />
@@ -298,7 +304,7 @@ export default function AdminNewsPage() {
                         เพิ่ม แก้ไข หรือลบข่าวสารที่แสดงบนหน้าแรก
                     </p>
                 </div>
-                <Button onClick={() => openDialog()}>
+                <Button onClick={() => openDialog()} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     เพิ่มข่าวสาร
                 </Button>
@@ -321,7 +327,8 @@ export default function AdminNewsPage() {
                     </div>
                 )}
                 {!loading && news.length > 0 && (
-                    <Table>
+                    <div className="overflow-x-auto">
+                    <Table className="min-w-[720px]">
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-16">รูป</TableHead>
@@ -388,6 +395,7 @@ export default function AdminNewsPage() {
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={() => openDialog(article)}
+                                                aria-label={`แก้ไขข่าว ${article.title}`}
                                             >
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
@@ -396,6 +404,7 @@ export default function AdminNewsPage() {
                                                 size="icon"
                                                 className="text-destructive hover:text-destructive"
                                                 onClick={() => handleDelete(article)}
+                                                aria-label={`ลบข่าว ${article.title}`}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -405,6 +414,7 @@ export default function AdminNewsPage() {
                             ))}
                         </TableBody>
                     </Table>
+                    </div>
                 )}
             </div>
         </div>

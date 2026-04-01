@@ -128,16 +128,16 @@ export function ProductCard({
             <div className="p-4 text-center">
                 <h3 className="font-semibold text-foreground truncate mb-1 text-center">{title}</h3>
                 <p className="text-lg font-bold text-primary text-center">฿{price.toLocaleString()}</p>
-                <div className="flex justify-center gap-2 mt-3">
+                <div className="grid grid-cols-2 gap-2 mt-3">
                     {isSold ? (
-                        <Button variant="outline" className="flex-1" disabled>
+                        <Button variant="outline" className="col-span-2 w-full" disabled>
                             <ShoppingCart className="h-4 w-4 mr-2" />
                             ขายแล้ว
                         </Button>
                     ) : (
                         <>
                             <Button
-                                className="flex-1"
+                                className="col-span-2 w-full"
                                 onClick={handleBuy}
                                 disabled={isLoading}
                             >
@@ -162,13 +162,14 @@ export function ProductCard({
                                     category,
                                     quantity: 1,
                                 }}
+                                className="w-full"
                                 showText={false}
                                 size="icon"
                             />
                         </>
                     )}
-                    <Link href={`/product/${id}`}>
-                        <Button variant="outline" size="icon">
+                    <Link href={`/product/${id}`} className="block">
+                        <Button variant="outline" size="icon" className="w-full" aria-label={`ดูรายละเอียด ${title}`}>
                             <Eye className="h-4 w-4" />
                         </Button>
                     </Link>

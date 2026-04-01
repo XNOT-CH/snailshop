@@ -229,12 +229,12 @@ export default function AdminSettingsPage() {
         <div className="space-y-8 animate-page-enter">
             {/* Header */}
             <div className="sticky top-0 z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 bg-background/85 backdrop-blur border-b">
-                <div className="flex items-center justify-between py-4">
+                <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">ตั้งค่าเว็บไซต์</h1>
                         <p className="text-muted-foreground">จัดการรูปภาพและข้อความบนเว็บไซต์</p>
                     </div>
-                    <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+                    <Button onClick={handleSave} disabled={isSaving} className="w-full gap-2 sm:w-auto">
                         {isSaving ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
@@ -257,7 +257,7 @@ export default function AdminSettingsPage() {
                             <span className="text-sm text-muted-foreground ml-1">— เปิด/ปิดส่วนต่างๆ ที่แสดงบนหน้าแรก</span>
                         </div>
                         <div className="p-5">
-                            <div className="flex items-center justify-between rounded-xl border border-border p-4 bg-gray-50 dark:bg-zinc-800">
+                            <div className="flex flex-col gap-3 rounded-xl border border-border p-4 bg-gray-50 dark:bg-zinc-800 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <p className="font-medium text-sm">สินค้าทั้งหมด</p>
                                     <p className="text-xs text-muted-foreground mt-0.5">แสดงรายการสินค้าทั้งหมดบนหน้าแรก</p>
@@ -313,7 +313,7 @@ export default function AdminSettingsPage() {
                                 <div className="grid gap-4 lg:grid-cols-2">
                                     <div className="space-y-3">
                                         {/* File Upload */}
-                                        <div className="flex gap-2">
+                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                             <input
                                                 ref={logoInputRef}
                                                 type="file"
@@ -340,7 +340,7 @@ export default function AdminSettingsPage() {
                                         </div>
 
                                         {/* URL Input */}
-                                        <div className="flex gap-2">
+                                        <div className="flex flex-col gap-2 sm:flex-row">
                                             <Input
                                                 value={settings.logoUrl}
                                                 onChange={(e) => updateSetting("logoUrl", e.target.value)}
@@ -353,7 +353,8 @@ export default function AdminSettingsPage() {
                                                     variant="ghost"
                                                     size="icon"
                                                     onClick={() => updateSetting("logoUrl", "")}
-                                                    className="text-red-500 hover:text-red-600"
+                                                    className="text-red-500 hover:text-red-600 sm:shrink-0"
+                                                    aria-label="ล้าง URL โลโก้"
                                                 >
                                                     <X className="h-4 w-4" />
                                                 </Button>

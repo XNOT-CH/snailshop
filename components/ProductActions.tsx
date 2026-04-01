@@ -174,7 +174,7 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
             {/* 2. Promo Code */}
             <div>
                 <p className="text-sm text-muted-foreground mb-1.5">ส่วนลด</p>
-                <div className="flex gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row">
                     <Input
                         placeholder="กรอกส่วนลดของท่าน"
                         value={promoCode}
@@ -202,7 +202,7 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
                     </Button>
                 </div>
                 {appliedPromo && (
-                    <div className="flex items-center gap-1.5 mt-1.5 text-green-600 text-sm font-medium">
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm font-medium text-green-600">
                         <Tag className="h-3.5 w-3.5" />
                         ใช้โค้ด {appliedPromo.code} — ราคาลดเหลือ ฿{finalPrice.toLocaleString()}
                     </div>

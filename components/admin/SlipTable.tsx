@@ -67,8 +67,8 @@ export function SlipTable({ slips }: Readonly<SlipTableProps>) {
     };
 
     return (
-        <div className="overflow-x-auto">
-            <Table>
+        <div className="overflow-x-auto rounded-xl border border-border">
+            <Table className="min-w-[640px]">
                 <TableHeader>
                     <TableRow>
                         <TableHead>User</TableHead>
@@ -121,7 +121,7 @@ export function SlipTable({ slips }: Readonly<SlipTableProps>) {
                                 )}
                             </TableCell>
                             <TableCell className="text-right">
-                                <div className="flex justify-end gap-2">
+                                <div className="flex flex-col justify-end gap-2 sm:flex-row">
                                     <Button
                                         size="sm"
                                         className="bg-green-600 hover:bg-green-700"

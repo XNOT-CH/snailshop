@@ -29,9 +29,10 @@ export function PageBreadcrumb({ items, className, showBackButton = true }: Read
     const router = useRouter();
 
     return (
-        <div className={cn("flex items-center justify-between", className)}>
-            <Breadcrumb className="w-fit">
-                <BreadcrumbList className="flex-nowrap gap-1 sm:gap-1.5 px-1 py-1 text-sm sm:text-base">
+        <div className={cn("flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between", className)}>
+            <div className="overflow-x-auto">
+                <Breadcrumb className="w-fit min-w-0">
+                    <BreadcrumbList className="flex-nowrap gap-1 min-w-max px-1 py-1 text-sm sm:gap-1.5 sm:text-base">
                     {/* Home */}
                     <BreadcrumbItem>
                         <BreadcrumbLink asChild>
@@ -72,15 +73,16 @@ export function PageBreadcrumb({ items, className, showBackButton = true }: Read
                             </span>
                         );
                     })}
-                </BreadcrumbList>
-            </Breadcrumb>
+                    </BreadcrumbList>
+                </Breadcrumb>
+            </div>
 
             {showBackButton && (
                 <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => router.back()}
-                    className="gap-1.5 text-xs sm:text-sm text-muted-foreground hover:text-primary hover:bg-accent/60 rounded-lg transition-colors duration-200"
+                    className="w-fit gap-1.5 text-xs sm:text-sm text-muted-foreground hover:text-primary hover:bg-accent/60 rounded-lg transition-colors duration-200"
                 >
                     <ArrowLeft className="h-3.5 w-3.5" />
                     ย้อนกลับ

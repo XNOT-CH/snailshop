@@ -46,6 +46,15 @@ interface AnnouncementPopup {
     createdAt: string;
 }
 
+interface PopupFormValue {
+    title: string | null;
+    imageUrl: string;
+    linkUrl: string | null;
+    sortOrder: number;
+    isActive: boolean;
+    dismissOption: string;
+}
+
 export default function AdminPopupsPage() {
     const [popups, setPopups] = useState<AnnouncementPopup[]>([]);
     const [loading, setLoading] = useState(true);
@@ -216,7 +225,7 @@ export default function AdminPopupsPage() {
         }).then(result => handleDialogResult(result, popup));
     };
 
-    const handleDialogResult = async (result: any, popup?: AnnouncementPopup) => {
+    const handleDialogResult = async (result: { isConfirmed: boolean; value?: PopupFormValue }, popup?: AnnouncementPopup) => {
         if (!result.isConfirmed || !result.value) return;
 
         showLoading("กำลังบันทึก...");
@@ -282,7 +291,7 @@ export default function AdminPopupsPage() {
             <input ref={fileInputRef} type="file" className="hidden" />
 
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
                         <Megaphone className="h-6 w-6" />
@@ -292,7 +301,7 @@ export default function AdminPopupsPage() {
                         เพิ่ม แก้ไข หรือลบ Pop-up ที่แสดงเมื่อเข้าเว็บไซต์
                     </p>
                 </div>
-                <Button onClick={() => openDialog()}>
+                <Button onClick={() => openDialog()} className="w-full sm:w-auto">
                     <Plus className="h-4 w-4 mr-2" />
                     เพิ่ม Pop-up
                 </Button>
@@ -315,7 +324,8 @@ export default function AdminPopupsPage() {
                     </div>
                 )}
                 {!loading && popups.length > 0 && (
-                    <Table>
+                    <div className="overflow-x-auto">
+                    <Table className="min-w-[720px]">
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-20">รูป</TableHead>
@@ -381,6 +391,7 @@ export default function AdminPopupsPage() {
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={() => openDialog(popup)}
+                                                aria-label={`แก้ไข Pop-up ${popup.title || popup.id}`}
                                             >
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
@@ -389,6 +400,7 @@ export default function AdminPopupsPage() {
                                                 size="icon"
                                                 className="text-destructive hover:text-destructive"
                                                 onClick={() => handleDelete(popup)}
+                                                aria-label={`ลบ Pop-up ${popup.title || popup.id}`}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -398,6 +410,7 @@ export default function AdminPopupsPage() {
                             ))}
                         </TableBody>
                     </Table>
+                    </div>
                 )}
             </div>
         </div>

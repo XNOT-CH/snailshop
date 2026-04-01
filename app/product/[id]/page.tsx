@@ -71,7 +71,7 @@ export default async function ProductDetailPage({
     });
 
     return (
-        <div className="min-h-screen bg-muted/60 dark:bg-background py-8 sm:py-12 px-4 sm:px-6 lg:px-8 animate-page-enter">
+        <div className="animate-page-enter rounded-2xl bg-muted/60 py-6 dark:bg-background sm:py-10">
             {/* Outer card */}
             <div className="relative max-w-screen-2xl mx-auto bg-card rounded-2xl border border-border overflow-hidden" style={{ boxShadow: '0 24px 80px rgba(0,0,0,0.14)' }}>
 
@@ -87,10 +87,10 @@ export default async function ProductDetailPage({
                     />
 
                     {/* Main layout: image left | info right */}
-                    <div className="flex flex-col lg:flex-row items-start -mx-6 sm:-mx-8 mt-2">
+                    <div className="mt-2 grid grid-cols-1 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
 
                         {/* Left — Gallery (muted bg) */}
-                        <div className="w-full lg:w-[380px] xl:w-[420px] shrink-0 bg-muted/40 lg:rounded-bl-2xl px-6 sm:px-8 py-6 border-b lg:border-b-0 lg:border-r border-border/60">
+                        <div className="w-full border-b border-border/60 bg-muted/40 px-4 py-6 sm:px-6 lg:border-b-0 lg:border-r">
                             <ProductGallery mainImage={product.imageUrl || "/placeholder.jpg"} />
                             {/* Share buttons under gallery */}
                             <div className="mt-4">
@@ -99,7 +99,7 @@ export default async function ProductDetailPage({
                         </div>
 
                         {/* Right — Info */}
-                        <div className="flex-1 px-6 sm:px-8 py-6">
+                        <div className="min-w-0 px-4 py-6 sm:px-6">
 
                             {/* Title */}
                             <h1 className="text-2xl font-bold text-foreground leading-snug">
@@ -159,12 +159,12 @@ export default async function ProductDetailPage({
 
             {/* Related Products Section */}
             {relatedProducts.length > 0 && (
-                <div className="max-w-screen-2xl mx-auto mt-16 mb-8 bg-card rounded-2xl border border-border p-6" style={{ boxShadow: '0 12px 48px rgba(0,0,0,0.10)' }}>
+                <div className="max-w-screen-2xl mx-auto mt-10 mb-2 rounded-2xl border border-border bg-card p-4 sm:mt-16 sm:mb-8 sm:p-6" style={{ boxShadow: '0 12px 48px rgba(0,0,0,0.10)' }}>
                     <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
                         รายการสินค้าอื่นๆ
                     </h2>
 
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
                         {relatedProducts.map((related) => {
                             const relPrice = Number(related.price);
                             const relDiscount = related.discountPrice ? Number(related.discountPrice) : null;

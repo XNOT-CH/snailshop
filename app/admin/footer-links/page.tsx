@@ -223,7 +223,7 @@ export default function FooterLinksAdminPage() {
             </div>
 
             {/* Toggle Active */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm px-5 py-4 flex items-center justify-between">
+            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                     <p className="font-medium">แสดงผลบนหน้าเว็บ</p>
                     <p className="text-sm text-muted-foreground">เปิดเพื่อโชว์เมนูนี้ให้ลูกค้าเห็น</p>
@@ -253,12 +253,12 @@ export default function FooterLinksAdminPage() {
                             <Input id="newHref" placeholder="เช่น /how-to-topup" value={newHref} onChange={(e) => setNewHref(e.target.value)} />
                         </div>
                     </div>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                         <div className="flex items-center space-x-2">
                             <Checkbox id="newOpenInNewTab" checked={newOpenInNewTab} onCheckedChange={(checked) => setNewOpenInNewTab(checked === true)} />
                             <Label htmlFor="newOpenInNewTab" className="text-sm font-normal cursor-pointer">เปิดแท็บใหม่ (สำหรับลิงก์ออกไปเว็บอื่น)</Label>
                         </div>
-                        <Button type="submit" disabled={saving} className="bg-[#1a56db] hover:bg-[#1e40af]">
+                        <Button type="submit" disabled={saving} className="w-full bg-[#1a56db] hover:bg-[#1e40af] sm:w-auto">
                             {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
                             เพิ่มลิงก์
                         </Button>
@@ -277,7 +277,8 @@ export default function FooterLinksAdminPage() {
                 {links.length === 0 ? (
                     <div className="text-center py-10 text-muted-foreground">ยังไม่มีลิงก์ เพิ่มลิงก์แรกของคุณด้านบน</div>
                 ) : (
-                    <Table>
+                    <div className="overflow-x-auto">
+                    <Table className="min-w-[760px]">
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-[50px]"></TableHead>
@@ -329,6 +330,7 @@ export default function FooterLinksAdminPage() {
                                                 variant="ghost"
                                                 size="icon"
                                                 onClick={() => openEditModal(link)}
+                                                aria-label={`แก้ไขลิงก์ ${link.label}`}
                                             >
                                                 <Pencil className="h-4 w-4" />
                                             </Button>
@@ -337,6 +339,7 @@ export default function FooterLinksAdminPage() {
                                                 size="icon"
                                                 className="text-destructive hover:text-destructive"
                                                 onClick={() => handleDeleteLink(link)}
+                                                aria-label={`ลบลิงก์ ${link.label}`}
                                             >
                                                 <Trash2 className="h-4 w-4" />
                                             </Button>
@@ -346,6 +349,7 @@ export default function FooterLinksAdminPage() {
                             ))}
                         </TableBody>
                     </Table>
+                    </div>
                 )}
             </div>
         </div>

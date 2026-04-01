@@ -189,7 +189,7 @@ export default function StockManagementPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <Link
                         href="/admin/products"
@@ -204,14 +204,14 @@ export default function StockManagementPage() {
                     </h1>
                     <p className="text-muted-foreground mt-1">{productName}</p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3 sm:justify-end">
                     <Badge variant="secondary" className="text-base px-3 py-1">
                         {stockItems.length} รายการ
                     </Badge>
                     <Button
                         onClick={handleSave}
                         disabled={isSaving || !hasChanges}
-                        className="gap-2"
+                        className="w-full gap-2 sm:w-auto"
                     >
                         {isSaving ? (
                             <Loader2 className="h-4 w-4 animate-spin" />

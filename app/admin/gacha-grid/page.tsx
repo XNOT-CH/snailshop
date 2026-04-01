@@ -324,7 +324,8 @@ export default function AdminGachaGridPage() {
                         </div>
                     )}
                     {!isLoading && rewards.length > 0 && (
-                        <Table>
+                        <div className="overflow-x-auto">
+                        <Table className="min-w-[760px]">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>รูป</TableHead>
@@ -437,6 +438,7 @@ export default function AdminGachaGridPage() {
                                 ))}
                             </TableBody>
                         </Table>
+                        </div>
                     )}
                 </CardContent>
             </Card>

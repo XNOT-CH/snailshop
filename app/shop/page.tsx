@@ -76,7 +76,7 @@ export default async function ShopPage(props: Readonly<{
     });
 
     return (
-        <div className="py-6 sm:py-8 bg-card/90 backdrop-blur-sm px-4 sm:px-6 shadow-xl shadow-primary/10">
+        <div className="rounded-2xl border border-border/50 bg-card/90 px-3 py-5 shadow-xl shadow-primary/10 backdrop-blur-sm sm:px-5 sm:py-7 lg:px-6">
             <PageBreadcrumb items={[{ label: "ร้านค้า" }]} className="mb-4" />
 
             <div className="mb-8">
@@ -88,7 +88,7 @@ export default async function ShopPage(props: Readonly<{
                     ค้นหาและซื้อไอดีเกมที่คุณต้องการ
                 </p>
 
-                <div className="flex items-center gap-4 mt-4">
+                <div className="mt-4 flex flex-wrap items-center gap-3">
                     <Badge variant="secondary" className="gap-1">
                         <Package className="h-3 w-3" />
                         ทั้งหมด {Number(totalProductCount)} รายการ
@@ -102,8 +102,9 @@ export default async function ShopPage(props: Readonly<{
 
             <Separator className="mb-8" />
 
-            <div className="flex flex-wrap gap-2 mb-4">
-                <Link
+            <div className="-mx-1 mb-4 overflow-x-auto px-1 pb-2">
+                <div className="flex min-w-max gap-2">
+                    <Link
                     href={`/shop?category=all&sort=${currentSort}`}
                     scroll={false}
                     className={`inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-150 h-8 px-4 rounded-full flex-shrink-0 ${
@@ -114,8 +115,8 @@ export default async function ShopPage(props: Readonly<{
                 >
                     ทั้งหมด ({Number(availableProductCount)})
                 </Link>
-                {categoryCounts.map((category) => (
-                    <Link
+                    {categoryCounts.map((category) => (
+                        <Link
                         key={category.category}
                         href={`/shop?category=${encodeURIComponent(category.category)}&sort=${currentSort}`}
                         scroll={false}
@@ -126,8 +127,9 @@ export default async function ShopPage(props: Readonly<{
                         }`}
                     >
                         {category.category} ({Number(category.count)})
-                    </Link>
-                ))}
+                        </Link>
+                    ))}
+                </div>
             </div>
 
             <div className="w-full mb-6">

@@ -20,9 +20,10 @@ export function DashboardTabs({
 
     return (
         <Tabs defaultValue="overview" className="w-full">
-            <TabsList
-                className={`w-full grid ${hasMembersTab ? "grid-cols-4" : "grid-cols-3"} h-11 mb-6 bg-muted/80 backdrop-blur-sm rounded-xl p-1`}
-            >
+            <div className="mb-6 overflow-x-auto pb-1">
+                <TabsList
+                    className={`grid h-11 min-w-max rounded-xl bg-muted/80 p-1 backdrop-blur-sm ${hasMembersTab ? "grid-cols-4" : "grid-cols-3"} w-full`}
+                >
                 <TabsTrigger
                     value="overview"
                     className="gap-1.5 rounded-lg text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 transition-all duration-200"
@@ -57,7 +58,8 @@ export function DashboardTabs({
                     <span className="hidden sm:inline">สินค้าล่าสุด</span>
                     <span className="sm:hidden">สินค้า</span>
                 </TabsTrigger>
-            </TabsList>
+                </TabsList>
+            </div>
 
             <TabsContent value="overview" className="animate-page-enter">
                 {overviewContent}

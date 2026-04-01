@@ -3,7 +3,7 @@
 import Image from "next/image";
 import useEmblaCarousel from "embla-carousel-react";
 import Autoplay from "embla-carousel-autoplay";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useState, useRef } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Banner {
@@ -82,14 +82,14 @@ export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
                                 )}
                                 {/* Text Content */}
                                 {(banner.title || banner.subtitle) && (
-                                    <div className="absolute inset-0 flex flex-col justify-center px-5 sm:px-12 lg:px-16">
+                                    <div className="absolute inset-0 flex flex-col justify-center px-4 sm:px-12 lg:px-16">
                                         {banner.title && (
-                                            <h2 className="text-base sm:text-3xl lg:text-5xl font-bold text-white mb-1 sm:mb-3 max-w-[50%] sm:max-w-none drop-shadow-lg">
+                                            <h2 className="mb-1 max-w-[70%] text-sm font-bold text-white drop-shadow-lg sm:mb-3 sm:max-w-[60%] sm:text-3xl lg:max-w-none lg:text-5xl">
                                                 {banner.title}
                                             </h2>
                                         )}
                                         {banner.subtitle && (
-                                            <p className="text-[10px] sm:text-lg lg:text-xl text-white/90 max-w-[45%] sm:max-w-lg font-medium drop-shadow">
+                                            <p className="max-w-[75%] text-xs font-medium text-white/90 drop-shadow sm:max-w-lg sm:text-lg lg:text-xl">
                                                 {banner.subtitle}
                                             </p>
                                         )}

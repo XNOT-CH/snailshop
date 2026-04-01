@@ -100,10 +100,10 @@ export default async function Navbar() {
 
     return (
         <header id="main-navbar" className="sticky top-0 z-50 w-full border-b border-border/50 bg-card/90 backdrop-blur-lg shadow-sm">
-            <div className="max-w-7xl mx-auto grid grid-cols-3 h-16 items-center px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 lg:px-6 xl:px-8">
 
                 {/* Left: Logo */}
-                <Link href="/" className="flex items-center gap-2.5 font-semibold text-lg text-primary justify-self-start">
+                <Link href="/" className="flex min-w-0 items-center gap-2.5 text-lg font-semibold text-primary">
                     {siteSettings?.logoUrl ? (
                         <Image
                             src={siteSettings.logoUrl}
@@ -118,13 +118,13 @@ export default async function Navbar() {
                             <Gamepad2 className="h-5 w-5 text-white" />
                         </div>
                     )}
-                    <span className="hidden sm:inline font-bold tracking-tight text-foreground">
+                    <span className="hidden truncate font-bold tracking-tight text-foreground sm:inline">
                         {siteSettings?.heroTitle || "GameStore"}
                     </span>
                 </Link>
 
                 {/* Center: Navigation - Desktop */}
-                <nav className="hidden md:flex items-center justify-center gap-1">
+                <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 xl:flex">
                     {navLinks.map((link) => {
                         const Icon = link.icon;
                         if (link.href === "/shop") {
@@ -149,7 +149,7 @@ export default async function Navbar() {
                 </nav>
 
                 {/* Right: Actions */}
-                <div className="flex items-center gap-1.5 justify-self-end">
+                <div className="flex shrink-0 items-center gap-1.5">
                     {/* Theme Toggle */}
                     <ThemeToggle />
 
@@ -159,7 +159,7 @@ export default async function Navbar() {
                     {user ? (
                         <>
                             {/* Credit Balance */}
-                            <Link href="/dashboard/topup" className="hidden sm:block">
+                            <Link href="/dashboard/topup" className="hidden lg:block">
                                 <Button variant="ghost" size="sm" className="gap-1.5 rounded-xl text-muted-foreground hover:text-primary hover:bg-accent font-medium">
                                     <Wallet className="h-4 w-4 shrink-0 text-primary" />
                                     <span className="text-foreground font-semibold">฿{Number(user.creditBalance).toLocaleString()}</span>
@@ -219,7 +219,7 @@ export default async function Navbar() {
                             </DropdownMenu>
                         </>
                     ) : (
-                        <div className="hidden sm:flex items-center gap-2">
+                        <div className="hidden lg:flex items-center gap-2">
                             <Link href="/login">
                                 <Button variant="ghost" size="sm" className="rounded-xl text-muted-foreground hover:text-primary hover:bg-accent">
                                     เข้าสู่ระบบ

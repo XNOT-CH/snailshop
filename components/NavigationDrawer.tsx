@@ -99,10 +99,11 @@ export function NavigationDrawer({
 
             {/* Drawer */}
             <aside
-                className="fixed top-0 left-0 z-[9999] h-svh w-[290px] flex flex-col transition-transform duration-300 ease-in-out"
+                className="fixed top-0 left-0 z-[9999] flex h-svh flex-col transition-transform duration-300 ease-in-out"
                 style={{
                     background: PANEL_BG,
-                    transform:  isOpen ? "translateX(0)" : "translateX(-100%)",
+                    width: "min(290px, 85vw)",
+                    transform: isOpen ? "translateX(0)" : "translateX(-100%)",
                     borderRight: `1px solid ${BORDER}`,
                 }}
             >
@@ -265,7 +266,7 @@ export function NavigationDrawer({
         <>
             <button
                 onClick={() => setIsOpen(true)}
-                className="md:hidden flex items-center justify-center w-9 h-9 rounded-xl text-muted-foreground hover:text-primary hover:bg-accent transition-colors"
+                className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-accent hover:text-primary xl:hidden"
                 aria-label="เปิดเมนู"
             >
                 <Menu className="h-5 w-5" />

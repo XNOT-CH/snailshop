@@ -45,6 +45,13 @@ export function AddToCartButton({
             className={`gap-2 rounded-xl transition-all duration-200 ${className}`}
             disabled={disabled || isAdding || cartLoading}
             onClick={handleAddToCart}
+            aria-label={
+                showText
+                    ? undefined
+                    : inCart
+                        ? `อยู่ในตะกร้าแล้ว: ${product.name}`
+                        : `เพิ่ม ${product.name} ลงตะกร้า`
+            }
         >
             {isAdding && <Loader2 className="h-4 w-4 animate-spin" />}
             {!isAdding && inCart && <Check className="h-4 w-4" />}
