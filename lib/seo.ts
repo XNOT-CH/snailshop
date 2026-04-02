@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 
 export const SITE_NAME = "Manashop";
 export const SITE_TITLE = `${SITE_NAME} - Game ID Marketplace`;
-export const DEFAULT_SITE_DESCRIPTION = "แหล่งซื้อขายไอดีเกมและไอเทมเกมที่ปลอดภัย ใช้งานง่าย และค้นหาสินค้าได้รวดเร็ว";
+export const DEFAULT_SITE_DESCRIPTION = "Trusted marketplace for game accounts and in-game items.";
 export const SITE_LOCALE = "th_TH";
+
+const isProduction = process.env.NODE_ENV === "production";
 
 function ensureAbsoluteUrl(value: string): string {
     if (value.startsWith("http://") || value.startsWith("https://")) {
@@ -16,12 +18,18 @@ function ensureAbsoluteUrl(value: string): string {
 export function getBaseUrl(): string {
     const rawValue =
         process.env.NEXT_PUBLIC_SITE_URL ??
-        process.env.AUTH_URL ??
         process.env.VERCEL_PROJECT_PRODUCTION_URL ??
         process.env.VERCEL_URL ??
+        process.env.AUTH_URL ??
         "http://localhost:3000";
 
-    return ensureAbsoluteUrl(rawValue).replace(/\/+$/, "");
+    const normalized = ensureAbsoluteUrl(rawValue).replace(/\/+$/, "");
+
+    if (isProduction && normalized === "http://localhost:3000") {
+        return "https://localhost.invalid";
+    }
+
+    return normalized;
 }
 
 export function absoluteUrl(path = "/"): string {

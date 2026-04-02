@@ -1,6 +1,24 @@
 import type { NextConfig } from "next";
 import path from "path";
 
+const isProduction = process.env.NODE_ENV === "production";
+
+function normalizeOrigin(value: string) {
+  if (value.startsWith("http://") || value.startsWith("https://")) {
+    return value;
+  }
+
+  return `https://${value}`;
+}
+
+const configuredOrigin =
+  process.env.ALLOWED_ORIGIN ||
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+  process.env.VERCEL_URL ||
+  process.env.AUTH_URL ||
+  "http://localhost:3000";
+
 const nextConfig: NextConfig = {
   turbopack: {
     root: path.resolve(__dirname),
@@ -27,12 +45,12 @@ const nextConfig: NextConfig = {
       "recharts",
     ],
   },
-  allowedDevOrigins: ['127.0.0.1'],
+  allowedDevOrigins: ["127.0.0.1"],
   images: {
     dangerouslyAllowSVG: true,
-    contentDispositionType: 'attachment',
-    formats: ['image/avif', 'image/webp'],   // ✅ serve avif/webp ก่อน
-    minimumCacheTTL: 3600,                    // ✅ cache ภาพ 1 ชั่วโมง
+    contentDispositionType: "attachment",
+    formats: ["image/avif", "image/webp"],
+    minimumCacheTTL: 3600,
     qualities: [70, 75],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
@@ -45,18 +63,13 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "*.pic.in.th",
       },
-      {
-        protocol: "https",
-        hostname: "**",
-      },
-      {
-        protocol: "http",
-        hostname: "**",
-      },
     ],
   },
-  // Security Headers
   async headers() {
+    const accessControlOrigin = isProduction
+      ? normalizeOrigin(configuredOrigin)
+      : (process.env.ALLOWED_ORIGIN || process.env.AUTH_URL || "http://localhost:3000");
+
     return [
       {
         source: "/:path*",
@@ -89,19 +102,16 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: "frame-ancestors 'self'",
           },
-          // HTTPS Enforcement (Strict Transport Security)
-          // max-age=1 year, includeSubDomains, preload for HSTS preload list
-          ...(process.env.NODE_ENV === "production"
+          ...(isProduction
             ? [
-              {
-                key: "Strict-Transport-Security",
-                value: "max-age=31536000; includeSubDomains; preload",
-              },
-            ]
+                {
+                  key: "Strict-Transport-Security",
+                  value: "max-age=31536000; includeSubDomains; preload",
+                },
+              ]
             : []),
         ],
       },
-      // CORS headers for API routes
       {
         source: "/api/:path*",
         headers: [
@@ -111,9 +121,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Access-Control-Allow-Origin",
-            // WARNING: Do NOT use "*" with credentials=true — browsers will block the request.
-            // Set ALLOWED_ORIGIN to your production domain (e.g. https://yourdomain.com)
-            value: process.env.ALLOWED_ORIGIN || process.env.AUTH_URL || "http://localhost:3000",
+            value: accessControlOrigin,
           },
           {
             key: "Access-Control-Allow-Methods",
