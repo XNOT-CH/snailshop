@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { GachaGridMachine } from "@/components/GachaGridMachine";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { buildPageMetadata } from "@/lib/seo";
+import { auth } from "@/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +21,8 @@ export default async function GachaGridIndexPage() {
     let userBalance = 0;
 
     try {
-        const cookieStore = await cookies();
-        const userId = cookieStore.get("userId")?.value;
+        const session = await auth();
+        const userId = session?.user?.id;
 
         const [settings, user] = await Promise.all([
             db.query.gachaSettings.findFirst(),

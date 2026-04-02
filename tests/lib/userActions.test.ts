@@ -5,8 +5,8 @@
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("next/headers", () => ({
-  cookies: vi.fn(),
+vi.mock("@/auth", () => ({
+  auth: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -35,13 +35,13 @@ vi.mock("@/lib/validations/profile", () => ({
   },
 }));
 
-import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { updateProfileSchema } from "@/lib/validations/profile";
 
-const mkCookies = (userId: string | undefined) => ({
-  get: (key: string) => (key === "userId" && userId ? { value: userId } : undefined),
-});
+const mkSession = (userId?: string) => (
+  userId ? { user: { id: userId } } : null
+);
 
 // ════════════════════════════════════════════════════════════════
 // updateProfile
@@ -49,8 +49,8 @@ const mkCookies = (userId: string | undefined) => ({
 describe("lib/actions/user: updateProfile", () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it("returns error when userId cookie is missing", async () => {
-    (cookies as any).mockResolvedValue(mkCookies(undefined));
+  it("returns error when auth session is missing", async () => {
+    (auth as any).mockResolvedValue(mkSession(undefined));
     const { updateProfile } = await import("@/lib/actions/user");
     const result = await updateProfile({ name: "Test" } as any);
     expect(result.success).toBe(false);
@@ -58,7 +58,7 @@ describe("lib/actions/user: updateProfile", () => {
   });
 
   it("returns validation error when schema fails", async () => {
-    (cookies as any).mockResolvedValue(mkCookies("u1"));
+    (auth as any).mockResolvedValue(mkSession("u1"));
     (updateProfileSchema.safeParse as any).mockReturnValue({
       success: false,
       error: { issues: [{ path: ["name"], message: "Name is required" }] },
@@ -71,7 +71,7 @@ describe("lib/actions/user: updateProfile", () => {
   });
 
   it("returns error when user not found in DB", async () => {
-    (cookies as any).mockResolvedValue(mkCookies("u1"));
+    (auth as any).mockResolvedValue(mkSession("u1"));
     (updateProfileSchema.safeParse as any).mockReturnValue({
       success: true,
       data: { name: "John", email: null, phone: null },
@@ -84,7 +84,7 @@ describe("lib/actions/user: updateProfile", () => {
   });
 
   it("updates profile successfully without password change", async () => {
-    (cookies as any).mockResolvedValue(mkCookies("u1"));
+    (auth as any).mockResolvedValue(mkSession("u1"));
     (updateProfileSchema.safeParse as any).mockReturnValue({
       success: true,
       data: { name: "John Updated", email: "john@test.com", phone: "0812345678" },
@@ -100,7 +100,7 @@ describe("lib/actions/user: updateProfile", () => {
   });
 
   it("updates profile with password change", async () => {
-    (cookies as any).mockResolvedValue(mkCookies("u1"));
+    (auth as any).mockResolvedValue(mkSession("u1"));
     (updateProfileSchema.safeParse as any).mockReturnValue({
       success: true,
       data: { name: "John", password: "newpass123", email: null, phone: null },
@@ -116,7 +116,7 @@ describe("lib/actions/user: updateProfile", () => {
   });
 
   it("updates profile with image field", async () => {
-    (cookies as any).mockResolvedValue(mkCookies("u1"));
+    (auth as any).mockResolvedValue(mkSession("u1"));
     (updateProfileSchema.safeParse as any).mockReturnValue({
       success: true,
       data: { name: "Jane", image: "/uploads/avatar.webp", email: null },
@@ -131,7 +131,7 @@ describe("lib/actions/user: updateProfile", () => {
   });
 
   it("updates profile with taxAddress fields", async () => {
-    (cookies as any).mockResolvedValue(mkCookies("u1"));
+    (auth as any).mockResolvedValue(mkSession("u1"));
     (updateProfileSchema.safeParse as any).mockReturnValue({
       success: true,
       data: {
@@ -151,7 +151,7 @@ describe("lib/actions/user: updateProfile", () => {
   });
 
   it("returns error when DB throws", async () => {
-    (cookies as any).mockResolvedValue(mkCookies("u1"));
+    (auth as any).mockResolvedValue(mkSession("u1"));
     (updateProfileSchema.safeParse as any).mockReturnValue({
       success: true,
       data: { name: "Error User", email: null },
@@ -170,15 +170,15 @@ describe("lib/actions/user: updateProfile", () => {
 describe("lib/actions/user: getCurrentUserProfile", () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it("returns null when userId cookie is missing", async () => {
-    (cookies as any).mockResolvedValue(mkCookies(undefined));
+  it("returns null when auth session is missing", async () => {
+    (auth as any).mockResolvedValue(mkSession(undefined));
     const { getCurrentUserProfile } = await import("@/lib/actions/user");
     const result = await getCurrentUserProfile();
     expect(result).toBeNull();
   });
 
   it("returns null when user not found in DB", async () => {
-    (cookies as any).mockResolvedValue(mkCookies("u1"));
+    (auth as any).mockResolvedValue(mkSession("u1"));
     (db.query.users.findFirst as any).mockResolvedValue(null);
     const { getCurrentUserProfile } = await import("@/lib/actions/user");
     const result = await getCurrentUserProfile();
@@ -186,7 +186,7 @@ describe("lib/actions/user: getCurrentUserProfile", () => {
   });
 
   it("returns user profile with creditBalance as string", async () => {
-    (cookies as any).mockResolvedValue(mkCookies("u1"));
+    (auth as any).mockResolvedValue(mkSession("u1"));
     (db.query.users.findFirst as any).mockResolvedValue({
       id: "u1", name: "John", username: "john", email: "john@test.com",
       phone: null, image: null, role: "USER", creditBalance: { toString: () => "1500" },
@@ -205,7 +205,7 @@ describe("lib/actions/user: getCurrentUserProfile", () => {
   });
 
   it("returns null when DB throws", async () => {
-    (cookies as any).mockResolvedValue(mkCookies("u1"));
+    (auth as any).mockResolvedValue(mkSession("u1"));
     (db.query.users.findFirst as any).mockRejectedValue(new Error("DB fail"));
     const { getCurrentUserProfile } = await import("@/lib/actions/user");
     const result = await getCurrentUserProfile();

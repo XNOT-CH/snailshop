@@ -244,48 +244,24 @@ describe("API: /api/admin/popups/[id] (GET + PUT + DELETE)", () => {
 describe("API: /api/session (POST + DELETE)", () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it("POST creates session with userId", async () => {
+  it("POST returns 410 because the legacy endpoint is disabled", async () => {
     const { POST } = await import("@/app/api/session/route");
     const req = new NextRequest("http://localhost", {
       method: "POST",
       body: JSON.stringify({ userId: "u1", rememberMe: true }),
     });
     const res = await POST(req);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(410);
     const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.message).toContain("created");
+    expect(body.message).toContain("disabled");
   });
 
-  it("POST creates session without rememberMe (session cookie)", async () => {
-    const { POST } = await import("@/app/api/session/route");
-    const req = new NextRequest("http://localhost", {
-      method: "POST",
-      body: JSON.stringify({ userId: "u1", rememberMe: false }),
-    });
-    const res = await POST(req);
-    expect(res.status).toBe(200);
-  });
-
-  it("POST returns 400 when userId is missing", async () => {
-    const { POST } = await import("@/app/api/session/route");
-    const req = new NextRequest("http://localhost", {
-      method: "POST",
-      body: JSON.stringify({ rememberMe: false }), // no userId
-    });
-    const res = await POST(req);
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.message).toContain("Missing userId");
-  });
-
-  it("DELETE clears session cookie", async () => {
+  it("DELETE returns 410 because the legacy endpoint is disabled", async () => {
     const { DELETE } = await import("@/app/api/session/route");
     const res = await DELETE();
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(410);
     const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.message).toContain("cleared");
+    expect(body.message).toContain("disabled");
   });
 });
 

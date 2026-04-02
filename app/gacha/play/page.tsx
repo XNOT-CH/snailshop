@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { db, users, gachaRewards } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { Lock, Home } from "lucide-react";
-import { cookies } from "next/headers";
 import Link from "next/link";
 import { GachaRhombus } from "@/components/GachaRhombus";
 import { type GachaProductLite, type GachaTier } from "@/lib/gachaGrid";
@@ -15,6 +14,7 @@ import {
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { buildPageMetadata } from "@/lib/seo";
+import { auth } from "@/auth";
 
 export const dynamic = "force-dynamic";
 
@@ -28,8 +28,8 @@ export const metadata: Metadata = buildPageMetadata({
 export default async function GachaPlayPage() {
     let settings = { isEnabled: true, costType: "FREE", costAmount: 0, dailySpinLimit: 0 };
 
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
+    const session = await auth();
+    const userId = session?.user?.id;
     let userBalance = 0;
 
     try {

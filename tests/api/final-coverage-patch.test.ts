@@ -134,27 +134,23 @@ describe("API: /api/footer-widget (error path)", () => {
 });
 
 // ════════════════════════════════════════════════════════════════
-// /api/session — catch blocks for POST and DELETE
+// /api/session — deprecated legacy endpoint
 // ════════════════════════════════════════════════════════════════
 describe("API: /api/session (error paths)", () => {
-  it("POST returns 500 when cookies() throws", async () => {
-    const { cookies } = await import("next/headers");
-    (cookies as any).mockRejectedValueOnce(new Error("cookie fail"));
+  it("POST returns 410 when the legacy route is disabled", async () => {
     const { POST } = await import("@/app/api/session/route");
     const req = new NextRequest("http://localhost", {
       method: "POST",
       body: JSON.stringify({ userId: "u1", rememberMe: false }),
     });
     const res = await POST(req);
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(410);
   });
 
-  it("DELETE returns 500 when cookies() throws", async () => {
-    const { cookies } = await import("next/headers");
-    (cookies as any).mockRejectedValueOnce(new Error("cookie fail"));
+  it("DELETE returns 410 when the legacy route is disabled", async () => {
     const { DELETE } = await import("@/app/api/session/route");
     const res = await DELETE();
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(410);
   });
 });
 
@@ -397,16 +393,15 @@ describe("API: /api/admin/nav-items/[id] (error paths)", () => {
 });
 
 // ════════════════════════════════════════════════════════════════
-// /api/user/settings — error paths
+// /api/user/settings — deprecated legacy endpoint
 // ════════════════════════════════════════════════════════════════
 describe("API: /api/user/settings (error paths)", () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it("PATCH returns 500 on DB error", async () => {
-    (db.query.users.findFirst as any).mockRejectedValueOnce(new Error("DB fail"));
+  it("PATCH returns 410 when the legacy route is disabled", async () => {
     const { PATCH } = await import("@/app/api/user/settings/route");
     const res = await PATCH(new NextRequest("http://localhost", { method: "PATCH", body: JSON.stringify({ password: "newpass123" }) }));
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(410);
   });
 });
 

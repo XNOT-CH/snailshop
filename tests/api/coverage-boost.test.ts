@@ -414,36 +414,23 @@ describe("API: /api/sale-products (GET)", () => {
 describe("API: /api/session (POST & DELETE)", () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it("POST returns 400 when userId missing", async () => {
+  it("POST returns 410 because the legacy endpoint is disabled", async () => {
     const { POST } = await import("@/app/api/session/route");
     const req = new NextRequest("http://localhost/api/session", {
       method: "POST",
       body: JSON.stringify({ rememberMe: false }),
     });
     const res = await POST(req);
-    expect(res.status).toBe(400);
-    expect((await res.json()).message).toContain("Missing userId");
+    expect(res.status).toBe(410);
+    expect((await res.json()).message).toContain("disabled");
   });
 
-  it("POST creates session successfully", async () => {
-    const { POST } = await import("@/app/api/session/route");
-    const req = new NextRequest("http://localhost/api/session", {
-      method: "POST",
-      body: JSON.stringify({ userId: "u1", rememberMe: true }),
-    });
-    const res = await POST(req);
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-  });
-
-  it("DELETE clears session successfully", async () => {
+  it("DELETE returns 410 because the legacy endpoint is disabled", async () => {
     const { DELETE } = await import("@/app/api/session/route");
     const res = await DELETE();
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(410);
     const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.message).toContain("cleared");
+    expect(body.message).toContain("disabled");
   });
 });
 

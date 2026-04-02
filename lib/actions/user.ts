@@ -1,10 +1,11 @@
 "use server";
 
-import { cookies } from "next/headers";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { createAuditLog, AUDIT_ACTIONS, getChanges } from "@/lib/auditLog";
 import { updateProfileSchema, UpdateProfileInput } from "@/lib/validations/profile";
+import bcrypt from "bcryptjs";
+import { auth } from "@/auth";
 
 interface ActionResult {
     success: boolean;
@@ -54,8 +55,8 @@ function mapShippingAddress(shippingAddress: any, updateData: any) {
 export async function updateProfile(formData: UpdateProfileInput): Promise<ActionResult> {
     try {
         // ตรวจสอบ authentication
-        const cookieStore = await cookies();
-        const userId = cookieStore.get("userId")?.value;
+        const session = await auth();
+        const userId = session?.user?.id;
 
         if (!userId) {
             return {
@@ -118,8 +119,7 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
 
         // อัปเดต password ถ้ากรอกมา
         if (validatedData.password && validatedData.password.length >= 6) {
-            // Note: ใน production ควร hash password ด้วย bcrypt
-            updateData.password = validatedData.password;
+            updateData.password = await bcrypt.hash(validatedData.password, 12);
         }
 
         // Track changes สำหรับ audit log
@@ -177,8 +177,8 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
  */
 export async function getCurrentUserProfile() {
     try {
-        const cookieStore = await cookies();
-        const userId = cookieStore.get("userId")?.value;
+        const session = await auth();
+        const userId = session?.user?.id;
 
         if (!userId) {
             return null;

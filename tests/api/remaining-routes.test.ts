@@ -127,50 +127,16 @@ describe("API: /api/upload (POST)", () => {
 describe("API: /api/user/settings (PATCH)", () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it("returns 400 when password is missing", async () => {
-    const { PATCH } = await import("@/app/api/user/settings/route");
-    const req = new NextRequest("http://localhost/api/user/settings", {
-      method: "PATCH",
-      body: JSON.stringify({}),
-    });
-    const res = await PATCH(req);
-    expect(res.status).toBe(400);
-  });
-
-  it("returns 400 for short password", async () => {
-    const { PATCH } = await import("@/app/api/user/settings/route");
-    const req = new NextRequest("http://localhost/api/user/settings", {
-      method: "PATCH",
-      body: JSON.stringify({ password: "abc" }),
-    });
-    const res = await PATCH(req);
-    expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.message).toContain("at least 6");
-  });
-
-  it("returns 404 when user not found", async () => {
-    (db.query.users.findFirst as any).mockResolvedValue(null);
+  it("returns 410 because the legacy endpoint is disabled", async () => {
     const { PATCH } = await import("@/app/api/user/settings/route");
     const req = new NextRequest("http://localhost/api/user/settings", {
       method: "PATCH",
       body: JSON.stringify({ password: "newpassword123" }),
     });
     const res = await PATCH(req);
-    expect(res.status).toBe(404);
-  });
-
-  it("updates password successfully", async () => {
-    (db.query.users.findFirst as any).mockResolvedValue({ id: "u1" });
-    const { PATCH } = await import("@/app/api/user/settings/route");
-    const req = new NextRequest("http://localhost/api/user/settings", {
-      method: "PATCH",
-      body: JSON.stringify({ password: "newpassword123" }),
-    });
-    const res = await PATCH(req);
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(410);
     const body = await res.json();
-    expect(body.success).toBe(true);
+    expect(body.message).toContain("disabled");
   });
 });
 
@@ -195,9 +161,20 @@ describe("API: /api/topup (POST)", () => {
     const { POST } = await import("@/app/api/topup/route");
     const req = new NextRequest("http://localhost/api/topup", {
       method: "POST",
-      body: JSON.stringify({ proofImage: "base64data" }),
+      body: JSON.stringify({ proofImage: "data:image/jpeg;base64,/9j/test" }),
     });
     const res = await POST(req);
     expect(res.status).toBe(401);
+  });
+
+  it("returns 413 when proof image is too large", async () => {
+    const { POST } = await import("@/app/api/topup/route");
+    const largeBase64 = "A".repeat((5 * 1024 * 1024 * 4) / 3 + 8);
+    const req = new NextRequest("http://localhost/api/topup", {
+      method: "POST",
+      body: JSON.stringify({ proofImage: `data:image/jpeg;base64,${largeBase64}` }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(413);
   });
 });

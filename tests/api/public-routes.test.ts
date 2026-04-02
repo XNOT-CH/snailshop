@@ -144,36 +144,26 @@ describe("API: /api/session", () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
   describe("POST", () => {
-    it("returns 400 when missing userId", async () => {
+    it("returns 410 because the legacy endpoint is disabled", async () => {
       const { POST } = await import("@/app/api/session/route");
       const req = new NextRequest("http://localhost/api/session", {
         method: "POST",
         body: JSON.stringify({}),
       });
       const res = await POST(req);
-      expect(res.status).toBe(400);
-    });
-
-    it("creates session cookie", async () => {
-      const { POST } = await import("@/app/api/session/route");
-      const req = new NextRequest("http://localhost/api/session", {
-        method: "POST",
-        body: JSON.stringify({ userId: "u1", rememberMe: true }),
-      });
-      const res = await POST(req);
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(410);
       const body = await res.json();
-      expect(body.success).toBe(true);
+      expect(body.message).toContain("disabled");
     });
   });
 
   describe("DELETE", () => {
-    it("clears session cookie", async () => {
+    it("returns 410 because the legacy endpoint is disabled", async () => {
       const { DELETE } = await import("@/app/api/session/route");
       const res = await DELETE();
-      expect(res.status).toBe(200);
+      expect(res.status).toBe(410);
       const body = await res.json();
-      expect(body.success).toBe(true);
+      expect(body.message).toContain("disabled");
     });
   });
 });

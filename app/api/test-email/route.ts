@@ -1,9 +1,19 @@
 import { sendEmail } from "@/lib/mail";
 import { NotificationEmail } from "@/components/emails/NotificationEmail";
 import { NextResponse } from "next/server";
+import { isAdmin } from "@/lib/auth";
 
 export async function GET(request: Request) {
     try {
+        if (process.env.NODE_ENV === "production") {
+            return NextResponse.json({ error: "Not found" }, { status: 404 });
+        }
+
+        const authCheck = await isAdmin();
+        if (!authCheck.success) {
+            return NextResponse.json({ error: authCheck.error }, { status: 401 });
+        }
+
         const { searchParams } = new URL(request.url);
         const to = searchParams.get("to");
 
