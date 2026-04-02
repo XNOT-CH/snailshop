@@ -11,6 +11,17 @@ import { FloatingChatButton } from "@/components/FloatingChatButton";
 import { SweetAlertProvider } from "@/components/SweetAlertProvider";
 import { AnnouncementPopupWrapper } from "@/components/AnnouncementPopupWrapper";
 import { GlobalLoadingWrapper } from "@/components/GlobalLoadingWrapper";
+import { StructuredData } from "@/components/StructuredData";
+import { getSiteSettings } from "@/lib/getSiteSettings";
+import {
+  DEFAULT_SITE_DESCRIPTION,
+  SITE_LOCALE,
+  SITE_NAME,
+  SITE_TITLE,
+  absoluteUrl,
+  getBaseUrl,
+  toAbsoluteAssetUrl,
+} from "@/lib/seo";
 
 const prompt = Prompt({
   subsets: ["thai", "latin"],
@@ -26,21 +37,64 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
+  metadataBase: new URL(getBaseUrl()),
   title: {
-    default: "Manashop - Game ID Marketplace",
-    template: "%s | Manashop",
+    default: SITE_TITLE,
+    template: `%s | ${SITE_NAME}`,
   },
-  description: "แหล่งซื้อขายไอดีเกมที่ปลอดภัยที่สุด",
+  description: DEFAULT_SITE_DESCRIPTION,
+  alternates: {
+    canonical: "/",
+  },
+  openGraph: {
+    title: SITE_TITLE,
+    description: DEFAULT_SITE_DESCRIPTION,
+    url: absoluteUrl("/"),
+    siteName: SITE_NAME,
+    locale: SITE_LOCALE,
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: SITE_TITLE,
+    description: DEFAULT_SITE_DESCRIPTION,
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const settings = await getSiteSettings();
+  const logoUrl = toAbsoluteAssetUrl(settings?.logoUrl);
+  const heroDescription = settings?.heroDescription?.trim() || DEFAULT_SITE_DESCRIPTION;
+  const structuredData = [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: SITE_NAME,
+      url: absoluteUrl("/"),
+      ...(logoUrl ? { logo: logoUrl } : {}),
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: SITE_NAME,
+      url: absoluteUrl("/"),
+      inLanguage: "th",
+      description: heroDescription,
+    },
+  ];
+
   return (
     <html lang="th" className={prompt.variable} suppressHydrationWarning data-scroll-behavior="smooth">
       <body className="font-sans antialiased min-h-screen bg-background flex flex-col">
+        <StructuredData data={structuredData} />
         <ThemeProvider>
           <SweetAlertProvider>
             <CartProvider>
@@ -84,5 +138,3 @@ export default function RootLayout({
     </html>
   );
 }
-
-

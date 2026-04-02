@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { db, users, gachaRewards } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { Lock, Home } from "lucide-react";
@@ -13,15 +14,18 @@ import {
     BreadcrumbPage,
     BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { buildPageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-    title: "กาชา | Manashop",
-    description: "ลุ้นรับไอเท็มสุดพิเศษจากระบบสุ่มกาชา",
-};
+export const metadata: Metadata = buildPageMetadata({
+    title: "กาชา",
+    description: "หน้าสุ่มกาชาสำหรับรับสินค้าและรางวัลพิเศษ",
+    path: "/gacha",
+    noIndex: true,
+});
 
-export default async function GachaPage() {
+export default async function GachaPlayPage() {
     let settings = { isEnabled: true, costType: "FREE", costAmount: 0, dailySpinLimit: 0 };
 
     const cookieStore = await cookies();
@@ -29,7 +33,6 @@ export default async function GachaPage() {
     let userBalance = 0;
 
     try {
-        // Parallel fetch: settings + user (no dependency between them)
         const [raw, user] = await Promise.all([
             db.query.gachaSettings.findFirst(),
             userId
@@ -49,33 +52,40 @@ export default async function GachaPage() {
         if (user) {
             userBalance = Number(settings.costType === "CREDIT" ? (user.creditBalance ?? 0) : (user.pointBalance ?? 0));
         }
-    } catch { /* table may not exist yet */ }
+    } catch { }
 
     let products: GachaProductLite[] = [];
     try {
         const rewards = await db.query.gachaRewards.findMany({
-            where: and(
-                eq(gachaRewards.isActive, true),
-                isNull(gachaRewards.gachaMachineId),
-            ),
+            where: and(eq(gachaRewards.isActive, true), isNull(gachaRewards.gachaMachineId)),
             with: { product: { columns: { id: true, name: true, price: true, imageUrl: true, isSold: true } } },
         });
         products = rewards
-            .filter((r) => (r.rewardType === "PRODUCT" ? r.product && !r.product.isSold : (r.rewardName && r.rewardAmount)))
-            .map((r) => {
-                if (r.rewardType === "PRODUCT" && r.product) {
-                    return { id: r.product.id, name: r.product.name, price: Number(r.product.price), imageUrl: r.product.imageUrl, tier: (r.tier as GachaTier) ?? "common" };
+            .filter((reward) => (reward.rewardType === "PRODUCT" ? reward.product && !reward.product.isSold : (reward.rewardName && reward.rewardAmount)))
+            .map((reward) => {
+                if (reward.rewardType === "PRODUCT" && reward.product) {
+                    return {
+                        id: reward.product.id,
+                        name: reward.product.name,
+                        price: Number(reward.product.price),
+                        imageUrl: reward.product.imageUrl,
+                        tier: (reward.tier as GachaTier) ?? "common",
+                    };
                 }
-                return { id: `reward:${r.id}`, name: r.rewardName ?? (r.rewardType === "CREDIT" ? "เครดิต" : "พอยต์"), price: Number(r.rewardAmount ?? 0), imageUrl: r.rewardImageUrl ?? null, tier: (r.tier as GachaTier) ?? "common" };
-            });
-    } catch { /* rewards not available */ }
 
+                return {
+                    id: `reward:${reward.id}`,
+                    name: reward.rewardName ?? (reward.rewardType === "CREDIT" ? "เครดิต" : "พอยต์"),
+                    price: Number(reward.rewardAmount ?? 0),
+                    imageUrl: reward.rewardImageUrl ?? null,
+                    tier: (reward.tier as GachaTier) ?? "common",
+                };
+            });
+    } catch { }
 
     return (
         <div className="mb-8 min-h-[calc(100vh-8rem)] rounded-2xl border border-border/50 bg-card/90 px-3 py-6 shadow-xl shadow-primary/10 backdrop-blur-sm sm:px-5 md:px-8">
             <div className="flex flex-col items-center gap-6">
-
-                {/* Header — centered to align with grid */}
                 <div className="w-full max-w-[640px] mb-2 px-2">
                     <div className="mb-4">
                         <Breadcrumb>
@@ -107,7 +117,6 @@ export default async function GachaPage() {
                     </div>
                 </div>
 
-                {/* Body */}
                 {settings.isEnabled ? (
                     <div className="flex w-full justify-center">
                         <GachaRhombus products={products} settings={settings} userBalance={userBalance} />

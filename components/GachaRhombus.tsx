@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -361,6 +361,7 @@ export function GachaRhombus({ products, settings, userBalance = 0, machineId }:
                         })}
                     </div>
                 </div>
+
             </div>
 
             {/* ── Controls ── */}
@@ -391,7 +392,7 @@ export function GachaRhombus({ products, settings, userBalance = 0, machineId }:
                 </div>
 
                 {/* Spin CTA panel */}
-                <div className="w-full flex flex-col items-center mt-6">
+                <div className="w-full flex flex-col items-center mt-3">
                     <div className="text-center mb-4 space-y-1">
                         <h2 className="text-[18px] md:text-[22px] font-bold text-[#145de7]">
                             สุ่มรางวัลครั้งละ {settings.costAmount.toLocaleString()} {settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}
@@ -401,30 +402,30 @@ export function GachaRhombus({ products, settings, userBalance = 0, machineId }:
                         </p>
                     </div>
 
-                    <div className="w-full bg-[#d0e3ff] dark:bg-[#d0e3ff]/10 text-[#145de7] dark:text-[#7ba2f5] font-bold text-sm md:text-base py-3.5 rounded-md text-center mb-6">
-                        ยอด{settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}สะสม:{" "}
+                    <div className="w-full rounded-xl border border-[#bcd6ff] bg-[#d0e3ff]/70 px-4 py-3 text-center text-sm font-bold text-[#145de7] dark:border-[#2b4f8f] dark:bg-[#d0e3ff]/10 dark:text-[#7ba2f5] mb-5">
+                        ยอด{settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}คงเหลือ:{" "}
                         {userBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
                         {settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}{" "}
-                        <span className="font-normal opacity-90">(แนะนำให้รีเฟรชเพื่อดูยอดล่าสุด)</span>
+                        <span className="font-normal opacity-90">(ตรวจยอดล่าสุดก่อนกดสุ่มได้)</span>
                     </div>
 
                     <div className="w-full">
                         {phase === "idle" && (
                             <button onClick={() => void handleFirstSpin()} disabled={!settings.isEnabled}
-                                className="w-full py-3 md:py-3.5 rounded-md bg-[#158e4d] hover:bg-[#117640] text-white font-bold text-[15px] md:text-base shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                className="w-full py-3.5 md:py-4 rounded-xl bg-[#158e4d] hover:bg-[#117640] text-white font-bold text-[15px] md:text-base shadow-[0_16px_32px_-18px_rgba(21,142,77,0.85)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                 <Gamepad2 className="h-5 w-5" /> สุ่ม
                             </button>
                         )}
                         {(phase === "rolling1" || phase === "rolling2" || phase === "revealing") && (
                             <button disabled
-                                className="w-full py-3 md:py-3.5 rounded-md bg-[#158e4d]/60 text-white/80 font-bold text-[15px] md:text-base cursor-not-allowed flex items-center justify-center gap-2">
+                                className="w-full py-3.5 md:py-4 rounded-xl bg-[#158e4d]/60 text-white/80 font-bold text-[15px] md:text-base cursor-not-allowed flex items-center justify-center gap-2">
                                 <Loader2 className="h-5 w-5 animate-spin" />
                                 {phase === "rolling1" ? "กำลังสุ่ม..." : phase === "rolling2" ? "กำลังเลือก..." : "กำลังเปิด..."}
                             </button>
                         )}
                         {phase === "waitSpin2" && (
                             <button onClick={() => void handleSecondSpin()}
-                                className="w-full py-3 md:py-3.5 rounded-md bg-[#158e4d] hover:bg-[#117640] text-white font-bold text-[15px] md:text-base shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                                className="w-full py-3.5 md:py-4 rounded-xl bg-[#158e4d] hover:bg-[#117640] text-white font-bold text-[15px] md:text-base shadow-[0_16px_32px_-18px_rgba(21,142,77,0.85)] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
                                 <Gamepad2 className="h-5 w-5" /> สุ่มครั้งที่ 2
                             </button>
                         )}

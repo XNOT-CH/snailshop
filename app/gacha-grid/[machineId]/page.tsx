@@ -1,12 +1,46 @@
-import { cookies } from "next/headers";
+import { cache } from "react";
+import type { Metadata } from "next";
+import { auth } from "@/auth";
 import { db, users, gachaMachines } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { GachaGridMachine } from "@/components/GachaGridMachine";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { buildPageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+
+const getMachine = cache(async (machineId: string) => {
+    return db.query.gachaMachines.findFirst({
+        where: eq(gachaMachines.id, machineId),
+    });
+});
+
+export async function generateMetadata({
+    params,
+}: Readonly<{
+    params: Promise<{ machineId: string }>;
+}>): Promise<Metadata> {
+    const { machineId } = await params;
+    const machine = await getMachine(machineId);
+
+    if (!machine) {
+        return buildPageMetadata({
+            title: "ไม่พบเครื่องกาชา",
+            path: `/gacha-grid/${machineId}`,
+            noIndex: true,
+        });
+    }
+
+    return buildPageMetadata({
+        title: machine.name,
+        description: machine.description || `ลุ้นรับรางวัลจาก ${machine.name}`,
+        path: `/gacha-grid/${machineId}`,
+        image: machine.imageUrl,
+        noIndex: !machine.isActive || !machine.isEnabled,
+    });
+}
 
 export default async function GachaGridPage({
     params,
@@ -14,13 +48,12 @@ export default async function GachaGridPage({
     params: Promise<{ machineId: string }>;
 }>) {
     const { machineId } = await params;
+    const machine = await getMachine(machineId);
 
-    const machine = await db.query.gachaMachines.findFirst({ where: eq(gachaMachines.id, machineId) });
+    if (!machine?.isActive || !machine.isEnabled) notFound();
 
-    if (!machine?.isActive) notFound();
-
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
+    const session = await auth();
+    const userId = session?.user?.id;
     let userBalance = 0;
 
     if (userId && machine.costType !== "FREE") {
@@ -34,9 +67,8 @@ export default async function GachaGridPage({
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
-            {/* Banner */}
-            <div className="bg-gradient-to-br from-[#1a56db] via-[#1e40af] to-[#1e3a5f] relative overflow-hidden py-10 px-6 text-center">
+        <div className="min-h-screen bg-background">
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#1a56db] via-[#1f4fc2] to-[#10284d] py-10 px-6 text-center">
                 <div className="absolute inset-0 opacity-10" style={{
                     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='52' viewBox='0 0 60 52'%3E%3Cpolygon points='30,0 60,17 60,35 30,52 0,35 0,17' fill='none' stroke='white' stroke-width='1'/%3E%3C/svg%3E")`,
                     backgroundSize: "60px 52px",
@@ -51,9 +83,8 @@ export default async function GachaGridPage({
                 </p>
             </div>
 
-            {/* Content */}
             <div className="max-w-lg mx-auto px-4 py-8">
-                <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-border shadow-sm p-4">
+                <div className="rounded-[1.75rem] border border-border/80 bg-card/95 p-4 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.45)] backdrop-blur-sm">
                     <GachaGridMachine
                         machineId={machineId}
                         machineName={machine.name}

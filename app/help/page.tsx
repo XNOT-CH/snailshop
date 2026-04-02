@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { db, helpArticles } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,8 +11,16 @@ import {
     AccordionItem,
     AccordionTrigger,
 } from "@/components/ui/accordion";
+import { StructuredData } from "@/components/StructuredData";
+import { buildPageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = buildPageMetadata({
+    title: "ศูนย์ช่วยเหลือ",
+    description: "รวมคำถามที่พบบ่อย วิธีใช้งาน และข้อมูลช่วยเหลือสำหรับลูกค้า",
+    path: "/help",
+});
 
 const CATEGORIES: Record<string, string> = {
     general: "ทั่วไป",
@@ -27,7 +36,6 @@ export default async function HelpPage() {
         orderBy: (t, { asc }) => [asc(t.category), asc(t.sortOrder)],
     });
 
-    // Group by category
     const groupedArticles = articles.reduce((acc, article) => {
         if (!acc[article.category]) {
             acc[article.category] = [];
@@ -36,20 +44,33 @@ export default async function HelpPage() {
         return acc;
     }, {} as Record<string, typeof articles>);
 
+    const faqStructuredData = {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        mainEntity: articles.map((article) => ({
+            "@type": "Question",
+            name: article.question,
+            acceptedAnswer: {
+                "@type": "Answer",
+                text: article.answer,
+            },
+        })),
+    };
+
     return (
         <div className="animate-page-enter max-w-4xl mx-auto">
+            {articles.length > 0 && <StructuredData data={faqStructuredData} />}
+
             <div className="py-6 sm:py-8 bg-card/90 backdrop-blur-sm px-4 sm:px-6 shadow-xl shadow-primary/10 border border-border/50">
-                {/* Breadcrumb */}
                 <PageBreadcrumb items={[{ label: "ศูนย์ช่วยเหลือ" }]} className="mb-6" />
 
-                {/* Header */}
                 <div className="text-center mb-8">
                     <div className="flex items-center justify-center gap-3 mb-4">
                         <HelpCircle className="h-10 w-10 text-primary" />
                         <h1 className="text-3xl font-bold">ศูนย์ช่วยเหลือ</h1>
                     </div>
                     <p className="text-muted-foreground">
-                        คำถามที่พบบ่อย และวิธีการใช้งานต่างๆ
+                        คำถามที่พบบ่อย และวิธีการใช้งานต่าง ๆ
                     </p>
                 </div>
 

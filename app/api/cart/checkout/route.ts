@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { db, users, products, orders } from "@/lib/db";
-import { eq, inArray } from "drizzle-orm";
+import { db, users } from "@/lib/db";
+import { eq } from "drizzle-orm";
 import { decrypt, encrypt } from "@/lib/encryption";
 import { splitStock, getDelimiter } from "@/lib/stock";
 import { sendEmail } from "@/lib/mail";

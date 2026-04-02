@@ -77,7 +77,7 @@ export default async function AdminDashboardPage() {
                                 return (
                                     <div
                                         key={kpi.title}
-                                        className="relative overflow-hidden bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow duration-300"
+                                        className="relative overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)] transition-shadow duration-300 hover:shadow-[0_24px_50px_-28px_rgba(37,99,235,0.25)]"
                                     >
                                         {/* Top gradient bar */}
                                         <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${kpi.gradient}`} />
@@ -98,7 +98,7 @@ export default async function AdminDashboardPage() {
                         </div>
 
                         {/* Revenue Chart */}
-                        <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
+                        <div className="overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)]">
                             <div className="border-b border-border py-3 px-5 flex items-center gap-2">
                                 <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
                                     <DollarSign className="h-3.5 w-3.5 text-white" />
@@ -116,7 +116,7 @@ export default async function AdminDashboardPage() {
                 purchasesContent={
                     <div className="grid gap-4 grid-cols-1 lg:grid-cols-5">
                         {/* Sales Distribution */}
-                        <div className="lg:col-span-2 bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
+                        <div className="lg:col-span-2 overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)]">
                             <div className="border-b border-border py-3 px-5 flex items-center gap-2">
                                 <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
                                     <ShoppingCart className="h-3.5 w-3.5 text-white" />
@@ -129,7 +129,7 @@ export default async function AdminDashboardPage() {
                         </div>
 
                         {/* Recent Transactions */}
-                        <div className="lg:col-span-3 bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
+                        <div className="lg:col-span-3 overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)]">
                             <div className="border-b border-border py-3 px-5 flex items-center gap-2">
                                 <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
                                     <Users className="h-3.5 w-3.5 text-white" />

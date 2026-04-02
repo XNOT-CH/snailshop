@@ -6,6 +6,34 @@ import { decrypt, encrypt } from "@/lib/encryption";
 import { takeFirstStock } from "@/lib/stock";
 import crypto from "node:crypto";
 
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+interface ProductRewardRecord {
+    id: string;
+    isSold: boolean;
+    orderId: string | null;
+    secretData: string;
+    stockSeparator: string | null;
+}
+
+interface RewardChoice {
+    id: string;
+    rewardType: string;
+    rewardName?: string | null;
+    rewardAmount?: string | number | null;
+    rewardImageUrl?: string | null;
+    tier?: string | null;
+    product?: {
+        id: string;
+        name?: string;
+        imageUrl?: string | null;
+        isSold?: boolean;
+        orderId?: string | null;
+        secretData?: string;
+        stockSeparator?: string | null;
+    } | null;
+}
+
 async function fetchUserOrError(userId: string, costType: string, costAmount: number) {
     const user = await db.query.users.findFirst({
         where: eq(users.id, userId),
@@ -37,9 +65,9 @@ function getRewardDetails(chosen: { rewardType: string; product?: { name?: strin
 }
 
 interface RollTxContext {
-    tx: any; // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    tx: DbTransaction;
     user: { id: string };
-    chosen: any; // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    chosen: RewardChoice;
     costType: string;
     costAmount: number;
     rewardName: string;
@@ -47,8 +75,7 @@ interface RollTxContext {
     machineId: string | null;
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function processProductReward(tx: any, userId: string, costAmount: number, product: any) {
+async function processProductReward(tx: DbTransaction, userId: string, costAmount: number, product: ProductRewardRecord) {
     if (product.isSold || product.orderId) throw new Error("รางวัลนี้ถูกใช้ไปแล้ว กรุณาสุ่มใหม่");
     const [taken, remainingData] = takeFirstStock(decrypt(product.secretData || ""), product.stockSeparator || "newline");
     if (!taken) throw new Error("สต็อกของรางวัลหมดแล้ว");
@@ -58,7 +85,6 @@ async function processProductReward(tx: any, userId: string, costAmount: number,
     await tx.update(products).set({ secretData: isLastStock ? encrypt(taken) : encrypt(remainingData), isSold: isLastStock, orderId }).where(eq(products.id, product.id));
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function executeRollTransaction(ctx: RollTxContext) {
     const { tx, user, chosen, costType, costAmount, rewardName, imageUrl, machineId } = ctx;
 
@@ -70,7 +96,13 @@ async function executeRollTransaction(ctx: RollTxContext) {
     if (chosen.rewardType === "POINT" && rewardAmount && rewardAmount > 0) await tx.update(users).set({ pointBalance: sql`pointBalance + ${rewardAmount}` }).where(eq(users.id, user.id));
     
     if (chosen.rewardType === "PRODUCT" && chosen.product) {
-        await processProductReward(tx, user.id, costAmount, chosen.product);
+        await processProductReward(tx, user.id, costAmount, {
+            id: chosen.product.id,
+            isSold: Boolean(chosen.product.isSold),
+            orderId: chosen.product.orderId ?? null,
+            secretData: chosen.product.secretData ?? "",
+            stockSeparator: chosen.product.stockSeparator ?? "newline",
+        });
     }
     await tx.insert(gachaRollLogs).values({
         id: crypto.randomUUID(), userId: user.id,

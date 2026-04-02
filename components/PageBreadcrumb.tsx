@@ -32,13 +32,13 @@ export function PageBreadcrumb({ items, className, showBackButton = true }: Read
         <div className={cn("flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between", className)}>
             <div className="overflow-x-auto">
                 <Breadcrumb className="w-fit min-w-0">
-                    <BreadcrumbList className="flex-nowrap gap-1 min-w-max px-1 py-1 text-sm sm:gap-1.5 sm:text-base">
+                    <BreadcrumbList className="min-w-max flex-nowrap gap-1 px-1 py-1 text-sm sm:gap-1.5 sm:text-base">
                     {/* Home */}
                     <BreadcrumbItem>
                         <BreadcrumbLink asChild>
                             <Link
                                 href="/"
-                                className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors duration-200"
+                                className="flex items-center gap-1.5 rounded-full px-2 py-1 text-muted-foreground/90 hover:text-primary transition-colors duration-200"
                             >
                                 <Home className="h-3.5 w-3.5" />
                                 <span>หน้าแรก</span>
@@ -56,14 +56,14 @@ export function PageBreadcrumb({ items, className, showBackButton = true }: Read
                                 </BreadcrumbSeparator>
                                 <BreadcrumbItem>
                                     {isLast || !item.href ? (
-                                        <BreadcrumbPage className="text-primary font-medium truncate max-w-[200px] sm:max-w-none">
+                                        <BreadcrumbPage className="max-w-[200px] rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary sm:max-w-none">
                                             {item.label}
                                         </BreadcrumbPage>
                                     ) : (
                                         <BreadcrumbLink asChild>
                                             <Link
                                                 href={item.href}
-                                                className="text-muted-foreground hover:text-primary transition-colors duration-200"
+                                                className="rounded-full px-2 py-1 text-muted-foreground/90 hover:text-primary transition-colors duration-200"
                                             >
                                                 {item.label}
                                             </Link>
@@ -82,7 +82,7 @@ export function PageBreadcrumb({ items, className, showBackButton = true }: Read
                     variant="ghost"
                     size="sm"
                     onClick={() => router.back()}
-                    className="w-fit gap-1.5 text-xs sm:text-sm text-muted-foreground hover:text-primary hover:bg-accent/60 rounded-lg transition-colors duration-200"
+                    className="w-fit gap-1.5 rounded-full text-xs text-muted-foreground hover:bg-accent/50 hover:text-primary transition-colors duration-200 sm:text-sm"
                 >
                     <ArrowLeft className="h-3.5 w-3.5" />
                     ย้อนกลับ

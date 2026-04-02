@@ -1,41 +1,68 @@
+import { cache } from "react";
+import type { Metadata } from "next";
 import { db, users, gachaMachines, gachaRewards } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { Lock } from "lucide-react";
-import { cookies } from "next/headers";
+import { auth } from "@/auth";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GachaRhombus } from "@/components/GachaRhombus";
 import { GachaGridMachine } from "@/components/GachaGridMachine";
 import { type GachaProductLite, type GachaTier } from "@/lib/gachaGrid";
+import { buildPageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
+
+const getMachine = cache(async (id: string) => {
+    return db.query.gachaMachines.findFirst({
+        where: eq(gachaMachines.id, id),
+        columns: {
+            id: true,
+            name: true,
+            description: true,
+            imageUrl: true,
+            gameType: true,
+            isActive: true,
+            isEnabled: true,
+            costType: true,
+            costAmount: true,
+            dailySpinLimit: true,
+        },
+    });
+});
+
+export async function generateMetadata({ params }: Readonly<{ params: Promise<{ id: string }> }>): Promise<Metadata> {
+    const { id } = await params;
+    const machine = await getMachine(id);
+
+    if (!machine) {
+        return buildPageMetadata({
+            title: "ไม่พบตู้กาชา",
+            path: `/gacha/${id}`,
+            noIndex: true,
+        });
+    }
+
+    const preferredPath = machine.gameType === "GRID_3X3" ? `/gacha-grid/${id}` : `/gacha/${id}`;
+
+    return buildPageMetadata({
+        title: machine.name,
+        description: machine.description || `ร่วมสนุกกับ ${machine.name} และลุ้นรับรางวัลจากระบบกาชา`,
+        path: preferredPath,
+        image: machine.imageUrl,
+        noIndex: machine.gameType === "GRID_3X3" || !machine.isActive || !machine.isEnabled,
+    });
+}
 
 export default async function GachaPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
     const { id } = await params;
 
-    const cookieStore = await cookies();
-    const userId = cookieStore.get("userId")?.value;
-
-    // Fetch the specific gacha machine
-    let machine: {
-        id: string;
-        name: string;
-        gameType: string;
-        isActive: boolean;
-        costType: string;
-        costAmount: string | number;
-        dailySpinLimit: number;
-    } | null | undefined = null;
-
-    try {
-        machine = await db.query.gachaMachines.findFirst({
-            where: eq(gachaMachines.id, id),
-            columns: { id: true, name: true, gameType: true, isActive: true, costType: true, costAmount: true, dailySpinLimit: true },
-        });
-    } catch { /* ignore */ }
+    const session = await auth();
+    const userId = session?.user?.id;
+    const machine = await getMachine(id);
 
     if (!machine) return notFound();
-    if (!machine.isActive) {
+    if (!machine.isActive || !machine.isEnabled) {
         return (
             <div className="flex flex-col items-center gap-3 py-20 text-center">
                 <div className="w-10 h-10 rounded-full border border-border flex items-center justify-center">
@@ -49,7 +76,6 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
 
     const costAmount = Number(machine.costAmount);
 
-    // Fetch user balance
     let userBalance = 0;
     try {
         if (userId) {
@@ -61,9 +87,8 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
                 userBalance = Number(machine.costType === "CREDIT" ? (user.creditBalance ?? 0) : (user.pointBalance ?? 0));
             }
         }
-    } catch { /* ignore */ }
+    } catch { }
 
-    // For SPIN_X — load products from this specific machine's rewards
     let products: GachaProductLite[] = [];
     if (machine.gameType === "SPIN_X") {
         try {
@@ -72,14 +97,26 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
                 with: { product: { columns: { id: true, name: true, price: true, imageUrl: true, isSold: true } } },
             });
             products = rewards
-                .filter((r) => (r.rewardType === "PRODUCT" ? r.product && !r.product.isSold : (r.rewardName && r.rewardAmount)))
-                .map((r) => {
-                    if (r.rewardType === "PRODUCT" && r.product) {
-                        return { id: r.product.id, name: r.product.name, price: Number(r.product.price), imageUrl: r.product.imageUrl, tier: (r.tier as GachaTier) ?? "common" };
+                .filter((reward) => (reward.rewardType === "PRODUCT" ? reward.product && !reward.product.isSold : (reward.rewardName && reward.rewardAmount)))
+                .map((reward) => {
+                    if (reward.rewardType === "PRODUCT" && reward.product) {
+                        return {
+                            id: reward.product.id,
+                            name: reward.product.name,
+                            price: Number(reward.product.price),
+                            imageUrl: reward.product.imageUrl,
+                            tier: (reward.tier as GachaTier) ?? "common",
+                        };
                     }
-                    return { id: `reward:${r.id}`, name: r.rewardName ?? (r.rewardType === "CREDIT" ? "เครดิต" : "พอยต์"), price: Number(r.rewardAmount ?? 0), imageUrl: r.rewardImageUrl ?? null, tier: (r.tier as GachaTier) ?? "common" };
+                    return {
+                        id: `reward:${reward.id}`,
+                        name: reward.rewardName ?? (reward.rewardType === "CREDIT" ? "เครดิต" : "พอยต์"),
+                        price: Number(reward.rewardAmount ?? 0),
+                        imageUrl: reward.rewardImageUrl ?? null,
+                        tier: (reward.tier as GachaTier) ?? "common",
+                    };
                 });
-        } catch { /* rewards not available */ }
+        } catch { }
     }
 
     const settings = {
@@ -90,9 +127,8 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-zinc-950">
-            {/* Hero Banner */}
-            <div className="bg-gradient-to-br from-[#1a56db] via-[#1e40af] to-[#1e3a5f] relative overflow-hidden py-10 px-6 text-center">
+        <div className="min-h-screen bg-background">
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#1a56db] via-[#1f4fc2] to-[#10284d] py-10 px-6 text-center">
                 <div className="absolute inset-0 opacity-10" style={{
                     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='52' viewBox='0 0 60 52'%3E%3Cpolygon points='30,0 60,17 60,35 30,52 0,35 0,17' fill='none' stroke='white' stroke-width='1'/%3E%3C/svg%3E")`,
                     backgroundSize: "60px 52px"
@@ -107,9 +143,8 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
                 </p>
             </div>
 
-            {/* Content */}
             <div className="max-w-4xl mx-auto px-4 py-8">
-                <div className="py-6 bg-card/90 backdrop-blur-sm rounded-2xl px-4 sm:px-6 md:px-10 shadow-xl shadow-primary/10 border border-border/50 overflow-x-hidden">
+                <div className="overflow-x-hidden rounded-[1.75rem] border border-border/80 bg-card/95 px-4 py-6 shadow-[0_28px_70px_-40px_rgba(15,23,42,0.45)] backdrop-blur-sm sm:px-6 md:px-10">
                     <div className="flex flex-col items-center gap-6">
                         {settings.dailySpinLimit > 0 && (
                             <div className="w-full flex justify-end">
@@ -118,6 +153,7 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
                                 </span>
                             </div>
                         )}
+
                         <div className="w-full flex justify-center">
                             {machine.gameType === "GRID_3X3" ? (
                                 <GachaGridMachine

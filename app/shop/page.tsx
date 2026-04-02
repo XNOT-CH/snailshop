@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { and, asc, count, desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { ShoppingBag, Package, TrendingUp } from "lucide-react";
@@ -7,12 +8,41 @@ import { ShopControls } from "@/components/ShopControls";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { db, products } from "@/lib/db";
+import { buildPageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
-export default async function ShopPage(props: Readonly<{
+type ShopPageProps = Readonly<{
     searchParams: Promise<{ category?: string; sort?: string; page?: string }>;
-}>) {
+}>;
+
+export async function generateMetadata({ searchParams }: ShopPageProps): Promise<Metadata> {
+    const params = await searchParams;
+    const currentCategory = params.category || "all";
+    const currentPage = Math.max(1, Number.parseInt(params.page || "1", 10) || 1);
+    const canonicalParams = new URLSearchParams();
+
+    if (currentCategory !== "all") {
+        canonicalParams.set("category", currentCategory);
+    }
+    if (currentPage > 1) {
+        canonicalParams.set("page", String(currentPage));
+    }
+
+    const path = canonicalParams.size > 0 ? `/shop?${canonicalParams.toString()}` : "/shop";
+    const title = currentCategory === "all" ? "ร้านค้า" : `ร้านค้า ${currentCategory}`;
+    const description = currentCategory === "all"
+        ? "เลือกซื้อไอดีเกมและสินค้าในร้าน พร้อมกรองหมวดหมู่และค้นหาสินค้าที่พร้อมขาย"
+        : `เลือกซื้อสินค้าในหมวด ${currentCategory} พร้อมรายการที่อัปเดตล่าสุดจากร้านค้า`;
+
+    return buildPageMetadata({
+        title,
+        description,
+        path,
+    });
+}
+
+export default async function ShopPage(props: ShopPageProps) {
     const searchParams = await props.searchParams;
     const currentCategory = searchParams.category || "all";
     const currentSort = searchParams.sort || "latest";
@@ -76,7 +106,7 @@ export default async function ShopPage(props: Readonly<{
     });
 
     return (
-        <div className="rounded-2xl border border-border/50 bg-card/90 px-3 py-5 shadow-xl shadow-primary/10 backdrop-blur-sm sm:px-5 sm:py-7 lg:px-6">
+        <div className="border border-border/50 bg-card/90 px-3 py-5 shadow-xl shadow-primary/10 backdrop-blur-sm sm:px-5 sm:py-7 lg:px-6">
             <PageBreadcrumb items={[{ label: "ร้านค้า" }]} className="mb-4" />
 
             <div className="mb-8">
@@ -105,28 +135,26 @@ export default async function ShopPage(props: Readonly<{
             <div className="-mx-1 mb-4 overflow-x-auto px-1 pb-2">
                 <div className="flex min-w-max gap-2">
                     <Link
-                    href={`/shop?category=all&sort=${currentSort}`}
-                    scroll={false}
-                    className={`inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-150 h-8 px-4 rounded-full flex-shrink-0 ${
-                        currentCategory === "all"
+                        href={`/shop?category=all&sort=${currentSort}`}
+                        scroll={false}
+                        className={`inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-150 h-8 px-4 rounded-full flex-shrink-0 ${currentCategory === "all"
                             ? "bg-primary text-primary-foreground shadow-sm"
                             : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
-                    }`}
-                >
-                    ทั้งหมด ({Number(availableProductCount)})
-                </Link>
+                            }`}
+                    >
+                        ทั้งหมด ({Number(availableProductCount)})
+                    </Link>
                     {categoryCounts.map((category) => (
                         <Link
-                        key={category.category}
-                        href={`/shop?category=${encodeURIComponent(category.category)}&sort=${currentSort}`}
-                        scroll={false}
-                        className={`inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-150 h-8 px-4 rounded-full flex-shrink-0 ${
-                            currentCategory === category.category
+                            key={category.category}
+                            href={`/shop?category=${encodeURIComponent(category.category)}&sort=${currentSort}`}
+                            scroll={false}
+                            className={`inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-150 h-8 px-4 rounded-full flex-shrink-0 ${currentCategory === category.category
                                 ? "bg-primary text-primary-foreground shadow-sm"
                                 : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
-                        }`}
-                    >
-                        {category.category} ({Number(category.count)})
+                                }`}
+                        >
+                            {category.category} ({Number(category.count)})
                         </Link>
                     ))}
                 </div>

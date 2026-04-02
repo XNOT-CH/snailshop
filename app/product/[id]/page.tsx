@@ -5,16 +5,16 @@ import { ProductGallery } from "@/components/ProductGallery";
 import { ProductActions } from "@/components/ProductActions";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { ShareButtons } from "@/components/ShareButtons";
+import { StructuredData } from "@/components/StructuredData";
 import { Info } from "lucide-react";
-
 import { db, products } from "@/lib/db";
 import { eq, and, ne, desc } from "drizzle-orm";
 import { getStockCount } from "@/lib/stock";
 import { decrypt } from "@/lib/encryption";
+import { absoluteUrl, buildPageMetadata, toAbsoluteAssetUrl } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 
-// Cache the DB lookup so generateMetadata and the page share one request
 const getProduct = cache(async (id: string) => {
     return db.query.products.findFirst({ where: eq(products.id, id) });
 });
@@ -26,24 +26,50 @@ interface ProductDetailPageProps {
 export async function generateMetadata({ params }: Readonly<ProductDetailPageProps>): Promise<Metadata> {
     const { id } = await params;
     const product = await getProduct(id);
-    if (!product) return { title: "ไม่พบสินค้า" };
+
+    if (!product) {
+        return buildPageMetadata({
+            title: "ไม่พบสินค้า",
+            path: `/product/${id}`,
+            noIndex: true,
+        });
+    }
+
+    const description = product.description || `ซื้อ ${product.name} ราคา ${Number(product.price).toLocaleString()} บาท`;
+    const image = toAbsoluteAssetUrl(product.imageUrl);
+
     return {
-        title: product.name,
-        description: product.description || `ซื้อ ${product.name} ราคา ${Number(product.price).toLocaleString()} บาท`,
-        openGraph: {
+        ...buildPageMetadata({
             title: product.name,
-            description: product.description || `ซื้อ ${product.name}`,
-            ...(product.imageUrl ? { images: [{ url: product.imageUrl }] } : {}),
+            description,
+            path: `/product/${product.id}`,
+            image,
+        }),
+        title: product.name,
+        description,
+        alternates: {
+            canonical: `/product/${product.id}`,
+        },
+        openGraph: {
+            title: `${product.name} | Manashop`,
+            description,
+            url: absoluteUrl(`/product/${product.id}`),
+            type: "website",
+            ...(image ? { images: [{ url: image }] } : {}),
+        },
+        twitter: {
+            card: image ? "summary_large_image" : "summary",
+            title: `${product.name} | Manashop`,
+            description,
+            ...(image ? { images: [image] } : {}),
         },
     };
 }
-
 
 export default async function ProductDetailPage({
     params,
 }: Readonly<ProductDetailPageProps>) {
     const { id } = await params;
-
     const product = await getProduct(id);
 
     if (!product) {
@@ -60,7 +86,6 @@ export default async function ProductDetailPage({
     const isAvailable = !isSold && stockCount > 0;
     const displayPrice = discountPrice ?? price;
 
-    // Fetch related products (same category, excluding current, max 4)
     const relatedProducts = await db.query.products.findMany({
         where: and(
             eq(products.category, product.category),
@@ -70,14 +95,53 @@ export default async function ProductDetailPage({
         limit: 4,
     });
 
+    const productImage = toAbsoluteAssetUrl(product.imageUrl || "/placeholder.jpg");
+    const productDescription = product.description || `ซื้อ ${product.name} ราคา ${displayPrice.toLocaleString()} บาท`;
+    const structuredData = [
+        {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+                {
+                    "@type": "ListItem",
+                    position: 1,
+                    name: "ร้านค้า",
+                    item: absoluteUrl("/shop"),
+                },
+                {
+                    "@type": "ListItem",
+                    position: 2,
+                    name: product.name,
+                    item: absoluteUrl(`/product/${product.id}`),
+                },
+            ],
+        },
+        {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: product.name,
+            description: productDescription,
+            sku: product.id,
+            category: product.category,
+            ...(productImage ? { image: [productImage] } : {}),
+            offers: {
+                "@type": "Offer",
+                priceCurrency: product.currency || "THB",
+                price: displayPrice.toFixed(2),
+                availability: isAvailable
+                    ? "https://schema.org/InStock"
+                    : "https://schema.org/OutOfStock",
+                url: absoluteUrl(`/product/${product.id}`),
+            },
+        },
+    ];
+
     return (
         <div className="animate-page-enter rounded-2xl bg-muted/60 py-6 dark:bg-background sm:py-10">
-            {/* Outer card */}
-            <div className="relative max-w-screen-2xl mx-auto bg-card rounded-2xl border border-border overflow-hidden" style={{ boxShadow: '0 24px 80px rgba(0,0,0,0.14)' }}>
+            <StructuredData data={structuredData} />
 
-
+            <div className="relative max-w-screen-2xl mx-auto bg-card rounded-2xl border border-border overflow-hidden" style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.14)" }}>
                 <div className="p-6 sm:p-8">
-                    {/* Breadcrumb */}
                     <PageBreadcrumb
                         items={[
                             { label: "ร้านค้า", href: "/shop" },
@@ -86,27 +150,19 @@ export default async function ProductDetailPage({
                         className="mb-6"
                     />
 
-                    {/* Main layout: image left | info right */}
                     <div className="mt-2 grid grid-cols-1 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-
-                        {/* Left — Gallery (muted bg) */}
                         <div className="w-full border-b border-border/60 bg-muted/40 px-4 py-6 sm:px-6 lg:border-b-0 lg:border-r">
                             <ProductGallery mainImage={product.imageUrl || "/placeholder.jpg"} />
-                            {/* Share buttons under gallery */}
                             <div className="mt-4">
                                 <ShareButtons title={product.name} />
                             </div>
                         </div>
 
-                        {/* Right — Info */}
                         <div className="min-w-0 px-4 py-6 sm:px-6">
-
-                            {/* Title */}
                             <h1 className="text-2xl font-bold text-foreground leading-snug">
                                 {product.name}
                             </h1>
 
-                            {/* Price */}
                             <div>
                                 <div className="flex items-baseline gap-2 flex-wrap">
                                     <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
@@ -123,7 +179,6 @@ export default async function ProductDetailPage({
                                 </p>
                             </div>
 
-                            {/* Description */}
                             {product.description && (
                                 <div className="space-y-1.5">
                                     <p className="text-sm text-muted-foreground flex items-center gap-1.5">
@@ -136,14 +191,13 @@ export default async function ProductDetailPage({
                                 </div>
                             )}
 
-                            {/* Actions (quantity, promo, buy, cart) */}
                             <div className="mt-1">
                                 <ProductActions
                                     product={{
                                         id: product.id,
                                         name: product.name,
-                                        price: price,
-                                        discountPrice: discountPrice,
+                                        price,
+                                        discountPrice,
                                         imageUrl: product.imageUrl,
                                         category: product.category,
                                     }}
@@ -151,17 +205,15 @@ export default async function ProductDetailPage({
                                     maxQuantity={stockCount}
                                 />
                             </div>
-
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Related Products Section */}
             {relatedProducts.length > 0 && (
-                <div className="max-w-screen-2xl mx-auto mt-10 mb-2 rounded-2xl border border-border bg-card p-4 sm:mt-16 sm:mb-8 sm:p-6" style={{ boxShadow: '0 12px 48px rgba(0,0,0,0.10)' }}>
+                <div className="max-w-screen-2xl mx-auto mt-10 mb-2 rounded-2xl border border-border bg-card p-4 sm:mt-16 sm:mb-8 sm:p-6" style={{ boxShadow: "0 12px 48px rgba(0,0,0,0.10)" }}>
                     <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
-                        รายการสินค้าอื่นๆ
+                        รายการสินค้าอื่น ๆ
                     </h2>
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
@@ -178,18 +230,15 @@ export default async function ProductDetailPage({
 
                             return (
                                 <Link href={`/product/${related.id}`} key={related.id} className="group cursor-pointer">
-                                    <div className="bg-card rounded-xl border border-border shadow-sm p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_rgba(0,0,0,0.18)] flex flex-col h-full">
-
-                                        {/* Image */}
-                                        <div className="group relative h-28 w-full rounded-lg overflow-hidden bg-muted mb-4">
+                                    <div className="flex h-full flex-col rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow duration-300 hover:shadow-[0_20px_40px_rgba(0,0,0,0.18)]">
+                                        <div className="group relative mb-4 aspect-square w-full overflow-hidden rounded-lg bg-muted">
                                             <Image
                                                 src={related.imageUrl || "/placeholder.jpg"}
                                                 alt={related.name}
                                                 fill
-                                                sizes="(max-width: 768px) 50vw, 25vw"
+                                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                                                 className="object-cover transition-all duration-500 group-hover:grayscale"
                                             />
-                                            {/* Hover Overlay */}
                                             {relAvailable && (
                                                 <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
                                                     <span
@@ -211,7 +260,6 @@ export default async function ProductDetailPage({
                                             )}
                                         </div>
 
-                                        {/* Info */}
                                         <div className="flex flex-col flex-1 text-center">
                                             <h3 className="font-semibold text-foreground line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors text-sm text-center">
                                                 {related.name}
@@ -230,7 +278,6 @@ export default async function ProductDetailPage({
                                                 </div>
                                             </div>
 
-                                            {/* Stock / Button */}
                                             <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
                                                 <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">
                                                     คงเหลือ {relStock} ชิ้น
@@ -243,7 +290,6 @@ export default async function ProductDetailPage({
                                                 </div>
                                             </div>
                                         </div>
-
                                     </div>
                                 </Link>
                             );

@@ -99,11 +99,11 @@ export default async function Navbar() {
         })();
 
     return (
-        <header id="main-navbar" className="sticky top-0 z-50 w-full border-b border-border/50 bg-card/90 backdrop-blur-lg shadow-sm">
-            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 lg:px-6 xl:px-8">
+        <header id="main-navbar" className="sticky top-0 z-50 w-full border-b border-white/6 bg-background/78 backdrop-blur-xl">
+            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 lg:px-6 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:gap-4 xl:px-8">
 
                 {/* Left: Logo */}
-                <Link href="/" className="flex min-w-0 items-center gap-2.5 text-lg font-semibold text-primary">
+                <Link href="/" className="flex min-w-0 items-center gap-2.5 text-lg font-semibold text-primary xl:min-w-0">
                     {siteSettings?.logoUrl ? (
                         <Image
                             src={siteSettings.logoUrl}
@@ -124,7 +124,7 @@ export default async function Navbar() {
                 </Link>
 
                 {/* Center: Navigation - Desktop */}
-                <nav className="hidden min-w-0 flex-1 items-center justify-center gap-1 xl:flex">
+                <nav className="hidden items-center justify-center gap-1 rounded-full border border-white/8 bg-white/[0.03] px-1.5 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] xl:flex">
                     {navLinks.map((link) => {
                         const Icon = link.icon;
                         if (link.href === "/shop") {
@@ -139,7 +139,7 @@ export default async function Navbar() {
                             <Link
                                 key={link.href}
                                 href={link.href}
-                                className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:text-primary rounded-lg hover:bg-accent whitespace-nowrap"
+                                className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-white/[0.06] hover:text-foreground whitespace-nowrap"
                             >
                                 <Icon className="h-4 w-4 flex-shrink-0" />
                                 {link.label}
@@ -149,7 +149,7 @@ export default async function Navbar() {
                 </nav>
 
                 {/* Right: Actions */}
-                <div className="flex shrink-0 items-center gap-1.5">
+                <div className="flex shrink-0 items-center gap-1.5 xl:justify-self-end">
                     {/* Theme Toggle */}
                     <ThemeToggle />
 

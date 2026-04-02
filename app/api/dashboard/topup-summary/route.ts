@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, like, lte, or, sql } from "drizzle-orm";
+﻿import { and, asc, count, desc, eq, gte, like, lte, or, sql } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db, topups, users } from "@/lib/db";
@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
         const session = await auth();
         const userId = session?.user?.id;
         if (!userId) {
-            return NextResponse.json({ success: false, message: "เธเธฃเธธเธ“เธฒเน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเธเนเธญเธ" }, { status: 401 });
+            return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
         }
         if ((session?.user as { role?: string })?.role !== "ADMIN") {
             return NextResponse.json({ success: false, message: "Forbidden" }, { status: 403 });
@@ -202,7 +202,7 @@ export async function GET(request: NextRequest) {
                 const hour = new Date(topup.createdAt).getHours();
                 hourlyMap.set(hour, (hourlyMap.get(hour) || 0) + amount);
 
-                const bank = topup.senderBank || "เนเธกเนเธฃเธฐเธเธธ";
+                const bank = topup.senderBank || "ไม่ระบุ";
                 const existing = methodMap.get(bank) || { count: 0, amount: 0 };
                 existing.count++;
                 existing.amount += amount;
@@ -271,8 +271,9 @@ export async function GET(request: NextRequest) {
     } catch (error) {
         console.error("Topup summary error:", error);
         return NextResponse.json(
-            { success: false, message: "เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”" },
+            { success: false, message: "เกิดข้อผิดพลาด" },
             { status: 500 }
         );
     }
 }
+

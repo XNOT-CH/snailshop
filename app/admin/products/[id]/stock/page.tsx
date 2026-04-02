@@ -34,26 +34,19 @@ export default function StockManagementPage() {
     const [secretData, setSecretData] = useState("");
     const [originalData, setOriginalData] = useState("");
 
-    // Cross-product duplicate guard: { [username]: productName }
     const [takenUsers, setTakenUsers] = useState<Record<string, string>>({});
-
-    // Single stock add form
     const [singleUser, setSingleUser] = useState("");
     const [singlePass, setSinglePass] = useState("");
-
-    // Edit stock item
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [editUser, setEditUser] = useState("");
     const [editPass, setEditPass] = useState("");
 
-    // Live stock preview
     const stockItems = useMemo(() => {
         return splitStock(secretData, "newline");
     }, [secretData]);
 
     const hasChanges = secretData !== originalData;
 
-    // Fetch product data + taken usernames from other products
     useEffect(() => {
         const fetchProduct = async () => {
             try {
@@ -61,11 +54,10 @@ export default function StockManagementPage() {
                     fetch(`/api/products/${productId}`),
                     fetch(`/api/products/${productId}/stock`),
                 ]);
+
                 const data = await productRes.json();
                 if (data.success && data.data) {
                     setProductName(data.data.name || "");
-                    // If product is sold (last item was purchased), show 0 stock
-                    // The secretData still holds the sold item for reference, but we don't show it as available
                     const displayData = data.data.isSold ? "" : (data.data.secretData || "");
                     setSecretData(displayData);
                     setOriginalData(displayData);
@@ -73,6 +65,7 @@ export default function StockManagementPage() {
                     showError("ไม่พบสินค้า");
                     router.push("/admin/products");
                 }
+
                 const takenData = await takenRes.json();
                 if (takenData.success) setTakenUsers(takenData.takenUsers ?? {});
             } catch {
@@ -82,6 +75,7 @@ export default function StockManagementPage() {
                 setIsFetching(false);
             }
         };
+
         fetchProduct();
     }, [productId, router]);
 
@@ -94,20 +88,21 @@ export default function StockManagementPage() {
             showError("กรุณากรอก User และ Pass");
             return;
         }
+
         const newUser = singleUser.trim();
-        // Check within this product
         const isDuplicate = stockItems.some((item) => item.split(" / ")[0]?.trim() === newUser);
         if (isDuplicate) {
             showError(`User "${newUser}" มีในสต็อกอยู่แล้ว`);
             return;
         }
-        // Check across all other products
+
         if (takenUsers[newUser]) {
             showError(`User "${newUser}" มีอยู่ในสต็อกของสินค้า "${takenUsers[newUser]}" แล้ว`);
             return;
         }
+
         const newEntry = `${newUser} / ${singlePass.trim()}`;
-        setSecretData((prev) => (prev ? prev + "\n" + newEntry : newEntry));
+        setSecretData((prev) => (prev ? `${prev}\n${newEntry}` : newEntry));
         setSingleUser("");
         setSinglePass("");
         showSuccess("เพิ่มสต็อกสำเร็จ");
@@ -122,24 +117,27 @@ export default function StockManagementPage() {
 
     const handleSaveEditStock = () => {
         if (editingIndex === null) return;
+
         if (!editUser.trim() || !editPass.trim()) {
             showError("กรุณากรอก User และ Pass");
             return;
         }
+
         const updatedUser = editUser.trim();
-        // Check within this product (skip current index)
-        const isDuplicate = stockItems.some((item, i) =>
-            i !== editingIndex && item.split(" / ")[0]?.trim() === updatedUser
+        const isDuplicate = stockItems.some((item, index) =>
+            index !== editingIndex && item.split(" / ")[0]?.trim() === updatedUser
         );
+
         if (isDuplicate) {
             showError(`User "${updatedUser}" มีในสต็อกอยู่แล้ว`);
             return;
         }
-        // Check across all other products
+
         if (takenUsers[updatedUser]) {
             showError(`User "${updatedUser}" มีอยู่ในสต็อกของสินค้า "${takenUsers[updatedUser]}" แล้ว`);
             return;
         }
+
         const items = [...stockItems];
         items[editingIndex] = `${updatedUser} / ${editPass.trim()}`;
         rebuildSecretData(items);
@@ -150,7 +148,7 @@ export default function StockManagementPage() {
     };
 
     const handleDeleteStock = (index: number) => {
-        const items = stockItems.filter((_, i) => i !== index);
+        const items = stockItems.filter((_, itemIndex) => itemIndex !== index);
         rebuildSecretData(items);
         if (editingIndex === index) setEditingIndex(null);
         showSuccess("ลบสต็อกสำเร็จ");
@@ -158,12 +156,14 @@ export default function StockManagementPage() {
 
     const handleSave = async () => {
         setIsSaving(true);
+
         try {
             const response = await fetch(`/api/products/${productId}/stock`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ secretData }),
             });
+
             const data = await response.json();
             if (data.success) {
                 setOriginalData(secretData);
@@ -188,24 +188,24 @@ export default function StockManagementPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                     <Link
                         href="/admin/products"
-                        className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground mb-2"
+                        className="mb-2 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
                     >
                         <ArrowLeft className="h-4 w-4" />
                         กลับไปรายการสินค้า
                     </Link>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <h1 className="flex items-center gap-2 text-2xl font-bold">
                         <Package className="h-6 w-6 text-amber-600" />
                         จัดการสต็อก
                     </h1>
-                    <p className="text-muted-foreground mt-1">{productName}</p>
+                    <p className="mt-1 text-muted-foreground">{productName}</p>
                 </div>
+
                 <div className="flex flex-wrap items-center gap-3 sm:justify-end">
-                    <Badge variant="secondary" className="text-base px-3 py-1">
+                    <Badge variant="secondary" className="px-3 py-1 text-base">
                         {stockItems.length} รายการ
                     </Badge>
                     <Button
@@ -223,11 +223,10 @@ export default function StockManagementPage() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left - Add Stock */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <Card className="border-amber-200 bg-amber-50/50">
                     <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2 text-amber-700">
+                        <CardTitle className="flex items-center gap-2 text-base text-amber-700">
                             <Plus className="h-5 w-5" />
                             เพิ่มสต็อก
                         </CardTitle>
@@ -244,6 +243,7 @@ export default function StockManagementPage() {
                                     className="font-mono"
                                 />
                             </div>
+
                             <div className="space-y-2">
                                 <Label htmlFor="singlePass">Pass</Label>
                                 <Input
@@ -254,6 +254,7 @@ export default function StockManagementPage() {
                                     className="font-mono"
                                 />
                             </div>
+
                             <Button
                                 type="button"
                                 className="w-full gap-2"
@@ -262,6 +263,7 @@ export default function StockManagementPage() {
                                 <Plus className="h-4 w-4" />
                                 เพิ่มสต็อก
                             </Button>
+
                             <p className="text-xs text-amber-600">
                                 กรุณากรอก User และ Pass ให้ครบทั้งสองช่อง
                             </p>
@@ -269,10 +271,9 @@ export default function StockManagementPage() {
                     </CardContent>
                 </Card>
 
-                {/* Right - Stock Items List */}
                 <Card className="border-blue-200 bg-blue-50/50">
                     <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2 text-blue-700">
+                        <CardTitle className="flex items-center gap-2 text-base text-blue-700">
                             <Eye className="h-5 w-5" />
                             รายการสต็อก
                             <Badge variant="secondary" className="ml-auto">
@@ -280,38 +281,43 @@ export default function StockManagementPage() {
                             </Badge>
                         </CardTitle>
                     </CardHeader>
+
                     <CardContent>
                         {stockItems.length === 0 ? (
-                            <div className="text-center py-8 text-muted-foreground">
-                                <Package className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                            <div className="py-8 text-center text-muted-foreground">
+                                <Package className="mx-auto mb-2 h-10 w-10 opacity-30" />
                                 <p>ยังไม่มีสต็อก</p>
-                                <p className="text-xs mt-1">เพิ่มข้อมูลทางด้านซ้าย หรือกดปุ่ม &quot;เพิ่มทีละไอดี&quot;</p>
+                                <p className="mt-1 text-xs">เพิ่มข้อมูลทางด้านซ้าย</p>
                             </div>
                         ) : (
-                            <div className="max-h-[500px] overflow-y-auto space-y-2">
+                            <div className="max-h-[500px] space-y-2 overflow-y-auto">
                                 {stockItems.map((item, index) => (
                                     <div
-                                        key={item + "-" + index}
+                                        key={`${item}-${index}`}
                                         className="rounded-lg border bg-card p-3 text-sm"
                                     >
                                         {editingIndex === index ? (
                                             <div className="space-y-2">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <Badge variant="outline" className="text-xs">#{index + 1}</Badge>
+                                                <div className="mb-2 flex items-center gap-2">
+                                                    <Badge variant="outline" className="text-xs">
+                                                        #{index + 1}
+                                                    </Badge>
                                                     <span className="text-xs text-muted-foreground">กำลังแก้ไข</span>
                                                 </div>
+
                                                 <Input
                                                     placeholder="User"
                                                     value={editUser}
                                                     onChange={(e) => setEditUser(e.target.value)}
-                                                    className="font-mono text-xs h-8"
+                                                    className="h-8 font-mono text-xs"
                                                 />
                                                 <Input
                                                     placeholder="Pass"
                                                     value={editPass}
                                                     onChange={(e) => setEditPass(e.target.value)}
-                                                    className="font-mono text-xs h-8"
+                                                    className="h-8 font-mono text-xs"
                                                 />
+
                                                 <div className="flex gap-1">
                                                     <Button type="button" size="sm" className="h-7 gap-1 text-xs" onClick={handleSaveEditStock}>
                                                         <Check className="h-3 w-3" /> บันทึก
@@ -323,15 +329,16 @@ export default function StockManagementPage() {
                                             </div>
                                         ) : (
                                             <>
-                                                <div className="flex items-center gap-2 mb-1">
+                                                <div className="mb-1 flex items-center gap-2">
                                                     <Badge variant="outline" className="text-xs">
                                                         #{index + 1}
                                                     </Badge>
                                                     {index === 0 && (
-                                                        <Badge className="text-xs bg-green-100 text-green-700 border-green-200">
+                                                        <Badge className="border-green-200 bg-green-100 text-xs text-green-700">
                                                             จะถูกส่งก่อน
                                                         </Badge>
                                                     )}
+
                                                     <div className="ml-auto flex gap-1">
                                                         <Button
                                                             type="button"
@@ -353,14 +360,15 @@ export default function StockManagementPage() {
                                                         </Button>
                                                     </div>
                                                 </div>
+
                                                 <div className="mt-1 space-y-1 font-mono text-xs">
                                                     <div className="flex gap-2">
-                                                        <span className="text-muted-foreground w-10 shrink-0">User:</span>
+                                                        <span className="w-10 shrink-0 text-muted-foreground">User:</span>
                                                         <span className="text-foreground">{item.split(" / ")[0] || item}</span>
                                                     </div>
                                                     {item.includes(" / ") && (
                                                         <div className="flex gap-2">
-                                                            <span className="text-muted-foreground w-10 shrink-0">Pass:</span>
+                                                            <span className="w-10 shrink-0 text-muted-foreground">Pass:</span>
                                                             <span className="text-foreground">{item.split(" / ")[1]}</span>
                                                         </div>
                                                     )}
@@ -374,25 +382,6 @@ export default function StockManagementPage() {
                     </CardContent>
                 </Card>
             </div>
-
-            {/* Bottom Save Button */}
-            {hasChanges && (
-                <div className="sticky bottom-4 flex justify-end">
-                    <Button
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        size="lg"
-                        className="gap-2 shadow-lg"
-                    >
-                        {isSaving ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                            <Save className="h-4 w-4" />
-                        )}
-                        บันทึกการเปลี่ยนแปลง
-                    </Button>
-                </div>
-            )}
         </div>
     );
 }

@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+import ProfileSettingsPage from "@/app/profile/settings/page";
+
+export const dynamic = "force-dynamic";
 
 export default function DashboardSettingsPage() {
-    redirect("/profile/settings");
+    return <ProfileSettingsPage />;
 }

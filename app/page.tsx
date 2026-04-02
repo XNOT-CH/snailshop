@@ -1,18 +1,31 @@
 // app/page.tsx
+import type { Metadata } from "next";
 import { ProductCard } from "@/components/ProductCard";
 import { HeroBanner } from "@/components/HeroBanner";
 import { FeaturedProducts } from "@/components/FeaturedProducts";
 import { SaleProducts } from "@/components/SaleProducts";
 import { NewsSection } from "@/components/NewsSection";
 import { db } from "@/lib/db";
+import { getSiteSettings } from "@/lib/getSiteSettings";
+import { buildPageMetadata, DEFAULT_SITE_DESCRIPTION } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
-  const siteSettings = await db.query.siteSettings.findFirst({
-    columns: { showAllProducts: true },
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+
+  return buildPageMetadata({
+    title: "ร้านขายไอดีเกม",
+    description: settings?.heroDescription?.trim() || DEFAULT_SITE_DESCRIPTION,
+    path: "/",
+    image: settings?.bannerImage1 || settings?.logoUrl,
   });
+}
+
+export default async function Home() {
+  const siteSettings = await getSiteSettings();
   const showAllProducts = siteSettings?.showAllProducts ?? true;
+  const pageHeading = siteSettings?.heroTitle?.trim() || "Manashop ร้านขายไอดีเกม";
 
   const productList = showAllProducts
     ? await db.query.products.findMany({ orderBy: (t, { desc }) => desc(t.createdAt) })
@@ -20,7 +33,9 @@ export default async function Home() {
 
   return (
     <div className="animate-page-enter">
-      <div className="rounded-2xl border border-border/50 bg-card/90 px-3 py-5 shadow-xl shadow-primary/10 backdrop-blur-sm space-y-6 sm:px-5 sm:py-6 lg:px-6">
+      <div className="border border-border/50 bg-card/90 px-3 py-5 shadow-xl shadow-primary/10 backdrop-blur-sm space-y-6 sm:px-5 sm:py-6 lg:px-6">
+        <h1 className="sr-only">{pageHeading}</h1>
+
         {/* Hero Banner */}
         <HeroBanner />
 

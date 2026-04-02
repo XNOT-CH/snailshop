@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { db, users, gachaRewards } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
 import { Lock } from "lucide-react";
@@ -5,13 +6,15 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { GachaRhombus } from "@/components/GachaRhombus";
 import { type GachaProductLite, type GachaTier } from "@/lib/gachaGrid";
+import { buildPageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
-export const metadata = {
-    title: "สุ่มตัว X | Manashop",
-    description: "ลุ้นรับไอเท็มสุดพิเศษจากระบบสุ่มตัว X",
-};
+export const metadata: Metadata = buildPageMetadata({
+    title: "สุ่มตัว X",
+    description: "ลุ้นรับสินค้าและไอเทมพิเศษจากระบบสุ่มตัว X",
+    path: "/gacha",
+});
 
 export default async function GachaPage() {
     let settings = { isEnabled: true, costType: "FREE", costAmount: 0, dailySpinLimit: 0 };
@@ -38,7 +41,7 @@ export default async function GachaPage() {
         if (user) {
             userBalance = Number(settings.costType === "CREDIT" ? (user.creditBalance ?? 0) : (user.pointBalance ?? 0));
         }
-    } catch { /* table may not exist yet */ }
+    } catch { }
 
     let products: GachaProductLite[] = [];
     try {
@@ -50,21 +53,31 @@ export default async function GachaPage() {
             with: { product: { columns: { id: true, name: true, price: true, imageUrl: true, isSold: true } } },
         });
         products = rewards
-            .filter((r) => (r.rewardType === "PRODUCT" ? r.product && !r.product.isSold : (r.rewardName && r.rewardAmount)))
-            .map((r) => {
-                if (r.rewardType === "PRODUCT" && r.product) {
-                    return { id: r.product.id, name: r.product.name, price: Number(r.product.price), imageUrl: r.product.imageUrl, tier: (r.tier as GachaTier) ?? "common" };
+            .filter((reward) => (reward.rewardType === "PRODUCT" ? reward.product && !reward.product.isSold : (reward.rewardName && reward.rewardAmount)))
+            .map((reward) => {
+                if (reward.rewardType === "PRODUCT" && reward.product) {
+                    return {
+                        id: reward.product.id,
+                        name: reward.product.name,
+                        price: Number(reward.product.price),
+                        imageUrl: reward.product.imageUrl,
+                        tier: (reward.tier as GachaTier) ?? "common",
+                    };
                 }
-                return { id: `reward:${r.id}`, name: r.rewardName ?? (r.rewardType === "CREDIT" ? "เครดิต" : "พอยต์"), price: Number(r.rewardAmount ?? 0), imageUrl: r.rewardImageUrl ?? null, tier: (r.tier as GachaTier) ?? "common" };
-            });
-    } catch { /* rewards not available */ }
 
+                return {
+                    id: `reward:${reward.id}`,
+                    name: reward.rewardName ?? (reward.rewardType === "CREDIT" ? "เครดิต" : "พอยต์"),
+                    price: Number(reward.rewardAmount ?? 0),
+                    imageUrl: reward.rewardImageUrl ?? null,
+                    tier: (reward.tier as GachaTier) ?? "common",
+                };
+            });
+    } catch { }
 
     return (
-        <div className="min-h-[calc(100vh-4rem)] bg-gray-50 dark:bg-zinc-950 overflow-x-hidden mb-8">
-
-            {/* Hero Banner — matches hub page */}
-            <div className="bg-gradient-to-br from-[#1a56db] via-[#1e40af] to-[#1e3a5f] relative overflow-hidden py-10 px-6 text-center">
+        <div className="min-h-[calc(100vh-4rem)] overflow-x-hidden bg-background mb-8">
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#1a56db] via-[#1f4fc2] to-[#10284d] py-10 px-6 text-center">
                 <div className="absolute inset-0 opacity-10" style={{
                     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='52' viewBox='0 0 60 52'%3E%3Cpolygon points='30,0 60,17 60,35 30,52 0,35 0,17' fill='none' stroke='white' stroke-width='1'/%3E%3C/svg%3E")`,
                     backgroundSize: "60px 52px"
@@ -86,9 +99,7 @@ export default async function GachaPage() {
                 )}
             </div>
 
-            <div className="flex flex-col items-center gap-6 px-4 sm:px-6 md:px-10 pt-4 pb-8">
-
-                {/* Body */}
+            <div className="flex flex-col items-center gap-6 px-4 pt-6 pb-8 sm:px-6 md:px-10">
                 {settings.isEnabled ? (
                     <div className="w-full flex justify-center">
                         <GachaRhombus products={products} settings={settings} userBalance={userBalance} />

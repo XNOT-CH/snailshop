@@ -35,7 +35,7 @@ export function ProductGallery({ mainImage }: Readonly<ProductGalleryProps>) {
                             alt="Product"
                             fill
                             sizes="(max-width: 768px) 100vw, 50vw"
-                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            className="object-cover"
                             priority
                         />
                         {/* Zoom Icon Overlay */}

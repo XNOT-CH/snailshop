@@ -165,7 +165,7 @@ export default function AnnouncementPopup() {
                         {/* Close Button */}
                         <motion.button
                             onClick={handleClose}
-                            className="absolute -top-3 -right-3 z-10 w-10 h-10 bg-white dark:bg-gray-800 rounded-full shadow-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                            className="absolute -top-3 -right-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-card/95 text-foreground shadow-xl shadow-black/25 backdrop-blur-md transition-colors hover:bg-accent"
                             aria-label="ปิด"
                             initial={{ scale: 0, rotate: -180 }}
                             animate={{ scale: 1, rotate: 0 }}
@@ -178,14 +178,14 @@ export default function AnnouncementPopup() {
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                         >
-                            <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                            <X className="h-5 w-5" />
                         </motion.button>
 
                         {/* Image Container */}
                         {currentPopup.linkUrl ? (
                             <button
                                 type="button"
-                                className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-gray-800 cursor-pointer"
+                                className="relative w-full aspect-square cursor-pointer overflow-hidden rounded-[1.75rem] border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)] backdrop-blur-md"
                                 onClick={handleImageClick}
                             >
                                 <Image
@@ -202,7 +202,7 @@ export default function AnnouncementPopup() {
                                     <>
                                         <motion.button
                                             onClick={goToPrevious}
-                                            className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-colors"
+                                            className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white transition-colors hover:bg-black/65"
                                             aria-label="รูปก่อนหน้า"
                                             whileHover={{ scale: 1.1 }}
                                             whileTap={{ scale: 0.9 }}
@@ -211,7 +211,7 @@ export default function AnnouncementPopup() {
                                         </motion.button>
                                         <motion.button
                                             onClick={goToNext}
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-black/50 hover:bg-black/70 rounded-full flex items-center justify-center text-white transition-colors"
+                                            className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white transition-colors hover:bg-black/65"
                                             aria-label="รูปถัดไป"
                                             whileHover={{ scale: 1.1 }}
                                             whileTap={{ scale: 0.9 }}
@@ -229,8 +229,8 @@ export default function AnnouncementPopup() {
                                                         setCurrentIndex(index);
                                                     }}
                                                     className={`w-2.5 h-2.5 rounded-full transition-all ${index === currentIndex
-                                                        ? "bg-white"
-                                                        : "bg-white/50 hover:bg-white/75"
+                                                        ? "bg-white shadow-[0_0_0_4px_rgba(255,255,255,0.15)]"
+                                                        : "bg-white/45 hover:bg-white/70"
                                                         }`}
                                                     aria-label={`ไปที่รูปที่ ${index + 1}`}
                                                     animate={{ scale: index === currentIndex ? 1.2 : 1 }}
@@ -242,7 +242,7 @@ export default function AnnouncementPopup() {
                                 )}
                             </button>
                         ) : (
-                            <div className="relative w-full aspect-square rounded-2xl overflow-hidden shadow-2xl bg-white dark:bg-gray-800">
+                            <div className="relative w-full aspect-square overflow-hidden rounded-[1.75rem] border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)] backdrop-blur-md">
                                 <Image
                                     src={currentPopup.imageUrl}
                                     alt={currentPopup.title || "ประชาสัมพันธ์"}

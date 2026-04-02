@@ -244,7 +244,7 @@ export default function ProfileSettingsPage() {
                         placeholder="ชื่อ - สกุล"
                         value={addr.fullName}
                         onChange={(e) => setAddr(prev => ({ ...prev, fullName: e.target.value }))}
-                        className="bg-gray-50 border-gray-200"
+                        className="bg-muted/60 border-border"
                     />
                 </div>
                 <div className="space-y-2">
@@ -254,7 +254,7 @@ export default function ProfileSettingsPage() {
                         placeholder="0xx-xxx-xxxx"
                         value={addr.phone}
                         onChange={(e) => setAddr(prev => ({ ...prev, phone: e.target.value }))}
-                        className="bg-gray-50 border-gray-200"
+                        className="bg-muted/60 border-border"
                     />
                 </div>
             </div>
@@ -265,7 +265,7 @@ export default function ProfileSettingsPage() {
                     placeholder="บ้านเลขที่ ซอย ถนน"
                     value={addr.address}
                     onChange={(e) => setAddr(prev => ({ ...prev, address: e.target.value }))}
-                    className="bg-gray-50 border-gray-200"
+                    className="bg-muted/60 border-border"
                 />
             </div>
             {/* Dependent Address Dropdowns */}
@@ -301,9 +301,9 @@ export default function ProfileSettingsPage() {
     if (!profile) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
-                <Alert className="max-w-md border-red-200 bg-red-50">
+                <Alert className="max-w-md border-red-500/25 bg-red-500/10 text-foreground">
                     <AlertTriangle className="h-4 w-4 text-red-600" />
-                    <AlertDescription className="text-red-700">
+                    <AlertDescription className="text-red-600 dark:text-red-300">
                         กรุณาเข้าสู่ระบบเพื่อแก้ไขโปรไฟล์
                     </AlertDescription>
                 </Alert>
@@ -312,7 +312,7 @@ export default function ProfileSettingsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-muted py-8 px-4">
+        <div className="min-h-screen bg-background py-8 px-4">
             <div className="max-w-6xl mx-auto space-y-5">
                 {/* Breadcrumb */}
                 <PageBreadcrumb
@@ -324,8 +324,8 @@ export default function ProfileSettingsPage() {
 
                 {/* Page Header */}
                 <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-blue-100">
-                        <User className="h-8 w-8 text-blue-600" />
+                    <div className="rounded-2xl border border-primary/15 bg-primary/10 p-3 shadow-sm">
+                        <User className="h-8 w-8 text-primary" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">ข้อมูลผู้ใช้</h1>
