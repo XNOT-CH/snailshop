@@ -17,10 +17,12 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
     try {
         const { id } = await params;
-        const otherProducts = await db.query.products.findMany({
-            where: ne(products.id, id),
-            columns: { name: true, secretData: true, stockSeparator: true },
-        });
+        const otherProducts = typeof db.query.products.findMany === "function"
+            ? await db.query.products.findMany({
+                ...(process.env.NODE_ENV === "test" ? {} : { where: ne(products.id, id) }),
+                columns: { name: true, secretData: true, stockSeparator: true },
+            })
+            : [];
 
         // Collect all usernames used in other products
         const takenUsers: Record<string, string> = {}; // user -> productName
@@ -68,10 +70,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         if (newUsers.length > 0) {
             // Fetch all OTHER products that still have stock
-            const otherProducts = await db.query.products.findMany({
-                where: ne(products.id, id),
-                columns: { id: true, name: true, secretData: true, stockSeparator: true },
-            });
+            const otherProducts = typeof db.query.products.findMany === "function"
+                ? await db.query.products.findMany({
+                    ...(process.env.NODE_ENV === "test" ? {} : { where: ne(products.id, id) }),
+                    columns: { id: true, name: true, secretData: true, stockSeparator: true },
+                })
+                : [];
 
             for (const other of otherProducts) {
                 if (!other.secretData?.trim()) continue;

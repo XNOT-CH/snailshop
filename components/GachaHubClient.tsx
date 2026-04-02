@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutGrid, ChevronLeft } from "lucide-react";
+import { LayoutGrid } from "lucide-react";
 
 export interface GachaCategoryLite {
     id: string;
