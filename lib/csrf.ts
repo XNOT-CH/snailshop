@@ -1,12 +1,16 @@
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
 
-const _csrfSecretRaw = process.env.CSRF_SECRET;
-if (!_csrfSecretRaw && process.env.NODE_ENV === "production") {
-    throw new Error("[csrf] CSRF_SECRET environment variable is required in production.");
-}
-const CSRF_SECRET = _csrfSecretRaw ?? "csrf-secret-key-32-characters!!"; // dev only fallback
 const CSRF_COOKIE_NAME = "csrf_cookie";
+
+function getCsrfSecret(): string {
+    const csrfSecret = process.env.CSRF_SECRET;
+    if (!csrfSecret && process.env.NODE_ENV === "production") {
+        throw new Error("[csrf] CSRF_SECRET environment variable is required in production.");
+    }
+
+    return csrfSecret ?? "csrf-secret-key-32-characters!!"; // dev only fallback
+}
 
 /**
  * Generate a CSRF token
@@ -20,9 +24,10 @@ export function generateCsrfToken(): string {
  */
 export async function createCsrfTokenPair(): Promise<{ token: string; cookieValue: string }> {
     const token = generateCsrfToken();
+    const csrfSecret = getCsrfSecret();
 
     // Create a signed version for the cookie
-    const hmac = crypto.createHmac("sha256", CSRF_SECRET);
+    const hmac = crypto.createHmac("sha256", csrfSecret);
     hmac.update(token);
     const cookieValue = hmac.digest("hex");
 
@@ -44,6 +49,7 @@ export async function createCsrfTokenPair(): Promise<{ token: string; cookieValu
  */
 export async function validateCsrfToken(token: string): Promise<boolean> {
     if (!token) return false;
+    const csrfSecret = getCsrfSecret();
 
     const cookieStore = await cookies();
     const cookieValue = cookieStore.get(CSRF_COOKIE_NAME)?.value;
@@ -51,7 +57,7 @@ export async function validateCsrfToken(token: string): Promise<boolean> {
     if (!cookieValue) return false;
 
     // Recreate the HMAC from the token
-    const hmac = crypto.createHmac("sha256", CSRF_SECRET);
+    const hmac = crypto.createHmac("sha256", csrfSecret);
     hmac.update(token);
     const expectedCookieValue = hmac.digest("hex");
 

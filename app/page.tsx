@@ -27,9 +27,17 @@ export default async function Home() {
   const showAllProducts = siteSettings?.showAllProducts ?? true;
   const pageHeading = siteSettings?.heroTitle?.trim() || "Manashop ร้านขายไอดีเกม";
 
-  const productList = showAllProducts
-    ? await db.query.products.findMany({ orderBy: (t, { desc }) => desc(t.createdAt) })
-    : [];
+  let productList: Awaited<ReturnType<typeof db.query.products.findMany>> = [];
+
+  if (showAllProducts) {
+    try {
+      productList = await db.query.products.findMany({
+        orderBy: (t, { desc }) => desc(t.createdAt),
+      });
+    } catch (error) {
+      console.error("Error fetching homepage products:", error);
+    }
+  }
 
   return (
     <div className="animate-page-enter">
