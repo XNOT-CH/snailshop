@@ -1,20 +1,33 @@
-import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
+import { eq } from "drizzle-orm";
 import { db, siteSettings } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
+import { auditFromRequest, AUDIT_ACTIONS, getChanges } from "@/lib/auditLog";
+import { mysqlNow } from "@/lib/utils/date";
 import { validateBody } from "@/lib/validations/validate";
 import { siteSettingsSchema } from "@/lib/validations/settings";
+import { SITE_SETTINGS_SINGLETON_ID } from "@/lib/db/singletons";
+
+async function getSiteSettingsRecord() {
+    return (
+        await db.query.siteSettings.findFirst({
+            where: eq(siteSettings.id, SITE_SETTINGS_SINGLETON_ID),
+        })
+    ) ?? db.query.siteSettings.findFirst();
+}
 
 export async function GET() {
     const authCheck = await isAdmin();
-    if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    if (!authCheck.success) {
+        return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    }
+
     try {
-        let settings = await db.query.siteSettings.findFirst();
+        let settings = await getSiteSettingsRecord();
 
         if (!settings) {
-            const newId = crypto.randomUUID();
             await db.insert(siteSettings).values({
-                id: newId,
+                id: SITE_SETTINGS_SINGLETON_ID,
                 heroTitle: "GameStore",
                 heroDescription: "Game ID Marketplace",
                 bannerImage1: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=2000&h=500&fit=crop",
@@ -29,14 +42,18 @@ export async function GET() {
                 createdAt: mysqlNow(),
                 updatedAt: mysqlNow(),
             });
-            settings = await db.query.siteSettings.findFirst();
+            settings = await getSiteSettingsRecord();
         }
 
         return NextResponse.json({ success: true, data: settings });
     } catch (error) {
         console.error("Error fetching settings:", error);
         return NextResponse.json(
-            { success: false, message: "เกิดข้อผิดพลาด: กรุณารัน 'npx drizzle-kit push' เพื่ออัปเดต database", error: String(error) },
+            {
+                success: false,
+                message: "เกิดข้อผิดพลาด: กรุณารัน 'npx drizzle-kit push' เพื่ออัปเดต database",
+                error: String(error),
+            },
             { status: 500 }
         );
     }
@@ -44,27 +61,54 @@ export async function GET() {
 
 export async function PUT(request: Request) {
     const authCheck = await isAdmin();
-    if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    if (!authCheck.success) {
+        return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    }
 
     try {
         const result = await validateBody(request, siteSettingsSchema.partial());
         if ("error" in result) return result.error;
-        const body = result.data;
 
-        const existing = await db.query.siteSettings.findFirst();
+        const body = result.data;
+        const existing = await getSiteSettingsRecord();
+        const changes = getChanges(
+            existing as Record<string, unknown> | null,
+            body as Partial<Record<string, unknown>>,
+            Object.keys(body)
+        );
+
         if (existing) {
-            await db.update(siteSettings).set(body).where(
-                (await import("drizzle-orm")).eq(siteSettings.id, existing.id)
-            );
+            await db.update(siteSettings).set(body).where(eq(siteSettings.id, existing.id));
         } else {
-            const newRecord = { id: crypto.randomUUID(), ...body, createdAt: mysqlNow(), updatedAt: mysqlNow() };
+            const newRecord = {
+                id: SITE_SETTINGS_SINGLETON_ID,
+                ...body,
+                createdAt: mysqlNow(),
+                updatedAt: mysqlNow(),
+            };
             await db.insert(siteSettings).values(newRecord as typeof siteSettings.$inferInsert);
         }
 
-        const updated = await db.query.siteSettings.findFirst();
-        return NextResponse.json({ success: true, message: "บันทึกการตั้งค่าสำเร็จ", data: updated });
+        const updated = await getSiteSettingsRecord();
+        await auditFromRequest(request, {
+            userId: authCheck.userId,
+            action: AUDIT_ACTIONS.SETTINGS_UPDATE,
+            resource: "Settings",
+            resourceId: updated?.id ?? existing?.id ?? "site-settings",
+            resourceName: "Site Settings",
+            changes,
+        });
+
+        return NextResponse.json({
+            success: true,
+            message: "บันทึกการตั้งค่าสำเร็จ",
+            data: updated,
+        });
     } catch (error) {
         console.error("Error updating settings:", error);
-        return NextResponse.json({ success: false, message: `เกิดข้อผิดพลาด: ${String(error)}` }, { status: 500 });
+        return NextResponse.json(
+            { success: false, message: `เกิดข้อผิดพลาด: ${String(error)}` },
+            { status: 500 }
+        );
     }
 }

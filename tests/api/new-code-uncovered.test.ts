@@ -44,6 +44,11 @@ vi.mock("@/lib/validations/gacha", () => ({
 vi.mock("@/lib/validations/settings", () => ({
   siteSettingsSchema: { partial: vi.fn().mockReturnValue({}) },
 }));
+vi.mock("@/lib/auditLog", () => ({
+  auditFromRequest: vi.fn(),
+  getChanges: vi.fn(() => []),
+  AUDIT_ACTIONS: { SETTINGS_UPDATE: "SETTINGS_UPDATE" },
+}));
 
 import { isAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -192,6 +197,7 @@ describe("API: /api/admin/settings (GET + PUT)", () => {
     (isAdmin as any).mockResolvedValue(ADMIN_OK);
     (db.query.siteSettings.findFirst as any)
       .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: "new_s", heroTitle: "GameStore" });
     const { GET } = await import("@/app/api/admin/settings/route");
     const res = await GET();
@@ -224,6 +230,7 @@ describe("API: /api/admin/settings (GET + PUT)", () => {
     (isAdmin as any).mockResolvedValue(ADMIN_OK);
     (validateBody as any).mockResolvedValue({ data: { heroTitle: "Brand New" } });
     (db.query.siteSettings.findFirst as any)
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: "new_s", heroTitle: "Brand New" });
     const { PUT } = await import("@/app/api/admin/settings/route");

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useRouter } from "next/navigation";
 import {
     Sheet,
@@ -18,7 +18,7 @@ import { CartItem } from "./CartItem";
 import { CartIcon } from "./CartIcon";
 import { showPurchaseSuccessModal, showPurchaseConfirm, showError } from "@/lib/swal";
 
-export function CartSheet() {
+function CartSheetContent() {
     const router = useRouter();
     const { items, removeFromCart, updateQuantity, clearCart, total, itemCount, isLoading } = useCart();
     const [isOpen, setIsOpen] = useState(false);
@@ -77,16 +77,16 @@ export function CartSheet() {
     };
 
     return (
-        <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-                <div>
-                    <CartIcon onClick={() => setIsOpen(true)} />
-                </div>
-            </SheetTrigger>
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+                <SheetTrigger asChild>
+                    <div>
+                        <CartIcon onClick={() => setIsOpen(true)} />
+                    </div>
+                </SheetTrigger>
 
-            <SheetContent
-                className="w-full sm:max-w-sm flex flex-col p-0 gap-0 bg-[#0f1923] border-l border-white/10 text-white"
-            >
+                <SheetContent
+                    className="w-full sm:max-w-sm flex flex-col p-0 gap-0 bg-[#0f1923] border-l border-white/10 text-white"
+                >
                 {/* Hidden title for Radix UI accessibility */}
                 <SheetHeader className="sr-only">
                     <SheetTitle>ตะกร้าสินค้า</SheetTitle>
@@ -182,4 +182,28 @@ export function CartSheet() {
             </SheetContent>
         </Sheet>
     );
+}
+
+export function CartSheet() {
+    const mounted = useSyncExternalStore(
+        () => () => undefined,
+        () => true,
+        () => false
+    );
+
+    if (!mounted) {
+        return (
+            <Button
+                variant="ghost"
+                size="icon"
+                className="relative h-10 w-10"
+                aria-label="ตะกร้าสินค้า"
+                disabled
+            >
+                <ShoppingCart className="h-5 w-5" />
+            </Button>
+        );
+    }
+
+    return <CartSheetContent />;
 }

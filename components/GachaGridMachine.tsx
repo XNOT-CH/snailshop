@@ -56,9 +56,11 @@ function RewardCard({
     isWinner: boolean;
     isSpinning: boolean;
 }>) {
+    const [imgErr, setImgErr] = useState(false);
     const ring = TIER_RING[reward.tier] ?? TIER_RING.common;
     const bg = TIER_BG[reward.tier] ?? TIER_BG.common;
     const dot = TIER_DOT[reward.tier] ?? TIER_DOT.common;
+    const hasValidImg = !imgErr && reward.imageUrl && (reward.imageUrl.startsWith("/") || reward.imageUrl.startsWith("http"));
 
     return (
         <div className={[
@@ -74,14 +76,15 @@ function RewardCard({
                     isWinner ? "scale-110 brightness-125" : "",
                     isSpinning && !isHighlighted ? "opacity-20 scale-90" : "",
                 ].join(" ")}>
-                    {reward.imageUrl && (reward.imageUrl.startsWith("/") || reward.imageUrl.startsWith("http")) ? (
+                    {hasValidImg ? (
                         <div className="absolute inset-0 bg-zinc-950">
                             <Image
-                                src={reward.imageUrl}
+                                src={reward.imageUrl!}
                                 alt={reward.rewardName}
                                 fill
                                 sizes="120px"
                                 className="object-contain"
+                                onError={() => setImgErr(true)}
                             />
                         </div>
                     ) : (

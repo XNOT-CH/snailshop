@@ -73,7 +73,13 @@ vi.mock("drizzle-orm", () => ({
 vi.mock("@/lib/auditLog", () => ({
   getAuditLogs: vi.fn().mockResolvedValue([]),
   auditFromRequest: vi.fn(),
-  AUDIT_ACTIONS: { ROLE_UPDATE: "ROLE_UPDATE", ROLE_DELETE: "ROLE_DELETE", PRODUCT_CREATE: "PRODUCT_CREATE" },
+  AUDIT_ACTIONS: {
+    ROLE_UPDATE: "ROLE_UPDATE",
+    ROLE_DELETE: "ROLE_DELETE",
+    PRODUCT_CREATE: "PRODUCT_CREATE",
+    TOPUP_APPROVE: "TOPUP_APPROVE",
+    TOPUP_REJECT: "TOPUP_REJECT",
+  },
 }));
 vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-03-14 00:00:00") }));
 vi.mock("@/lib/validations/validate", () => ({ validateBody: vi.fn() }));
@@ -324,6 +330,7 @@ describe("API: /api/admin/currency-settings (GET + PUT)", () => {
     (isAdmin as any).mockResolvedValue(ADMIN_OK);
     (db.query.currencySettings.findFirst as any)
       .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: "default", name: "พอยท์", symbol: "💎", code: "POINT", isActive: true });
     const { GET } = await import("@/app/api/admin/currency-settings/route");
     const res = await GET();
@@ -353,6 +360,7 @@ describe("API: /api/admin/currency-settings (GET + PUT)", () => {
     (isAdmin as any).mockResolvedValue(ADMIN_OK);
     (validateBody as any).mockResolvedValue({ data: { name: "Diamonds", symbol: "💠", isActive: false, description: "Premium currency" } });
     (db.query.currencySettings.findFirst as any)
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: "default", name: "Diamonds" });
     const { PUT } = await import("@/app/api/admin/currency-settings/route");
@@ -459,6 +467,7 @@ describe("API: /api/admin/gacha-settings (GET + PUT)", () => {
   it("GET creates default settings when none exist", async () => {
     (isAdmin as any).mockResolvedValue(ADMIN_OK);
     (db.query.gachaSettings.findFirst as any)
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: "default", isEnabled: true });
     const { GET } = await import("@/app/api/admin/gacha-settings/route");

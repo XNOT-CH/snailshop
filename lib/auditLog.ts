@@ -2,7 +2,6 @@ import { mysqlNow } from "@/lib/utils/date";
 import { db, auditLogs } from "@/lib/db";
 import { eq, lt, and, gte, lte } from "drizzle-orm";
 import { getClientIp } from "@/lib/rateLimit";
-import { cookies } from "next/headers";
 
 // Audit action types
 export const AUDIT_ACTIONS = {
@@ -19,6 +18,7 @@ export const AUDIT_ACTIONS = {
     POPUP_CREATE: "POPUP_CREATE", POPUP_UPDATE: "POPUP_UPDATE", POPUP_DELETE: "POPUP_DELETE",
     PURCHASE: "PURCHASE",
     TOPUP_REQUEST: "TOPUP_REQUEST", TOPUP_APPROVE: "TOPUP_APPROVE", TOPUP_REJECT: "TOPUP_REJECT",
+    CHAT_CUSTOMER_MESSAGE: "CHAT_CUSTOMER_MESSAGE", CHAT_ADMIN_MESSAGE: "CHAT_ADMIN_MESSAGE", CHAT_STATUS_UPDATE: "CHAT_STATUS_UPDATE", CHAT_DELETE: "CHAT_DELETE",
     SETTINGS_UPDATE: "SETTINGS_UPDATE",
     API_KEY_CREATE: "API_KEY_CREATE", API_KEY_REVOKE: "API_KEY_REVOKE",
     RATE_LIMIT_EXCEEDED: "RATE_LIMIT_EXCEEDED", UNAUTHORIZED_ACCESS: "UNAUTHORIZED_ACCESS",
@@ -47,10 +47,8 @@ interface AuditLogParams {
 
 async function getCurrentUserId(): Promise<string | null> {
     try {
-        const cookieStore = await cookies();
-        const sessionCookie = cookieStore.get("session");
-        if (!sessionCookie?.value) return null;
-        const session = JSON.parse(sessionCookie.value);
+        const { auth } = await import("@/auth");
+        const session = await auth();
         return session?.user?.id || null;
     } catch {
         return null;

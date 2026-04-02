@@ -9,7 +9,26 @@ const globalForDb = globalThis as unknown as {
 
 const isProduction = process.env.NODE_ENV === "production";
 
-const dbUrl = process.env.DATABASE_URL ?? "";
+function normalizeDbUrl(rawUrl: string) {
+    if (!rawUrl) {
+        return rawUrl;
+    }
+
+    try {
+        const parsedUrl = new URL(rawUrl);
+
+        // On Windows/local dev, forcing IPv4 avoids intermittent localhost resolution timeouts.
+        if (parsedUrl.hostname === "localhost") {
+            parsedUrl.hostname = "127.0.0.1";
+        }
+
+        return parsedUrl.toString();
+    } catch {
+        return rawUrl.replace("@localhost:", "@127.0.0.1:");
+    }
+}
+
+const dbUrl = normalizeDbUrl(process.env.DATABASE_URL ?? "");
 const isTiDB = dbUrl.includes("tidbcloud.com");
 
 const pool = globalForDb.pool ?? mysql.createPool({
@@ -18,6 +37,7 @@ const pool = globalForDb.pool ?? mysql.createPool({
     connectionLimit: isProduction ? 5 : 10,
     charset: "utf8mb4",
     timezone: "+00:00",
+    connectTimeout: 10000,
     ssl: isTiDB ? { rejectUnauthorized: true } : undefined,
 });
 

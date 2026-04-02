@@ -1,6 +1,6 @@
-﻿"use client";
+"use client";
 
-import { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dices, Loader2, Gamepad2 } from "lucide-react";
 import Image from "next/image";
@@ -90,6 +90,16 @@ function WinBurst({ tier }: { tier: string }) {
                     }}
                 />
             ))}
+        </div>
+    );
+}
+
+function TileImage({ imageUrl, name, fallback }: { imageUrl: string; name: string; fallback: React.ReactNode }) {
+    const [err, setErr] = useState(false);
+    if (err) return <>{fallback}</>;
+    return (
+        <div className="absolute inset-0 bg-zinc-950 flex items-center justify-center">
+            <Image src={imageUrl} alt={name} fill sizes="64px" className="object-contain" onError={() => setErr(true)} />
         </div>
     );
 }
@@ -333,9 +343,11 @@ export function GachaRhombus({ products, settings, userBalance = 0, machineId }:
                                         )}
                                         {isItem && (
                                             tile.product?.imageUrl ? (
-                                                <div className="absolute inset-0 bg-zinc-950 flex items-center justify-center">
-                                                    <Image src={tile.product.imageUrl} alt={tile.product.name} fill sizes="64px" className="object-contain" />
-                                                </div>
+                                                <TileImage imageUrl={tile.product.imageUrl} name={tile.product.name} fallback={
+                                                    <div className={`w-full h-full ${tierBg[tile.type]} flex items-center justify-center`}>
+                                                        <span className={`w-2 h-2 rounded-full ${tierDot[tile.type] ?? "bg-zinc-500"}`} />
+                                                    </div>
+                                                } />
                                             ) : (
                                                 <div className={`w-full h-full ${tierBg[tile.type]} flex items-center justify-center`}>
                                                     {tile.product

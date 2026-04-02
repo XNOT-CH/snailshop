@@ -29,6 +29,7 @@ import {
     ChevronDown,
     Layers,
     FileSpreadsheet,
+    MessagesSquare,
 } from "lucide-react";
 
 // ── Navigation structure ───────────────────────────────────────────────────
@@ -42,6 +43,7 @@ const navigation: NavEntry[] = [
     { href: "/admin/news", label: "จัดการข่าวสาร", icon: Newspaper },
     { href: "/admin/popups", label: "จัดการป๊อปอัพ", icon: Megaphone },
     { href: "/admin/users", label: "จัดการผู้ใช้", icon: Users },
+    { href: "/admin/chat", label: "แชทลูกค้า", icon: MessagesSquare },
     { href: "/admin/roles", label: "จัดการสิทธิ์", icon: Shield },
     { href: "/admin/slips", label: "ตรวจสอบสลิป", icon: FileCheck },
     {

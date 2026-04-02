@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { db } from "@/lib/db";
 import { RegisterForm } from "./RegisterForm";
 import { buildPageMetadata } from "@/lib/seo";
+import { getSiteSettings } from "@/lib/getSiteSettings";
 
 export const metadata: Metadata = buildPageMetadata({
     title: "สมัครสมาชิก",
@@ -10,9 +10,7 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 export default async function RegisterPage() {
-    const settings = await db.query.siteSettings.findFirst({
-        columns: { logoUrl: true },
-    });
+    const settings = await getSiteSettings();
 
     return <RegisterForm logoUrl={settings?.logoUrl ?? null} />;
 }

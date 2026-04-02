@@ -21,6 +21,26 @@ export interface GachaMachineLite {
     category: GachaCategoryLite | null;
 }
 
+function HubImage({ src, alt }: { src: string; alt: string }) {
+    const [err, setErr] = useState(false);
+    if (err) return (
+        <div className="w-full h-full flex items-center justify-center">
+            <LayoutGrid className="w-10 h-10 text-muted-foreground/20" />
+        </div>
+    );
+    return (
+        <Image
+            src={src}
+            alt={alt}
+            width={2000}
+            height={500}
+            sizes="(max-width: 640px) 100vw, 800px"
+            className="w-full h-full object-cover"
+            onError={() => setErr(true)}
+        />
+    );
+}
+
 interface GachaHubClientProps {
     readonly machines: GachaMachineLite[];
 }
@@ -94,14 +114,7 @@ export function GachaHubClient({ machines }: Readonly<GachaHubClientProps>) {
                         >
                             <div className="w-full overflow-hidden bg-muted/60" style={{ aspectRatio: "2000/500" }}>
                                 {machine.imageUrl && (machine.imageUrl.startsWith("/") || machine.imageUrl.startsWith("http")) ? (
-                                    <Image
-                                        src={machine.imageUrl}
-                                        alt={machine.name}
-                                        width={2000}
-                                        height={500}
-                                        sizes="(max-width: 640px) 100vw, 800px"
-                                        className="w-full h-full object-cover"
-                                    />
+                                    <HubImage src={machine.imageUrl} alt={machine.name} />
                                 ) : (
                                     <div className="w-full h-full flex items-center justify-center">
                                         <LayoutGrid className="w-10 h-10 text-muted-foreground/20" />

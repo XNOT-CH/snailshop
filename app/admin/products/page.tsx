@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { runAutoDelete } from "@/lib/autoDelete";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Package, Trash2 } from "lucide-react";
@@ -8,6 +9,8 @@ import { ProductTable } from "@/components/admin/ProductTable";
 export const dynamic = "force-dynamic";
 
 export default async function AdminProductsPage() {
+    await runAutoDelete();
+
     const productList = await db.query.products.findMany({
         orderBy: (t, { desc }) => desc(t.createdAt),
         columns: {

@@ -4,6 +4,17 @@ import { db, apiKeys } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
 import { hasPermission, Permission } from "@/lib/permissions";
 
+function normaliseApiKeyPermissions(raw: string[] | string | null | undefined): string[] {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+
+    try {
+        return JSON.parse(raw) as string[];
+    } catch {
+        return [];
+    }
+}
+
 export function generateApiKey(): { rawKey: string; hashedKey: string; prefix: string } {
     const rawKey = crypto.randomBytes(32).toString("hex");
     const prefix = rawKey.substring(0, 8);
@@ -33,7 +44,7 @@ export async function validateApiKey(rawKey: string): Promise<{
             eq(apiKeys.isActive, true)
         ),
         with: {
-            user: { columns: { id: true, role: true, permissions: true } },
+            user: { columns: { id: true, role: true } },
         },
     });
 
@@ -47,7 +58,7 @@ export async function validateApiKey(rawKey: string): Promise<{
         .set({ lastUsedAt: new Date().toISOString().slice(0, 19).replace("T", " ") })
         .where(eq(apiKeys.id, apiKey.id));
 
-    const permissions = apiKey.permissions ? JSON.parse(apiKey.permissions) : [];
+    const permissions = normaliseApiKeyPermissions(apiKey.permissions);
     return { valid: true, userId: apiKey.userId, permissions };
 }
 
@@ -67,7 +78,7 @@ export async function createApiKey(
         key: hashedKey,
         keyPrefix: prefix,
         userId,
-        permissions: permissions ? JSON.stringify(permissions) : null,
+        permissions: permissions ?? null,
         expiresAt,
         createdAt: mysqlNow(),
     });
@@ -90,7 +101,7 @@ export async function revokeApiKey(keyId: string): Promise<void> {
 export function apiKeyHasPermission(
     apiKeyPermissions: string[],
     userRole: string,
-    userPermissions: string | null,
+    userPermissions: string[] | string | null,
     requiredPermission: Permission
 ): boolean {
     if (apiKeyPermissions.length > 0 && !apiKeyPermissions.includes(requiredPermission)) return false;

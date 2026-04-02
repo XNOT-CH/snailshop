@@ -5,29 +5,19 @@ import { db, users, navItems } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { Button } from "@/components/ui/button";
+import { NavbarUserMenu } from "@/components/NavbarUserMenu";
 import { ShopDropdown } from "@/components/ShopDropdown";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NavigationDrawer } from "@/components/NavigationDrawer";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { LogoutButton } from "@/components/LogoutButton";
-import {
-    Gamepad2,
-    Home,
-    ShoppingBag,
-    LayoutDashboard,
-    Wallet,
-    User,
-    UserCog,
-    Settings,
-    HelpCircle,
     Dices,
+    Gamepad2,
+    HelpCircle,
+    Home,
+    LayoutDashboard,
+    Settings,
+    ShoppingBag,
+    User,
+    Wallet,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NavbarCartButton } from "@/components/NavbarCartButton";
@@ -36,27 +26,28 @@ export default async function Navbar() {
     const session = await auth();
     const userId = session?.user?.id;
 
-    // Parallel fetch for better performance
     const [user, siteSettings, dbNavItems, allProducts] = await Promise.all([
-        userId ? db.query.users.findFirst({
-            where: eq(users.id, userId),
-            columns: { username: true, creditBalance: true },
-        }) : Promise.resolve(null),
+        userId
+            ? db.query.users.findFirst({
+                  where: eq(users.id, userId),
+                  columns: { username: true, creditBalance: true },
+              })
+            : Promise.resolve(null),
         getSiteSettings(),
         db.query.navItems.findMany({
             where: eq(navItems.isActive, true),
-            orderBy: (t, { asc }) => asc(t.sortOrder),
+            orderBy: (table, { asc }) => asc(table.sortOrder),
         }),
         db.query.products.findMany({
             columns: { category: true },
-            where: (t, { eq }) => eq(t.isSold, false),
+            where: (table, { eq: equals }) => equals(table.isSold, false),
         }),
     ]);
 
-    // Get unique categories from available products only (don't show empty categories)
-    const shopCategories = [...new Set(allProducts.map((p) => p.category))].filter(Boolean).sort((a, b) => a.localeCompare(b));
+    const shopCategories = [...new Set(allProducts.map((product) => product.category))]
+        .filter(Boolean)
+        .sort((left, right) => left.localeCompare(right));
 
-    // Icon mapping for dynamic nav items
     const iconMap: Record<string, typeof Home> = {
         home: Home,
         shop: ShoppingBag,
@@ -69,40 +60,43 @@ export default async function Navbar() {
         gacha: Dices,
     };
 
-    // Use database items if available, otherwise fallback to defaults
-    const baseNavLinks = dbNavItems.length > 0
-        ? dbNavItems.map(item => ({
-            href: item.href,
-            label: item.label,
-            icon: iconMap[item.icon?.toLowerCase() || ''] || Home,
-        }))
-        : [
-            { href: "/", label: "หน้าแรก", icon: Home },
-            { href: "/shop", label: "ร้านค้า", icon: ShoppingBag },
-            { href: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
-            { href: "/help", label: "ช่วยเหลือ", icon: HelpCircle },
-        ];
+    const baseNavLinks =
+        dbNavItems.length > 0
+            ? dbNavItems.map((item) => ({
+                  href: item.href,
+                  label: item.label,
+                  icon: iconMap[item.icon?.toLowerCase() ?? ""] ?? Home,
+              }))
+            : [
+                  { href: "/", label: "หน้าแรก", icon: Home },
+                  { href: "/shop", label: "ร้านค้า", icon: ShoppingBag },
+                  { href: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
+                  { href: "/help", label: "ช่วยเหลือ", icon: HelpCircle },
+              ];
 
-    // Always include gacha hub link (insert after /shop if exists, else append)
-    const hasGachapons = baseNavLinks.some(l => l.href === "/gachapons");
+    const hasGachapons = baseNavLinks.some((link) => link.href === "/gachapons");
     const navLinks = hasGachapons
         ? baseNavLinks
         : (() => {
-            const shopIdx = baseNavLinks.findIndex(l => l.href === "/shop");
-            const hubItem = { href: "/gachapons", label: "หมวดหมู่กาชา", icon: Dices };
-            const base = [...baseNavLinks];
-            if (shopIdx >= 0) {
-                base.splice(shopIdx + 1, 0, hubItem);
-                return base;
-            }
-            return [...base, hubItem];
-        })();
+              const shopIndex = baseNavLinks.findIndex((link) => link.href === "/shop");
+              const hubItem = {
+                  href: "/gachapons",
+                  label: "หมวดหมู่กาชา",
+                  icon: Dices,
+              };
+              const nextLinks = [...baseNavLinks];
+
+              if (shopIndex >= 0) {
+                  nextLinks.splice(shopIndex + 1, 0, hubItem);
+                  return nextLinks;
+              }
+
+              return [...nextLinks, hubItem];
+          })();
 
     return (
         <header id="main-navbar" className="sticky top-0 z-50 w-full border-b border-white/6 bg-background/78 backdrop-blur-xl">
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 lg:px-6 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:gap-4 xl:px-8">
-
-                {/* Left: Logo */}
                 <Link href="/" className="flex min-w-0 items-center gap-2.5 text-lg font-semibold text-primary xl:min-w-0">
                     {siteSettings?.logoUrl ? (
                         <Image
@@ -111,10 +105,10 @@ export default async function Navbar() {
                             width={36}
                             height={36}
                             priority
-                            className="rounded-lg object-contain h-9 w-9"
+                            className="h-9 w-9 rounded-lg object-contain"
                         />
                     ) : (
-                        <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
                             <Gamepad2 className="h-5 w-5 text-white" />
                         </div>
                     )}
@@ -123,23 +117,19 @@ export default async function Navbar() {
                     </span>
                 </Link>
 
-                {/* Center: Navigation - Desktop */}
                 <nav className="hidden items-center justify-center gap-1 rounded-full border border-white/8 bg-white/[0.03] px-1.5 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] xl:flex">
                     {navLinks.map((link) => {
                         const Icon = link.icon;
+
                         if (link.href === "/shop") {
-                            return (
-                                <ShopDropdown
-                                    key={link.href}
-                                    categories={shopCategories}
-                                />
-                            );
+                            return <ShopDropdown key={link.href} categories={shopCategories} />;
                         }
+
                         return (
                             <Link
                                 key={link.href}
                                 href={link.href}
-                                className="flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-white/[0.06] hover:text-foreground whitespace-nowrap"
+                                className="flex whitespace-nowrap items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-white/[0.06] hover:text-foreground"
                             >
                                 <Icon className="h-4 w-4 flex-shrink-0" />
                                 {link.label}
@@ -148,80 +138,30 @@ export default async function Navbar() {
                     })}
                 </nav>
 
-                {/* Right: Actions */}
                 <div className="flex shrink-0 items-center gap-1.5 xl:justify-self-end">
-                    {/* Theme Toggle */}
                     <ThemeToggle />
-
-                    {/* Cart Button */}
                     <NavbarCartButton />
 
                     {user ? (
                         <>
-                            {/* Credit Balance */}
                             <Link href="/dashboard/topup" className="hidden lg:block">
-                                <Button variant="ghost" size="sm" className="gap-1.5 rounded-xl text-muted-foreground hover:text-primary hover:bg-accent font-medium">
+                                <Button variant="ghost" size="sm" className="gap-1.5 rounded-xl font-medium text-muted-foreground hover:bg-accent hover:text-primary">
                                     <Wallet className="h-4 w-4 shrink-0 text-primary" />
-                                    <span className="text-foreground font-semibold">฿{Number(user.creditBalance).toLocaleString()}</span>
+                                    <span className="font-semibold text-foreground">
+                                        ฿{Number(user.creditBalance).toLocaleString()}
+                                    </span>
                                 </Button>
                             </Link>
 
-                            {/* User Dropdown */}
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="rounded-full">
-                                        <Avatar className="h-9 w-9 border-2 border-primary">
-                                            <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
-                                                {user.username.charAt(0).toUpperCase()}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-56 rounded-xl bg-card">
-                                    <DropdownMenuLabel>
-                                        <div className="flex flex-col space-y-1">
-                                            <p className="text-sm font-medium text-foreground">{user.username}</p>
-                                            <p className="text-xs text-muted-foreground">
-                                                ฿{Number(user.creditBalance).toLocaleString()}
-                                            </p>
-                                        </div>
-                                    </DropdownMenuLabel>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem asChild>
-                                        <Link href="/dashboard" className="flex items-center gap-2 cursor-pointer text-foreground">
-                                            <User className="h-4 w-4" />
-                                            แดชบอร์ด
-                                        </Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem asChild>
-                                        <Link href="/profile/settings" className="flex items-center gap-2 cursor-pointer text-foreground">
-                                            <UserCog className="h-4 w-4" />
-                                            แก้ไขโปรไฟล์
-                                        </Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem asChild>
-                                        <Link href="/dashboard/topup" className="flex items-center gap-2 cursor-pointer text-foreground">
-                                            <Wallet className="h-4 w-4" />
-                                            เติมเงิน
-                                        </Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem asChild>
-                                        <Link href="/dashboard/settings" className="flex items-center gap-2 cursor-pointer text-foreground">
-                                            <Settings className="h-4 w-4" />
-                                            ตั้งค่า
-                                        </Link>
-                                    </DropdownMenuItem>
-                                    <DropdownMenuSeparator />
-                                    <DropdownMenuItem className="text-destructive focus:text-destructive">
-                                        <LogoutButton />
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            <NavbarUserMenu
+                                username={user.username}
+                                creditBalance={Number(user.creditBalance)}
+                            />
                         </>
                     ) : (
-                        <div className="hidden lg:flex items-center gap-2">
+                        <div className="hidden items-center gap-2 lg:flex">
                             <Link href="/login">
-                                <Button variant="ghost" size="sm" className="rounded-xl text-muted-foreground hover:text-primary hover:bg-accent">
+                                <Button variant="ghost" size="sm" className="rounded-xl text-muted-foreground hover:bg-accent hover:text-primary">
                                     เข้าสู่ระบบ
                                 </Button>
                             </Link>
@@ -233,7 +173,6 @@ export default async function Navbar() {
                         </div>
                     )}
 
-                    {/* Mobile Navigation Drawer */}
                     <NavigationDrawer
                         navLinks={navLinks.map(({ href, label }) => ({ href, label }))}
                         user={user ? { username: user.username, creditBalance: Number(user.creditBalance) } : null}

@@ -38,6 +38,7 @@ vi.mock("drizzle-orm", () => ({
 
 vi.mock("@/lib/auditLog", () => ({
   auditFromRequest: vi.fn(),
+  getChanges: vi.fn(() => []),
   AUDIT_ACTIONS: {
     NEWS_CREATE: "NEWS_CREATE", HELP_CREATE: "HELP_CREATE",
     ROLE_CREATE: "ROLE_CREATE", POPUP_CREATE: "POPUP_CREATE",

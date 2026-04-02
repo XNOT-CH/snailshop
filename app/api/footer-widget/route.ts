@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 import { db, footerLinks } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { FOOTER_WIDGET_SETTINGS_SINGLETON_ID } from "@/lib/db/singletons";
 
 export async function GET() {
     try {
-        const settings = await db.query.footerWidgetSettings.findFirst();
+        const settings =
+            await db.query.footerWidgetSettings.findFirst({
+                where: (t, { eq: whereEq }) => whereEq(t.id, FOOTER_WIDGET_SETTINGS_SINGLETON_ID),
+            })
+            ?? await db.query.footerWidgetSettings.findFirst();
+
         if (!settings?.isActive) {
             return NextResponse.json({ settings: { isActive: false, title: "" }, links: [] });
         }

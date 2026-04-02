@@ -56,3 +56,4 @@ lint-report.json
 
 # Database backup files (may contain sensitive data)
 *.sql
+!drizzle/*.sql

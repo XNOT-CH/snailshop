@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, RotateCcw } from "lucide-react";
 import Image from "next/image";
@@ -46,7 +47,9 @@ const tierConfig = {
 };
 
 export function GachaResultModal({ product, onClose, onSpinAgain }: Readonly<GachaResultModalProps>) {
+    const [imgErr, setImgErr] = useState(false);
     const tier = tierConfig[product.tier];
+    const hasValidImg = !imgErr && product.imageUrl && (product.imageUrl.startsWith("/") || product.imageUrl.startsWith("http"));
 
     return (
         <AnimatePresence>
@@ -101,13 +104,14 @@ export function GachaResultModal({ product, onClose, onSpinAgain }: Readonly<Gac
                             transition={{ type: "spring", delay: 0.15, damping: 18 }}
                         >
 
-                            {product.imageUrl && (product.imageUrl.startsWith("/") || product.imageUrl.startsWith("http")) ? (
+                            {hasValidImg ? (
                                 <Image
-                                    src={product.imageUrl}
+                                    src={product.imageUrl!}
                                     alt={product.name}
                                     fill
                                     sizes="144px"
                                     className="object-cover"
+                                    onError={() => setImgErr(true)}
                                 />
                             ) : (
                                 <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-4xl">

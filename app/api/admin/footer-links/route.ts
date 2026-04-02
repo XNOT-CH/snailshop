@@ -5,14 +5,22 @@ import { max } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { footerLinkSchema } from "@/lib/validations/content";
+import { FOOTER_WIDGET_SETTINGS_SINGLETON_ID } from "@/lib/db/singletons";
+
+async function getFooterWidgetSettingsRecord() {
+    return (
+        await db.query.footerWidgetSettings.findFirst({
+            where: (t, { eq }) => eq(t.id, FOOTER_WIDGET_SETTINGS_SINGLETON_ID),
+        })
+    ) ?? db.query.footerWidgetSettings.findFirst();
+}
 
 export async function GET() {
     try {
-        let settings = await db.query.footerWidgetSettings.findFirst();
+        let settings = await getFooterWidgetSettingsRecord();
         if (!settings) {
-            const newId = crypto.randomUUID();
-            await db.insert(footerWidgetSettings).values({ id: newId, isActive: true, title: "เมนูลัด", createdAt: mysqlNow(), updatedAt: mysqlNow() });
-            settings = await db.query.footerWidgetSettings.findFirst();
+            await db.insert(footerWidgetSettings).values({ id: FOOTER_WIDGET_SETTINGS_SINGLETON_ID, isActive: true, title: "เมนูลัด", createdAt: mysqlNow(), updatedAt: mysqlNow() });
+            settings = await getFooterWidgetSettingsRecord();
         }
         const links = await db.query.footerLinks.findMany({ orderBy: (t, { asc }) => asc(t.sortOrder) });
         return NextResponse.json({ settings, links });

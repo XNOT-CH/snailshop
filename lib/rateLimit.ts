@@ -31,6 +31,11 @@ const config = {
         maxAttempts: 3,           // Max registrations per IP
         windowMs: 60 * 60 * 1000, // 1 hour window
     },
+    // Chat image uploads
+    chatImageUpload: {
+        maxAttempts: 8,
+        windowMs: 5 * 60 * 1000,
+    },
 };
 
 /**
@@ -200,6 +205,52 @@ export function checkRegisterRateLimit(ip: string): {
     });
 
     return { blocked: false };
+}
+
+export function checkChatImageUploadRateLimit(identifier: string): {
+    blocked: boolean;
+    remainingUploads: number;
+    retryAfter?: number;
+    message?: string;
+} {
+    const key = `chat-image:${identifier}`;
+    const now = Date.now();
+    const entry = rateLimitStore.get(key);
+
+    if (!entry || now - entry.firstAttempt > config.chatImageUpload.windowMs) {
+        rateLimitStore.set(key, {
+            count: 1,
+            firstAttempt: now,
+        });
+
+        return {
+            blocked: false,
+            remainingUploads: config.chatImageUpload.maxAttempts - 1,
+        };
+    }
+
+    const newCount = entry.count + 1;
+    rateLimitStore.set(key, {
+        ...entry,
+        count: newCount,
+    });
+
+    if (newCount > config.chatImageUpload.maxAttempts) {
+        const retryAfter = config.chatImageUpload.windowMs - (now - entry.firstAttempt);
+        const retryAfterMinutes = Math.max(1, Math.ceil(retryAfter / 60000));
+
+        return {
+            blocked: true,
+            remainingUploads: 0,
+            retryAfter,
+            message: `ส่งรูปได้บ่อยเกินไป กรุณารอประมาณ ${retryAfterMinutes} นาที`,
+        };
+    }
+
+    return {
+        blocked: false,
+        remainingUploads: config.chatImageUpload.maxAttempts - newCount,
+    };
 }
 
 /**

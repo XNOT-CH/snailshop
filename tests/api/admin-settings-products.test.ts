@@ -27,7 +27,12 @@ vi.mock("@/lib/db", () => ({
 vi.mock("drizzle-orm", () => ({ eq: vi.fn(), and: vi.fn(), isNull: vi.fn(), asc: vi.fn() }));
 vi.mock("@/lib/auditLog", () => ({
   auditFromRequest: vi.fn(),
-  AUDIT_ACTIONS: { PRODUCT_UPDATE: "PRODUCT_UPDATE", PRODUCT_DELETE: "PRODUCT_DELETE" },
+  getChanges: vi.fn(() => []),
+  AUDIT_ACTIONS: {
+    PRODUCT_UPDATE: "PRODUCT_UPDATE",
+    PRODUCT_DELETE: "PRODUCT_DELETE",
+    SETTINGS_UPDATE: "SETTINGS_UPDATE",
+  },
 }));
 vi.mock("@/lib/cache", () => ({ invalidateProductCaches: vi.fn() }));
 vi.mock("@/lib/encryption", () => ({
@@ -71,6 +76,7 @@ describe("API: /api/admin/settings", () => {
   it("GET creates defaults when none exist", async () => {
     (isAdmin as any).mockResolvedValue({ success: true });
     (db.query.siteSettings.findFirst as any)
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: "new", heroTitle: "GameStore" });
     const { GET } = await import("@/app/api/admin/settings/route");

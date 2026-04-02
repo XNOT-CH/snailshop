@@ -317,6 +317,7 @@ describe("API: /api/admin/footer-links/settings (missing paths)", () => {
   it("GET covers insert branch when settings is null", async () => {
     (db.query.footerWidgetSettings.findFirst as any)
       .mockResolvedValueOnce(null)         // first call: null → insert
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: "s1" }); // second call after insert
     const { GET } = await import("@/app/api/admin/footer-links/settings/route");
     const res = await GET();
@@ -327,6 +328,7 @@ describe("API: /api/admin/footer-links/settings (missing paths)", () => {
   it("PUT covers else branch (no existing settings → insert)", async () => {
     (db.query.footerWidgetSettings.findFirst as any)
       .mockResolvedValueOnce(null)          // no existing → insert branch
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: "s1" }); // second findFirst after insert
     const { PUT } = await import("@/app/api/admin/footer-links/settings/route");
     const res = await PUT(new NextRequest("http://localhost", { method: "PUT", body: JSON.stringify({ isActive: true, title: "Menu" }) }));

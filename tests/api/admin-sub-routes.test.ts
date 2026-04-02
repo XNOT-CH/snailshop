@@ -170,7 +170,8 @@ describe("API: /api/admin/footer-links", () => {
 
     it("creates default settings when none exist", async () => {
       (db.query.footerWidgetSettings.findFirst as any)
-        .mockResolvedValueOnce(null) // first check
+        .mockResolvedValueOnce(null) // singleton lookup
+        .mockResolvedValueOnce(null) // legacy fallback lookup
         .mockResolvedValueOnce({ id: "new", isActive: true, title: "เมนูลัด" }); // re-fetch
       const { GET } = await import("@/app/api/admin/footer-links/route");
       const res = await GET();

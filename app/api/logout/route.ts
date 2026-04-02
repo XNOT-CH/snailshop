@@ -1,8 +1,22 @@
 import { NextResponse } from "next/server";
-import { signOut } from "@/auth";
+import { auth, signOut } from "@/auth";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 
-export async function POST() {
+export async function POST(request: Request) {
     try {
+        const session = await auth();
+        const userId = session?.user?.id;
+
+        if (userId) {
+            await auditFromRequest(request, {
+                userId,
+                action: AUDIT_ACTIONS.LOGOUT,
+                resource: "User",
+                resourceId: userId,
+                status: "SUCCESS",
+            });
+        }
+
         await signOut({ redirect: false });
         return NextResponse.json({ success: true, message: "Logged out successfully" });
     } catch (error) {

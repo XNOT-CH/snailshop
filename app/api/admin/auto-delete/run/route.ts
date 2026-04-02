@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runAutoDelete } from "@/lib/autoDelete";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
+import { isAdmin } from "@/lib/auth";
 
 // Protected by CRON_SECRET env var
 // Call: GET /api/admin/auto-delete/run?secret=<CRON_SECRET>
@@ -9,26 +10,30 @@ export async function GET(request: NextRequest) {
     const secret = searchParams.get("secret");
     const cronSecret = process.env.CRON_SECRET;
     const isProduction = process.env.NODE_ENV === "production";
+    const adminCheck = await isAdmin();
+    const isAdminRequest = adminCheck.success && !!adminCheck.userId;
+    const isCronRequest = !!cronSecret && secret === cronSecret;
 
     if (isProduction && !cronSecret) {
         console.error("[AUTO_DELETE_CRON] Missing CRON_SECRET in production.");
         return NextResponse.json({ success: false, message: "Server misconfigured" }, { status: 500 });
     }
 
-    if (cronSecret && secret !== cronSecret) {
+    if (!isAdminRequest && !isCronRequest) {
         return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 });
     }
 
     try {
-        const { deleted, names } = await runAutoDelete();
+        const { deleted, names, deletedItems } = await runAutoDelete();
 
         if (deleted > 0) {
             await auditFromRequest(request, {
+                userId: adminCheck.userId,
                 action: AUDIT_ACTIONS.PRODUCT_DELETE,
                 resource: "Product",
                 resourceId: "auto-delete",
                 resourceName: `Auto-deleted ${deleted} products`,
-                details: { reason: "auto_delete_cron", deletedProducts: names },
+                details: { reason: "auto_delete_cron", deletedProducts: deletedItems },
             });
         }
 

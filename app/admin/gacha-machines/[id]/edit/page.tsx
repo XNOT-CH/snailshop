@@ -649,7 +649,7 @@ export default function EditGachaMachinePage() {
                                         <td className="px-3 py-2.5 text-muted-foreground">{(rewardPage - 1) * rewardPerPage + i + 1}</td>
                                         <td className="px-3 py-2.5">
                                             {validImageUrl(imgUrl) ? (
-                                                <Image src={imgUrl!} alt={name} width={36} height={36} className="w-9 h-9 rounded-lg object-cover" />
+                                                <Image src={imgUrl!} alt={name} width={36} height={36} className="w-9 h-9 rounded-lg object-cover" unoptimized />
                                             ) : (
                                                 <div className="w-9 h-9 rounded-lg bg-[#eff6ff] flex items-center justify-center">
                                                     <LayoutGrid className="w-4 h-4 text-[#145de7]/40" />

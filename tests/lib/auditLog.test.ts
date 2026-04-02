@@ -22,10 +22,8 @@ vi.mock("@/lib/rateLimit", () => ({
   getClientIp: vi.fn(() => "127.0.0.1"),
 }));
 
-vi.mock("next/headers", () => ({
-  cookies: vi.fn().mockResolvedValue({
-    get: vi.fn().mockReturnValue(null),
-  }),
+vi.mock("@/auth", () => ({
+  auth: vi.fn().mockResolvedValue({ user: { id: "user-from-session" } }),
 }));
 
 vi.mock("@/lib/utils/date", () => ({

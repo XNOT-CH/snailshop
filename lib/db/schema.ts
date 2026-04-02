@@ -28,7 +28,6 @@ export const users = mysqlTable("User", {
     password: varchar("password", { length: 255 }).notNull(),
     image: text("image"),
     role: varchar("role", { length: 50 }).default("USER").notNull(),
-    permissions: json("permissions").$type<string[]>(),
     phone: varchar("phone", { length: 20 }),
     phoneVerified: boolean("phoneVerified").default(false).notNull(),
     emailVerified: boolean("emailVerified").default(false).notNull(),
@@ -67,6 +66,8 @@ export const usersRelations = relations(users, ({ many }) => ({
     apiKeys: many(apiKeys),
     auditLogs: many(auditLogs),
     gachaRollLogs: many(gachaRollLogs),
+    chatConversations: many(chatConversations),
+    chatMessages: many(chatMessages),
 }));
 
 // ─────────────────────────────────────────────
@@ -99,7 +100,7 @@ export const apiKeys = mysqlTable("ApiKey", {
     key: varchar("key", { length: 64 }).unique().notNull(),
     keyPrefix: varchar("keyPrefix", { length: 8 }).notNull(),
     userId: varchar("userId", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
-    permissions: text("permissions"),
+    permissions: json("permissions").$type<string[]>(),
     expiresAt: datetime("expiresAt", { mode: "string" }),
     lastUsedAt: datetime("lastUsedAt", { mode: "string" }),
     isActive: boolean("isActive").default(true).notNull(),
@@ -219,7 +220,7 @@ export const topupsRelations = relations(topups, ({ one }) => ({
 // SiteSettings
 // ─────────────────────────────────────────────
 export const siteSettings = mysqlTable("SiteSettings", {
-    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: varchar("id", { length: 36 }).primaryKey().default("default"),
     heroTitle: varchar("heroTitle", { length: 255 }),
     heroDescription: text("heroDescription"),
     announcement: text("announcement"),
@@ -253,7 +254,9 @@ export const helpArticles = mysqlTable("HelpArticle", {
     isActive: boolean("isActive").default(true).notNull(),
     createdAt: now(),
     updatedAt: updatedAt(),
-});
+}, (t) => [
+    index("idx_help_article_active_category_sort").on(t.isActive, t.category, t.sortOrder),
+]);
 
 // ─────────────────────────────────────────────
 // NewsArticle
@@ -268,7 +271,9 @@ export const newsArticles = mysqlTable("NewsArticle", {
     isActive: boolean("isActive").default(true).notNull(),
     createdAt: now(),
     updatedAt: updatedAt(),
-});
+}, (t) => [
+    index("idx_news_article_active_sort_created").on(t.isActive, t.sortOrder, t.createdAt),
+]);
 
 // ─────────────────────────────────────────────
 // PromoCode
@@ -295,7 +300,7 @@ export const promoCodes = mysqlTable("PromoCode", {
 // FooterWidgetSettings
 // ─────────────────────────────────────────────
 export const footerWidgetSettings = mysqlTable("FooterWidgetSettings", {
-    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    id: varchar("id", { length: 36 }).primaryKey().default("default"),
     isActive: boolean("isActive").default(true).notNull(),
     title: varchar("title", { length: 100 }).default("เมนูลัด").notNull(),
     createdAt: now(),
@@ -314,7 +319,9 @@ export const footerLinks = mysqlTable("FooterLink", {
     isActive: boolean("isActive").default(true).notNull(),
     createdAt: now(),
     updatedAt: updatedAt(),
-});
+}, (t) => [
+    index("idx_footer_link_active_sort").on(t.isActive, t.sortOrder),
+]);
 
 // ─────────────────────────────────────────────
 // NavItem
@@ -328,7 +335,9 @@ export const navItems = mysqlTable("NavItem", {
     isActive: boolean("isActive").default(true).notNull(),
     createdAt: now(),
     updatedAt: updatedAt(),
-});
+}, (t) => [
+    index("idx_nav_item_active_sort").on(t.isActive, t.sortOrder),
+]);
 
 // ─────────────────────────────────────────────
 // CurrencySettings
@@ -343,6 +352,44 @@ export const currencySettings = mysqlTable("CurrencySettings", {
     updatedAt: updatedAt(),
 });
 
+export const chatConversations = mysqlTable("ChatConversation", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: varchar("userId", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+    status: varchar("status", { length: 20 }).default("OPEN").notNull(),
+    subject: varchar("subject", { length: 255 }),
+    customerLastReadAt: datetime("customerLastReadAt", { mode: "string" }),
+    adminLastReadAt: datetime("adminLastReadAt", { mode: "string" }),
+    lastMessageAt: datetime("lastMessageAt", { mode: "string" }).default(sql`now()`).notNull(),
+    closedAt: datetime("closedAt", { mode: "string" }),
+    createdAt: now(),
+    updatedAt: updatedAt(),
+}, (t) => [
+    index("idx_chat_conversation_user_last_message").on(t.userId, t.lastMessageAt),
+    index("idx_chat_conversation_status_last_message").on(t.status, t.lastMessageAt),
+]);
+
+export const chatConversationsRelations = relations(chatConversations, ({ one, many }) => ({
+    user: one(users, { fields: [chatConversations.userId], references: [users.id] }),
+    messages: many(chatMessages),
+}));
+
+export const chatMessages = mysqlTable("ChatMessage", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    conversationId: varchar("conversationId", { length: 36 }).notNull().references(() => chatConversations.id, { onDelete: "cascade" }),
+    senderType: varchar("senderType", { length: 20 }).notNull(),
+    senderUserId: varchar("senderUserId", { length: 36 }).references(() => users.id, { onDelete: "set null" }),
+    body: text("body").notNull(),
+    createdAt: now(),
+}, (t) => [
+    index("idx_chat_message_conversation_created").on(t.conversationId, t.createdAt),
+    index("idx_chat_message_sender_created").on(t.senderType, t.createdAt),
+]);
+
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+    conversation: one(chatConversations, { fields: [chatMessages.conversationId], references: [chatConversations.id] }),
+    senderUser: one(users, { fields: [chatMessages.senderUserId], references: [users.id] }),
+}));
+
 // ─────────────────────────────────────────────
 // AnnouncementPopup
 // ─────────────────────────────────────────────
@@ -356,7 +403,9 @@ export const announcementPopups = mysqlTable("AnnouncementPopup", {
     dismissOption: varchar("dismissOption", { length: 30 }).default("show_always").notNull(),
     createdAt: now(),
     updatedAt: updatedAt(),
-});
+}, (t) => [
+    index("idx_popup_active_sort_created").on(t.isActive, t.sortOrder, t.createdAt),
+]);
 
 // ─────────────────────────────────────────────
 // Role
@@ -409,7 +458,10 @@ export const gachaMachines = mysqlTable("GachaMachine", {
     sortOrder: int("sortOrder").default(0).notNull(),
     createdAt: now(),
     updatedAt: updatedAt(),
-}, (t) => [index("idx_gacha_machine_categoryId").on(t.categoryId)]);
+}, (t) => [
+    index("idx_gacha_machine_categoryId").on(t.categoryId),
+    index("idx_gacha_machine_active_enabled_sort").on(t.isActive, t.isEnabled, t.sortOrder),
+]);
 
 export const gachaMachinesRelations = relations(gachaMachines, ({ one, many }) => ({
     category: one(gachaCategories, { fields: [gachaMachines.categoryId], references: [gachaCategories.id] }),
@@ -446,7 +498,9 @@ export const gachaRewards = mysqlTable("GachaReward", {
     gachaMachineId: varchar("gachaMachineId", { length: 36 }).references(() => gachaMachines.id, { onDelete: "set null" }),
     createdAt: now(),
     updatedAt: updatedAt(),
-}, (t) => [index("idx_gacha_reward_machineId").on(t.gachaMachineId)]);
+}, (t) => [
+    index("idx_gacha_reward_machine_active_created").on(t.gachaMachineId, t.isActive, t.createdAt),
+]);
 
 export const gachaRewardsRelations = relations(gachaRewards, ({ one }) => ({
     product: one(products, { fields: [gachaRewards.productId], references: [products.id] }),

@@ -116,7 +116,7 @@ export default async function RootLayout({
 
               {/* Floating Chat Button */}
               <div id="main-chat">
-                <FloatingChatButton href="https://m.me/61571169820803" />
+                <FloatingChatButton />
               </div>
 
               {/* Announcement Popup - Client Side Only */}

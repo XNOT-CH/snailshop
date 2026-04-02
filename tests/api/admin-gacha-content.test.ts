@@ -135,6 +135,7 @@ describe("API: /api/admin/gacha-settings", () => {
     (isAdmin as any).mockResolvedValue({ success: true });
     (db.query.gachaSettings.findFirst as any)
       .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: "default", isEnabled: true });
     const { GET } = await import("@/app/api/admin/gacha-settings/route");
     const res = await GET();
@@ -349,6 +350,7 @@ describe("API: /api/admin/footer-links/settings", () => {
   it("GET creates default when none exist", async () => {
     (db.query.footerWidgetSettings.findFirst as any)
       .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: "new", isActive: true, title: "เมนูลัด" });
     const { GET } = await import("@/app/api/admin/footer-links/settings/route");
     const res = await GET();
@@ -372,6 +374,7 @@ describe("API: /api/admin/footer-links/settings", () => {
 
   it("PUT creates when none exist", async () => {
     (db.query.footerWidgetSettings.findFirst as any)
+      .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: "new", isActive: true, title: "Quick Links" });
     const { PUT } = await import("@/app/api/admin/footer-links/settings/route");
