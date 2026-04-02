@@ -6,6 +6,7 @@
     "dev": "node C:\\Users\\USER\\my-game-store\\scripts\\run-next-dev.mjs",
     "build": "next build",
     "start": "next start",
+    "check:deploy": "node scripts/validate-deploy.mjs",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",

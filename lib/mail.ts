@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resendApiKey = process.env.RESEND_API_KEY;
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
 
 export const sendEmail = async ({
     to,
@@ -12,6 +13,11 @@ export const sendEmail = async ({
     react: React.ReactElement;
 }) => {
     try {
+        if (!resend) {
+            console.warn("[mail] RESEND_API_KEY is not configured. Email send skipped.");
+            return { success: false, error: "RESEND_API_KEY is not configured" };
+        }
+
         const { data, error } = await resend.emails.send({
             from: "onboarding@resend.dev", // Resend default test address
             to,
