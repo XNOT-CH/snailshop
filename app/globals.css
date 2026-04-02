@@ -12,7 +12,7 @@
 
   --color-foreground: var(--foreground);
 
-  --font-sans: var(--font-noto-sans), "Noto Sans Thai", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-sans: "Prompt", "Noto Sans Thai", "Leelawadee UI", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 
   --font-mono: var(--font-geist-mono);
 
