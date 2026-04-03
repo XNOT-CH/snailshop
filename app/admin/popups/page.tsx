@@ -174,7 +174,7 @@ export default function AdminPopupsPage() {
                             <span class="text-sm text-gray-400 self-center">หรือ</span>
                         </div>
                         <input id="swal-imageUrl" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="วาง URL รูปภาพ..." value="${popup?.imageUrl || ""}">
-                        <p class="text-xs text-gray-400 mt-1">รองรับไฟล์ JPG, PNG, WebP, GIF (สูงสุด 5MB) • แนะนำขนาด 1500x1500px</p>
+                        <p class="text-xs text-gray-400 mt-1">รองรับไฟล์ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก • แนะนำขนาด 1500x1500px</p>
                         <div id="swal-img-preview" class="mt-2 ${popup?.imageUrl ? "" : "hidden"}">
                             <img src="${popup?.imageUrl || ""}" class="w-40 h-40 object-cover rounded-lg border mx-auto" onerror="this.src='https://placehold.co/200x200/ef4444/ffffff?text=Invalid+URL'">
                         </div>

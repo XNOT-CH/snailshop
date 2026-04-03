@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdmin } from "@/lib/auth";
-import { writeFile, mkdir } from "node:fs/promises";
 import path from "node:path";
-import { existsSync } from "node:fs";
-import crypto from "node:crypto";
+import { isAdmin } from "@/lib/auth";
+import { saveOptimizedImageUpload } from "@/lib/serverImageUpload";
 
 export async function POST(request: NextRequest) {
     const authCheck = await isAdmin();
@@ -19,37 +17,19 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: "ไม่พบไฟล์ที่อัปโหลด" }, { status: 400 });
         }
 
-        const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-        if (!allowedTypes.includes(file.type)) {
-            return NextResponse.json(
-                { success: false, message: "รองรับเฉพาะไฟล์ JPEG, PNG, WebP และ GIF" },
-                { status: 400 }
-            );
-        }
+        const savedFile = await saveOptimizedImageUpload(file, {
+            allowedTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+            maxInputBytes: 5 * 1024 * 1024,
+            maxDimension: 1080,
+            outputQuality: 82,
+            uploadDir: path.join(process.cwd(), "public", "uploads", "gacha"),
+            publicPath: "/uploads/gacha",
+        });
 
-        const maxSize = 5 * 1024 * 1024; // 5MB
-        if (file.size > maxSize) {
-            return NextResponse.json({ success: false, message: "ไฟล์ใหญ่เกิน 5MB" }, { status: 400 });
-        }
-
-        const uploadDir = path.join(process.cwd(), "public", "uploads", "gacha");
-        if (!existsSync(uploadDir)) {
-            await mkdir(uploadDir, { recursive: true });
-        }
-
-        const timestamp = Date.now();
-        const randomStr = crypto.randomBytes(4).toString('hex');
-        const extension = file.name.split(".").pop() || "jpg";
-        const filename = `${timestamp}-${randomStr}.${extension}`;
-
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        await writeFile(path.join(uploadDir, filename), buffer);
-
-        const publicUrl = `/uploads/gacha/${filename}`;
-        return NextResponse.json({ success: true, url: publicUrl, filename });
+        return NextResponse.json({ success: true, url: savedFile.url, filename: savedFile.filename });
     } catch (error) {
         console.error("Gacha upload error:", error);
-        return NextResponse.json({ success: false, message: "อัปโหลดไม่สำเร็จ" }, { status: 500 });
+        const message = error instanceof Error ? error.message : "อัปโหลดไม่สำเร็จ";
+        return NextResponse.json({ success: false, message }, { status: /file|image/i.test(message) ? 400 : 500 });
     }
 }

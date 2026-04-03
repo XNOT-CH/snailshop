@@ -317,7 +317,7 @@ export default function AdminSettingsPage() {
                                             <input
                                                 ref={logoInputRef}
                                                 type="file"
-                                                accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml"
+                                                accept="image/jpeg,image/png,image/webp,image/gif"
                                                 className="hidden"
                                                 onChange={handleLogoUpload}
                                             />
@@ -481,7 +481,7 @@ export default function AdminSettingsPage() {
                             รูปภาพ Banner (Carousel)
                         </h2>
                         <p className="text-sm text-muted-foreground mb-4">
-                            รองรับไฟล์ JPG, PNG, WebP, GIF (สูงสุด 5MB) • แนะนำขนาด 2000x500px
+                            รองรับไฟล์ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก • แนะนำขนาด 2000x500px
                         </p>
                         <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
                             {[1, 2, 3].map((num) => (

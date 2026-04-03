@@ -1,10 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
-import { writeFile, mkdir } from "node:fs/promises";
+import { saveOptimizedImageUpload } from "@/lib/serverImageUpload";
 import path from "node:path";
-import { existsSync } from "node:fs";
-
-import crypto from "node:crypto";
 
 export async function POST(request: NextRequest) {
     // Check if user is admin
@@ -27,55 +24,27 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Validate file type
-        const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-        if (!allowedTypes.includes(file.type)) {
-            return NextResponse.json(
-                { success: false, message: "Invalid file type. Only JPEG, PNG, WebP, and GIF are allowed." },
-                { status: 400 }
-            );
-        }
-
-        // Validate file size (max 5MB)
-        const maxSize = 5 * 1024 * 1024;
-        if (file.size > maxSize) {
-            return NextResponse.json(
-                { success: false, message: "File size exceeds 5MB limit" },
-                { status: 400 }
-            );
-        }
-
-        // Create upload directory if it doesn't exist
         const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
-        if (!existsSync(uploadDir)) {
-            await mkdir(uploadDir, { recursive: true });
-        }
-
-        // Generate unique filename
-        const timestamp = Date.now();
-        const randomStr = crypto.randomBytes(4).toString('hex');
-        const extension = file.name.split(".").pop() || "jpg";
-        const filename = `${timestamp}-${randomStr}.${extension}`;
-
-        // Write file to disk
-        const bytes = await file.arrayBuffer();
-        const buffer = Buffer.from(bytes);
-        const filePath = path.join(uploadDir, filename);
-        await writeFile(filePath, buffer);
-
-        // Return the public URL
-        const publicUrl = `/uploads/products/${filename}`;
+        const savedFile = await saveOptimizedImageUpload(file, {
+            allowedTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
+            maxInputBytes: 5 * 1024 * 1024,
+            maxDimension: 1080,
+            outputQuality: 82,
+            uploadDir,
+            publicPath: "/uploads/products",
+        });
 
         return NextResponse.json({
             success: true,
-            url: publicUrl,
-            filename,
+            url: savedFile.url,
+            filename: savedFile.filename,
         });
     } catch (error) {
         console.error("Upload error:", error);
+        const message = error instanceof Error ? error.message : "Failed to upload file";
         return NextResponse.json(
-            { success: false, message: "Failed to upload file" },
-            { status: 500 }
+            { success: false, message },
+            { status: /file|image/i.test(message) ? 400 : 500 }
         );
     }
 }

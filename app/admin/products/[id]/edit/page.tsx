@@ -352,7 +352,7 @@ export default function EditProductPage() {
                             )}
 
                             <p className="text-xs text-muted-foreground">
-                                รองรับไฟล์ JPG, PNG, WebP, GIF (สูงสุด 5MB)
+                                รองรับไฟล์ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก
                             </p>
                         </div>
 

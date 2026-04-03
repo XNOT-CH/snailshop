@@ -184,7 +184,7 @@ export default function AdminNewsPage() {
                         <div id="swal-img-preview" class="mt-2 ${article?.imageUrl ? "" : "hidden"}">
                             <img src="${article?.imageUrl || ""}" class="w-full h-28 object-cover rounded-lg border" onerror="this.src='https://placehold.co/400x200/ef4444/ffffff?text=Invalid+URL'">
                         </div>
-                        <p class="text-xs text-gray-400 mt-1">รองรับไฟล์ JPG, PNG, WebP, GIF (สูงสุด 5MB) · แนะนำขนาด 1280×720px (16:9)</p>
+                        <p class="text-xs text-gray-400 mt-1">รองรับไฟล์ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก · แนะนำขนาด 1280×720px (16:9)</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ลิงก์ (อ่านเพิ่มเติม)</label>

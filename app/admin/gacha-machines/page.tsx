@@ -277,7 +277,7 @@ export default function GachaMachinesAdminPage() {
                 {/* ── รูปภาพ ── */}
                 <div className="mt-4">
                     <label htmlFor="addMachineImageFile" className={labelCls}>รูปภาพตู้กาชา</label>
-                    <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL รูปภาพ — รองรับ JPG, PNG, WebP, GIF (สูงสุด 5MB)</p>
+                    <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL รูปภาพ — รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB และระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติ</p>
 
                     {/* Preview + upload zone */}
                     <div className="flex items-start gap-3">
