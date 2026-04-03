@@ -357,6 +357,8 @@ export const chatConversations = mysqlTable("ChatConversation", {
     userId: varchar("userId", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
     status: varchar("status", { length: 20 }).default("OPEN").notNull(),
     subject: varchar("subject", { length: 255 }),
+    isPinned: boolean("isPinned").default(false).notNull(),
+    tags: json("tags").$type<string[]>().notNull(),
     customerLastReadAt: datetime("customerLastReadAt", { mode: "string" }),
     adminLastReadAt: datetime("adminLastReadAt", { mode: "string" }),
     lastMessageAt: datetime("lastMessageAt", { mode: "string" }).default(sql`now()`).notNull(),
@@ -366,6 +368,7 @@ export const chatConversations = mysqlTable("ChatConversation", {
 }, (t) => [
     index("idx_chat_conversation_user_last_message").on(t.userId, t.lastMessageAt),
     index("idx_chat_conversation_status_last_message").on(t.status, t.lastMessageAt),
+    index("idx_chat_conversation_pinned_last_message").on(t.isPinned, t.lastMessageAt),
 ]);
 
 export const chatConversationsRelations = relations(chatConversations, ({ one, many }) => ({
@@ -391,6 +394,18 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
 }));
 
 // ─────────────────────────────────────────────
+export const chatQuickReplies = mysqlTable("ChatQuickReply", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    title: varchar("title", { length: 120 }).notNull(),
+    body: text("body").notNull(),
+    sortOrder: int("sortOrder").default(0).notNull(),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: now(),
+    updatedAt: updatedAt(),
+}, (t) => [
+    index("idx_chat_quick_reply_active_sort").on(t.isActive, t.sortOrder),
+]);
+
 // AnnouncementPopup
 // ─────────────────────────────────────────────
 export const announcementPopups = mysqlTable("AnnouncementPopup", {

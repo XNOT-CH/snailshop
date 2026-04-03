@@ -36,6 +36,11 @@ const config = {
         maxAttempts: 8,
         windowMs: 5 * 60 * 1000,
     },
+    // Chat text messages
+    chatMessage: {
+        maxAttempts: 12,
+        windowMs: 60 * 1000,
+    },
 };
 
 /**
@@ -250,6 +255,52 @@ export function checkChatImageUploadRateLimit(identifier: string): {
     return {
         blocked: false,
         remainingUploads: config.chatImageUpload.maxAttempts - newCount,
+    };
+}
+
+export function checkChatMessageRateLimit(identifier: string): {
+    blocked: boolean;
+    remainingMessages: number;
+    retryAfter?: number;
+    message?: string;
+} {
+    const key = `chat-message:${identifier}`;
+    const now = Date.now();
+    const entry = rateLimitStore.get(key);
+
+    if (!entry || now - entry.firstAttempt > config.chatMessage.windowMs) {
+        rateLimitStore.set(key, {
+            count: 1,
+            firstAttempt: now,
+        });
+
+        return {
+            blocked: false,
+            remainingMessages: config.chatMessage.maxAttempts - 1,
+        };
+    }
+
+    const newCount = entry.count + 1;
+    rateLimitStore.set(key, {
+        ...entry,
+        count: newCount,
+    });
+
+    if (newCount > config.chatMessage.maxAttempts) {
+        const retryAfter = config.chatMessage.windowMs - (now - entry.firstAttempt);
+        const retryAfterSeconds = Math.max(1, Math.ceil(retryAfter / 1000));
+
+        return {
+            blocked: true,
+            remainingMessages: 0,
+            retryAfter,
+            message: `ส่งข้อความถี่เกินไป กรุณารอประมาณ ${retryAfterSeconds} วินาที`,
+        };
+    }
+
+    return {
+        blocked: false,
+        remainingMessages: config.chatMessage.maxAttempts - newCount,
     };
 }
 

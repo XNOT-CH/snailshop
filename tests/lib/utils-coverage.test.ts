@@ -412,6 +412,38 @@ describe("lib/cache", () => {
     const result = await cacheOrFetch("test_key", fetchFn, 60);
     expect(result).toEqual({ id: "fresh" });
     expect(fetchFn).toHaveBeenCalledOnce();
+    expect(redis!.set).toHaveBeenCalledWith("test_key", { id: "fresh" }, { ex: 60 });
+  });
+
+  it("cacheOrFetch waits for the cache write before resolving", async () => {
+    const { redis } = await import("@/lib/redis");
+    let resolveSet: ((value: string) => void) | undefined;
+
+    (redis!.get as any).mockResolvedValueOnce(null);
+    (redis!.set as any).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveSet = resolve;
+        })
+    );
+
+    const { cacheOrFetch } = await import("@/lib/cache");
+    const fetchFn = vi.fn().mockResolvedValue({ id: "fresh" });
+    let settled = false;
+
+    const pending = cacheOrFetch("test_key", fetchFn, 60).then(() => {
+      settled = true;
+    });
+
+    await vi.waitFor(() => {
+      expect(redis!.set).toHaveBeenCalledTimes(1);
+      expect(resolveSet).toBeTypeOf("function");
+    });
+    expect(settled).toBe(false);
+
+    resolveSet?.("OK");
+    await pending;
+    expect(settled).toBe(true);
   });
 
   it("invalidateProductCaches invalidates product keys", async () => {

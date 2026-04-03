@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, orders, users, topups, gachaRollLogs, products } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
 import { desc, gte, lte, and } from "drizzle-orm";
+import { formatDateInTimeZone } from "@/lib/utils/date";
+
+const EXPORT_ROW_LIMIT = 50000;
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -40,8 +43,29 @@ function csvResponse(csv: string, filename: string) {
         headers: {
             "Content-Type": "text/csv; charset=utf-8",
             "Content-Disposition": `attachment; filename="${filename}"`,
+            "X-Export-Row-Limit": String(EXPORT_ROW_LIMIT),
         },
     });
+}
+
+function isValidDateOnly(value: string | null): value is string {
+    return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function getDateRangeError(from: string | null, to: string | null): string | null {
+    if (from && !isValidDateOnly(from)) {
+        return 'Invalid "from" date. Use YYYY-MM-DD.';
+    }
+
+    if (to && !isValidDateOnly(to)) {
+        return 'Invalid "to" date. Use YYYY-MM-DD.';
+    }
+
+    if (from && to && from > to) {
+        return '"from" date must be before or equal to "to" date.';
+    }
+
+    return null;
 }
 
 // ─── main route ───────────────────────────────────────────────────────────────
@@ -62,7 +86,7 @@ async function exportOrders(from: string | null, to: string | null, dateTag: str
                     .from(orders)
                     .where(conditions.length ? and(...conditions) : undefined)
                     .orderBy(desc(orders.purchasedAt))
-                    .limit(50000);
+                    .limit(EXPORT_ROW_LIMIT);
 
     const headers = ["id", "userId", "totalPrice", "status", "purchasedAt"];
     return csvResponse(toCsvWithBOM(rows as never, headers), `orders_${dateTag}.csv`);
@@ -85,7 +109,7 @@ async function exportUsers(dateTag: string) {
                     })
                     .from(users)
                     .orderBy(desc(users.createdAt))
-                    .limit(50000);
+                    .limit(EXPORT_ROW_LIMIT);
 
     const headers = [
         "id", "username", "email", "name", "role", "phone",
@@ -115,7 +139,7 @@ async function exportTopups(from: string | null, to: string | null, dateTag: str
                     .from(topups)
                     .where(conditions.length ? and(...conditions) : undefined)
                     .orderBy(desc(topups.createdAt))
-                    .limit(50000);
+                    .limit(EXPORT_ROW_LIMIT);
 
     const headers = [
         "id", "userId", "amount", "status", "transactionRef",
@@ -143,7 +167,7 @@ async function exportGacha(from: string | null, to: string | null, dateTag: stri
                     .from(gachaRollLogs)
                     .where(conditions.length ? and(...conditions) : undefined)
                     .orderBy(desc(gachaRollLogs.createdAt))
-                    .limit(50000);
+                    .limit(EXPORT_ROW_LIMIT);
 
     const headers = [
         "id", "userId", "rewardName", "tier",
@@ -168,7 +192,7 @@ async function exportProducts(dateTag: string) {
                     })
                     .from(products)
                     .orderBy(desc(products.createdAt))
-                    .limit(50000);
+                    .limit(EXPORT_ROW_LIMIT);
 
     const headers = [
         "id", "name", "category", "price", "discountPrice",
@@ -187,9 +211,13 @@ export async function GET(request: NextRequest) {
     const table = searchParams.get("table") ?? "orders";
     const from = searchParams.get("from");
     const to = searchParams.get("to");
+    const dateRangeError = getDateRangeError(from, to);
 
-    const now = new Date();
-    const dateTag = now.toISOString().slice(0, 10);
+    if (dateRangeError) {
+        return NextResponse.json({ success: false, message: dateRangeError }, { status: 400 });
+    }
+
+    const dateTag = formatDateInTimeZone(new Date());
 
     try {
         switch (table) {

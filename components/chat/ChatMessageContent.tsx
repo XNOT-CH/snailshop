@@ -19,12 +19,14 @@ interface ChatMessageContentProps {
     message: ChatRenderableMessage;
     tone: "primary" | "neutral";
     timestampMode?: "relative" | "datetime";
+    statusLabel?: string | null;
 }
 
 export function ChatMessageContent({
     message,
     tone,
     timestampMode = "relative",
+    statusLabel,
 }: Readonly<ChatMessageContentProps>) {
     const [failedImageKey, setFailedImageKey] = useState<string | null>(null);
     const imageKey = `${message.id}:${message.imageUrl ?? ""}`;
@@ -40,7 +42,7 @@ export function ChatMessageContent({
                 // eslint-disable-next-line @next/next/no-img-element -- Protected chat media relies on same-origin cookie auth.
                 <img
                     key={imageKey}
-                    src={message.imageUrl}
+                    src={message.imageUrl ?? undefined}
                     alt="รูปภาพในแชท"
                     className="max-h-72 w-full rounded-[20px] object-cover"
                     loading="lazy"
@@ -64,14 +66,19 @@ export function ChatMessageContent({
 
             {message.body ? <p className="whitespace-pre-wrap break-words">{message.body}</p> : null}
 
-            <ChatTimestamp
-                value={message.createdAt}
-                mode={timestampMode}
+            <div
                 className={cn(
-                    "mt-2 block text-[11px]",
+                    "mt-2 flex items-center gap-2 text-[11px]",
                     tone === "primary" ? "text-blue-100" : "text-slate-400"
                 )}
-            />
+            >
+                <ChatTimestamp
+                    value={message.createdAt}
+                    mode={timestampMode}
+                    className="block"
+                />
+                {statusLabel ? <span className="font-medium">{statusLabel}</span> : null}
+            </div>
         </>
     );
 }

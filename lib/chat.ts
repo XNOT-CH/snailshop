@@ -1,6 +1,8 @@
 import { and, eq, gt, sql } from "drizzle-orm";
 import { db, chatConversations, chatMessages, users } from "@/lib/db";
 import { deleteChatImageFile } from "@/lib/chatMedia";
+import { sanitizeChatTags } from "@/lib/chatAdmin";
+import { parseChatMessagePayload } from "@/lib/chatSecurity";
 import { ChatMessageKind, parseChatImagePayload, parseChatMessageContent } from "@/lib/chatMessageContent";
 import { mysqlDateTimeToIso, mysqlNow } from "@/lib/utils/date";
 
@@ -23,6 +25,8 @@ export interface ChatConversationDto {
     id: string;
     status: ChatConversationStatus;
     subject: string | null;
+    isPinned: boolean;
+    tags: string[];
     createdAt: string;
     updatedAt: string;
     lastMessageAt: string;
@@ -43,6 +47,8 @@ export interface ChatConversationSummaryDto {
     id: string;
     status: ChatConversationStatus;
     subject: string | null;
+    isPinned: boolean;
+    tags: string[];
     createdAt: string;
     updatedAt: string;
     lastMessageAt: string;
@@ -60,6 +66,8 @@ interface ChatConversationSummaryRecord {
     id: string;
     status: string;
     subject: string | null;
+    isPinned: boolean;
+    tags: string[];
     createdAt: string;
     updatedAt: string;
     lastMessageAt: string;
@@ -81,16 +89,14 @@ interface ChatConversationRecord {
     userId: string;
     status: string;
     subject: string | null;
+    isPinned: boolean;
+    tags: string[];
     createdAt: string;
     updatedAt: string;
     lastMessageAt: string;
     customerLastReadAt: string | null;
     adminLastReadAt: string | null;
     closedAt: string | null;
-}
-
-function trimMessageBody(body: string) {
-    return body.trim().replace(/\s+\n/g, "\n").slice(0, 2000);
 }
 
 function serializeMessage(message: {
@@ -122,7 +128,10 @@ function serializeMessage(message: {
     };
 }
 
-function serializeConversationTimestamps(conversation: ChatConversationRecord) {
+function serializeConversationTimestamps(conversation: Pick<
+    ChatConversationRecord,
+    "createdAt" | "updatedAt" | "lastMessageAt" | "customerLastReadAt" | "adminLastReadAt" | "closedAt"
+>) {
     return {
         createdAt: mysqlDateTimeToIso(conversation.createdAt) ?? conversation.createdAt,
         updatedAt: mysqlDateTimeToIso(conversation.updatedAt) ?? conversation.updatedAt,
@@ -170,6 +179,8 @@ async function enrichConversationSummary(conversation: ChatConversationSummaryRe
         id: conversation.id,
         status: conversation.status as ChatConversationStatus,
         subject: conversation.subject,
+        isPinned: conversation.isPinned,
+        tags: conversation.tags ?? [],
         createdAt: timestamps.createdAt,
         updatedAt: timestamps.updatedAt,
         lastMessageAt: timestamps.lastMessageAt,
@@ -239,6 +250,8 @@ async function hydrateConversation(conversation: ChatConversationRecord): Promis
         id: conversation.id,
         status: conversation.status as ChatConversationStatus,
         subject: conversation.subject,
+        isPinned: conversation.isPinned,
+        tags: conversation.tags ?? [],
         createdAt: timestamps.createdAt,
         updatedAt: timestamps.updatedAt,
         lastMessageAt: timestamps.lastMessageAt,
@@ -271,6 +284,8 @@ export async function getOrCreateUserConversation(userId: string) {
     await db.insert(chatConversations).values({
         userId,
         status: "OPEN",
+        isPinned: false,
+        tags: [],
         customerLastReadAt: now,
         adminLastReadAt: null,
         lastMessageAt: now,
@@ -308,7 +323,7 @@ export async function listAdminConversations(): Promise<ChatConversationSummaryD
         orderBy: (t, { desc: orderDesc }) => orderDesc(t.lastMessageAt),
     });
 
-    return Promise.all(conversations.map(async (conversation) => {
+    const summaries = await Promise.all(conversations.map(async (conversation) => {
         const [user, latestMessages] = await Promise.all([
             getChatUser(conversation.userId),
             db.query.chatMessages.findMany({
@@ -331,6 +346,14 @@ export async function listAdminConversations(): Promise<ChatConversationSummaryD
             messages: latestMessages,
         });
     }));
+
+    return summaries.sort((a, b) => {
+        if (a.isPinned !== b.isPinned) {
+            return a.isPinned ? -1 : 1;
+        }
+
+        return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
+    });
 }
 
 export async function getAdminConversation(conversationId: string): Promise<ChatConversationDto | null> {
@@ -351,11 +374,9 @@ export async function sendConversationMessage(params: {
     body: string;
     conversationId?: string;
 }) {
-    const sanitizedBody = trimMessageBody(params.body);
-
-    if (!sanitizedBody) {
-        throw new Error("Message cannot be empty");
-    }
+    const sanitizedBody = parseChatImagePayload(params.body)
+        ? params.body
+        : parseChatMessagePayload({ message: params.body });
 
     const now = mysqlNow();
 
@@ -405,6 +426,33 @@ export async function updateConversationStatus(conversationId: string, status: C
         status,
         closedAt: status === "CLOSED" ? mysqlNow() : null,
     }).where(eq(chatConversations.id, conversationId));
+}
+
+export async function updateConversationAdminMeta(
+    conversationId: string,
+    input: {
+        isPinned?: boolean;
+        tags?: unknown;
+    }
+) {
+    const updateData: {
+        isPinned?: boolean;
+        tags?: string[];
+    } = {};
+
+    if (typeof input.isPinned === "boolean") {
+        updateData.isPinned = input.isPinned;
+    }
+
+    if (input.tags !== undefined) {
+        updateData.tags = sanitizeChatTags(input.tags);
+    }
+
+    if (Object.keys(updateData).length === 0) {
+        return;
+    }
+
+    await db.update(chatConversations).set(updateData).where(eq(chatConversations.id, conversationId));
 }
 
 export async function getConversationMessage(messageId: string) {

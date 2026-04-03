@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     Sheet,
@@ -185,11 +185,11 @@ function CartSheetContent() {
 }
 
 export function CartSheet() {
-    const mounted = useSyncExternalStore(
-        () => () => undefined,
-        () => true,
-        () => false
-    );
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     if (!mounted) {
         return (

@@ -118,8 +118,8 @@ export async function cacheOrFetch<T>(
     // Fetch fresh data
     const data = await fetchFn();
 
-    // Store in cache (don't await to not block response)
-    setToCache(key, data, ttlSeconds);
+    // Await the write so the request that warms the cache reliably persists it.
+    await setToCache(key, data, ttlSeconds);
 
     return data;
 }

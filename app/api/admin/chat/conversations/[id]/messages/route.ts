@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { getAdminConversation, sendConversationMessage } from "@/lib/chat";
 import { isAdminWithCsrf } from "@/lib/auth";
+import { parseChatMessagePayload } from "@/lib/chatSecurity";
+import { checkChatMessageRateLimit, getClientIp } from "@/lib/rateLimit";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
@@ -17,6 +19,22 @@ export async function POST(request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
 
     try {
+        const messageRateLimit = checkChatMessageRateLimit(
+            `admin:${authCheck.userId}:${getClientIp(request)}`
+        );
+
+        if (messageRateLimit.blocked) {
+            return NextResponse.json(
+                { success: false, message: messageRateLimit.message ?? "Too many messages" },
+                {
+                    status: 429,
+                    headers: messageRateLimit.retryAfter
+                        ? { "Retry-After": String(Math.ceil(messageRateLimit.retryAfter / 1000)) }
+                        : undefined,
+                }
+            );
+        }
+
         const existingConversation = await getAdminConversation(id);
 
         if (!existingConversation) {
@@ -24,7 +42,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         }
 
         const body = await request.json();
-        const message = typeof body?.message === "string" ? body.message : "";
+        const message = parseChatMessagePayload(body);
 
         await sendConversationMessage({
             conversationId: id,

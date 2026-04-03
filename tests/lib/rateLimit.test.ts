@@ -5,6 +5,7 @@ import {
   clearLoginAttempts,
   checkApiRateLimit,
   checkRegisterRateLimit,
+  checkChatMessageRateLimit,
   getClientIp,
   getProgressiveDelay,
   sleep,
@@ -101,6 +102,25 @@ describe("rateLimit utilities", () => {
       const result = checkRegisterRateLimit(testId);
       expect(result.blocked).toBe(true);
       expect(result.message).toBeDefined();
+    });
+  });
+
+  describe("checkChatMessageRateLimit", () => {
+    it("allows the first chat message", () => {
+      const result = checkChatMessageRateLimit(testId);
+      expect(result.blocked).toBe(false);
+      expect(result.remainingMessages).toBe(11);
+    });
+
+    it("blocks after exceeding the chat message limit", () => {
+      for (let i = 0; i < 12; i++) {
+        checkChatMessageRateLimit(testId);
+      }
+
+      const result = checkChatMessageRateLimit(testId);
+      expect(result.blocked).toBe(true);
+      expect(result.remainingMessages).toBe(0);
+      expect(result.retryAfter).toBeDefined();
     });
   });
 

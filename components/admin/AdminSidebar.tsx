@@ -7,102 +7,186 @@ import { Button } from "@/components/ui/button";
 import {
     Sheet,
     SheetContent,
-    SheetTrigger,
-    SheetTitle,
     SheetHeader,
+    SheetTitle,
+    SheetTrigger,
 } from "@/components/ui/sheet";
 import {
-    LayoutDashboard,
-    Package,
-    Users,
-    FileCheck,
-    Settings,
-    LogOut,
-    Gamepad2,
-    Newspaper,
-    FileText,
-    LinkIcon,
-    Gem,
-    Megaphone,
-    Shield,
-    Menu,
     ChevronDown,
-    Layers,
+    FileCheck,
     FileSpreadsheet,
+    FileText,
+    Gamepad2,
+    Gem,
+    Layers,
+    LayoutDashboard,
+    LinkIcon,
+    LogOut,
+    Megaphone,
+    Menu,
     MessagesSquare,
+    Newspaper,
+    Package,
+    Settings,
+    Shield,
+    Users,
 } from "lucide-react";
 
-// ── Navigation structure ───────────────────────────────────────────────────
-type NavItem = { href: string; label: string; icon: React.ElementType };
-type NavGroup = { label: string; icon: React.ElementType; items: NavItem[] };
+type NavItem = {
+    href: string;
+    label: string;
+    icon: React.ElementType;
+    badge?: string;
+};
+
+type NavGroup = {
+    label: string;
+    icon: React.ElementType;
+    items: NavItem[];
+};
+
 type NavEntry = NavItem | ({ group: true } & NavGroup);
 
-const navigation: NavEntry[] = [
-    { href: "/admin", label: "แดชบอร์ด", icon: LayoutDashboard },
-    { href: "/admin/products", label: "จัดการสินค้า", icon: Package },
-    { href: "/admin/news", label: "จัดการข่าวสาร", icon: Newspaper },
-    { href: "/admin/popups", label: "จัดการป๊อปอัพ", icon: Megaphone },
-    { href: "/admin/users", label: "จัดการผู้ใช้", icon: Users },
-    { href: "/admin/chat", label: "แชทลูกค้า", icon: MessagesSquare },
-    { href: "/admin/roles", label: "จัดการสิทธิ์", icon: Shield },
-    { href: "/admin/slips", label: "ตรวจสอบสลิป", icon: FileCheck },
+type NavSection = {
+    title: string;
+    hint: string;
+    items: NavEntry[];
+};
+
+function isNavGroup(entry: NavEntry): entry is ({ group: true } & NavGroup) {
+    return "group" in entry && entry.group === true;
+}
+
+const navigationSections: NavSection[] = [
     {
-        group: true,
-        label: "กาชา",
-        icon: Gamepad2,
+        title: "ใช้งานบ่อย",
+        hint: "เมนูที่แอดมินเปิดบ่อยสุด",
         items: [
-            { href: "/admin/gacha-machines", label: "หมวดหมู่กาชา", icon: Layers },
+            { href: "/admin", label: "แดชบอร์ด", icon: LayoutDashboard, badge: "หลัก" },
+            { href: "/admin/chat", label: "แชทลูกค้า", icon: MessagesSquare, badge: "สด" },
+            { href: "/admin/slips", label: "ตรวจสอบสลิป", icon: FileCheck },
         ],
     },
-    { href: "/admin/currency-settings", label: "ตั้งค่าสกุลเงิน", icon: Gem },
-    { href: "/admin/footer-links", label: "ลิงก์ท้ายเว็บ", icon: LinkIcon },
-    { href: "/admin/export", label: "ส่งออกข้อมูล", icon: FileSpreadsheet },
-    { href: "/admin/audit-logs", label: "บันทึกการใช้งาน", icon: FileText },
-    { href: "/admin/settings", label: "ตั้งค่าเว็บไซต์", icon: Settings },
+    {
+        title: "จัดการร้าน",
+        hint: "สินค้า ผู้ใช้ และสิทธิ์",
+        items: [
+            { href: "/admin/products", label: "จัดการสินค้า", icon: Package },
+            { href: "/admin/users", label: "จัดการผู้ใช้", icon: Users },
+            { href: "/admin/roles", label: "จัดการสิทธิ์", icon: Shield },
+            {
+                group: true,
+                label: "กาชา",
+                icon: Gamepad2,
+                items: [
+                    { href: "/admin/gacha-machines", label: "หมวดหมู่กาชา", icon: Layers },
+                ],
+            },
+        ],
+    },
+    {
+        title: "คอนเทนต์",
+        hint: "สิ่งที่ลูกค้าเห็นบนหน้าร้าน",
+        items: [
+            { href: "/admin/news", label: "จัดการข่าวสาร", icon: Newspaper },
+            { href: "/admin/popups", label: "จัดการป๊อปอัพ", icon: Megaphone },
+            { href: "/admin/footer-links", label: "ลิงก์ท้ายเว็บ", icon: LinkIcon },
+        ],
+    },
+    {
+        title: "ตั้งค่าและระบบ",
+        hint: "เครื่องมือหลังบ้านและค่าระบบ",
+        items: [
+            { href: "/admin/currency-settings", label: "ตั้งค่าสกุลเงิน", icon: Gem },
+            { href: "/admin/export", label: "ส่งออกข้อมูล", icon: FileSpreadsheet },
+            { href: "/admin/audit-logs", label: "บันทึกการใช้งาน", icon: FileText },
+            { href: "/admin/settings", label: "ตั้งค่าเว็บไซต์", icon: Settings },
+        ],
+    },
 ];
 
-// ── Single nav item ────────────────────────────────────────────────────────
-function NavLink({ href, label, icon: Icon, active, onClick, sub = false }: Readonly<{
-    href: string; label: string; icon: React.ElementType;
-    active: boolean; onClick?: () => void; sub?: boolean;
+function NavLink({
+    href,
+    label,
+    icon: Icon,
+    active,
+    onClick,
+    sub = false,
+    badge,
+}: Readonly<{
+    href: string;
+    label: string;
+    icon: React.ElementType;
+    active: boolean;
+    onClick?: () => void;
+    sub?: boolean;
+    badge?: string;
 }>) {
     return (
         <Link
             href={href}
             onClick={onClick}
             className={[
-                "flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150",
-                sub ? "py-2 text-[13px]" : "",
+                "group relative flex items-center gap-3 overflow-hidden rounded-2xl border px-3 py-3 text-sm font-medium transition-all duration-150",
+                sub ? "py-2.5 text-[13px]" : "",
                 active
-                    ? "border border-[#145de7]/60 bg-[#eef4ff] text-[#145de7] shadow-sm"
-                    : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 border border-transparent",
+                    ? "border-[#6ea0ff] bg-[#eef4ff] text-[#145de7] shadow-sm"
+                    : "border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900",
             ].join(" ")}
         >
-            <Icon className={["flex-shrink-0", sub ? "h-4 w-4" : "h-[18px] w-[18px]", active ? "text-[#145de7]" : "text-slate-400"].join(" ")} />
-            {label}
+            <span
+                className={[
+                    "absolute left-0 top-2 bottom-2 w-1 rounded-r-full transition-opacity duration-150",
+                    active ? "bg-[#145de7] opacity-100" : "opacity-0",
+                ].join(" ")}
+            />
+            <Icon
+                className={[
+                    "relative z-10 flex-shrink-0",
+                    sub ? "h-4 w-4" : "h-[18px] w-[18px]",
+                    active ? "text-[#145de7]" : "text-slate-400 group-hover:text-slate-600",
+                ].join(" ")}
+            />
+            <span className="relative z-10 flex-1 truncate">{label}</span>
+            {badge ? (
+                <span
+                    className={[
+                        "relative z-10 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.08em]",
+                        active
+                            ? "bg-white/90 text-[#145de7]"
+                            : "bg-slate-100 text-slate-500",
+                    ].join(" ")}
+                >
+                    {badge}
+                </span>
+            ) : null}
         </Link>
     );
 }
 
-// ── Collapsible group ──────────────────────────────────────────────────────
-function NavGroup({ group, pathname, onLinkClick }: Readonly<{
-    group: NavGroup; pathname: string; onLinkClick?: () => void;
+function NavGroup({
+    group,
+    pathname,
+    onLinkClick,
+}: Readonly<{
+    group: NavGroup;
+    pathname: string;
+    onLinkClick?: () => void;
 }>) {
-    const anyActive = group.items.some(
-        (i) => pathname === i.href || pathname.startsWith(i.href)
-    );
+    const anyActive = group.items.some((item) => pathname === item.href || pathname.startsWith(item.href));
     const [open, setOpen] = useState(anyActive);
     const Icon = group.icon;
 
     return (
-        <div>
+        <div className="space-y-1.5">
             <button
-                onClick={() => setOpen((v) => !v)}
+                type="button"
+                onClick={() => setOpen((current) => !current)}
                 className={[
-                    "w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-150 border",
+                    "flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-sm font-medium transition-all duration-150",
                     anyActive
-                        ? "border-slate-200 bg-slate-50 text-slate-700"
-                        : "border-transparent text-slate-500 hover:bg-slate-100 hover:text-slate-800",
+                        ? "border-slate-200 bg-slate-50 text-slate-900"
+                        : "border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900",
                 ].join(" ")}
             >
                 <Icon className="h-[18px] w-[18px] flex-shrink-0 text-slate-400" />
@@ -115,14 +199,18 @@ function NavGroup({ group, pathname, onLinkClick }: Readonly<{
                 />
             </button>
 
-            {open && (
-                <div className="mt-1 ml-3 pl-3 border-l-2 border-slate-200 space-y-0.5">
+            {open ? (
+                <div className="ml-4 space-y-1 border-l border-slate-200/80 pl-3">
                     {group.items.map((item) => {
                         const active = pathname === item.href || pathname.startsWith(item.href);
+
                         return (
                             <NavLink
                                 key={item.href}
-                                {...item}
+                                href={item.href}
+                                label={item.label}
+                                icon={item.icon}
+                                badge={item.badge}
                                 active={active}
                                 onClick={onLinkClick}
                                 sub
@@ -130,50 +218,91 @@ function NavGroup({ group, pathname, onLinkClick }: Readonly<{
                         );
                     })}
                 </div>
-            )}
+            ) : null}
         </div>
     );
 }
 
-// ── Sidebar nav contents ───────────────────────────────────────────────────
-function SidebarNav({ onLinkClick }: Readonly<{ onLinkClick?: () => void }>) {
-    const pathname = usePathname();
-
+function SidebarSection({
+    title,
+    hint,
+    items,
+    pathname,
+    onLinkClick,
+}: Readonly<{
+    title: string;
+    hint: string;
+    items: NavEntry[];
+    pathname: string;
+    onLinkClick?: () => void;
+}>) {
     return (
-        <>
-            <nav className="flex-1 space-y-0.5 px-3 py-4 overflow-y-auto">
-                {navigation.map((entry) => {
-                    if ("group" in entry && entry.group) {
+        <section className="space-y-2.5">
+            <div className="px-1">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                    {title}
+                </p>
+                <p className="mt-1 text-[11px] text-slate-400">{hint}</p>
+            </div>
+
+            <div className="space-y-1.5">
+                {items.map((entry) => {
+                    if (isNavGroup(entry)) {
                         return (
                             <NavGroup
                                 key={entry.label}
-                                group={entry as NavGroup}
+                                group={entry}
                                 pathname={pathname}
                                 onLinkClick={onLinkClick}
                             />
                         );
                     }
-                    const item = entry as NavItem;
+
                     const active =
-                        pathname === item.href ||
-                        (item.href !== "/admin" && pathname.startsWith(item.href));
+                        pathname === entry.href ||
+                        (entry.href !== "/admin" && pathname.startsWith(entry.href));
+
                     return (
                         <NavLink
-                            key={item.href}
-                            {...item}
+                            key={entry.href}
+                            href={entry.href}
+                            label={entry.label}
+                            icon={entry.icon}
+                            badge={entry.badge}
                             active={active}
                             onClick={onLinkClick}
                         />
                     );
                 })}
+            </div>
+        </section>
+    );
+}
+
+function SidebarNav({ onLinkClick }: Readonly<{ onLinkClick?: () => void }>) {
+    const pathname = usePathname();
+
+    return (
+        <>
+
+            <nav className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
+                {navigationSections.map((section) => (
+                    <SidebarSection
+                        key={section.title}
+                        title={section.title}
+                        hint={section.hint}
+                        items={section.items}
+                        pathname={pathname}
+                        onLinkClick={onLinkClick}
+                    />
+                ))}
             </nav>
 
-            {/* Back to Shop */}
-            <div className="border-t border-slate-200 p-3">
+            <div className="border-t border-slate-200 p-4">
                 <Link
                     href="/"
                     onClick={onLinkClick}
-                    className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800 border border-transparent"
+                    className="flex items-center gap-3 rounded-2xl border border-transparent px-3 py-3 text-sm font-medium text-slate-500 transition-colors hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900"
                 >
                     <LogOut className="h-[18px] w-[18px] text-slate-400" />
                     กลับหน้าร้าน
@@ -183,48 +312,65 @@ function SidebarNav({ onLinkClick }: Readonly<{ onLinkClick?: () => void }>) {
     );
 }
 
-// ── Main export ────────────────────────────────────────────────────────────
 export function AdminSidebar() {
     const [open, setOpen] = useState(false);
 
     return (
         <>
-            {/* Desktop Sidebar */}
-            <aside className="fixed left-0 top-0 z-40 hidden md:flex h-screen w-64 flex-col bg-white border-r border-slate-200 shadow-sm">
-                {/* Logo */}
-                <div className="flex h-16 items-center border-b border-slate-200 px-5 gap-3">
-                    <div className="h-8 w-8 rounded-xl bg-[#145de7] flex items-center justify-center shadow-sm">
+            <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 flex-col border-r border-slate-200 bg-white shadow-sm md:flex">
+                <div className="flex h-16 items-center gap-3 border-b border-slate-200 px-5">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#145de7] shadow-sm">
                         <Gamepad2 className="h-4 w-4 text-white" />
                     </div>
-                    <span className="text-[15px] font-bold text-slate-800 tracking-tight">แผงควบคุม</span>
+                    <div className="min-w-0">
+                        <p className="truncate text-[15px] font-bold tracking-tight text-slate-900">
+                            แผงควบคุม
+                        </p>
+                        <p className="truncate text-[11px] text-slate-400">
+                            จัดการร้านและระบบหลังบ้าน
+                        </p>
+                    </div>
                 </div>
 
                 <SidebarNav />
             </aside>
 
-            {/* Mobile Header */}
-            <div className="fixed top-0 left-0 right-0 z-40 flex md:hidden h-14 items-center justify-between bg-white border-b border-slate-200 px-4 shadow-sm">
-                <Link href="/admin" className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-lg bg-[#145de7] flex items-center justify-center">
+            <div className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm md:hidden">
+                <Link href="/admin" className="flex items-center gap-2.5">
+                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#145de7]">
                         <Gamepad2 className="h-3.5 w-3.5 text-white" />
                     </div>
-                    <span className="text-base font-bold text-slate-800">ผู้ดูแล</span>
+                    <span className="text-base font-bold text-slate-900">ผู้ดูแล</span>
                 </Link>
 
                 <Sheet open={open} onOpenChange={setOpen}>
                     <SheetTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-slate-500 hover:text-slate-800 hover:bg-slate-100" aria-label="เปิดเมนูผู้ดูแลระบบ">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                            aria-label="เปิดเมนูผู้ดูแลระบบ"
+                        >
                             <Menu className="h-5 w-5" />
                         </Button>
                     </SheetTrigger>
-                    <SheetContent side="left" className="w-[min(18rem,85vw)] p-0 bg-white border-slate-200 sm:w-72">
-                        <SheetHeader className="h-14 flex-row items-center border-b border-slate-200 px-5 gap-3 shrink-0 space-y-0">
-                            <div className="h-7 w-7 rounded-lg bg-[#145de7] flex items-center justify-center">
-                                <Gamepad2 className="h-3.5 w-3.5 text-white" />
+
+                    <SheetContent side="left" className="w-[min(19rem,88vw)] border-slate-200 bg-white p-0 sm:w-80">
+                        <SheetHeader className="flex h-16 shrink-0 flex-row items-center gap-3 space-y-0 border-b border-slate-200 px-5">
+                            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#145de7]">
+                                <Gamepad2 className="h-4 w-4 text-white" />
                             </div>
-                            <SheetTitle className="text-[15px] font-bold text-slate-800">แผงควบคุม</SheetTitle>
+                            <div className="min-w-0 text-left">
+                                <SheetTitle className="truncate text-[15px] font-bold text-slate-900">
+                                    แผงควบคุม
+                                </SheetTitle>
+                                <p className="truncate text-[11px] text-slate-400">
+                                    จัดการร้านและระบบหลังบ้าน
+                                </p>
+                            </div>
                         </SheetHeader>
-                        <div className="flex flex-col h-[calc(100%-3.5rem)]">
+
+                        <div className="flex h-[calc(100%-4rem)] flex-col">
                             <SidebarNav onLinkClick={() => setOpen(false)} />
                         </div>
                     </SheetContent>

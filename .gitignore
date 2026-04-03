@@ -37,6 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# editor / local IDE state
+.vscode/settings.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
@@ -50,6 +53,7 @@ next-env.d.ts
 drizzle/meta
 
 # SonarQube output files (generated, do not commit)
+.scannerwork/
 scripts/sonar/sonar-current-issues.json
 eslint_report.txt
 lint-report.json

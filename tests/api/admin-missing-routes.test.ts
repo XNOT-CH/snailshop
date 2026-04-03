@@ -81,7 +81,13 @@ vi.mock("@/lib/auditLog", () => ({
     TOPUP_REJECT: "TOPUP_REJECT",
   },
 }));
-vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-03-14 00:00:00") }));
+vi.mock("@/lib/utils/date", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@/lib/utils/date")>();
+  return {
+    ...actual,
+    mysqlNow: vi.fn(() => "2026-03-14 00:00:00"),
+  };
+});
 vi.mock("@/lib/validations/validate", () => ({ validateBody: vi.fn() }));
 vi.mock("@/lib/validations/content", () => ({
   currencySettingsSchema: {},
@@ -162,7 +168,10 @@ describe("API: /api/admin/audit-logs (GET)", () => {
 // /api/admin/export
 // ════════════════════════════════════════════════════════════════
 describe("API: /api/admin/export (GET)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useRealTimers();
+  });
 
   const mkExportReq = (params: Record<string, string>) => {
     const url = new URL("http://localhost/api/admin/export");
@@ -210,6 +219,32 @@ describe("API: /api/admin/export (GET)", () => {
     const { GET } = await import("@/app/api/admin/export/route");
     const res = await GET(mkExportReq({ table: "orders", from: "2026-01-01", to: "2026-03-14" }));
     expect(res.status).toBe(200);
+  });
+
+  it("returns 400 when date range is reversed", async () => {
+    (isAdmin as any).mockResolvedValue(ADMIN_OK);
+    const { GET } = await import("@/app/api/admin/export/route");
+    const res = await GET(mkExportReq({ table: "orders", from: "2026-03-15", to: "2026-03-14" }));
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.message).toContain("before or equal");
+  });
+
+  it("uses Bangkok date for exported filenames", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-02T20:00:00.000Z"));
+    (isAdmin as any).mockResolvedValue(ADMIN_OK);
+    (db.select as any) = vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        orderBy: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    });
+    const { GET } = await import("@/app/api/admin/export/route");
+    const res = await GET(mkExportReq({ table: "products" }));
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Content-Disposition")).toContain('products_2026-04-03.csv');
   });
 
   it("exports users as CSV", async () => {

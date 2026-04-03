@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Settings, User, UserCog, Wallet } from "lucide-react";
 import { LogoutMenuItem } from "@/components/LogoutMenuItem";
@@ -46,11 +46,11 @@ export function NavbarUserMenu({
     username,
     creditBalance,
 }: Readonly<NavbarUserMenuProps>) {
-    const mounted = useSyncExternalStore(
-        () => () => undefined,
-        () => true,
-        () => false
-    );
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
 
     if (!mounted) {
         return <UserAvatarButton username={username} disabled />;

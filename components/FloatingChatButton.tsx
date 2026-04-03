@@ -17,6 +17,12 @@ import {
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
+import {
+    CHAT_ALLOWED_IMAGE_TYPES,
+    CHAT_IMAGE_ACCEPT_ATTRIBUTE,
+    CHAT_MAX_IMAGE_SIZE,
+    CHAT_MAX_MESSAGE_LENGTH,
+} from "@/lib/chatConstraints";
 import { compressImage } from "@/lib/compressImage";
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import { showError } from "@/lib/swal";
@@ -36,12 +42,27 @@ interface ChatMessage {
 interface ChatConversation {
     id: string;
     status: "OPEN" | "CLOSED";
+    adminLastReadAt: string | null;
     messages: ChatMessage[];
 }
 
 const HIDDEN_PATH_PREFIXES = ["/login", "/register", "/admin"];
 
-function ChatBubble({ message }: Readonly<{ message: ChatMessage }>) {
+function isMessageReadByAdmin(message: ChatMessage, adminLastReadAt: string | null) {
+    if (!adminLastReadAt) {
+        return false;
+    }
+
+    return new Date(adminLastReadAt).getTime() >= new Date(message.createdAt).getTime();
+}
+
+function ChatBubble({
+    message,
+    statusLabel,
+}: Readonly<{
+    message: ChatMessage;
+    statusLabel?: string | null;
+}>) {
     const isCustomer = message.senderType === "CUSTOMER";
 
     return (
@@ -53,7 +74,11 @@ function ChatBubble({ message }: Readonly<{ message: ChatMessage }>) {
                         : "border border-slate-200 bg-white text-slate-900"
                 }`}
             >
-                <ChatMessageContent message={message} tone={isCustomer ? "primary" : "neutral"} />
+                <ChatMessageContent
+                    message={message}
+                    tone={isCustomer ? "primary" : "neutral"}
+                    statusLabel={isCustomer ? statusLabel : null}
+                />
             </div>
         </div>
     );
@@ -70,6 +95,9 @@ export function FloatingChatButton() {
     const [isSending, startSending] = useTransition();
     const endOfMessagesRef = useRef<HTMLDivElement | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const latestCustomerMessageId = [...(conversation?.messages ?? [])]
+        .reverse()
+        .find((message) => message.senderType === "CUSTOMER")?.id;
 
     useEffect(() => {
         if (!isOpen) {
@@ -164,10 +192,23 @@ export function FloatingChatButton() {
         setIsUploading(true);
 
         try {
+            if (!CHAT_ALLOWED_IMAGE_TYPES.includes(originalFile.type as (typeof CHAT_ALLOWED_IMAGE_TYPES)[number])) {
+                throw new Error("รองรับเฉพาะไฟล์ JPG, PNG, WebP และ GIF");
+            }
+
             const fileToUpload =
                 originalFile.type === "image/gif"
                     ? originalFile
                     : await compressImage(originalFile, 500 * 1024);
+
+            if (fileToUpload.size === 0) {
+                throw new Error("ไฟล์รูปว่างเปล่า กรุณาเลือกไฟล์ใหม่");
+            }
+
+            if (fileToUpload.size > CHAT_MAX_IMAGE_SIZE) {
+                throw new Error("ไฟล์รูปต้องมีขนาดไม่เกิน 3MB");
+            }
+
             const formData = new FormData();
 
             formData.append("file", fileToUpload, fileToUpload.name);
@@ -203,12 +244,11 @@ export function FloatingChatButton() {
             <SheetTrigger asChild>
                 <button
                     type="button"
-                    className="fixed bottom-4 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-[20px] bg-white shadow-xl shadow-slate-300/60 ring-1 ring-slate-200 transition hover:scale-105 hover:shadow-2xl hover:shadow-slate-300/70 sm:bottom-6 sm:right-6 sm:h-[60px] sm:w-[60px]"
+                    className="fixed bottom-4 right-4 z-50 flex h-[76px] w-[76px] items-center justify-center rounded-[24px] bg-transparent shadow-none ring-0 transition hover:scale-105 sm:bottom-6 sm:right-6 sm:h-[84px] sm:w-[84px]"
                     aria-label="เปิดแชทลูกค้า"
                 >
                     <ChatBrandLogo
-                        className="h-10 w-10 rounded-[15px] shadow-none sm:h-11 sm:w-11"
-                        bubbleClassName="h-5 w-5"
+                        className="h-full w-full rounded-[24px] shadow-none"
                     />
                 </button>
             </SheetTrigger>
@@ -219,7 +259,7 @@ export function FloatingChatButton() {
             >
                 <SheetHeader className="shrink-0 border-b border-slate-200 bg-white px-4 py-4 pr-12 text-left sm:px-5 sm:pr-14">
                     <div className="flex items-center gap-3">
-                        <ChatBrandLogo className="h-11 w-11 rounded-2xl" bubbleClassName="h-5 w-5" />
+                        <ChatBrandLogo className="h-11 w-11 rounded-2xl" />
                         <div>
                             <SheetTitle className="text-base text-slate-900">คุยกับทีมร้าน</SheetTitle>
                             <SheetDescription className="mt-1 text-xs text-slate-500">
@@ -262,9 +302,23 @@ export function FloatingChatButton() {
                                         กำลังโหลดข้อความ
                                     </div>
                                 ) : conversation?.messages.length ? (
-                                    conversation.messages.map((message) => (
-                                        <ChatBubble key={message.id} message={message} />
-                                    ))
+                                    conversation.messages.map((message) => {
+                                        const statusLabel = message.id === latestCustomerMessageId
+                                            ? (
+                                                isMessageReadByAdmin(message, conversation.adminLastReadAt)
+                                                    ? "อ่านแล้ว"
+                                                    : "ส่งแล้ว"
+                                            )
+                                            : null;
+
+                                        return (
+                                            <ChatBubble
+                                                key={message.id}
+                                                message={message}
+                                                statusLabel={statusLabel}
+                                            />
+                                        );
+                                    })
                                 ) : (
                                     <div className="flex min-h-[280px] items-center justify-center rounded-[28px] border border-dashed border-slate-200 bg-white px-4 text-center text-sm text-slate-500">
                                         เริ่มพิมพ์ข้อความแรกเพื่อคุยกับทีมร้านได้เลย
@@ -279,7 +333,7 @@ export function FloatingChatButton() {
                                 <input
                                     ref={fileInputRef}
                                     type="file"
-                                    accept="image/png,image/jpeg,image/webp,image/gif"
+                                    accept={CHAT_IMAGE_ACCEPT_ATTRIBUTE}
                                     className="hidden"
                                     onChange={handleImageSelected}
                                 />
@@ -288,6 +342,7 @@ export function FloatingChatButton() {
                                     onChange={(event) => setDraft(event.target.value)}
                                     onKeyDown={handleComposerKeyDown}
                                     placeholder="พิมพ์ข้อความของคุณ"
+                                    maxLength={CHAT_MAX_MESSAGE_LENGTH}
                                     className="min-h-20 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 sm:min-h-24"
                                 />
                                 <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

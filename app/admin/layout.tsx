@@ -43,7 +43,7 @@ export default async function AdminLayout({
             <HideMainLayout />
             <AdminSidebar />
 
-            <main className="ml-0 w-full min-h-screen flex-1 animate-page-enter pt-14 md:ml-64 md:pt-0">
+            <main className="ml-0 w-full min-h-screen flex-1 animate-page-enter pt-14 md:ml-72 md:pt-0">
                 <div className="px-3 py-3 sm:px-4 md:px-6 md:py-6 lg:px-8">
                     <div className="mx-auto w-full max-w-[1600px] rounded-2xl bg-card p-4 shadow-sm sm:p-5 md:p-7">
                         {children}
