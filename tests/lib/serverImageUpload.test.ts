@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { optimizeImageUpload, validateImageFile } from "@/lib/serverImageUpload";
+import { deleteManagedUpload, isManagedUploadPath, optimizeImageUpload, resolveManagedUploadPath, validateImageFile } from "@/lib/serverImageUpload";
 
 const PNG_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aR0YAAAAASUVORK5CYII=";
 const GIF_BASE64 = "R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
@@ -46,5 +46,28 @@ describe("lib/serverImageUpload", () => {
         expect(result.mimeType).toBe("image/gif");
         expect(result.filename.endsWith(".gif")).toBe(true);
         expect(result.buffer.equals(Buffer.from(GIF_BASE64, "base64"))).toBe(true);
+    });
+
+    it("accepts only managed upload paths inside the public profile directory", () => {
+        expect(isManagedUploadPath("/uploads/profiles/avatar.webp", "/uploads/profiles")).toBe(true);
+        expect(isManagedUploadPath("https://example.com/avatar.webp", "/uploads/profiles")).toBe(false);
+        expect(isManagedUploadPath("/uploads/profiles/../avatar.webp", "/uploads/profiles")).toBe(false);
+    });
+
+    it("resolves managed upload paths into local files", () => {
+        const resolved = resolveManagedUploadPath(
+            "/uploads/profiles/avatar.webp",
+            "C:/repo/public/uploads/profiles",
+            "/uploads/profiles"
+        );
+
+        expect(resolved).toContain("avatar.webp");
+        expect(resolveManagedUploadPath("https://example.com/avatar.webp", "C:/repo/public/uploads/profiles", "/uploads/profiles")).toBeNull();
+    });
+
+    it("returns false when deleting a missing managed upload", async () => {
+        await expect(
+            deleteManagedUpload("/uploads/profiles/missing.webp", "C:/repo/public/uploads/profiles", "/uploads/profiles")
+        ).resolves.toBe(false);
     });
 });

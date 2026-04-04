@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Swal from "sweetalert2";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
     Table,
     TableBody,
@@ -14,9 +15,16 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Plus, Pencil, Trash2, ExternalLink, Loader2, Link as LinkIcon, GripVertical } from "lucide-react";
-import Swal from "sweetalert2";
-import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
+import {
+    ExternalLink,
+    GripVertical,
+    Link as LinkIcon,
+    Loader2,
+    Pencil,
+    Plus,
+    Trash2,
+} from "lucide-react";
+import { showDeleteConfirm, showError, showSuccess } from "@/lib/swal";
 
 interface FooterLink {
     id: string;
@@ -33,24 +41,32 @@ interface FooterSettings {
     title: string;
 }
 
+function getDomainLabel(href: string) {
+    if (href.startsWith("/")) return "ลิงก์ภายในเว็บ";
+    try {
+        return new URL(href).hostname.replace(/^www\./, "");
+    } catch {
+        return "ลิงก์ภายนอก";
+    }
+}
+
 export default function FooterLinksAdminPage() {
     const [settings, setSettings] = useState<FooterSettings | null>(null);
     const [links, setLinks] = useState<FooterLink[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
-    // Form states
     const [newLabel, setNewLabel] = useState("");
     const [newHref, setNewHref] = useState("");
     const [newOpenInNewTab, setNewOpenInNewTab] = useState(false);
 
-
-
-
     const fetchData = useCallback(async () => {
         try {
             const res = await fetch("/api/admin/footer-links");
-            const data = await res.json();
+            const data = (await res.json()) as {
+                settings: FooterSettings;
+                links: FooterLink[];
+            };
             setSettings(data.settings);
             setLinks(data.links);
         } catch (error) {
@@ -62,8 +78,17 @@ export default function FooterLinksAdminPage() {
     }, []);
 
     useEffect(() => {
-        fetchData();
+        void fetchData();
     }, [fetchData]);
+
+    const sortedLinks = useMemo(
+        () =>
+            [...links].sort((a, b) => {
+                if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+                return a.label.localeCompare(b.label);
+            }),
+        [links],
+    );
 
     const handleToggleActive = async (isActive: boolean) => {
         try {
@@ -72,14 +97,15 @@ export default function FooterLinksAdminPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ isActive }),
             });
+
             if (res.ok) {
-                const updated = await res.json();
+                const updated = (await res.json()) as FooterSettings;
                 setSettings(updated);
                 showSuccess(isActive ? "เปิดการแสดงผลแล้ว" : "ปิดการแสดงผลแล้ว");
             }
         } catch (error) {
             console.error("Error toggling active:", error);
-            showError("ไม่สามารถอัปเดตได้");
+            showError("ไม่สามารถอัปเดตสถานะได้");
         }
     };
 
@@ -103,8 +129,8 @@ export default function FooterLinksAdminPage() {
             });
 
             if (res.ok) {
-                const newLink = await res.json();
-                setLinks([...links, newLink]);
+                const newLink = (await res.json()) as FooterLink;
+                setLinks((prev) => [...prev, newLink]);
                 setNewLabel("");
                 setNewHref("");
                 setNewOpenInNewTab(false);
@@ -120,9 +146,16 @@ export default function FooterLinksAdminPage() {
         }
     };
 
-    const handleConfirmEdit = async (result: { isConfirmed: boolean; value?: Record<string, unknown> }, link: FooterLink) => {
+    const handleConfirmEdit = async (
+        result: { isConfirmed: boolean; value?: Record<string, unknown> },
+        link: FooterLink,
+    ) => {
         if (!result.isConfirmed || !result.value) return;
-        if (!result.value.label || !result.value.href) { showError("กรุณากรอกข้อมูลให้ครบ"); return; }
+        if (!result.value.label || !result.value.href) {
+            showError("กรุณากรอกข้อมูลให้ครบ");
+            return;
+        }
+
         setSaving(true);
         try {
             const res = await fetch(`/api/admin/footer-links/${link.id}`, {
@@ -130,44 +163,86 @@ export default function FooterLinksAdminPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(result.value),
             });
+
             if (res.ok) {
-                const updated = await res.json();
-                setLinks(prev => prev.map(l => l.id === updated.id ? updated : l));
+                const updated = (await res.json()) as FooterLink;
+                setLinks((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
                 showSuccess("แก้ไขลิงก์เรียบร้อย");
-            } else { showError("ไม่สามารถแก้ไขลิงก์ได้"); }
-        } catch { showError("เกิดข้อผิดพลาด"); }
-        finally { setSaving(false); }
+            } else {
+                showError("ไม่สามารถแก้ไขลิงก์ได้");
+            }
+        } catch {
+            showError("เกิดข้อผิดพลาด");
+        } finally {
+            setSaving(false);
+        }
     };
 
     const openEditModal = (link: FooterLink) => {
-        Swal.fire({
+        void Swal.fire({
             title: "แก้ไขลิงก์",
-            width: "min(96vw, 480px)",
+            width: "min(96vw, 540px)",
             showCancelButton: true,
             confirmButtonText: "บันทึก",
             cancelButtonText: "ยกเลิก",
-            confirmButtonColor: "#1a56db",
+            confirmButtonColor: "#1d4ed8",
             cancelButtonColor: "#6b7280",
             reverseButtons: true,
             focusConfirm: false,
-            customClass: { popup: "rounded-2xl text-left", confirmButton: "rounded-xl px-6 py-2", cancelButton: "rounded-xl px-6 py-2" },
+            customClass: {
+                popup: "overflow-hidden rounded-[28px] text-left",
+                confirmButton: "rounded-xl px-6 py-2.5",
+                cancelButton: "rounded-xl px-6 py-2.5",
+                actions: "mt-6 border-t border-gray-100 px-0 pt-4",
+            },
             html: `
                 <div class="space-y-4 text-left">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">ข้อความที่โชว์</label>
-                        <input id="swal-label" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${link.label}">
+                    <div class="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white px-4 py-3">
+                        <p class="text-sm font-semibold text-blue-700">ปรับข้อมูลลิงก์เมนูลัด</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">แก้ไขข้อความที่โชว์ ลิงก์ปลายทาง และวิธีเปิดลิงก์ให้ตรงกับสิ่งที่ต้องการ</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">ลิงก์ไปที่</label>
-                        <input id="swal-href" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${link.href}">
+                        <label class="mb-1.5 block text-sm font-medium text-gray-700">ข้อความที่โชว์</label>
+                        <input
+                            id="swal-label"
+                            class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value="${link.label}"
+                        />
                     </div>
-                    <div class="flex items-center gap-3">
-                        <input id="swal-newtab" type="checkbox" class="w-4 h-4" ${link.openInNewTab ? "checked" : ""}>
-                        <label for="swal-newtab" class="text-sm">เปิดแท็บใหม่</label>
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-gray-700">ลิงก์ปลายทาง</label>
+                        <div class="rounded-2xl border border-gray-200 bg-gray-50/60 p-3">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                <input
+                                    id="swal-href"
+                                    class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value="${link.href}"
+                                />
+                                <a
+                                    href="${link.href}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center justify-center rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+                                >
+                                    เปิดลิงก์
+                                </a>
+                            </div>
+                            <p class="mt-2 text-xs text-gray-500">ตรวจสอบปลายทางก่อนบันทึกได้ทันที</p>
+                        </div>
                     </div>
-                    <div class="flex items-center gap-3">
-                        <input id="swal-active" type="checkbox" class="w-4 h-4" ${link.isActive ? "checked" : ""}>
-                        <label for="swal-active" class="text-sm">แสดงผลลิงก์นี้</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <label class="flex items-center gap-3 rounded-2xl border border-gray-200 px-4 py-3">
+                            <input id="swal-newtab" type="checkbox" class="h-4 w-4" ${
+                                link.openInNewTab ? "checked" : ""
+                            }>
+                            <span class="text-sm text-slate-700">เปิดในแท็บใหม่</span>
+                        </label>
+                        <label class="flex items-center gap-3 rounded-2xl border border-gray-200 px-4 py-3">
+                            <input id="swal-active" type="checkbox" class="h-4 w-4" ${
+                                link.isActive ? "checked" : ""
+                            }>
+                            <span class="text-sm text-slate-700">แสดงลิงก์นี้</span>
+                        </label>
                     </div>
                 </div>
             `,
@@ -177,10 +252,8 @@ export default function FooterLinksAdminPage() {
                 openInNewTab: (document.getElementById("swal-newtab") as HTMLInputElement)?.checked,
                 isActive: (document.getElementById("swal-active") as HTMLInputElement)?.checked,
             }),
-        }).then((result) => handleConfirmEdit(result, link));
+        }).then((result) => void handleConfirmEdit(result, link));
     };
-
-
 
     const handleDeleteLink = async (link: FooterLink) => {
         const confirmed = await showDeleteConfirm(link.label);
@@ -192,7 +265,7 @@ export default function FooterLinksAdminPage() {
             });
 
             if (res.ok) {
-                setLinks(links.filter((l) => l.id !== link.id));
+                setLinks((prev) => prev.filter((item) => item.id !== link.id));
                 showSuccess("ลบลิงก์เรียบร้อย");
             } else {
                 showError("ไม่สามารถลบลิงก์ได้");
@@ -205,7 +278,7 @@ export default function FooterLinksAdminPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-[400px]">
+            <div className="flex min-h-[400px] items-center justify-center">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
         );
@@ -213,142 +286,220 @@ export default function FooterLinksAdminPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <LinkIcon className="h-6 w-6 text-[#1a56db]" />
+                <h1 className="flex items-center gap-3 text-2xl font-bold text-foreground">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-[#eef4ff] text-[#145de7]">
+                        <LinkIcon className="h-5 w-5" />
+                    </span>
                     จัดการเมนูลัดส่วนท้าย
                 </h1>
-                <p className="text-muted-foreground mt-1">เพิ่ม แก้ไข หรือลบลิงก์ที่แสดงในส่วนท้ายของเว็บไซต์</p>
+                <p className="mt-2 text-muted-foreground">
+                    เพิ่ม แก้ไข หรือซ่อนลิงก์ที่แสดงในส่วนท้ายของเว็บไซต์
+                </p>
             </div>
 
-            {/* Toggle Active */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm px-5 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <p className="font-medium">แสดงผลบนหน้าเว็บ</p>
-                    <p className="text-sm text-muted-foreground">เปิดเพื่อโชว์เมนูนี้ให้ลูกค้าเห็น</p>
-                </div>
-                <Switch
-                    checked={settings?.isActive ?? false}
-                    onCheckedChange={handleToggleActive}
-                />
-            </div>
-
-            {/* Add New Link Form */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
-                <div className="border-b border-border py-3 px-5 flex items-center gap-2">
-                    <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
-                        <Plus className="h-3.5 w-3.5 text-white" />
+            <div className="rounded-2xl border border-border bg-card shadow-sm">
+                <div className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <p className="font-semibold text-foreground">แสดงผลบนหน้าเว็บ</p>
+                            <span
+                                className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                                    settings?.isActive
+                                        ? "bg-emerald-100 text-emerald-700"
+                                        : "bg-slate-100 text-slate-500"
+                                }`}
+                            >
+                                {settings?.isActive ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+                            </span>
+                        </div>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            เปิดเพื่อให้เมนูลัดชุดนี้แสดงในส่วนท้ายเว็บไซต์
+                        </p>
                     </div>
-                    <span className="font-bold">เพิ่มลิงก์ใหม่</span>
+                    <Switch
+                        checked={settings?.isActive ?? false}
+                        onCheckedChange={handleToggleActive}
+                    />
                 </div>
-                <form onSubmit={handleAddLink} className="p-5 space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+                <div className="border-b border-border px-5 py-4">
+                    <div className="flex items-center gap-2">
+                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#145de7] text-white">
+                            <Plus className="h-4 w-4" />
+                        </span>
+                        <p className="font-semibold text-foreground">เพิ่มลิงก์ใหม่</p>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        สร้างเมนูลัดที่ช่วยพาลูกค้าไปยังหน้าสำคัญหรือปลายทางภายนอก
+                    </p>
+                </div>
+                <form onSubmit={handleAddLink} className="space-y-4 p-5">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-[1.2fr,1.2fr,auto]">
                         <div className="space-y-2">
                             <Label htmlFor="newLabel">ข้อความที่โชว์</Label>
-                            <Input id="newLabel" placeholder="เช่น วิธีเติมเงิน, ติดต่อเรา" value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
+                            <Input
+                                id="newLabel"
+                                placeholder="เช่น วิธีเติมเงิน, ติดต่อเรา"
+                                value={newLabel}
+                                onChange={(e) => setNewLabel(e.target.value)}
+                            />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="newHref">ลิงก์ไปที่</Label>
-                            <Input id="newHref" placeholder="เช่น /how-to-topup" value={newHref} onChange={(e) => setNewHref(e.target.value)} />
+                            <Label htmlFor="newHref">ลิงก์ปลายทาง</Label>
+                            <Input
+                                id="newHref"
+                                placeholder="เช่น /how-to-topup หรือ https://facebook.com/..."
+                                value={newHref}
+                                onChange={(e) => setNewHref(e.target.value)}
+                            />
+                        </div>
+                        <div className="flex items-end">
+                            <Button
+                                type="submit"
+                                disabled={saving}
+                                className="w-full rounded-xl bg-[#145de7] hover:bg-[#1048b8] md:w-auto"
+                            >
+                                {saving ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Plus className="mr-2 h-4 w-4" />
+                                )}
+                                เพิ่มลิงก์
+                            </Button>
                         </div>
                     </div>
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-3">
                         <div className="flex items-center space-x-2">
-                            <Checkbox id="newOpenInNewTab" checked={newOpenInNewTab} onCheckedChange={(checked) => setNewOpenInNewTab(checked === true)} />
-                            <Label htmlFor="newOpenInNewTab" className="text-sm font-normal cursor-pointer">เปิดแท็บใหม่ (สำหรับลิงก์ออกไปเว็บอื่น)</Label>
+                            <Checkbox
+                                id="newOpenInNewTab"
+                                checked={newOpenInNewTab}
+                                onCheckedChange={(checked) => setNewOpenInNewTab(checked === true)}
+                            />
+                            <Label
+                                htmlFor="newOpenInNewTab"
+                                className="cursor-pointer text-sm font-normal"
+                            >
+                                เปิดแท็บใหม่สำหรับลิงก์ที่ออกไปเว็บไซต์ภายนอก
+                            </Label>
                         </div>
-                        <Button type="submit" disabled={saving} className="w-full bg-[#1a56db] hover:bg-[#1e40af] sm:w-auto">
-                            {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
-                            เพิ่มลิงก์
-                        </Button>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                            ถ้าเป็นลิงก์ภายในเว็บมักไม่จำเป็นต้องเปิดแท็บใหม่
+                        </p>
                     </div>
                 </form>
             </div>
 
-            {/* Links List */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
-                <div className="border-b border-border py-3 px-5 flex items-center gap-2">
-                    <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
-                        <LinkIcon className="h-3.5 w-3.5 text-white" />
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+                <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-sm font-semibold text-foreground">
+                            รายการลิงก์ {links.length} รายการ
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                            ตรวจสอบลิงก์ที่ใช้งานอยู่ พร้อมสถานะและรูปแบบการเปิดลิงก์
+                        </p>
                     </div>
-                    <span className="font-bold">รายการลิงก์ ({links.length})</span>
+                    <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        พร้อมแสดง {links.filter((item) => item.isActive).length} รายการ
+                    </div>
                 </div>
+
                 {links.length === 0 ? (
-                    <div className="text-center py-10 text-muted-foreground">ยังไม่มีลิงก์ เพิ่มลิงก์แรกของคุณด้านบน</div>
+                    <div className="py-12 text-center text-muted-foreground">
+                        ยังไม่มีลิงก์ในส่วนท้าย เพิ่มรายการแรกได้จากฟอร์มด้านบน
+                    </div>
                 ) : (
                     <div className="overflow-x-auto">
-                    <Table className="min-w-[760px]">
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-[50px]"></TableHead>
-                                <TableHead>ข้อความ</TableHead>
-                                <TableHead>ลิงก์</TableHead>
-                                <TableHead className="text-center">แท็บใหม่</TableHead>
-                                <TableHead className="text-center">สถานะ</TableHead>
-                                <TableHead className="text-right">จัดการ</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {links.map((link) => (
-                                <TableRow key={link.id}>
-                                    <TableCell>
-                                        <GripVertical className="h-4 w-4 text-muted-foreground" />
-                                    </TableCell>
-                                    <TableCell className="font-medium">
-                                        {link.label}
-                                    </TableCell>
-                                    <TableCell>
-                                        <a
-                                            href={link.href}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-800 hover:underline group max-w-[250px]"
-                                        >
-                                            <span className="truncate">{link.href}</span>
-                                            <ExternalLink className="h-3.5 w-3.5 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        </a>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        {link.openInNewTab && (
-                                            <ExternalLink className="h-4 w-4 mx-auto text-blue-500" />
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <span
-                                            className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${link.isActive
-                                                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                                                : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
-                                                }`}
-                                        >
-                                            {link.isActive ? "แสดง" : "ซ่อน"}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => openEditModal(link)}
-                                                aria-label={`แก้ไขลิงก์ ${link.label}`}
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="text-destructive hover:text-destructive"
-                                                onClick={() => handleDeleteLink(link)}
-                                                aria-label={`ลบลิงก์ ${link.label}`}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
+                        <Table className="min-w-[860px]">
+                            <TableHeader>
+                                <TableRow className="bg-muted/30">
+                                    <TableHead className="w-[50px]"></TableHead>
+                                    <TableHead className="min-w-[220px]">ข้อความ</TableHead>
+                                    <TableHead className="min-w-[280px]">ลิงก์</TableHead>
+                                    <TableHead className="w-[130px] text-center">แท็บใหม่</TableHead>
+                                    <TableHead className="w-[100px] text-center">สถานะ</TableHead>
+                                    <TableHead className="w-[130px] text-right">จัดการ</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {sortedLinks.map((link) => (
+                                    <TableRow key={link.id} className="hover:bg-muted/20">
+                                        <TableCell>
+                                            <GripVertical className="h-4 w-4 text-muted-foreground" />
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="space-y-1">
+                                                <p className="font-semibold text-foreground">
+                                                    {link.label}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {getDomainLabel(link.href)}
+                                                </p>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <a
+                                                href={link.href}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex max-w-[300px] items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                            >
+                                                <span className="truncate">{link.href}</span>
+                                                <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
+                                            </a>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <span
+                                                className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                                                    link.openInNewTab
+                                                        ? "bg-blue-100 text-blue-700"
+                                                        : "bg-slate-100 text-slate-500"
+                                                }`}
+                                            >
+                                                {link.openInNewTab ? "เปิดแท็บใหม่" : "แท็บเดิม"}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            <span
+                                                className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                                                    link.isActive
+                                                        ? "bg-emerald-100 text-emerald-700"
+                                                        : "bg-slate-100 text-slate-500"
+                                                }`}
+                                            >
+                                                {link.isActive ? "แสดง" : "ซ่อน"}
+                                            </span>
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex items-center justify-end gap-1.5">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="rounded-lg text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
+                                                    onClick={() => openEditModal(link)}
+                                                    aria-label={`แก้ไขลิงก์ ${link.label}`}
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                                                    onClick={() => void handleDeleteLink(link)}
+                                                    aria-label={`ลบลิงก์ ${link.label}`}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     </div>
                 )}
             </div>

@@ -1,8 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
-import { showError, showSuccess, showDeleteConfirm, showLoading, hideLoading } from "@/lib/swal";
+import {
+    showDeleteConfirm,
+    showError,
+    showLoading,
+    showSuccess,
+    hideLoading,
+} from "@/lib/swal";
 import { compressImage } from "@/lib/compressImage";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -15,25 +21,16 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import {
-    Plus,
-    Pencil,
-    Trash2,
-    Loader2,
-    Megaphone,
     ExternalLink,
     Image as ImageIcon,
+    Link2,
+    Loader2,
+    Megaphone,
+    Pencil,
+    Plus,
+    Trash2,
 } from "lucide-react";
 import Image from "next/image";
-
-function isValidUrl(url: string): boolean {
-    if (!url || url.length < 5) return false;
-    try {
-        new URL(url);
-        return url.startsWith("http://") || url.startsWith("https://") || url.startsWith("/");
-    } catch {
-        return url.startsWith("/");
-    }
-}
 
 interface AnnouncementPopup {
     id: string;
@@ -55,24 +52,36 @@ interface PopupFormValue {
     dismissOption: string;
 }
 
+const DISMISS_OPTIONS = [
+    { value: "show_always", label: "แสดงทุกครั้งเมื่อเข้าเว็บไซต์" },
+    { value: "hide_1_hour", label: "ซ่อนชั่วคราว 1 ชั่วโมงหลังปิด" },
+];
+
+function getDismissLabel(value: string) {
+    return (
+        DISMISS_OPTIONS.find((option) => option.value === value)?.label ||
+        "แสดงทุกครั้งเมื่อเข้าเว็บไซต์"
+    );
+}
+
 export default function AdminPopupsPage() {
     const [popups, setPopups] = useState<AnnouncementPopup[]>([]);
     const [loading, setLoading] = useState(true);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const initializePopupModalUpload = () => {
-        const urlInput = document.getElementById("swal-imageUrl") as HTMLInputElement;
+        const urlInput = document.getElementById("swal-imageUrl") as HTMLInputElement | null;
         const preview = document.getElementById("swal-img-preview");
-        const previewImg = preview?.querySelector("img");
+        const previewImg = preview?.querySelector("img") as HTMLImageElement | null;
+        const linkInput = document.getElementById("swal-linkUrl") as HTMLInputElement | null;
+        const linkPreview = document.getElementById("swal-link-preview") as HTMLAnchorElement | null;
+        const linkHint = document.getElementById("swal-link-hint");
 
         if (urlInput) {
             urlInput.addEventListener("input", () => {
-                if (urlInput.value) {
-                    if (preview) preview.classList.remove("hidden");
-                    if (previewImg) previewImg.src = urlInput.value;
-                } else if (preview) {
-                    preview.classList.add("hidden");
-                }
+                const nextUrl = urlInput.value.trim();
+                if (preview) preview.classList.toggle("hidden", !nextUrl);
+                if (previewImg && nextUrl) previewImg.src = nextUrl;
             });
         }
 
@@ -82,9 +91,30 @@ export default function AdminPopupsPage() {
                 const input = document.createElement("input");
                 input.type = "file";
                 input.accept = "image/jpeg,image/png,image/webp,image/gif";
-                input.onchange = () => handlePopupImageUpload(input, urlInput, preview, previewImg);
+                input.onchange = () =>
+                    void handlePopupImageUpload(input, urlInput, preview, previewImg, uploadBtn);
                 input.click();
             });
+        }
+
+        if (linkInput) {
+            const syncLinkPreview = () => {
+                const nextLink = linkInput.value.trim();
+                if (!linkPreview || !linkHint) return;
+
+                if (!nextLink) {
+                    linkPreview.classList.add("hidden");
+                    linkHint.textContent = "ใส่เฉพาะเมื่ออยากให้ลูกค้าคลิกไปยังหน้าโปรโมชันหรือปลายทางภายนอก";
+                    return;
+                }
+
+                linkPreview.href = nextLink;
+                linkPreview.classList.remove("hidden");
+                linkHint.textContent = "กดเปิดลิงก์เพื่อเช็กปลายทางก่อนบันทึกได้ทันที";
+            };
+
+            linkInput.addEventListener("input", syncLinkPreview);
+            syncLinkPreview();
         }
     };
 
@@ -93,7 +123,7 @@ export default function AdminPopupsPage() {
             setLoading(true);
             const res = await fetch("/api/admin/popups");
             if (res.ok) {
-                const data = await res.json();
+                const data = (await res.json()) as AnnouncementPopup[];
                 setPopups(data);
             }
         } catch (error) {
@@ -104,128 +134,238 @@ export default function AdminPopupsPage() {
     }, []);
 
     useEffect(() => {
-        fetchPopups();
+        void fetchPopups();
     }, [fetchPopups]);
 
-    // Handle image upload inside Swal
-    const handleFileUploadInSwal = async (file: File): Promise<string | null> => {
+    const handleFileUploadInSwal = async (
+        file: File,
+        uploadBtn?: HTMLElement,
+    ): Promise<string | null> => {
         try {
-            showLoading("กำลังอัพโหลดรูป...");
+            if (uploadBtn) {
+                uploadBtn.textContent = "กำลังอัปโหลด...";
+                (uploadBtn as HTMLButtonElement).disabled = true;
+            }
+
             const compressed = await compressImage(file);
             const uploadFormData = new FormData();
             uploadFormData.append("file", compressed);
+
             const res = await fetch("/api/upload", { method: "POST", body: uploadFormData });
-            const data = await res.json();
-            hideLoading();
-            if (data.success) {
-                showSuccess("อัพโหลดรูปสำเร็จ!");
-                return data.url as string;
-            } else {
-                showError(data.message || "อัพโหลดไม่สำเร็จ");
-                return null;
+            const data = (await res.json()) as {
+                success: boolean;
+                url?: string;
+                message?: string;
+            };
+
+            if (data.success && data.url) {
+                return data.url;
             }
-        } catch {
-            hideLoading();
-            showError("เกิดข้อผิดพลาดในการอัพโหลด");
+
+            Swal.showValidationMessage(data.message || "อัปโหลดรูปไม่สำเร็จ");
             return null;
+        } catch {
+            Swal.showValidationMessage("เกิดข้อผิดพลาดในการอัปโหลดรูป");
+            return null;
+        } finally {
+            if (uploadBtn) {
+                uploadBtn.textContent = "อัปโหลดรูป";
+                (uploadBtn as HTMLButtonElement).disabled = false;
+            }
         }
     };
 
-    const handlePopupImageUpload = async (input: HTMLInputElement, urlInput: HTMLInputElement | null, preview: HTMLElement | null, previewImg: HTMLImageElement | null | undefined) => {
+    const handlePopupImageUpload = async (
+        input: HTMLInputElement,
+        urlInput: HTMLInputElement | null,
+        preview: HTMLElement | null,
+        previewImg: HTMLImageElement | null,
+        uploadBtn?: HTMLElement,
+    ) => {
         const file = input.files?.[0];
         if (!file) return;
-        const url = await handleFileUploadInSwal(file);
-        if (url) {
-            if (urlInput) urlInput.value = url;
-            if (preview) preview.classList.remove("hidden");
-            if (previewImg) previewImg.src = url;
-        }
+
+        const url = await handleFileUploadInSwal(file, uploadBtn);
+        if (!url) return;
+
+        if (urlInput) urlInput.value = url;
+        if (preview) preview.classList.remove("hidden");
+        if (previewImg) previewImg.src = url;
     };
 
-    // Open Create/Edit form in SweetAlert2
     const openDialog = (popup?: AnnouncementPopup) => {
-        Swal.fire({
+        void Swal.fire({
             title: popup ? "แก้ไข Pop-up" : "เพิ่ม Pop-up ใหม่",
-            width: "min(96vw, 560px)",
+            width: "min(96vw, 620px)",
             showCancelButton: true,
-            confirmButtonText: popup ? "บันทึก" : "เพิ่ม",
+            confirmButtonText: popup ? "บันทึก" : "เพิ่ม Pop-up",
             cancelButtonText: "ยกเลิก",
-            confirmButtonColor: "#1a56db",
+            confirmButtonColor: "#1d4ed8",
             cancelButtonColor: "#6b7280",
             reverseButtons: true,
             focusConfirm: false,
             customClass: {
-                popup: "rounded-2xl text-left",
-                confirmButton: "rounded-xl px-6 py-2",
-                cancelButton: "rounded-xl px-6 py-2",
+                popup: "overflow-hidden rounded-[28px] text-left",
+                confirmButton: "rounded-xl px-6 py-2.5",
+                cancelButton: "rounded-xl px-6 py-2.5",
+                actions: "mt-6 border-t border-gray-100 px-0 pt-4",
             },
             html: `
                 <div class="space-y-4 text-left">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">ชื่อ (สำหรับ admin)</label>
-                        <input id="swal-title" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="เช่น โปรโมชั่นวาเลนไทน์" value="${popup?.title || ""}">
+                    <div class="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white px-4 py-3">
+                        <p class="text-sm font-semibold text-blue-700">${popup ? "อัปเดต Pop-up เดิม" : "สร้าง Pop-up ใหม่"}</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">ตั้งค่ารูปหลัก ลิงก์ปลายทาง ลำดับการแสดง และพฤติกรรมเมื่อผู้ใช้กดปิด</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">รูปภาพ *</label>
-                        <div class="flex gap-2 mb-2">
-                            <button id="swal-upload-btn" type="button" class="flex items-center gap-1 text-sm border border-gray-300 rounded-lg px-3 py-1.5 hover:bg-gray-50 transition-colors">
-                                📷 อัพโหลดรูป
-                            </button>
-                            <span class="text-sm text-gray-400 self-center">หรือ</span>
-                        </div>
-                        <input id="swal-imageUrl" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="วาง URL รูปภาพ..." value="${popup?.imageUrl || ""}">
-                        <p class="text-xs text-gray-400 mt-1">รองรับไฟล์ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก • แนะนำขนาด 1500x1500px</p>
-                        <div id="swal-img-preview" class="mt-2 ${popup?.imageUrl ? "" : "hidden"}">
-                            <img src="${popup?.imageUrl || ""}" class="w-40 h-40 object-cover rounded-lg border mx-auto" onerror="this.src='https://placehold.co/200x200/ef4444/ffffff?text=Invalid+URL'">
+                        <label class="mb-1.5 block text-sm font-medium text-gray-700">ชื่อสำหรับหลังบ้าน</label>
+                        <input
+                            id="swal-title"
+                            class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="เช่น โปรโมชันหน้าฝน"
+                            value="${popup?.title || ""}"
+                        />
+                    </div>
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-gray-700">รูปภาพ Pop-up *</label>
+                        <div class="rounded-2xl border border-gray-200 bg-gray-50/70 p-3">
+                            <div class="mb-3 flex items-center gap-2">
+                                <button
+                                    id="swal-upload-btn"
+                                    type="button"
+                                    class="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-100"
+                                >
+                                    อัปโหลดรูป
+                                </button>
+                                <span class="text-xs text-gray-400">หรือวาง URL รูปภาพด้านล่าง</span>
+                            </div>
+                            <input
+                                id="swal-imageUrl"
+                                class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="https://example.com/popup-cover.webp"
+                                value="${popup?.imageUrl || ""}"
+                            />
+                            <div id="swal-img-preview" class="mt-3 ${popup?.imageUrl ? "" : "hidden"}">
+                                <img
+                                    src="${popup?.imageUrl || ""}"
+                                    class="mx-auto h-40 w-40 rounded-2xl border border-gray-200 object-cover"
+                                    onerror="this.src='https://placehold.co/300x300/e5e7eb/64748b?text=Preview'"
+                                />
+                            </div>
+                            <p class="mt-2 text-xs text-gray-500">
+                                รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก
+                            </p>
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">ลิงก์ (เมื่อคลิก)</label>
-                        <input id="swal-linkUrl" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://example.com/promo" value="${popup?.linkUrl || ""}">
+                        <label class="mb-1.5 block text-sm font-medium text-gray-700">ลิงก์เมื่อคลิก Pop-up</label>
+                        <div class="rounded-2xl border border-gray-200 bg-gray-50/60 p-3">
+                            <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                <input
+                                    id="swal-linkUrl"
+                                    class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="https://example.com/promo"
+                                    value="${popup?.linkUrl || ""}"
+                                />
+                                <a
+                                    id="swal-link-preview"
+                                    href="${popup?.linkUrl || "#"}"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="${popup?.linkUrl ? "inline-flex" : "hidden"} items-center justify-center rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+                                >
+                                    เปิดลิงก์
+                                </a>
+                            </div>
+                            <p id="swal-link-hint" class="mt-2 text-xs text-gray-500">
+                                ใส่เฉพาะเมื่ออยากให้ลูกค้าคลิกไปยังหน้าโปรโมชันหรือปลายทางภายนอก
+                            </p>
+                        </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">ลำดับการแสดง</label>
-                            <input id="swal-sortOrder" type="number" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${popup?.sortOrder ?? 0}">
+                            <label class="mb-1.5 block text-sm font-medium text-gray-700">ลำดับการแสดง</label>
+                            <input
+                                id="swal-sortOrder"
+                                type="number"
+                                class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value="${popup?.sortOrder ?? 0}"
+                            />
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">สถานะ</label>
-                            <select id="swal-isActive" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="true" ${popup?.isActive ?? true ? "selected" : ""}>แสดง</option>
+                            <label class="mb-1.5 block text-sm font-medium text-gray-700">สถานะ</label>
+                            <select
+                                id="swal-isActive"
+                                class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            >
+                                <option value="true" ${(popup?.isActive ?? true) ? "selected" : ""}>แสดง</option>
                                 <option value="false" ${popup?.isActive === false ? "selected" : ""}>ซ่อน</option>
                             </select>
                         </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">เมื่อปิด Popup</label>
-                        <select id="swal-dismissOption" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="show_always" ${(popup?.dismissOption ?? "show_always") === "show_always" ? "selected" : ""}>แสดงทุกครั้งเมื่อเข้าเว็บ</option>
-                            <option value="hide_1_hour" ${popup?.dismissOption === "hide_1_hour" ? "selected" : ""}>ปิดการแจ้งเตือน 1 ชั่วโมง</option>
+                        <label class="mb-1.5 block text-sm font-medium text-gray-700">เมื่อผู้ใช้กดปิด Pop-up</label>
+                        <select
+                            id="swal-dismissOption"
+                            class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            ${DISMISS_OPTIONS.map(
+                                (option) =>
+                                    `<option value="${option.value}" ${
+                                        (popup?.dismissOption ?? "show_always") === option.value
+                                            ? "selected"
+                                            : ""
+                                    }>${option.label}</option>`,
+                            ).join("")}
                         </select>
-                        <p class="text-xs text-gray-400 mt-1">กำหนดว่าเมื่อผู้ใช้ปิด popup จะแสดงอีกครั้งเมื่อไหร่</p>
+                        <p class="mt-1 text-xs text-gray-500">
+                            กำหนดว่าหลังผู้ใช้กดปิดแล้ว Pop-up นี้จะกลับมาแสดงอีกเมื่อไร
+                        </p>
+                    </div>
+                    <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50/40 px-4 py-3">
+                        <p class="text-xs font-medium text-slate-700">พร้อมบันทึกเมื่อมีรูปภาพและตั้งค่าสถานะเรียบร้อยแล้ว</p>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">เช็กภาพตัวอย่าง ลิงก์ปลายทาง และรูปแบบการซ่อนก่อนกดบันทึกอีกครั้ง</p>
                     </div>
                 </div>
             `,
             didOpen: initializePopupModalUpload,
             preConfirm: () => {
-                const imageUrl = (document.getElementById("swal-imageUrl") as HTMLInputElement)?.value?.trim();
+                const imageUrl = (
+                    document.getElementById("swal-imageUrl") as HTMLInputElement
+                )?.value?.trim();
+
                 if (!imageUrl) {
-                    Swal.showValidationMessage("กรุณาระบุ URL รูปภาพ");
+                    Swal.showValidationMessage("กรุณาใส่รูปภาพ Pop-up");
                     return false;
                 }
+
                 return {
-                    title: (document.getElementById("swal-title") as HTMLInputElement)?.value?.trim() || null,
+                    title:
+                        (document.getElementById("swal-title") as HTMLInputElement)?.value?.trim() ||
+                        null,
                     imageUrl,
-                    linkUrl: (document.getElementById("swal-linkUrl") as HTMLInputElement)?.value?.trim() || null,
-                    sortOrder: Number.parseInt((document.getElementById("swal-sortOrder") as HTMLInputElement)?.value) || 0,
-                    isActive: (document.getElementById("swal-isActive") as HTMLSelectElement)?.value === "true",
-                    dismissOption: (document.getElementById("swal-dismissOption") as HTMLSelectElement)?.value || "show_always",
+                    linkUrl:
+                        (document.getElementById("swal-linkUrl") as HTMLInputElement)?.value?.trim() ||
+                        null,
+                    sortOrder:
+                        Number.parseInt(
+                            (document.getElementById("swal-sortOrder") as HTMLInputElement)?.value,
+                            10,
+                        ) || 0,
+                    isActive:
+                        (document.getElementById("swal-isActive") as HTMLSelectElement)?.value ===
+                        "true",
+                    dismissOption:
+                        (document.getElementById("swal-dismissOption") as HTMLSelectElement)?.value ||
+                        "show_always",
                 };
             },
-        }).then(result => handleDialogResult(result, popup));
+        }).then((result) => void handleDialogResult(result, popup));
     };
 
-    const handleDialogResult = async (result: { isConfirmed: boolean; value?: PopupFormValue }, popup?: AnnouncementPopup) => {
+    const handleDialogResult = async (
+        result: { isConfirmed: boolean; value?: PopupFormValue },
+        popup?: AnnouncementPopup,
+    ) => {
         if (!result.isConfirmed || !result.value) return;
 
         showLoading("กำลังบันทึก...");
@@ -237,20 +377,22 @@ export default function AdminPopupsPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(result.value),
             });
+
             hideLoading();
+
             if (res.ok) {
                 showSuccess(popup ? "แก้ไข Pop-up สำเร็จ!" : "เพิ่ม Pop-up สำเร็จ!");
-                fetchPopups();
-            } else {
-                showError("เกิดข้อผิดพลาดในการบันทึก");
+                void fetchPopups();
+                return;
             }
+
+            showError("เกิดข้อผิดพลาดในการบันทึก");
         } catch {
             hideLoading();
             showError("เกิดข้อผิดพลาดในการบันทึก");
         }
     };
 
-    // Delete popup
     const handleDelete = async (popup: AnnouncementPopup) => {
         const confirmed = await showDeleteConfirm(popup.title || "Pop-up ไม่มีชื่อ");
         if (!confirmed) return;
@@ -259,19 +401,20 @@ export default function AdminPopupsPage() {
         try {
             const res = await fetch(`/api/admin/popups/${popup.id}`, { method: "DELETE" });
             hideLoading();
+
             if (res.ok) {
                 showSuccess("ลบ Pop-up สำเร็จ!");
-                fetchPopups();
-            } else {
-                showError("เกิดข้อผิดพลาดในการลบ");
+                void fetchPopups();
+                return;
             }
+
+            showError("เกิดข้อผิดพลาดในการลบ");
         } catch {
             hideLoading();
             showError("เกิดข้อผิดพลาดในการลบ");
         }
     };
 
-    // Toggle active status
     const toggleActive = async (popup: AnnouncementPopup) => {
         try {
             const res = await fetch(`/api/admin/popups/${popup.id}`, {
@@ -279,137 +422,180 @@ export default function AdminPopupsPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ...popup, isActive: !popup.isActive }),
             });
-            if (res.ok) fetchPopups();
+
+            if (res.ok) {
+                void fetchPopups();
+            }
         } catch (error) {
             console.error("Error toggling active:", error);
         }
     };
 
+    const sortedPopups = [...popups].sort((a, b) => {
+        if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
     return (
         <div className="space-y-6">
-            {/* Hidden file input ref (unused, kept for TS) */}
             <input ref={fileInputRef} type="file" className="hidden" />
 
-            {/* Header */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                        <Megaphone className="h-6 w-6" />
+                    <h1 className="flex items-center gap-3 text-2xl font-bold text-foreground">
+                        <span className="flex h-11 w-11 items-center justify-center rounded-2xl border border-border bg-[#eef4ff] text-[#145de7]">
+                            <Megaphone className="h-5 w-5" />
+                        </span>
                         จัดการ Pop-up ประชาสัมพันธ์
                     </h1>
-                    <p className="text-muted-foreground mt-1">
-                        เพิ่ม แก้ไข หรือลบ Pop-up ที่แสดงเมื่อเข้าเว็บไซต์
+                    <p className="mt-2 text-muted-foreground">
+                        เพิ่ม แก้ไข หรือซ่อน Pop-up ที่แสดงเมื่อผู้ใช้เข้าเว็บไซต์
                     </p>
                 </div>
-                <Button onClick={() => openDialog()} className="w-full sm:w-auto">
-                    <Plus className="h-4 w-4 mr-2" />
+                <Button onClick={() => openDialog()} className="w-full rounded-xl sm:w-auto">
+                    <Plus className="mr-2 h-4 w-4" />
                     เพิ่ม Pop-up
                 </Button>
             </div>
 
-            {/* Table */}
-            <div className="bg-card rounded-xl border border-border overflow-hidden">
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+                <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-sm font-semibold text-foreground">
+                            Pop-up ทั้งหมด {popups.length} รายการ
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                            จัดการรูปภาพ ลิงก์ปลายทาง ลำดับ และรูปแบบการซ่อนของแต่ละ Pop-up
+                        </p>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        พร้อมแสดง {popups.filter((item) => item.isActive).length} รายการ
+                    </div>
+                </div>
+
                 {loading && (
-                    <div className="flex items-center justify-center py-12">
+                    <div className="flex items-center justify-center py-14">
                         <Loader2 className="h-8 w-8 animate-spin text-primary" />
                     </div>
                 )}
+
                 {!loading && popups.length === 0 && (
-                    <div className="text-center py-12 text-muted-foreground">
-                        <Megaphone className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>ยังไม่มี Pop-up</p>
+                    <div className="py-14 text-center text-muted-foreground">
+                        <Megaphone className="mx-auto mb-4 h-12 w-12 opacity-40" />
+                        <p>ยังไม่มี Pop-up ในระบบ</p>
                         <Button variant="link" className="mt-2" onClick={() => openDialog()}>
-                            เพิ่ม Pop-up แรก
+                            เพิ่ม Pop-up รายการแรก
                         </Button>
                     </div>
                 )}
+
                 {!loading && popups.length > 0 && (
                     <div className="overflow-x-auto">
-                    <Table className="min-w-[720px]">
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-20">รูป</TableHead>
-                                <TableHead>ชื่อ</TableHead>
-                                <TableHead className="hidden md:table-cell">ลิงก์</TableHead>
-                                <TableHead className="w-20 text-center">ลำดับ</TableHead>
-                                <TableHead className="w-20 text-center">สถานะ</TableHead>
-                                <TableHead className="w-24 text-center">จัดการ</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {popups.map((popup) => (
-                                <TableRow key={popup.id}>
-                                    <TableCell>
-                                        <div className="relative w-16 h-16 rounded overflow-hidden bg-muted flex items-center justify-center">
-                                            {isValidUrl(popup.imageUrl) ? (
+                        <Table className="min-w-[860px]">
+                            <TableHeader>
+                                <TableRow className="bg-muted/30">
+                                    <TableHead className="w-[110px]">รูป</TableHead>
+                                    <TableHead className="min-w-[240px]">ชื่อ</TableHead>
+                                    <TableHead className="min-w-[260px]">ลิงก์ / พฤติกรรม</TableHead>
+                                    <TableHead className="w-20 text-center">ลำดับ</TableHead>
+                                    <TableHead className="w-24 text-center">สถานะ</TableHead>
+                                    <TableHead className="w-[150px] text-center">จัดการ</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {sortedPopups.map((popup) => (
+                                    <TableRow key={popup.id} className="hover:bg-muted/20">
+                                        <TableCell>
+                                            <div className="relative h-16 w-16 overflow-hidden rounded-2xl border border-border bg-muted shadow-sm">
                                                 <Image
                                                     src={popup.imageUrl}
                                                     alt={popup.title || "Popup"}
                                                     fill
                                                     sizes="64px"
                                                     className="object-cover"
-                                                    onError={(e) => {
-                                                        (e.target as HTMLImageElement).src =
-                                                            "https://placehold.co/100x100/3b82f6/ffffff?text=P";
-                                                    }}
+                                                    unoptimized
                                                 />
-                                            ) : (
-                                                <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="font-medium">
-                                            {popup.title || <span className="text-muted-foreground italic">ไม่มีชื่อ</span>}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="hidden md:table-cell">
-                                        {popup.linkUrl ? (
-                                            <a
-                                                href={popup.linkUrl}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="text-xs text-primary hover:underline flex items-center gap-1"
-                                            >
-                                                <ExternalLink className="h-3 w-3" />
-                                                เปิดลิงก์
-                                            </a>
-                                        ) : (
-                                            <span className="text-muted-foreground text-xs">-</span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-center">{popup.sortOrder}</TableCell>
-                                    <TableCell className="text-center">
-                                        <Switch
-                                            checked={popup.isActive}
-                                            onCheckedChange={() => toggleActive(popup)}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center justify-center gap-1">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => openDialog(popup)}
-                                                aria-label={`แก้ไข Pop-up ${popup.title || popup.id}`}
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="text-destructive hover:text-destructive"
-                                                onClick={() => handleDelete(popup)}
-                                                aria-label={`ลบ Pop-up ${popup.title || popup.id}`}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="space-y-1">
+                                                <p className="font-semibold text-foreground">
+                                                    {popup.title?.trim() || "ไม่มีชื่อ"}
+                                                </p>
+                                                <div className="flex flex-wrap items-center gap-2">
+                                                    {popup.linkUrl ? (
+                                                        <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                                                            <Link2 className="h-3 w-3" />
+                                                            มีลิงก์
+                                                        </span>
+                                                    ) : (
+                                                        <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                                                            ไม่มีลิงก์
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="space-y-1.5">
+                                                {popup.linkUrl ? (
+                                                    <a
+                                                        href={popup.linkUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex max-w-[250px] items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                                    >
+                                                        <span className="truncate">{popup.linkUrl}</span>
+                                                        <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
+                                                    </a>
+                                                ) : (
+                                                    <span className="text-sm text-muted-foreground">
+                                                        ไม่มีลิงก์ปลายทาง
+                                                    </span>
+                                                )}
+                                                <p className="text-xs text-muted-foreground">
+                                                    {getDismissLabel(popup.dismissOption)}
+                                                </p>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="text-center font-medium">
+                                            {popup.sortOrder}
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex justify-center">
+                                                <Switch
+                                                    checked={popup.isActive}
+                                                    onCheckedChange={() => void toggleActive(popup)}
+                                                />
+                                            </div>
+                                        </TableCell>
+                                        <TableCell>
+                                            <div className="flex items-center justify-center gap-1.5">
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="rounded-lg text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
+                                                    onClick={() => openDialog(popup)}
+                                                    aria-label={`แก้ไข Pop-up ${popup.title || "ไม่มีชื่อ"}`}
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                                                    onClick={() => void handleDelete(popup)}
+                                                    aria-label={`ลบ Pop-up ${popup.title || "ไม่มีชื่อ"}`}
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
                     </div>
                 )}
             </div>

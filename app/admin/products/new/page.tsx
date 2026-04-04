@@ -1,18 +1,41 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import React, { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+    ArrowLeft,
+    Banknote,
+    Eye,
+    Gem,
+    Loader2,
+    Package,
+    Plus,
+    Shield,
+    Trash2,
+    Upload,
+    X,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Loader2, Shield, Gem, Banknote, Package, Eye, Plus, Trash2, Upload, X } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { showSuccess, showError } from "@/lib/swal";
-import { splitStock, type StockSeparatorType } from "@/lib/stock";
+import { Textarea } from "@/components/ui/textarea";
 import { compressImage } from "@/lib/compressImage";
+import { showError, showSuccess } from "@/lib/swal";
+import { splitStock, type StockSeparatorType } from "@/lib/stock";
+
+type DiscountMode = "amount" | "percent";
+
+function normalizeMoney(value: number, currency: string) {
+    if (!Number.isFinite(value)) return 0;
+    return currency === "POINT" ? Math.round(value) : Math.round(value * 100) / 100;
+}
+
+function formatDiscountValue(value: number, currency: string) {
+    return currency === "POINT" ? value.toLocaleString() : value.toFixed(2);
+}
 
 export default function AddProductPage() {
     const router = useRouter();
@@ -28,31 +51,52 @@ export default function AddProductPage() {
         currency: "THB",
         stockSeparator: "newline" as StockSeparatorType,
     });
-
-    // Single stock add form
     const [singleUser, setSingleUser] = useState("");
     const [singlePass, setSinglePass] = useState("");
-
-    // Image upload
     const [isUploading, setIsUploading] = useState(false);
+    const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    const [discountMode, setDiscountMode] = useState<DiscountMode>("amount");
     const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-    // Edit stock item
-    const [editingIndex, setEditingIndex] = useState<number | null>(null);
+    const stockItems = useMemo(
+        () => splitStock(formData.secretData, formData.stockSeparator),
+        [formData.secretData, formData.stockSeparator]
+    );
+    const hasDiscountPrice = formData.discountPrice.trim().length > 0;
+    const priceNumber = Number(formData.price);
+    const discountInputNumber = Number(formData.discountPrice);
+    const isDiscountValueValid =
+        !hasDiscountPrice ||
+        (Number.isFinite(discountInputNumber) &&
+            discountInputNumber > 0 &&
+            (discountMode === "percent" ? discountInputNumber < 100 : discountInputNumber < priceNumber));
+    const calculatedDiscountPrice =
+        hasDiscountPrice &&
+        isDiscountValueValid &&
+        Number.isFinite(priceNumber) &&
+        priceNumber > 0 &&
+        Number.isFinite(discountInputNumber)
+            ? discountMode === "percent"
+                ? normalizeMoney(priceNumber - (priceNumber * discountInputNumber) / 100, formData.currency)
+                : normalizeMoney(priceNumber - discountInputNumber, formData.currency)
+            : null;
+    const normalizedDiscountPrice =
+        calculatedDiscountPrice !== null && calculatedDiscountPrice > 0 ? calculatedDiscountPrice : null;
 
     const handleAddSingleStock = () => {
         if (!singleUser.trim() || !singlePass.trim()) {
             showError("กรุณากรอก User และ Pass");
             return;
         }
+
         const newEntry = `${singleUser.trim()} / ${singlePass.trim()}`;
         setFormData((prev) => ({
             ...prev,
-            secretData: prev.secretData ? prev.secretData + "\n" + newEntry : newEntry,
+            secretData: prev.secretData ? `${prev.secretData}\n${newEntry}` : newEntry,
         }));
         setSingleUser("");
         setSinglePass("");
-        showSuccess("เพิ่มสต็อกสำเร็จ");
+        showSuccess("เพิ่มสต๊อกสำเร็จ");
     };
 
     const rebuildSecretData = (items: string[]) => {
@@ -60,18 +104,14 @@ export default function AddProductPage() {
     };
 
     const handleDeleteStock = (index: number) => {
-        const items = stockItems.filter((_, i) => i !== index);
+        const items = stockItems.filter((_, itemIndex) => itemIndex !== index);
         rebuildSecretData(items);
-        if (editingIndex === index) setEditingIndex(null);
-        showSuccess("ลบสต็อกสำเร็จ");
+        if (editingIndex === index) {
+            setEditingIndex(null);
+        }
+        showSuccess("ลบสต๊อกสำเร็จ");
     };
 
-    // Live stock preview
-    const stockItems = useMemo(() => {
-        return splitStock(formData.secretData, formData.stockSeparator);
-    }, [formData.secretData, formData.stockSeparator]);
-
-    // Handle file upload
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -90,21 +130,19 @@ export default function AddProductPage() {
             const data = await res.json();
             if (data.success) {
                 setFormData((prev) => ({ ...prev, image: data.url }));
-                showSuccess("อัพโหลดรูปสำเร็จ!");
+                showSuccess("อัปโหลดรูปสำเร็จ!");
             } else {
-                showError(data.message || "อัพโหลดไม่สำเร็จ");
+                showError(data.message || "อัปโหลดไม่สำเร็จ");
             }
         } catch (error) {
             console.error("[NEW_PRODUCT_UPLOAD]", error);
-            showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
+            showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัปโหลด");
         } finally {
             setIsUploading(false);
         }
     };
 
-    const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-    ) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
@@ -112,7 +150,6 @@ export default function AddProductPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // Validate required fields
         if (!formData.title.trim()) {
             showError("กรุณากรอกชื่อสินค้า");
             return;
@@ -125,21 +162,35 @@ export default function AddProductPage() {
             showError("กรุณากรอกหมวดหมู่");
             return;
         }
-        // Note: secretData is optional, can add stock later via stock management
+        if (hasDiscountPrice) {
+            if (!Number.isFinite(discountInputNumber) || discountInputNumber <= 0) {
+                showError(discountMode === "percent" ? "กรุณากรอกเปอร์เซ็นส่วนลดให้ถูกต้อง" : "กรุณากรอกจำนวนส่วนลดให้ถูกต้อง");
+                return;
+            }
+            if (discountMode === "percent" && discountInputNumber >= 100) {
+                showError("ส่วนลดแบบเปอร์เซ็นต้องน้อยกว่า 100%");
+                return;
+            }
+            if (normalizedDiscountPrice === null) {
+                showError("ราคาหลังลดต้องมากกว่า 0");
+                return;
+            }
+        }
 
         setIsLoading(true);
-
         try {
             const response = await fetch("/api/products", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    ...formData,
+                    discountPrice: normalizedDiscountPrice === null ? "" : String(normalizedDiscountPrice),
+                }),
             });
 
             const data = await response.json();
-
             if (data.success) {
-                showSuccess("🎉 สร้างสินค้าสำเร็จ! สินค้าถูกเพิ่มเข้าระบบเรียบร้อยแล้ว");
+                showSuccess("สร้างสินค้าสำเร็จ");
                 router.push("/admin/products");
             } else {
                 showError(`เกิดข้อผิดพลาด: ${data.message}`);
@@ -154,7 +205,6 @@ export default function AddProductPage() {
 
     return (
         <div className="space-y-6">
-            {/* Back Button */}
             <Link
                 href="/admin/products"
                 className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
@@ -163,22 +213,17 @@ export default function AddProductPage() {
                 กลับไปรายการสินค้า
             </Link>
 
-            {/* Form - 2 Column Layout */}
             <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                    {/* Left Column - Product Info */}
-                    <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-border overflow-hidden">
-                        {/* Card Header */}
-                        <div className="border-b border-border py-3 px-5 flex items-center gap-2">
-                            <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
-                                <Shield className="h-3.5 w-3.5 text-white" />
+                <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
+                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                        <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3.5">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1a56db] text-white">
+                                <Shield className="h-4 w-4" />
                             </div>
                             <span className="font-bold text-foreground">ข้อมูลสินค้า</span>
                         </div>
 
-                        <div className="p-5 space-y-6">
-                            {/* Title */}
+                        <div className="space-y-6 p-5">
                             <div className="space-y-2">
                                 <Label htmlFor="title">ชื่อสินค้า *</Label>
                                 <Input
@@ -191,7 +236,6 @@ export default function AddProductPage() {
                                 />
                             </div>
 
-                            {/* Currency Type */}
                             <div className="space-y-3">
                                 <Label>ประเภทสกุลเงิน *</Label>
                                 <RadioGroup
@@ -201,34 +245,36 @@ export default function AddProductPage() {
                                     }
                                     className="grid gap-3 sm:grid-cols-2"
                                 >
-                                    <div className="flex items-center space-x-2">
+                                    <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 transition hover:border-slate-300">
                                         <RadioGroupItem value="THB" id="currency-thb" />
-                                        <Label htmlFor="currency-thb" className="flex items-center gap-2 cursor-pointer">
+                                        <span className="flex items-center gap-2 text-sm font-medium">
                                             <Banknote className="h-4 w-4 text-green-600" />
                                             บาท (THB)
-                                        </Label>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
+                                        </span>
+                                    </label>
+                                    <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 transition hover:border-slate-300">
                                         <RadioGroupItem value="POINT" id="currency-point" />
-                                        <Label htmlFor="currency-point" className="flex items-center gap-2 cursor-pointer">
+                                        <span className="flex items-center gap-2 text-sm font-medium">
                                             <Gem className="h-4 w-4 text-purple-600" />
                                             พอยท์ (POINT)
-                                        </Label>
-                                    </div>
+                                        </span>
+                                    </label>
                                 </RadioGroup>
                                 {formData.currency === "POINT" && (
                                     <p className="text-xs text-purple-600">
-                                        💎 สินค้านี้จะซื้อได้ด้วย Point เท่านั้น
+                                        สินค้านี้จะซื้อได้ด้วย Point เท่านั้น
                                     </p>
                                 )}
                             </div>
 
-                            {/* Price & Discount Row */}
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label htmlFor="price" className="flex items-center gap-2">
                                         {formData.currency === "POINT" ? (
-                                            <><Gem className="h-4 w-4 text-purple-600" /> ราคา (Point) *</>
+                                            <>
+                                                <Gem className="h-4 w-4 text-purple-600" />
+                                                ราคา (Point) *
+                                            </>
                                         ) : (
                                             <>ราคาเต็ม (฿) *</>
                                         )}
@@ -243,32 +289,88 @@ export default function AddProductPage() {
                                         value={formData.price}
                                         onChange={handleChange}
                                         required
-                                        className={formData.currency === "POINT" ? "border-purple-300 focus:border-purple-500" : ""}
+                                        className={
+                                            formData.currency === "POINT"
+                                                ? "border-purple-300 focus:border-purple-500"
+                                                : ""
+                                        }
                                     />
                                 </div>
+
                                 <div className="space-y-2">
                                     <Label htmlFor="discountPrice" className="flex items-center gap-2">
                                         <span className="text-red-500">🎁</span>
-                                        ราคาลด {formData.currency === "POINT" ? "(Point)" : "(฿)"}
+                                        ส่วนลด
                                     </Label>
-                                    <Input
-                                        id="discountPrice"
-                                        name="discountPrice"
-                                        type="number"
-                                        placeholder="เว้นว่างถ้าไม่ลดราคา"
-                                        min="0"
-                                        step="0.01"
-                                        value={formData.discountPrice}
-                                        onChange={handleChange}
-                                        className="border-red-200 focus:border-red-400"
-                                    />
+                                    <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50/75 p-3">
+                                            <div className="grid grid-cols-2 gap-2">
+                                            <Button
+                                                type="button"
+                                                variant={discountMode === "amount" ? "default" : "outline"}
+                                                className="rounded-xl"
+                                                onClick={() => setDiscountMode("amount")}
+                                            >
+                                                ลดเป็น{formData.currency === "POINT" ? "พอยท์" : "บาท"}
+                                            </Button>
+                                            <Button
+                                                type="button"
+                                                variant={discountMode === "percent" ? "default" : "outline"}
+                                                className="rounded-xl"
+                                                onClick={() => setDiscountMode("percent")}
+                                            >
+                                                ลดเป็น %
+                                            </Button>
+                                        </div>
+                                        <Input
+                                            id="discountPrice"
+                                            name="discountPrice"
+                                            type="number"
+                                            placeholder={
+                                                discountMode === "percent"
+                                                    ? "เช่น 15"
+                                                    : formData.currency === "POINT"
+                                                        ? "เช่น 100"
+                                                        : "เช่น 100"
+                                            }
+                                            min="0"
+                                            max={discountMode === "percent" ? "99.99" : undefined}
+                                            step={discountMode === "percent" ? "0.01" : formData.currency === "POINT" ? "1" : "0.01"}
+                                            value={formData.discountPrice}
+                                            onChange={handleChange}
+                                            className={
+                                                hasDiscountPrice
+                                                    ? "border-amber-300 bg-amber-50/40 focus:border-amber-500"
+                                                    : "bg-white"
+                                            }
+                                        />
+                                        <div className="flex items-center justify-between text-xs">
+                                            <span className="text-muted-foreground">
+                                                {discountMode === "percent"
+                                                    ? "กรอกเปอร์เซ็นที่ต้องการลด"
+                                                    : `กรอกจำนวน${formData.currency === "POINT" ? "พอยท์" : "บาท"}ที่ต้องการลด`}
+                                            </span>
+                                            {hasDiscountPrice && !isDiscountValueValid ? (
+                                                <span className="font-medium text-rose-600">
+                                                    {discountMode === "percent"
+                                                        ? "เปอร์เซ็นต์ต้องน้อยกว่า 100%"
+                                                        : "จำนวนส่วนลดต้องน้อยกว่าราคาเต็ม"}
+                                                </span>
+                                            ) : normalizedDiscountPrice !== null && (
+                                                <span className="font-medium text-amber-700">
+                                                    ลด {formatDiscountValue(discountInputNumber, formData.currency)}
+                                                    {discountMode === "percent" ? "%" : formData.currency === "POINT" ? " พอยท์" : " บาท"}
+                                                    {" เหลือ "}
+                                                    {formatDiscountValue(normalizedDiscountPrice, formData.currency)}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
                                     <p className="text-xs text-muted-foreground">
-                                        หากกรอกราคานี้ สินค้าจะแสดงใน &quot;สินค้าลดราคา&quot;
+                                        หากตั้งค่าส่วนลด สินค้าจะแสดงใน "สินค้าลดราคา"
                                     </p>
                                 </div>
                             </div>
 
-                            {/* Category */}
                             <div className="space-y-2">
                                 <Label htmlFor="category">หมวดหมู่ *</Label>
                                 <Input
@@ -281,86 +383,98 @@ export default function AddProductPage() {
                                 />
                             </div>
 
-                            {/* Image Upload/URL */}
                             <div className="space-y-3">
                                 <Label>รูปภาพสินค้า</Label>
+                                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+                                        <div className="space-y-3">
+                                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                                <input
+                                                    ref={fileInputRef}
+                                                    type="file"
+                                                    accept="image/jpeg,image/png,image/webp,image/gif"
+                                                    className="hidden"
+                                                    onChange={handleFileUpload}
+                                                />
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    className="gap-2 rounded-xl bg-white"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    disabled={isUploading}
+                                                >
+                                                    {isUploading ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : (
+                                                        <Upload className="h-4 w-4" />
+                                                    )}
+                                                    {isUploading ? "กำลังปรับปรุงภาพ..." : "อัปโหลดจากเครื่อง"}
+                                                </Button>
+                                                <span className="self-center text-sm text-muted-foreground">
+                                                    หรือวาง URL
+                                                </span>
+                                            </div>
 
-                                {/* File Upload */}
-                                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/jpeg,image/png,image/webp,image/gif"
-                                        className="hidden"
-                                        onChange={handleFileUpload}
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="outline"
-                                        className="gap-2"
-                                        onClick={() => fileInputRef.current?.click()}
-                                        disabled={isUploading}
-                                    >
-                                        {isUploading ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <Upload className="h-4 w-4" />
-                                        )}
-                                        {isUploading ? "กำลังปรับปรุงภาพ..." : "อัพโหลดจากเครื่อง"}
-                                    </Button>
-                                    <span className="text-sm text-muted-foreground self-center">หรือ</span>
-                                </div>
+                                            <div className="flex flex-col gap-2 sm:flex-row">
+                                                <Input
+                                                    id="image"
+                                                    name="image"
+                                                    placeholder="วาง URL รูปภาพ..."
+                                                    value={formData.image}
+                                                    onChange={handleChange}
+                                                    className="flex-1 bg-white"
+                                                />
+                                                {formData.image && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() =>
+                                                            setFormData((prev) => ({ ...prev, image: "" }))
+                                                        }
+                                                        className="shrink-0 text-red-500 hover:text-red-600"
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
 
-                                {/* URL Input */}
-                                <div className="flex flex-col gap-2 sm:flex-row">
-                                    <Input
-                                        id="image"
-                                        name="image"
-                                        placeholder="วาง URL รูปภาพ..."
-                                        value={formData.image}
-                                        onChange={handleChange}
-                                        className="flex-1"
-                                    />
-                                    {formData.image && (
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => setFormData(prev => ({ ...prev, image: "" }))}
-                                            className="text-red-500 hover:text-red-600"
-                                        >
-                                            <X className="h-4 w-4" />
-                                        </Button>
-                                    )}
-                                </div>
+                                            <p className="text-xs leading-5 text-muted-foreground">
+                                                รองรับไฟล์ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก
+                                            </p>
+                                        </div>
 
-                                {/* Preview */}
-                                {formData.image && (
-                                    <div className="mt-2 relative aspect-video rounded-lg overflow-hidden bg-muted max-w-xs border">
-                                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                                        <img
-                                            src={formData.image}
-                                            alt="Preview"
-                                            className="w-full h-full object-cover"
-                                            onError={(e) => {
-                                                (e.target as HTMLImageElement).src = "https://placehold.co/400x300/f1f5f9/64748b?text=Invalid+URL";
-                                            }}
-                                        />
+                                        <div className="overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-white">
+                                            {formData.image ? (
+                                                <div className="relative aspect-video h-full min-h-[140px]">
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    <img
+                                                        src={formData.image}
+                                                        alt="Preview"
+                                                        className="h-full w-full object-cover"
+                                                        onError={(e) => {
+                                                            (e.target as HTMLImageElement).src =
+                                                                "https://placehold.co/400x300/f1f5f9/64748b?text=Invalid+URL";
+                                                        }}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="flex min-h-[140px] flex-col items-center justify-center gap-2 px-4 text-center text-sm text-muted-foreground">
+                                                    <Upload className="h-5 w-5" />
+                                                    <span>ภาพตัวอย่างจะแสดงที่นี่</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                )}
-
-                                <p className="text-xs text-muted-foreground">
-                                    รองรับไฟล์ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก
-                                </p>
+                                </div>
                             </div>
 
-                            {/* Description */}
                             <div className="space-y-2">
                                 <Label htmlFor="description">รายละเอียด</Label>
                                 <Textarea
                                     id="description"
                                     name="description"
-                                    placeholder="รายละเอียดสินค้า เช่น แรงค์, สกินที่มี, Agent ที่ปลดล็อค..."
+                                    placeholder="รายละเอียดสินค้า เช่น แรงค์, สกินที่มี, Agent ที่ปลดล็อก..."
                                     rows={4}
                                     value={formData.description}
                                     onChange={handleChange}
@@ -369,22 +483,32 @@ export default function AddProductPage() {
                         </div>
                     </div>
 
-                    {/* Right Column - Stock Management */}
                     <div className="space-y-6">
-                        {/* Add Single Stock */}
-                        <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-border overflow-hidden">
-                            <div className="border-b border-border py-3 px-5 flex items-center gap-2">
-                                <div className="w-6 h-6 bg-amber-500 rounded flex items-center justify-center">
-                                    <Package className="h-3.5 w-3.5 text-white" />
+                        <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_100%)] p-4 shadow-sm">
+                            <div className="flex items-start justify-between gap-4">
+                                <div>
+                                    <p className="text-sm font-semibold text-slate-900">สรุปสต๊อกก่อนสร้างสินค้า</p>
                                 </div>
-                                <span className="font-bold text-foreground">เพิ่มสต็อก 1 รายการ</span>
+                                <Badge className="rounded-full bg-blue-600 px-3 py-1 text-white hover:bg-blue-600">
+                                    {stockItems.length} รายการ
+                                </Badge>
+                            </div>
+                        </div>
+
+                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                            <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3.5">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500 text-white">
+                                    <Package className="h-4 w-4" />
+                                </div>
+                                <span className="font-bold text-foreground">เพิ่มสต๊อก 1 รายการ</span>
                                 {stockItems.length > 0 && (
                                     <Badge variant="secondary" className="ml-auto">
                                         {stockItems.length} รายการ
                                     </Badge>
                                 )}
                             </div>
-                            <div className="p-5 space-y-3">
+
+                            <div className="space-y-4 p-5">
                                 <div className="space-y-2">
                                     <Label htmlFor="singleUser">User *</Label>
                                     <Input
@@ -395,6 +519,7 @@ export default function AddProductPage() {
                                         className="font-mono"
                                     />
                                 </div>
+
                                 <div className="space-y-2">
                                     <Label htmlFor="singlePass">Pass *</Label>
                                     <Input
@@ -405,44 +530,46 @@ export default function AddProductPage() {
                                         className="font-mono"
                                     />
                                 </div>
+
                                 <Button
                                     type="button"
-                                    className="w-full gap-2 bg-[#1a56db] hover:bg-[#1e40af] text-white"
+                                    className="w-full gap-2 rounded-xl bg-[#1a56db] text-white hover:bg-[#1e40af]"
                                     onClick={handleAddSingleStock}
                                 >
                                     <Plus className="h-4 w-4" />
-                                    เพิ่มสต็อก
+                                    เพิ่มสต๊อก
                                 </Button>
-                                <p className="text-xs text-amber-600">
-                                    ⚠️ แต่ละรายการจะถูกส่งให้ลูกค้าทีละ 1 ชิ้นเมื่อซื้อ
+
+                                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                                    แต่ละรายการจะถูกส่งให้ลูกค้าทีละ 1 ชิ้นเมื่อซื้อ
                                 </p>
                             </div>
                         </div>
 
-                        {/* Stock List */}
                         {stockItems.length > 0 && (
-                            <div className="bg-white dark:bg-zinc-900 rounded-xl shadow-sm border border-border overflow-hidden">
-                                <div className="border-b border-border py-3 px-5 flex items-center gap-2">
-                                    <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
-                                        <Eye className="h-3.5 w-3.5 text-white" />
+                            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                                <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3.5">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1a56db] text-white">
+                                        <Eye className="h-4 w-4" />
                                     </div>
-                                    <span className="font-bold text-foreground">รายการสต็อก</span>
+                                    <span className="font-bold text-foreground">รายการสต๊อก</span>
                                     <Badge variant="secondary" className="ml-auto">
                                         {stockItems.length} รายการ
                                     </Badge>
                                 </div>
+
                                 <div className="p-5">
-                                    <div className="max-h-64 overflow-y-auto space-y-2">
+                                    <div className="space-y-2 overflow-y-auto max-h-64">
                                         {stockItems.map((item, index) => (
                                             <div
-                                                key={item + "-" + index}
-                                                className="rounded-lg border bg-card p-3 text-sm flex items-center justify-between"
+                                                key={`${item}-${index}`}
+                                                className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-sm"
                                             >
-                                                <div className="flex items-center gap-2">
+                                                <div className="flex min-w-0 items-center gap-2">
                                                     <Badge variant="outline" className="text-xs">
                                                         #{index + 1}
                                                     </Badge>
-                                                    <span className="font-mono text-xs truncate max-w-[200px]">
+                                                    <span className="max-w-[220px] truncate font-mono text-xs">
                                                         {item}
                                                     </span>
                                                 </div>
@@ -450,10 +577,10 @@ export default function AddProductPage() {
                                                     type="button"
                                                     variant="ghost"
                                                     size="icon"
-                                                    className="h-6 w-6 text-muted-foreground hover:text-red-600"
+                                                    className="h-7 w-7 text-muted-foreground hover:text-red-600"
                                                     onClick={() => handleDeleteStock(index)}
                                                 >
-                                                    <Trash2 className="h-3 w-3" />
+                                                    <Trash2 className="h-3.5 w-3.5" />
                                                 </Button>
                                             </div>
                                         ))}
@@ -464,22 +591,29 @@ export default function AddProductPage() {
                     </div>
                 </div>
 
-                {/* Submit Button - Full Width */}
-                <Button
-                    type="submit"
-                    className="w-full bg-[#1a56db] hover:bg-[#1e40af] text-white"
-                    size="lg"
-                    disabled={isLoading}
-                >
-                    {isLoading ? (
-                        <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            กำลังสร้าง...
-                        </>
-                    ) : (
-                        "สร้างสินค้า"
-                    )}
-                </Button>
+                <div className="sticky bottom-4 z-10 flex justify-end">
+                    <div className="flex w-full max-w-md items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
+                        <div className="min-w-0">
+                            <p className="text-sm font-semibold text-slate-900">พร้อมสร้างสินค้าใหม่</p>
+                            <p className="text-xs text-slate-500">สต๊อกเริ่มต้น {stockItems.length} รายการ</p>
+                        </div>
+                        <Button
+                            type="submit"
+                            className="min-w-[150px] rounded-xl bg-[#1a56db] text-white hover:bg-[#1e40af]"
+                            size="lg"
+                            disabled={isLoading}
+                        >
+                            {isLoading ? (
+                                <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    กำลังสร้าง...
+                                </>
+                            ) : (
+                                "สร้างสินค้า"
+                            )}
+                        </Button>
+                    </div>
+                </div>
             </form>
         </div>
     );

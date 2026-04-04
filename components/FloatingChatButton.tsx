@@ -86,6 +86,7 @@ function ChatBubble({
 
 export function FloatingChatButton() {
     const pathname = usePathname();
+    const [isMounted, setIsMounted] = useState(false);
     const [isOpen, setIsOpen] = useState(false);
     const [conversation, setConversation] = useState<ChatConversation | null>(null);
     const [draft, setDraft] = useState("");
@@ -98,6 +99,10 @@ export function FloatingChatButton() {
     const latestCustomerMessageId = [...(conversation?.messages ?? [])]
         .reverse()
         .find((message) => message.senderType === "CUSTOMER")?.id;
+
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
 
     useEffect(() => {
         if (!isOpen) {
@@ -117,7 +122,7 @@ export function FloatingChatButton() {
         endOfMessagesRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
     }, [conversation]);
 
-    if (HIDDEN_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    if (!isMounted || HIDDEN_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
         return null;
     }
 
@@ -294,8 +299,18 @@ export function FloatingChatButton() {
                             ) : null}
                         </div>
 
-                        <ScrollArea className="min-h-0 flex-1 p-3 sm:p-4">
-                            <div className="space-y-4">
+                        <ScrollArea className="relative min-h-0 flex-1 p-3 sm:p-4">
+                            {/* Watermark */}
+                            <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
+                                <img
+                                    src="/chat-snail.png"
+                                    alt=""
+                                    className="h-40 w-40 object-contain opacity-[0.07] sm:h-48 sm:w-48"
+                                    draggable={false}
+                                />
+                            </div>
+
+                            <div className="relative z-10 space-y-4">
                                 {isLoading ? (
                                     <div className="flex min-h-[280px] items-center justify-center text-sm text-slate-500">
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />

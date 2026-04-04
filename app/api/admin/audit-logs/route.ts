@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAuditLogs, AUDIT_ACTIONS } from "@/lib/auditLog";
+import { getAuditLogs } from "@/lib/auditLog";
 import { db, auditLogs } from "@/lib/db";
 import { and, eq, gte, lte, count } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
@@ -21,26 +21,22 @@ export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get("userId") || undefined;
-        const action = searchParams.get("action") as keyof typeof AUDIT_ACTIONS | undefined;
+        const action = searchParams.get("action") || undefined;
         const resource = searchParams.get("resource") || undefined;
         const startDate = parseDateParam(searchParams.get("startDate"), "startDate") ?? undefined;
         const endDate = parseDateParam(searchParams.get("endDate"), "endDate") ?? undefined;
         const limit = Math.min(Number.parseInt(searchParams.get("limit") || "50"), 200);
         const offset = Math.max(Number.parseInt(searchParams.get("offset") || "0"), 0);
 
-        if (action && !(action in AUDIT_ACTIONS)) {
-            return NextResponse.json({ error: "Invalid action filter" }, { status: 400 });
-        }
-
         const logs = await getAuditLogs({
-            userId, action: action ? AUDIT_ACTIONS[action] : undefined,
+            userId, action,
             resource, startDate, endDate, limit, offset,
         });
 
         // Build where conditions for count
         const conditions = [];
         if (userId) conditions.push(eq(auditLogs.userId, userId));
-        if (action) conditions.push(eq(auditLogs.action, AUDIT_ACTIONS[action]));
+        if (action) conditions.push(eq(auditLogs.action, action));
         if (resource) conditions.push(eq(auditLogs.resource, resource));
         if (startDate) conditions.push(gte(auditLogs.createdAt, startDate.toISOString().slice(0, 19).replace("T", " ")));
         if (endDate) conditions.push(lte(auditLogs.createdAt, endDate.toISOString().slice(0, 19).replace("T", " ")));

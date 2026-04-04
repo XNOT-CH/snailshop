@@ -4,6 +4,7 @@ import { db, products } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
 import { encrypt } from "@/lib/encryption";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
+import { invalidateProductCaches } from "@/lib/cache";
 
 export async function POST(request: NextRequest) {
     const authCheck = await isAdmin();
@@ -60,6 +61,8 @@ export async function POST(request: NextRequest) {
             resourceName: title,
             details: { resourceName: title, price: priceNumber, category },
         });
+
+        await invalidateProductCaches();
 
         return NextResponse.json({
             success: true,

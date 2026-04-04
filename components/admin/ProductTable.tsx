@@ -1,450 +1,544 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MoreHorizontal, Pencil, Trash2, Eye, Star, Copy, Gem, Package, Timer, Search, LayoutGrid, ChevronLeft, ChevronRight } from "lucide-react";
-import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { showConfirm, showError, showSuccess } from "@/lib/swal";
 import { cn } from "@/lib/utils";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Eye,
+  Gem,
+  LayoutGrid,
+  MoreHorizontal,
+  Package,
+  Pencil,
+  Search,
+  Star,
+  Timer,
+  Trash2,
+} from "lucide-react";
 
 interface Product {
-    id: string;
-    name: string;
-    price: number;
-    imageUrl: string | null;
-    category: string;
-    currency?: string;
-    isSold: boolean;
-    isFeatured: boolean;
-    stockCount?: number;
-    autoDeleteAfterSale?: number | null;
+  id: string | number;
+  name: string;
+  description?: string | null;
+  price: number;
+  discountPrice?: number | null;
+  imageUrl: string | null;
+  category: string | null;
+  isFeatured: boolean;
+  isSold: boolean;
+  stockCount?: number | null;
+  autoDeleteAfterSale?: number | null;
+  currency?: "THB" | "POINT" | null;
 }
 
 interface ProductTableProps {
-    products: Product[];
+  products: Product[];
 }
 
-const PER_PAGE_OPTIONS = [10, 25, 50, 100];
+const ITEMS_PER_PAGE_OPTIONS = [10, 20, 50] as const;
 
-export function ProductTable({ products }: Readonly<ProductTableProps>) {
-    const router = useRouter();
-    const [deletingId, setDeletingId] = useState<string | null>(null);
-    const [togglingFeatured, setTogglingFeatured] = useState<string | null>(null);
-    const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
-    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [perPage, setPerPage] = useState(10);
+function formatAutoDelete(minutes?: number | null) {
+  if (!minutes || minutes <= 0) {
+    return null;
+  }
 
-    // Extract unique categories with counts
-    const categoryStats = useMemo(() => {
-        const map = new Map<string, number>();
-        for (const p of products) {
-            map.set(p.category, (map.get(p.category) ?? 0) + 1);
-        }
-        // Sort alphabetically
-        return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]));
-    }, [products]);
+  if (minutes % 10080 === 0) {
+    return `${minutes / 10080} สัปดาห์`;
+  }
 
-    // Filter products
-    const filteredProducts = useMemo(() => {
-        let list = products;
-        if (selectedCategory) {
-            list = list.filter((p) => p.category === selectedCategory);
-        }
-        if (searchQuery.trim()) {
-            const q = searchQuery.toLowerCase();
-            list = list.filter(
-                (p) =>
-                    p.name.toLowerCase().includes(q) ||
-                    p.category.toLowerCase().includes(q)
-            );
-        }
-        return list;
-    }, [products, selectedCategory, searchQuery]);
+  if (minutes % 1440 === 0) {
+    return `${minutes / 1440} วัน`;
+  }
 
-    // Pagination
-    const totalPages = Math.max(1, Math.ceil(filteredProducts.length / perPage));
-    const safePage = Math.min(currentPage, totalPages);
-    const paginatedProducts = filteredProducts.slice(
-        (safePage - 1) * perPage,
-        safePage * perPage
+  if (minutes % 60 === 0) {
+    return `${minutes / 60} ชั่วโมง`;
+  }
+
+  return `${minutes} นาที`;
+}
+
+export default function ProductTable({ products }: ProductTableProps) {
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState<number>(10);
+  const [loadingId, setLoadingId] = useState<string | number | null>(null);
+
+  const categories = useMemo(() => {
+    const uniqueCategories = Array.from(
+      new Set(products.map((product) => product.category).filter(Boolean) as string[])
     );
 
-    const handleCategoryChange = (cat: string | null) => {
-        setSelectedCategory(cat);
-        setCurrentPage(1);
-    };
+    return ["ทั้งหมด", ...uniqueCategories];
+  }, [products]);
 
-    const handleToggleFeatured = async (id: string, isFeatured: boolean) => {
-        setTogglingFeatured(id);
-        try {
-            const res = await fetch(`/api/admin/products/${id}/featured`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ isFeatured }),
-            });
-            if (res.ok) {
-                showSuccess(isFeatured ? "เพิ่มสินค้าแนะนำ" : "ยกเลิกสินค้าแนะนำ");
-                router.refresh();
-            } else {
-                showError("เกิดข้อผิดพลาด");
-            }
-        } catch (error) {
-            console.error("[PRODUCT_FEATURED_TOGGLE]", error);
-            showError("เกิดข้อผิดพลาด");
-        } finally {
-            setTogglingFeatured(null);
-        }
-    };
+  const filteredProducts = useMemo(() => {
+    return products.filter((product) => {
+      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory =
+        selectedCategory === "ทั้งหมด" || product.category === selectedCategory;
 
-    const handleDuplicate = async (id: string) => {
-        setDuplicatingId(id);
-        try {
-            const res = await fetch(`/api/admin/products/${id}/duplicate`, { method: "POST" });
-            if (res.ok) {
-                const data = await res.json();
-                showSuccess(`คัดลอกสำเร็จ: ${data.product.name}`);
-                router.refresh();
-            } else {
-                showError("ไม่สามารถคัดลอกสินค้าได้");
-            }
-        } catch (error) {
-            console.error("[PRODUCT_DUPLICATE]", error);
-            showError("เกิดข้อผิดพลาด");
-        } finally {
-            setDuplicatingId(null);
-        }
-    };
+      return matchesSearch && matchesCategory;
+    });
+  }, [products, searchTerm, selectedCategory]);
 
-    const handleDelete = async (id: string) => {
-        setDeletingId(id);
-        try {
-            const res = await fetch(`/api/products/${id}`, {
-                method: "DELETE",
-            });
-            const data = await res.json();
+  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const startIndex = (safeCurrentPage - 1) * itemsPerPage;
+  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
 
-            if (data.success) {
-                showSuccess("ลบสินค้าสำเร็จ");
-                router.refresh();
-            } else {
-                showError(data.message || "เกิดข้อผิดพลาด");
-            }
-        } catch (error) {
-            console.error("[PRODUCT_DELETE]", error);
-            showError("ไม่สามารถลบสินค้าได้");
-        } finally {
-            setDeletingId(null);
-        }
-    };
+  const handleToggleFeatured = async (productId: string | number, currentFeatured: boolean) => {
+    setLoadingId(productId);
 
-    return (
-        <div className="space-y-0">
-            {/* ── Category Filter + Search Bar ── */}
-            <div className="flex flex-col gap-3 mb-4">
-                {/* Category pills */}
-                <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground mr-1">
-                        <LayoutGrid className="h-4 w-4" />
-                        หมวดหมู่
-                    </div>
-                    <button
-                        onClick={() => handleCategoryChange(null)}
-                        className={cn(
-                            "px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150",
-                            selectedCategory === null
-                                ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                                : "bg-background text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
-                        )}
-                    >
-                        ทั้งหมด ({products.length})
-                    </button>
-                    {categoryStats.map(([cat, count]) => (
-                        <button
-                            key={cat}
-                            onClick={() => handleCategoryChange(cat)}
-                            className={cn(
-                                "px-3 py-1.5 rounded-full text-xs font-medium border transition-all duration-150",
-                                selectedCategory === cat
-                                    ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                                    : "bg-background text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
-                            )}
-                        >
-                            {cat} ({count})
-                        </button>
-                    ))}
-                </div>
+    try {
+      const response = await fetch(`/api/admin/products/${productId}/featured`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ isFeatured: !currentFeatured }),
+      });
 
-                {/* Search + per page */}
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="relative w-full sm:w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
-                        <input
-                            value={searchQuery}
-                            onChange={(e) => {
-                                setSearchQuery(e.target.value);
-                                setCurrentPage(1);
-                            }}
-                            placeholder="ค้นหาชื่อสินค้า..."
-                            className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-lg bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
-                        />
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <span>แสดง</span>
-                        <select
-                            value={perPage}
-                            onChange={(e) => {
-                                setPerPage(Number(e.target.value));
-                                setCurrentPage(1);
-                            }}
-                            className="border border-border rounded-md px-2 py-1.5 text-xs bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                        >
-                            {PER_PAGE_OPTIONS.map((n) => (
-                                <option key={n} value={n}>
-                                    {n}
-                                </option>
-                            ))}
-                        </select>
-                        <span>รายการ</span>
-                    </div>
-                </div>
-            </div>
+      if (!response.ok) {
+        throw new Error("ไม่สามารถอัปเดตสินค้าแนะนำได้");
+      }
 
-            {/* ── Table ── */}
-            <div className="rounded-lg border overflow-x-auto">
-                <Table className="min-w-[700px]">
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead className="w-[80px]">รูป</TableHead>
-                            <TableHead>ชื่อสินค้า</TableHead>
-                            <TableHead className="hidden md:table-cell">หมวดหมู่</TableHead>
-                            <TableHead className="text-right">ราคา</TableHead>
-                            <TableHead className="text-center">สต็อก</TableHead>
-                            <TableHead className="text-center">สถานะ</TableHead>
-                            <TableHead className="text-center hidden md:table-cell">แนะนำ</TableHead>
-                            <TableHead className="w-[80px]"></TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {paginatedProducts.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={8} className="text-center py-12 text-muted-foreground">
-                                    <Package className="mx-auto h-8 w-8 opacity-30 mb-2" />
-                                    {searchQuery ? "ไม่พบสินค้าที่ค้นหา" : "ไม่มีสินค้าในหมวดนี้"}
-                                </TableCell>
-                            </TableRow>
-                        ) : (
-                            paginatedProducts.map((product) => {
-                                let statusBadge;
-                                if (product.isSold) {
-                                    statusBadge = <Badge variant="destructive">ขายแล้ว</Badge>;
-                                } else if (product.stockCount === 0) {
-                                    statusBadge = <Badge variant="destructive">หมดสต็อก</Badge>;
-                                } else {
-                                    statusBadge = <Badge variant="default" className="bg-green-600">พร้อมขาย</Badge>;
-                                }
+      showSuccess(
+        currentFeatured ? "นำสินค้าออกจากสินค้าแนะนำแล้ว" : "เพิ่มสินค้าไปยังสินค้าแนะนำแล้ว"
+      );
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      showError("ไม่สามารถอัปเดตสินค้าแนะนำได้");
+    } finally {
+      setLoadingId(null);
+    }
+  };
 
-                                const autoDeleteBadge = product.autoDeleteAfterSale ? (
-                                    <Badge variant="outline" className="gap-1 text-orange-600 border-orange-300 text-xs">
-                                        <Timer className="h-3 w-3" />
-                                        {product.autoDeleteAfterSale >= 1440
-                                            ? `${Math.round(product.autoDeleteAfterSale / 1440)}ว.`
-                                            : product.autoDeleteAfterSale >= 60
-                                            ? `${Math.round(product.autoDeleteAfterSale / 60)}ชม.`
-                                            : `${product.autoDeleteAfterSale}น.`}
-                                    </Badge>
-                                ) : null;
+  const handleDuplicate = async (productId: string | number) => {
+    setLoadingId(productId);
 
-                                return (
-                                    <TableRow key={product.id}>
-                                    <TableCell>
-                                        <Avatar className="rounded-lg">
-                                            <AvatarImage
-                                                src={product.imageUrl || ""}
-                                                alt={product.name}
-                                                className="object-cover"
-                                            />
-                                            <AvatarFallback className="rounded-lg bg-muted">
-                                                {product.name.charAt(0)}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                    </TableCell>
-                                    <TableCell className="font-medium">
-                                        {product.name}
-                                    </TableCell>
-                                    <TableCell className="hidden md:table-cell">
-                                        <Badge variant="secondary">{product.category}</Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right font-medium">
-                                        {product.currency === "POINT" ? (
-                                            <span className="flex items-center justify-end gap-1 text-purple-600">
-                                                <Gem className="h-4 w-4" />
-                                                {product.price.toLocaleString()}
-                                            </span>
-                                        ) : (
-                                            <span>฿{product.price.toLocaleString()}</span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        {product.stockCount === undefined ? (
-                                            <span className="text-muted-foreground">-</span>
-                                        ) : (
-                                            <Badge variant={product.stockCount > 0 ? "secondary" : "destructive"} className="gap-1">
-                                                <Package className="h-3 w-3" />
-                                                {product.stockCount}
-                                            </Badge>
-                                        )}
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                        <div className="flex flex-col items-center gap-1">
-                                            {statusBadge}
-                                            {autoDeleteBadge}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="text-center hidden md:table-cell">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            onClick={() => handleToggleFeatured(product.id, !product.isFeatured)}
-                                            disabled={togglingFeatured === product.id}
-                                            className={cn("transition-colors", product.isFeatured && "text-amber-500 hover:text-amber-600")}
-                                            aria-label={product.isFeatured ? `ยกเลิกสินค้าแนะนำ ${product.name}` : `ตั้ง ${product.name} เป็นสินค้าแนะนำ`}
-                                        >
-                                            <Star className={cn("h-5 w-5", product.isFeatured && "fill-current")} />
-                                        </Button>
-                                    </TableCell>
-                                    <TableCell>
-                                        <DropdownMenu>
-                                            <DropdownMenuTrigger asChild>
-                                                <Button variant="ghost" size="icon" aria-label={`เปิดเมนูจัดการ ${product.name}`}>
-                                                    <MoreHorizontal className="h-4 w-4" />
-                                                </Button>
-                                            </DropdownMenuTrigger>
-                                            <DropdownMenuContent align="end">
-                                                <DropdownMenuItem asChild>
-                                                    <Link href={`/product/${product.id}`} className="flex items-center gap-2 cursor-pointer">
-                                                        <Eye className="h-4 w-4" />
-                                                        ดูรายละเอียด
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem asChild>
-                                                    <Link href={`/admin/products/${product.id}/edit`} className="flex items-center gap-2 cursor-pointer">
-                                                        <Pencil className="h-4 w-4" />
-                                                        แก้ไข
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem asChild>
-                                                    <Link href={`/admin/products/${product.id}/stock`} className="flex items-center gap-2 cursor-pointer">
-                                                        <Package className="h-4 w-4" />
-                                                        จัดการสต็อก
-                                                    </Link>
-                                                </DropdownMenuItem>
-                                                <DropdownMenuItem
-                                                    onClick={() => handleDuplicate(product.id)}
-                                                    disabled={duplicatingId === product.id}
-                                                    className="cursor-pointer"
-                                                >
-                                                    <Copy className="h-4 w-4 mr-2" />
-                                                    {duplicatingId === product.id ? "กำลังคัดลอก..." : "คัดลอกสินค้า"}
-                                                </DropdownMenuItem>
-                                                <DropdownMenuSeparator />
-                                                <DropdownMenuItem
-                                                    onClick={async () => {
-                                                        const confirmed = await showDeleteConfirm(product.name);
-                                                        if (confirmed) {
-                                                            handleDelete(product.id);
-                                                        }
-                                                    }}
-                                                    disabled={deletingId === product.id}
-                                                    className="text-destructive focus:text-destructive cursor-pointer"
-                                                >
-                                                    <Trash2 className="h-4 w-4 mr-2" />
-                                                    {deletingId === product.id ? "กำลังลบ..." : "ลบ"}
-                                                </DropdownMenuItem>
-                                            </DropdownMenuContent>
-                                        </DropdownMenu>
-                                    </TableCell>
-                                </TableRow>
-                                );
-                            })
-                        )}
-                    </TableBody>
-                </Table>
-            </div>
+    try {
+      const response = await fetch(`/api/admin/products/${productId}/duplicate`, {
+        method: "POST",
+      });
 
-            {/* ── Pagination ── */}
-            {filteredProducts.length > perPage && (
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-4 text-sm text-muted-foreground">
-                    <span>
-                        แสดง {filteredProducts.length === 0 ? 0 : (safePage - 1) * perPage + 1} ถึง{" "}
-                        {Math.min(safePage * perPage, filteredProducts.length)} จาก {filteredProducts.length} รายการ
-                    </span>
-                    <div className="flex items-center gap-1">
-                        <button
-                            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                            disabled={safePage === 1}
-                            className="p-2 rounded-lg border border-border hover:bg-muted transition disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            <ChevronLeft className="h-4 w-4" />
-                        </button>
-                        {Array.from({ length: totalPages }, (_, i) => i + 1)
-                            .filter((p) => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
-                            .reduce<(number | "...")[]>((acc, p, i, arr) => {
-                                if (i > 0 && p - (arr[i - 1] ?? 0) > 1) acc.push("...");
-                                acc.push(p);
-                                return acc;
-                            }, [])
-                            .map((p, i) =>
-                                p === "..." ? (
-                                    <span key={`dots-${i}`} className="px-2 text-muted-foreground/50">
-                                        …
-                                    </span>
-                                ) : (
-                                    <button
-                                        key={p}
-                                        onClick={() => setCurrentPage(p as number)}
-                                        className={cn(
-                                            "min-w-[36px] h-9 rounded-lg border text-xs font-medium transition",
-                                            p === safePage
-                                                ? "bg-primary text-primary-foreground border-primary"
-                                                : "border-border hover:bg-muted"
-                                        )}
-                                    >
-                                        {p}
-                                    </button>
-                                )
-                            )}
-                        <button
-                            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                            disabled={safePage === totalPages}
-                            className="p-2 rounded-lg border border-border hover:bg-muted transition disabled:opacity-40 disabled:cursor-not-allowed"
-                        >
-                            <ChevronRight className="h-4 w-4" />
-                        </button>
-                    </div>
-                </div>
-            )}
+      if (!response.ok) {
+        throw new Error("ไม่สามารถคัดลอกสินค้าได้");
+      }
+
+      showSuccess("คัดลอกสินค้าเรียบร้อยแล้ว");
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      showError("ไม่สามารถคัดลอกสินค้าได้");
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const handleDelete = async (productId: string | number, productName: string) => {
+    const confirmed = await showConfirm(
+      "ลบสินค้า",
+      `คุณแน่ใจหรือไม่ว่าต้องการลบสินค้า \"${productName}\"? การดำเนินการนี้ไม่สามารถย้อนกลับได้`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setLoadingId(productId);
+
+    try {
+      const response = await fetch(`/api/admin/products/${productId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("ไม่สามารถลบสินค้าได้");
+      }
+
+      showSuccess("ลบสินค้าเรียบร้อยแล้ว");
+      router.refresh();
+    } catch (error) {
+      console.error(error);
+      showError("ไม่สามารถลบสินค้าได้");
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:items-center">
+          <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
+            <LayoutGrid className="h-4 w-4 text-slate-400" />
+            <span>หมวดหมู่</span>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {categories.map((category) => {
+              const isActive = selectedCategory === category;
+              const count =
+                category === "ทั้งหมด"
+                  ? products.length
+                  : products.filter((product) => product.category === category).length;
+
+              return (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory(category);
+                    setCurrentPage(1);
+                  }}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition",
+                    isActive
+                      ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                      : "border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                  )}
+                >
+                  <span>{category}</span>
+                  <span className={cn("text-xs", isActive ? "text-blue-100" : "text-slate-400")}>
+                    ({count})
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-    );
-}
 
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative min-w-[260px] flex-1 sm:min-w-[320px]">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="ค้นหาชื่อสินค้า..."
+              value={searchTerm}
+              onChange={(event) => {
+                setSearchTerm(event.target.value);
+                setCurrentPage(1);
+              }}
+              className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 text-sm text-slate-500">
+            <span>แสดง</span>
+            <select
+              value={itemsPerPage}
+              onChange={(event) => {
+                setItemsPerPage(Number(event.target.value));
+                setCurrentPage(1);
+              }}
+              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+            >
+              {ITEMS_PER_PAGE_OPTIONS.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+            <span>รายการ</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+        <Table>
+          <TableHeader>
+            <TableRow className="border-slate-200 bg-slate-50/80 hover:bg-slate-50/80">
+              <TableHead className="w-20 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                รูป
+              </TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                ชื่อสินค้า
+              </TableHead>
+              <TableHead className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                หมวดหมู่
+              </TableHead>
+              <TableHead className="text-center text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                ราคา
+              </TableHead>
+              <TableHead className="text-center text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                สต็อก
+              </TableHead>
+              <TableHead className="text-center text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                สถานะ
+              </TableHead>
+              <TableHead className="text-center text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                แนะนำ
+              </TableHead>
+              <TableHead className="text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                จัดการ
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {paginatedProducts.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="py-16 text-center text-slate-500">
+                  <div className="mx-auto flex max-w-sm flex-col items-center gap-3">
+                    <div className="rounded-full bg-slate-100 p-3 text-slate-400">
+                      <Package className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <p className="text-base font-semibold text-slate-700">ไม่พบสินค้าที่ตรงเงื่อนไข</p>
+                      <p className="mt-1 text-sm text-slate-500">ลองค้นหาด้วยชื่ออื่นหรือเปลี่ยนหมวดหมู่ที่เลือก</p>
+                    </div>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              paginatedProducts.map((product, index) => {
+                const hasDiscount =
+                  product.discountPrice !== null &&
+                  product.discountPrice !== undefined &&
+                  product.discountPrice < product.price;
+                const displayStockCount = product.stockCount ?? (product.isSold ? 0 : 1);
+                const autoDeleteLabel = formatAutoDelete(product.autoDeleteAfterSale);
+                const isPointProduct = product.currency === "POINT";
+                const activePrice = hasDiscount ? product.discountPrice : product.price;
+
+                return (
+                  <TableRow
+                    key={product.id}
+                    className={cn(
+                      "border-slate-200 transition hover:bg-blue-50/40",
+                      index % 2 === 0 ? "bg-white" : "bg-slate-50/35"
+                    )}
+                  >
+                    <TableCell>
+                      <Avatar className="h-11 w-11 rounded-xl border border-slate-200 shadow-sm">
+                        <AvatarImage src={product.imageUrl || undefined} alt={product.name} className="object-cover" />
+                        <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 text-xs font-semibold text-blue-700">
+                          {product.name.slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="space-y-1">
+                        <p className="font-semibold text-slate-900">{product.name}</p>
+                        <p className="line-clamp-1 max-w-[280px] text-sm text-slate-500">
+                          {product.description || "ไม่มีรายละเอียดเพิ่มเติม"}
+                        </p>
+                      </div>
+                    </TableCell>
+
+                    <TableCell>
+                      <Badge variant="secondary" className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
+                        {product.category || "ทั่วไป"}
+                      </Badge>
+                    </TableCell>
+
+                    <TableCell className="text-center">
+                      <div className="flex flex-col items-center gap-1">
+                        <div className="flex items-center gap-1.5 text-base font-semibold text-slate-900">
+                          {isPointProduct ? <Gem className="h-4 w-4 text-violet-500" /> : null}
+                          <span>
+                            {isPointProduct
+                              ? Number(activePrice).toLocaleString()
+                              : `฿${Number(activePrice).toLocaleString()}`}
+                          </span>
+                        </div>
+                        {hasDiscount ? (
+                          <>
+                            <p className="text-xs text-slate-400 line-through">
+                              {isPointProduct
+                                ? `${Number(product.price).toLocaleString()} พอยท์`
+                                : `฿${Number(product.price).toLocaleString()}`}
+                            </p>
+                            <Badge className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-50">
+                              ลดราคา
+                            </Badge>
+                          </>
+                        ) : null}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="text-center">
+                      <Badge
+                        variant="outline"
+                        className="inline-flex items-center gap-1 rounded-full border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-700"
+                      >
+                        <Package className="h-3.5 w-3.5 text-slate-400" />
+                        {displayStockCount}
+                      </Badge>
+                    </TableCell>
+
+                    <TableCell className="text-center">
+                      <div className="flex flex-col items-center gap-2">
+                        <Badge
+                          className={cn(
+                            "rounded-full px-2.5 py-1 text-xs font-semibold",
+                            product.isSold
+                              ? "bg-rose-100 text-rose-700 hover:bg-rose-100"
+                              : "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
+                          )}
+                        >
+                          {product.isSold ? "ขายแล้ว" : "พร้อมขาย"}
+                        </Badge>
+                        {autoDeleteLabel ? (
+                          <Badge
+                            variant="outline"
+                            className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700"
+                          >
+                            <Timer className="mr-1 h-3 w-3" />
+                            {autoDeleteLabel}
+                          </Badge>
+                        ) : null}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="text-center">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        disabled={loadingId === product.id}
+                        onClick={() => handleToggleFeatured(product.id, product.isFeatured)}
+                        className={cn(
+                          "mx-auto rounded-full border transition",
+                          product.isFeatured
+                            ? "border-amber-200 bg-amber-50 text-amber-500 hover:bg-amber-100"
+                            : "border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-600"
+                        )}
+                      >
+                        <Star className={cn("h-4 w-4", product.isFeatured ? "fill-current" : "")} />
+                      </Button>
+                    </TableCell>
+
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="rounded-full border border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-700"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/product/${product.id}`} className="flex items-center gap-2">
+                              <Eye className="h-4 w-4" />
+                              ดูสินค้า
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/admin/products/${product.id}/edit`} className="flex items-center gap-2">
+                              <Pencil className="h-4 w-4" />
+                              แก้ไขสินค้า
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDuplicate(product.id)}
+                            disabled={loadingId === product.id}
+                            className="flex items-center gap-2"
+                          >
+                            <Copy className="h-4 w-4" />
+                            คัดลอกสินค้า
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(product.id, product.name)}
+                            disabled={loadingId === product.id}
+                            className="flex items-center gap-2 text-rose-600 focus:text-rose-600"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            ลบสินค้า
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            )}
+          </TableBody>
+        </Table>
+
+        <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50/60 px-4 py-3 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+          <p>
+            แสดง {filteredProducts.length === 0 ? 0 : startIndex + 1} ถึง {Math.min(startIndex + itemsPerPage, filteredProducts.length)} จาก {filteredProducts.length} รายการ
+          </p>
+
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+              disabled={safeCurrentPage === 1}
+              className="h-9 w-9 rounded-xl border-slate-200 bg-white disabled:opacity-50"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            <div className="flex items-center gap-1.5">
+              {Array.from({ length: totalPages }, (_, index) => index + 1)
+                .slice(Math.max(0, safeCurrentPage - 2), Math.max(3, safeCurrentPage + 1))
+                .map((pageNumber) => (
+                  <Button
+                    key={pageNumber}
+                    type="button"
+                    variant={pageNumber === safeCurrentPage ? "default" : "outline"}
+                    onClick={() => setCurrentPage(pageNumber)}
+                    className={cn(
+                      "h-9 min-w-9 rounded-xl px-3",
+                      pageNumber === safeCurrentPage
+                        ? "bg-blue-600 text-white hover:bg-blue-700"
+                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                    )}
+                  >
+                    {pageNumber}
+                  </Button>
+                ))}
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+              disabled={safeCurrentPage === totalPages}
+              className="h-9 w-9 rounded-xl border-slate-200 bg-white disabled:opacity-50"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

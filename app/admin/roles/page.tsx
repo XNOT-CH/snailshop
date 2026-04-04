@@ -1,377 +1,537 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { showWarning, showError, showSuccess, showDeleteConfirm } from "@/lib/swal";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import {
+  Crown,
+  Loader2,
+  Pencil,
+  Plus,
+  Shield,
+  Trash2,
+  X,
+} from "lucide-react";
+import { showDeleteConfirm, showError, showSuccess, showWarning } from "@/lib/swal";
+import { PERMISSIONS } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
-import {
-    Plus,
-    Pencil,
-    Trash2,
-    Loader2,
-    Shield,
-    Crown,
-    X,
-} from "lucide-react";
-import Image from "next/image";
-import { PERMISSIONS } from "@/lib/permissions";
 
 interface Role {
-    id: string;
-    name: string;
-    code: string;
-    iconUrl: string | null;
-    description: string | null;
-    permissions: string | null;
-    sortOrder: number;
-    isSystem: boolean;
-    createdAt: string;
+  id: string;
+  name: string;
+  code: string;
+  iconUrl: string | null;
+  description: string | null;
+  permissions: string | null;
+  sortOrder: number;
+  isSystem: boolean;
+  createdAt: string;
+}
+
+function normalizeRolePermissions(raw: Role["permissions"] | string[] | null | undefined) {
+  if (!raw) {
+    return [] as string[];
+  }
+
+  if (Array.isArray(raw)) {
+    return raw;
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
 }
 
 const PERMISSION_GROUPS = {
-    "สินค้า": [
-        { key: PERMISSIONS.PRODUCT_VIEW, label: "ดูสินค้า" },
-        { key: PERMISSIONS.PRODUCT_CREATE, label: "เพิ่มสินค้า" },
-        { key: PERMISSIONS.PRODUCT_EDIT, label: "แก้ไขสินค้า" },
-        { key: PERMISSIONS.PRODUCT_DELETE, label: "ลบสินค้า" },
-    ],
-    "ผู้ใช้": [
-        { key: PERMISSIONS.USER_VIEW, label: "ดูผู้ใช้" },
-        { key: PERMISSIONS.USER_EDIT, label: "แก้ไขผู้ใช้" },
-        { key: PERMISSIONS.USER_DELETE, label: "ลบผู้ใช้" },
-        { key: PERMISSIONS.USER_MANAGE_ROLE, label: "จัดการยศ" },
-    ],
-    "คำสั่งซื้อ": [
-        { key: PERMISSIONS.ORDER_VIEW, label: "ดูคำสั่งซื้อตัวเอง" },
-        { key: PERMISSIONS.ORDER_VIEW_ALL, label: "ดูคำสั่งซื้อทั้งหมด" },
-    ],
-    "สลิป/เติมเงิน": [
-        { key: PERMISSIONS.SLIP_VIEW, label: "ดูสลิป" },
-        { key: PERMISSIONS.SLIP_APPROVE, label: "อนุมัติสลิป" },
-        { key: PERMISSIONS.SLIP_REJECT, label: "ปฏิเสธสลิป" },
-    ],
-    "ตั้งค่า": [
-        { key: PERMISSIONS.SETTINGS_VIEW, label: "ดูตั้งค่า" },
-        { key: PERMISSIONS.SETTINGS_EDIT, label: "แก้ไขตั้งค่า" },
-    ],
-    "ระบบ": [
-        { key: PERMISSIONS.ADMIN_PANEL, label: "เข้าหน้าแอดมิน" },
-        { key: PERMISSIONS.AUDIT_LOG_VIEW, label: "ดู Audit Log" },
-        { key: PERMISSIONS.API_KEY_MANAGE, label: "จัดการ API Key" },
-    ],
-};
+  "สินค้า": [
+    { key: PERMISSIONS.PRODUCT_VIEW, label: "ดูสินค้า" },
+    { key: PERMISSIONS.PRODUCT_CREATE, label: "เพิ่มสินค้า" },
+    { key: PERMISSIONS.PRODUCT_EDIT, label: "แก้ไขสินค้า" },
+    { key: PERMISSIONS.PRODUCT_DELETE, label: "ลบสินค้า" },
+  ],
+  "ผู้ใช้": [
+    { key: PERMISSIONS.USER_VIEW, label: "ดูผู้ใช้" },
+    { key: PERMISSIONS.USER_EDIT, label: "แก้ไขผู้ใช้" },
+    { key: PERMISSIONS.USER_DELETE, label: "ลบผู้ใช้" },
+    { key: PERMISSIONS.USER_MANAGE_ROLE, label: "จัดการยศ" },
+  ],
+  "คำสั่งซื้อ": [
+    { key: PERMISSIONS.ORDER_VIEW, label: "ดูคำสั่งซื้อตัวเอง" },
+    { key: PERMISSIONS.ORDER_VIEW_ALL, label: "ดูคำสั่งซื้อทั้งหมด" },
+  ],
+  "สลิป/เติมเงิน": [
+    { key: PERMISSIONS.SLIP_VIEW, label: "ดูสลิป" },
+    { key: PERMISSIONS.SLIP_APPROVE, label: "อนุมัติสลิป" },
+    { key: PERMISSIONS.SLIP_REJECT, label: "ปฏิเสธสลิป" },
+  ],
+  "ตั้งค่า": [
+    { key: PERMISSIONS.SETTINGS_VIEW, label: "ดูตั้งค่า" },
+    { key: PERMISSIONS.SETTINGS_EDIT, label: "แก้ไขตั้งค่า" },
+  ],
+  "ระบบ": [
+    { key: PERMISSIONS.ADMIN_PANEL, label: "เข้าหน้าแอดมิน" },
+    { key: PERMISSIONS.AUDIT_LOG_VIEW, label: "ดู Audit Log" },
+    { key: PERMISSIONS.API_KEY_MANAGE, label: "จัดการ API Key" },
+  ],
+} as const;
+
+const ALL_PERMISSION_KEYS = Object.values(PERMISSION_GROUPS).flatMap((permissions) =>
+  permissions.map((permission) => permission.key)
+);
 
 export default function AdminRolesPage() {
-    const [roles, setRoles] = useState<Role[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [isPanelOpen, setIsPanelOpen] = useState(false);
-    const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-    const [saving, setSaving] = useState(false);
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [saving, setSaving] = useState(false);
 
-    const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState({
+    name: "",
+    code: "",
+    iconUrl: "",
+    description: "",
+    permissions: [] as string[],
+    sortOrder: 0,
+  });
+
+  const selectedPermissionCount = formData.permissions.length;
+  const totalPermissionCount = ALL_PERMISSION_KEYS.length;
+  const selectedPermissionSet = useMemo(() => new Set(formData.permissions), [formData.permissions]);
+
+  const fetchRoles = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/admin/roles");
+      if (response.ok) {
+        setRoles(await response.json());
+      }
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchRoles();
+  }, [fetchRoles]);
+
+  const openPanel = (role?: Role) => {
+    if (role) {
+      setSelectedRole(role);
+      const permissions = normalizeRolePermissions(role.permissions);
+
+      setFormData({
+        name: role.name,
+        code: role.code,
+        iconUrl: role.iconUrl || "",
+        description: role.description || "",
+        permissions,
+        sortOrder: role.sortOrder,
+      });
+    } else {
+      setSelectedRole(null);
+      setFormData({
         name: "",
         code: "",
         iconUrl: "",
         description: "",
-        permissions: [] as string[],
+        permissions: [],
         sortOrder: 0,
+      });
+    }
+
+    setIsPanelOpen(true);
+  };
+
+  const closePanel = () => {
+    setIsPanelOpen(false);
+    setSelectedRole(null);
+  };
+
+  const togglePermission = (permission: string) => {
+    setFormData((previous) => ({
+      ...previous,
+      permissions: previous.permissions.includes(permission)
+        ? previous.permissions.filter((item) => item !== permission)
+        : [...previous.permissions, permission],
+    }));
+  };
+
+  const togglePermissionGroup = (permissions: readonly { key: string; label: string }[]) => {
+    setFormData((previous) => {
+      const keys = permissions.map((permission) => permission.key);
+      const allSelected = keys.every((key) => previous.permissions.includes(key));
+
+      if (allSelected) {
+        return {
+          ...previous,
+          permissions: previous.permissions.filter((permission) => !keys.includes(permission)),
+        };
+      }
+
+      return {
+        ...previous,
+        permissions: Array.from(new Set([...previous.permissions, ...keys])),
+      };
     });
+  };
 
-    const fetchRoles = useCallback(async () => {
-        try {
-            setLoading(true);
-            const res = await fetch("/api/admin/roles");
-            if (res.ok) setRoles(await res.json());
-        } catch (error) {
-            console.error("Error fetching roles:", error);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
+  const toggleAllPermissions = () => {
+    setFormData((previous) => ({
+      ...previous,
+      permissions:
+        previous.permissions.length === totalPermissionCount ? [] : [...ALL_PERMISSION_KEYS],
+    }));
+  };
 
-    useEffect(() => { fetchRoles(); }, [fetchRoles]);
+  const handleSave = async () => {
+    if (!formData.name.trim()) {
+      showWarning("กรุณาระบุชื่อยศ");
+      return;
+    }
 
-    const openPanel = (role?: Role) => {
-        if (role) {
-            setSelectedRole(role);
-            let perms: string[] = [];
-            try { perms = role.permissions ? JSON.parse(role.permissions) : []; } catch { perms = []; }
-            setFormData({
-                name: role.name,
-                code: role.code,
-                iconUrl: role.iconUrl || "",
-                description: role.description || "",
-                permissions: perms,
-                sortOrder: role.sortOrder,
-            });
-        } else {
-            setSelectedRole(null);
-            setFormData({ name: "", code: "", iconUrl: "", description: "", permissions: [], sortOrder: 0 });
-        }
-        setIsPanelOpen(true);
-    };
+    setSaving(true);
+    try {
+      const url = selectedRole ? `/api/admin/roles/${selectedRole.id}` : "/api/admin/roles";
+      const method = selectedRole ? "PUT" : "POST";
+      const response = await fetch(url, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
 
-    const closePanel = () => { setIsPanelOpen(false); setSelectedRole(null); };
+      if (response.ok) {
+        closePanel();
+        await fetchRoles();
+        showSuccess(selectedRole ? "บันทึกยศเรียบร้อย" : "เพิ่มยศเรียบร้อย");
+      } else {
+        const data = await response.json();
+        showError(data.error || "เกิดข้อผิดพลาดในการบันทึก");
+      }
+    } catch {
+      showError("เกิดข้อผิดพลาดในการบันทึก");
+    } finally {
+      setSaving(false);
+    }
+  };
 
-    const togglePermission = (permission: string) => {
-        setFormData((prev) => ({
-            ...prev,
-            permissions: prev.permissions.includes(permission)
-                ? prev.permissions.filter((p) => p !== permission)
-                : [...prev.permissions, permission],
-        }));
-    };
+  const handleDelete = async (role: Role) => {
+    if (role.isSystem) {
+      showWarning("ไม่สามารถลบยศระบบได้");
+      return;
+    }
 
-    const handleSave = async () => {
-        if (!formData.name) { showWarning("กรุณาระบุชื่อยศ"); return; }
+    const confirmed = await showDeleteConfirm(role.name);
+    if (!confirmed) {
+      return;
+    }
 
-        setSaving(true);
-        try {
-            const url = selectedRole ? `/api/admin/roles/${selectedRole.id}` : "/api/admin/roles";
-            const method = selectedRole ? "PUT" : "POST";
-            const res = await fetch(url, {
-                method,
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
-            });
+    try {
+      const response = await fetch(`/api/admin/roles/${role.id}`, { method: "DELETE" });
+      if (response.ok) {
+        await fetchRoles();
+        showSuccess("ลบยศเรียบร้อย");
+      } else {
+        const data = await response.json();
+        showError(data.error || "เกิดข้อผิดพลาดในการลบ");
+      }
+    } catch {
+      showError("เกิดข้อผิดพลาดในการลบ");
+    }
+  };
 
-            if (res.ok) {
-                closePanel();
-                fetchRoles();
-                showSuccess(selectedRole ? "บันทึกยศเรียบร้อย" : "เพิ่มยศเรียบร้อย");
-            } else {
-                const data = await res.json();
-                showError(data.error || "เกิดข้อผิดพลาดในการบันทึก");
-            }
-        } catch {
-            showError("เกิดข้อผิดพลาดในการบันทึก");
-        } finally {
-            setSaving(false);
-        }
-    };
-
-    const handleDelete = async (role: Role) => {
-        if (role.isSystem) { showWarning("ไม่สามารถลบยศระบบได้"); return; }
-        const confirmed = await showDeleteConfirm(role.name);
-        if (!confirmed) return;
-
-        try {
-            const res = await fetch(`/api/admin/roles/${role.id}`, { method: "DELETE" });
-            if (res.ok) {
-                fetchRoles();
-                showSuccess("ลบยศเรียบร้อย");
-            } else {
-                const data = await res.json();
-                showError(data.error || "เกิดข้อผิดพลาดในการลบ");
-            }
-        } catch {
-            showError("เกิดข้อผิดพลาดในการลบ");
-        }
-    };
-
-    return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                        <Shield className="h-6 w-6 text-[#1a56db]" />
-                        จัดการยศแอดมิน
-                    </h1>
-                    <p className="text-muted-foreground mt-1">เพิ่ม แก้ไข หรือลบยศของผู้ดูแลระบบ</p>
-                </div>
-                <Button onClick={() => openPanel()} className="w-full bg-[#1a56db] hover:bg-[#1e40af] sm:w-auto">
-                    <Plus className="h-4 w-4 mr-2" />
-                    เพิ่มยศ
-                </Button>
-            </div>
-
-            {/* Table Card */}
-            <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
-                {/* Card Header */}
-                <div className="border-b border-border py-3 px-5 flex items-center gap-2">
-                    <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
-                        <Shield className="h-3.5 w-3.5 text-white" />
-                    </div>
-                    <span className="font-bold text-foreground">รายการยศ</span>
-                </div>
-
-                {loading && (
-                    <div className="flex items-center justify-center py-12">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                )}
-                {!loading && roles.length === 0 && (
-                    <div className="text-center py-12 text-muted-foreground">
-                        <Shield className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                        <p>ยังไม่มียศ</p>
-                        <Button variant="link" className="mt-2" onClick={() => openPanel()}>เพิ่มยศแรก</Button>
-                    </div>
-                )}
-                {!loading && roles.length > 0 && (
-                    <div className="overflow-x-auto">
-                    <Table className="min-w-[680px]">
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-16">ไอคอน</TableHead>
-                                <TableHead>ชื่อยศ</TableHead>
-                                <TableHead className="hidden md:table-cell">คำอธิบาย</TableHead>
-                                <TableHead className="w-24 text-center">จัดการ</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {roles.map((role) => (
-                                <TableRow key={role.id}>
-                                    <TableCell>
-                                        <div className="relative w-10 h-10 rounded-full overflow-hidden bg-muted flex items-center justify-center">
-                                            {role.iconUrl ? (
-                                                <Image src={role.iconUrl} alt={role.name} fill sizes="40px" className="object-cover" />
-                                            ) : (
-                                                <Crown className="h-5 w-5 text-muted-foreground" />
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-medium">{role.name}</span>
-                                            {role.isSystem && (
-                                                <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded">ระบบ</span>
-                                            )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell className="hidden md:table-cell text-muted-foreground text-sm">
-                                        {role.description || "-"}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center justify-center gap-1">
-                                            <Button variant="ghost" size="icon" onClick={() => openPanel(role)} aria-label={`แก้ไขยศ ${role.name}`}>
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="text-destructive hover:text-destructive"
-                                                onClick={() => handleDelete(role)}
-                                                disabled={role.isSystem}
-                                                aria-label={`ลบยศ ${role.name}`}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                    </div>
-                )}
-            </div>
-
-            {/* Modal Overlay */}
-            {isPanelOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    {/* Backdrop */}
-                    <button
-                        type="button"
-                        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-                        onClick={closePanel}
-                        aria-label="ปิดหน้าต่าง"
-                    />
-                    {/* Modal */}
-                    <div className="relative w-full max-w-lg bg-white dark:bg-zinc-900 shadow-2xl rounded-2xl flex flex-col max-h-[90vh] overflow-hidden">
-                        {/* Panel Header */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-gradient-to-r from-[#1a56db] to-[#1e40af]">
-                            <div className="flex items-center gap-2">
-                                <Shield className="h-5 w-5 text-white" />
-                                <h2 className="text-lg font-bold text-white">
-                                    {selectedRole ? "แก้ไขยศ" : "เพิ่มยศใหม่"}
-                                </h2>
-                            </div>
-                            <button
-                                onClick={closePanel}
-                                className="text-white/80 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
-                            >
-                                <X className="h-5 w-5" />
-                            </button>
-                        </div>
-
-                        {/* Panel Body */}
-                        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
-                            {/* Name */}
-                            <div className="space-y-1.5">
-                                <Label htmlFor="panel-name">ชื่อยศ *</Label>
-                                <Input
-                                    id="panel-name"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    placeholder="เช่น แอดมินผู้ช่วย"
-                                />
-                            </div>
-
-                            {/* Permissions */}
-                            <div className="space-y-3">
-                                <Label>สิทธิ์การใช้งาน</Label>
-                                <div className="rounded-xl border border-border overflow-hidden">
-                                    {Object.entries(PERMISSION_GROUPS).map(([group, perms], idx) => (
-                                        <div key={group} className={idx > 0 ? "border-t border-border" : ""}>
-                                            <div className="px-4 py-2 bg-gray-50 dark:bg-zinc-800">
-                                                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                                                    {group}
-                                                </h4>
-                                            </div>
-                                            <div className="grid grid-cols-2 gap-0 px-4 py-2">
-                                                {perms.map((perm) => (
-                                                    <div
-                                                        key={perm.key}
-                                                        className="flex items-center gap-2 py-1.5"
-                                                    >
-                                                        <Checkbox
-                                                            id={`panel-${perm.key}`}
-                                                            checked={formData.permissions.includes(perm.key)}
-                                                            onCheckedChange={() => togglePermission(perm.key)}
-                                                        />
-                                                        <label
-                                                            htmlFor={`panel-${perm.key}`}
-                                                            className="text-sm cursor-pointer select-none"
-                                                        >
-                                                            {perm.label}
-                                                        </label>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Panel Footer */}
-                        <div className="px-6 py-4 border-t border-border flex gap-3 bg-gray-50 dark:bg-zinc-800">
-                            <Button variant="outline" onClick={closePanel} disabled={saving} className="flex-1">
-                                ยกเลิก
-                            </Button>
-                            <Button
-                                onClick={handleSave}
-                                disabled={saving}
-                                className="flex-1 bg-[#1a56db] hover:bg-[#1e40af]"
-                            >
-                                {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                                {selectedRole ? "บันทึก" : "เพิ่มยศ"}
-                            </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
+            <Shield className="h-6 w-6 text-[#1a56db]" />
+            จัดการยศแอดมิน
+          </h1>
+          <p className="mt-1 text-muted-foreground">เพิ่ม แก้ไข หรือลบยศของผู้ดูแลระบบ</p>
         </div>
-    );
+
+        <Button
+          onClick={() => openPanel()}
+          className="w-full bg-[#1a56db] hover:bg-[#1e40af] sm:w-auto"
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          เพิ่มยศ
+        </Button>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3">
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#1a56db]">
+            <Shield className="h-3.5 w-3.5 text-white" />
+          </div>
+          <span className="font-bold text-foreground">รายการยศ</span>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        ) : null}
+
+        {!loading && roles.length === 0 ? (
+          <div className="py-12 text-center text-muted-foreground">
+            <Shield className="mx-auto mb-4 h-12 w-12 opacity-30" />
+            <p>ยังไม่มียศ</p>
+            <Button variant="link" className="mt-2" onClick={() => openPanel()}>
+              เพิ่มยศแรก
+            </Button>
+          </div>
+        ) : null}
+
+        {!loading && roles.length > 0 ? (
+          <div className="overflow-x-auto">
+            <Table className="min-w-[720px]">
+              <TableHeader>
+                <TableRow className="bg-slate-50/70 hover:bg-slate-50/70">
+                  <TableHead className="w-16">ไอคอน</TableHead>
+                  <TableHead>ชื่อยศ</TableHead>
+                  <TableHead className="hidden md:table-cell">คำอธิบาย</TableHead>
+                  <TableHead className="w-28 text-center">จัดการ</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {roles.map((role, index) => (
+                  <TableRow
+                    key={role.id}
+                    className={index % 2 === 0 ? "bg-white" : "bg-slate-50/35"}
+                  >
+                    <TableCell>
+                      <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-muted">
+                        {role.iconUrl ? (
+                          <Image
+                            src={role.iconUrl}
+                            alt={role.name}
+                            fill
+                            sizes="40px"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <Crown className="h-5 w-5 text-muted-foreground" />
+                        )}
+                      </div>
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold text-slate-900">{role.name}</span>
+                        {role.isSystem ? (
+                          <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                            ระบบ
+                          </span>
+                        ) : null}
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="hidden text-sm text-muted-foreground md:table-cell">
+                      {role.description || "ยังไม่ได้ตั้งคำอธิบาย"}
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex items-center justify-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openPanel(role)}
+                          title={`แก้ไข ${role.name}`}
+                          aria-label={`แก้ไขยศ ${role.name}`}
+                          className="rounded-xl border border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-[#1a56db]"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleDelete(role)}
+                          disabled={role.isSystem}
+                          title={role.isSystem ? "ยศระบบลบไม่ได้" : `ลบ ${role.name}`}
+                          aria-label={`ลบยศ ${role.name}`}
+                          className="rounded-xl border border-transparent text-rose-500 hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-40"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : null}
+      </div>
+
+      {isPanelOpen ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={closePanel}
+            aria-label="ปิดหน้าต่าง"
+          />
+
+          <div className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border bg-gradient-to-r from-[#1a56db] to-[#1e40af] px-6 py-4">
+              <div className="flex items-center gap-2">
+                <Shield className="h-5 w-5 text-white" />
+                <div>
+                  <h2 className="text-lg font-bold text-white">
+                    {selectedRole ? "แก้ไขยศ" : "เพิ่มยศใหม่"}
+                  </h2>
+                  <p className="text-xs text-white/80">
+                    เลือกสิทธิ์แล้ว {selectedPermissionCount} จาก {totalPermissionCount} รายการ
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={closePanel}
+                className="rounded-lg p-1 text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 space-y-5 overflow-y-auto px-6 py-5">
+              <div className="space-y-1.5">
+                <Label htmlFor="panel-name">ชื่อยศ *</Label>
+                <Input
+                  id="panel-name"
+                  value={formData.name}
+                  onChange={(event) =>
+                    setFormData((previous) => ({ ...previous, name: event.target.value }))
+                  }
+                  placeholder="เช่น แอดมินผู้ช่วย"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="panel-description">คำอธิบาย</Label>
+                <Input
+                  id="panel-description"
+                  value={formData.description}
+                  onChange={(event) =>
+                    setFormData((previous) => ({
+                      ...previous,
+                      description: event.target.value,
+                    }))
+                  }
+                  placeholder="สรุปหน้าที่ของยศนี้แบบสั้นๆ"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <Label>สิทธิ์การใช้งาน</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleAllPermissions}
+                    className="rounded-full"
+                  >
+                    {selectedPermissionCount === totalPermissionCount
+                      ? "ล้างสิทธิ์ทั้งหมด"
+                      : "เลือกทั้งหมด"}
+                  </Button>
+                </div>
+
+                <div className="overflow-hidden rounded-xl border border-border">
+                  {Object.entries(PERMISSION_GROUPS).map(([groupName, permissions], index) => {
+                    const groupCount = permissions.filter((permission) =>
+                      selectedPermissionSet.has(permission.key)
+                    ).length;
+                    const groupAllSelected = groupCount === permissions.length;
+
+                    return (
+                      <div
+                        key={groupName}
+                        className={index > 0 ? "border-t border-border" : ""}
+                      >
+                        <div className="flex items-center justify-between gap-3 bg-slate-50 px-4 py-2.5">
+                          <div>
+                            <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                              {groupName}
+                            </h4>
+                            <p className="mt-0.5 text-xs text-muted-foreground">
+                              เลือกแล้ว {groupCount} จาก {permissions.length} สิทธิ์
+                            </p>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => togglePermissionGroup(permissions)}
+                            className="h-8 rounded-full px-3 text-xs text-slate-600 hover:bg-white"
+                          >
+                            {groupAllSelected ? "ล้างทั้งหมวด" : "เลือกทั้งหมวด"}
+                          </Button>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-0 px-4 py-2">
+                          {permissions.map((permission) => (
+                            <div key={permission.key} className="flex items-center gap-2 py-2">
+                              <Checkbox
+                                id={`panel-${permission.key}`}
+                                checked={formData.permissions.includes(permission.key)}
+                                onCheckedChange={() => togglePermission(permission.key)}
+                              />
+                              <label
+                                htmlFor={`panel-${permission.key}`}
+                                className="cursor-pointer select-none text-sm"
+                              >
+                                {permission.label}
+                              </label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            <div className="sticky bottom-0 flex gap-3 border-t border-border bg-slate-50 px-6 py-4">
+              <Button
+                variant="outline"
+                onClick={closePanel}
+                disabled={saving}
+                className="flex-1"
+              >
+                ยกเลิก
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                className="flex-1 bg-[#1a56db] hover:bg-[#1e40af]"
+              >
+                {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                {selectedRole ? "บันทึก" : "เพิ่มยศ"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
 }

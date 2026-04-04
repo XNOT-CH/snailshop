@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
 import { encrypt, decrypt } from "@/lib/encryption";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
+import { invalidateProductCaches } from "@/lib/cache";
 
 function validateDiscountPrice(discountPrice: string | number | null | undefined, priceNumber: number) {
     if (discountPrice !== undefined && discountPrice !== "" && discountPrice !== null) {
@@ -73,6 +74,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             details: { resourceName: title, changes },
         });
 
+        await invalidateProductCaches();
+
         return NextResponse.json({ success: true, message: "Product updated successfully", data: { id, ...body } });
     } catch (error) {
         console.error("[PRODUCT_PUT]", error);
@@ -98,6 +101,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             action: AUDIT_ACTIONS.PRODUCT_DELETE, resource: "Product", resourceId: id, resourceName: product.name,
             details: { resourceName: product.name, deletedData: { name: product.name, price: product.price, category: product.category } },
         });
+
+        await invalidateProductCaches();
 
         return NextResponse.json({ success: true, message: "Product deleted successfully" });
     } catch (error) {

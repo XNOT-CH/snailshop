@@ -99,15 +99,29 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
 
         // เตรียมข้อมูลสำหรับอัปเดต
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const updateData: Record<string, any> = {
-            name: validatedData.name,
-            email: validatedData.email || null,
-            phone: validatedData.phone || null,
-            firstName: validatedData.firstName || null,
-            lastName: validatedData.lastName || null,
-            firstNameEn: validatedData.firstNameEn || null,
-            lastNameEn: validatedData.lastNameEn || null,
-        };
+        const updateData: Record<string, any> = {};
+
+        if (validatedData.name !== undefined) {
+            updateData.name = validatedData.name || null;
+        }
+        if (validatedData.email !== undefined) {
+            updateData.email = validatedData.email || null;
+        }
+        if (validatedData.phone !== undefined) {
+            updateData.phone = validatedData.phone || null;
+        }
+        if (validatedData.firstName !== undefined) {
+            updateData.firstName = validatedData.firstName || null;
+        }
+        if (validatedData.lastName !== undefined) {
+            updateData.lastName = validatedData.lastName || null;
+        }
+        if (validatedData.firstNameEn !== undefined) {
+            updateData.firstNameEn = validatedData.firstNameEn || null;
+        }
+        if (validatedData.lastNameEn !== undefined) {
+            updateData.lastNameEn = validatedData.lastNameEn || null;
+        }
 
         // อัปเดต image ถ้ามีการส่งมา
         if (validatedData.image !== undefined) {
@@ -122,6 +136,13 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
             updateData.password = await bcrypt.hash(validatedData.password, 12);
         }
 
+        if (Object.keys(updateData).length === 0) {
+            return {
+                success: false,
+                message: "ไม่มีข้อมูลสำหรับอัปเดต",
+            };
+        }
+
         // Track changes สำหรับ audit log
         const changes = getChanges(
             {
@@ -131,9 +152,9 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
                 password: currentUser.password,
             },
             {
-                name: updateData.name,
-                email: updateData.email,
-                image: updateData.image,
+                name: updateData.name ?? currentUser.name,
+                email: updateData.email ?? currentUser.email,
+                image: updateData.image ?? currentUser.image,
                 // ซ่อน password จาก audit log
                 password: updateData.password ? "[CHANGED]" : currentUser.password,
             },

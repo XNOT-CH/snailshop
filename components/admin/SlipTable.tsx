@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { showConfirm, showSuccess, showError } from "@/lib/swal";
+import { showConfirm, showError, showSuccess } from "@/lib/swal";
 import { Button } from "@/components/ui/button";
 import {
     Table,
@@ -13,7 +13,7 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Check, X, Loader2, ExternalLink } from "lucide-react";
+import { Check, ExternalLink, ImageOff, Loader2, X } from "lucide-react";
 
 interface Slip {
     id: string;
@@ -36,7 +36,11 @@ export function SlipTable({ slips }: Readonly<SlipTableProps>) {
 
     const handleAction = async (slipId: string, action: "APPROVE" | "REJECT") => {
         const actionText = action === "APPROVE" ? "อนุมัติ" : "ปฏิเสธ";
-        const confirmed = await showConfirm("ยืนยันการดำเนินการ", `คุณต้องการ${actionText}รายการนี้ใช่หรือไม่?`);
+        const confirmed = await showConfirm(
+            "ยืนยันการดำเนินการ",
+            `คุณต้องการ${actionText}รายการนี้ใช่หรือไม่?`
+        );
+
         if (!confirmed) {
             return;
         }
@@ -67,34 +71,42 @@ export function SlipTable({ slips }: Readonly<SlipTableProps>) {
     };
 
     return (
-        <div className="overflow-x-auto rounded-xl border border-border">
-            <Table className="min-w-[640px]">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+            <Table className="min-w-[720px]">
                 <TableHeader>
-                    <TableRow>
-                        <TableHead>User</TableHead>
-                        <TableHead>Amount</TableHead>
-                        <TableHead className="hidden md:table-cell">Date</TableHead>
-                        <TableHead className="hidden md:table-cell">Proof Image</TableHead>
-                        <TableHead className="text-right">Actions</TableHead>
+                    <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
+                        <TableHead className="font-semibold text-slate-600">User</TableHead>
+                        <TableHead className="font-semibold text-slate-600">Amount</TableHead>
+                        <TableHead className="hidden font-semibold text-slate-600 md:table-cell">Date</TableHead>
+                        <TableHead className="hidden font-semibold text-slate-600 md:table-cell">Proof Image</TableHead>
+                        <TableHead className="text-right font-semibold text-slate-600">Actions</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {slips.map((slip) => (
-                        <TableRow key={slip.id}>
-                            <TableCell className="font-medium">
+                    {slips.map((slip, index) => (
+                        <TableRow key={slip.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50/35"}>
+                            <TableCell className="font-medium text-slate-800">
                                 {slip.user.email || slip.user.username}
                             </TableCell>
                             <TableCell className="font-bold text-indigo-600">
                                 ฿{slip.amount.toLocaleString()}
                             </TableCell>
-                            <TableCell className="hidden md:table-cell text-zinc-500">
-                                {new Date(slip.createdAt).toLocaleDateString("th-TH", {
-                                    year: "numeric",
-                                    month: "short",
-                                    day: "numeric",
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                })}
+                            <TableCell className="hidden md:table-cell text-slate-500">
+                                <div className="space-y-0.5">
+                                    <p>
+                                        {new Date(slip.createdAt).toLocaleDateString("th-TH", {
+                                            year: "numeric",
+                                            month: "short",
+                                            day: "numeric",
+                                        })}
+                                    </p>
+                                    <p className="text-xs text-slate-400">
+                                        {new Date(slip.createdAt).toLocaleTimeString("th-TH", {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                        })}
+                                    </p>
+                                </div>
                             </TableCell>
                             <TableCell className="hidden md:table-cell">
                                 {slip.proofImage ? (
@@ -102,7 +114,7 @@ export function SlipTable({ slips }: Readonly<SlipTableProps>) {
                                         href={slip.proofImage}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center gap-2"
+                                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-2.5 py-2 transition-colors hover:border-slate-300 hover:bg-slate-100"
                                     >
                                         <Avatar className="h-10 w-10 rounded-md">
                                             <AvatarImage
@@ -110,21 +122,25 @@ export function SlipTable({ slips }: Readonly<SlipTableProps>) {
                                                 alt="Proof"
                                                 className="object-cover"
                                             />
-                                            <AvatarFallback className="rounded-md">
+                                            <AvatarFallback className="rounded-md text-xs">
                                                 IMG
                                             </AvatarFallback>
                                         </Avatar>
-                                        <ExternalLink className="h-4 w-4 text-zinc-400" />
+                                        <ExternalLink className="h-4 w-4 text-slate-400" />
                                     </a>
                                 ) : (
-                                    <span className="text-zinc-400">No image</span>
+                                    <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-slate-400">
+                                        <ImageOff className="h-3.5 w-3.5" />
+                                        ไม่มีรูป
+                                    </span>
                                 )}
                             </TableCell>
                             <TableCell className="text-right">
                                 <div className="flex flex-col justify-end gap-2 sm:flex-row">
                                     <Button
                                         size="sm"
-                                        className="bg-green-600 hover:bg-green-700"
+                                        variant="outline"
+                                        className="border-emerald-200 bg-emerald-50 font-semibold text-emerald-700 shadow-none hover:bg-emerald-100 hover:text-emerald-800"
                                         onClick={() => handleAction(slip.id, "APPROVE")}
                                         disabled={processingId === slip.id}
                                     >
@@ -133,13 +149,14 @@ export function SlipTable({ slips }: Readonly<SlipTableProps>) {
                                         ) : (
                                             <>
                                                 <Check className="mr-1 h-4 w-4" />
-                                                Approve
+                                                อนุมัติ
                                             </>
                                         )}
                                     </Button>
                                     <Button
                                         size="sm"
-                                        variant="destructive"
+                                        variant="outline"
+                                        className="border-rose-200 bg-rose-50 font-semibold text-rose-600 shadow-none hover:bg-rose-100 hover:text-rose-700"
                                         onClick={() => handleAction(slip.id, "REJECT")}
                                         disabled={processingId === slip.id}
                                     >
@@ -148,7 +165,7 @@ export function SlipTable({ slips }: Readonly<SlipTableProps>) {
                                         ) : (
                                             <>
                                                 <X className="mr-1 h-4 w-4" />
-                                                Reject
+                                                ปฏิเสธ
                                             </>
                                         )}
                                     </Button>

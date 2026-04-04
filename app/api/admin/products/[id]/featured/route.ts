@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, products } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
+import { invalidateProductCaches } from "@/lib/cache";
 import { z } from "zod";
 
 const featuredSchema = z.object({
@@ -23,6 +24,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         }
         const { isFeatured } = parsed.data;
         await db.update(products).set({ isFeatured }).where(eq(products.id, id));
+        await invalidateProductCaches();
         const product = await db.query.products.findFirst({ where: eq(products.id, id), columns: { id: true, name: true, isFeatured: true } });
         return NextResponse.json(product);
     } catch (error) {

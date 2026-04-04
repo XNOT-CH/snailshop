@@ -140,7 +140,7 @@ export async function auditUpdate<T extends Record<string, unknown>>(
 
 export async function getAuditLogs(options: {
     userId?: string;
-    action?: AuditAction;
+    action?: string;
     resource?: string;
     startDate?: Date;
     endDate?: Date;

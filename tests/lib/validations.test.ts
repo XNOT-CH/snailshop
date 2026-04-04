@@ -165,8 +165,20 @@ describe("profile validations", () => {
       const result = updateProfileSchema.safeParse({ name: "John", email: "john@test.com" });
       expect(result.success).toBe(true);
     });
-    it("rejects empty name", () => {
-      expect(updateProfileSchema.safeParse({ name: "", email: "a@b.com" }).success).toBe(false);
+    it("accepts image-only profile updates", () => {
+      const result = updateProfileSchema.safeParse({ image: "/uploads/profiles/avatar.webp" });
+      expect(result.success).toBe(true);
+    });
+    it("accepts uploaded local profile image paths", () => {
+      const result = updateProfileSchema.safeParse({ name: "John", email: "john@test.com", image: "/uploads/profiles/avatar.webp" });
+      expect(result.success).toBe(true);
+    });
+    it("allows empty name for partial updates", () => {
+      expect(updateProfileSchema.safeParse({ name: "", email: "a@b.com" }).success).toBe(true);
+    });
+    it("rejects invalid profile image values", () => {
+      const result = updateProfileSchema.safeParse({ name: "John", email: "john@test.com", image: "not-a-valid-image" });
+      expect(result.success).toBe(false);
     });
     it("rejects mismatched passwords", () => {
       const result = updateProfileSchema.safeParse({ name: "John", email: "a@b.com", password: "newpass", confirmPassword: "different" });

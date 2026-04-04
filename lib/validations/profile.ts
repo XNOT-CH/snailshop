@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// Schema สำหรับที่อยู่ (ใช้ร่วมกันทั้งใบกำกับภาษีและจัดส่ง)
 const addressSchema = z.object({
     fullName: z.string().max(200).optional().or(z.literal("")),
     phone: z.string().max(20).optional().or(z.literal("")),
@@ -11,42 +10,53 @@ const addressSchema = z.object({
     postalCode: z.string().max(10).optional().or(z.literal("")),
 });
 
-// Schema สำหรับอัปเดตโปรไฟล์
+const profileImageValue = z
+    .string()
+    .optional()
+    .refine(
+        (val) => {
+            if (!val || val.trim() === "") return true;
+            if (val.startsWith("/")) return true;
+            try {
+                const url = new URL(val);
+                return url.protocol === "http:" || url.protocol === "https:";
+            } catch {
+                return false;
+            }
+        },
+        { message: "กรุณาใส่ URL รูปโปรไฟล์ที่ถูกต้อง หรือ path รูปที่อัปโหลด" }
+    );
+
 export const updateProfileSchema = z.object({
     name: z
         .string()
-        .min(1, "กรุณากรอกชื่อ")
-        .max(100, "ชื่อต้องไม่เกิน 100 ตัวอักษร"),
+        .max(100, "ชื่อต้องไม่เกิน 100 ตัวอักษร")
+        .optional(),
     email: z
         .email({ error: "กรุณากรอกอีเมลให้ถูกต้อง" })
-        .or(z.literal("")), // อนุญาตให้ว่างได้
+        .or(z.literal(""))
+        .optional(),
     phone: z
         .string()
         .max(20, "เบอร์มือถือต้องไม่เกิน 20 ตัวอักษร")
         .optional()
         .or(z.literal("")),
-    image: z
-        .url({ error: "กรุณากรอก URL รูปภาพให้ถูกต้อง" })
-        .or(z.literal(""))
-        .optional(), // Optional profile image URL
-    // ข้อมูลส่วนตัว
+    image: profileImageValue,
     firstName: z.string().max(100).optional().or(z.literal("")),
     lastName: z.string().max(100).optional().or(z.literal("")),
     firstNameEn: z.string().max(100).optional().or(z.literal("")),
     lastNameEn: z.string().max(100).optional().or(z.literal("")),
-    // ที่อยู่
     taxAddress: addressSchema.optional(),
     shippingAddress: addressSchema.optional(),
     password: z
         .string()
         .min(6, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร")
-        .or(z.literal("")) // อนุญาตให้ว่างได้ (ใช้รหัสเดิม)
+        .or(z.literal(""))
         .optional(),
     confirmPassword: z
         .string()
         .optional(),
 }).refine((data) => {
-    // ถ้ากรอก password ต้องกรอก confirmPassword ให้ตรงกัน
     if (data.password && data.password.length > 0) {
         return data.password === data.confirmPassword;
     }

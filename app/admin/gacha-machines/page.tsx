@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, Loader2, LayoutGrid, Upload, X, ImageIcon, Copy, GripVertical } from "lucide-react";
+import { Plus, Trash2, Loader2, LayoutGrid, Upload, X, ImageIcon, Copy, GripVertical, Sparkles } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 import Image from "next/image";
 import {
@@ -257,8 +257,8 @@ export default function GachaMachinesAdminPage() {
                         </select>
                     </div>
                     <div>
-                        <label htmlFor="addCostAmount" className={`${labelCls} ${machineForm.costType === "FREE" ? "opacity-40" : ""}`}>
-                            ราคาต่อครั้ง {machineForm.costType === "FREE" && <span className="font-normal text-muted-foreground">(ไม่ใช้เมื่อเลือก ฟรี)</span>}
+                        <label htmlFor="addCostAmount" className={`${labelCls} ${machineForm.costType === "FREE" ? "opacity-50" : ""}`}>
+                            ราคาต่อครั้ง {machineForm.costType === "FREE" && <span className="font-normal text-muted-foreground">(ปิดอัตโนมัติเมื่อเลือก ฟรี)</span>}
                         </label>
                         <input
                             id="addCostAmount"
@@ -268,7 +268,7 @@ export default function GachaMachinesAdminPage() {
                             min={0}
                             placeholder={machineForm.costType === "FREE" ? "—" : "0"}
                             disabled={machineForm.costType === "FREE"}
-                            className={`${inputCls} disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-muted/40`}
+                            className={`${inputCls} disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:opacity-100`}
                         />
                     </div>
 
@@ -480,7 +480,7 @@ function SortableRow({
                 <button
                     onClick={() => handleDuplicate(m.id, m.name)}
                     disabled={duplicatingId === m.id}
-                    className="w-8 h-8 rounded-lg text-muted-foreground hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-500/10 dark:hover:text-blue-400 flex items-center justify-center transition disabled:opacity-50"
+                    className="w-8 h-8 rounded-l-xl rounded-r-md border border-r-0 border-slate-200 bg-white text-muted-foreground hover:bg-blue-50 hover:text-blue-600 flex items-center justify-center transition disabled:opacity-50"
                     title="คัดลอก"
                 >
                     {duplicatingId === m.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Copy className="w-3.5 h-3.5" />}
@@ -489,7 +489,7 @@ function SortableRow({
             <td className="px-3 py-2.5">
                 <button
                     onClick={() => router.push(`/admin/gacha-machines/${m.id}/edit`)}
-                    className="w-8 h-8 rounded-lg text-muted-foreground hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-500/10 dark:hover:text-violet-400 flex items-center justify-center transition"
+                    className="w-8 h-8 border-y border-slate-200 bg-white text-muted-foreground hover:bg-violet-50 hover:text-violet-600 flex items-center justify-center transition"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
                 </button>
@@ -497,7 +497,7 @@ function SortableRow({
             <td className="px-3 py-2.5">
                 <button
                     onClick={() => onDelete(m.id)}
-                    className="w-8 h-8 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 flex items-center justify-center transition"
+                    className="w-8 h-8 rounded-l-md rounded-r-xl border border-l-0 border-slate-200 bg-white text-muted-foreground hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition"
                 >
                     <Trash2 className="w-3.5 h-3.5" />
                 </button>
@@ -614,6 +614,20 @@ function MachineTable({
 
     return (
         <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+            <div className="border-b border-border bg-slate-50/70 px-4 py-3">
+                <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#145de7]/10 text-[#145de7]">
+                        <Sparkles className="h-4 w-4" />
+                    </div>
+                    <div>
+                        <p className="text-sm font-semibold text-foreground">รายการตู้กาชา</p>
+                        <p className="text-xs text-muted-foreground">
+                            ทั้งหมด {localMachines.length} รายการ
+                            {search ? `, ตรงคำค้น ${sortedAndFiltered.length} รายการ` : ""}
+                        </p>
+                    </div>
+                </div>
+            </div>
             {/* Header */}
             <div className="px-4 py-3 border-b border-border flex flex-wrap items-center gap-3 justify-between">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">

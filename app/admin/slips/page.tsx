@@ -1,6 +1,6 @@
 import { db, topups } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { FileCheck, AlertCircle } from "lucide-react";
+import { FileCheck, AlertCircle, Clock3, ImageIcon, Wallet } from "lucide-react";
 import { SlipTable } from "@/components/admin/SlipTable";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +11,14 @@ export default async function AdminSlipsPage() {
         with: { user: true },
         orderBy: (t, { desc }) => desc(t.createdAt),
     });
+    const totalPendingAmount = pendingSlips.reduce((sum, slip) => sum + Number(slip.amount), 0);
+    const slipsWithImage = pendingSlips.filter((slip) => Boolean(slip.proofImage)).length;
+    const latestPendingAt = pendingSlips[0]?.createdAt
+        ? new Date(pendingSlips[0].createdAt).toLocaleString("th-TH", {
+            dateStyle: "medium",
+            timeStyle: "short",
+        })
+        : "ไม่มีรายการล่าสุด";
 
     return (
         <div className="space-y-6">
@@ -21,6 +29,46 @@ export default async function AdminSlipsPage() {
                     ตรวจสอบสลิป
                 </h1>
                 <p className="text-muted-foreground mt-1">ตรวจสอบและอนุมัติคำขอเติมเงิน</p>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_100%)] p-5 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
+                            <FileCheck className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-slate-500">รออนุมัติ</p>
+                            <p className="text-2xl font-bold text-slate-900">{pendingSlips.length}</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#f8fafc_0%,#ffffff_100%)] p-5 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-sm">
+                            <Wallet className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-slate-500">ยอดรวมรอตรวจ</p>
+                            <p className="text-2xl font-bold text-slate-900">฿{totalPendingAmount.toLocaleString()}</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#fff7ed_0%,#ffffff_100%)] p-5 shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm">
+                            <ImageIcon className="h-5 w-5" />
+                        </div>
+                        <div className="min-w-0">
+                            <p className="text-sm text-slate-500">แนบรูปแล้ว</p>
+                            <p className="text-lg font-bold text-slate-900">{slipsWithImage} รายการ</p>
+                            <div className="mt-1 flex items-center gap-1 text-xs text-slate-400">
+                                <Clock3 className="h-3.5 w-3.5" />
+                                <span className="truncate">ล่าสุด {latestPendingAt}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Pending Requests Card */}

@@ -13,6 +13,7 @@ export async function GET() {
                 id: products.id,
                 name: products.name,
                 price: products.price,
+                discountPrice: products.discountPrice,
                 imageUrl: products.imageUrl,
                 category: products.category,
                 isSold: products.isSold,

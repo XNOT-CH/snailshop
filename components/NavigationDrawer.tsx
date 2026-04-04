@@ -11,12 +11,14 @@ import {
     Lock, UserPlus, Menu, LogOut, CircleDollarSign,
 } from "lucide-react";
 import { useLogout } from "@/components/useLogout";
+import { withImageVersion } from "@/lib/imageUrl";
 
 interface SerializableNavLink { href: string; label: string; }
 
 interface NavigationDrawerProps {
     navLinks?: SerializableNavLink[];
-    user?: { username: string; creditBalance: number; } | null;
+    user?: { username: string; image?: string | null; creditBalance: number; } | null;
+    imageVersion?: string | number;
     siteName?: string;
     logoUrl?: string;
     walletIconUrl?: string;
@@ -55,7 +57,7 @@ function NavIcon({ href }: { href: string }) {
 }
 
 export function NavigationDrawer({
-    navLinks, user, siteName = "GameStore", logoUrl, walletIconUrl, categories = [],
+    navLinks, user, imageVersion, siteName = "GameStore", logoUrl, walletIconUrl, categories = [],
 }: NavigationDrawerProps) {
     const [isOpen, setIsOpen]             = useState(false);
     const [mounted, setMounted]           = useState(false);
@@ -137,8 +139,20 @@ export function NavigationDrawer({
                         <div className="flex flex-col gap-3">
                             {/* Avatar + Info */}
                             <div className="flex items-center gap-3">
-                                <div className="h-12 w-12 rounded-full bg-white/15 border-2 border-white/20 flex items-center justify-center flex-shrink-0">
-                                    <User className="h-6 w-6 text-white/70" />
+                                <div className="h-12 w-12 rounded-full bg-white/15 border-2 border-white/20 overflow-hidden flex items-center justify-center flex-shrink-0">
+                                    {user.image ? (
+                                        <Image
+                                            src={withImageVersion(user.image, imageVersion) ?? user.image}
+                                            alt={user.username}
+                                            width={48}
+                                            height={48}
+                                            className="h-full w-full object-cover"
+                                        />
+                                    ) : (
+                                        <span className="text-base font-bold text-white/85">
+                                            {user.username.charAt(0).toUpperCase()}
+                                        </span>
+                                    )}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-white font-bold text-sm tracking-wide uppercase truncate">{user.username}</p>

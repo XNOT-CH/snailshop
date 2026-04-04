@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import path from "node:path";
 import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
 import sharp from "sharp";
 
 const IMAGE_SIGNATURES = {
@@ -153,4 +153,35 @@ export async function saveOptimizedImageUpload(file: File, options: SaveOptimize
         mimeType: optimized.mimeType,
         url: `${publicPath}/${optimized.filename}`,
     };
+}
+
+export function isManagedUploadPath(fileUrl: string, publicPath: string) {
+    if (!fileUrl.startsWith(`${publicPath}/`)) {
+        return false;
+    }
+
+    return !fileUrl.includes("..");
+}
+
+export function resolveManagedUploadPath(fileUrl: string, uploadDir: string, publicPath: string) {
+    if (!isManagedUploadPath(fileUrl, publicPath)) {
+        return null;
+    }
+
+    const filename = fileUrl.slice(publicPath.length + 1);
+    return path.join(uploadDir, filename);
+}
+
+export async function deleteManagedUpload(fileUrl: string | null | undefined, uploadDir: string, publicPath: string) {
+    if (!fileUrl) {
+        return false;
+    }
+
+    const filePath = resolveManagedUploadPath(fileUrl, uploadDir, publicPath);
+    if (!filePath || !existsSync(filePath)) {
+        return false;
+    }
+
+    await unlink(filePath);
+    return true;
 }

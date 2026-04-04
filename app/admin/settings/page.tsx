@@ -155,6 +155,16 @@ export default function AdminSettingsPage() {
         setSettings(prev => ({ ...prev, [key]: value }));
     };
 
+    const allBannerImages = [
+        settings.bannerImage1,
+        settings.bannerImage2,
+        settings.bannerImage3,
+        ...extraBanners.map((banner) => banner.image),
+    ];
+    const activeBannerCount = allBannerImages.filter((image) => image && image.trim() !== "").length;
+    const totalBannerCount = allBannerImages.length;
+    const assetPanelClass = "rounded-2xl border border-border bg-slate-50/50 p-4";
+
     // Handle file upload for logo
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -259,7 +269,15 @@ export default function AdminSettingsPage() {
                         <div className="p-5">
                             <div className="flex flex-col gap-3 rounded-xl border border-border p-4 bg-gray-50 dark:bg-zinc-800 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
-                                    <p className="font-medium text-sm">สินค้าทั้งหมด</p>
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-medium text-sm">สินค้าทั้งหมด</p>
+                                        <Badge
+                                            variant="secondary"
+                                            className={settings.showAllProducts ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}
+                                        >
+                                            {settings.showAllProducts ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+                                        </Badge>
+                                    </div>
                                     <p className="text-xs text-muted-foreground mt-0.5">แสดงรายการสินค้าทั้งหมดบนหน้าแรก</p>
                                 </div>
                                 <Switch
@@ -307,9 +325,11 @@ export default function AdminSettingsPage() {
                                     rows={2}
                                 />
                             </div>
-                            <div className="space-y-3">
-                                <Label>โลโก้</Label>
-
+                            <div className={assetPanelClass}>
+                                <div className="space-y-1">
+                                    <Label>โลโก้</Label>
+                                    <p className="text-xs text-muted-foreground">อัปโหลดหรือวาง URL เพื่อใช้เป็นโลโก้หลักของเว็บไซต์</p>
+                                </div>
                                 <div className="grid gap-4 lg:grid-cols-2">
                                     <div className="space-y-3">
                                         {/* File Upload */}
@@ -384,11 +404,14 @@ export default function AdminSettingsPage() {
                                     </div>
                                 </div>
                             </div>
-                            <div className="space-y-3">
-                                <Label className="flex items-center gap-2">
-                                    <Wallpaper className="h-4 w-4" />
-                                    รูปพื้นหลัง
-                                </Label>
+                            <div className={assetPanelClass}>
+                                <div className="space-y-1">
+                                    <Label className="flex items-center gap-2">
+                                        <Wallpaper className="h-4 w-4" />
+                                        รูปพื้นหลัง
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">ใช้ภาพพื้นหลังหน้าแรก และเลือกได้ว่าจะเบลอเพื่อให้อ่านข้อความด้านหน้าได้ง่ายขึ้น</p>
+                                </div>
 
                                 {/* Preview full-width */}
                                 {settings.backgroundImage ? (
@@ -475,64 +498,90 @@ export default function AdminSettingsPage() {
 
                 <div className="space-y-6 xl:col-span-7">
                     {/* Banner Images */}
-                    <div>
-                        <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
-                            <ImageIcon className="h-5 w-5" />
-                            รูปภาพ Banner (Carousel)
-                        </h2>
-                        <p className="text-sm text-muted-foreground mb-4">
-                            รองรับไฟล์ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก • แนะนำขนาด 2000x500px
-                        </p>
-                        <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
-                            {[1, 2, 3].map((num) => (
-                                <BannerCard
-                                    key={num}
-                                    number={num}
-                                    image={settings[`bannerImage${num}` as keyof SiteSettings] as string}
-                                    title={settings[`bannerTitle${num}` as keyof SiteSettings] as string}
-                                    subtitle={settings[`bannerSubtitle${num}` as keyof SiteSettings] as string}
-                                    onImageChange={(v) => updateSetting(`bannerImage${num}` as keyof SiteSettings, v)}
-                                    onTitleChange={(v) => updateSetting(`bannerTitle${num}` as keyof SiteSettings, v)}
-                                    onSubtitleChange={(v) => updateSetting(`bannerSubtitle${num}` as keyof SiteSettings, v)}
-                                />
-                            ))}
-                            {extraBanners.map((banner, idx) => (
-                                <BannerCard
-                                    key={`extra-${idx}`}
-                                    number={4 + idx}
-                                    image={banner.image}
-                                    title={banner.title}
-                                    subtitle={banner.subtitle}
-                                    onImageChange={(v) => updateExtraBanner(idx, "image", v)}
-                                    onTitleChange={(v) => updateExtraBanner(idx, "title", v)}
-                                    onSubtitleChange={(v) => updateExtraBanner(idx, "subtitle", v)}
-                                    onRemove={() => removeExtraBanner(idx)}
-                                />
-                            ))}
+                    <div className="overflow-hidden rounded-xl border border-border bg-white shadow-sm dark:bg-zinc-900">
+                        <div className="border-b border-border px-5 py-4">
+                            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                <div>
+                                    <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+                                        <ImageIcon className="h-5 w-5" />
+                                        รูปภาพ Banner (Carousel)
+                                    </h2>
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                        รองรับไฟล์ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก • แนะนำขนาด 2000x500px
+                                    </p>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    <Badge className="border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
+                                        พร้อมใช้งาน {activeBannerCount}/{totalBannerCount}
+                                    </Badge>
+                                    <Badge variant="secondary" className="bg-slate-100 text-slate-700">
+                                        แสดงบนหน้าแรกแบบสไลด์
+                                    </Badge>
+                                </div>
+                            </div>
                         </div>
-                        <div className="mt-4">
-                            <Button
-                                type="button"
-                                variant="outline"
-                                className="gap-2 border-dashed"
-                                onClick={addExtraBanner}
-                            >
-                                <Plus className="h-4 w-4" />
-                                เพิ่มป้าย
-                            </Button>
+                        <div className="space-y-4 p-5">
+                            <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
+                                {[1, 2, 3].map((num) => (
+                                    <BannerCard
+                                        key={num}
+                                        number={num}
+                                        image={settings[`bannerImage${num}` as keyof SiteSettings] as string}
+                                        title={settings[`bannerTitle${num}` as keyof SiteSettings] as string}
+                                        subtitle={settings[`bannerSubtitle${num}` as keyof SiteSettings] as string}
+                                        onImageChange={(v) => updateSetting(`bannerImage${num}` as keyof SiteSettings, v)}
+                                        onTitleChange={(v) => updateSetting(`bannerTitle${num}` as keyof SiteSettings, v)}
+                                        onSubtitleChange={(v) => updateSetting(`bannerSubtitle${num}` as keyof SiteSettings, v)}
+                                    />
+                                ))}
+                                {extraBanners.map((banner, idx) => (
+                                    <BannerCard
+                                        key={`extra-${idx}`}
+                                        number={4 + idx}
+                                        image={banner.image}
+                                        title={banner.title}
+                                        subtitle={banner.subtitle}
+                                        onImageChange={(v) => updateExtraBanner(idx, "image", v)}
+                                        onTitleChange={(v) => updateExtraBanner(idx, "title", v)}
+                                        onSubtitleChange={(v) => updateExtraBanner(idx, "subtitle", v)}
+                                        onRemove={() => removeExtraBanner(idx)}
+                                    />
+                                ))}
+                            </div>
+                            <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-border bg-slate-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-foreground">เพิ่มป้ายโปรโมชันได้ตามต้องการ</p>
+                                    <p className="text-xs text-muted-foreground">แบนเนอร์ที่มีรูปแล้วจะถูกนับเป็นชุดพร้อมใช้งานทันที</p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="gap-2 border-dashed"
+                                    onClick={addExtraBanner}
+                                >
+                                    <Plus className="h-4 w-4" />
+                                    เพิ่มป้าย
+                                </Button>
+                            </div>
                         </div>
                     </div>
 
                     {/* Save Button Bottom */}
-                    <div className="flex justify-end">
-                        <Button onClick={handleSave} disabled={isSaving} size="lg" className="gap-2">
-                            {isSaving ? (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                                <Save className="h-4 w-4" />
-                            )}
-                            บันทึกการตั้งค่า
-                        </Button>
+                    <div className="sticky bottom-4 z-20">
+                        <div className="ml-auto flex flex-col gap-3 rounded-2xl border border-border bg-background/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p className="text-sm font-semibold text-foreground">พร้อมบันทึกการเปลี่ยนแปลง</p>
+                                <p className="text-xs text-muted-foreground">ตรวจสอบข้อความ โลโก้ รูปพื้นหลัง และแบนเนอร์ให้เรียบร้อยก่อนกดบันทึก</p>
+                            </div>
+                            <Button onClick={handleSave} disabled={isSaving} size="lg" className="gap-2 sm:min-w-[180px]">
+                                {isSaving ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Save className="h-4 w-4" />
+                                )}
+                                บันทึกการตั้งค่า
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </div>

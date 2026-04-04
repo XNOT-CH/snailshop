@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { runAutoDelete } from "@/lib/autoDelete";
+import { getStockCount } from "@/lib/stock";
+import { decrypt } from "@/lib/encryption";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Package, Trash2 } from "lucide-react";
-import { ProductTable } from "@/components/admin/ProductTable";
+import ProductTable from "@/components/admin/ProductTable";
 
 export const dynamic = "force-dynamic";
 
@@ -17,12 +19,35 @@ export default async function AdminProductsPage() {
             id: true,
             name: true,
             price: true,
+            discountPrice: true,
             imageUrl: true,
             category: true,
+            secretData: true,
+            stockSeparator: true,
             isSold: true,
             isFeatured: true,
             autoDeleteAfterSale: true,
         },
+    });
+
+    const productsWithStock = productList.map((product) => {
+        let stockCount = 0;
+
+        if (!product.isSold) {
+            try {
+                stockCount = getStockCount(
+                    decrypt(product.secretData ?? ""),
+                    product.stockSeparator ?? "newline"
+                );
+            } catch {
+                stockCount = 0;
+            }
+        }
+
+        return {
+            ...product,
+            stockCount,
+        };
     });
 
     return (
@@ -75,15 +100,16 @@ export default async function AdminProductsPage() {
                         </div>
                     ) : (
                         <ProductTable
-                            products={productList.map((p) => ({
+                            products={productsWithStock.map((p) => ({
                                 id: p.id,
                                 name: p.name,
                                 price: Number(p.price),
+                                discountPrice: p.discountPrice ? Number(p.discountPrice) : null,
                                 imageUrl: p.imageUrl,
                                 category: p.category,
                                 isSold: p.isSold,
                                 isFeatured: p.isFeatured,
-                                stockCount: p.isSold ? 0 : undefined,
+                                stockCount: p.stockCount,
                                 autoDeleteAfterSale: p.autoDeleteAfterSale,
                             }))}
                         />

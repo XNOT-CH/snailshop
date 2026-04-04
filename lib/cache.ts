@@ -2,7 +2,7 @@ import { redis, isRedisAvailable } from "./redis";
 
 // Cache key prefixes
 export const CACHE_KEYS = {
-    FEATURED_PRODUCTS: "featured_products",
+    FEATURED_PRODUCTS: "featured_products_v2",
     SALE_PRODUCTS: "sale_products",
     NEWS_ARTICLES: "news_articles",
     SITE_SETTINGS: "site_settings",

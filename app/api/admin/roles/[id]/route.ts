@@ -23,18 +23,25 @@ export async function PUT(request: Request, { params }: RouteParams) {
         const { id } = await params;
         const body = await request.json();
         const { name, code, iconUrl, description, permissions, sortOrder } = body;
-        if (!name || !code) return NextResponse.json({ error: "Name and code are required" }, { status: 400 });
+        if (!name) return NextResponse.json({ error: "Name is required" }, { status: 400 });
 
         const existingRole = await db.query.roles.findFirst({ where: eq(roles.id, id) });
         if (!existingRole) return NextResponse.json({ error: "Role not found" }, { status: 404 });
 
-        if (code.toUpperCase() !== existingRole.code) {
-            const conflict = await db.query.roles.findFirst({ where: eq(roles.code, code.toUpperCase()) });
+        const normalizedCode = String(code || existingRole.code || name)
+            .toUpperCase()
+            .replaceAll(/\s+/g, "_")
+            .replaceAll(/[^A-Z0-9_]/g, "");
+
+        const safeRoleCode = normalizedCode || `ROLE_${id.replaceAll("-", "").slice(0, 8).toUpperCase()}`;
+
+        if (safeRoleCode !== existingRole.code) {
+            const conflict = await db.query.roles.findFirst({ where: eq(roles.code, safeRoleCode) });
             if (conflict) return NextResponse.json({ error: "Role code already exists" }, { status: 400 });
         }
 
         const newData = {
-            name, code: code.toUpperCase(), iconUrl: iconUrl || null, description: description || null,
+            name, code: safeRoleCode, iconUrl: iconUrl || null, description: description || null,
             permissions: permissions || null,
             sortOrder: sortOrder === undefined ? existingRole.sortOrder : sortOrder,
         };

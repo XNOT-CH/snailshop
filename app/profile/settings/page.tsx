@@ -1,12 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
     User,
     Mail,
@@ -20,11 +28,16 @@ import {
     FileText,
     Truck,
     Pencil,
+    Upload,
+    X,
+    Image as ImageIcon,
 } from "lucide-react";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { updateProfile } from "@/lib/actions/user";
 import { showLoading, hideLoading, showSuccessAlert, showErrorAlert } from "@/lib/swal";
 import { ThaiAddressSelector } from "@/components/ThaiAddressSelector";
+import { fetchWithCsrf } from "@/lib/csrf-client";
+import { compressImage } from "@/lib/compressImage";
 
 interface AddressData {
     fullName: string;
@@ -78,9 +91,12 @@ const emptyAddress: AddressData = {
 };
 
 export default function ProfileSettingsPage() {
+    const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [profile, setProfile] = useState<UserProfile | null>(null);
+    const profileImageInputRef = useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -98,6 +114,47 @@ export default function ProfileSettingsPage() {
     const [editingTax, setEditingTax] = useState(false);
     const [editingShip, setEditingShip] = useState(false);
     const [errors, setErrors] = useState<Record<string, string[]>>({});
+
+    const hasProfileImage = Boolean(formData.image?.trim());
+    const profileInitial = (formData.name || profile?.username || "U").trim().charAt(0).toUpperCase();
+    const elevatedCardClass =
+        "border border-slate-200/80 bg-white/95 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.28)]";
+    const addressCardClass =
+        "border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/80 shadow-[0_18px_45px_-32px_rgba(15,23,42,0.22)]";
+    const saveButtonClass =
+        "h-11 w-full gap-2 rounded-2xl bg-blue-600 px-6 text-white shadow-[0_16px_30px_-18px_rgba(37,99,235,0.75)] transition hover:bg-blue-700 hover:shadow-[0_18px_36px_-18px_rgba(29,78,216,0.75)] sm:w-auto sm:min-w-[148px]";
+
+    const buildSubmitData = (section: "contact" | "personal" | "password" | "tax" | "ship") => {
+        switch (section) {
+            case "contact":
+                return {
+                    name: formData.name,
+                    email: formData.email,
+                    phone: formData.phone,
+                };
+            case "personal":
+                return {
+                    firstName: formData.firstName,
+                    lastName: formData.lastName,
+                    firstNameEn: formData.firstNameEn,
+                    lastNameEn: formData.lastNameEn,
+                    image: formData.image,
+                };
+            case "password":
+                return {
+                    password: formData.password,
+                    confirmPassword: formData.confirmPassword,
+                };
+            case "tax":
+                return {
+                    taxAddress,
+                };
+            case "ship":
+                return {
+                    shippingAddress: shipAddress,
+                };
+        }
+    };
 
     // Fetch current profile on mount
     useEffect(() => {
@@ -161,11 +218,7 @@ export default function ProfileSettingsPage() {
         showLoading("กำลังบันทึก...");
 
         try {
-            const submitData = {
-                ...formData,
-                taxAddress,
-                shippingAddress: shipAddress,
-            };
+            const submitData = buildSubmitData(section);
             const result = await updateProfile(submitData);
 
             hideLoading();
@@ -190,6 +243,7 @@ export default function ProfileSettingsPage() {
                         setProfile(refreshData.data as UserProfile);
                     }
                 } catch { }
+                router.refresh();
             } else {
                 if (result.errors) {
                     setErrors(result.errors);
@@ -205,6 +259,85 @@ export default function ProfileSettingsPage() {
     };
 
     const passwordsMatch = !formData.confirmPassword || formData.password === formData.confirmPassword;
+
+    const handleProfileImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setIsUploadingImage(true);
+        try {
+            const compressed = await compressImage(file, 350 * 1024);
+            const uploadFormData = new FormData();
+            uploadFormData.append("file", compressed);
+
+            const response = await fetchWithCsrf("/api/profile/upload-image", {
+                method: "POST",
+                body: uploadFormData,
+            });
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || "อัปโหลดรูปโปรไฟล์ไม่สำเร็จ");
+            }
+
+            setFormData((prev) => ({
+                ...prev,
+                image: data.url,
+            }));
+            setProfile((prev) => (prev ? { ...prev, image: data.url } : prev));
+            router.refresh();
+            await showSuccessAlert("สำเร็จ!", "อัปเดตรูปโปรไฟล์เรียบร้อยแล้ว");
+        } catch (error) {
+            await showErrorAlert(
+                "อัปโหลดไม่สำเร็จ",
+                error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัปโหลดรูปโปรไฟล์"
+            );
+        } finally {
+            setIsUploadingImage(false);
+            event.target.value = "";
+        }
+    };
+
+    const clearProfileImage = async () => {
+        if (!hasProfileImage) return;
+
+        setIsUploadingImage(true);
+        try {
+            const response = await fetchWithCsrf("/api/profile/upload-image", {
+                method: "DELETE",
+            });
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || "ลบรูปโปรไฟล์ไม่สำเร็จ");
+            }
+
+            setFormData((prev) => ({
+                ...prev,
+                image: "",
+            }));
+            setProfile((prev) => (prev ? { ...prev, image: null } : prev));
+            router.refresh();
+            await showSuccessAlert("สำเร็จ!", "ลบรูปโปรไฟล์เรียบร้อยแล้ว");
+        } catch (error) {
+            await showErrorAlert(
+                "ลบรูปไม่สำเร็จ",
+                error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการลบรูปโปรไฟล์"
+            );
+        } finally {
+            setIsUploadingImage(false);
+            if (profileImageInputRef.current) {
+                profileImageInputRef.current.value = "";
+            }
+        }
+    };
+
+    const handleProfileImagePreviewError = () => {
+        setFormData((prev) => ({
+            ...prev,
+            image: "",
+        }));
+    };
 
     const hasAddressData = (addr: AddressData) => {
         return Object.values(addr).some(v => v && v.trim() !== "");
@@ -336,7 +469,7 @@ export default function ProfileSettingsPage() {
                 {/* Row 1: Contact Info + Personal Info */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                     {/* Contact Info Card */}
-                    <Card className="bg-card shadow-sm border-0">
+                    <Card className={elevatedCardClass}>
                         <CardHeader className="pb-4">
                             <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
                                 <Phone className="h-5 w-5" />
@@ -433,11 +566,11 @@ export default function ProfileSettingsPage() {
                             </div>
 
                             {/* Save Button */}
-                            <div className="flex justify-end pt-2">
+                            <div className="flex justify-end pt-3">
                                 <Button
                                     type="button"
                                     onClick={() => handleSubmit("contact")}
-                                    className="gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6"
+                                    className={saveButtonClass}
                                     disabled={isLoading}
                                 >
                                     {isLoading ? (
@@ -452,7 +585,7 @@ export default function ProfileSettingsPage() {
                     </Card>
 
                     {/* Personal Info Card */}
-                    <Card className="bg-card shadow-sm border-0">
+                    <Card className={elevatedCardClass}>
                         <CardHeader className="pb-4">
                             <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
                                 <User className="h-5 w-5" />
@@ -529,15 +662,125 @@ export default function ProfileSettingsPage() {
                                 />
                             </div>
 
+                            {/* Profile Image */}
+                            <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                                <Label className="flex items-center gap-2 text-muted-foreground">
+                                    <ImageIcon className="h-4 w-4" />
+                                    รูปโปรไฟล์
+                                </Label>
+                                <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-sky-50/50 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
+                                    <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                                        <div className="flex items-center gap-4">
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <button
+                                                        type="button"
+                                                        className="group relative shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed"
+                                                        disabled={isUploadingImage}
+                                                        aria-label="Open profile image menu"
+                                                    >
+                                                        {hasProfileImage ? (
+                                                            // eslint-disable-next-line @next/next/no-img-element
+                                                            <img
+                                                                src={formData.image}
+                                                                alt="Profile preview"
+                                                                className="h-20 w-20 rounded-full border-4 border-white object-cover shadow-[0_16px_30px_-18px_rgba(15,23,42,0.45)] transition group-hover:scale-[1.02] group-hover:shadow-[0_18px_34px_-18px_rgba(37,99,235,0.55)]"
+                                                                onError={handleProfileImagePreviewError}
+                                                            />
+                                                        ) : (
+                                                            <div className="flex h-20 w-20 items-center justify-center rounded-full border border-dashed border-blue-200 bg-white text-2xl font-semibold text-primary shadow-[0_12px_24px_-16px_rgba(37,99,235,0.4)] transition group-hover:scale-[1.02] group-hover:border-blue-300 group-hover:shadow-[0_18px_34px_-18px_rgba(37,99,235,0.45)]">
+                                                                {profileInitial}
+                                                            </div>
+                                                        )}
+                                                        <span className="absolute -bottom-1 left-1/2 inline-flex -translate-x-1/2 rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm">
+                                                            เปลี่ยนรูป
+                                                        </span>
+                                                    </button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="start" className="w-48 rounded-2xl border-slate-200 p-2">
+                                                    <DropdownMenuItem
+                                                        className="rounded-xl py-2"
+                                                        onClick={() => profileImageInputRef.current?.click()}
+                                                        disabled={isUploadingImage}
+                                                    >
+                                                        <Upload className="h-4 w-4" />
+                                                        อัปโหลดรูปใหม่
+                                                    </DropdownMenuItem>
+                                                    {hasProfileImage && (
+                                                        <>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem
+                                                                className="rounded-xl py-2"
+                                                                variant="destructive"
+                                                                onClick={clearProfileImage}
+                                                                disabled={isUploadingImage}
+                                                            >
+                                                                <X className="h-4 w-4" />
+                                                                ล้างรูป
+                                                            </DropdownMenuItem>
+                                                        </>
+                                                    )}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                            <div className="space-y-1.5">
+                                                <p className="text-sm font-medium text-foreground">อัปโหลดรูปจากเครื่องได้</p>
+                                                <p className="text-xs leading-5 text-muted-foreground">
+                                                    รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก
+                                                </p>
+                                                <p className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600">
+                                                    อัปโหลดแล้วระบบจะบันทึกรูปให้ทันที ไม่ต้องกดปุ่มบันทึกด้านล่าง
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2 lg:justify-end">
+                                            <input
+                                                ref={profileImageInputRef}
+                                                id="profile-image-upload"
+                                                type="file"
+                                                accept="image/jpeg,image/png,image/webp,image/gif"
+                                                className="hidden"
+                                                onChange={handleProfileImageUpload}
+                                            />
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="h-11 gap-2 rounded-2xl border-slate-200 bg-white px-4 shadow-sm hover:bg-slate-50"
+                                                onClick={() => profileImageInputRef.current?.click()}
+                                                disabled={isUploadingImage}
+                                            >
+                                                {isUploadingImage ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Upload className="h-4 w-4" />
+                                                )}
+                                                {isUploadingImage ? "กำลังอัปโหลด..." : "อัปโหลดรูป"}
+                                            </Button>
+                                            {hasProfileImage && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    className="h-11 gap-2 rounded-2xl text-red-500 hover:bg-red-50 hover:text-red-600"
+                                                    onClick={clearProfileImage}
+                                                    disabled={isUploadingImage}
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                    ล้างรูป
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             {/* Profile Image URL */}
                             <div className="space-y-2">
-                                <Label htmlFor="image" className="flex items-center gap-2 text-muted-foreground">
-                                    URL รูปโปรไฟล์
+                                <Label htmlFor="image" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                                    URL รูปโปรไฟล์ (ถ้าต้องการใช้ลิงก์ภายนอก)
                                 </Label>
                                 <Input
                                     id="image"
-                                    type="url"
-                                    placeholder="https://example.com/your-photo.jpg"
+                                    type="text"
+                                    placeholder="https://example.com/your-photo.jpg หรือ /uploads/profiles/..."
                                     value={formData.image}
                                     onChange={(e) =>
                                         setFormData((prev) => ({
@@ -545,7 +788,7 @@ export default function ProfileSettingsPage() {
                                             image: e.target.value,
                                         }))
                                     }
-                                    className="bg-muted/50 border-border"
+                                    className="border-slate-200 bg-white"
                                 />
                                 {errors.image && (
                                     <p className="text-sm text-red-500">{errors.image[0]}</p>
@@ -553,11 +796,11 @@ export default function ProfileSettingsPage() {
                             </div>
 
                             {/* Save Button */}
-                            <div className="flex justify-end pt-2">
+                            <div className="flex justify-end pt-3">
                                 <Button
                                     type="button"
                                     onClick={() => handleSubmit("personal")}
-                                    className="gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6"
+                                    className={saveButtonClass}
                                     disabled={isLoading}
                                 >
                                     {isLoading ? (
@@ -575,7 +818,7 @@ export default function ProfileSettingsPage() {
                 {/* Row 2: Tax Address + Shipping Address */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                     {/* Tax Invoice Address Card */}
-                    <Card className="bg-card shadow-sm border-0">
+                    <Card className={addressCardClass}>
                         <CardHeader className="pb-4">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -603,11 +846,11 @@ export default function ProfileSettingsPage() {
                             {editingTax ? (
                                 <div className="space-y-4">
                                     {renderAddressForm(taxAddress, setTaxAddress, "tax")}
-                                    <div className="flex justify-end pt-2">
+                                    <div className="flex justify-end pt-3">
                                         <Button
                                             type="button"
                                             onClick={() => handleSubmit("tax")}
-                                            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6"
+                                            className={saveButtonClass}
                                             disabled={isLoading}
                                         >
                                             {isLoading ? (
@@ -620,8 +863,8 @@ export default function ProfileSettingsPage() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="p-4 rounded-lg bg-muted/50">
-                                    <div className="flex items-start gap-2">
+                                <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+                                    <div className="flex items-start gap-3">
                                         <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                                         {renderAddressDisplay(taxAddress)}
                                     </div>
@@ -631,7 +874,7 @@ export default function ProfileSettingsPage() {
                     </Card>
 
                     {/* Shipping Address Card */}
-                    <Card className="bg-card shadow-sm border-0">
+                    <Card className={addressCardClass}>
                         <CardHeader className="pb-4">
                             <div className="flex items-center justify-between">
                                 <div>
@@ -659,11 +902,11 @@ export default function ProfileSettingsPage() {
                             {editingShip ? (
                                 <div className="space-y-4">
                                     {renderAddressForm(shipAddress, setShipAddress, "ship")}
-                                    <div className="flex justify-end pt-2">
+                                    <div className="flex justify-end pt-3">
                                         <Button
                                             type="button"
                                             onClick={() => handleSubmit("ship")}
-                                            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6"
+                                            className={saveButtonClass}
                                             disabled={isLoading}
                                         >
                                             {isLoading ? (
@@ -676,8 +919,8 @@ export default function ProfileSettingsPage() {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="p-4 rounded-lg bg-muted/50">
-                                    <div className="flex items-start gap-2">
+                                <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
+                                    <div className="flex items-start gap-3">
                                         <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
                                         {renderAddressDisplay(shipAddress)}
                                     </div>
@@ -688,7 +931,7 @@ export default function ProfileSettingsPage() {
                 </div>
 
                 {/* Row 3: Password (full width) */}
-                <Card className="bg-card shadow-sm border-0">
+                <Card className={elevatedCardClass}>
                     <CardHeader className="pb-4">
                         <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
                             <Lock className="h-5 w-5" />
@@ -769,11 +1012,11 @@ export default function ProfileSettingsPage() {
                         )}
 
                         {/* Save Button */}
-                        <div className="flex justify-end pt-2">
+                        <div className="flex justify-end pt-3">
                             <Button
                                 type="button"
                                 onClick={() => handleSubmit("password")}
-                                className="gap-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full px-6"
+                                className={saveButtonClass}
                                 disabled={isLoading || !passwordsMatch || !formData.password}
                             >
                                 {isLoading ? (

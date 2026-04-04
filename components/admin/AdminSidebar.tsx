@@ -127,16 +127,16 @@ function NavLink({
             href={href}
             onClick={onClick}
             className={[
-                "group relative flex items-center gap-3 overflow-hidden rounded-2xl border px-3 py-3 text-sm font-medium transition-all duration-150",
-                sub ? "py-2.5 text-[13px]" : "",
+                "group relative flex items-center gap-3 overflow-hidden rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-150",
+                sub ? "py-2 text-[13px]" : "",
                 active
-                    ? "border-[#6ea0ff] bg-[#eef4ff] text-[#145de7] shadow-sm"
-                    : "border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900",
+                    ? "border-transparent bg-[#eef4ff] text-[#145de7]"
+                    : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900",
             ].join(" ")}
         >
             <span
                 className={[
-                    "absolute left-0 top-2 bottom-2 w-1 rounded-r-full transition-opacity duration-150",
+                    "absolute left-0 top-2 bottom-2 w-0.5 rounded-r-full transition-opacity duration-150",
                     active ? "bg-[#145de7] opacity-100" : "opacity-0",
                 ].join(" ")}
             />
@@ -178,15 +178,15 @@ function NavGroup({
     const Icon = group.icon;
 
     return (
-        <div className="space-y-1.5">
+        <div className="space-y-1">
             <button
                 type="button"
                 onClick={() => setOpen((current) => !current)}
                 className={[
-                    "flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-sm font-medium transition-all duration-150",
+                    "flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-150",
                     anyActive
-                        ? "border-slate-200 bg-slate-50 text-slate-900"
-                        : "border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900",
+                        ? "border-transparent bg-slate-50 text-slate-900"
+                        : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900",
                 ].join(" ")}
             >
                 <Icon className="h-[18px] w-[18px] flex-shrink-0 text-slate-400" />
@@ -237,15 +237,15 @@ function SidebarSection({
     onLinkClick?: () => void;
 }>) {
     return (
-        <section className="space-y-2.5">
-            <div className="px-1">
-                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+        <section className="space-y-2">
+            <div className="px-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                     {title}
                 </p>
-                <p className="mt-1 text-[11px] text-slate-400">{hint}</p>
+                <p className="mt-1 max-w-[15rem] text-[11px] leading-5 text-slate-400">{hint}</p>
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1">
                 {items.map((entry) => {
                     if (isNavGroup(entry)) {
                         return (
@@ -285,7 +285,7 @@ function SidebarNav({ onLinkClick }: Readonly<{ onLinkClick?: () => void }>) {
     return (
         <>
 
-            <nav className="flex-1 space-y-5 overflow-y-auto px-4 py-4">
+            <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-3">
                 {navigationSections.map((section) => (
                     <SidebarSection
                         key={section.title}
@@ -302,7 +302,7 @@ function SidebarNav({ onLinkClick }: Readonly<{ onLinkClick?: () => void }>) {
                 <Link
                     href="/"
                     onClick={onLinkClick}
-                    className="flex items-center gap-3 rounded-2xl border border-transparent px-3 py-3 text-sm font-medium text-slate-500 transition-colors hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900"
+                    className="flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
                 >
                     <LogOut className="h-[18px] w-[18px] text-slate-400" />
                     กลับหน้าร้าน

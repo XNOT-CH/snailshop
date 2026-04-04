@@ -25,12 +25,13 @@ import { NavbarCartButton } from "@/components/NavbarCartButton";
 export default async function Navbar() {
     const session = await auth();
     const userId = session?.user?.id;
+    const avatarVersion = Date.now();
 
     const [user, siteSettings, dbNavItems, allProducts] = await Promise.all([
         userId
             ? db.query.users.findFirst({
                   where: eq(users.id, userId),
-                  columns: { username: true, creditBalance: true },
+                  columns: { username: true, image: true, creditBalance: true },
               })
             : Promise.resolve(null),
         getSiteSettings(),
@@ -155,6 +156,8 @@ export default async function Navbar() {
 
                             <NavbarUserMenu
                                 username={user.username}
+                                image={user.image}
+                                imageVersion={avatarVersion}
                                 creditBalance={Number(user.creditBalance)}
                             />
                         </>
@@ -175,7 +178,8 @@ export default async function Navbar() {
 
                     <NavigationDrawer
                         navLinks={navLinks.map(({ href, label }) => ({ href, label }))}
-                        user={user ? { username: user.username, creditBalance: Number(user.creditBalance) } : null}
+                        user={user ? { username: user.username, image: user.image, creditBalance: Number(user.creditBalance) } : null}
+                        imageVersion={avatarVersion}
                         siteName={siteSettings?.heroTitle || "GameStore"}
                         logoUrl={siteSettings?.logoUrl || undefined}
                         categories={shopCategories}
