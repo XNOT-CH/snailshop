@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Tag, ShoppingCart, Eye, Percent, Loader2 } f
 import { Button } from "@/components/ui/button";
 import { showPurchaseConfirm, showPurchaseSuccessModal, showError, showWarning } from "@/lib/swal";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
+import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 
 interface SaleProduct {
     id: string;
@@ -21,24 +22,26 @@ interface SaleProduct {
 
 export function SaleProducts() {
     const router = useRouter();
+    const maintenance = useMaintenanceStatus().purchase;
     const [products, setProducts] = useState<SaleProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [buyingId, setBuyingId] = useState<string | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const handleBuyClick = async (product: SaleProduct) => {
+        if (maintenance?.enabled) {
+            showWarning(maintenance.message);
+            return;
+        }
+
         const confirmed = await showPurchaseConfirm({
             productName: product.name,
             priceText: `฿${product.discountPrice.toLocaleString()}`,
-            extraHtml: `<span class="text-sm text-gray-500 line-through">ราคาเดิม: ฿${product.price.toLocaleString()}</span>`,
+            extraHtml: `<span class="text-sm text-gray-500 line-through">ราคาปกติ: ฿${product.price.toLocaleString()}</span>`,
             confirmButtonColor: "#ef4444",
         });
         if (!confirmed) return;
 
-        handleBuyConfirm(product);
-    };
-
-    const handleBuyConfirm = async (product: SaleProduct) => {
         setBuyingId(product.id);
 
         try {
@@ -55,7 +58,6 @@ export function SaleProducts() {
                     productName: data.productName,
                 });
                 router.refresh();
-                // Update local state
                 setProducts((prev) =>
                     prev.map((p) =>
                         p.id === product.id ? { ...p, isSold: true } : p
@@ -65,7 +67,7 @@ export function SaleProducts() {
                 showWarning(data.message);
             }
         } catch {
-            showError("ไม่สามารถทำรายการได้ กรุณาลองใหม่");
+            showError("เกิดข้อผิดพลาดในการสั่งซื้อ กรุณาลองใหม่อีกครั้ง");
         } finally {
             setBuyingId(null);
         }
@@ -147,6 +149,13 @@ export function SaleProducts() {
 
     return (
         <div>
+            {maintenance?.enabled && (
+                <div className="mb-4 rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <p className="font-semibold">ระบบสั่งซื้อกำลังปิดปรับปรุงชั่วคราว</p>
+                    <p className="mt-1 text-xs text-amber-800/90">{maintenance.message}</p>
+                </div>
+            )}
+
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
                     <Tag className="h-6 w-6 text-red-500" />
@@ -154,10 +163,10 @@ export function SaleProducts() {
                     <span className="px-2 py-1 text-xs font-bold bg-red-500 text-white rounded-full animate-pulse">SALE</span>
                 </div>
                 <div className="flex shrink-0 gap-2">
-                    <Button variant="outline" size="icon" className="rounded-full" onClick={() => scroll("left")} aria-label="เลื่อนสินค้าลดราคาไปทางซ้าย">
+                    <Button variant="outline" size="icon" className="rounded-full" onClick={() => scroll("left")} aria-label="เลื่อนเซกชันสินค้าโปรโมชันไปทางซ้าย">
                         <ChevronLeft className="h-5 w-5" />
                     </Button>
-                    <Button variant="outline" size="icon" className="rounded-full" onClick={() => scroll("right")} aria-label="เลื่อนสินค้าลดราคาไปทางขวา">
+                    <Button variant="outline" size="icon" className="rounded-full" onClick={() => scroll("right")} aria-label="เลื่อนเซกชันสินค้าโปรโมชันไปทางขวา">
                         <ChevronRight className="h-5 w-5" />
                     </Button>
                 </div>
@@ -190,7 +199,6 @@ export function SaleProducts() {
                                         </span>
                                     </div>
                                 )}
-                                {/* Hover Overlay */}
                                 {!product.isSold && (
                                     <Link href={`/product/${product.id}`} className="absolute inset-0 z-10 bg-white/10 backdrop-blur-[1px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
                                         <span
@@ -229,18 +237,18 @@ export function SaleProducts() {
                                         <>
                                             <Button
                                                 className="col-span-2 w-full bg-red-500 hover:bg-red-600"
-                                                onClick={() => handleBuyClick(product)}
-                                                disabled={buyingId === product.id}
+                                                onClick={() => void handleBuyClick(product)}
+                                                disabled={buyingId === product.id || maintenance?.enabled}
                                             >
                                                 {buyingId === product.id ? (
                                                     <>
                                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                        ซื้อ
+                                                        กำลังสั่งซื้อ
                                                     </>
                                                 ) : (
                                                     <>
                                                         <ShoppingCart className="h-4 w-4 mr-2" />
-                                                        ซื้อ
+                                                        {maintenance?.enabled ? "ปิดปรับปรุง" : "สั่งซื้อ"}
                                                     </>
                                                 )}
                                             </Button>
@@ -271,9 +279,7 @@ export function SaleProducts() {
                     </div>
                 ))}
             </div>
-
-
-
         </div>
     );
 }
+

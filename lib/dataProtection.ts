@@ -13,6 +13,16 @@ const SENSITIVE_FIELDS = [
 ];
 
 /**
+ * Mask transaction reference while keeping a searchable-looking suffix for admins.
+ */
+export function maskTransactionRef(transactionRef: string | null | undefined): string | null {
+    if (!transactionRef) return null;
+    const trimmed = transactionRef.trim();
+    if (trimmed.length <= 6) return "***";
+    return `${trimmed.slice(0, 3)}***${trimmed.slice(-3)}`;
+}
+
+/**
  * Throw error if an object contains secretData (to prevent internal leakage)
  */
 export function assertNoSecretDataLeak(obj: Record<string, unknown>, context: string = "API Response"): void {

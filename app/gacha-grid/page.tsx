@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { GachaGridMachine } from "@/components/GachaGridMachine";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { buildPageMetadata } from "@/lib/seo";
 import { auth } from "@/auth";
 
@@ -16,6 +17,7 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 export default async function GachaGridIndexPage() {
+    const maintenance = getMaintenanceState("gacha");
     let costType = "FREE";
     let costAmount = 0;
     let userBalance = 0;
@@ -63,6 +65,7 @@ export default async function GachaGridIndexPage() {
                         costType={costType}
                         costAmount={costAmount}
                         userBalance={userBalance}
+                        maintenance={maintenance}
                     />
                 </div>
             </div>

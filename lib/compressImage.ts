@@ -10,7 +10,7 @@ async function compressWithCanvas(
     imageBitmap: ImageBitmap,
     startWidth: number,
     startHeight: number,
-    maxSizeBytes: number
+    maxSizeBytes: number,
 ): Promise<Blob | null> {
     const outputType = "image/webp";
     let quality = 0.85;
@@ -19,11 +19,11 @@ async function compressWithCanvas(
     let blob: Blob | null = null;
 
     for (let i = 0; i < 10; i++) {
-        blob = await new Promise<Blob | null>((resolve) =>
-            canvas.toBlob(resolve, outputType, quality)
-        );
+        blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, outputType, quality));
 
-        if (!blob || blob.size <= maxSizeBytes) break;
+        if (!blob || blob.size <= maxSizeBytes) {
+            break;
+        }
 
         quality -= 0.1;
         if (quality < 0.1) {
@@ -35,6 +35,7 @@ async function compressWithCanvas(
             quality = 0.5;
         }
     }
+
     return blob;
 }
 
@@ -50,33 +51,32 @@ const MAX_DIMENSION = 1920; // Max width/height
  */
 export async function compressImage(
     file: File,
-    maxSizeBytes: number = DEFAULT_MAX_SIZE_BYTES
+    maxSizeBytes: number = DEFAULT_MAX_SIZE_BYTES,
 ): Promise<File> {
-    // If already small enough, return as-is
     if (file.size <= maxSizeBytes) {
         return file;
     }
 
-    // Skip non-image files
     if (!file.type.startsWith("image/")) {
         return file;
     }
 
-    // GIF/SVG can't be canvas-compressed — enforce 2MB limit
+    // GIF/SVG can't be canvas-compressed reliably, so keep the stricter 2MB limit.
     if (file.type === "image/gif" || file.type === "image/svg+xml") {
         if (file.size > MAX_GIF_SVG_SIZE) {
             const sizeMB = (file.size / (1024 * 1024)).toFixed(1);
+            const fileLabel = file.type === "image/gif" ? "GIF" : "SVG";
             throw new Error(
-                `ไฟล์ ${file.type === "image/gif" ? "GIF" : "SVG"} มีขนาด ${sizeMB}MB เกินขีดจำกัด 2MB กรุณาลดขนาดไฟล์ก่อนอัพโหลด`
+                `ไฟล์ ${fileLabel} มีขนาด ${sizeMB}MB ซึ่งเกินขีดจำกัด 2MB สำหรับไฟล์ประเภทนี้ ระบบไม่สามารถย่ออัตโนมัติได้ กรุณาลดขนาดไฟล์ก่อนอัปโหลด`,
             );
         }
+
         return file;
     }
 
     const imageBitmap = await createImageBitmap(file);
     let { width, height } = imageBitmap;
 
-    // Scale down if too large
     if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
         const ratio = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
         width = Math.round(width * ratio);
@@ -88,21 +88,20 @@ export async function compressImage(
     canvas.height = height;
 
     const ctx = canvas.getContext("2d");
-    if (!ctx) throw new Error("Canvas context not available");
+    if (!ctx) {
+        throw new Error("Canvas context not available");
+    }
 
     ctx.drawImage(imageBitmap, 0, 0, width, height);
 
-    // Try WebP first, then JPEG
     const blob = await compressWithCanvas(canvas, ctx, imageBitmap, width, height, maxSizeBytes);
-
     if (!blob) {
-        return file; // Fallback to original
+        return file;
     }
 
-    // Create a new File with .webp extension
     const baseName = file.name.replace(/\.[^.]+$/, "");
     return new File([blob], `${baseName}.webp`, {
-        type: "image/webp",
         lastModified: Date.now(),
+        type: "image/webp",
     });
 }

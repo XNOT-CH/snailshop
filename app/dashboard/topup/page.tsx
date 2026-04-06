@@ -23,6 +23,7 @@ import {
     ShieldCheck,
     ImagePlus,
 } from "lucide-react";
+import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 
 const BANK_INFO = {
     bankName: "ธนาคารกสิกรไทย",
@@ -44,6 +45,7 @@ function formatCurrency(value: string) {
 
 export default function TopupPage() {
     const router = useRouter();
+    const maintenance = useMaintenanceStatus().topup;
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
@@ -57,7 +59,7 @@ export default function TopupPage() {
         return Number.isFinite(amount) && amount > 0;
     }, [topupAmount]);
 
-    const canSubmit = Boolean(slipFile) && hasValidAmount && !isSubmitting;
+    const canSubmit = Boolean(slipFile) && hasValidAmount && !isSubmitting && !maintenance?.enabled;
 
     const copyToClipboard = async (text: string) => {
         try {
@@ -128,6 +130,11 @@ export default function TopupPage() {
     };
 
     const handleSubmit = async () => {
+        if (maintenance?.enabled) {
+            showWarning(maintenance.message);
+            return;
+        }
+
         if (!slipFile) {
             showWarning("กรุณาอัปโหลดสลิปการโอน");
             return;
@@ -190,6 +197,12 @@ export default function TopupPage() {
             <div className="mx-auto max-w-2xl">
                 <Card className="border-0 shadow-lg">
                     <CardContent className="space-y-6 p-6">
+                        {maintenance?.enabled && (
+                            <div className="rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                                <p className="font-semibold">ระบบเติมเงินกำลังปิดปรับปรุงชั่วคราว</p>
+                                <p className="mt-1 text-xs text-amber-800/90">{maintenance.message}</p>
+                            </div>
+                        )}
                         <div className="flex flex-wrap items-center justify-center gap-3 rounded-2xl border border-emerald-100 bg-emerald-50/80 px-4 py-3">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500">
                                 <ShieldCheck className="h-5 w-5 text-white" />

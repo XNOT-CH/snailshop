@@ -1,10 +1,9 @@
-import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
-import { db, products } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
-import { encrypt } from "@/lib/encryption";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { invalidateProductCaches } from "@/lib/cache";
+import { createProduct } from "@/lib/features/products/mutations";
+import { parseProductPrice, validateDiscountPrice, type ProductPayloadInput } from "@/lib/features/products/shared";
 
 export async function POST(request: NextRequest) {
     const authCheck = await isAdmin();
@@ -13,51 +12,42 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const body = await request.json();
+        const body = await request.json() as ProductPayloadInput;
         const { title, price, discountPrice, image, category, description, secretData, currency, stockSeparator, autoDeleteAfterSale } = body;
 
         if (!title || !price || !category) {
             return NextResponse.json({ success: false, message: "Missing required fields: title, price, category" }, { status: 400 });
         }
 
-        const priceNumber = Number.parseFloat(price);
-        if (Number.isNaN(priceNumber) || priceNumber <= 0) {
-            return NextResponse.json({ success: false, message: "Price must be a positive number" }, { status: 400 });
+        const parsedPrice = parseProductPrice(price);
+        if ("error" in parsedPrice) {
+            return NextResponse.json({ success: false, message: parsedPrice.error }, { status: 400 });
         }
+        const priceNumber = parsedPrice.value;
 
-        let discountPriceNumber: number | null = null;
-        if (discountPrice !== undefined && discountPrice !== "" && discountPrice !== null) {
-            discountPriceNumber = Number.parseFloat(discountPrice);
-            if (Number.isNaN(discountPriceNumber) || discountPriceNumber < 0) {
-                return NextResponse.json({ success: false, message: "Discount price must be a positive number" }, { status: 400 });
-            }
-            if (discountPriceNumber >= priceNumber) {
-                return NextResponse.json({ success: false, message: "Discount price must be less than original price" }, { status: 400 });
-            }
+        const discountValidation = validateDiscountPrice(discountPrice, priceNumber);
+        if ("error" in discountValidation) {
+            return NextResponse.json({ success: false, message: discountValidation.error }, { status: 400 });
         }
+        const discountPriceNumber = discountValidation.value;
 
-        const newId = crypto.randomUUID();
-        await db.insert(products).values({
-            id: newId,
-            name: title,
-            price: String(priceNumber),
-            discountPrice: discountPriceNumber === null ? null : String(discountPriceNumber),
-            imageUrl: image || null,
+        const createdProduct = await createProduct({
+            title,
+            price,
+            discountPrice,
+            image,
             category,
-            currency: currency || "THB",
-            description: description || null,
-            secretData: secretData ? encrypt(secretData) : "",
-            stockSeparator: stockSeparator || "newline",
-            isSold: false,
-            autoDeleteAfterSale: autoDeleteAfterSale ? Number(autoDeleteAfterSale) : null,
-            createdAt: mysqlNow(),
-            updatedAt: mysqlNow(),
-        });
+            description,
+            secretData,
+            currency,
+            stockSeparator,
+            autoDeleteAfterSale,
+        }, priceNumber, discountPriceNumber);
 
         await auditFromRequest(request, {
             action: AUDIT_ACTIONS.PRODUCT_CREATE,
             resource: "Product",
-            resourceId: newId,
+            resourceId: createdProduct.id,
             resourceName: title,
             details: { resourceName: title, price: priceNumber, category },
         });
@@ -67,7 +57,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({
             success: true,
             message: "Product created successfully",
-            product: { id: newId, name: title, price: priceNumber, category },
+            product: { id: createdProduct.id, name: title, price: priceNumber, category },
         });
     } catch (error) {
         console.error("Create product error:", error);

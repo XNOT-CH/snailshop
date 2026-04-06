@@ -50,7 +50,7 @@ const req = (body: object) =>
   });
 
 /** Build a mock MySQL2 pool connection */
-function mkConn(productRow?: object) {
+function mkConn(productRow?: object, promoRow?: object | null) {
   const conn = {
     beginTransaction: vi.fn().mockResolvedValue(undefined),
     execute: vi.fn(),
@@ -61,7 +61,11 @@ function mkConn(productRow?: object) {
   if (productRow) {
     // First call: SELECT product FOR UPDATE
     conn.execute.mockResolvedValueOnce([[productRow]]);
-    // Subsequent calls: INSERT, UPDATE User, UPDATE Product
+    if (promoRow !== undefined) {
+      // Second call: SELECT promo FOR UPDATE
+      conn.execute.mockResolvedValueOnce([promoRow ? [promoRow] : []]);
+    }
+    // Subsequent calls: INSERT, UPDATE User, UPDATE Product, promo usage updates
     conn.execute.mockResolvedValue([{ affectedRows: 1 }]);
   }
   return conn;
@@ -149,9 +153,20 @@ describe("API: /api/purchase (POST)", () => {
       maxDiscount: null,
     });
     (splitStock as any).mockReturnValue(["item1"]);
-    const conn = mkConn(MOCK_PRODUCT);
-    // Add promo update call
-    conn.execute.mockResolvedValue([{ affectedRows: 1 }]);
+    const conn = mkConn(MOCK_PRODUCT, {
+      id: "promo1", code: "SAVE10", isActive: true,
+      startsAt: new Date(Date.now() - 1000),
+      expiresAt: null,
+      usageLimit: null, usedCount: 0,
+      usagePerUser: null,
+      applicableCategories: null,
+      excludedCategories: null,
+      isNewUserOnly: false,
+      discountType: "PERCENTAGE",
+      discountValue: "10",
+      maxDiscount: null,
+      minPurchase: null,
+    });
     (db.$client.getConnection as any).mockResolvedValue(conn);
 
     const { POST } = await import("@/app/api/purchase/route");
@@ -170,8 +185,16 @@ describe("API: /api/purchase (POST)", () => {
       discountType: "FIXED", discountValue: "20", maxDiscount: null,
     });
     (splitStock as any).mockReturnValue(["item1"]);
-    const conn = mkConn(MOCK_PRODUCT);
-    conn.execute.mockResolvedValue([{ affectedRows: 1 }]);
+    const conn = mkConn(MOCK_PRODUCT, {
+      id: "promo2", code: "FLAT20", isActive: true,
+      startsAt: new Date(Date.now() - 1000),
+      expiresAt: null, usageLimit: null, usedCount: 0,
+      usagePerUser: null,
+      applicableCategories: null,
+      excludedCategories: null,
+      isNewUserOnly: false,
+      discountType: "FIXED", discountValue: "20", maxDiscount: null, minPurchase: null,
+    });
     (db.$client.getConnection as any).mockResolvedValue(conn);
 
     const { POST } = await import("@/app/api/purchase/route");
@@ -189,8 +212,16 @@ describe("API: /api/purchase (POST)", () => {
       discountType: "PERCENTAGE", discountValue: "50", maxDiscount: "30",
     });
     (splitStock as any).mockReturnValue(["item1"]);
-    const conn = mkConn(MOCK_PRODUCT);
-    conn.execute.mockResolvedValue([{ affectedRows: 1 }]);
+    const conn = mkConn(MOCK_PRODUCT, {
+      id: "promo3", code: "BIG50", isActive: true,
+      startsAt: new Date(Date.now() - 1000),
+      expiresAt: null, usageLimit: null, usedCount: 0,
+      usagePerUser: null,
+      applicableCategories: null,
+      excludedCategories: null,
+      isNewUserOnly: false,
+      discountType: "PERCENTAGE", discountValue: "50", maxDiscount: "30", minPurchase: null,
+    });
     (db.$client.getConnection as any).mockResolvedValue(conn);
 
     const { POST } = await import("@/app/api/purchase/route");
@@ -198,7 +229,7 @@ describe("API: /api/purchase (POST)", () => {
     expect(res.status).toBe(200);
   });
 
-  it("ignores expired promo code (promoData = null)", async () => {
+  it("rejects expired promo code", async () => {
     (auth as any).mockResolvedValue({ user: { id: "u1" } });
     (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
     (db.query.promoCodes.findFirst as any).mockResolvedValue({
@@ -209,16 +240,25 @@ describe("API: /api/purchase (POST)", () => {
       discountType: "FIXED", discountValue: "10", maxDiscount: null,
     });
     (splitStock as any).mockReturnValue(["item1"]);
-    const conn = mkConn(MOCK_PRODUCT);
+    const conn = mkConn(MOCK_PRODUCT, {
+      id: "promo4", code: "EXPIRED", isActive: true,
+      startsAt: new Date(Date.now() - 2000),
+      expiresAt: new Date(Date.now() - 1000),
+      usageLimit: null, usedCount: 0,
+      usagePerUser: null,
+      applicableCategories: null,
+      excludedCategories: null,
+      isNewUserOnly: false,
+      discountType: "FIXED", discountValue: "10", maxDiscount: null, minPurchase: null,
+    });
     (db.$client.getConnection as any).mockResolvedValue(conn);
 
     const { POST } = await import("@/app/api/purchase/route");
     const res = await POST(req({ productId: "p1", promoCode: "EXPIRED" }));
-    // Still succeeds, just without discount
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(400);
   });
 
-  it("ignores usage-limit-exceeded promo code", async () => {
+  it("rejects usage-limit-exceeded promo code", async () => {
     (auth as any).mockResolvedValue({ user: { id: "u1" } });
     (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
     (db.query.promoCodes.findFirst as any).mockResolvedValue({
@@ -228,12 +268,21 @@ describe("API: /api/purchase (POST)", () => {
       discountType: "FIXED", discountValue: "10", maxDiscount: null,
     });
     (splitStock as any).mockReturnValue(["item1"]);
-    const conn = mkConn(MOCK_PRODUCT);
+    const conn = mkConn(MOCK_PRODUCT, {
+      id: "promo5", code: "MAXED", isActive: true,
+      startsAt: new Date(Date.now() - 1000),
+      expiresAt: null, usageLimit: 10, usedCount: 10,
+      usagePerUser: null,
+      applicableCategories: null,
+      excludedCategories: null,
+      isNewUserOnly: false,
+      discountType: "FIXED", discountValue: "10", maxDiscount: null, minPurchase: null,
+    });
     (db.$client.getConnection as any).mockResolvedValue(conn);
 
     const { POST } = await import("@/app/api/purchase/route");
     const res = await POST(req({ productId: "p1", promoCode: "MAXED" }));
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(400);
   });
 
   // ── transaction error paths ─────────────────────────────────────────────────

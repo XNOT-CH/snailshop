@@ -25,7 +25,6 @@ import { NavbarCartButton } from "@/components/NavbarCartButton";
 export default async function Navbar() {
     const session = await auth();
     const userId = session?.user?.id;
-    const avatarVersion = Date.now();
 
     const [user, siteSettings, dbNavItems, allProducts] = await Promise.all([
         userId
@@ -44,6 +43,8 @@ export default async function Navbar() {
             where: (table, { eq: equals }) => equals(table.isSold, false),
         }),
     ]);
+
+    const avatarVersion = user?.image ?? "default-avatar";
 
     const shopCategories = [...new Set(allProducts.map((product) => product.category))]
         .filter(Boolean)

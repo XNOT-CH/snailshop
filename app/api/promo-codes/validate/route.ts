@@ -1,77 +1,81 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, promoCodes } from "@/lib/db";
-import { eq } from "drizzle-orm";
-
-type ValidatePromoSource = { startsAt: Date | string; expiresAt: Date | string | null; usageLimit: number | null; usedCount: number; minPurchase: string | number | null };
-
-function validatePromoConditions(promo: ValidatePromoSource, totalPrice: unknown): string | null {
-    const now = new Date();
-    if (now < new Date(promo.startsAt)) return "โค้ดนี้ยังไม่ถึงวันเริ่มใช้งาน";
-    if (promo.expiresAt && now > new Date(promo.expiresAt)) return "โค้ดนี้หมดอายุแล้ว";
-    if (promo.usageLimit !== null && promo.usedCount >= promo.usageLimit) return "โค้ดนี้ถูกใช้ครบจำนวนแล้ว";
-    
-    const minPurchase = promo.minPurchase ? Number(promo.minPurchase) : null;
-    if (minPurchase !== null && typeof totalPrice === "number" && totalPrice < minPurchase) {
-        return `ต้องซื้อขั้นต่ำ ฿${minPurchase.toLocaleString()} เพื่อใช้โค้ดนี้`;
-    }
-    return null;
-}
-
-function calculateDiscount(promo: { discountValue: string | number; minPurchase: string | number | null; discountType: string; maxDiscount: string | number | null }, totalPrice: unknown) {
-    const discountValue = Number(promo.discountValue);
-    const minPurchase = promo.minPurchase ? Number(promo.minPurchase) : null;
-
-    if (promo.discountType === "FIXED") {
-        return { minPurchase, discountAmount: discountValue };
-    }
-
-    let discountAmount = typeof totalPrice === "number" ? (totalPrice * discountValue) / 100 : 0;
-    const maxDiscount = promo.maxDiscount ? Number(promo.maxDiscount) : null;
-    if (maxDiscount !== null && discountAmount > maxDiscount) {
-        discountAmount = maxDiscount;
-    }
-    
-    return { minPurchase, discountAmount };
-}
+import { auth } from "@/auth";
+import {
+    buildPromoSuccessMessage,
+    calculatePromoDiscountAmount,
+    validatePromoCode,
+} from "@/lib/promo";
+import {
+    checkPromoValidationRateLimit,
+    clearPromoValidationAttempts,
+    getClientIp,
+    recordFailedPromoValidation,
+} from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
     try {
-        const { code, totalPrice } = await request.json();
+        const { code, totalPrice, productCategory } = await request.json();
 
         if (!code || typeof code !== "string") {
-            return NextResponse.json({ valid: false, message: "กรุณากรอกโค้ดส่วนลด" });
+            return NextResponse.json({
+                valid: false,
+                message: "กรุณากรอกโค้ดส่วนลด",
+            });
         }
 
-        const promo = await db.query.promoCodes.findFirst({
-            where: eq(promoCodes.code, code.trim().toUpperCase()),
+        const session = await auth();
+        const userId = session?.user?.id ?? null;
+        const identifier = userId ? `user:${userId}` : `ip:${getClientIp(request)}`;
+
+        const limit = checkPromoValidationRateLimit(identifier);
+        if (limit.blocked) {
+            return NextResponse.json({
+                valid: false,
+                message: limit.message || "กรุณาลองใหม่ภายหลัง",
+            }, { status: 429 });
+        }
+
+        const result = await validatePromoCode({
+            code,
+            totalPrice: typeof totalPrice === "number" ? totalPrice : null,
+            productCategory: typeof productCategory === "string" ? productCategory : null,
+            userId,
         });
 
-        if (!promo) {
-            return NextResponse.json({ valid: false, message: "โค้ดส่วนลดไม่ถูกต้อง" });
+        if (!result.valid) {
+            recordFailedPromoValidation(identifier);
+            return NextResponse.json(result);
         }
 
-        if (!promo.isActive) {
-            return NextResponse.json({ valid: false, message: "โค้ดนี้ถูกปิดใช้งานแล้ว" });
-        }
+        clearPromoValidationAttempts(identifier);
 
-        const errorMsg = validatePromoConditions(promo, totalPrice);
-        if (errorMsg) return NextResponse.json({ valid: false, message: errorMsg });
-
-        const { minPurchase, discountAmount } = calculateDiscount(promo, totalPrice);
+        const { minPurchase, discountAmount } = calculatePromoDiscountAmount(
+            result.promo,
+            typeof totalPrice === "number" ? totalPrice : null
+        );
 
         return NextResponse.json({
             valid: true,
-            discount: Number(promo.discountValue),
-            discountType: promo.discountType,
-            discountAmount: typeof totalPrice === "number" ? discountAmount : null,
-            maxDiscount: promo.maxDiscount ? Number(promo.maxDiscount) : null,
+            discount: Number(result.promo.discountValue),
+            discountType: result.promo.discountType,
+            discountAmount,
+            maxDiscount: result.promo.maxDiscount ? Number(result.promo.maxDiscount) : null,
             minPurchase,
-            message: promo.discountType === "PERCENTAGE"
-                ? `โค้ด "${promo.code}" ใช้ได้ ลด ${promo.discountValue}%`
-                : `โค้ด "${promo.code}" ใช้ได้ ลด ฿${Number(promo.discountValue).toLocaleString()}`,
+            usagePerUser: result.promo.usagePerUser ?? null,
+            isNewUserOnly: Boolean(result.promo.isNewUserOnly),
+            applicableCategories: Array.isArray(result.promo.applicableCategories)
+                ? result.promo.applicableCategories
+                : [],
+            excludedCategories: Array.isArray(result.promo.excludedCategories)
+                ? result.promo.excludedCategories
+                : [],
+            message: buildPromoSuccessMessage(result.promo),
         });
     } catch (error) {
         console.error("Validate promo code error:", error);
-        return NextResponse.json({ valid: false, message: "เกิดข้อผิดพลาด กรุณาลองใหม่" }, { status: 500 });
+        return NextResponse.json({
+            valid: false,
+            message: "เกิดข้อผิดพลาด กรุณาลองใหม่",
+        }, { status: 500 });
     }
 }

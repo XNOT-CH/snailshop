@@ -1,20 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, products } from "@/lib/db";
-import { eq } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
-import { encrypt, decrypt } from "@/lib/encryption";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { invalidateProductCaches } from "@/lib/cache";
-
-function validateDiscountPrice(discountPrice: string | number | null | undefined, priceNumber: number) {
-    if (discountPrice !== undefined && discountPrice !== "" && discountPrice !== null) {
-        const dp = Number(discountPrice);
-        if (Number.isNaN(dp) || dp < 0) return { error: "Discount price must be a positive number" };
-        if (dp >= priceNumber) return { error: "Discount price must be less than original price" };
-        return { value: dp };
-    }
-    return { value: null };
-}
+import { clearProductOrder, deleteProduct, updateProduct } from "@/lib/features/products/mutations";
+import { findProductById } from "@/lib/features/products/queries";
+import { decryptProductSecret, parseProductPrice, validateDiscountPrice, type ProductPayloadInput } from "@/lib/features/products/shared";
 
 interface RouteParams { params: Promise<{ id: string }> }
 
@@ -24,10 +14,10 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     try {
         const { id } = await params;
-        const product = await db.query.products.findFirst({ where: eq(products.id, id) });
+        const product = await findProductById(id);
         if (!product) return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
 
-        return NextResponse.json({ success: true, data: { ...product, secretData: decrypt(product.secretData || "") } });
+        return NextResponse.json({ success: true, data: { ...product, secretData: decryptProductSecret(product.secretData) } });
     } catch (error) {
         console.error("[PRODUCT_GET]", error);
         return NextResponse.json({ success: false, message: "Failed to fetch product" }, { status: 500 });
@@ -40,29 +30,32 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     try {
         const { id } = await params;
-        const body = await request.json();
+        const body = await request.json() as ProductPayloadInput;
         const { title, price, discountPrice, image, category, description, secretData, currency, stockSeparator, autoDeleteAfterSale } = body;
 
-        const existingProduct = await db.query.products.findFirst({ where: eq(products.id, id) });
+        const existingProduct = await findProductById(id);
         if (!existingProduct) return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
 
-        const priceNumber = Number.parseFloat(price);
-        const dpValidation = validateDiscountPrice(discountPrice, priceNumber);
-        if (dpValidation.error) return NextResponse.json({ success: false, message: dpValidation.error }, { status: 400 });
-        const discountPriceNumber = dpValidation.value;
+        const parsedPrice = parseProductPrice(price ?? "");
+        if ("error" in parsedPrice) return NextResponse.json({ success: false, message: parsedPrice.error }, { status: 400 });
+        const priceNumber = parsedPrice.value;
 
-        await db.update(products).set({
-            name: title,
-            price: String(priceNumber),
-            discountPrice: discountPriceNumber === null ? null : String(discountPriceNumber),
-            imageUrl: image || null,
+        const discountValidation = validateDiscountPrice(discountPrice, priceNumber);
+        if ("error" in discountValidation) return NextResponse.json({ success: false, message: discountValidation.error }, { status: 400 });
+        const discountPriceNumber = discountValidation.value;
+
+        await updateProduct(id, {
+            title,
+            price,
+            discountPrice,
+            image,
             category,
-            currency: currency || "THB",
-            description: description || null,
-            secretData: encrypt(secretData),
-            stockSeparator: stockSeparator || "newline",
-            autoDeleteAfterSale: autoDeleteAfterSale != null && autoDeleteAfterSale !== "" ? Number(autoDeleteAfterSale) : null,
-        }).where(eq(products.id, id));
+            description,
+            secretData,
+            currency,
+            stockSeparator,
+            autoDeleteAfterSale,
+        }, priceNumber, discountPriceNumber);
 
         const changes = [];
         if (existingProduct.name !== title) changes.push({ field: "name", old: existingProduct.name, new: title });
@@ -89,13 +82,13 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     try {
         const { id } = await params;
-        const product = await db.query.products.findFirst({ where: eq(products.id, id) });
+        const product = await findProductById(id);
         if (!product) return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
 
         if (product.orderId) {
-            await db.update(products).set({ orderId: null }).where(eq(products.id, id));
+            await clearProductOrder(id);
         }
-        await db.delete(products).where(eq(products.id, id));
+        await deleteProduct(id);
 
         await auditFromRequest(request, {
             action: AUDIT_ACTIONS.PRODUCT_DELETE, resource: "Product", resourceId: id, resourceName: product.name,

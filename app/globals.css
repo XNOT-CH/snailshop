@@ -12,7 +12,7 @@
 
   --color-foreground: var(--foreground);
 
-  --font-sans: "Prompt", "Noto Sans Thai", "Leelawadee UI", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-sans: var(--font-prompt), "Noto Sans Thai", "Leelawadee UI", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 
   --font-mono: var(--font-geist-mono);
 
@@ -881,6 +881,10 @@ html[data-scroll-behavior="smooth"] {
   scroll-behavior: smooth;
 
   scrollbar-gutter: stable;
+
+  -webkit-text-size-adjust: 100%;
+
+  text-size-adjust: 100%;
 
 }
 

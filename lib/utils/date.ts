@@ -34,9 +34,13 @@ export function getFirstDayOfMonthInTimeZone(date: Date, timeZone: string = TH_T
  * timezone marker. Convert them to ISO-8601 so browsers interpret them
  * consistently instead of treating them as local time.
  */
-export function mysqlDateTimeToIso(value: string | null | undefined): string | null {
+export function mysqlDateTimeToIso(value: string | Date | null | undefined): string | null {
     if (!value) {
         return null;
+    }
+
+    if (value instanceof Date) {
+        return value.toISOString();
     }
 
     if (value.includes("T")) {

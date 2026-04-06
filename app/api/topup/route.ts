@@ -1,10 +1,13 @@
-import path from "node:path";
 import { NextRequest, NextResponse } from "next/server";
 import { eq, sql } from "drizzle-orm";
 import { db, users, topups } from "@/lib/db";
 import { mysqlNow } from "@/lib/utils/date";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { isAuthenticatedWithCsrf } from "@/lib/auth";
+import { getMaintenanceState } from "@/lib/maintenanceMode";
+import { checkTopupRateLimit, getClientIp } from "@/lib/rateLimit";
+import { encryptTopupSensitiveFields } from "@/lib/sensitiveData";
+import { PRIVATE_SLIP_PATH_PREFIX, PRIVATE_SLIP_UPLOAD_DIR } from "@/lib/slipStorage";
 import {
     hasValidImageSignature,
     saveOptimizedImageUpload,
@@ -15,8 +18,6 @@ export const runtime = "nodejs";
 
 const EASYSLIP_API_URL = "https://developer.easyslip.com/api/v1/verify";
 const MAX_SLIP_BYTES = 5 * 1024 * 1024;
-const SLIP_UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "slips");
-const SLIP_PUBLIC_PATH = "/uploads/slips";
 const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 
 interface SlipVerificationResult {
@@ -62,18 +63,18 @@ function getSlipDataUrl(file: File, buffer: Buffer) {
 
 function mapSlipError(message: string | undefined) {
     const errorMessages: Record<string, string> = {
-        invalid_payload: "รูปสลิปไม่ถูกต้อง กรุณาอัปโหลดสลิปใหม่",
-        invalid_image: "รูปสลิปไม่ถูกต้อง กรุณาอัปโหลดสลิปใหม่",
-        duplicate_slip: "สลิปนี้เคยใช้แล้ว กรุณาใช้สลิปใหม่",
-        image_size_too_large: "ขนาดรูปใหญ่เกินไป กรุณาลดขนาดรูป",
-        slip_not_found: "ไม่พบข้อมูลสลิปในระบบธนาคาร กรุณาตรวจสอบสลิปอีกครั้ง",
-        qrcode_not_found: "ไม่พบข้อมูลสลิปในระบบธนาคาร กรุณาตรวจสอบสลิปอีกครั้ง",
-        unauthorized: "ระบบตรวจสลิปขัดข้อง กรุณาติดต่อแอดมิน",
-        quota_exceeded: "ระบบตรวจสลิปเต็มโควตา กรุณาติดต่อแอดมิน",
+        invalid_payload: "เธฃเธนเธเธชเธฅเธดเธเนเธกเนเธ–เธนเธเธ•เนเธญเธ เธเธฃเธธเธ“เธฒเธญเธฑเธเนเธซเธฅเธ”เธชเธฅเธดเธเนเธซเธกเน",
+        invalid_image: "เธฃเธนเธเธชเธฅเธดเธเนเธกเนเธ–เธนเธเธ•เนเธญเธ เธเธฃเธธเธ“เธฒเธญเธฑเธเนเธซเธฅเธ”เธชเธฅเธดเธเนเธซเธกเน",
+        duplicate_slip: "เธชเธฅเธดเธเธเธตเนเน€เธเธขเนเธเนเนเธฅเนเธง เธเธฃเธธเธ“เธฒเนเธเนเธชเธฅเธดเธเนเธซเธกเน",
+        image_size_too_large: "เธเธเธฒเธ”เธฃเธนเธเนเธซเธเนเน€เธเธดเธเนเธ เธเธฃเธธเธ“เธฒเธฅเธ”เธเธเธฒเธ”เธฃเธนเธ",
+        slip_not_found: "เนเธกเนเธเธเธเนเธญเธกเธนเธฅเธชเธฅเธดเธเนเธเธฃเธฐเธเธเธเธเธฒเธเธฒเธฃ เธเธฃเธธเธ“เธฒเธ•เธฃเธงเธเธชเธญเธเธชเธฅเธดเธเธญเธตเธเธเธฃเธฑเนเธ",
+        qrcode_not_found: "เนเธกเนเธเธเธเนเธญเธกเธนเธฅเธชเธฅเธดเธเนเธเธฃเธฐเธเธเธเธเธฒเธเธฒเธฃ เธเธฃเธธเธ“เธฒเธ•เธฃเธงเธเธชเธญเธเธชเธฅเธดเธเธญเธตเธเธเธฃเธฑเนเธ",
+        unauthorized: "เธฃเธฐเธเธเธ•เธฃเธงเธเธชเธฅเธดเธเธเธฑเธ”เธเนเธญเธ เธเธฃเธธเธ“เธฒเธ•เธดเธ”เธ•เนเธญเนเธญเธ”เธกเธดเธ",
+        quota_exceeded: "เธฃเธฐเธเธเธ•เธฃเธงเธเธชเธฅเธดเธเน€เธ•เนเธกเนเธเธงเธ•เธฒ เธเธฃเธธเธ“เธฒเธ•เธดเธ”เธ•เนเธญเนเธญเธ”เธกเธดเธ",
     };
 
     if (!message) {
-        return "เกิดข้อผิดพลาดในการตรวจสอบสลิป";
+        return "เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”เนเธเธเธฒเธฃเธ•เธฃเธงเธเธชเธญเธเธชเธฅเธดเธ";
     }
 
     return errorMessages[message] || message;
@@ -112,11 +113,38 @@ async function verifySlipWithEasySlip(file: File, dataUrl: string): Promise<Slip
 }
 
 export async function POST(request: NextRequest) {
+    const maintenance = getMaintenanceState("topup");
+    if (maintenance.enabled) {
+        return NextResponse.json(
+            { success: false, message: maintenance.message },
+            {
+                status: 503,
+                headers: {
+                    "Retry-After": String(maintenance.retryAfterSeconds),
+                },
+            },
+        );
+    }
+
+    const ip = getClientIp(request);
+    const rateLimit = checkTopupRateLimit(ip);
+    if (rateLimit.blocked) {
+        return NextResponse.json(
+            { success: false, message: "เธชเนเธเธเธณเธเธญเน€เธ•เธดเธกเน€เธเธดเธเธ–เธตเนเน€เธเธดเธเนเธ เธเธฃเธธเธ“เธฒเธฃเธญเธชเธฑเธเธเธฃเธนเนเนเธฅเนเธงเธฅเธญเธเนเธซเธกเนเธญเธตเธเธเธฃเธฑเนเธ" },
+            {
+                status: 429,
+                headers: {
+                    "Retry-After": String(Math.max(1, Math.ceil((rateLimit.retryAfter ?? 1000) / 1000))),
+                },
+            },
+        );
+    }
+
     try {
         const authCheck = await isAuthenticatedWithCsrf(request);
         if (!authCheck.success || !authCheck.userId) {
             return NextResponse.json(
-                { success: false, message: authCheck.error ?? "กรุณาเข้าสู่ระบบก่อน" },
+                { success: false, message: authCheck.error ?? "เธเธฃเธธเธ“เธฒเน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเธเนเธญเธ" },
                 { status: 401 },
             );
         }
@@ -126,11 +154,11 @@ export async function POST(request: NextRequest) {
         const requestedAmount = parseAmount(formData.get("amount"));
 
         if (!(file instanceof File)) {
-            return NextResponse.json({ success: false, message: "กรุณาอัปโหลดสลิปการโอนเงิน" }, { status: 400 });
+            return NextResponse.json({ success: false, message: "เธเธฃเธธเธ“เธฒเธญเธฑเธเนเธซเธฅเธ”เธชเธฅเธดเธเธเธฒเธฃเนเธญเธเน€เธเธดเธ" }, { status: 400 });
         }
 
         if (!requestedAmount) {
-            return NextResponse.json({ success: false, message: "กรุณากรอกจำนวนเงินที่โอนให้ถูกต้อง" }, { status: 400 });
+            return NextResponse.json({ success: false, message: "เธเธฃเธธเธ“เธฒเธเธฃเธญเธเธเธณเธเธงเธเน€เธเธดเธเธ—เธตเนเนเธญเธเนเธซเนเธ–เธนเธเธ•เนเธญเธ" }, { status: 400 });
         }
 
         validateImageFile(file, {
@@ -143,7 +171,7 @@ export async function POST(request: NextRequest) {
 
         const originalBuffer = Buffer.from(await file.arrayBuffer());
         if (!hasValidImageSignature(file.type as (typeof ALLOWED_IMAGE_TYPES)[number], originalBuffer)) {
-            return NextResponse.json({ success: false, message: "รูปสลิปไม่ถูกต้อง" }, { status: 400 });
+            return NextResponse.json({ success: false, message: "เธฃเธนเธเธชเธฅเธดเธเนเธกเนเธ–เธนเธเธ•เนเธญเธ" }, { status: 400 });
         }
 
         const user = await db.query.users.findFirst({
@@ -152,7 +180,7 @@ export async function POST(request: NextRequest) {
         });
 
         if (!user) {
-            return NextResponse.json({ success: false, message: "ไม่พบผู้ใช้งาน" }, { status: 404 });
+            return NextResponse.json({ success: false, message: "เนเธกเนเธเธเธเธนเนเนเธเนเธเธฒเธ" }, { status: 404 });
         }
 
         const slipDataUrl = getSlipDataUrl(file, originalBuffer);
@@ -185,7 +213,7 @@ export async function POST(request: NextRequest) {
             });
 
             if (existingTopup) {
-                return NextResponse.json({ success: false, message: "สลิปนี้เคยใช้เติมเงินแล้ว" }, { status: 400 });
+                return NextResponse.json({ success: false, message: "เธชเธฅเธดเธเธเธตเนเน€เธเธขเนเธเนเน€เธ•เธดเธกเน€เธเธดเธเนเธฅเนเธง" }, { status: 400 });
             }
         }
 
@@ -195,30 +223,30 @@ export async function POST(request: NextRequest) {
             maxDimension: 1600,
             outputQuality: 84,
             preserveAnimation: false,
-            uploadDir: SLIP_UPLOAD_DIR,
-            publicPath: SLIP_PUBLIC_PATH,
+            uploadDir: PRIVATE_SLIP_UPLOAD_DIR,
+            publicPath: PRIVATE_SLIP_PATH_PREFIX,
         });
 
         const topupId = crypto.randomUUID();
 
         if (shouldFallbackToPending || !verificationResult?.data) {
-            await db.insert(topups).values({
+            await db.insert(topups).values(encryptTopupSensitiveFields({
                 id: topupId,
                 userId: user.id,
                 amount: String(requestedAmount),
                 proofImage: savedSlip.url,
                 status: "PENDING",
                 createdAt: mysqlNow(),
-            });
+            }));
 
             await auditFromRequest(request, {
                 action: AUDIT_ACTIONS.TOPUP_REQUEST,
                 resource: "TopupRequest",
                 resourceId: topupId,
-                resourceName: `฿${requestedAmount.toLocaleString("th-TH")}`,
+                resourceName: `เธฟ${requestedAmount.toLocaleString("th-TH")}`,
                 details: {
                     amount: requestedAmount,
-                    proofImage: savedSlip.url,
+                    proofImageStored: Boolean(savedSlip.url),
                     status: "PENDING",
                     verification: "manual-review",
                 },
@@ -226,7 +254,7 @@ export async function POST(request: NextRequest) {
 
             return NextResponse.json({
                 success: true,
-                message: `ส่งสลิปสำเร็จ จำนวน ฿${requestedAmount.toLocaleString("th-TH")} และรอแอดมินตรวจสอบ`,
+                message: `เธชเนเธเธชเธฅเธดเธเธชเธณเน€เธฃเนเธ เธเธณเธเธงเธ เธฟ${requestedAmount.toLocaleString("th-TH")} เนเธฅเธฐเธฃเธญเนเธญเธ”เธกเธดเธเธ•เธฃเธงเธเธชเธญเธ`,
                 data: {
                     topupId,
                     amount: requestedAmount,
@@ -239,13 +267,13 @@ export async function POST(request: NextRequest) {
         const verifiedAmount = verificationResult.data.amount?.amount || 0;
         if (verifiedAmount <= 0) {
             return NextResponse.json(
-                { success: false, message: "ไม่สามารถอ่านจำนวนเงินจากสลิปได้" },
+                { success: false, message: "เนเธกเนเธชเธฒเธกเธฒเธฃเธ–เธญเนเธฒเธเธเธณเธเธงเธเน€เธเธดเธเธเธฒเธเธชเธฅเธดเธเนเธ”เน" },
                 { status: 400 },
             );
         }
 
         await db.transaction(async (tx) => {
-            await tx.insert(topups).values({
+            await tx.insert(topups).values(encryptTopupSensitiveFields({
                 id: topupId,
                 userId: user.id,
                 amount: String(verifiedAmount),
@@ -257,7 +285,7 @@ export async function POST(request: NextRequest) {
                 receiverName: verificationResult?.data?.receiver?.account?.name?.th || null,
                 receiverBank: verificationResult?.data?.receiver?.bank?.name || null,
                 createdAt: mysqlNow(),
-            });
+            }));
 
             await tx.update(users).set({
                 creditBalance: sql`creditBalance + ${verifiedAmount}`,
@@ -269,13 +297,13 @@ export async function POST(request: NextRequest) {
             action: AUDIT_ACTIONS.TOPUP_REQUEST,
             resource: "TopupRequest",
             resourceId: topupId,
-            resourceName: `฿${verifiedAmount.toLocaleString("th-TH")}`,
+            resourceName: `เธฟ${verifiedAmount.toLocaleString("th-TH")}`,
             details: {
                 amount: verifiedAmount,
                 requestedAmount,
                 transRef: verificationResult.data.transRef,
-                senderName: verificationResult.data.sender?.account?.name?.th,
-                proofImage: savedSlip.url,
+                senderNameStored: Boolean(verificationResult.data.sender?.account?.name?.th),
+                proofImageStored: Boolean(savedSlip.url),
                 status: "APPROVED",
                 verification: "automatic",
             },
@@ -283,7 +311,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            message: `เติมเงินสำเร็จ! ได้รับ ฿${verifiedAmount.toLocaleString("th-TH")}`,
+            message: `เน€เธ•เธดเธกเน€เธเธดเธเธชเธณเน€เธฃเนเธ! เนเธ”เนเธฃเธฑเธ เธฟ${verifiedAmount.toLocaleString("th-TH")}`,
             data: {
                 topupId,
                 amount: verifiedAmount,
@@ -297,7 +325,7 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error("Topup error:", error);
         return NextResponse.json(
-            { success: false, message: error instanceof Error ? error.message : "เกิดข้อผิดพลาด กรุณาลองใหม่" },
+            { success: false, message: error instanceof Error ? error.message : "เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ” เธเธฃเธธเธ“เธฒเธฅเธญเธเนเธซเธกเน" },
             { status: 500 },
         );
     }

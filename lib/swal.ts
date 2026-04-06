@@ -1,5 +1,10 @@
 import Swal from "sweetalert2";
 
+const modalDefaults = {
+    scrollbarPadding: false,
+    heightAuto: false,
+} as const;
+
 // Custom SweetAlert Toast (สำหรับแจ้งเตือนเล็กๆ)
 const Toast = Swal.mixin({
     toast: true,
@@ -50,6 +55,7 @@ export const showConfirm = async (
     cancelText = "ยกเลิก"
 ): Promise<boolean> => {
     const result = await Swal.fire({
+        ...modalDefaults,
         title,
         text,
         icon: "warning",
@@ -75,6 +81,7 @@ export const showDeleteConfirm = async (
     itemName: string
 ): Promise<boolean> => {
     const result = await Swal.fire({
+        ...modalDefaults,
         title: "ยืนยันการลบ?",
         html: `คุณต้องการลบ <strong>"${itemName}"</strong> ใช่หรือไม่?`,
         icon: "warning",
@@ -98,6 +105,7 @@ export const showDeleteConfirm = async (
 // Success alert with action
 export const showSuccessAlert = (title: string, text?: string) => {
     return Swal.fire({
+        ...modalDefaults,
         icon: "success",
         title,
         text,
@@ -120,6 +128,7 @@ export const showPurchaseConfirm = async (params: {
     confirmButtonColor?: string;
 }): Promise<boolean> => {
     const result = await Swal.fire({
+        ...modalDefaults,
         title: "ยืนยันการสั่งซื้อ",
         html: `
             <div class="text-center space-y-6">
@@ -170,6 +179,7 @@ export const showPurchaseSuccessModal = (params: {
     confirmText?: string;
 }) => {
     return Swal.fire({
+        ...modalDefaults,
         icon: "success",
         title: params.title || "ซื้อสำเร็จ",
         text: params.text,
@@ -194,6 +204,7 @@ export const showPurchaseSuccessModal = (params: {
 // Purchase success popup (centered modal with green button)
 export const showPurchaseSuccess = (title: string, text?: string) => {
     return Swal.fire({
+        ...modalDefaults,
         icon: "success",
         title,
         text,
@@ -210,6 +221,7 @@ export const showPurchaseSuccess = (title: string, text?: string) => {
 // Error alert
 export const showErrorAlert = (title: string, text?: string) => {
     return Swal.fire({
+        ...modalDefaults,
         icon: "error",
         title,
         text,
@@ -226,6 +238,7 @@ export const showErrorAlert = (title: string, text?: string) => {
 // Loading
 export const showLoading = (title = "กำลังดำเนินการ...") => {
     Swal.fire({
+        ...modalDefaults,
         title,
         allowOutsideClick: false,
         allowEscapeKey: false,

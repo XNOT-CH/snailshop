@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, products } from "@/lib/db";
-import { eq, ne } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
-import { encrypt, decrypt } from "@/lib/encryption";
-import { splitStock } from "@/lib/stock";
+import { updateProductStock } from "@/lib/features/products/mutations";
+import { findProductById, listOtherProductsForStockCheck, listOtherProductsForTakenUsers } from "@/lib/features/products/queries";
+import { extractStockUsers, extractUsersFromEncryptedStock } from "@/lib/features/products/shared";
 
 interface RouteParams { params: Promise<{ id: string }> }
 
@@ -17,22 +16,15 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
     try {
         const { id } = await params;
-        const otherProducts = typeof db.query.products.findMany === "function"
-            ? await db.query.products.findMany({
-                ...(process.env.NODE_ENV === "test" ? {} : { where: ne(products.id, id) }),
-                columns: { name: true, secretData: true, stockSeparator: true },
-            })
-            : [];
+        const otherProducts = await listOtherProductsForTakenUsers(id);
 
         // Collect all usernames used in other products
         const takenUsers: Record<string, string> = {}; // user -> productName
         for (const other of otherProducts) {
             if (!other.secretData?.trim()) continue;
             try {
-                const decrypted = decrypt(other.secretData);
-                const items = splitStock(decrypted, other.stockSeparator ?? "newline");
-                for (const item of items) {
-                    const user = item.split(" / ")[0]?.trim();
+                const users = extractUsersFromEncryptedStock(other.secretData, other.stockSeparator);
+                for (const user of users) {
                     if (user) takenUsers[user] = other.name;
                 }
             } catch { /* skip undecryptable */ }
@@ -58,33 +50,21 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ success: false, message: "Missing secretData" }, { status: 400 });
         }
 
-        const existingProduct = await db.query.products.findFirst({ where: eq(products.id, id) });
+        const existingProduct = await findProductById(id);
         if (!existingProduct) return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
 
         // ── Cross-product duplicate check ──────────────────────────────
         // Extract the usernames from the new secretData being saved
-        const newItems = splitStock(secretData, "newline");
-        const newUsers = newItems
-            .map((item) => item.split(" / ")[0]?.trim())
-            .filter(Boolean) as string[];
+        const newUsers = extractStockUsers(secretData, "newline");
 
         if (newUsers.length > 0) {
             // Fetch all OTHER products that still have stock
-            const otherProducts = typeof db.query.products.findMany === "function"
-                ? await db.query.products.findMany({
-                    ...(process.env.NODE_ENV === "test" ? {} : { where: ne(products.id, id) }),
-                    columns: { id: true, name: true, secretData: true, stockSeparator: true },
-                })
-                : [];
+            const otherProducts = await listOtherProductsForStockCheck(id);
 
             for (const other of otherProducts) {
                 if (!other.secretData?.trim()) continue;
                 try {
-                    const decrypted = decrypt(other.secretData);
-                    const otherItems = splitStock(decrypted, other.stockSeparator ?? "newline");
-                    const otherUsers = new Set(
-                        otherItems.map((item) => item.split(" / ")[0]?.trim()).filter(Boolean)
-                    );
+                    const otherUsers = new Set(extractUsersFromEncryptedStock(other.secretData, other.stockSeparator));
                     const collision = newUsers.find((u) => otherUsers.has(u));
                     if (collision) {
                         return NextResponse.json(
@@ -103,7 +83,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         // ──────────────────────────────────────────────────────────────
 
         const hasStock = secretData.trim().length > 0;
-        await db.update(products).set({ secretData: encrypt(secretData), isSold: !hasStock }).where(eq(products.id, id));
+        await updateProductStock(id, secretData, hasStock);
 
         return NextResponse.json({ success: true, message: "Stock updated" });
     } catch (error) {

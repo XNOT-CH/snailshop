@@ -18,6 +18,7 @@ import {
     FileText,
     Gamepad2,
     Gem,
+    Gift,
     Layers,
     LayoutDashboard,
     LinkIcon,
@@ -29,6 +30,7 @@ import {
     Package,
     Settings,
     Shield,
+    Ticket,
     Users,
 } from "lucide-react";
 
@@ -60,7 +62,7 @@ function isNavGroup(entry: NavEntry): entry is ({ group: true } & NavGroup) {
 const navigationSections: NavSection[] = [
     {
         title: "ใช้งานบ่อย",
-        hint: "เมนูที่แอดมินเปิดบ่อยสุด",
+        hint: "เมนูที่แอดมินเปิดบ่อยที่สุด",
         items: [
             { href: "/admin", label: "แดชบอร์ด", icon: LayoutDashboard, badge: "หลัก" },
             { href: "/admin/chat", label: "แชทลูกค้า", icon: MessagesSquare, badge: "สด" },
@@ -69,9 +71,11 @@ const navigationSections: NavSection[] = [
     },
     {
         title: "จัดการร้าน",
-        hint: "สินค้า ผู้ใช้ และสิทธิ์",
+        hint: "สินค้า ผู้ใช้ และสิทธิ์พิเศษ",
         items: [
             { href: "/admin/products", label: "จัดการสินค้า", icon: Package },
+            { href: "/admin/promo-codes", label: "โค้ดส่วนลด", icon: Ticket },
+            { href: "/admin/season-pass", label: "Season Pass", icon: Gift },
             { href: "/admin/users", label: "จัดการผู้ใช้", icon: Users },
             { href: "/admin/roles", label: "จัดการสิทธิ์", icon: Shield },
             {
@@ -80,6 +84,7 @@ const navigationSections: NavSection[] = [
                 icon: Gamepad2,
                 items: [
                     { href: "/admin/gacha-machines", label: "หมวดหมู่กาชา", icon: Layers },
+                    { href: "/admin/season-pass", label: "Season Pass Box", icon: Gift },
                 ],
             },
         ],
@@ -136,7 +141,7 @@ function NavLink({
         >
             <span
                 className={[
-                    "absolute left-0 top-2 bottom-2 w-0.5 rounded-r-full transition-opacity duration-150",
+                    "absolute bottom-2 left-0 top-2 w-0.5 rounded-r-full transition-opacity duration-150",
                     active ? "bg-[#145de7] opacity-100" : "opacity-0",
                 ].join(" ")}
             />
@@ -152,9 +157,7 @@ function NavLink({
                 <span
                     className={[
                         "relative z-10 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.08em]",
-                        active
-                            ? "bg-white/90 text-[#145de7]"
-                            : "bg-slate-100 text-slate-500",
+                        active ? "bg-white/90 text-[#145de7]" : "bg-slate-100 text-slate-500",
                     ].join(" ")}
                 >
                     {badge}
@@ -239,9 +242,7 @@ function SidebarSection({
     return (
         <section className="space-y-2">
             <div className="px-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
-                    {title}
-                </p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{title}</p>
                 <p className="mt-1 max-w-[15rem] text-[11px] leading-5 text-slate-400">{hint}</p>
             </div>
 
@@ -284,7 +285,6 @@ function SidebarNav({ onLinkClick }: Readonly<{ onLinkClick?: () => void }>) {
 
     return (
         <>
-
             <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-3">
                 {navigationSections.map((section) => (
                     <SidebarSection
@@ -323,12 +323,8 @@ export function AdminSidebar() {
                         <Gamepad2 className="h-4 w-4 text-white" />
                     </div>
                     <div className="min-w-0">
-                        <p className="truncate text-[15px] font-bold tracking-tight text-slate-900">
-                            แผงควบคุม
-                        </p>
-                        <p className="truncate text-[11px] text-slate-400">
-                            จัดการร้านและระบบหลังบ้าน
-                        </p>
+                        <p className="truncate text-[15px] font-bold tracking-tight text-slate-900">แผงควบคุม</p>
+                        <p className="truncate text-[11px] text-slate-400">จัดการร้านและระบบหลังบ้าน</p>
                     </div>
                 </div>
 
@@ -364,9 +360,7 @@ export function AdminSidebar() {
                                 <SheetTitle className="truncate text-[15px] font-bold text-slate-900">
                                     แผงควบคุม
                                 </SheetTitle>
-                                <p className="truncate text-[11px] text-slate-400">
-                                    จัดการร้านและระบบหลังบ้าน
-                                </p>
+                                <p className="truncate text-[11px] text-slate-400">จัดการร้านและระบบหลังบ้าน</p>
                             </div>
                         </SheetHeader>
 

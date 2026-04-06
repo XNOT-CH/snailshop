@@ -1,7 +1,9 @@
-import { db, topups } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { FileCheck, AlertCircle, Clock3, ImageIcon, Wallet } from "lucide-react";
+import { AlertCircle, Clock3, FileCheck, ImageIcon, Wallet } from "lucide-react";
 import { SlipTable } from "@/components/admin/SlipTable";
+import { db, topups } from "@/lib/db";
+import { decryptTopupSensitiveFields } from "@/lib/sensitiveData";
+import { buildAdminSlipImageUrl } from "@/lib/slipStorage";
 
 export const dynamic = "force-dynamic";
 
@@ -9,26 +11,26 @@ export default async function AdminSlipsPage() {
     const pendingSlips = await db.query.topups.findMany({
         where: eq(topups.status, "PENDING"),
         with: { user: true },
-        orderBy: (t, { desc }) => desc(t.createdAt),
+        orderBy: (table, { desc }) => desc(table.createdAt),
     });
-    const totalPendingAmount = pendingSlips.reduce((sum, slip) => sum + Number(slip.amount), 0);
-    const slipsWithImage = pendingSlips.filter((slip) => Boolean(slip.proofImage)).length;
-    const latestPendingAt = pendingSlips[0]?.createdAt
-        ? new Date(pendingSlips[0].createdAt).toLocaleString("th-TH", {
+    const decryptedPendingSlips = pendingSlips.map((slip) => decryptTopupSensitiveFields(slip));
+    const totalPendingAmount = decryptedPendingSlips.reduce((sum, slip) => sum + Number(slip.amount), 0);
+    const slipsWithImage = decryptedPendingSlips.filter((slip) => Boolean(slip.proofImage)).length;
+    const latestPendingAt = decryptedPendingSlips[0]?.createdAt
+        ? new Date(decryptedPendingSlips[0].createdAt).toLocaleString("th-TH", {
             dateStyle: "medium",
             timeStyle: "short",
         })
-        : "ไม่มีรายการล่าสุด";
+        : "เนเธกเนเธกเธตเธฃเธฒเธขเธเธฒเธฃเธฅเนเธฒเธชเธธเธ”";
 
     return (
         <div className="space-y-6">
-            {/* Page Header */}
             <div>
                 <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
                     <FileCheck className="h-6 w-6 text-[#1a56db]" />
-                    ตรวจสอบสลิป
+                    เธ•เธฃเธงเธเธชเธญเธเธชเธฅเธดเธ
                 </h1>
-                <p className="text-muted-foreground mt-1">ตรวจสอบและอนุมัติคำขอเติมเงิน</p>
+                <p className="text-muted-foreground mt-1">เธ•เธฃเธงเธเธชเธญเธเนเธฅเธฐเธญเธเธธเธกเธฑเธ•เธดเธเธณเธเธญเน€เธ•เธดเธกเน€เธเธดเธ</p>
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
@@ -38,8 +40,8 @@ export default async function AdminSlipsPage() {
                             <FileCheck className="h-5 w-5" />
                         </div>
                         <div>
-                            <p className="text-sm text-slate-500">รออนุมัติ</p>
-                            <p className="text-2xl font-bold text-slate-900">{pendingSlips.length}</p>
+                            <p className="text-sm text-slate-500">เธฃเธญเธญเธเธธเธกเธฑเธ•เธด</p>
+                            <p className="text-2xl font-bold text-slate-900">{decryptedPendingSlips.length}</p>
                         </div>
                     </div>
                 </div>
@@ -49,8 +51,8 @@ export default async function AdminSlipsPage() {
                             <Wallet className="h-5 w-5" />
                         </div>
                         <div>
-                            <p className="text-sm text-slate-500">ยอดรวมรอตรวจ</p>
-                            <p className="text-2xl font-bold text-slate-900">฿{totalPendingAmount.toLocaleString()}</p>
+                            <p className="text-sm text-slate-500">เธขเธญเธ”เธฃเธงเธกเธฃเธญเธ•เธฃเธงเธ</p>
+                            <p className="text-2xl font-bold text-slate-900">เธฟ{totalPendingAmount.toLocaleString()}</p>
                         </div>
                     </div>
                 </div>
@@ -60,37 +62,35 @@ export default async function AdminSlipsPage() {
                             <ImageIcon className="h-5 w-5" />
                         </div>
                         <div className="min-w-0">
-                            <p className="text-sm text-slate-500">แนบรูปแล้ว</p>
-                            <p className="text-lg font-bold text-slate-900">{slipsWithImage} รายการ</p>
+                            <p className="text-sm text-slate-500">เนเธเธเธฃเธนเธเนเธฅเนเธง</p>
+                            <p className="text-lg font-bold text-slate-900">{slipsWithImage} เธฃเธฒเธขเธเธฒเธฃ</p>
                             <div className="mt-1 flex items-center gap-1 text-xs text-slate-400">
                                 <Clock3 className="h-3.5 w-3.5" />
-                                <span className="truncate">ล่าสุด {latestPendingAt}</span>
+                                <span className="truncate">เธฅเนเธฒเธชเธธเธ” {latestPendingAt}</span>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* Pending Requests Card */}
             <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
-                {/* Card Header */}
                 <div className="border-b border-border py-3 px-5 flex items-center gap-2">
                     <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
                         <FileCheck className="h-3.5 w-3.5 text-white" />
                     </div>
-                    <span className="font-bold text-foreground">รออนุมัติ ({pendingSlips.length})</span>
+                    <span className="font-bold text-foreground">เธฃเธญเธญเธเธธเธกเธฑเธ•เธด ({decryptedPendingSlips.length})</span>
                 </div>
-                {pendingSlips.length === 0 ? (
+                {decryptedPendingSlips.length === 0 ? (
                     <div className="py-14 text-center text-muted-foreground">
                         <AlertCircle className="mx-auto h-12 w-12 opacity-30 mb-3" />
-                        <p>ไม่มีคำขอที่รออนุมัติ</p>
+                        <p>เนเธกเนเธกเธตเธเธณเธเธญเธ—เธตเนเธฃเธญเธญเธเธธเธกเธฑเธ•เธด</p>
                     </div>
                 ) : (
                     <SlipTable
-                        slips={pendingSlips.map((slip) => ({
+                        slips={decryptedPendingSlips.map((slip) => ({
                             id: slip.id,
                             amount: Number(slip.amount),
-                            proofImage: slip.proofImage,
+                            proofImage: buildAdminSlipImageUrl(slip.id, Boolean(slip.proofImage)),
                             createdAt: typeof slip.createdAt === "string" ? slip.createdAt : new Date(slip.createdAt).toISOString(),
                             user: {
                                 email: slip.user.email,

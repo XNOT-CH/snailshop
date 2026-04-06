@@ -5,6 +5,7 @@ import { Lock } from "lucide-react";
 import Link from "next/link";
 import { GachaRhombus } from "@/components/GachaRhombus";
 import { type GachaProductLite, type GachaTier } from "@/lib/gachaGrid";
+import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { buildPageMetadata } from "@/lib/seo";
 import { auth } from "@/auth";
 
@@ -17,6 +18,7 @@ export const metadata: Metadata = buildPageMetadata({
 });
 
 export default async function GachaPage() {
+    const maintenance = getMaintenanceState("gacha");
     let settings = { isEnabled: true, costType: "FREE", costAmount: 0, dailySpinLimit: 0 };
 
     const session = await auth();
@@ -102,7 +104,7 @@ export default async function GachaPage() {
             <div className="flex flex-col items-center gap-6 px-4 pt-6 pb-8 sm:px-6 md:px-10">
                 {settings.isEnabled ? (
                     <div className="w-full flex justify-center">
-                        <GachaRhombus products={products} settings={settings} userBalance={userBalance} />
+                        <GachaRhombus products={products} settings={settings} userBalance={userBalance} maintenance={maintenance} />
                     </div>
                 ) : (
                     <div className="flex flex-col items-center gap-3 py-20 text-center">

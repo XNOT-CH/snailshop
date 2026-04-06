@@ -1,9 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Loader2, LayoutGrid, Upload, X, ImageIcon, Copy, GripVertical, Sparkles } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
+import { compressImage } from "@/lib/compressImage";
 import Image from "next/image";
 import {
     DndContext,
@@ -61,8 +62,8 @@ const GAME_TYPES = [
     {
         value: "GRID_3X3",
         label: "3×3",
-        desc: "กริด 3 คูณ 3 สุ่มช่องรางวัล",
-        icon: "⊞",
+        desc: "กริด 3 คูณ 3 ลุ้นช่องรางวัล",
+        icon: "▦",
     },
 ];
 
@@ -102,8 +103,9 @@ export default function GachaMachinesAdminPage() {
     const handleImageUpload = async (file: File) => {
         setUploadingImage(true);
         try {
+            const preparedFile = await compressImage(file, 4.5 * 1024 * 1024);
             const formData = new FormData();
-            formData.append("file", file);
+            formData.append("file", preparedFile);
             const res = await fetch("/api/admin/gacha-machines/upload-image", {
                 method: "POST",
                 body: formData,
@@ -120,7 +122,7 @@ export default function GachaMachinesAdminPage() {
     };
 
     const addMachine = async () => {
-        if (!machineForm.name.trim()) return showError("ต้องใส่ชื่อตู้กาชา");
+        if (!machineForm.name.trim()) return showError("กรุณากรอกชื่อตู้กาชา");
         setSavingMachine(true);
         try {
             const res = await fetch("/api/admin/gacha-machines", {
@@ -135,15 +137,15 @@ export default function GachaMachinesAdminPage() {
             });
             const json = await res.json() as { success: boolean };
             if (json.success) {
-                showSuccess("เพิ่มตู้กาชาแล้ว");
+                showSuccess("เพิ่มตู้กาชาสำเร็จ");
                 setMachineForm({ name: "", description: "", imageUrl: "", gameType: "SPIN_X", categoryId: "", costType: "FREE", costAmount: 0, dailySpinLimit: 0, sortOrder: 0 });
                 loadAll();
-            } else showError("เพิ่มไม่สำเร็จ");
+            } else showError("เพิ่มตู้กาชาไม่สำเร็จ");
         } catch { showError("เกิดข้อผิดพลาด"); } finally { setSavingMachine(false); }
     };
 
     const toggleMachine = async (id: string, field: "isActive" | "isEnabled", val: boolean) => {
-        // Optimistic update — no full reload so page doesn't scroll
+        // Optimistic update โ€” no full reload so page doesn't scroll
         setMachines(prev => prev.map(m => m.id === id ? { ...m, [field]: val } : m));
         try {
             await fetch(`/api/admin/gacha-machines/${id}`, {
@@ -188,14 +190,14 @@ export default function GachaMachinesAdminPage() {
         <div className="space-y-6">
 
 
-            {/* ── เพิ่มตู้กาชา ── */}
+            {/* โ”€โ”€ เพิ่มตู้กาชา โ”€โ”€ */}
             <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
                 <div className="mb-5">
                     <h2 className="text-base font-bold text-[#145de7]">ตู้กาชา</h2>
                     <p className="text-xs text-muted-foreground">จัดการตู้กาชา</p>
                 </div>
 
-                {/* ── ประเภทมินิเกม ── */}
+                {/* โ”€โ”€ เธเธฃเธฐเน€เธ เธ—มินิเกม โ”€โ”€ */}
                 <div className="mb-5">
                     <span className={labelCls}>ประเภทมินิเกม *</span>
                     <div className="grid grid-cols-2 gap-3">
@@ -230,7 +232,7 @@ export default function GachaMachinesAdminPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* แถว 1: ชื่อตู้กาชา + หมวดหมู่ */}
+                    {/* เนเธ–เธง 1: ชื่อตู้กาชา + เธซเธกเธงเธ”เธซเธกเธนเน */}
                     <div>
                         <label htmlFor="addMachineName" className={labelCls}>ชื่อตู้กาชา *</label>
                         <input
@@ -242,7 +244,7 @@ export default function GachaMachinesAdminPage() {
                         />
                     </div>
 
-                    {/* แถว 2: ประเภทราคา + ราคาต่อครั้ง */}
+                    {/* เนเธ–เธง 2: ประเภทราคา + ราคาต่อครั้ง */}
                     <div>
                         <label htmlFor="addCostType" className={labelCls}>ประเภทราคา</label>
                         <select
@@ -266,7 +268,7 @@ export default function GachaMachinesAdminPage() {
                             value={machineForm.costType === "FREE" ? "" : machineForm.costAmount}
                             onChange={e => setMachineForm(f => ({ ...f, costAmount: Number(e.target.value) }))}
                             min={0}
-                            placeholder={machineForm.costType === "FREE" ? "—" : "0"}
+                            placeholder={machineForm.costType === "FREE" ? "-" : "0"}
                             disabled={machineForm.costType === "FREE"}
                             className={`${inputCls} disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:opacity-100`}
                         />
@@ -274,10 +276,10 @@ export default function GachaMachinesAdminPage() {
 
                 </div>
 
-                {/* ── รูปภาพ ── */}
+                {/* โ”€โ”€ รูปเธ เธฒเธ โ”€โ”€ */}
                 <div className="mt-4">
                     <label htmlFor="addMachineImageFile" className={labelCls}>รูปภาพตู้กาชา</label>
-                    <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL รูปภาพ — รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB และระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติ</p>
+                    <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL รูปภาพ — รองรับ JPG, PNG, WebP, GIF ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนอัปโหลด</p>
 
                     {/* Preview + upload zone */}
                     <div className="flex items-start gap-3">
@@ -356,7 +358,7 @@ export default function GachaMachinesAdminPage() {
                     </div>
                 </div>
 
-                {/* ── รายละเอียด ── */}
+                {/* โ”€โ”€ รายละเอียด โ”€โ”€ */}
                 <div className="mt-4">
                     <label htmlFor="addMachineDescription" className={labelCls}>รายละเอียด</label>
                     <textarea
@@ -379,7 +381,7 @@ export default function GachaMachinesAdminPage() {
                 </button>
             </div>
 
-            {/* ── รายการตู้กาชา ── */}
+            {/* โ”€โ”€ รายการตู้กาชา โ”€โ”€ */}
             {machines.length > 0 && (
                 <MachineTable
                     machines={machines}
@@ -392,7 +394,7 @@ export default function GachaMachinesAdminPage() {
     );
 }
 
-// ── Sortable row component ────────────────────────────────────────────────
+// โ”€โ”€ Sortable row component โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 function SortableRow({
     m,
     i,
@@ -506,7 +508,7 @@ function SortableRow({
     );
 }
 
-// ── Data table component ───────────────────────────────────────────────────
+// โ”€โ”€ Data table component โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
 function MachineTable({
     machines,
     onToggle,
@@ -739,4 +741,6 @@ function MachineTable({
         </div>
     );
 }
+
+
 

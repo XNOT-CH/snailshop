@@ -7,6 +7,8 @@ export interface GachaProductLite {
     price: number;
     imageUrl: string | null;
     tier: GachaTier;
+    rewardType?: string;
+    rewardAmount?: number | null;
 }
 
 export interface Tile {

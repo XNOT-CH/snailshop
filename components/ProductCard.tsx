@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { showPurchaseConfirm, showPurchaseSuccessModal, showError, showWarning } from "@/lib/swal";
 import { ShoppingCart, Eye, Loader2 } from "lucide-react";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
+import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 
 interface ProductCardProps {
     id: string;
@@ -29,18 +30,23 @@ export function ProductCard({
     index = 0,
 }: Readonly<ProductCardProps>) {
     const router = useRouter();
+    const maintenance = useMaintenanceStatus().purchase;
     const [isLoading, setIsLoading] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
 
-    // Trigger animation after mount
     useEffect(() => {
         const timer = setTimeout(() => {
             setIsVisible(true);
-        }, index * 50); // Stagger delay
+        }, index * 50);
         return () => clearTimeout(timer);
     }, [index]);
 
     const handleBuy = async () => {
+        if (maintenance?.enabled) {
+            showWarning(maintenance.message);
+            return;
+        }
+
         if (isSold || isLoading) return;
         const confirmed = await showPurchaseConfirm({
             productName: title,
@@ -69,7 +75,7 @@ export function ProductCard({
                 showWarning(data.message);
             }
         } catch {
-            showError("ไม่สามารถทำรายการได้ กรุณาลองใหม่");
+            showError("เกิดข้อผิดพลาดในการสั่งซื้อ กรุณาลองใหม่อีกครั้ง");
         } finally {
             setIsLoading(false);
         }
@@ -79,7 +85,7 @@ export function ProductCard({
         <div
             className={`
                 group relative bg-card rounded-2xl border border-border/50 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300
-                ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}
+                ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}
             `}
             style={{
                 transitionDelay: `${index * 50}ms`,
@@ -98,7 +104,6 @@ export function ProductCard({
                         </span>
                     </div>
                 )}
-                {/* Hover Overlay */}
                 {!isSold && (
                     <Link href={`/product/${id}`} className="absolute inset-0 z-10 bg-white/10 backdrop-blur-[1px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
                         <span
@@ -138,18 +143,18 @@ export function ProductCard({
                         <>
                             <Button
                                 className="col-span-2 w-full"
-                                onClick={handleBuy}
-                                disabled={isLoading}
+                                onClick={() => void handleBuy()}
+                                disabled={isLoading || maintenance?.enabled}
                             >
                                 {isLoading ? (
                                     <>
                                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        ซื้อ
+                                        กำลังสั่งซื้อ
                                     </>
                                 ) : (
                                     <>
                                         <ShoppingCart className="h-4 w-4 mr-2" />
-                                        ซื้อ
+                                        {maintenance?.enabled ? "ปิดปรับปรุง" : "สั่งซื้อ"}
                                     </>
                                 )}
                             </Button>
@@ -178,3 +183,4 @@ export function ProductCard({
         </div>
     );
 }
+

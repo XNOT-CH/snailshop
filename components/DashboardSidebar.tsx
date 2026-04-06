@@ -2,33 +2,31 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { ArrowLeft, Gift, Package, Settings, ShoppingBag, Wallet } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
 import {
     Tooltip,
     TooltipContent,
     TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-    Wallet,
-    Package,
-    Settings,
-    ArrowLeft,
-} from "lucide-react";
 
 interface DashboardSidebarProps {
     user: {
         username: string;
         email: string | null;
+        image?: string | null;
         creditBalance?: number | bigint;
     } | null;
 }
 
 const sidebarLinks = [
     { href: "/dashboard/topup", label: "เติมเงิน", icon: Wallet },
+    { href: "/dashboard/season-pass", label: "Season Pass", icon: Gift },
+    { href: "/dashboard/wallet", label: "กระเป๋า", icon: ShoppingBag },
     { href: "/dashboard/inventory", label: "สินค้าของฉัน", icon: Package },
     { href: "/dashboard/settings", label: "ตั้งค่า", icon: Settings },
 ];
@@ -38,21 +36,18 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
 
     return (
         <TooltipProvider>
-            {/* Desktop Sidebar */}
-            <aside className="fixed left-0 top-0 z-40 hidden md:flex h-screen w-64 flex-col border-r border-border bg-card">
-                {/* User Info */}
+            <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 flex-col border-r border-border bg-card md:flex">
                 <div className="p-4">
-                    <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/50">
+                    <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3">
                         <Avatar>
+                            <AvatarImage src={user?.image || undefined} alt={user?.username || "User"} />
                             <AvatarFallback className="bg-primary text-primary-foreground">
                                 {user?.username?.charAt(0).toUpperCase() || "?"}
                             </AvatarFallback>
                         </Avatar>
-                        <div className="flex-1 min-w-0">
-                            <p className="font-medium truncate">
-                                {user?.username || "Guest"}
-                            </p>
-                            <Badge variant="secondary" className="text-xs mt-1">
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium">{user?.username || "Guest"}</p>
+                            <Badge variant="secondary" className="mt-1 text-xs">
                                 ฿{user?.creditBalance ? Number(user.creditBalance).toLocaleString() : "0"}
                             </Badge>
                         </div>
@@ -61,7 +56,6 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
 
                 <Separator />
 
-                {/* Navigation */}
                 <ScrollArea className="flex-1 px-3 py-4">
                     <nav className="flex flex-col gap-1">
                         {sidebarLinks.map((link) => {
@@ -75,18 +69,17 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
                                     <TooltipTrigger asChild>
                                         <Link
                                             href={link.href}
-                                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 btn-press touch-feedback ${isActive
-                                                ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
-                                                : "text-muted-foreground hover:bg-accent hover:text-foreground hover:translate-x-1"
-                                                }`}
+                                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 btn-press touch-feedback ${
+                                                isActive
+                                                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
+                                                    : "text-muted-foreground hover:translate-x-1 hover:bg-accent hover:text-foreground"
+                                            }`}
                                         >
                                             <Icon className="h-5 w-5" />
                                             {link.label}
                                         </Link>
                                     </TooltipTrigger>
-                                    <TooltipContent side="right">
-                                        {link.label}
-                                    </TooltipContent>
+                                    <TooltipContent side="right">{link.label}</TooltipContent>
                                 </Tooltip>
                             );
                         })}
@@ -95,7 +88,6 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
 
                 <Separator />
 
-                {/* Back to Shop */}
                 <div className="p-3">
                     <Link
                         href="/"
@@ -107,8 +99,7 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
                 </div>
             </aside>
 
-            {/* Mobile Bottom Navigation */}
-            <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around bg-card border-t border-border px-1 py-2 md:hidden">
+            <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-border bg-card px-1 py-2 md:hidden">
                 {sidebarLinks.map((link) => {
                     const isActive =
                         pathname === link.href ||
@@ -119,10 +110,9 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
                         <Link
                             key={link.href}
                             href={link.href}
-                            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${isActive
-                                ? "text-primary"
-                                : "text-muted-foreground hover:text-foreground"
-                                }`}
+                            className={`flex flex-col items-center gap-0.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
+                                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                            }`}
                         >
                             <Icon className={`h-5 w-5 ${isActive ? "text-primary" : ""}`} />
                             <span className="max-w-[4.75rem] truncate text-center leading-tight">{link.label}</span>
@@ -131,10 +121,10 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
                 })}
                 <Link
                     href="/"
-                    className="flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-lg text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                    className="flex flex-col items-center gap-0.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
                     <ArrowLeft className="h-5 w-5" />
-                    <span className="truncate max-w-[4rem]">ร้านค้า</span>
+                    <span className="max-w-[4rem] truncate">ร้านค้า</span>
                 </Link>
             </nav>
         </TooltipProvider>

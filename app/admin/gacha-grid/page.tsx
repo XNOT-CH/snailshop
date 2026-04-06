@@ -26,6 +26,7 @@ import { showSuccess, showError } from "@/lib/swal";
 import { Loader2, Grid3X3, Plus, Trash2, Upload, ImageIcon, Pencil, X } from "lucide-react";
 import Image from "next/image";
 import { resizeFileToSquare } from "@/lib/imageResize";
+import { RewardImageCropDialog } from "@/components/gacha/RewardImageCropDialog";
 
 type Tier = "common" | "rare" | "epic" | "legendary";
 type RewardType = "CREDIT" | "POINT";
@@ -42,6 +43,8 @@ interface RewardRow {
 
 
 export default function AdminGachaGridPage() {
+    const cropUrlRef = useRef<string | null>(null);
+    const pendingEditRewardIdRef = useRef<string | null>(null);
     const [rewards, setRewards] = useState<RewardRow[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
@@ -54,6 +57,10 @@ export default function AdminGachaGridPage() {
     const [newImageUrl, setNewImageUrl] = useState("");
     const [isUploadingNew, setIsUploadingNew] = useState(false);
     const newFileRef = useRef<HTMLInputElement>(null);
+    const [cropDialogOpen, setCropDialogOpen] = useState(false);
+    const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+    const [cropFileName, setCropFileName] = useState("");
+    const [cropTarget, setCropTarget] = useState<"new" | "edit" | null>(null);
 
     // Edit image
     const [editingId, setEditingId] = useState<string | null>(null);
@@ -82,8 +89,21 @@ export default function AdminGachaGridPage() {
 
     useEffect(() => { void fetchRewards(); }, []);
 
+    const clearCropDialog = () => {
+        if (cropUrlRef.current) {
+            URL.revokeObjectURL(cropUrlRef.current);
+            cropUrlRef.current = null;
+        }
+        pendingEditRewardIdRef.current = null;
+        setCropDialogOpen(false);
+        setCropImageSrc(null);
+        setCropFileName("");
+        setCropTarget(null);
+    };
+
     const uploadImage = async (file: File): Promise<string | null> => {
-        const resized = await resizeFileToSquare(file, 400);
+        const keepsOriginalFrames = file.type === "image/gif" || file.type === "image/svg+xml";
+        const resized = keepsOriginalFrames ? file : await resizeFileToSquare(file, 512, 0.92);
         const formData = new FormData();
         formData.append("file", resized);
         const res = await fetch("/api/admin/gacha-rewards/upload-image", { method: "POST", body: formData });
@@ -93,6 +113,19 @@ export default function AdminGachaGridPage() {
     };
 
     const handleUploadNew = async (file: File) => {
+        if (file.type !== "image/gif" && file.type !== "image/svg+xml") {
+            if (cropUrlRef.current) {
+                URL.revokeObjectURL(cropUrlRef.current);
+            }
+            const objectUrl = URL.createObjectURL(file);
+            cropUrlRef.current = objectUrl;
+            setCropTarget("new");
+            setCropFileName(file.name);
+            setCropImageSrc(objectUrl);
+            setCropDialogOpen(true);
+            return;
+        }
+
         setIsUploadingNew(true);
         try {
             const url = await uploadImage(file);
@@ -101,6 +134,20 @@ export default function AdminGachaGridPage() {
     };
 
     const handleUploadEdit = async (file: File, rewardId: string) => {
+        if (file.type !== "image/gif" && file.type !== "image/svg+xml") {
+            if (cropUrlRef.current) {
+                URL.revokeObjectURL(cropUrlRef.current);
+            }
+            const objectUrl = URL.createObjectURL(file);
+            cropUrlRef.current = objectUrl;
+            pendingEditRewardIdRef.current = rewardId;
+            setCropTarget("edit");
+            setCropFileName(file.name);
+            setCropImageSrc(objectUrl);
+            setCropDialogOpen(true);
+            return;
+        }
+
         setIsUploadingEdit(true);
         try {
             const url = await uploadImage(file);
@@ -114,6 +161,41 @@ export default function AdminGachaGridPage() {
             if (!res.ok || !data.success) { showError(data.message || "อัปเดตรูปภาพไม่สำเร็จ"); return; }
             await fetchRewards();
         } finally { setIsUploadingEdit(false); setEditingId(null); }
+    };
+
+    const handleCropConfirm = async (croppedFile: File) => {
+        if (cropTarget === "new") {
+            setIsUploadingNew(true);
+            try {
+                const url = await uploadImage(croppedFile);
+                if (url) setNewImageUrl(url);
+            } finally {
+                setIsUploadingNew(false);
+                clearCropDialog();
+            }
+            return;
+        }
+
+        const rewardId = pendingEditRewardIdRef.current;
+        if (cropTarget === "edit" && rewardId) {
+            setIsUploadingEdit(true);
+            try {
+                const url = await uploadImage(croppedFile);
+                if (!url) return;
+                const res = await fetch(`/api/admin/gacha-rewards/${rewardId}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ rewardImageUrl: url }),
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) { showError(data.message || "อัปเดตรูปภาพไม่สำเร็จ"); return; }
+                await fetchRewards();
+            } finally {
+                setIsUploadingEdit(false);
+                setEditingId(null);
+                clearCropDialog();
+            }
+        }
     };
 
     const handleAdd = async () => {
@@ -239,7 +321,7 @@ export default function AdminGachaGridPage() {
                     <div className="space-y-2">
                         <div className="flex items-center justify-between">
                             <Label>รูปภาพรางวัล (ไม่บังคับ)</Label>
-                            <span className="text-xs text-muted-foreground">✨ ปรับขนาดอัตโนมัติ</span>
+                            <span className="text-xs text-muted-foreground">✨ ครอปตรงกลางให้พอดีวงกลมอัตโนมัติ</span>
                         </div>
                         <div className="flex items-center gap-3">
                             <input
@@ -262,7 +344,7 @@ export default function AdminGachaGridPage() {
 
                             {newImageUrl ? (
                                 <div className="relative flex-shrink-0">
-                                    <div className="h-14 w-14 rounded-lg border overflow-hidden">
+                                    <div className="h-14 w-14 rounded-full border overflow-hidden">
                                         <Image src={newImageUrl} alt="preview" width={56} height={56} className="object-cover w-full h-full" />
                                     </div>
                                     <button
@@ -273,7 +355,7 @@ export default function AdminGachaGridPage() {
                                     </button>
                                 </div>
                             ) : (
-                                <div className="h-14 w-14 rounded-lg border border-dashed flex items-center justify-center text-muted-foreground">
+                                <div className="h-14 w-14 rounded-full border border-dashed flex items-center justify-center text-muted-foreground">
                                     <ImageIcon className="h-5 w-5" />
                                 </div>
                             )}
@@ -342,14 +424,14 @@ export default function AdminGachaGridPage() {
                                         {/* รูป */}
                                         <TableCell>
                                             <div className="flex items-center gap-1.5">
-                                                <div className="h-10 w-10 rounded-md border overflow-hidden bg-white flex items-center justify-center flex-shrink-0">
+                                                <div className="h-10 w-10 rounded-full border overflow-hidden bg-white flex items-center justify-center flex-shrink-0">
                                                     {r.rewardImageUrl ? (
                                                         <Image
                                                             src={r.rewardImageUrl}
                                                             alt="reward"
                                                             width={40}
                                                             height={40}
-                                                            className="object-contain w-full h-full"
+                                                            className="object-cover w-full h-full"
                                                         />
                                                     ) : (
                                                         <ImageIcon className="h-4 w-4 text-muted-foreground" />
@@ -442,6 +524,14 @@ export default function AdminGachaGridPage() {
                     )}
                 </CardContent>
             </Card>
+
+            <RewardImageCropDialog
+                open={cropDialogOpen}
+                imageSrc={cropImageSrc}
+                fileName={cropFileName}
+                onClose={clearCropDialog}
+                onConfirm={handleCropConfirm}
+            />
         </div>
     );
 }

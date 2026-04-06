@@ -6,6 +6,7 @@ import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { HideMainLayout } from "@/components/HideMainLayout";
 import { buildPageMetadata } from "@/lib/seo";
+import { ensureTicketBalanceColumn } from "@/lib/wallet";
 
 export const metadata: Metadata = buildPageMetadata({
     title: "แดชบอร์ด",
@@ -23,15 +24,18 @@ export default async function DashboardLayout({
 
     let user = null;
     if (userId) {
+        await ensureTicketBalanceColumn();
+
         const dbUser = await db.query.users.findFirst({
             where: eq(users.id, userId),
-            columns: { username: true, email: true, creditBalance: true },
+            columns: { username: true, email: true, image: true, creditBalance: true, ticketBalance: true },
         });
 
         if (dbUser) {
             user = {
                 username: dbUser.username,
                 email: dbUser.email,
+                image: dbUser.image,
                 creditBalance: Number(dbUser.creditBalance),
             };
         }

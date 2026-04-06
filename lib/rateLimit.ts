@@ -41,6 +41,27 @@ const config = {
         maxAttempts: 12,
         windowMs: 60 * 1000,
     },
+    // Promo code validation
+    promoValidate: {
+        maxAttempts: 5,
+        windowMs: 15 * 60 * 1000,
+        lockoutMs: 15 * 60 * 1000,
+    },
+    // Purchase APIs
+    purchase: {
+        maxAttempts: 12,
+        windowMs: 60 * 1000,
+    },
+    // Topup submit API
+    topup: {
+        maxAttempts: 6,
+        windowMs: 10 * 60 * 1000,
+    },
+    // Gacha roll APIs
+    gacha: {
+        maxAttempts: 30,
+        windowMs: 60 * 1000,
+    },
 };
 
 /**
@@ -302,6 +323,127 @@ export function checkChatMessageRateLimit(identifier: string): {
         blocked: false,
         remainingMessages: config.chatMessage.maxAttempts - newCount,
     };
+}
+
+export function checkPromoValidationRateLimit(identifier: string): {
+    blocked: boolean;
+    remainingAttempts: number;
+    lockoutRemaining?: number;
+    message?: string;
+} {
+    const key = `promo-validate:${identifier}`;
+    const now = Date.now();
+    const entry = rateLimitStore.get(key);
+
+    if (entry?.lockedUntil && entry.lockedUntil > now) {
+        const remainingMs = entry.lockedUntil - now;
+        const remainingMinutes = Math.max(1, Math.ceil(remainingMs / 60000));
+        return {
+            blocked: true,
+            remainingAttempts: 0,
+            lockoutRemaining: remainingMs,
+            message: `กรอกโค้ดผิดบ่อยเกินไป กรุณารอ ${remainingMinutes} นาที`,
+        };
+    }
+
+    if (!entry || now - entry.firstAttempt > config.promoValidate.windowMs) {
+        return {
+            blocked: false,
+            remainingAttempts: config.promoValidate.maxAttempts,
+        };
+    }
+
+    const remainingAttempts = config.promoValidate.maxAttempts - entry.count;
+    if (remainingAttempts <= 0) {
+        rateLimitStore.set(key, {
+            ...entry,
+            lockedUntil: now + config.promoValidate.lockoutMs,
+        });
+
+        const lockoutMinutes = Math.ceil(config.promoValidate.lockoutMs / 60000);
+        return {
+            blocked: true,
+            remainingAttempts: 0,
+            lockoutRemaining: config.promoValidate.lockoutMs,
+            message: `กรอกโค้ดผิดบ่อยเกินไป กรุณารอ ${lockoutMinutes} นาที`,
+        };
+    }
+
+    return {
+        blocked: false,
+        remainingAttempts,
+    };
+}
+
+export function recordFailedPromoValidation(identifier: string): void {
+    const key = `promo-validate:${identifier}`;
+    const now = Date.now();
+    const entry = rateLimitStore.get(key);
+
+    if (!entry || now - entry.firstAttempt > config.promoValidate.windowMs) {
+        rateLimitStore.set(key, {
+            count: 1,
+            firstAttempt: now,
+        });
+        return;
+    }
+
+    rateLimitStore.set(key, {
+        ...entry,
+        count: entry.count + 1,
+    });
+}
+
+export function clearPromoValidationAttempts(identifier: string): void {
+    rateLimitStore.delete(`promo-validate:${identifier}`);
+}
+
+function checkWindowRateLimit(key: string, maxAttempts: number, windowMs: number) {
+    const now = Date.now();
+    const entry = rateLimitStore.get(key);
+
+    if (!entry || now - entry.firstAttempt > windowMs) {
+        rateLimitStore.set(key, {
+            count: 1,
+            firstAttempt: now,
+        });
+        return {
+            blocked: false,
+            remainingAttempts: maxAttempts - 1,
+        };
+    }
+
+    const newCount = entry.count + 1;
+    rateLimitStore.set(key, {
+        ...entry,
+        count: newCount,
+    });
+
+    if (newCount > maxAttempts) {
+        const retryAfter = windowMs - (now - entry.firstAttempt);
+        return {
+            blocked: true,
+            remainingAttempts: 0,
+            retryAfter,
+        };
+    }
+
+    return {
+        blocked: false,
+        remainingAttempts: maxAttempts - newCount,
+    };
+}
+
+export function checkPurchaseRateLimit(identifier: string) {
+    return checkWindowRateLimit(`purchase:${identifier}`, config.purchase.maxAttempts, config.purchase.windowMs);
+}
+
+export function checkTopupRateLimit(identifier: string) {
+    return checkWindowRateLimit(`topup:${identifier}`, config.topup.maxAttempts, config.topup.windowMs);
+}
+
+export function checkGachaRateLimit(identifier: string) {
+    return checkWindowRateLimit(`gacha:${identifier}`, config.gacha.maxAttempts, config.gacha.windowMs);
 }
 
 /**

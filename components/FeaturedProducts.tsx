@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -21,6 +21,7 @@ import {
   showPurchaseSuccessModal,
   showWarning,
 } from "@/lib/swal";
+import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 
 interface FeaturedProduct {
   id: string;
@@ -63,27 +64,29 @@ function getDiscountPercent(product: FeaturedProduct) {
 
 export function FeaturedProducts() {
   const router = useRouter();
+  const maintenance = useMaintenanceStatus().purchase;
   const [products, setProducts] = useState<FeaturedProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [buyingId, setBuyingId] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleBuyClick = async (product: FeaturedProduct) => {
+    if (maintenance?.enabled) {
+      showWarning(maintenance.message);
+      return;
+    }
+
     const discounted = hasDiscount(product);
     const confirmed = await showPurchaseConfirm({
       productName: product.name,
       priceText: `฿${getActivePrice(product).toLocaleString()}`,
       extraHtml: discounted
-        ? `<span class="text-sm text-gray-500 line-through">ราคาเดิม: ฿${product.price.toLocaleString()}</span>`
+        ? `<span class="text-sm text-gray-500 line-through">ราคาปกติ: ฿${product.price.toLocaleString()}</span>`
         : undefined,
       confirmButtonColor: discounted ? "#ef4444" : undefined,
     });
     if (!confirmed) return;
 
-    handleBuyConfirm(product);
-  };
-
-  const handleBuyConfirm = async (product: FeaturedProduct) => {
     setBuyingId(product.id);
 
     try {
@@ -107,7 +110,7 @@ export function FeaturedProducts() {
         showWarning(data.message);
       }
     } catch {
-      showError("ไม่สามารถทำรายการได้ กรุณาลองใหม่");
+      showError("เกิดข้อผิดพลาดในการสั่งซื้อ กรุณาลองใหม่อีกครั้ง");
     } finally {
       setBuyingId(null);
     }
@@ -192,28 +195,23 @@ export function FeaturedProducts() {
 
   return (
     <div>
+      {maintenance?.enabled && (
+        <div className="mb-4 rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <p className="font-semibold">ระบบสั่งซื้อกำลังปิดปรับปรุงชั่วคราว</p>
+          <p className="mt-1 text-xs text-amber-800/90">{maintenance.message}</p>
+        </div>
+      )}
+
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2">
           <Flame className="h-6 w-6 animate-pulse text-orange-500" />
           <h2 className="text-2xl font-bold">สินค้าแนะนำ</h2>
         </div>
         <div className="flex shrink-0 gap-2">
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full"
-            onClick={() => scroll("left")}
-            aria-label="เลื่อนสินค้าแนะนำไปทางซ้าย"
-          >
+          <Button variant="outline" size="icon" className="rounded-full" onClick={() => scroll("left")} aria-label="เลื่อนเซกชันโปรโมชันไปทางซ้าย">
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full"
-            onClick={() => scroll("right")}
-            aria-label="เลื่อนสินค้าแนะนำไปทางขวา"
-          >
+          <Button variant="outline" size="icon" className="rounded-full" onClick={() => scroll("right")} aria-label="เลื่อนเซกชันโปรโมชันไปทางขวา">
             <ChevronRight className="h-5 w-5" />
           </Button>
         </div>
@@ -240,13 +238,11 @@ export function FeaturedProducts() {
                       </span>
                     </div>
                   ) : null}
-
                   <div className="absolute right-3 top-3 z-10">
                     <span className="rounded-full bg-primary/90 px-2 py-1 text-xs font-medium text-primary-foreground">
                       {product.category}
                     </span>
                   </div>
-
                   {product.isSold ? (
                     <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
                       <span className="transform rounded-full bg-red-500 px-4 py-2 font-bold text-white -rotate-12">
@@ -254,7 +250,6 @@ export function FeaturedProducts() {
                       </span>
                     </div>
                   ) : null}
-
                   {!product.isSold ? (
                     <Link
                       href={`/product/${product.id}`}
@@ -272,7 +267,6 @@ export function FeaturedProducts() {
                       </span>
                     </Link>
                   ) : null}
-
                   <Image
                     src={product.imageUrl || "/placeholder.jpg"}
                     alt={product.name}
@@ -281,10 +275,8 @@ export function FeaturedProducts() {
                     className="object-cover transition-all duration-300 ease-out group-hover:grayscale-[30%] group-hover:blur-[1px]"
                   />
                 </div>
-
                 <div className="p-4 text-center">
                   <h3 className="mb-1 truncate text-center font-semibold text-foreground">{product.name}</h3>
-
                   <div className={`mb-1 flex items-center justify-center gap-2 ${discounted ? "" : "flex-col"}`}>
                     <p className={`text-lg font-bold ${discounted ? "text-red-500" : "text-primary"}`}>
                       ฿{Number(activePrice).toLocaleString()}
@@ -295,7 +287,6 @@ export function FeaturedProducts() {
                       </p>
                     ) : null}
                   </div>
-
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     {product.isSold ? (
                       <Button variant="outline" className="col-span-2 w-full" disabled>
@@ -306,18 +297,18 @@ export function FeaturedProducts() {
                       <>
                         <Button
                           className={`col-span-2 w-full ${discounted ? "bg-red-500 hover:bg-red-600" : ""}`}
-                          onClick={() => handleBuyClick(product)}
-                          disabled={buyingId === product.id}
+                          onClick={() => void handleBuyClick(product)}
+                          disabled={buyingId === product.id || maintenance?.enabled}
                         >
                           {buyingId === product.id ? (
                             <>
                               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                              ซื้อ
+                              กำลังสั่งซื้อ
                             </>
                           ) : (
                             <>
                               <ShoppingCart className="mr-2 h-4 w-4" />
-                              ซื้อ
+                              {maintenance?.enabled ? "ปิดปรับปรุง" : "สั่งซื้อ"}
                             </>
                           )}
                         </Button>
@@ -337,14 +328,8 @@ export function FeaturedProducts() {
                         />
                       </>
                     )}
-
                     <Link href={`/product/${product.id}`} className="block">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="w-full"
-                        aria-label={`ดูรายละเอียด ${product.name}`}
-                      >
+                      <Button variant="outline" size="icon" className="w-full" aria-label={`ดูรายละเอียด ${product.name}`}>
                         <Eye className="h-4 w-4" />
                       </Button>
                     </Link>
@@ -358,3 +343,4 @@ export function FeaturedProducts() {
     </div>
   );
 }
+

@@ -9,6 +9,7 @@ import { notFound } from "next/navigation";
 import { GachaRhombus } from "@/components/GachaRhombus";
 import { GachaGridMachine } from "@/components/GachaGridMachine";
 import { type GachaProductLite, type GachaTier } from "@/lib/gachaGrid";
+import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { buildPageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -56,6 +57,7 @@ export async function generateMetadata({ params }: Readonly<{ params: Promise<{ 
 
 export default async function GachaPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
     const { id } = await params;
+    const maintenance = getMaintenanceState("gacha");
 
     const session = await auth();
     const userId = session?.user?.id;
@@ -162,6 +164,7 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
                                     costType={machine.costType}
                                     costAmount={costAmount}
                                     userBalance={userBalance}
+                                    maintenance={maintenance}
                                 />
                             ) : (
                                 <GachaRhombus
@@ -169,6 +172,7 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
                                     settings={settings}
                                     userBalance={userBalance}
                                     machineId={machine.id}
+                                    maintenance={maintenance}
                                 />
                             )}
                         </div>

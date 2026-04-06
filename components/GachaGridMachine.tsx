@@ -5,6 +5,7 @@ import { Loader2, Gift, RotateCcw, Gamepad2, X } from "lucide-react";
 import Image from "next/image";
 import { GachaResultModal } from "@/components/GachaResultModal";
 import { showError } from "@/lib/swal";
+import { shouldBypassImageOptimization } from "@/lib/imageUrl";
 
 interface GridReward {
     id: string;
@@ -21,6 +22,10 @@ interface GachaGridMachineProps {
     readonly costType?: string;
     readonly costAmount?: number;
     readonly userBalance?: number;
+    readonly maintenance?: {
+        enabled: boolean;
+        message: string;
+    };
 }
 
 // Match สุ่มตัว X tier ring styles
@@ -84,6 +89,7 @@ function RewardCard({
                                 fill
                                 sizes="120px"
                                 className="object-contain"
+                                unoptimized={shouldBypassImageOptimization(reward.imageUrl)}
                                 onError={() => setImgErr(true)}
                             />
                         </div>
@@ -124,6 +130,7 @@ export function GachaGridMachine({
     costType = "FREE",
     costAmount = 0,
     userBalance = 0,
+    maintenance,
 }: Readonly<GachaGridMachineProps>) {
     const [rewards, setRewards] = useState<GridReward[]>([]);
     const [loading, setLoading] = useState(true);
@@ -231,6 +238,7 @@ export function GachaGridMachine({
     const costLabel = costType === "FREE"
         ? "สุ่มรางวัล (ฟรี)"
         : `สุ่มรางวัลครั้งละ ${costAmount.toLocaleString()} ${currencyWord}`;
+    const isBlocked = Boolean(maintenance?.enabled);
 
     let balanceLabel = null;
     if (costType === "CREDIT") balanceLabel = "ยอดเครดิตสะสม";
@@ -279,6 +287,12 @@ export function GachaGridMachine({
 
             {/* ── Controls (same layout as สุ่มตัว X) ── */}
             <div className="flex flex-col gap-4 w-full">
+                {maintenance?.enabled && (
+                    <div className="w-full rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-center shadow-sm">
+                        <p className="text-sm font-semibold text-amber-900">ระบบกาชากำลังปิดปรับปรุงชั่วคราว</p>
+                        <p className="mt-1 text-xs text-amber-800/90">{maintenance.message}</p>
+                    </div>
+                )}
 
                 {/* Cost text — centered, matches สุ่มตัว X */}
                 <div className="w-full flex flex-col items-center mt-2">
@@ -312,12 +326,12 @@ export function GachaGridMachine({
                         ) : (
                             <button
                                 onClick={() => handleSpin()}
-                                disabled={spinning || loading}
+                                disabled={spinning || loading || isBlocked}
                                 className="w-full py-3 md:py-3.5 rounded-md bg-[#158e4d] hover:bg-[#117640] text-white font-bold text-[15px] md:text-base shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 {spinning
                                     ? <><Loader2 className="h-5 w-5 animate-spin" /> กำลังสุ่ม...</>
-                                    : <><Gamepad2 className="h-5 w-5" /> สุ่ม 1 ครั้ง</>
+                                    : <><Gamepad2 className="h-5 w-5" /> {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : "สุ่ม 1 ครั้ง"}</>
                                 }
                             </button>
                         )}

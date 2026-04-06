@@ -107,6 +107,12 @@ export function NavbarUserMenu({
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
+                    <Link href="/dashboard/wallet" className="flex cursor-pointer items-center gap-2 text-foreground">
+                        <Package className="h-4 w-4" />
+                        {"\u0E01\u0E23\u0E30\u0E40\u0E1B\u0E4B\u0E32"}
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
                     <Link href="/dashboard/settings" className="flex cursor-pointer items-center gap-2 text-foreground">
                         <Settings className="h-4 w-4" />
                         {"\u0E15\u0E31\u0E49\u0E07\u0E04\u0E48\u0E32"}

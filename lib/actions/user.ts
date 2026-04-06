@@ -1,11 +1,12 @@
 "use server";
 
-import { db, users } from "@/lib/db";
-import { eq } from "drizzle-orm";
-import { createAuditLog, AUDIT_ACTIONS, getChanges } from "@/lib/auditLog";
-import { updateProfileSchema, UpdateProfileInput } from "@/lib/validations/profile";
 import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
+import { createAuditLog, AUDIT_ACTIONS, getChanges } from "@/lib/auditLog";
+import { db, users } from "@/lib/db";
+import { decryptUserSensitiveFields, encryptUserSensitiveFields } from "@/lib/sensitiveData";
+import { updateProfileSchema, UpdateProfileInput } from "@/lib/validations/profile";
 
 interface ActionResult {
     success: boolean;
@@ -50,11 +51,10 @@ function mapShippingAddress(shippingAddress: any, updateData: any) {
 }
 
 /**
- * อัปเดตโปรไฟล์ผู้ใช้
+ * เธญเธฑเธเน€เธ”เธ•เนเธเธฃเนเธเธฅเนเธเธนเนเนเธเน
  */
 export async function updateProfile(formData: UpdateProfileInput): Promise<ActionResult> {
     try {
-        // ตรวจสอบ authentication
         const session = await auth();
         const userId = session?.user?.id;
 
@@ -65,7 +65,6 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
             };
         }
 
-        // Validate ข้อมูลด้วย Zod
         const validationResult = updateProfileSchema.safeParse(formData);
         if (!validationResult.success) {
             return {
@@ -77,7 +76,6 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
 
         const validatedData = validationResult.data;
 
-        // ดึงข้อมูลผู้ใช้ปัจจุบัน
         const currentUser = await db.query.users.findFirst({
             where: eq(users.id, userId),
             columns: {
@@ -97,53 +95,34 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
             };
         }
 
-        // เตรียมข้อมูลสำหรับอัปเดต
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const updateData: Record<string, any> = {};
 
-        if (validatedData.name !== undefined) {
-            updateData.name = validatedData.name || null;
-        }
-        if (validatedData.email !== undefined) {
-            updateData.email = validatedData.email || null;
-        }
-        if (validatedData.phone !== undefined) {
-            updateData.phone = validatedData.phone || null;
-        }
-        if (validatedData.firstName !== undefined) {
-            updateData.firstName = validatedData.firstName || null;
-        }
-        if (validatedData.lastName !== undefined) {
-            updateData.lastName = validatedData.lastName || null;
-        }
-        if (validatedData.firstNameEn !== undefined) {
-            updateData.firstNameEn = validatedData.firstNameEn || null;
-        }
-        if (validatedData.lastNameEn !== undefined) {
-            updateData.lastNameEn = validatedData.lastNameEn || null;
-        }
-
-        // อัปเดต image ถ้ามีการส่งมา
-        if (validatedData.image !== undefined) {
-            updateData.image = validatedData.image || null;
-        }
+        if (validatedData.name !== undefined) updateData.name = validatedData.name || null;
+        if (validatedData.email !== undefined) updateData.email = validatedData.email || null;
+        if (validatedData.phone !== undefined) updateData.phone = validatedData.phone || null;
+        if (validatedData.firstName !== undefined) updateData.firstName = validatedData.firstName || null;
+        if (validatedData.lastName !== undefined) updateData.lastName = validatedData.lastName || null;
+        if (validatedData.firstNameEn !== undefined) updateData.firstNameEn = validatedData.firstNameEn || null;
+        if (validatedData.lastNameEn !== undefined) updateData.lastNameEn = validatedData.lastNameEn || null;
+        if (validatedData.image !== undefined) updateData.image = validatedData.image || null;
 
         mapTaxAddress(validatedData.taxAddress, updateData);
         mapShippingAddress(validatedData.shippingAddress, updateData);
 
-        // อัปเดต password ถ้ากรอกมา
+        const encryptedUpdateData = encryptUserSensitiveFields(updateData);
+
         if (validatedData.password && validatedData.password.length >= 6) {
-            updateData.password = await bcrypt.hash(validatedData.password, 12);
+            encryptedUpdateData.password = await bcrypt.hash(validatedData.password, 12);
         }
 
-        if (Object.keys(updateData).length === 0) {
+        if (Object.keys(encryptedUpdateData).length === 0) {
             return {
                 success: false,
                 message: "ไม่มีข้อมูลสำหรับอัปเดต",
             };
         }
 
-        // Track changes สำหรับ audit log
         const changes = getChanges(
             {
                 name: currentUser.name,
@@ -152,35 +131,32 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
                 password: currentUser.password,
             },
             {
-                name: updateData.name ?? currentUser.name,
-                email: updateData.email ?? currentUser.email,
-                image: updateData.image ?? currentUser.image,
-                // ซ่อน password จาก audit log
-                password: updateData.password ? "[CHANGED]" : currentUser.password,
+                name: encryptedUpdateData.name ?? currentUser.name,
+                email: encryptedUpdateData.email ?? currentUser.email,
+                image: encryptedUpdateData.image ?? currentUser.image,
+                password: encryptedUpdateData.password ? "[CHANGED]" : currentUser.password,
             },
             ["name", "email", "image", "password"]
         );
 
-        // อัปเดตข้อมูลใน database
-        await db.update(users).set(updateData).where(eq(users.id, userId));
+        await db.update(users).set(encryptedUpdateData).where(eq(users.id, userId));
 
-        // บันทึก Audit Log
         await createAuditLog({
             userId,
             action: AUDIT_ACTIONS.PROFILE_UPDATE,
             resource: "User",
             resourceId: userId,
-            changes: changes.map(c => ({
-                field: c.field,
-                oldValue: c.field === "password" ? "[HIDDEN]" : c.oldValue,
-                newValue: c.field === "password" ? "[HIDDEN]" : c.newValue,
+            changes: changes.map((change) => ({
+                field: change.field,
+                oldValue: change.field === "password" ? "[HIDDEN]" : change.oldValue,
+                newValue: change.field === "password" ? "[HIDDEN]" : change.newValue,
             })),
             status: "SUCCESS",
         });
 
         return {
             success: true,
-            message: updateData.password
+            message: encryptedUpdateData.password
                 ? "อัปเดตโปรไฟล์และรหัสผ่านเรียบร้อยแล้ว"
                 : "อัปเดตโปรไฟล์เรียบร้อยแล้ว",
         };
@@ -194,7 +170,7 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
 }
 
 /**
- * ดึงข้อมูลโปรไฟล์ผู้ใช้ปัจจุบัน
+ * เธ”เธถเธเธเนเธญเธกเธนเธฅเนเธเธฃเนเธเธฅเนเธเธนเนเนเธเนเธเธฑเธเธเธธเธเธฑเธ
  */
 export async function getCurrentUserProfile() {
     try {
@@ -223,7 +199,7 @@ export async function getCurrentUserProfile() {
         }
 
         return {
-            ...user,
+            ...decryptUserSensitiveFields(user),
             creditBalance: user.creditBalance.toString(),
         };
     } catch (error) {

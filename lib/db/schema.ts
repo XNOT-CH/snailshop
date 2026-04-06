@@ -8,6 +8,7 @@ import {
     datetime,
     index,
     json,
+    uniqueIndex,
 } from "drizzle-orm/mysql-core";
 import { relations, sql } from "drizzle-orm";
 
@@ -35,22 +36,23 @@ export const users = mysqlTable("User", {
     lastName: varchar("lastName", { length: 100 }),
     firstNameEn: varchar("firstNameEn", { length: 100 }),
     lastNameEn: varchar("lastNameEn", { length: 100 }),
-    taxFullName: varchar("taxFullName", { length: 255 }),
-    taxPhone: varchar("taxPhone", { length: 20 }),
+    taxFullName: text("taxFullName"),
+    taxPhone: text("taxPhone"),
     taxAddress: text("taxAddress"),
-    taxProvince: varchar("taxProvince", { length: 100 }),
-    taxDistrict: varchar("taxDistrict", { length: 100 }),
-    taxSubdistrict: varchar("taxSubdistrict", { length: 100 }),
-    taxPostalCode: varchar("taxPostalCode", { length: 10 }),
-    shipFullName: varchar("shipFullName", { length: 255 }),
-    shipPhone: varchar("shipPhone", { length: 20 }),
+    taxProvince: text("taxProvince"),
+    taxDistrict: text("taxDistrict"),
+    taxSubdistrict: text("taxSubdistrict"),
+    taxPostalCode: text("taxPostalCode"),
+    shipFullName: text("shipFullName"),
+    shipPhone: text("shipPhone"),
     shipAddress: text("shipAddress"),
-    shipProvince: varchar("shipProvince", { length: 100 }),
-    shipDistrict: varchar("shipDistrict", { length: 100 }),
-    shipSubdistrict: varchar("shipSubdistrict", { length: 100 }),
-    shipPostalCode: varchar("shipPostalCode", { length: 10 }),
+    shipProvince: text("shipProvince"),
+    shipDistrict: text("shipDistrict"),
+    shipSubdistrict: text("shipSubdistrict"),
+    shipPostalCode: text("shipPostalCode"),
     creditBalance: decimal("creditBalance", { precision: 10, scale: 2 }).default("0.00").notNull(),
     pointBalance: int("pointBalance").default(0).notNull(),
+    ticketBalance: int("ticketBalance").default(0).notNull(),
     totalTopup: decimal("totalTopup", { precision: 10, scale: 2 }).default("0.00").notNull(),
     lifetimePoints: int("lifetimePoints").default(0).notNull(),
     createdAt: now(),
@@ -201,11 +203,11 @@ export const topups = mysqlTable("Topup", {
     proofImage: text("proofImage"),
     status: varchar("status", { length: 20 }).default("PENDING").notNull(),
     transactionRef: varchar("transactionRef", { length: 100 }).unique(),
-    senderName: varchar("senderName", { length: 255 }),
+    senderName: text("senderName"),
     senderBank: varchar("senderBank", { length: 100 }),
     rejectReason: varchar("rejectReason", { length: 500 }),
-    receiverName: varchar("receiverName", { length: 255 }),
-    receiverBank: varchar("receiverBank", { length: 100 }),
+    receiverName: text("receiverName"),
+    receiverBank: text("receiverBank"),
     createdAt: now(),
 }, (t) => [
     index("idx_topup_userId_createdAt").on(t.userId, t.createdAt),
@@ -215,6 +217,69 @@ export const topups = mysqlTable("Topup", {
 export const topupsRelations = relations(topups, ({ one }) => ({
     user: one(users, { fields: [topups.userId], references: [users.id] }),
 }));
+
+// Season Pass
+export const seasonPassPlans = mysqlTable("SeasonPassPlan", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    slug: varchar("slug", { length: 100 }).unique().notNull(),
+    name: varchar("name", { length: 255 }).notNull(),
+    description: text("description"),
+    price: decimal("price", { precision: 10, scale: 2 }).notNull(),
+    durationDays: int("durationDays").default(30).notNull(),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: now(),
+    updatedAt: updatedAt(),
+}, (t) => [
+    index("idx_season_pass_plan_active").on(t.isActive),
+]);
+
+export const seasonPassSubscriptions = mysqlTable("SeasonPassSubscription", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: varchar("userId", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+    planId: varchar("planId", { length: 36 }).notNull().references(() => seasonPassPlans.id, { onDelete: "restrict" }),
+    status: varchar("status", { length: 20 }).default("ACTIVE").notNull(),
+    startAt: datetime("startAt", { mode: "string" }).default(sql`now()`).notNull(),
+    endAt: datetime("endAt", { mode: "string" }).notNull(),
+    createdAt: now(),
+    updatedAt: updatedAt(),
+}, (t) => [
+    index("idx_season_pass_subscription_user_status").on(t.userId, t.status),
+    index("idx_season_pass_subscription_endAt").on(t.endAt),
+]);
+
+export const seasonPassClaims = mysqlTable("SeasonPassClaim", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    subscriptionId: varchar("subscriptionId", { length: 36 }).notNull().references(() => seasonPassSubscriptions.id, { onDelete: "cascade" }),
+    userId: varchar("userId", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+    dayNumber: int("dayNumber").notNull(),
+    claimDateKey: varchar("claimDateKey", { length: 10 }).notNull(),
+    rewardType: varchar("rewardType", { length: 30 }).notNull(),
+    rewardLabel: varchar("rewardLabel", { length: 120 }).notNull(),
+    rewardAmount: varchar("rewardAmount", { length: 50 }).notNull(),
+    rewardPayload: json("rewardPayload").$type<Record<string, unknown> | null>(),
+    createdAt: now(),
+}, (t) => [
+    index("idx_season_pass_claim_user_created").on(t.userId, t.createdAt),
+    uniqueIndex("uq_season_pass_claim_subscription_day").on(t.subscriptionId, t.dayNumber),
+]);
+
+export const seasonPassRewards = mysqlTable("SeasonPassReward", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    planId: varchar("planId", { length: 36 }).notNull().references(() => seasonPassPlans.id, { onDelete: "cascade" }),
+    dayNumber: int("dayNumber").notNull(),
+    rewardType: varchar("rewardType", { length: 30 }).notNull(),
+    label: varchar("label", { length: 120 }).notNull(),
+    amount: varchar("amount", { length: 50 }).notNull(),
+    imageUrl: varchar("imageUrl", { length: 500 }),
+    highlight: boolean("highlight").default(false).notNull(),
+    creditReward: int("creditReward"),
+    pointReward: int("pointReward"),
+    createdAt: now(),
+    updatedAt: updatedAt(),
+}, (t) => [
+    index("idx_season_pass_reward_plan_day").on(t.planId, t.dayNumber),
+    uniqueIndex("uq_season_pass_reward_plan_day").on(t.planId, t.dayNumber),
+]);
 
 // ─────────────────────────────────────────────
 // SiteSettings
@@ -286,14 +351,33 @@ export const promoCodes = mysqlTable("PromoCode", {
     minPurchase: decimal("minPurchase", { precision: 10, scale: 2 }),
     maxDiscount: decimal("maxDiscount", { precision: 10, scale: 2 }),
     usageLimit: int("usageLimit"),
+    usagePerUser: int("usagePerUser"),
     usedCount: int("usedCount").default(0).notNull(),
     startsAt: datetime("startsAt", { mode: "string" }).default(sql`now()`).notNull(),
     expiresAt: datetime("expiresAt", { mode: "string" }),
+    applicableCategories: json("applicableCategories").$type<string[]>(),
+    excludedCategories: json("excludedCategories").$type<string[]>(),
+    isNewUserOnly: boolean("isNewUserOnly").default(false).notNull(),
     isActive: boolean("isActive").default(true).notNull(),
     createdAt: now(),
     updatedAt: updatedAt(),
 }, (t) => [
     index("idx_promocode_isActive_expiresAt").on(t.isActive, t.expiresAt),
+]);
+
+export const promoUsages = mysqlTable("PromoUsage", {
+    id: varchar("id", { length: 191 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    promoCodeId: varchar("promoCodeId", { length: 191 }).notNull().references(() => promoCodes.id, { onDelete: "cascade" }),
+    userId: varchar("userId", { length: 191 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+    orderId: varchar("orderId", { length: 191 }).references(() => orders.id, { onDelete: "set null" }),
+    promoCode: varchar("promoCode", { length: 50 }).notNull(),
+    discountAmount: decimal("discountAmount", { precision: 10, scale: 2 }).notNull(),
+    status: varchar("status", { length: 20 }).default("COMPLETED").notNull(),
+    createdAt: now(),
+    updatedAt: updatedAt(),
+}, (t) => [
+    index("idx_promousage_promo_user_status").on(t.promoCodeId, t.userId, t.status),
+    index("idx_promousage_order").on(t.orderId),
 ]);
 
 // ─────────────────────────────────────────────

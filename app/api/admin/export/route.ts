@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, orders, users, topups, gachaRollLogs, products } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
 import { desc, gte, lte, and } from "drizzle-orm";
+import { maskTransactionRef } from "@/lib/dataProtection";
 import { formatDateInTimeZone } from "@/lib/utils/date";
+import { decryptTopupSensitiveFields } from "@/lib/sensitiveData";
 
 const EXPORT_ROW_LIMIT = 50000;
 
@@ -141,11 +143,15 @@ async function exportTopups(from: string | null, to: string | null, dateTag: str
                     .orderBy(desc(topups.createdAt))
                     .limit(EXPORT_ROW_LIMIT);
 
+    const decryptedRows = rows.map((row) => ({
+        ...decryptTopupSensitiveFields(row),
+        transactionRef: maskTransactionRef(row.transactionRef),
+    }));
     const headers = [
         "id", "userId", "amount", "status", "transactionRef",
         "senderName", "senderBank", "receiverName", "receiverBank", "createdAt",
     ];
-    return csvResponse(toCsvWithBOM(rows as never, headers), `topups_${dateTag}.csv`);
+    return csvResponse(toCsvWithBOM(decryptedRows as never, headers), `topups_${dateTag}.csv`);
 }
 
 async function exportGacha(from: string | null, to: string | null, dateTag: string) {
