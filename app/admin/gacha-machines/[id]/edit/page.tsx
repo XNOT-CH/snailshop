@@ -1,9 +1,12 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Loader2, ArrowLeft, Save, Trash2, Pencil, Gift, LayoutGrid, X, Plus, Upload, ImageIcon } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
+import { compressImage } from "@/lib/compressImage";
+import { resizeFileToSquare } from "@/lib/imageResize";
+import { RewardImageCropDialog } from "@/components/gacha/RewardImageCropDialog";
 import Image from "next/image";
 
 interface GachaReward {
@@ -189,7 +192,7 @@ function AddRewardForm({ form, setForm, products, productSearch, setProductSearc
                 <div>
                     <label htmlFor="addRewardType" className={labelCls}>ประเภทรางวัล *</label>
                     <select id="addRewardType" value={form.rewardType} onChange={e => setForm((f: any) => ({ ...f, rewardType: e.target.value, productId: "", rewardAmount: "" }))} className={inputCls}>
-                        <option value="POINT">พอย</option>
+                        <option value="POINT">พอยต์</option>
                         <option value="CREDIT">เครดิต</option>
                         <option value="PRODUCT">สินค้าในเว็บ</option>
                     </select>
@@ -198,7 +201,7 @@ function AddRewardForm({ form, setForm, products, productSearch, setProductSearc
                     <div className="md:col-span-1">
                         <label htmlFor="addProductCategory" className={labelCls}>เลือกสินค้า *</label>
                         <select id="addProductCategory" value={productCategory} onChange={e => { setProductCategory(e.target.value); setProductSearch(""); setForm((f: any) => ({ ...f, productId: "", rewardName: "" })); }} className={inputCls + " mb-2"}>
-                            <option value="">— เลือกหมวดหมู่ —</option>
+                            <option value="">- เลือกหมวดหมู่ -</option>
                             {[...new Set(products.map(p => p.category))].sort((a, b) => a.localeCompare(b)).map(cat => (
                                 <option key={cat} value={cat}>{cat}</option>
                             ))}
@@ -207,7 +210,7 @@ function AddRewardForm({ form, setForm, products, productSearch, setProductSearc
                             <input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="ค้นหาชื่อสินค้า..." className={inputCls} />
                             <ProductPickerDropdown products={products} search={productSearch} category={productCategory} onSelect={(p) => { setForm((f: any) => ({ ...f, productId: p.id, rewardName: p.name })); setProductSearch(""); setProductCategory(""); }} />
                         </div>
-                        {form.productId && <p className="mt-1 text-xs text-[#145de7] font-medium">✓ เลือก: {form.rewardName}</p>}
+                        {form.productId && <p className="mt-1 text-xs text-[#145de7] font-medium">เลือก: {form.rewardName}</p>}
                     </div>
                 ) : (
                     <div>
@@ -216,7 +219,7 @@ function AddRewardForm({ form, setForm, products, productSearch, setProductSearc
                     </div>
                 )}
                 <div>
-                    <label htmlFor="addRewardTier" className={labelCls}>รูปแบบรางวัล *</label>
+                    <label htmlFor="addRewardTier" className={labelCls}>ระดับรางวัล *</label>
                     <select id="addRewardTier" value={form.tier} onChange={e => setForm((f: any) => ({ ...f, tier: e.target.value }))} className={inputCls}>
                         {TIER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
@@ -225,10 +228,10 @@ function AddRewardForm({ form, setForm, products, productSearch, setProductSearc
 
             <div className="mt-4">
                 <label htmlFor="addRewardImageFile" className={labelCls}>รูปภาพรางวัล</label>
-                <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB และระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติ</p>
+                <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF ระบบจะครอปตรงกลางและย่ออัตโนมัติให้พอดีกับวงกลมรางวัลก่อนอัปโหลด</p>
                 <input id="addRewardImageFile" ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={e => { const file = e.target.files?.[0]; if (file) { void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); } e.target.value = ""; }} />
                 <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => fileInputRef.current?.click()} className={`w-12 h-12 rounded-lg border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors cursor-pointer ${isDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/20"}`} onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={(e) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); }}>
+                    <button type="button" onClick={() => fileInputRef.current?.click()} className={`w-12 h-12 rounded-full border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors cursor-pointer ${isDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/20"}`} onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={(e) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); }}>
                         {validImageUrl(String(form.rewardImageUrl)) ? <Image src={String(form.rewardImageUrl)} alt="preview" width={48} height={48} className="w-full h-full object-cover pointer-events-none" /> : <ImageIcon className={`w-5 h-5 ${isDragging ? "text-[#145de7]" : "text-muted-foreground/40"}`} />}
                     </button>
                     <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border hover:bg-muted/50 text-xs font-medium transition disabled:opacity-50 flex-shrink-0">
@@ -259,12 +262,12 @@ function EditRewardForm({ form, setForm, products, productSearch, setProductSear
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div><label htmlFor="editRewardName" className={labelCls}>ชื่อรางวัล *</label><input id="editRewardName" value={form.rewardName} onChange={e => setForm((f: any) => ({ ...f, rewardName: e.target.value }))} placeholder="จำเป็น" className={inputCls} /></div>
                 <div><label htmlFor="editProbability" className={labelCls}>โอกาสได้รับ (%) *</label><input id="editProbability" type="number" value={form.probability} onChange={e => setForm((f: any) => ({ ...f, probability: Number(e.target.value) }))} placeholder="รวมโอกาสของรางวัลทั้งหมดต้องไม่เกิน 100%" min={0.01} max={100} step={0.01} className={inputCls} /></div>
-                <div><label htmlFor="editRewardType" className={labelCls}>ประเภทรางวัล *</label><select id="editRewardType" value={form.rewardType ?? "POINT"} onChange={e => setForm((f: any) => ({ ...f, rewardType: e.target.value, productId: "", rewardAmount: 0 }))} className={inputCls}><option value="POINT">พอย</option><option value="CREDIT">เครดิต</option><option value="PRODUCT">สินค้าในเว็บ</option></select></div>
+                <div><label htmlFor="editRewardType" className={labelCls}>ประเภทรางวัล *</label><select id="editRewardType" value={form.rewardType ?? "POINT"} onChange={e => setForm((f: any) => ({ ...f, rewardType: e.target.value, productId: "", rewardAmount: 0 }))} className={inputCls}><option value="POINT">พอยต์</option><option value="CREDIT">เครดิต</option><option value="PRODUCT">สินค้าในเว็บ</option></select></div>
                 {form.rewardType === "PRODUCT" ? (
                     <div>
                         <label htmlFor="editProductCategory" className={labelCls}>เลือกสินค้า *</label>
                         <select id="editProductCategory" value={productCategory} onChange={e => { setProductCategory(e.target.value); setProductSearch(""); setForm((f: any) => ({ ...f, productId: "", rewardName: "" })); }} className={inputCls + " mb-2"}>
-                            <option value="">— เลือกหมวดหมู่ —</option>
+                            <option value="">- เลือกหมวดหมู่ -</option>
                             {[...new Set(products.map(p => p.category))].sort((a, b) => a.localeCompare(b)).map(cat => (
                                 <option key={cat} value={cat}>{cat}</option>
                             ))}
@@ -273,18 +276,18 @@ function EditRewardForm({ form, setForm, products, productSearch, setProductSear
                             <input id="editProductSearch" value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="ค้นหาชื่อสินค้า..." className={inputCls} />
                             <ProductPickerDropdown products={products} search={productSearch} category={productCategory} onSelect={(p) => { setForm((f: any) => ({ ...f, productId: p.id, rewardName: p.name })); setProductSearch(""); setProductCategory(""); }} />
                         </div>
-                        {form.productId && <p className="mt-1 text-xs text-[#145de7] font-medium">✓ เลือก: {form.rewardName}</p>}
+                        {form.productId && <p className="mt-1 text-xs text-[#145de7] font-medium">เลือก: {form.rewardName}</p>}
                     </div>
                 ) : (
                     <div><label htmlFor="editRewardAmount" className={labelCls}>จำนวนที่จะได้รับ *</label><input id="editRewardAmount" type="number" value={form.rewardAmount} onChange={e => setForm((f: any) => ({ ...f, rewardAmount: Number(e.target.value) }))} placeholder="เช่น 100" min={0} className={inputCls} /></div>
                 )}
-                <div><label htmlFor="editRewardTier" className={labelCls}>รูปแบบรางวัล *</label><select id="editRewardTier" value={form.tier} onChange={e => setForm((f: any) => ({ ...f, tier: e.target.value }))} className={inputCls}>{TIER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
+                <div><label htmlFor="editRewardTier" className={labelCls}>ระดับรางวัล *</label><select id="editRewardTier" value={form.tier} onChange={e => setForm((f: any) => ({ ...f, tier: e.target.value }))} className={inputCls}>{TIER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
                 <div className="md:col-span-2 mt-4">
                     <label htmlFor="editRewardImageFile" className={labelCls}>รูปภาพรางวัล</label>
-                    <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB และระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติ</p>
+                    <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF ระบบจะครอปตรงกลางและย่ออัตโนมัติให้พอดีกับวงกลมรางวัลก่อนอัปโหลด</p>
                     <input id="editRewardImageFile" ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={e => { const file = e.target.files?.[0]; if (file) { void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); } e.target.value = ""; }} />
                     <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => fileInputRef.current?.click()} className={`w-12 h-12 rounded-lg border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors cursor-pointer ${isDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/20"}`} onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={(e) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); }}>
+                        <button type="button" onClick={() => fileInputRef.current?.click()} className={`w-12 h-12 rounded-full border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors cursor-pointer ${isDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/20"}`} onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={(e) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); }}>
                             {validImageUrl(form.rewardImageUrl) ? <Image src={form.rewardImageUrl} alt="preview" width={48} height={48} className="w-full h-full object-cover pointer-events-none" /> : <ImageIcon className={`w-5 h-5 ${isDragging ? "text-[#145de7]" : "text-muted-foreground/40"}`} />}
                         </button>
                         <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border hover:bg-muted/50 text-xs font-medium transition disabled:opacity-50 flex-shrink-0">
@@ -306,6 +309,11 @@ export default function EditGachaMachinePage() {
     const params = useParams();
     const router = useRouter();
     const id = params.id as string;
+    const cropUrlRef = useRef<string | null>(null);
+    const pendingUploadRef = useRef<{
+        setUrl: (url: string) => void;
+        setUploading: (v: boolean) => void;
+    } | null>(null);
 
     const [machineName, setMachineName] = useState("");
     const [loading, setLoading] = useState(true);
@@ -321,6 +329,9 @@ export default function EditGachaMachinePage() {
     // add reward form
     const [addForm, setAddForm] = useState(defaultAddForm);
     const [addSaving, setAddSaving] = useState(false);
+    const [cropDialogOpen, setCropDialogOpen] = useState(false);
+    const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+    const [cropFileName, setCropFileName] = useState("");
 
     // edit reward modal
     const [editReward, setEditReward] = useState<GachaReward | null>(null);
@@ -377,7 +388,7 @@ export default function EditGachaMachinePage() {
             .catch(() => { /* ignore */ });
     }, [loadMachine, loadRewards]);
 
-    // ── Add reward ──
+    // โ”€โ”€ Add reward โ”€โ”€
     const handleAddReward = async () => {
         const error = validateReward(addForm, rewards);
         if (error) return showError(error);
@@ -399,16 +410,31 @@ export default function EditGachaMachinePage() {
         } catch { showError("เกิดข้อผิดพลาด"); } finally { setAddSaving(false); }
     };
 
-    // ── Upload image (shared) ──
-    const handleImageUpload = async (
+    const clearCropDialog = useCallback(() => {
+        if (cropUrlRef.current) {
+            URL.revokeObjectURL(cropUrlRef.current);
+            cropUrlRef.current = null;
+        }
+        pendingUploadRef.current = null;
+        setCropDialogOpen(false);
+        setCropImageSrc(null);
+        setCropFileName("");
+    }, []);
+
+    const uploadRewardImage = useCallback(async (
         file: File,
         setUrl: (url: string) => void,
         setUploading: (v: boolean) => void
     ) => {
         setUploading(true);
         try {
+            const keepsOriginalFrames = file.type === "image/gif" || file.type === "image/svg+xml";
+            const croppedFile = keepsOriginalFrames
+                ? file
+                : await resizeFileToSquare(file, 512, 0.92);
+            const preparedFile = await compressImage(croppedFile, 4.5 * 1024 * 1024);
             const formData = new FormData();
-            formData.append("file", file);
+            formData.append("file", preparedFile);
             const res = await fetch("/api/admin/gacha-rewards/upload-image", {
                 method: "POST",
                 body: formData,
@@ -422,9 +448,43 @@ export default function EditGachaMachinePage() {
             }
         } catch { showError("เกิดข้อผิดพลาดในการอัปโหลด"); }
         finally { setUploading(false); }
+    }, []);
+
+    // Upload image (shared)
+    const handleImageUpload = async (
+        file: File,
+        setUrl: (url: string) => void,
+        setUploading: (v: boolean) => void
+    ) => {
+        if (file.type === "image/gif" || file.type === "image/svg+xml") {
+            await uploadRewardImage(file, setUrl, setUploading);
+            return;
+        }
+
+        if (cropUrlRef.current) {
+            URL.revokeObjectURL(cropUrlRef.current);
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        cropUrlRef.current = objectUrl;
+        pendingUploadRef.current = { setUrl, setUploading };
+        setCropFileName(file.name);
+        setCropImageSrc(objectUrl);
+        setCropDialogOpen(true);
     };
 
-    // ── Delete reward ──
+    const handleCropConfirm = useCallback(async (croppedFile: File) => {
+        const pendingUpload = pendingUploadRef.current;
+        if (!pendingUpload) {
+            clearCropDialog();
+            return;
+        }
+
+        await uploadRewardImage(croppedFile, pendingUpload.setUrl, pendingUpload.setUploading);
+        clearCropDialog();
+    }, [clearCropDialog, uploadRewardImage]);
+
+    // โ”€โ”€ Delete reward โ”€โ”€
     const handleDeleteReward = async (rewardId: string) => {
         if (!await showDeleteConfirm("รางวัลนี้")) return;
         setDeletingId(rewardId);
@@ -434,7 +494,7 @@ export default function EditGachaMachinePage() {
         } finally { setDeletingId(null); }
     };
 
-    // ── Edit reward ──
+    // โ”€โ”€ Edit reward โ”€โ”€
     const openEdit = (r: GachaReward) => {
         setEditReward(r);
         setEditForm({
@@ -469,7 +529,7 @@ export default function EditGachaMachinePage() {
         } catch { showError("เกิดข้อผิดพลาด"); } finally { setEditSaving(false); }
     };
 
-    // ── Pagination & Sorting ──
+    // โ”€โ”€ Pagination & Sorting โ”€โ”€
     const [sortField, setSortField] = useState<"name" | "probability" | "tier" | null>(null);
     const [sortAsc, setSortAsc] = useState(true);
 
@@ -494,7 +554,7 @@ export default function EditGachaMachinePage() {
     const totalRewardPages = Math.max(1, Math.ceil(sortedRewards.length / rewardPerPage));
     const paginatedRewards = sortedRewards.slice((rewardPage - 1) * rewardPerPage, rewardPage * rewardPerPage);
 
-    // ── Total probability used ──
+    // โ”€โ”€ Total probability used โ”€โ”€
     const totalUsed = Math.round(rewards.reduce((sum, r) => sum + Number(r.probability ?? 0), 0) * 100) / 100;
     const remaining = Math.max(0, Math.round((100 - totalUsed) * 100) / 100);
 
@@ -525,7 +585,7 @@ export default function EditGachaMachinePage() {
                 </div>
             </div>
 
-            {/* ── จัดการรางวัล ── */}
+            {/* โ”€โ”€ จัดการรางวัล โ”€โ”€ */}
             <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
 
                 {/* Section header */}
@@ -554,8 +614,8 @@ export default function EditGachaMachinePage() {
                     </div>
                     <p className="mt-1 text-[11px] text-muted-foreground">
                         {totalUsed >= 100
-                            ? "⛔ ไม่สามารถเพิ่มรางวัลได้อีก (ใช้ครบ 100%)"
-                            : `✅ เหลือโอกาส ${remaining}% สำหรับรางวัลเพิ่มเติม`}
+                            ? "ไม่สามารถเพิ่มรางวัลได้อีก (ใช้ครบ 100%)"
+                            : `เหลือโอกาส ${remaining}% สำหรับรางวัลเพิ่มเติม`}
                     </p>
                 </div>
 
@@ -627,7 +687,7 @@ export default function EditGachaMachinePage() {
                                     className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap cursor-pointer hover:text-foreground select-none group"
                                     onClick={() => handleSort("tier")}
                                 >
-                                    <div className="flex items-center gap-1">รูปแบบ {sortField === "tier" && (sortAsc ? "↑" : "↓")}</div>
+                                    <div className="flex items-center gap-1">ระดับ {sortField === "tier" && (sortAsc ? "↑" : "↓")}</div>
                                 </th>
                                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">แก้ไข</th>
                                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ลบ</th>
@@ -649,9 +709,9 @@ export default function EditGachaMachinePage() {
                                         <td className="px-3 py-2.5 text-muted-foreground">{(rewardPage - 1) * rewardPerPage + i + 1}</td>
                                         <td className="px-3 py-2.5">
                                             {validImageUrl(imgUrl) ? (
-                                                <Image src={imgUrl!} alt={name} width={36} height={36} className="w-9 h-9 rounded-lg object-cover" unoptimized />
+                                                <Image src={imgUrl!} alt={name} width={36} height={36} className="w-9 h-9 rounded-full object-cover" unoptimized />
                                             ) : (
-                                                <div className="w-9 h-9 rounded-lg bg-[#eff6ff] flex items-center justify-center">
+                                                <div className="w-9 h-9 rounded-full bg-[#eff6ff] flex items-center justify-center">
                                                     <LayoutGrid className="w-4 h-4 text-[#145de7]/40" />
                                                 </div>
                                             )}
@@ -698,6 +758,19 @@ export default function EditGachaMachinePage() {
                     </div>
                 </div>
             </div>
+
+            <RewardImageCropDialog
+                open={cropDialogOpen}
+                imageSrc={cropImageSrc}
+                fileName={cropFileName}
+                onClose={clearCropDialog}
+                onConfirm={handleCropConfirm}
+            />
         </div>
     );
 }
+
+
+
+
+

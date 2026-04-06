@@ -14,6 +14,10 @@
     "db:push": "npx drizzle-kit push",
     "db:migrate": "npx drizzle-kit migrate",
     "db:studio": "npx drizzle-kit studio",
+    "db:migrate-sensitive": "node scripts/migrate-sensitive-data.mjs",
+    "storage:migrate-slips": "node scripts/migrate-slip-files.mjs",
+    "storage:cleanup-legacy-slips": "node scripts/cleanup-legacy-slip-files.mjs",
+    "ops:reconcile-commerce": "node scripts/reconcile-commerce.mjs",
     "sonar:scan": "node scripts/sonar/run-sonar.js",
     "sonar:fetch": "node scripts/sonar/fetch-sonar.js",
     "sonar:summary": "node scripts/sonar/summarize-sonar.js"

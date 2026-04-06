@@ -1,23 +1,23 @@
-import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
-import { db, promoCodes } from "@/lib/db";
-import { eq } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
+import { createPromoCode } from "@/lib/features/promo/mutations";
+import { findPromoByCode, listPromoCodes } from "@/lib/features/promo/queries";
+import { serializePromo } from "@/lib/features/promo/shared";
 import { validateBody } from "@/lib/validations/validate";
 import { promoCodeSchema } from "@/lib/validations/promoCode";
 
 export async function GET() {
     const authCheck = await isAdmin();
-    if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    if (!authCheck.success) {
+        return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    }
+
     try {
-        const codes = await db.query.promoCodes.findMany({ orderBy: (t, { desc }) => desc(t.createdAt) });
+        const codes = await listPromoCodes();
+
         return NextResponse.json({
             success: true,
-            data: codes.map((code) => ({
-                ...code, discountValue: Number(code.discountValue),
-                minPurchase: code.minPurchase ? Number(code.minPurchase) : null,
-                maxDiscount: code.maxDiscount ? Number(code.maxDiscount) : null,
-            })),
+            data: codes.map((code) => serializePromo(code)),
         });
     } catch (error) {
         console.error("[PROMO_CODES_GET]", error);
@@ -27,38 +27,32 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     const authCheck = await isAdmin();
-    if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    if (!authCheck.success) {
+        return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    }
+
     try {
         const result = await validateBody(request, promoCodeSchema);
         if ("error" in result) return result.error;
         const body = result.data;
 
-        const existing = await db.query.promoCodes.findFirst({ where: eq(promoCodes.code, body.code.toUpperCase()) });
-        if (existing) return NextResponse.json({ success: false, message: "Promo code already exists" }, { status: 400 });
+        const existing = await findPromoByCode(body.code);
+        if (existing) {
+            return NextResponse.json({ success: false, message: "Promo code already exists" }, { status: 400 });
+        }
 
-        const newId = crypto.randomUUID();
-        const toMySQLDatetime = (d: Date) => d.toISOString().slice(0, 19).replace("T", " ");
-        const now = mysqlNow();
-        const insertValues = {
-            id: newId,
-            code: body.code.toUpperCase(),
-            discountType: body.discountType,
-            discountValue: String(body.discountValue),
-            minPurchase: body.minOrderAmount > 0 ? String(body.minOrderAmount) : null,
-            maxDiscount: null as string | null,
-            usageLimit: body.maxUses > 0 ? body.maxUses : null,
-            usedCount: 0,
-            expiresAt: body.expiresAt ? toMySQLDatetime(new Date(body.expiresAt)) : null,
-            startsAt: toMySQLDatetime(new Date()),
-            isActive: body.isActive,
-            createdAt: now,
-            updatedAt: now,
-        };
-        // ✅ ไม่ต้อง query ซ้ำ — คืนข้อมูลที่ insert โดยตรง
-        await db.insert(promoCodes).values(insertValues);
-        return NextResponse.json({ success: true, message: "Promo code created successfully", data: insertValues });
+        const createdPromo = await createPromoCode(body);
+
+        return NextResponse.json({
+            success: true,
+            message: "Promo code created successfully",
+            data: serializePromo(createdPromo),
+        });
     } catch (error) {
         console.error("Create promo code error:", error);
-        return NextResponse.json({ success: false, message: error instanceof Error ? error.message : "Failed to create promo code" }, { status: 500 });
+        return NextResponse.json({
+            success: false,
+            message: error instanceof Error ? error.message : "Failed to create promo code",
+        }, { status: 500 });
     }
 }

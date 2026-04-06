@@ -6,6 +6,8 @@ import { decrypt, encrypt } from "@/lib/encryption";
 import { splitStock, getDelimiter } from "@/lib/stock";
 import { sendEmail } from "@/lib/mail";
 import { PurchaseReceiptEmail } from "@/components/emails/PurchaseReceiptEmail";
+import { getMaintenanceState } from "@/lib/maintenanceMode";
+import { checkPurchaseRateLimit, getClientIp } from "@/lib/rateLimit";
 
 type ProductRow = {
     id: string;
@@ -223,6 +225,33 @@ async function runCheckoutTransaction(context: PurchaseContext) {
 }
 
 export async function POST(request: NextRequest) {
+    const maintenance = getMaintenanceState("purchase");
+    if (maintenance.enabled) {
+        return NextResponse.json(
+            { success: false, message: maintenance.message },
+            {
+                status: 503,
+                headers: {
+                    "Retry-After": String(maintenance.retryAfterSeconds),
+                },
+            },
+        );
+    }
+
+    const ip = getClientIp(request);
+    const rateLimit = checkPurchaseRateLimit(`${ip}:cart`);
+    if (rateLimit.blocked) {
+        return NextResponse.json(
+            { success: false, message: "คำขอสั่งซื้อถี่เกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง" },
+            {
+                status: 429,
+                headers: {
+                    "Retry-After": String(Math.max(1, Math.ceil((rateLimit.retryAfter ?? 1000) / 1000))),
+                },
+            },
+        );
+    }
+
     try {
         const { productIds } = await request.json();
 

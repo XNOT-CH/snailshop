@@ -1,56 +1,71 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { db, users, promoCodes } from "@/lib/db";
+import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { decrypt, encrypt } from "@/lib/encryption";
 import { splitStock, getDelimiter } from "@/lib/stock";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { sendEmail } from "@/lib/mail";
 import { PurchaseReceiptEmail } from "@/components/emails/PurchaseReceiptEmail";
+import { getMaintenanceState } from "@/lib/maintenanceMode";
+import { checkPurchaseRateLimit, getClientIp } from "@/lib/rateLimit";
+import {
+    calculatePromoDiscountAmount,
+    getPromoValidationMessage,
+    type PromoRecord,
+} from "@/lib/promo";
 
-async function validatePromo(promoCode: string) {
-    const promo = await db.query.promoCodes.findFirst({
-        where: eq(promoCodes.code, promoCode.trim().toUpperCase()),
-    });
+type PurchasePromoData = {
+    id: string;
+    code: string;
+    discountType: string;
+    discountValue: number;
+    maxDiscount: number | null;
+    discountAmount: number;
+};
 
-    if (!promo?.isActive) return null;
+type TransactionProductRow = {
+    id: string;
+    name: string;
+    price: string;
+    discountPrice: string | null;
+    isSold: number;
+    secretData: string;
+    stockSeparator: string | null;
+    orderId: string | null;
+    autoDeleteAfterSale?: number | null;
+    category?: string | null;
+};
 
-    const now = new Date();
-    const startsAt = new Date(promo.startsAt);
-    const expiresAt = promo.expiresAt ? new Date(promo.expiresAt) : null;
-    const withinLimit = promo.usageLimit === null || promo.usedCount < promo.usageLimit;
+type AuthUser = {
+    id: string;
+    name: string | null;
+    email: string | null;
+    creditBalance: string;
+};
 
-    if (now >= startsAt && (expiresAt === null || now <= expiresAt) && withinLimit) {
-        return {
-            id: promo.id,
-            discountType: promo.discountType,
-            discountValue: Number(promo.discountValue),
-            maxDiscount: promo.maxDiscount ? Number(promo.maxDiscount) : null,
-        };
+async function getAuthUser() {
+    const session = await auth();
+    const userId = session?.user?.id;
+    if (!userId) {
+        return { error: "กรุณาเข้าสู่ระบบก่อน", status: 401 } as const;
     }
-    return null;
-}
 
-function calculateDiscount(totalPrice: number, promoData: { discountType: string; discountValue: number; maxDiscount: number | null; } | null) {
-    if (!promoData) return totalPrice;
-    let discountAmount = 0;
-    if (promoData.discountType === "PERCENTAGE") {
-        discountAmount = (totalPrice * promoData.discountValue) / 100;
-        if (promoData.maxDiscount !== null && discountAmount > promoData.maxDiscount) {
-            discountAmount = promoData.maxDiscount;
-        }
-    } else {
-        discountAmount = promoData.discountValue;
+    const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    if (!user) {
+        return { error: "ไม่พบผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่", status: 404 } as const;
     }
-    const finalPrice = Math.max(0, totalPrice - discountAmount);
-    return Math.round(finalPrice * 100) / 100;
+
+    return { user } as const;
 }
 
 function processStock(decryptedData: string, separatorType: string, qty: number) {
     const stockItems = splitStock(decryptedData, separatorType);
 
     if (stockItems.length === 0) throw new Error("สินค้าหมดสต็อก");
-    if (stockItems.length < qty) throw new Error(`สต็อกไม่เพียงพอ (เหลือ ${stockItems.length} รายการ)`);
+    if (stockItems.length < qty) {
+        throw new Error(`สต็อกไม่เพียงพอ (เหลือ ${stockItems.length} รายการ)`);
+    }
 
     const givenItems = stockItems.slice(0, qty);
     const remainingItems = stockItems.slice(qty);
@@ -63,68 +78,131 @@ function processStock(decryptedData: string, separatorType: string, qty: number)
     };
 }
 
-async function getAuthUser() {
-    const session = await auth();
-    const userId = session?.user?.id;
-    if (!userId) return { error: "กรุณาเข้าสู่ระบบก่อน", status: 401 };
-    const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
-    if (!user) return { error: "ไม่พบผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่", status: 404 };
-    return { user };
-}
-
-async function sendPurchaseReceipt(email: string | null, name: string | null, result: { finalPrice: number, product: { name: string } } | undefined) {
+function sendPurchaseReceipt(
+    email: string | null,
+    name: string | null,
+    result: { finalPrice: number; product: { name: string } } | undefined
+) {
     if (!email || !result) {
-        console.log("No user email found to send receipt");
         return;
     }
-    console.log("Sending receipt to:", email);
-    try {
-        const emailResult = await sendEmail({
-            to: email,
-            subject: `ใบเสร็จรับเงิน SnailShop - สั่งซื้อสินค้า 1 รายการ`,
-            react: PurchaseReceiptEmail({
-                userName: name || "ลูกค้า",
-                orderCount: 1,
-                totalTHB: result.finalPrice,
-                totalPoints: 0,
-                items: [
-                    {
-                        productName: result.product.name,
-                        price: result.finalPrice,
-                        currency: "THB" // Assuming THB for single purchases
-                    }
-                ],
-            }),
-        });
-        console.log("Email Result:", emailResult);
-    } catch (e) {
-        console.error("Failed to send email receipt:", e);
-    }
+
+    return sendEmail({
+        to: email,
+        subject: `ใบเสร็จรับเงิน SnailShop - สั่งซื้อสินค้า 1 รายการ`,
+        react: PurchaseReceiptEmail({
+            userName: name || "ลูกค้า",
+            orderCount: 1,
+            totalTHB: result.finalPrice,
+            totalPoints: 0,
+            items: [
+                {
+                    productName: result.product.name,
+                    price: result.finalPrice,
+                    currency: "THB",
+                },
+            ],
+        }),
+    }).catch((error) => {
+        console.error("Failed to send email receipt:", error);
+    });
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function executePurchaseTransaction(conn: any, productId: string, qty: number, user: any, promoData: any) {
+async function validatePromoInTransaction(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    conn: any,
+    promoCode: string,
+    userId: string,
+    totalPrice: number,
+    productCategory: string | null | undefined
+): Promise<PurchasePromoData> {
+    const [promoRows] = await conn.execute(
+        "SELECT * FROM PromoCode WHERE code = ? FOR UPDATE",
+        [promoCode.trim().toUpperCase()]
+    );
+    const promo = (promoRows as PromoRecord[])[0];
+
+    if (!promo) {
+        throw new Error("โค้ดส่วนลดไม่ถูกต้อง");
+    }
+
+    let completedOrderExists = false;
+    if (promo.isNewUserOnly) {
+        const [orderRows] = await conn.execute(
+            "SELECT id FROM `Order` WHERE userId = ? AND status = 'COMPLETED' LIMIT 1",
+            [userId]
+        );
+        completedOrderExists = Array.isArray(orderRows) && orderRows.length > 0;
+    }
+
+    let userPromoUsageCount = 0;
+    if (promo.usagePerUser !== null && promo.usagePerUser !== undefined) {
+        const [usageRows] = await conn.execute(
+            "SELECT COUNT(*) AS count FROM PromoUsage WHERE promoCodeId = ? AND userId = ? AND status <> 'REVERTED'",
+            [promo.id, userId]
+        );
+        userPromoUsageCount = Number((usageRows as Array<{ count: number | string }>)[0]?.count ?? 0);
+    }
+
+    const errorMessage = getPromoValidationMessage(promo, {
+        totalPrice,
+        productCategory,
+        isAuthenticated: true,
+        hasCompletedOrder: completedOrderExists,
+        userPromoUsageCount,
+    });
+
+    if (errorMessage) {
+        throw new Error(errorMessage);
+    }
+
+    const { discountAmount } = calculatePromoDiscountAmount(promo, totalPrice);
+
+    return {
+        id: promo.id,
+        code: promo.code,
+        discountType: promo.discountType,
+        discountValue: Number(promo.discountValue),
+        maxDiscount: promo.maxDiscount ? Number(promo.maxDiscount) : null,
+        discountAmount: discountAmount ?? 0,
+    };
+}
+
+async function executePurchaseTransaction(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    conn: any,
+    productId: string,
+    qty: number,
+    user: AuthUser,
+    promoCode?: string
+) {
     try {
         await conn.beginTransaction();
 
-        const [product] = await conn.execute(
+        const [productRows] = await conn.execute(
             "SELECT * FROM Product WHERE id = ? FOR UPDATE",
             [productId]
         );
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const prod = (product as any[])[0];
+        const prod = (productRows as TransactionProductRow[])[0];
 
         if (!prod) throw new Error("ไม่พบสินค้านี้ในระบบ");
         if (prod.isSold) throw new Error("สินค้านี้ถูกขายไปแล้ว");
 
         const unitPrice = prod.discountPrice ? Number(prod.discountPrice) : Number(prod.price);
+        const baseTotalPrice = unitPrice * qty;
+        const promoData = promoCode
+            ? await validatePromoInTransaction(conn, promoCode, user.id, baseTotalPrice, prod.category)
+            : null;
+        const totalPrice = Math.max(
+            0,
+            Math.round((baseTotalPrice - (promoData?.discountAmount ?? 0)) * 100) / 100
+        );
         const userBalance = Number(user.creditBalance);
-        let totalPrice = unitPrice * qty;
-
-        totalPrice = calculateDiscount(totalPrice, promoData);
 
         if (userBalance < totalPrice) {
-            throw new Error(`เครดิตไม่เพียงพอ (ต้องการ ฿${totalPrice.toLocaleString()} แต่มี ฿${userBalance.toLocaleString()})`);
+            throw new Error(
+                `เครดิตไม่เพียงพอ (ต้องการ ฿${totalPrice.toLocaleString()} แต่มี ฿${userBalance.toLocaleString()})`
+            );
         }
 
         const decryptedData = decrypt(prod.secretData || "");
@@ -142,7 +220,6 @@ async function executePurchaseTransaction(conn: any, productId: string, qty: num
             [totalPrice, user.id]
         );
 
-        // Calculate scheduledDeleteAt if autoDeleteAfterSale is configured
         let scheduledDeleteAt: string | null = null;
         if (isLastStock && prod.autoDeleteAfterSale) {
             const deleteAt = new Date();
@@ -160,19 +237,63 @@ async function executePurchaseTransaction(conn: any, productId: string, qty: num
                 "UPDATE PromoCode SET usedCount = usedCount + 1 WHERE id = ?",
                 [promoData.id]
             );
+            await conn.execute(
+                "INSERT INTO PromoUsage (id, promoCodeId, userId, orderId, promoCode, discountAmount, status, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, 'COMPLETED', NOW(), NOW())",
+                [
+                    crypto.randomUUID(),
+                    promoData.id,
+                    user.id,
+                    orderId,
+                    promoData.code,
+                    promoData.discountAmount.toFixed(2),
+                ]
+            );
         }
 
         await conn.commit();
-        return { order: { id: orderId }, product: prod, finalPrice: totalPrice };
-    } catch (txError) {
+
+        return {
+            order: { id: orderId },
+            product: prod,
+            finalPrice: totalPrice,
+            promoData,
+        };
+    } catch (error) {
         await conn.rollback();
-        throw txError;
+        throw error;
     } finally {
         conn.release();
     }
 }
 
 export async function POST(request: NextRequest) {
+    const maintenance = getMaintenanceState("purchase");
+    if (maintenance.enabled) {
+        return NextResponse.json(
+            { success: false, message: maintenance.message },
+            {
+                status: 503,
+                headers: {
+                    "Retry-After": String(maintenance.retryAfterSeconds),
+                },
+            },
+        );
+    }
+
+    const ip = getClientIp(request);
+    const rateLimit = checkPurchaseRateLimit(ip);
+    if (rateLimit.blocked) {
+        return NextResponse.json(
+            { success: false, message: "คำขอซื้อถี่เกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง" },
+            {
+                status: 429,
+                headers: {
+                    "Retry-After": String(Math.max(1, Math.ceil((rateLimit.retryAfter ?? 1000) / 1000))),
+                },
+            },
+        );
+    }
+
     try {
         const { productId, quantity, promoCode } = await request.json();
 
@@ -186,54 +307,56 @@ export async function POST(request: NextRequest) {
         }
 
         const authRes = await getAuthUser();
-        if ('error' in authRes) return NextResponse.json({ success: false, message: authRes.error }, { status: authRes.status });
+        if ("error" in authRes) {
+            return NextResponse.json({ success: false, message: authRes.error }, { status: authRes.status });
+        }
         const { user } = authRes;
 
-        // Validate promo code if provided
-        let promoData = null;
-        if (promoCode && typeof promoCode === "string") {
-            promoData = await validatePromo(promoCode);
-        }
-
-        // Drizzle mysql2 doesn't have built-in transaction method like Prisma,
-        // so we use the underlying pool connection for a manual transaction
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const conn = await (db as any).$client.getConnection();
-        // Execute transaction
-        const result = await executePurchaseTransaction(conn, productId, qty, user, promoData);
+        const result = await executePurchaseTransaction(
+            conn,
+            productId,
+            qty,
+            user,
+            typeof promoCode === "string" ? promoCode : undefined
+        );
 
         await auditFromRequest(request, {
             action: AUDIT_ACTIONS.PURCHASE,
             userId: user.id,
             resource: "Order",
-            resourceId: result?.order.id || "unknown",
-            resourceName: result?.product.name || "unknown",
+            resourceId: result.order.id,
+            resourceName: result.product.name,
             details: {
-                resourceName: result?.product.name,
+                resourceName: result.product.name,
                 productId,
-                orderId: result?.order.id,
-                promoCode: promoData ? promoCode.trim().toUpperCase() : undefined,
-                unitPrice: result?.product.discountPrice ? Number(result.product.discountPrice) : Number(result?.product.price || 0),
+                orderId: result.order.id,
+                promoCode: result.promoData?.code,
+                unitPrice: result.product.discountPrice
+                    ? Number(result.product.discountPrice)
+                    : Number(result.product.price || 0),
                 quantity: qty,
-                totalPrice: result?.finalPrice || 0,
+                totalPrice: result.finalPrice,
             },
         });
 
-        // Send an email receipt asynchronously
         void sendPurchaseReceipt(user.email, user.name, result);
 
         return NextResponse.json({
             success: true,
             message: "ซื้อสำเร็จ! 🎉",
-            orderId: result?.order.id,
-            productName: result?.product.name,
+            orderId: result.order.id,
+            productName: result.product.name,
         });
     } catch (error) {
         console.error("Purchase error:", error);
         return NextResponse.json(
-            { success: false, message: error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการซื้อ" },
+            {
+                success: false,
+                message: error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการซื้อ",
+            },
             { status: 400 }
         );
     }
 }
-

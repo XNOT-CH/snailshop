@@ -8,6 +8,7 @@ import { showError } from "@/lib/swal";
 import { GachaResultModal } from "@/components/GachaResultModal";
 import { GachaRecentFeed } from "@/components/GachaRecentFeed";
 import { DropRateModal } from "@/components/DropRateModal";
+import { shouldBypassImageOptimization } from "@/lib/imageUrl";
 import {
     buildGrid,
     findTileIndex,
@@ -26,7 +27,7 @@ const tierRing: Record<TileType, string> = {
     common: "ring-1 ring-amber-400/80 shadow-[0_0_8px_rgba(251,191,36,0.3)]",
     rare: "ring-2 ring-emerald-400/80 shadow-[0_0_12px_rgba(52,211,153,0.4)]",
     epic: "ring-2 ring-violet-500/90 shadow-[0_0_15px_rgba(139,92,246,0.6)]",
-    legendary: "ring-[3px] ring-red-500 shadow-[0_0_20px_rgba(239,68,68,0.8)] animate-pulse",
+    legendary: "ring-[3px] ring-red-500 shadow-[0_0_20px_rgba(239,68,68,0.8)]",
 };
 
 const tierDot: Record<string, string> = {
@@ -98,8 +99,16 @@ function TileImage({ imageUrl, name, fallback }: { imageUrl: string; name: strin
     const [err, setErr] = useState(false);
     if (err) return <>{fallback}</>;
     return (
-        <div className="absolute inset-0 bg-zinc-950 flex items-center justify-center">
-            <Image src={imageUrl} alt={name} fill sizes="64px" className="object-contain" onError={() => setErr(true)} />
+        <div className="absolute inset-0 rounded-full overflow-hidden bg-transparent flex items-center justify-center">
+            <Image
+                src={imageUrl}
+                alt={name}
+                fill
+                sizes="64px"
+                className="object-cover object-center"
+                unoptimized={shouldBypassImageOptimization(imageUrl)}
+                onError={() => setErr(true)}
+            />
         </div>
     );
 }
@@ -109,9 +118,13 @@ interface GachaRhombusProps {
     settings: { isEnabled: boolean; costType: string; costAmount: number; dailySpinLimit: number };
     userBalance?: number;
     machineId?: string;
+    maintenance?: {
+        enabled: boolean;
+        message: string;
+    };
 }
 
-export function GachaRhombus({ products, settings, userBalance = 0, machineId }: GachaRhombusProps) {
+export function GachaRhombus({ products, settings, userBalance = 0, machineId, maintenance }: GachaRhombusProps) {
     const tiles = useMemo(() => buildGrid(products), [products]);
 
     const [phase, setPhase] = useState<Phase>("idle");
@@ -126,9 +139,20 @@ export function GachaRhombus({ products, settings, userBalance = 0, machineId }:
     const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
     const [flipKey, setFlipKey] = useState<Record<number, number>>({});
     const [showDropRate, setShowDropRate] = useState(false);
+    const [auraTiles, setAuraTiles] = useState<number[]>([]);
+    const [selectedLAuraTiles, setSelectedLAuraTiles] = useState<number[]>([]);
+    const [balance, setBalance] = useState(userBalance);
 
     const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     useEffect(() => () => { if (intervalRef.current) clearTimeout(intervalRef.current); }, []);
+    useEffect(() => { setBalance(userBalance); }, [userBalance]);
+
+    const currencyWord = settings.costType === "CREDIT"
+        ? "เครดิต"
+        : settings.costType === "POINT"
+            ? "พอยต์"
+            : "เพชร";
+    const isBlocked = !settings.isEnabled || maintenance?.enabled;
 
     const lSelectorIndices = useMemo(
         () => tiles.map((t, i) => (t.type === "selector" && t.side === "left" ? i : -1)).filter(i => i >= 0),
@@ -151,8 +175,15 @@ export function GachaRhombus({ products, settings, userBalance = 0, machineId }:
                     ? tiles.findIndex(t => t.type === "selector" && t.label === chosenLabel)
                     : idx[step % idx.length];
                 setHighlightedTile(tileIdx >= 0 ? tileIdx : idx[0]);
+                // Compute aura path for current selector
+                const currentTile = tiles[tileIdx >= 0 ? tileIdx : idx[0]];
+                if (currentTile?.label) {
+                    const pathCoords = SELECTOR_PATHS[currentTile.label] || [];
+                    const pathIndices = pathCoords.map(([r, c]) => findTileIndex(tiles, r, c)).filter(i => i >= 0);
+                    setAuraTiles([tileIdx >= 0 ? tileIdx : idx[0], ...pathIndices]);
+                }
                 step++;
-                if (isLast) { setTimeout(onDone, 400); return; }
+                if (isLast) { setAuraTiles([]); setTimeout(onDone, 400); return; }
                 const delay = step < 4 ? 280 : step < 8 ? 160 : 200 + (step - 8) * 30;
                 intervalRef.current = setTimeout(flash, delay);
             };
@@ -200,7 +231,7 @@ export function GachaRhombus({ products, settings, userBalance = 0, machineId }:
     const reset = () => {
         setResultProduct(null); setPhase("idle"); setHighlightedTile(null);
         setSelectedLLabel(null); setSelectedRLabel(null);
-        setLPathTiles([]); setRPathTiles([]);
+        setLPathTiles([]); setRPathTiles([]); setAuraTiles([]); setSelectedLAuraTiles([]);
     };
 
     const handleFirstSpin = useCallback(async () => {
@@ -213,9 +244,16 @@ export function GachaRhombus({ products, settings, userBalance = 0, machineId }:
             if (!data.success) { showError(data.message || "สุ่มไม่สำเร็จ"); reset(); return; }
             const lLabel = data.data?.lLabel;
             if (!lLabel) { showError("ข้อมูลสุ่มไม่ครบถ้วน"); reset(); return; }
-            runRoulette("L", lLabel, () => { setSelectedLLabel(lLabel); setPhase("waitSpin2"); });
+            runRoulette("L", lLabel, () => {
+                setSelectedLLabel(lLabel);
+                const pathCoords = SELECTOR_PATHS[lLabel] || [];
+                const selectorIdx = tiles.findIndex(t => t.type === "selector" && t.label === lLabel);
+                const pathIndices = pathCoords.map(([r, c]) => findTileIndex(tiles, r, c)).filter(i => i >= 0);
+                setSelectedLAuraTiles(selectorIdx >= 0 ? [selectorIdx, ...pathIndices] : pathIndices);
+                setPhase("waitSpin2");
+            });
         } catch { showError("เกิดข้อผิดพลาดในการสุ่ม"); reset(); }
-    }, [callRollApi, phase, runRoulette]);
+    }, [callRollApi, phase, runRoulette, tiles]);
 
     const handleSecondSpin = useCallback(async () => {
         if (phase !== "waitSpin2") return;
@@ -224,6 +262,15 @@ export function GachaRhombus({ products, settings, userBalance = 0, machineId }:
             const data = await callRollApi(2);
             if (!data.success) { showError(data.message || "สุ่มไม่สำเร็จ"); reset(); return; }
             const { rLabel, product } = data.data ?? {};
+            if (settings.costAmount > 0) {
+                setBalance((prev) => Math.max(0, prev - settings.costAmount));
+            }
+            if (product?.rewardType === "CREDIT" && product.rewardAmount) {
+                setBalance((prev) => prev + product.rewardAmount);
+            }
+            if (product?.rewardType === "POINT" && product.rewardAmount) {
+                setBalance((prev) => prev + product.rewardAmount);
+            }
             if (!rLabel || !product) { showError("ข้อมูลสุ่มไม่ครบถ้วน"); reset(); return; }
             runRoulette("R", rLabel, () => {
                 setSelectedRLabel(rLabel);
@@ -231,7 +278,7 @@ export function GachaRhombus({ products, settings, userBalance = 0, machineId }:
                 revealIntersection(selectedLLabel!, rLabel, product);
             });
         } catch { showError("เกิดข้อผิดพลาดในการสุ่ม"); reset(); }
-    }, [callRollApi, phase, selectedLLabel, runRoulette, revealIntersection]);
+    }, [callRollApi, phase, selectedLLabel, runRoulette, revealIntersection, settings.costAmount]);
 
     // ── Layout ─────────────────────────────────────────────────────────────────
     const spacingX = 110, spacingY = 44, tileSize = 52;
@@ -297,10 +344,13 @@ export function GachaRhombus({ products, settings, userBalance = 0, machineId }:
                             const onL = lPathTiles.includes(index);
                             const onR = rPathTiles.includes(index);
                             const onBoth = onL && onR;
+                            const onAura = auraTiles.includes(index);
+                            const onSelectedLPath = selectedLAuraTiles.includes(index);
 
                             const fade =
-                                (phase === "rolling1" && (isItem || tile.side === "right")) ||
-                                (phase === "rolling2" && (isItem || tile.side === "left")) ||
+                                (phase === "rolling1" && (isItem || tile.side === "right") && !onAura) ||
+                                (phase === "waitSpin2" && isItem && !onSelectedLPath) ||
+                                (phase === "rolling2" && (isItem || tile.side === "left") && !onSelectedLPath && !onAura) ||
                                 (phase === "revealing" && isItem && !onL && !onR);
 
                             return (
@@ -320,8 +370,23 @@ export function GachaRhombus({ products, settings, userBalance = 0, machineId }:
                                             isRSel ? "ring-2 ring-emerald-400" : "",
                                             onL && !onBoth && phase === "revealing" ? "ring-2 ring-violet-400/50" : "",
                                             onR && !onBoth && phase === "revealing" ? "ring-2 ring-emerald-400/50" : "",
-                                            fade ? "opacity-10 scale-90" : "",
+                                            fade ? "opacity-55 grayscale" : "",
                                         ].join(" ")}
+                                        style={(() => {
+                                            if (auraTiles.includes(index) && !isHL) {
+                                                return {
+                                                    boxShadow: "0 0 10px 3px rgba(0,180,216,0.18), 0 0 18px 6px rgba(0,180,216,0.08)",
+                                                    filter: "brightness(1.12)",
+                                                };
+                                            }
+                                            if (selectedLAuraTiles.includes(index) && (phase === "waitSpin2" || phase === "rolling2")) {
+                                                return {
+                                                    boxShadow: "0 0 12px 4px rgba(0,180,216,0.22), 0 0 20px 7px rgba(0,180,216,0.1)",
+                                                    filter: "brightness(1.1)",
+                                                };
+                                            }
+                                            return {};
+                                        })()}
                                     >
                                         {tile.type === "start" && (
                                             <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
@@ -378,6 +443,12 @@ export function GachaRhombus({ products, settings, userBalance = 0, machineId }:
 
             {/* ── Controls ── */}
             <div className="flex flex-col gap-4 w-full">
+                {maintenance?.enabled && (
+                    <div className="w-full rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-center shadow-sm">
+                        <p className="text-sm font-semibold text-amber-900">ระบบกาชากำลังปิดปรับปรุงชั่วคราว</p>
+                        <p className="mt-1 text-xs text-amber-800/90">{maintenance.message}</p>
+                    </div>
+                )}
 
                 {/* Status line */}
                 <div className="min-h-[20px]">
@@ -407,25 +478,25 @@ export function GachaRhombus({ products, settings, userBalance = 0, machineId }:
                 <div className="w-full flex flex-col items-center mt-3">
                     <div className="text-center mb-4 space-y-1">
                         <h2 className="text-[18px] md:text-[22px] font-bold text-[#145de7]">
-                            สุ่มรางวัลครั้งละ {settings.costAmount.toLocaleString()} {settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}
+                            สุ่มรางวัลครั้งละ {settings.costAmount.toLocaleString()} {currencyWord}
                         </h2>
                         <p className="text-[13px] md:text-[14px] font-medium text-gray-800 dark:text-gray-200">
-                            * เมื่อกดสุ่มแล้วไม่สามารถขอคืน{settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}ได้ในทุกกรณี *
+                            * เมื่อกดสุ่มแล้วไม่สามารถขอคืน{currencyWord}ได้ในทุกกรณี *
                         </p>
                     </div>
 
                     <div className="w-full rounded-xl border border-[#bcd6ff] bg-[#d0e3ff]/70 px-4 py-3 text-center text-sm font-bold text-[#145de7] dark:border-[#2b4f8f] dark:bg-[#d0e3ff]/10 dark:text-[#7ba2f5] mb-5">
-                        ยอด{settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}คงเหลือ:{" "}
-                        {userBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
-                        {settings.costType === "CREDIT" ? "เครดิต" : "เพชร"}{" "}
+                        ยอด{currencyWord}คงเหลือ:{" "}
+                        {balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}{" "}
+                        {currencyWord}{" "}
                         <span className="font-normal opacity-90">(ตรวจยอดล่าสุดก่อนกดสุ่มได้)</span>
                     </div>
 
                     <div className="w-full">
                         {phase === "idle" && (
-                            <button onClick={() => void handleFirstSpin()} disabled={!settings.isEnabled}
+                            <button onClick={() => void handleFirstSpin()} disabled={isBlocked}
                                 className="w-full py-3.5 md:py-4 rounded-xl bg-[#158e4d] hover:bg-[#117640] text-white font-bold text-[15px] md:text-base shadow-[0_16px_32px_-18px_rgba(21,142,77,0.85)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                                <Gamepad2 className="h-5 w-5" /> สุ่ม
+                                <Gamepad2 className="h-5 w-5" /> {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : "สุ่ม"}
                             </button>
                         )}
                         {(phase === "rolling1" || phase === "rolling2" || phase === "revealing") && (
@@ -436,8 +507,8 @@ export function GachaRhombus({ products, settings, userBalance = 0, machineId }:
                             </button>
                         )}
                         {phase === "waitSpin2" && (
-                            <button onClick={() => void handleSecondSpin()}
-                                className="w-full py-3.5 md:py-4 rounded-xl bg-[#158e4d] hover:bg-[#117640] text-white font-bold text-[15px] md:text-base shadow-[0_16px_32px_-18px_rgba(21,142,77,0.85)] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                            <button onClick={() => void handleSecondSpin()} disabled={isBlocked}
+                                className="w-full py-3.5 md:py-4 rounded-xl bg-[#158e4d] hover:bg-[#117640] text-white font-bold text-[15px] md:text-base shadow-[0_16px_32px_-18px_rgba(21,142,77,0.85)] active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
                                 <Gamepad2 className="h-5 w-5" /> สุ่มครั้งที่ 2
                             </button>
                         )}

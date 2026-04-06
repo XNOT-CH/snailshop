@@ -12,8 +12,37 @@ export function generateSessionToken(): string {
     return crypto.randomBytes(64).toString("hex");
 }
 
+function hashSessionToken(token: string): string {
+    return crypto.createHash("sha256").update(token).digest("hex");
+}
+
+async function findSessionByToken(token: string) {
+    const hashedToken = hashSessionToken(token);
+    const hashedSession = await db.query.sessions.findFirst({
+        where: eq(sessions.token, hashedToken),
+    });
+
+    if (hashedSession) {
+        return hashedSession;
+    }
+
+    return db.query.sessions.findFirst({
+        where: eq(sessions.token, token),
+    });
+}
+
+async function deleteSessionByToken(token: string) {
+    const hashedToken = hashSessionToken(token);
+    await db.delete(sessions).where(eq(sessions.token, hashedToken));
+
+    if (hashedToken !== token) {
+        await db.delete(sessions).where(eq(sessions.token, token));
+    }
+}
+
 export async function createSession(userId: string, rememberMe: boolean = false): Promise<string> {
     const token = generateSessionToken();
+    const hashedToken = hashSessionToken(token);
     const expiresAt = new Date();
 
     if (rememberMe) {
@@ -23,7 +52,7 @@ export async function createSession(userId: string, rememberMe: boolean = false)
     }
 
     await db.insert(sessions).values({
-        token,
+        token: hashedToken,
         userId,
         expiresAt: expiresAt.toISOString().slice(0, 19).replace("T", " "),
         lastActivity: new Date().toISOString().slice(0, 19).replace("T", " "),
@@ -50,9 +79,7 @@ export async function validateSession(): Promise<string | null> {
 
     if (!token) return null;
 
-    const session = await db.query.sessions.findFirst({
-        where: eq(sessions.token, token),
-    });
+    const session = await findSessionByToken(token);
 
     if (!session) return null;
 
@@ -71,7 +98,7 @@ export async function validateSession(): Promise<string | null> {
 
     await db.update(sessions)
         .set({ lastActivity: new Date().toISOString().slice(0, 19).replace("T", " ") })
-        .where(eq(sessions.token, token));
+        .where(eq(sessions.token, session.token));
 
     return session.userId;
 }
@@ -89,7 +116,7 @@ export async function destroySession(token?: string): Promise<void> {
     }
 
     if (token) {
-        await db.delete(sessions).where(eq(sessions.token, token));
+        await deleteSessionByToken(token);
     }
 
     cookieStore.delete(SESSION_COOKIE_NAME);
@@ -107,8 +134,11 @@ export async function getCurrentSession() {
 
     if (!token) return null;
 
+    const session = await findSessionByToken(token);
+    if (!session) return null;
+
     return db.query.sessions.findFirst({
-        where: eq(sessions.token, token),
+        where: eq(sessions.token, session.token),
         with: {
             user: {
                 columns: { id: true, username: true, role: true },

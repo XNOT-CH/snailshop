@@ -35,9 +35,55 @@ const missingRecommended = recommendedVars.filter((name) => !process.env[name]?.
 
 const errors = [];
 
+function parseEncryptionKey(rawKey) {
+  if (/^[0-9a-f]{64}$/i.test(rawKey)) {
+    return Buffer.from(rawKey, "hex");
+  }
+
+  if (Buffer.byteLength(rawKey, "utf8") === 32) {
+    return Buffer.from(rawKey, "utf8");
+  }
+
+  const base64Buffer = Buffer.from(rawKey, "base64");
+  if (base64Buffer.length === 32) {
+    return base64Buffer;
+  }
+
+  throw new Error("ENCRYPTION_KEY must be 32 bytes (utf8), 64 hex chars, or base64 for 32 bytes.");
+}
+
+function validateKeyList(rawKeys) {
+  for (const rawEntry of rawKeys.split(";")) {
+    const entry = rawEntry.trim();
+    if (!entry) {
+      continue;
+    }
+
+    const separatorIndex = entry.indexOf("=");
+    if (separatorIndex <= 0 || separatorIndex === entry.length - 1) {
+      throw new Error("ENCRYPTION_PREVIOUS_KEYS entries must look like kid=key.");
+    }
+
+    parseEncryptionKey(entry.slice(separatorIndex + 1).trim());
+  }
+}
+
 const encryptionKey = process.env.ENCRYPTION_KEY;
-if (encryptionKey && Buffer.byteLength(encryptionKey, "utf8") !== 32) {
-  errors.push("ENCRYPTION_KEY must be exactly 32 bytes.");
+if (encryptionKey) {
+  try {
+    parseEncryptionKey(encryptionKey);
+  } catch (error) {
+    errors.push(error instanceof Error ? error.message : "ENCRYPTION_KEY is invalid.");
+  }
+}
+
+const previousKeys = process.env.ENCRYPTION_PREVIOUS_KEYS;
+if (previousKeys) {
+  try {
+    validateKeyList(previousKeys);
+  } catch (error) {
+    errors.push(error instanceof Error ? error.message : "ENCRYPTION_PREVIOUS_KEYS is invalid.");
+  }
 }
 
 const csrfSecret = process.env.CSRF_SECRET;

@@ -2,6 +2,9 @@ import { and, asc, count, desc, eq, gte, like, lte, or, sql } from "drizzle-orm"
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db, topups, users } from "@/lib/db";
+import { maskTransactionRef } from "@/lib/dataProtection";
+import { decryptTopupSensitiveFields } from "@/lib/sensitiveData";
+import { buildAdminSlipImageUrl } from "@/lib/slipStorage";
 
 export const dynamic = "force-dynamic";
 
@@ -202,19 +205,22 @@ function buildSummaryResponse({
                 amount: data.amount,
                 color: getBankColor(name),
             })),
-            records: paginatedRecords.map((topup) => ({
-                id: topup.id,
-                username: topup.username || topup.user?.username || "",
-                amount: Number(topup.amount),
-                time: typeof topup.createdAt === "string"
-                    ? topup.createdAt
-                    : new Date(topup.createdAt).toISOString(),
-                status: topup.status,
-                senderBank: topup.senderBank,
-                proofImage: topup.proofImage ?? null,
-                transactionRef: topup.transactionRef ?? null,
-                rejectReason: topup.rejectReason ?? null,
-            })),
+            records: paginatedRecords.map((topup) => {
+                const decrypted = decryptTopupSensitiveFields(topup);
+                return {
+                    id: topup.id,
+                    username: topup.username || topup.user?.username || "",
+                    amount: Number(topup.amount),
+                    time: typeof topup.createdAt === "string"
+                        ? topup.createdAt
+                        : new Date(topup.createdAt).toISOString(),
+                    status: topup.status,
+                    senderBank: topup.senderBank,
+                    proofImage: buildAdminSlipImageUrl(String(topup.id), Boolean(decrypted.proofImage)),
+                    transactionRef: maskTransactionRef(topup.transactionRef),
+                    rejectReason: topup.rejectReason ?? null,
+                };
+            }),
             recordsPagination: {
                 page: validPage,
                 pageSize,
@@ -403,6 +409,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json(buildSummaryResponse({
             rows: aggregateRows.map((topup) => {
                 const record = recordMap.get(topup.id);
+                const decryptedRecord = record ? decryptTopupSensitiveFields(record) : null;
                 return {
                     id: topup.id,
                     amount: topup.amount,
@@ -411,8 +418,8 @@ export async function GET(request: NextRequest) {
                     senderBank: topup.senderBank,
                     userId: topup.userId,
                     username: record?.username ?? null,
-                    proofImage: record?.proofImage ?? null,
-                    transactionRef: record?.transactionRef ?? null,
+                    proofImage: buildAdminSlipImageUrl(topup.id, Boolean(decryptedRecord?.proofImage)),
+                    transactionRef: maskTransactionRef(record?.transactionRef),
                     rejectReason: record?.rejectReason ?? null,
                 };
             }),

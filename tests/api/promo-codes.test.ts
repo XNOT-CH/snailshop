@@ -1,16 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+vi.mock("@/auth", () => ({ auth: vi.fn().mockResolvedValue(null) }));
 vi.mock("@/lib/db", () => ({
   db: {
+    select: vi.fn(),
     query: {
       promoCodes: { findFirst: vi.fn() },
+      orders: { findFirst: vi.fn() },
     },
   },
   promoCodes: { code: "code" },
+  orders: { userId: "userId", status: "status" },
+  promoUsages: { promoCodeId: "promoCodeId", userId: "userId", status: "status" },
 }));
 
 vi.mock("drizzle-orm", () => ({ eq: vi.fn() }));
+vi.mock("@/lib/rateLimit", () => ({
+  checkPromoValidationRateLimit: vi.fn(() => ({ blocked: false, remainingAttempts: 5 })),
+  recordFailedPromoValidation: vi.fn(),
+  clearPromoValidationAttempts: vi.fn(),
+  getClientIp: vi.fn(() => "127.0.0.1"),
+}));
 
 import { db } from "@/lib/db";
 

@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { GachaGridMachine } from "@/components/GachaGridMachine";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { buildPageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +49,7 @@ export default async function GachaGridPage({
     params: Promise<{ machineId: string }>;
 }>) {
     const { machineId } = await params;
+    const maintenance = getMaintenanceState("gacha");
     const machine = await getMachine(machineId);
 
     if (!machine?.isActive || !machine.isEnabled) notFound();
@@ -91,6 +93,7 @@ export default async function GachaGridPage({
                         costType={machine.costType ?? "FREE"}
                         costAmount={Number(machine.costAmount ?? 0)}
                         userBalance={userBalance}
+                        maintenance={maintenance}
                     />
                 </div>
             </div>

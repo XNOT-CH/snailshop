@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+const imageUrlSchema = z.string().trim().refine(
+    (value) => value === "" || value.startsWith("/") || value.startsWith("http://") || value.startsWith("https://"),
+    { message: "URL รูปภาพไม่ถูกต้อง" },
+);
+
 // ── Gacha Machine ────────────────────────────────────────
 export const gachaMachineSchema = z.object({
     name: z.string().min(1, "กรุณากรอกชื่อตู้กาชา").max(200),
@@ -26,7 +31,7 @@ export const gachaRewardSchema = z.object({
     productId: z.uuid({ error: "Invalid UUID" }).optional().nullable(),
     rewardName: z.string().max(200).optional().or(z.literal("")),
     rewardAmount: z.coerce.number().min(0).optional().nullable(),
-    rewardImageUrl: z.url({ error: "Invalid URL" }).optional().or(z.literal("")),
+    rewardImageUrl: imageUrlSchema.optional().or(z.literal("")),
     isActive: z.boolean().default(true),
 });
 export type GachaRewardInput = z.infer<typeof gachaRewardSchema>;

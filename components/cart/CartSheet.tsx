@@ -17,14 +17,21 @@ import { useCart } from "@/components/providers/CartContext";
 import { CartItem } from "./CartItem";
 import { CartIcon } from "./CartIcon";
 import { showPurchaseSuccessModal, showPurchaseConfirm, showError } from "@/lib/swal";
+import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 
 function CartSheetContent() {
     const router = useRouter();
+    const maintenance = useMaintenanceStatus().purchase;
     const { items, removeFromCart, updateQuantity, clearCart, total, itemCount, isLoading } = useCart();
     const [isOpen, setIsOpen] = useState(false);
     const [isCheckingOut, setIsCheckingOut] = useState(false);
 
     const handleCheckout = async () => {
+        if (maintenance?.enabled) {
+            showError(maintenance.message);
+            return;
+        }
+
         if (items.length === 0) {
             showError("ตะกร้าว่างเปล่า");
             return;
@@ -134,6 +141,12 @@ function CartSheetContent() {
 
                         {/* ── Summary + Actions ─────────── */}
                         <div className="border-t border-white/10 px-5 pt-4 pb-5 space-y-4">
+                            {maintenance?.enabled && (
+                                <div className="rounded-xl border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+                                    <p className="font-semibold">ระบบสั่งซื้อกำลังปิดปรับปรุงชั่วคราว</p>
+                                    <p className="mt-1 text-xs text-amber-100/80">{maintenance.message}</p>
+                                </div>
+                            )}
                             {/* Subtotals */}
                             <div className="space-y-1.5 text-sm">
                                 <div className="flex justify-between text-white/50">
@@ -152,7 +165,7 @@ function CartSheetContent() {
                             <Button
                                 className="w-full h-12 text-base font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-xl gap-2"
                                 onClick={handleCheckout}
-                                disabled={isCheckingOut || isLoading}
+                                disabled={isCheckingOut || isLoading || maintenance?.enabled}
                             >
                                 {isCheckingOut ? (
                                     <>
@@ -162,7 +175,7 @@ function CartSheetContent() {
                                 ) : (
                                     <>
                                         <ShoppingCart className="h-4 w-4" />
-                                        ชำระเงิน ฿{total.toLocaleString()}
+                                        {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : `ชำระเงิน ฿${total.toLocaleString()}`}
                                     </>
                                 )}
                             </Button>
@@ -188,7 +201,11 @@ export function CartSheet() {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
-        setMounted(true);
+        const frame = window.requestAnimationFrame(() => {
+            setMounted(true);
+        });
+
+        return () => window.cancelAnimationFrame(frame);
     }, []);
 
     if (!mounted) {

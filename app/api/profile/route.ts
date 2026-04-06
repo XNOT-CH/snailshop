@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { decryptUserSensitiveFields } from "@/lib/sensitiveData";
 
 export async function GET() {
     try {
@@ -31,7 +32,7 @@ export async function GET() {
 
         return NextResponse.json({
             success: true,
-            data: { ...user, creditBalance: String(user.creditBalance) },
+            data: { ...decryptUserSensitiveFields(user), creditBalance: String(user.creditBalance) },
         });
     } catch (error) {
         console.error("Get profile error:", error);

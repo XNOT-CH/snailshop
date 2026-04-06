@@ -18,10 +18,9 @@ import {
     Dialog,
     DialogContent,
     DialogDescription,
+    DialogFooter,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
-    DialogFooter,
 } from "@/components/ui/dialog";
 import {
     Table,
@@ -31,8 +30,8 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Plus, Ticket, Loader2, Trash2, Pencil, Copy } from "lucide-react";
-import { showDeleteConfirm, showSuccess, showError } from "@/lib/swal";
+import { Copy, Loader2, Pencil, Plus, Ticket, Trash2 } from "lucide-react";
+import { showDeleteConfirm, showError, showSuccess } from "@/lib/swal";
 
 interface PromoCode {
     id: string;
@@ -49,34 +48,47 @@ interface PromoCode {
     createdAt: string;
 }
 
+type PromoFormState = {
+    code: string;
+    discountType: string;
+    discountValue: string;
+    minPurchase: string;
+    maxDiscount: string;
+    usageLimit: string;
+    expiresAt: string;
+    isActive: boolean;
+};
+
+const initialFormData: PromoFormState = {
+    code: "",
+    discountType: "PERCENTAGE",
+    discountValue: "",
+    minPurchase: "",
+    maxDiscount: "",
+    usageLimit: "",
+    expiresAt: "",
+    isActive: true,
+};
+
 export default function AdminPromoCodesPage() {
     const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingCode, setEditingCode] = useState<PromoCode | null>(null);
     const [isSaving, setIsSaving] = useState(false);
-
-    const [formData, setFormData] = useState({
-        code: "",
-        discountType: "PERCENTAGE",
-        discountValue: "",
-        minPurchase: "",
-        maxDiscount: "",
-        usageLimit: "",
-        expiresAt: "",
-        isActive: true,
-    });
+    const [formData, setFormData] = useState<PromoFormState>(initialFormData);
 
     const fetchPromoCodes = useCallback(async () => {
         try {
             const response = await fetch("/api/admin/promo-codes");
             const data = await response.json();
+
             if (data.success) {
                 setPromoCodes(data.data);
             }
         } catch (error) {
             console.error("[PROMO_CODE_FETCH]", error);
-            showError("ไม่สามารถโหลดข้อมูลได้");
+            showError("ไม่สามารถโหลดข้อมูลโค้ดส่วนลดได้");
         } finally {
             setIsLoading(false);
         }
@@ -87,16 +99,7 @@ export default function AdminPromoCodesPage() {
     }, [fetchPromoCodes]);
 
     const resetForm = () => {
-        setFormData({
-            code: "",
-            discountType: "PERCENTAGE",
-            discountValue: "",
-            minPurchase: "",
-            maxDiscount: "",
-            usageLimit: "",
-            expiresAt: "",
-            isActive: true,
-        });
+        setFormData(initialFormData);
         setEditingCode(null);
     };
 
@@ -120,6 +123,9 @@ export default function AdminPromoCodesPage() {
         setIsDialogOpen(true);
     };
 
+    const normalizeDateForApi = (value: string) =>
+        value ? new Date(`${value}T23:59:59.000+07:00`).toISOString() : null;
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsSaving(true);
@@ -130,25 +136,46 @@ export default function AdminPromoCodesPage() {
                 : "/api/admin/promo-codes";
             const method = editingCode ? "PUT" : "POST";
 
+            const payload = editingCode
+                ? {
+                    ...formData,
+                    expiresAt: normalizeDateForApi(formData.expiresAt),
+                }
+                : {
+                    code: formData.code,
+                    discountType: formData.discountType,
+                    discountValue: formData.discountValue,
+                    minOrderAmount: formData.minPurchase || 0,
+                    maxDiscount: formData.maxDiscount || 0,
+                    maxUses: formData.usageLimit || 0,
+                    usagePerUser: 0,
+                    startsAt: null,
+                    expiresAt: normalizeDateForApi(formData.expiresAt),
+                    applicableCategories: [],
+                    excludedCategories: [],
+                    isNewUserOnly: false,
+                    isActive: formData.isActive,
+                };
+
             const response = await fetch(url, {
                 method,
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify(payload),
             });
-
             const data = await response.json();
 
             if (data.success) {
-                showSuccess(editingCode ? "แก้ไขสำเร็จ!" : "สร้างโค้ดส่วนลดสำเร็จ!");
+                showSuccess(editingCode ? "แก้ไขโค้ดสำเร็จ" : "สร้างโค้ดส่วนลดสำเร็จ");
                 setIsDialogOpen(false);
                 resetForm();
                 fetchPromoCodes();
-            } else {
-                showError(data.message || "เกิดข้อผิดพลาด");
+                return;
             }
+
+            showError(data.message || "เกิดข้อผิดพลาด");
         } catch (error) {
             console.error("[PROMO_CODE_SUBMIT]", error);
-            showError("ไม่สามารถบันทึกได้");
+            showError("ไม่สามารถบันทึกข้อมูลได้");
         } finally {
             setIsSaving(false);
         }
@@ -165,11 +192,12 @@ export default function AdminPromoCodesPage() {
             const data = await response.json();
 
             if (data.success) {
-                showSuccess("ลบโค้ดสำเร็จ!");
+                showSuccess("ลบโค้ดสำเร็จ");
                 fetchPromoCodes();
-            } else {
-                showError(data.message || "ไม่สามารถลบได้");
+                return;
             }
+
+            showError(data.message || "ไม่สามารถลบโค้ดได้");
         } catch (error) {
             console.error("[PROMO_CODE_DELETE]", error);
             showError("เกิดข้อผิดพลาด");
@@ -197,19 +225,25 @@ export default function AdminPromoCodesPage() {
 
     const copyCode = (code: string) => {
         navigator.clipboard.writeText(code);
-        showSuccess(`คัดลอก ${code} แล้ว!`);
+        showSuccess(`คัดลอก ${code} แล้ว`);
     };
 
     const formatDiscount = (code: PromoCode) => {
         if (code.discountType === "PERCENTAGE") {
             return `${code.discountValue}%`;
         }
+
         return `฿${code.discountValue.toLocaleString()}`;
     };
 
     const isExpired = (expiresAt: string | null) => {
         if (!expiresAt) return false;
         return new Date(expiresAt) < new Date();
+    };
+
+    const formatExpireDate = (expiresAt: string | null) => {
+        if (!expiresAt) return "ไม่หมดอายุ";
+        return new Date(expiresAt).toLocaleDateString("th-TH");
     };
 
     if (isLoading) {
@@ -222,53 +256,59 @@ export default function AdminPromoCodesPage() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
-                        โค้ดส่วนลด <span className="text-3xl">🎟️</span>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-1">
+                    <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground sm:text-3xl">
+                        โค้ดส่วนลด <span className="text-2xl sm:text-3xl">🎟️</span>
                     </h1>
-                    <p className="text-muted-foreground">จัดการโค้ดโปรโมชั่นและส่วนลด</p>
+                    <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
+                        จัดการโปรโมชั่นและส่วนลด พร้อมเปิดปิดการใช้งานได้จากหน้านี้
+                    </p>
                 </div>
+
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <DialogTrigger asChild>
-                        <Button onClick={handleOpenCreate} className="w-full gap-2 sm:w-auto">
-                            <Plus className="h-4 w-4" />
-                            สร้างโค้ดใหม่
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-md">
+                    <Button onClick={handleOpenCreate} className="w-full gap-2 sm:w-auto">
+                        <Plus className="h-4 w-4" />
+                        สร้างโค้ดใหม่
+                    </Button>
+
+                    <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto p-4 sm:max-w-md sm:p-6">
                         <DialogHeader>
                             <DialogTitle>
                                 {editingCode ? "แก้ไขโค้ดส่วนลด" : "สร้างโค้ดส่วนลดใหม่"}
                             </DialogTitle>
                             <DialogDescription>
-                                กรอกรายละเอียดโค้ดส่วนลด
+                                กรอกรายละเอียดโค้ดส่วนลดและกำหนดเงื่อนไขเบื้องต้น
                             </DialogDescription>
                         </DialogHeader>
+
                         <form onSubmit={handleSubmit} className="space-y-4">
-                            {/* Code */}
                             <div className="space-y-2">
-                                <Label htmlFor="code">โค้ด *</Label>
+                                <Label htmlFor="code">โค้ด</Label>
                                 <Input
                                     id="code"
                                     placeholder="เช่น SALE50"
                                     value={formData.code}
                                     onChange={(e) =>
-                                        setFormData({ ...formData, code: e.target.value.toUpperCase() })
+                                        setFormData((current) => ({
+                                            ...current,
+                                            code: e.target.value.toUpperCase(),
+                                        }))
                                     }
                                     required
                                 />
                             </div>
 
-                            {/* Discount Type & Value */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label>ประเภทส่วนลด</Label>
                                     <Select
                                         value={formData.discountType}
                                         onValueChange={(value) =>
-                                            setFormData({ ...formData, discountType: value })
+                                            setFormData((current) => ({
+                                                ...current,
+                                                discountType: value,
+                                            }))
                                         }
                                     >
                                         <SelectTrigger>
@@ -280,9 +320,10 @@ export default function AdminPromoCodesPage() {
                                         </SelectContent>
                                     </Select>
                                 </div>
+
                                 <div className="space-y-2">
                                     <Label htmlFor="discountValue">
-                                        {formData.discountType === "PERCENTAGE" ? "เปอร์เซ็นต์ *" : "จำนวนเงิน *"}
+                                        {formData.discountType === "PERCENTAGE" ? "เปอร์เซ็นต์" : "จำนวนเงิน"}
                                     </Label>
                                     <Input
                                         id="discountValue"
@@ -290,15 +331,17 @@ export default function AdminPromoCodesPage() {
                                         placeholder={formData.discountType === "PERCENTAGE" ? "10" : "50"}
                                         value={formData.discountValue}
                                         onChange={(e) =>
-                                            setFormData({ ...formData, discountValue: e.target.value })
+                                            setFormData((current) => ({
+                                                ...current,
+                                                discountValue: e.target.value,
+                                            }))
                                         }
                                         required
                                     />
                                 </div>
                             </div>
 
-                            {/* Min Purchase & Max Discount */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label htmlFor="minPurchase">ยอดขั้นต่ำ (฿)</Label>
                                     <Input
@@ -307,10 +350,14 @@ export default function AdminPromoCodesPage() {
                                         placeholder="ไม่บังคับ"
                                         value={formData.minPurchase}
                                         onChange={(e) =>
-                                            setFormData({ ...formData, minPurchase: e.target.value })
+                                            setFormData((current) => ({
+                                                ...current,
+                                                minPurchase: e.target.value,
+                                            }))
                                         }
                                     />
                                 </div>
+
                                 <div className="space-y-2">
                                     <Label htmlFor="maxDiscount">ส่วนลดสูงสุด (฿)</Label>
                                     <Input
@@ -319,14 +366,16 @@ export default function AdminPromoCodesPage() {
                                         placeholder="ไม่จำกัด"
                                         value={formData.maxDiscount}
                                         onChange={(e) =>
-                                            setFormData({ ...formData, maxDiscount: e.target.value })
+                                            setFormData((current) => ({
+                                                ...current,
+                                                maxDiscount: e.target.value,
+                                            }))
                                         }
                                     />
                                 </div>
                             </div>
 
-                            {/* Usage Limit & Expires */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label htmlFor="usageLimit">จำกัดการใช้</Label>
                                     <Input
@@ -335,10 +384,14 @@ export default function AdminPromoCodesPage() {
                                         placeholder="ไม่จำกัด"
                                         value={formData.usageLimit}
                                         onChange={(e) =>
-                                            setFormData({ ...formData, usageLimit: e.target.value })
+                                            setFormData((current) => ({
+                                                ...current,
+                                                usageLimit: e.target.value,
+                                            }))
                                         }
                                     />
                                 </div>
+
                                 <div className="space-y-2">
                                     <Label htmlFor="expiresAt">หมดอายุ</Label>
                                     <Input
@@ -346,33 +399,41 @@ export default function AdminPromoCodesPage() {
                                         type="date"
                                         value={formData.expiresAt}
                                         onChange={(e) =>
-                                            setFormData({ ...formData, expiresAt: e.target.value })
+                                            setFormData((current) => ({
+                                                ...current,
+                                                expiresAt: e.target.value,
+                                            }))
                                         }
                                     />
                                 </div>
                             </div>
 
-                            {/* Active Toggle */}
-                            <div className="flex items-center justify-between">
-                                <Label>เปิดใช้งาน</Label>
+                            <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 px-4 py-3">
+                                <Label htmlFor="promo-active">เปิดใช้งาน</Label>
                                 <Switch
+                                    id="promo-active"
                                     checked={formData.isActive}
                                     onCheckedChange={(checked) =>
-                                        setFormData({ ...formData, isActive: checked })
+                                        setFormData((current) => ({
+                                            ...current,
+                                            isActive: checked,
+                                        }))
                                     }
                                 />
                             </div>
 
                             <DialogFooter>
                                 <Button type="submit" disabled={isSaving} className="w-full">
-                                    {isSaving && (
+                                    {isSaving ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                             กำลังบันทึก...
                                         </>
+                                    ) : editingCode ? (
+                                        "บันทึกการแก้ไข"
+                                    ) : (
+                                        "สร้างโค้ด"
                                     )}
-                                    {!isSaving && editingCode && "บันทึกการแก้ไข"}
-                                    {!isSaving && !editingCode && "สร้างโค้ด"}
                                 </Button>
                             </DialogFooter>
                         </form>
@@ -380,14 +441,14 @@ export default function AdminPromoCodesPage() {
                 </Dialog>
             </div>
 
-            {/* Promo Codes Table */}
             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
+                <CardHeader className="space-y-2">
+                    <CardTitle className="flex flex-wrap items-center gap-2 text-lg sm:text-xl">
                         <Ticket className="h-5 w-5" />
                         รายการโค้ดทั้งหมด ({promoCodes.length})
                     </CardTitle>
                 </CardHeader>
+
                 <CardContent>
                     {promoCodes.length === 0 ? (
                         <div className="py-12 text-center">
@@ -399,94 +460,183 @@ export default function AdminPromoCodesPage() {
                             </Button>
                         </div>
                     ) : (
-                        <div className="overflow-x-auto">
-                        <Table className="min-w-[760px]">
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>โค้ด</TableHead>
-                                    <TableHead>ส่วนลด</TableHead>
-                                    <TableHead>การใช้งาน</TableHead>
-                                    <TableHead>หมดอายุ</TableHead>
-                                    <TableHead>สถานะ</TableHead>
-                                    <TableHead className="text-right">จัดการ</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
+                        <>
+                            <div className="space-y-3 md:hidden">
                                 {promoCodes.map((code) => (
-                                    <TableRow key={code.id}>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <code className="bg-muted px-2 py-1 rounded font-mono text-sm">
-                                                    {code.code}
-                                                </code>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-6 w-6"
-                                                    onClick={() => copyCode(code.code)}
-                                                    aria-label={`คัดลอกโค้ด ${code.code}`}
-                                                >
-                                                    <Copy className="h-3 w-3" />
-                                                </Button>
+                                    <div
+                                        key={code.id}
+                                        className="rounded-2xl border border-border/70 bg-background p-4 shadow-sm"
+                                    >
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="min-w-0 space-y-2">
+                                                <div className="flex items-center gap-2">
+                                                    <code className="rounded bg-muted px-2 py-1 font-mono text-sm">
+                                                        {code.code}
+                                                    </code>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-7 w-7"
+                                                        onClick={() => copyCode(code.code)}
+                                                        aria-label={`คัดลอกโค้ด ${code.code}`}
+                                                    >
+                                                        <Copy className="h-3.5 w-3.5" />
+                                                    </Button>
+                                                </div>
+                                                <Badge variant="secondary">{formatDiscount(code)}</Badge>
                                             </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Badge variant="secondary">
-                                                {formatDiscount(code)}
-                                            </Badge>
-                                            {code.minPurchase && (
-                                                <p className="text-xs text-muted-foreground mt-1">
-                                                    ขั้นต่ำ ฿{code.minPurchase.toLocaleString()}
-                                                </p>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            <span className="font-medium">{code.usedCount}</span>
-                                            {code.usageLimit && (
-                                                <span className="text-muted-foreground">
-                                                    /{code.usageLimit}
-                                                </span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
-                                            {code.expiresAt ? (
-                                                <span className={isExpired(code.expiresAt) ? "text-red-500" : ""}>
-                                                    {new Date(code.expiresAt).toLocaleDateString("th-TH")}
-                                                </span>
-                                            ) : (
-                                                <span className="text-muted-foreground">ไม่หมดอายุ</span>
-                                            )}
-                                        </TableCell>
-                                        <TableCell>
+
                                             <Switch
                                                 checked={code.isActive && !isExpired(code.expiresAt)}
                                                 onCheckedChange={() => handleToggleActive(code)}
                                                 disabled={isExpired(code.expiresAt)}
                                             />
-                                        </TableCell>
-                                        <TableCell className="text-right">
+                                        </div>
+
+                                        <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                                            <div className="rounded-xl bg-muted/40 p-3">
+                                                <p className="text-xs text-muted-foreground">การใช้งาน</p>
+                                                <p className="mt-1 font-medium">
+                                                    {code.usedCount}
+                                                    {code.usageLimit ? (
+                                                        <span className="text-muted-foreground">
+                                                            /{code.usageLimit}
+                                                        </span>
+                                                    ) : null}
+                                                </p>
+                                            </div>
+
+                                            <div className="rounded-xl bg-muted/40 p-3">
+                                                <p className="text-xs text-muted-foreground">หมดอายุ</p>
+                                                <p
+                                                    className={[
+                                                        "mt-1 font-medium",
+                                                        isExpired(code.expiresAt) ? "text-red-500" : "",
+                                                    ].join(" ")}
+                                                >
+                                                    {formatExpireDate(code.expiresAt)}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        {code.minPurchase ? (
+                                            <p className="mt-3 text-xs text-muted-foreground">
+                                                ขั้นต่ำ ฿{code.minPurchase.toLocaleString()}
+                                            </p>
+                                        ) : null}
+
+                                        <div className="mt-4 flex gap-2">
                                             <Button
-                                                variant="ghost"
-                                                size="icon"
+                                                variant="outline"
+                                                className="flex-1"
                                                 onClick={() => handleOpenEdit(code)}
                                                 aria-label={`แก้ไขโค้ด ${code.code}`}
                                             >
-                                                <Pencil className="h-4 w-4" />
+                                                <Pencil className="mr-2 h-4 w-4" />
+                                                แก้ไข
                                             </Button>
+
                                             <Button
-                                                variant="ghost"
-                                                size="icon"
+                                                variant="outline"
+                                                className="flex-1 text-red-500 hover:text-red-600"
                                                 onClick={() => handleDelete(code.id)}
                                                 aria-label={`ลบโค้ด ${code.code}`}
                                             >
-                                                <Trash2 className="h-4 w-4 text-red-500" />
+                                                <Trash2 className="mr-2 h-4 w-4" />
+                                                ลบ
                                             </Button>
-                                        </TableCell>
-                                    </TableRow>
+                                        </div>
+                                    </div>
                                 ))}
-                            </TableBody>
-                        </Table>
-                        </div>
+                            </div>
+
+                            <div className="hidden overflow-x-auto md:block">
+                                <Table className="min-w-[760px]">
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>โค้ด</TableHead>
+                                            <TableHead>ส่วนลด</TableHead>
+                                            <TableHead>การใช้งาน</TableHead>
+                                            <TableHead>หมดอายุ</TableHead>
+                                            <TableHead>สถานะ</TableHead>
+                                            <TableHead className="text-right">จัดการ</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+
+                                    <TableBody>
+                                        {promoCodes.map((code) => (
+                                            <TableRow key={code.id}>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <code className="rounded bg-muted px-2 py-1 font-mono text-sm">
+                                                            {code.code}
+                                                        </code>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-6 w-6"
+                                                            onClick={() => copyCode(code.code)}
+                                                            aria-label={`คัดลอกโค้ด ${code.code}`}
+                                                        >
+                                                            <Copy className="h-3 w-3" />
+                                                        </Button>
+                                                    </div>
+                                                </TableCell>
+
+                                                <TableCell>
+                                                    <Badge variant="secondary">{formatDiscount(code)}</Badge>
+                                                    {code.minPurchase ? (
+                                                        <p className="mt-1 text-xs text-muted-foreground">
+                                                            ขั้นต่ำ ฿{code.minPurchase.toLocaleString()}
+                                                        </p>
+                                                    ) : null}
+                                                </TableCell>
+
+                                                <TableCell>
+                                                    <span className="font-medium">{code.usedCount}</span>
+                                                    {code.usageLimit ? (
+                                                        <span className="text-muted-foreground">/{code.usageLimit}</span>
+                                                    ) : null}
+                                                </TableCell>
+
+                                                <TableCell>
+                                                    <span className={isExpired(code.expiresAt) ? "text-red-500" : ""}>
+                                                        {formatExpireDate(code.expiresAt)}
+                                                    </span>
+                                                </TableCell>
+
+                                                <TableCell>
+                                                    <Switch
+                                                        checked={code.isActive && !isExpired(code.expiresAt)}
+                                                        onCheckedChange={() => handleToggleActive(code)}
+                                                        disabled={isExpired(code.expiresAt)}
+                                                    />
+                                                </TableCell>
+
+                                                <TableCell className="text-right">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleOpenEdit(code)}
+                                                        aria-label={`แก้ไขโค้ด ${code.code}`}
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => handleDelete(code.id)}
+                                                        aria-label={`ลบโค้ด ${code.code}`}
+                                                    >
+                                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </>
                     )}
                 </CardContent>
             </Card>

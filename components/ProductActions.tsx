@@ -8,6 +8,7 @@ import { ShoppingCart, Loader2, Plus, Check, Search, Tag } from "lucide-react";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { useCart } from "@/components/providers/CartContext";
 import { showPurchaseConfirm, showPurchaseSuccessModal, showWarning, showErrorAlert } from "@/lib/swal";
+import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 
 interface ProductActionsProps {
     product: {
@@ -24,6 +25,7 @@ interface ProductActionsProps {
 
 export function ProductActions({ product, disabled = false, maxQuantity = 99 }: Readonly<ProductActionsProps>) {
     const router = useRouter();
+    const maintenance = useMaintenanceStatus().purchase;
     const { addToCart, isInCart, isLoading: cartLoading } = useCart();
     const [quantity, setQuantity] = useState(1);
     const [isBuying, setIsBuying] = useState(false);
@@ -64,7 +66,11 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
             const res = await fetch(`/api/promo-codes/validate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ code: promoCode, totalPrice: basePrice }),
+                body: JSON.stringify({
+                    code: promoCode,
+                    totalPrice: basePrice,
+                    productCategory: product.category,
+                }),
             });
             const data = await res.json();
             if (data.valid) {
@@ -88,6 +94,11 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
 
     // Buy Now handler
     const handlePurchase = async () => {
+        if (maintenance?.enabled) {
+            showWarning(maintenance.message);
+            return;
+        }
+
         if (disabled || isBuying) return;
 
         const discountLine = appliedPromo
@@ -156,6 +167,12 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
 
     return (
         <div className="space-y-4">
+            {maintenance?.enabled && (
+                <div className="rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    <p className="font-semibold">ระบบสั่งซื้อกำลังปิดปรับปรุงชั่วคราว</p>
+                    <p className="mt-1 text-xs text-amber-800/90">{maintenance.message}</p>
+                </div>
+            )}
             {/* 1. Quantity Selector */}
             {!disabled && (
                 <div className="flex justify-center">
@@ -217,7 +234,7 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
                     ? "bg-rose-100 text-rose-400 hover:bg-rose-100 cursor-not-allowed border border-rose-200"
                     : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
                     }`}
-                disabled={disabled || isBuying}
+                disabled={disabled || isBuying || maintenance?.enabled}
                 onClick={handlePurchase}
             >
                 {isBuying && (
@@ -229,7 +246,7 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
                 {!isBuying && (
                     <>
                         <ShoppingCart className="h-5 w-5" />
-                        {disabled ? "สินค้าหมด 🚫" : `ซื้อเลย - ฿${finalPrice.toLocaleString()}`}
+                        {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : disabled ? "สินค้าหมด 🚫" : `ซื้อเลย - ฿${finalPrice.toLocaleString()}`}
                     </>
                 )}
             </Button>

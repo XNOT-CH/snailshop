@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Loader2, User, Gift } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import { shouldBypassImageOptimization } from "@/lib/imageUrl";
 
 interface RecentLog {
     id: string;
@@ -104,7 +105,14 @@ export function GachaRecentFeed({ refreshKey }: Readonly<{ refreshKey: number }>
                             >
                                 <div className="w-20 h-20 rounded-full bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border border-border transition-transform group-hover:scale-105 shadow-sm relative">
                                     {log.rewardImageUrl ? (
-                                        <Image src={log.rewardImageUrl} alt={log.rewardName} fill sizes="80px" className="object-cover" />
+                                        <Image
+                                            src={log.rewardImageUrl}
+                                            alt={log.rewardName}
+                                            fill
+                                            sizes="80px"
+                                            className="object-cover"
+                                            unoptimized={shouldBypassImageOptimization(log.rewardImageUrl)}
+                                        />
                                     ) : (
                                         <Gift className="w-8 h-8 text-muted-foreground/30" />
                                     )}

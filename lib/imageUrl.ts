@@ -14,3 +14,7 @@ export function withImageVersion(imageUrl: string | null | undefined, version: s
     const separator = imageUrl.includes("?") ? "&" : "?";
     return `${imageUrl}${separator}v=${encodeURIComponent(String(version))}`;
 }
+
+export function shouldBypassImageOptimization(imageUrl: string | null | undefined) {
+    return typeof imageUrl === "string" && imageUrl.startsWith("/uploads/");
+}

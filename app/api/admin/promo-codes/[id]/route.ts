@@ -1,52 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, promoCodes } from "@/lib/db";
-import { eq } from "drizzle-orm";
 import { isAdmin } from "@/lib/auth";
+import { deletePromoCode, updatePromoCode } from "@/lib/features/promo/mutations";
+import { findPromoByCode, findPromoById } from "@/lib/features/promo/queries";
+import { serializePromo, type PromoUpdateInput } from "@/lib/features/promo/shared";
 
-interface RouteParams { params: Promise<{ id: string }> }
-
-const toMySQLDatetime = (d: Date) => d.toISOString().slice(0, 19).replace("T", " ");
-
-type Numberish = string | number | null;
-
-interface PromoCodeBody {
-    code?: string;
-    discountType?: string;
-    discountValue?: Numberish;
-    minPurchase?: Numberish;
-    maxDiscount?: Numberish;
-    usageLimit?: string | null;
-    startsAt?: string | Date;
-    expiresAt?: string | Date | null;
-    isActive?: boolean;
+interface RouteParams {
+    params: Promise<{ id: string }>;
 }
 
-function buildUpdateData(body: PromoCodeBody) {
-    const { code, discountType, discountValue, minPurchase, maxDiscount, usageLimit, startsAt, expiresAt, isActive } = body;
-    const parseNumStr = (val: string | number | null | undefined) => val ? String(Number.parseFloat(String(val))) : null;
-    
-    const updateData: Record<string, unknown> = {};
-    if (code !== undefined) updateData.code = code.toUpperCase();
-    if (discountType !== undefined) updateData.discountType = discountType;
-    if (discountValue !== undefined) updateData.discountValue = parseNumStr(discountValue);
-    if (minPurchase !== undefined) updateData.minPurchase = parseNumStr(minPurchase);
-    if (maxDiscount !== undefined) updateData.maxDiscount = parseNumStr(maxDiscount);
-    if (usageLimit !== undefined) updateData.usageLimit = usageLimit ? Number.parseInt(usageLimit) : null;
-    if (startsAt !== undefined) updateData.startsAt = toMySQLDatetime(new Date(startsAt));
-    if (expiresAt !== undefined) updateData.expiresAt = expiresAt ? toMySQLDatetime(new Date(expiresAt)) : null;
-    if (isActive !== undefined) updateData.isActive = isActive;
-    
-    return updateData;
-}
-
-export async function GET(request: NextRequest, { params }: RouteParams) {
+export async function GET(_request: NextRequest, { params }: RouteParams) {
     const authCheck = await isAdmin();
-    if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    if (!authCheck.success) {
+        return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    }
+
     try {
         const { id } = await params;
-        const promoCode = await db.query.promoCodes.findFirst({ where: eq(promoCodes.id, id) });
-        if (!promoCode) return NextResponse.json({ success: false, message: "Promo code not found" }, { status: 404 });
-        return NextResponse.json({ success: true, data: { ...promoCode, discountValue: Number(promoCode.discountValue), minPurchase: promoCode.minPurchase ? Number(promoCode.minPurchase) : null, maxDiscount: promoCode.maxDiscount ? Number(promoCode.maxDiscount) : null } });
+        const promoCode = await findPromoById(id);
+
+        if (!promoCode) {
+            return NextResponse.json({ success: false, message: "Promo code not found" }, { status: 404 });
+        }
+
+        return NextResponse.json({ success: true, data: serializePromo(promoCode) });
     } catch {
         return NextResponse.json({ success: false, message: "Failed to fetch promo code" }, { status: 500 });
     }
@@ -54,40 +30,61 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
     const authCheck = await isAdmin();
-    if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    if (!authCheck.success) {
+        return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    }
+
     try {
         const { id } = await params;
-        const body = await request.json();
-        const { code } = body;
+        const body = await request.json() as PromoUpdateInput;
+        const existing = await findPromoById(id);
 
-        const existing = await db.query.promoCodes.findFirst({ where: eq(promoCodes.id, id) });
-        if (!existing) return NextResponse.json({ success: false, message: "Promo code not found" }, { status: 404 });
-
-        if (code && code.toUpperCase() !== existing.code) {
-            const conflict = await db.query.promoCodes.findFirst({ where: eq(promoCodes.code, code.toUpperCase()) });
-            if (conflict) return NextResponse.json({ success: false, message: "Promo code already exists" }, { status: 400 });
+        if (!existing) {
+            return NextResponse.json({ success: false, message: "Promo code not found" }, { status: 404 });
         }
 
-        const updateData = buildUpdateData(body);
+        if (body.code && body.code.toUpperCase() !== existing.code) {
+            const conflict = await findPromoByCode(body.code);
+            if (conflict) {
+                return NextResponse.json({ success: false, message: "Promo code already exists" }, { status: 400 });
+            }
+        }
 
-        await db.update(promoCodes).set(updateData).where(eq(promoCodes.id, id));
-        const updated = await db.query.promoCodes.findFirst({ where: eq(promoCodes.id, id) });
-        return NextResponse.json({ success: true, message: "Promo code updated successfully", data: updated });
+        const updated = await updatePromoCode(id, body);
+
+        return NextResponse.json({
+            success: true,
+            message: "Promo code updated successfully",
+            data: updated ? serializePromo(updated) : null,
+        });
     } catch (error) {
-        return NextResponse.json({ success: false, message: error instanceof Error ? error.message : "Failed to update promo code" }, { status: 500 });
+        return NextResponse.json({
+            success: false,
+            message: error instanceof Error ? error.message : "Failed to update promo code",
+        }, { status: 500 });
     }
 }
 
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export async function DELETE(_request: NextRequest, { params }: RouteParams) {
     const authCheck = await isAdmin();
-    if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    if (!authCheck.success) {
+        return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    }
+
     try {
         const { id } = await params;
-        const existing = await db.query.promoCodes.findFirst({ where: eq(promoCodes.id, id) });
-        if (!existing) return NextResponse.json({ success: false, message: "Promo code not found" }, { status: 404 });
-        await db.delete(promoCodes).where(eq(promoCodes.id, id));
+        const existing = await findPromoById(id);
+
+        if (!existing) {
+            return NextResponse.json({ success: false, message: "Promo code not found" }, { status: 404 });
+        }
+
+        await deletePromoCode(id);
         return NextResponse.json({ success: true, message: "Promo code deleted successfully" });
     } catch (error) {
-        return NextResponse.json({ success: false, message: error instanceof Error ? error.message : "Failed to delete promo code" }, { status: 500 });
+        return NextResponse.json({
+            success: false,
+            message: error instanceof Error ? error.message : "Failed to delete promo code",
+        }, { status: 500 });
     }
 }

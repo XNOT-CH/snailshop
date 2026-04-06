@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
+import { Prompt } from "next/font/google";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { DynamicBackground } from "@/components/DynamicBackground";
@@ -21,6 +22,13 @@ import {
   getBaseUrl,
   toAbsoluteAssetUrl,
 } from "@/lib/seo";
+
+const prompt = Prompt({
+  subsets: ["latin", "thai"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+  variable: "--font-prompt",
+});
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -84,7 +92,12 @@ export default async function RootLayout({
   ];
 
   return (
-    <html lang="th" suppressHydrationWarning data-scroll-behavior="smooth">
+    <html
+      lang="th"
+      suppressHydrationWarning
+      data-scroll-behavior="smooth"
+      className={prompt.variable}
+    >
       <body className="font-sans antialiased min-h-screen bg-background flex flex-col">
         <StructuredData data={structuredData} />
         <ThemeProvider>

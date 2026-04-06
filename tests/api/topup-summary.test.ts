@@ -186,6 +186,17 @@ describe("API: /api/dashboard/topup-summary (GET)", () => {
     expect(body.data.hourlyData).toHaveLength(24); // always 24 hours
   });
 
+  it("returns admin slip image route instead of raw file path", async () => {
+    (auth as any).mockResolvedValue(ADMIN_SESSION);
+    (db.query.topups.findMany as any).mockResolvedValue([
+      mkTopup({ id: "t-slip", proofImage: "/private/slips/example.webp" }),
+    ]);
+    const { GET } = await import("@/app/api/dashboard/topup-summary/route");
+    const res = await GET(req());
+    const body = await res.json();
+    expect(body.data.records[0].proofImage).toBe("/api/admin/slips/t-slip/image");
+  });
+
   // ── date range filter ───────────────────────────────────────────────────
   it("accepts startDate/endDate query params", async () => {
     (auth as any).mockResolvedValue(ADMIN_SESSION);
