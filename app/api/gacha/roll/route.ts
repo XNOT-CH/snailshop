@@ -19,6 +19,7 @@ import {
     type GachaProductLite,
     type GachaTier,
 } from "@/lib/gachaGrid";
+import { pickWeightedCandidate } from "@/lib/gachaProbability";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkGachaRateLimit, getClientIp } from "@/lib/rateLimit";
 import { isRedisAvailable, redis } from "@/lib/redis";
@@ -33,6 +34,7 @@ type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type PendingSpinPayload = {
     userId: string;
     lLabel: string;
+    chosenRewardId: string;
     machineId: string | null;
     iat: number;
     nonce: string;
@@ -73,7 +75,17 @@ function getDayRange(date: Date) {
 }
 
 function getCurrencyRewardLabel(rewardType: string) {
-    return rewardType === "CREDIT" ? "เครดิต" : "พอยต์";
+    if (rewardType === "CREDIT") return "เครดิต";
+    if (rewardType === "POINT") return "พอยต์";
+    return "ตั๋วสุ่ม";
+}
+
+function buildChosenRewardId(reward: {
+    id: string;
+    rewardType: string;
+    productId: string | null;
+}) {
+    return reward.rewardType === "PRODUCT" ? reward.productId : `reward:${reward.id}`;
 }
 
 async function fetchRewards(machineId: string | null) {
@@ -84,7 +96,7 @@ async function fetchRewards(machineId: string | null) {
             or(
                 and(eq(gachaRewards.rewardType, "PRODUCT"), isNotNull(gachaRewards.productId)),
                 and(
-                    inArray(gachaRewards.rewardType, ["CREDIT", "POINT"]),
+                    inArray(gachaRewards.rewardType, ["CREDIT", "POINT", "TICKET"]),
                     isNotNull(gachaRewards.rewardName),
                     isNotNull(gachaRewards.rewardAmount),
                 ),
@@ -115,7 +127,7 @@ async function fetchTieredProducts(machineId: string | null) {
         .filter((reward: RewardRow) =>
             reward.rewardType === "PRODUCT"
                 ? reward.product && !reward.product.isSold && !reward.product.orderId
-                : reward.rewardName && reward.rewardAmount,
+                : reward.rewardName && reward.rewardAmount && Number(reward.rewardAmount) > 0
         )
         .map((reward: RewardRow) =>
             reward.rewardType === "PRODUCT" && reward.product
@@ -132,7 +144,7 @@ async function fetchTieredProducts(machineId: string | null) {
                     name: reward.rewardName ?? getCurrencyRewardLabel(reward.rewardType),
                     price: Number(reward.rewardAmount ?? 0),
                     tier: (reward.tier as GachaTier) ?? "common",
-                },
+                }
         );
 
     return { allRewards, tieredProducts };
@@ -151,7 +163,7 @@ async function fetchUserOrError(userId: string) {
     return { user };
 }
 
-async function handleSpin1(userId: string, machineId: string | null, costType: string, costAmount: number, dailySpinLimit: number) {
+async function handleSpin1(userId: string, machineId: string | null, _costType: string, _costAmount: number, dailySpinLimit: number) {
     const userRes = await fetchUserOrError(userId);
     if ("error" in userRes) {
         return { error: userRes.error, status: userRes.status };
@@ -161,20 +173,41 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
         await checkDailySpinLimit(userId, machineId, dailySpinLimit);
     }
 
-    const { tieredProducts } = await fetchTieredProducts(machineId);
+    const { allRewards, tieredProducts } = await fetchTieredProducts(machineId);
     if (tieredProducts.length === 0) {
         return { error: "ไม่มีรางวัลสำหรับกาชาในขณะนี้", status: 400 };
     }
 
     const tiles = buildGrid(tieredProducts);
-    const validLSelectors = getValidLSelectors(tiles);
-    if (validLSelectors.length === 0) {
+    const allValidLSelectors = getValidLSelectors(tiles);
+    if (allValidLSelectors.length === 0) {
         return { error: "ไม่มีแถวซ้ายที่สามารถสุ่มได้", status: 400 };
+    }
+
+    const eligibleRewards = allRewards.filter((reward) =>
+        reward.rewardType === "PRODUCT"
+            ? reward.product && !reward.product.isSold && !reward.product.orderId
+            : reward.rewardName && reward.rewardAmount && Number(reward.rewardAmount) > 0
+    );
+    const chosenReward = pickWeightedCandidate(eligibleRewards);
+    if (!chosenReward) {
+        return { error: "ไม่พบรางวัลที่สามารถสุ่มได้", status: 400 };
+    }
+
+    const chosenRewardId = buildChosenRewardId(chosenReward);
+    const validLSelectors = allValidLSelectors.filter((candidateLLabel) =>
+        ["R1", "R2", "R3", "R4"].some((candidateRLabel) => {
+            const tile = getIntersectionTile(tiles, candidateLLabel, candidateRLabel);
+            return tile?.product?.id === chosenRewardId;
+        })
+    );
+    if (validLSelectors.length === 0) {
+        return { error: "ไม่พบเส้นทางสำหรับรางวัลที่สุ่มได้", status: 400 };
     }
 
     const lLabel = validLSelectors[crypto.randomInt(0, validLSelectors.length)];
     const nonce = crypto.randomUUID();
-    const pendingPayload: PendingSpinPayload = { userId, lLabel, machineId, iat: Date.now(), nonce };
+    const pendingPayload: PendingSpinPayload = { userId, lLabel, chosenRewardId, machineId, iat: Date.now(), nonce };
     const payload = encrypt(JSON.stringify(pendingPayload));
 
     const cookieStore = await cookies();
@@ -200,21 +233,17 @@ async function validatePendingSpin(userId: string, machineId: string | null) {
 
     let lLabel: string;
     let nonce: string | null = null;
+    let chosenRewardId: string;
 
     try {
         const parsed = JSON.parse(decrypt(rawCookie)) as PendingSpinPayload;
-        if (parsed.userId !== userId) {
-            throw new Error("user mismatch");
-        }
-        if (Date.now() - parsed.iat > COOKIE_TTL * 1000) {
-            throw new Error("expired");
-        }
-        if ((parsed.machineId ?? null) !== machineId) {
-            throw new Error("machine mismatch");
-        }
+        if (parsed.userId !== userId) throw new Error("user mismatch");
+        if (Date.now() - parsed.iat > COOKIE_TTL * 1000) throw new Error("expired");
+        if ((parsed.machineId ?? null) !== machineId) throw new Error("machine mismatch");
 
         lLabel = parsed.lLabel;
         nonce = parsed.nonce;
+        chosenRewardId = parsed.chosenRewardId;
     } catch {
         cookieStore.delete(COOKIE_NAME);
         return { error: "เซสชันการสุ่มหมดอายุ กรุณาเริ่มใหม่", status: 400 };
@@ -232,7 +261,7 @@ async function validatePendingSpin(userId: string, machineId: string | null) {
 
         const pendingKey = `${PENDING_SPIN_PREFIX}:${nonce}`;
         const pendingPayload = await redis.get<PendingSpinPayload>(pendingKey);
-        if (!pendingPayload || pendingPayload.userId !== userId || pendingPayload.lLabel !== lLabel || (pendingPayload.machineId ?? null) !== machineId) {
+        if (!pendingPayload || pendingPayload.userId !== userId || pendingPayload.lLabel !== lLabel || pendingPayload.chosenRewardId !== chosenRewardId || (pendingPayload.machineId ?? null) !== machineId) {
             return { error: "เซสชันการสุ่มไม่ถูกต้อง กรุณาเริ่มใหม่", status: 400 };
         }
 
@@ -244,14 +273,14 @@ async function validatePendingSpin(userId: string, machineId: string | null) {
 
         pendingSpinMemoryLocks.set(nonce, Date.now() + COOKIE_TTL * 1000);
         const pendingPayload = pendingSpinMemoryStore.get(nonce);
-        if (!pendingPayload || pendingPayload.userId !== userId || pendingPayload.lLabel !== lLabel || (pendingPayload.machineId ?? null) !== machineId) {
+        if (!pendingPayload || pendingPayload.userId !== userId || pendingPayload.lLabel !== lLabel || pendingPayload.chosenRewardId !== chosenRewardId || (pendingPayload.machineId ?? null) !== machineId) {
             return { error: "เซสชันการสุ่มไม่ถูกต้อง กรุณาเริ่มใหม่", status: 400 };
         }
 
         pendingSpinMemoryStore.delete(nonce);
     }
 
-    return { lLabel };
+    return { lLabel, chosenRewardId };
 }
 
 async function finalizeCurrencyRewardRoll(
@@ -261,7 +290,7 @@ async function finalizeCurrencyRewardRoll(
     machineId: string | null,
     costType: string,
     costAmount: number,
-    rewardType: "CREDIT" | "POINT",
+    rewardType: "CREDIT" | "POINT" | "TICKET",
     rewardAmount: number,
     rewardMeta: GachaProductLite | undefined,
     tier: GachaTier,
@@ -289,7 +318,7 @@ async function handleSpin2(userId: string, machineId: string | null, costType: s
         return { error: pendingRes.error, status: pendingRes.status };
     }
 
-    const { lLabel } = pendingRes;
+    const { lLabel, chosenRewardId } = pendingRes;
     const userRes = await fetchUserOrError(userId);
     if ("error" in userRes) {
         return { error: userRes.error, status: userRes.status };
@@ -311,21 +340,29 @@ async function handleSpin2(userId: string, machineId: string | null, costType: s
         return { error: "ไม่มีแถวขวาที่สามารถสุ่มได้", status: 400 };
     }
 
-    const rLabel = validRSelectors[crypto.randomInt(0, validRSelectors.length)];
-    const selectorLabel = `${lLabel}+${rLabel}`;
-    const intersectionTile = getIntersectionTile(tiles, lLabel, rLabel);
-    if (!intersectionTile?.product) {
+    const chosenId = chosenRewardId;
+    const selectorPairs = validRSelectors
+        .map((candidateRLabel) => {
+            const tile = getIntersectionTile(tiles, lLabel, candidateRLabel);
+            return tile?.product?.id === chosenId ? { rLabel: candidateRLabel, tile } : null;
+        })
+        .filter((pair): pair is { rLabel: string; tile: NonNullable<ReturnType<typeof getIntersectionTile>> } => Boolean(pair));
+
+    if (selectorPairs.length === 0) {
         return { error: "ไม่พบรางวัลที่จุดตัด กรุณาสุ่มใหม่", status: 400 };
     }
 
-    const chosenId = intersectionTile.product.id;
+    const selectedPair = selectorPairs[crypto.randomInt(0, selectorPairs.length)];
+    const rLabel = selectedPair.rLabel;
+    const selectorLabel = `${lLabel}+${rLabel}`;
+
     const rewardMeta = tieredProducts.find((product) => product.id === chosenId);
     const tier: GachaTier = rewardMeta?.tier ?? "common";
 
     if (chosenId.startsWith("reward:")) {
         const rewardRowId = chosenId.replace("reward:", "");
         const chosenRewardRow = allRewards.find((reward) => reward.id === rewardRowId);
-        const rewardType = chosenRewardRow?.rewardType as "CREDIT" | "POINT";
+        const rewardType = chosenRewardRow?.rewardType as "CREDIT" | "POINT" | "TICKET";
         const rewardAmount = Number(chosenRewardRow?.rewardAmount ?? 0);
 
         await db.transaction(async (tx) => {
@@ -515,8 +552,12 @@ export async function POST(req: Request) {
             "ไม่พบตู้กาชา",
             "เครดิตไม่เพียงพอ",
             "พอยต์ไม่เพียงพอ",
+            "ตั๋วสุ่มไม่เพียงพอ",
             "รางวัลนี้ถูกใช้งานไปแล้ว กรุณาสุ่มใหม่",
             "สต็อกของรางวัลหมดแล้ว",
+            "ไม่สามารถหักเครดิตได้",
+            "ไม่สามารถหักพอยต์ได้",
+            "ไม่สามารถหักตั๋วสุ่มได้",
         ];
 
         if (passthroughMessages.some((message) => normalizedError.message?.includes(message))) {

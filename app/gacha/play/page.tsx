@@ -16,12 +16,13 @@ import {
 } from "@/components/ui/breadcrumb";
 import { buildPageMetadata } from "@/lib/seo";
 import { auth } from "@/auth";
+import { EMPTY_USER_BALANCES } from "@/lib/userBalances";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = buildPageMetadata({
     title: "กาชา",
-    description: "หน้าสุ่มกาชาสำหรับรับสินค้าและรางวัลพิเศษ",
+    description: "หน้าสุ่มกาชาสำหรับลุ้นรับสินค้าและรางวัลพิเศษ",
     path: "/gacha",
     noIndex: true,
 });
@@ -32,13 +33,13 @@ export default async function GachaPlayPage() {
 
     const session = await auth();
     const userId = session?.user?.id;
-    let userBalance = 0;
+    let initialBalances = EMPTY_USER_BALANCES;
 
     try {
         const [raw, user] = await Promise.all([
             db.query.gachaSettings.findFirst(),
             userId
-                ? db.query.users.findFirst({ where: eq(users.id, userId), columns: { creditBalance: true, pointBalance: true } })
+                ? db.query.users.findFirst({ where: eq(users.id, userId), columns: { creditBalance: true, pointBalance: true, ticketBalance: true } })
                 : Promise.resolve(null),
         ]);
 
@@ -52,9 +53,15 @@ export default async function GachaPlayPage() {
         }
 
         if (user) {
-            userBalance = Number(settings.costType === "CREDIT" ? (user.creditBalance ?? 0) : (user.pointBalance ?? 0));
+            initialBalances = {
+                creditBalance: Number(user.creditBalance ?? 0),
+                pointBalance: Number(user.pointBalance ?? 0),
+                ticketBalance: Number(user.ticketBalance ?? 0),
+            };
         }
-    } catch { }
+    } catch {
+        // Ignore fetch failures and fall back to defaults.
+    }
 
     let products: GachaProductLite[] = [];
     try {
@@ -62,8 +69,9 @@ export default async function GachaPlayPage() {
             where: and(eq(gachaRewards.isActive, true), isNull(gachaRewards.gachaMachineId)),
             with: { product: { columns: { id: true, name: true, price: true, imageUrl: true, isSold: true } } },
         });
+
         products = rewards
-            .filter((reward) => (reward.rewardType === "PRODUCT" ? reward.product && !reward.product.isSold : (reward.rewardName && reward.rewardAmount)))
+            .filter((reward) => (reward.rewardType === "PRODUCT" ? reward.product && !reward.product.isSold : reward.rewardName && reward.rewardAmount))
             .map((reward) => {
                 if (reward.rewardType === "PRODUCT" && reward.product) {
                     return {
@@ -77,31 +85,33 @@ export default async function GachaPlayPage() {
 
                 return {
                     id: `reward:${reward.id}`,
-                    name: reward.rewardName ?? (reward.rewardType === "CREDIT" ? "เครดิต" : "พอยต์"),
+                    name: reward.rewardName ?? (reward.rewardType === "CREDIT" ? "เครดิต" : reward.rewardType === "POINT" ? "พอยต์" : "ตั๋วสุ่ม"),
                     price: Number(reward.rewardAmount ?? 0),
                     imageUrl: reward.rewardImageUrl ?? null,
                     tier: (reward.tier as GachaTier) ?? "common",
                 };
             });
-    } catch { }
+    } catch {
+        // Ignore reward fetch failures and render an empty board.
+    }
 
     return (
         <div className="mb-8 min-h-[calc(100vh-8rem)] rounded-2xl border border-border/50 bg-card/90 px-3 py-6 shadow-xl shadow-primary/10 backdrop-blur-sm sm:px-5 md:px-8">
             <div className="flex flex-col items-center gap-6">
-                <div className="w-full max-w-[640px] mb-2 px-2">
+                <div className="mb-2 w-full max-w-[640px] px-2">
                     <div className="mb-4">
                         <Breadcrumb>
                             <BreadcrumbList>
                                 <BreadcrumbItem>
                                     <BreadcrumbLink asChild>
-                                        <Link href="/" className="flex items-center gap-1.5 text-muted-foreground hover:text-primary transition-colors text-sm font-medium">
-                                            <Home className="w-4 h-4" /> หน้าหลัก
+                                        <Link href="/" className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+                                            <Home className="h-4 w-4" /> หน้าหลัก
                                         </Link>
                                     </BreadcrumbLink>
                                 </BreadcrumbItem>
                                 <BreadcrumbSeparator />
                                 <BreadcrumbItem>
-                                    <BreadcrumbPage className="font-semibold text-foreground text-sm">กาชา</BreadcrumbPage>
+                                    <BreadcrumbPage className="text-sm font-semibold text-foreground">กาชา</BreadcrumbPage>
                                 </BreadcrumbItem>
                             </BreadcrumbList>
                         </Breadcrumb>
@@ -110,8 +120,8 @@ export default async function GachaPlayPage() {
                     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-4">
                         <h1 className="text-3xl font-bold tracking-tight text-foreground">กาชา</h1>
                         {settings.dailySpinLimit > 0 && (
-                            <div className="flex flex-wrap gap-2 items-center">
-                                <span className="text-sm font-medium text-orange-500 bg-orange-500/10 border border-orange-500/20 rounded-full px-3 py-1 shadow-sm">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1 text-sm font-medium text-orange-500 shadow-sm">
                                     สุ่มได้ {settings.dailySpinLimit} ครั้ง/วัน
                                 </span>
                             </div>
@@ -121,11 +131,11 @@ export default async function GachaPlayPage() {
 
                 {settings.isEnabled ? (
                     <div className="flex w-full justify-center">
-                        <GachaRhombus products={products} settings={settings} userBalance={userBalance} maintenance={maintenance} />
+                        <GachaRhombus products={products} settings={settings} initialBalances={initialBalances} maintenance={maintenance} />
                     </div>
                 ) : (
                     <div className="flex flex-col items-center gap-3 py-20 text-center">
-                        <div className="w-10 h-10 rounded-full border border-border flex items-center justify-center">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border">
                             <Lock className="h-4 w-4 text-muted-foreground" />
                         </div>
                         <p className="text-sm font-medium text-foreground">ระบบกาชาปิดอยู่ชั่วคราว</p>

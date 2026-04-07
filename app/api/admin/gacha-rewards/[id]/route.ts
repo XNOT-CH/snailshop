@@ -17,12 +17,25 @@ export async function PUT(request: Request, { params }: RouteParams) {
         const body = result.data;
 
         const updateData: Record<string, unknown> = {};
+        if (body.rewardType !== undefined) updateData.rewardType = body.rewardType;
+        if (body.productId !== undefined) updateData.productId = body.productId;
         if (body.tier !== undefined) updateData.tier = body.tier;
         if (body.isActive !== undefined) updateData.isActive = body.isActive;
         if (body.rewardName !== undefined) updateData.rewardName = body.rewardName;
         if (body.rewardAmount !== undefined) updateData.rewardAmount = String(body.rewardAmount);
         if (body.rewardImageUrl !== undefined) updateData.rewardImageUrl = body.rewardImageUrl;
         if (body.probability !== undefined) updateData.probability = String(body.probability);
+
+        if (body.rewardType === "PRODUCT") {
+            updateData.rewardName = null;
+            updateData.rewardAmount = null;
+            if (body.rewardImageUrl === undefined) {
+                updateData.rewardImageUrl = null;
+            }
+        } else if (body.rewardType !== undefined && body.productId === undefined) {
+            updateData.productId = null;
+        }
+
         await db.update(gachaRewards).set(updateData).where(eq(gachaRewards.id, id));
         const updated = await db.query.gachaRewards.findFirst({ where: eq(gachaRewards.id, id) });
         return NextResponse.json({ success: true, data: updated });

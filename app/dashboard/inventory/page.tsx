@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db, users, orders } from "@/lib/db";
@@ -28,7 +28,6 @@ export default async function InventoryPage() {
 
     return (
         <div className="space-y-6">
-            {/* Breadcrumb */}
             <PageBreadcrumb
                 items={[
                     { label: "แดชบอร์ด", href: "/dashboard" },
@@ -36,7 +35,6 @@ export default async function InventoryPage() {
                 ]}
             />
 
-            {/* Page Header */}
             <div>
                 <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
                     <Package className="h-6 w-6 text-primary" />
@@ -48,7 +46,6 @@ export default async function InventoryPage() {
             </div>
 
             {orderList.length === 0 ? (
-                /* Empty State */
                 <Card className="py-12">
                     <CardContent className="text-center">
                         <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
@@ -67,7 +64,6 @@ export default async function InventoryPage() {
                     </CardContent>
                 </Card>
             ) : (
-                /* Inventory Grid */
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
                     {orderList.map(
                         (order) =>
@@ -94,4 +90,3 @@ export default async function InventoryPage() {
         </div>
     );
 }
-

@@ -92,26 +92,69 @@ export async function deductUserBalanceOrThrow(
     }
 
     if (costType === "CREDIT") {
+        const currentUser = await tx.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: { creditBalance: true },
+        });
+
+        if (Number(currentUser?.creditBalance ?? 0) < costAmount) {
+            throw new Error("เครดิตไม่เพียงพอ");
+        }
+
         const result = await tx
             .update(users)
             .set({ creditBalance: sql`creditBalance - ${costAmount}` })
-            .where(and(eq(users.id, userId), sql`${users.creditBalance} >= ${costAmount}`));
+            .where(eq(users.id, userId));
 
-        if (getAffectedRows(result) !== 1) {
-            throw new Error("เครดิตไม่เพียงพอ");
+        const affectedRows = getAffectedRows(result);
+        if (affectedRows !== null && affectedRows !== 1) {
+            throw new Error("ไม่สามารถหักเครดิตได้");
         }
 
         return;
     }
 
     if (costType === "POINT") {
+        const currentUser = await tx.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: { pointBalance: true },
+        });
+
+        if (Number(currentUser?.pointBalance ?? 0) < costAmount) {
+            throw new Error("พอยต์ไม่เพียงพอ");
+        }
+
         const result = await tx
             .update(users)
             .set({ pointBalance: sql`pointBalance - ${costAmount}` })
-            .where(and(eq(users.id, userId), sql`${users.pointBalance} >= ${costAmount}`));
+            .where(eq(users.id, userId));
 
-        if (getAffectedRows(result) !== 1) {
-            throw new Error("พอยต์ไม่เพียงพอ");
+        const affectedRows = getAffectedRows(result);
+        if (affectedRows !== null && affectedRows !== 1) {
+            throw new Error("ไม่สามารถหักพอยต์ได้");
+        }
+
+        return;
+    }
+
+    if (costType === "TICKET") {
+        const currentUser = await tx.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: { ticketBalance: true },
+        });
+
+        if (Number(currentUser?.ticketBalance ?? 0) < costAmount) {
+            throw new Error("ตั๋วสุ่มไม่เพียงพอ");
+        }
+
+        const result = await tx
+            .update(users)
+            .set({ ticketBalance: sql`ticketBalance - ${costAmount}` })
+            .where(eq(users.id, userId));
+
+        const affectedRows = getAffectedRows(result);
+        if (affectedRows !== null && affectedRows !== 1) {
+            throw new Error("ไม่สามารถหักตั๋วสุ่มได้");
         }
     }
 }
@@ -132,6 +175,10 @@ export async function grantCurrencyReward(
 
     if (rewardType === "POINT") {
         await tx.update(users).set({ pointBalance: sql`pointBalance + ${rewardAmount}` }).where(eq(users.id, userId));
+    }
+
+    if (rewardType === "TICKET") {
+        await tx.update(users).set({ ticketBalance: sql`ticketBalance + ${rewardAmount}` }).where(eq(users.id, userId));
     }
 }
 

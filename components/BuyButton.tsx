@@ -28,7 +28,7 @@ export function BuyButton({ productId, price, disabled }: Readonly<BuyButtonProp
         if (disabled || isLoading) return;
 
         const confirmed = await showPurchaseConfirm({
-            priceText: `เธฟ${price.toLocaleString()}`,
+            priceText: `฿${price.toLocaleString()}`,
         });
 
         if (!confirmed) return;
@@ -47,17 +47,25 @@ export function BuyButton({ productId, price, disabled }: Readonly<BuyButtonProp
             const data = await response.json();
 
             if (data.success) {
-                await showPurchaseSuccessModal({
+                const result = await showPurchaseSuccessModal({
                     productName: data.productName,
+                    title: "ซื้อสำเร็จ",
+                    text: "ต้องการเข้าไปดูสินค้าที่ซื้อเลยไหม",
+                    confirmText: "ไปดูสินค้าเลย",
+                    cancelText: "อยู่หน้านี้",
+                    showCancelButton: true,
                 });
                 router.refresh();
+                if (result.isConfirmed) {
+                    router.push("/dashboard/inventory");
+                }
             } else {
                 showWarning(data.message);
             }
         } catch (error) {
             await showErrorAlert(
-                "เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”",
-                error instanceof Error ? error.message : "เธเธฃเธธเธ“เธฒเธฅเธญเธเนเธซเธกเนเธญเธตเธเธเธฃเธฑเนเธ"
+                "เกิดข้อผิดพลาด",
+                error instanceof Error ? error.message : "กรุณาลองใหม่อีกครั้ง"
             );
         } finally {
             setIsLoading(false);
@@ -74,12 +82,12 @@ export function BuyButton({ productId, price, disabled }: Readonly<BuyButtonProp
             {isLoading ? (
                 <>
                     <Loader2 className="h-5 w-5 animate-spin" />
-                    เธเธณเธฅเธฑเธเธ”เธณเน€เธเธดเธเธเธฒเธฃ...
+                    กำลังดำเนินการ...
                 </>
             ) : (
                 <>
                     <ShoppingCart className="h-5 w-5" />
-                    {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : disabled ? "เนเธกเนเธเธฃเนเธญเธกเธเธฒเธข" : `เธเธทเนเธญเน€เธฅเธข - เธฟ${price.toLocaleString()}`}
+                    {maintenance?.enabled ? "ปิดปรับปรุง" : disabled ? "ไม่พร้อมจำหน่าย" : `ซื้อสินค้า - ฿${price.toLocaleString()}`}
                 </>
             )}
         </Button>

@@ -11,6 +11,7 @@ import { GachaGridMachine } from "@/components/GachaGridMachine";
 import { type GachaProductLite, type GachaTier } from "@/lib/gachaGrid";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { buildPageMetadata } from "@/lib/seo";
+import { EMPTY_USER_BALANCES } from "@/lib/userBalances";
 
 export const dynamic = "force-dynamic";
 
@@ -67,7 +68,7 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
     if (!machine.isActive || !machine.isEnabled) {
         return (
             <div className="flex flex-col items-center gap-3 py-20 text-center">
-                <div className="w-10 h-10 rounded-full border border-border flex items-center justify-center">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full border border-border">
                     <Lock className="h-4 w-4 text-muted-foreground" />
                 </div>
                 <p className="text-sm font-medium text-foreground">ตู้กาชานี้ปิดอยู่ชั่วคราว</p>
@@ -78,18 +79,24 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
 
     const costAmount = Number(machine.costAmount);
 
-    let userBalance = 0;
+    let initialBalances = EMPTY_USER_BALANCES;
     try {
         if (userId) {
             const user = await db.query.users.findFirst({
                 where: eq(users.id, userId),
-                columns: { creditBalance: true, pointBalance: true },
+                columns: { creditBalance: true, pointBalance: true, ticketBalance: true },
             });
             if (user) {
-                userBalance = Number(machine.costType === "CREDIT" ? (user.creditBalance ?? 0) : (user.pointBalance ?? 0));
+                initialBalances = {
+                    creditBalance: Number(user.creditBalance ?? 0),
+                    pointBalance: Number(user.pointBalance ?? 0),
+                    ticketBalance: Number(user.ticketBalance ?? 0),
+                };
             }
         }
-    } catch { }
+    } catch {
+        // Ignore balance fetch failures and fall back to zero values.
+    }
 
     let products: GachaProductLite[] = [];
     if (machine.gameType === "SPIN_X") {
@@ -98,8 +105,9 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
                 where: and(eq(gachaRewards.gachaMachineId, id), eq(gachaRewards.isActive, true)),
                 with: { product: { columns: { id: true, name: true, price: true, imageUrl: true, isSold: true } } },
             });
+
             products = rewards
-                .filter((reward) => (reward.rewardType === "PRODUCT" ? reward.product && !reward.product.isSold : (reward.rewardName && reward.rewardAmount)))
+                .filter((reward) => (reward.rewardType === "PRODUCT" ? reward.product && !reward.product.isSold : reward.rewardName && reward.rewardAmount))
                 .map((reward) => {
                     if (reward.rewardType === "PRODUCT" && reward.product) {
                         return {
@@ -110,15 +118,18 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
                             tier: (reward.tier as GachaTier) ?? "common",
                         };
                     }
+
                     return {
                         id: `reward:${reward.id}`,
-                        name: reward.rewardName ?? (reward.rewardType === "CREDIT" ? "เครดิต" : "พอยต์"),
+                        name: reward.rewardName ?? (reward.rewardType === "CREDIT" ? "เครดิต" : reward.rewardType === "POINT" ? "พอยต์" : "ตั๋วสุ่ม"),
                         price: Number(reward.rewardAmount ?? 0),
                         imageUrl: reward.rewardImageUrl ?? null,
                         tier: (reward.tier as GachaTier) ?? "common",
                     };
                 });
-        } catch { }
+        } catch {
+            // Ignore reward fetch failures and render an empty board.
+        }
     }
 
     const settings = {
@@ -130,47 +141,50 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
 
     return (
         <div className="min-h-screen bg-background">
-            <div className="relative overflow-hidden bg-gradient-to-br from-[#1a56db] via-[#1f4fc2] to-[#10284d] py-10 px-6 text-center">
-                <div className="absolute inset-0 opacity-10" style={{
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='52' viewBox='0 0 60 52'%3E%3Cpolygon points='30,0 60,17 60,35 30,52 0,35 0,17' fill='none' stroke='white' stroke-width='1'/%3E%3C/svg%3E")`,
-                    backgroundSize: "60px 52px"
-                }} />
-                <h1 className="text-3xl font-bold text-white mb-2 relative z-10 tracking-wide">{machine.name}</h1>
-                <p className="text-blue-200 text-sm relative z-10 font-medium flex items-center justify-center gap-1.5">
-                    <Link href="/" className="hover:text-white transition-colors">หน้าหลัก</Link>
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#1a56db] via-[#1f4fc2] to-[#10284d] px-6 py-10 text-center">
+                <div
+                    className="absolute inset-0 opacity-10"
+                    style={{
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='52' viewBox='0 0 60 52'%3E%3Cpolygon points='30,0 60,17 60,35 30,52 0,35 0,17' fill='none' stroke='white' stroke-width='1'/%3E%3C/svg%3E")`,
+                        backgroundSize: "60px 52px",
+                    }}
+                />
+                <h1 className="relative z-10 mb-2 text-3xl font-bold tracking-wide text-white">{machine.name}</h1>
+                <p className="relative z-10 flex items-center justify-center gap-1.5 text-sm font-medium text-blue-200">
+                    <Link href="/" className="transition-colors hover:text-white">หน้าหลัก</Link>
                     <span className="opacity-60">&gt;</span>
-                    <Link href="/gachapons" className="hover:text-white transition-colors">หมวดหมู่กาชา</Link>
+                    <Link href="/gachapons" className="transition-colors hover:text-white">หมวดหมู่กาชา</Link>
                     <span className="opacity-60">&gt;</span>
-                    <span className="text-white font-semibold">{machine.name}</span>
+                    <span className="font-semibold text-white">{machine.name}</span>
                 </p>
             </div>
 
-            <div className="max-w-4xl mx-auto px-4 py-8">
+            <div className="mx-auto max-w-4xl px-4 py-8">
                 <div className="overflow-x-hidden rounded-[1.75rem] border border-border/80 bg-card/95 px-4 py-6 shadow-[0_28px_70px_-40px_rgba(15,23,42,0.45)] backdrop-blur-sm sm:px-6 md:px-10">
                     <div className="flex flex-col items-center gap-6">
                         {settings.dailySpinLimit > 0 && (
-                            <div className="w-full flex justify-end">
-                                <span className="text-sm font-medium text-orange-500 bg-orange-500/10 border border-orange-500/20 rounded-full px-3 py-1 shadow-sm">
+                            <div className="flex w-full justify-end">
+                                <span className="rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1 text-sm font-medium text-orange-500 shadow-sm">
                                     สุ่มได้ {settings.dailySpinLimit} ครั้ง/วัน
                                 </span>
                             </div>
                         )}
 
-                        <div className="w-full flex justify-center">
+                        <div className="flex w-full justify-center">
                             {machine.gameType === "GRID_3X3" ? (
                                 <GachaGridMachine
                                     machineId={machine.id}
                                     machineName={machine.name}
                                     costType={machine.costType}
                                     costAmount={costAmount}
-                                    userBalance={userBalance}
+                                    initialBalances={initialBalances}
                                     maintenance={maintenance}
                                 />
                             ) : (
                                 <GachaRhombus
                                     products={products}
                                     settings={settings}
-                                    userBalance={userBalance}
+                                    initialBalances={initialBalances}
                                     machineId={machine.id}
                                     maintenance={maintenance}
                                 />

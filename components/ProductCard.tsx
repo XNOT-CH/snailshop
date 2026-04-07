@@ -67,10 +67,18 @@ export function ProductCard({
             const data = await response.json();
 
             if (data.success) {
-                await showPurchaseSuccessModal({
+                const result = await showPurchaseSuccessModal({
                     productName: data.productName,
+                    title: "ซื้อสำเร็จ",
+                    text: "ต้องการเข้าไปดูสินค้าที่ซื้อเลยไหม",
+                    confirmText: "ไปดูสินค้าเลย",
+                    cancelText: "อยู่หน้านี้",
+                    showCancelButton: true,
                 });
                 router.refresh();
+                if (result.isConfirmed) {
+                    router.push("/dashboard/inventory");
+                }
             } else {
                 showWarning(data.message);
             }
@@ -105,7 +113,7 @@ export function ProductCard({
                     </div>
                 )}
                 {!isSold && (
-                    <Link href={`/product/${id}`} className="absolute inset-0 z-10 bg-white/10 backdrop-blur-[1px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
+                    <Link href={`/product/${id}`} className="absolute inset-0 z-10 flex items-center justify-center bg-white/10 opacity-0 backdrop-blur-[1px] transition duration-300 group-hover:opacity-100">
                         <span
                             style={{
                                 border: "1.5px solid rgba(96, 165, 250, 0.85)",

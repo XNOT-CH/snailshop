@@ -61,7 +61,9 @@ export default function AdminSeasonPassPage() {
                     <Button asChild className="rounded-full px-5">
                         <Link href="/admin/season-pass/edit">แก้ไขแพ็กเกจ</Link>
                     </Button>
-                    <Button variant="outline" className="rounded-full px-5">ดู log การรับกล่อง</Button>
+                    <Button asChild variant="outline" className="rounded-full px-5">
+                        <Link href="/admin/season-pass/logs">ดู log การรับกล่อง</Link>
+                    </Button>
                 </div>
             </section>
 
@@ -165,9 +167,9 @@ export default function AdminSeasonPassPage() {
                         </div>
                         <div className="mt-5 space-y-3">
                             {[
-                                "บันทึก claim แยกตาม user และวันที่เพื่อกันรับซ้ำ",
-                                "มีสถานะ missed_day ไว้แสดงวันพลาดสิทธิ์ในหน้า user",
-                                "ตั้ง notification banner ใน dashboard เมื่อวันนี้ยังไม่รับกล่อง",
+                                "บันทึก claim แยกตาม user และวันที่เพื่อกันการรับซ้ำ",
+                                "มีสถานะ missed day ไว้แสดงวันที่พลาดสิทธิ์ในหน้า user",
+                                "ตั้ง notification banner ใน dashboard เมื่อวันนี้ยังไม่ได้รับกล่อง",
                                 "ให้แอดมินมี log และปุ่มชดเชยกรณีระบบมีปัญหา",
                             ].map((item) => (
                                 <div key={item} className="flex items-start gap-3 rounded-2xl border border-border/70 bg-background/80 p-4">

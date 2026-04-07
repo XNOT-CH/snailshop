@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -26,8 +26,8 @@ interface DashboardSidebarProps {
 const sidebarLinks = [
     { href: "/dashboard/topup", label: "เติมเงิน", icon: Wallet },
     { href: "/dashboard/season-pass", label: "Season Pass", icon: Gift },
-    { href: "/dashboard/wallet", label: "กระเป๋า", icon: ShoppingBag },
-    { href: "/dashboard/inventory", label: "สินค้าของฉัน", icon: Package },
+    { href: "/dashboard/wallet", label: "กระเป๋าเงิน", icon: ShoppingBag },
+    { href: "/dashboard/inventory", label: "คลังสินค้าของฉัน", icon: Package },
     { href: "/dashboard/settings", label: "ตั้งค่า", icon: Settings },
 ];
 
@@ -124,7 +124,7 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
                     className="flex flex-col items-center gap-0.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
                 >
                     <ArrowLeft className="h-5 w-5" />
-                    <span className="max-w-[4rem] truncate">ร้านค้า</span>
+                    <span className="max-w-[4rem] truncate">หน้าร้าน</span>
                 </Link>
             </nav>
         </TooltipProvider>

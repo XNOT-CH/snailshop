@@ -145,7 +145,7 @@ export default function GachaMachinesAdminPage() {
     };
 
     const toggleMachine = async (id: string, field: "isActive" | "isEnabled", val: boolean) => {
-        // Optimistic update โ€” no full reload so page doesn't scroll
+        // Optimistic update: no full reload so page doesn't scroll
         setMachines(prev => prev.map(m => m.id === id ? { ...m, [field]: val } : m));
         try {
             await fetch(`/api/admin/gacha-machines/${id}`, {
@@ -190,14 +190,14 @@ export default function GachaMachinesAdminPage() {
         <div className="space-y-6">
 
 
-            {/* โ”€โ”€ เพิ่มตู้กาชา โ”€โ”€ */}
+            {/* เพิ่มตู้กาชา */}
             <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
                 <div className="mb-5">
                     <h2 className="text-base font-bold text-[#145de7]">ตู้กาชา</h2>
                     <p className="text-xs text-muted-foreground">จัดการตู้กาชา</p>
                 </div>
 
-                {/* โ”€โ”€ เธเธฃเธฐเน€เธ เธ—มินิเกม โ”€โ”€ */}
+                {/* ประเภทมินิเกม */}
                 <div className="mb-5">
                     <span className={labelCls}>ประเภทมินิเกม *</span>
                     <div className="grid grid-cols-2 gap-3">
@@ -232,7 +232,7 @@ export default function GachaMachinesAdminPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* เนเธ–เธง 1: ชื่อตู้กาชา + เธซเธกเธงเธ”เธซเธกเธนเน */}
+                    {/* แถว 1: ชื่อตู้กาชา */}
                     <div>
                         <label htmlFor="addMachineName" className={labelCls}>ชื่อตู้กาชา *</label>
                         <input
@@ -244,7 +244,7 @@ export default function GachaMachinesAdminPage() {
                         />
                     </div>
 
-                    {/* เนเธ–เธง 2: ประเภทราคา + ราคาต่อครั้ง */}
+                    {/* แถว 2: ประเภทราคา + ราคาต่อครั้ง */}
                     <div>
                         <label htmlFor="addCostType" className={labelCls}>ประเภทราคา</label>
                         <select
@@ -256,6 +256,7 @@ export default function GachaMachinesAdminPage() {
                             <option value="FREE">ฟรี</option>
                             <option value="CREDIT">เครดิต</option>
                             <option value="POINT">พอยต์</option>
+                            <option value="TICKET">ตั๋วสุ่ม</option>
                         </select>
                     </div>
                     <div>
@@ -276,7 +277,7 @@ export default function GachaMachinesAdminPage() {
 
                 </div>
 
-                {/* โ”€โ”€ รูปเธ เธฒเธ โ”€โ”€ */}
+                {/* รูปภาพ */}
                 <div className="mt-4">
                     <label htmlFor="addMachineImageFile" className={labelCls}>รูปภาพตู้กาชา</label>
                     <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL รูปภาพ — รองรับ JPG, PNG, WebP, GIF ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนอัปโหลด</p>
@@ -358,7 +359,7 @@ export default function GachaMachinesAdminPage() {
                     </div>
                 </div>
 
-                {/* โ”€โ”€ รายละเอียด โ”€โ”€ */}
+                {/* รายละเอียด */}
                 <div className="mt-4">
                     <label htmlFor="addMachineDescription" className={labelCls}>รายละเอียด</label>
                     <textarea
@@ -381,7 +382,7 @@ export default function GachaMachinesAdminPage() {
                 </button>
             </div>
 
-            {/* โ”€โ”€ รายการตู้กาชา โ”€โ”€ */}
+            {/* รายการตู้กาชา */}
             {machines.length > 0 && (
                 <MachineTable
                     machines={machines}
@@ -464,6 +465,7 @@ function SortableRow({
                 {m.costType === "FREE" && <span className="text-green-600 font-medium">ฟรี</span>}
                 {m.costType === "CREDIT" && `${Number(m.costAmount).toLocaleString()} เครดิต`}
                 {m.costType === "POINT" && `${Number(m.costAmount).toLocaleString()} พอยต์`}
+                {m.costType === "TICKET" && `${Number(m.costAmount).toLocaleString()} ตั๋วสุ่ม`}
             </td>
             <td className="px-3 py-2.5 text-muted-foreground">{m._count.rewards}</td>
             <td className="px-3 py-2.5">
@@ -508,7 +510,7 @@ function SortableRow({
     );
 }
 
-// โ”€โ”€ Data table component โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+// Data table component
 function MachineTable({
     machines,
     onToggle,

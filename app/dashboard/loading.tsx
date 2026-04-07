@@ -1,13 +1,11 @@
-export default function DashboardLoading() {
+﻿export default function DashboardLoading() {
     return (
         <div className="space-y-8 animate-page-enter">
-            {/* Welcome Header Skeleton */}
             <div className="space-y-2">
                 <div className="h-8 w-64 skeleton-wave"></div>
                 <div className="h-4 w-80 skeleton-wave"></div>
             </div>
 
-            {/* Stats Cards Skeleton */}
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {[1, 2, 3].map((i) => (
                     <div
@@ -22,10 +20,8 @@ export default function DashboardLoading() {
                 ))}
             </div>
 
-            {/* Separator */}
             <div className="h-px skeleton-wave"></div>
 
-            {/* Recent Purchases Skeleton */}
             <div className="space-y-4">
                 <div className="flex items-center justify-between">
                     <div className="space-y-2">

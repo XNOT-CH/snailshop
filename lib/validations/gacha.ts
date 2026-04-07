@@ -12,7 +12,7 @@ export const gachaMachineSchema = z.object({
     imageUrl: z.string().nullish().or(z.literal("")),
     categoryId: z.uuid({ error: "Invalid UUID" }).optional().nullable(),
     gameType: z.enum(["SPIN_X", "GRID_3X3"]).default("SPIN_X"),
-    costType: z.enum(["FREE", "CREDIT", "POINT"]).default("FREE"),
+    costType: z.enum(["FREE", "CREDIT", "POINT", "TICKET"]).default("FREE"),
     costAmount: z.coerce.number().min(0).default(0),
     dailySpinLimit: z.coerce.number().int().min(0).default(0),
     tierMode: z.enum(["SINGLE", "MULTI"]).default("SINGLE"),
@@ -25,7 +25,7 @@ export type GachaMachineInput = z.infer<typeof gachaMachineSchema>;
 // ── Gacha Reward ─────────────────────────────────────────
 export const gachaRewardSchema = z.object({
     gachaMachineId: z.uuid({ error: "Invalid UUID" }).optional().nullable(),
-    rewardType: z.enum(["PRODUCT", "CREDIT", "POINT"]),
+    rewardType: z.enum(["PRODUCT", "CREDIT", "POINT", "TICKET"]),
     tier: z.enum(["common", "rare", "epic", "legendary"]).default("common"),
     probability: z.coerce.number().min(0).max(100).default(1),
     productId: z.uuid({ error: "Invalid UUID" }).optional().nullable(),
@@ -39,7 +39,7 @@ export type GachaRewardInput = z.infer<typeof gachaRewardSchema>;
 // ── Gacha Settings ───────────────────────────────────────
 export const gachaSettingsSchema = z.object({
     isEnabled: z.boolean().default(true),
-    costType: z.enum(["FREE", "CREDIT", "POINT"]).default("FREE"),
+    costType: z.enum(["FREE", "CREDIT", "POINT", "TICKET"]).default("FREE"),
     costAmount: z.coerce.number().min(0).default(0),
     dailySpinLimit: z.coerce.number().int().min(0).default(0),
     tierMode: z.enum(["PRICE", "MANUAL"]).default("PRICE"),

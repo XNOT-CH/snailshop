@@ -60,6 +60,16 @@ const defaultAddForm = {
     rewardImageUrl: "",
 };
 
+type SimulationRow = {
+    id: string;
+    name: string;
+    configuredProbability: number;
+    simulatedCount: number;
+    simulatedRate: number;
+};
+
+const SIMULATION_RUNS = 10000;
+
 function buildRewardPayload(form: { rewardType: string; productId?: string; probability: string | number; tier: string; rewardName?: string; rewardAmount?: string | number; rewardImageUrl?: string; }, machineId?: string) {
     if (form.rewardType === "PRODUCT") {
         return {
@@ -110,9 +120,24 @@ function sortRewards(rewards: GachaReward[], sortField: string | null, sortAsc: 
     });
 }
 
+function getSimulationRewardName(reward: GachaReward) {
+    return reward.rewardType === "PRODUCT"
+        ? (reward.product?.name ?? "Unknown Product")
+        : (reward.rewardName || "Unknown");
+}
+
+function isRewardEligibleForSimulation(reward: GachaReward) {
+    if (reward.rewardType === "PRODUCT") {
+        return Boolean(reward.product && !reward.product.isSold);
+    }
+
+    return Boolean(reward.rewardAmount && Number(reward.rewardAmount) > 0);
+}
+
 function validateReward(form: any, rewards: GachaReward[], ignoreId?: string): string | null {
     if (form.rewardType === "PRODUCT" && !form.productId) return "กรุณาเลือกสินค้า";
     if (form.rewardType !== "PRODUCT" && !String(form.rewardName).trim()) return "กรุณากรอกชื่อรางวัล";
+    if (form.rewardType !== "PRODUCT" && Number(form.rewardAmount) <= 0) return "จำนวนที่จะได้รับต้องมากกว่า 0";
     const prob = Number(form.probability);
     if (!prob || prob <= 0 || prob > 100) return "โอกาสได้รับต้องอยู่ระหว่าง 0.01-100";
     const otherTotal = rewards.filter(r => r.id !== ignoreId).reduce((sum, r) => sum + Number(r.probability ?? 0), 0);
@@ -325,6 +350,9 @@ export default function EditGachaMachinePage() {
     const [rewardPerPage, setRewardPerPage] = useState(10);
     const [rewardPage, setRewardPage] = useState(1);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [simulating, setSimulating] = useState(false);
+    const [simulationResults, setSimulationResults] = useState<SimulationRow[] | null>(null);
+    const [simulationRounds, setSimulationRounds] = useState<number>(SIMULATION_RUNS);
 
     // add reward form
     const [addForm, setAddForm] = useState(defaultAddForm);
@@ -529,6 +557,57 @@ export default function EditGachaMachinePage() {
         } catch { showError("เกิดข้อผิดพลาด"); } finally { setEditSaving(false); }
     };
 
+    const handleSimulate = async () => {
+        const eligibleRewards = rewards.filter(isRewardEligibleForSimulation);
+
+        if (eligibleRewards.length === 0) {
+            showError("ไม่มีรางวัลที่พร้อมสำหรับการจำลอง");
+            return;
+        }
+
+        setSimulating(true);
+        try {
+            const rounds = SIMULATION_RUNS;
+            const weights = eligibleRewards.map((reward) => Math.max(0, Number(reward.probability ?? 0)));
+            const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+
+            if (totalWeight <= 0) {
+                showError("โอกาสรวมต้องมากกว่า 0 ก่อนจำลอง");
+                return;
+            }
+
+            const counts = new Map<string, number>();
+            for (const reward of eligibleRewards) {
+                counts.set(reward.id, 0);
+            }
+
+            for (let round = 0; round < rounds; round += 1) {
+                let cursor = Math.random() * totalWeight;
+                for (let index = 0; index < eligibleRewards.length; index += 1) {
+                    cursor -= weights[index] ?? 0;
+                    if (cursor < 0) {
+                        const rewardId = eligibleRewards[index].id;
+                        counts.set(rewardId, (counts.get(rewardId) ?? 0) + 1);
+                        break;
+                    }
+                }
+            }
+
+            const rows = eligibleRewards.map((reward) => ({
+                id: reward.id,
+                name: getSimulationRewardName(reward),
+                configuredProbability: Number(reward.probability ?? 0),
+                simulatedCount: counts.get(reward.id) ?? 0,
+                simulatedRate: Number((((counts.get(reward.id) ?? 0) / rounds) * 100).toFixed(2)),
+            })).sort((a, b) => b.configuredProbability - a.configuredProbability);
+
+            setSimulationRounds(rounds);
+            setSimulationResults(rows);
+        } finally {
+            setSimulating(false);
+        }
+    };
+
     // โ”€โ”€ Pagination & Sorting โ”€โ”€
     const [sortField, setSortField] = useState<"name" | "probability" | "tier" | null>(null);
     const [sortAsc, setSortAsc] = useState(true);
@@ -617,6 +696,66 @@ export default function EditGachaMachinePage() {
                             ? "ไม่สามารถเพิ่มรางวัลได้อีก (ใช้ครบ 100%)"
                             : `เหลือโอกาส ${remaining}% สำหรับรางวัลเพิ่มเติม`}
                     </p>
+                    <div className="mt-4 rounded-xl border border-[#d9e5ff] bg-white p-4 shadow-sm">
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                            <div>
+                                <h3 className="text-sm font-bold text-[#145de7]">ผลจำลองอัตราสุ่ม</h3>
+                                <p className="text-[11px] text-muted-foreground">
+                                    ใช้ค่า probability ปัจจุบันของรางวัลในตู้ใบนี้เพื่อจำลอง {SIMULATION_RUNS.toLocaleString()} ครั้ง
+                                </p>
+                            </div>
+                            <button
+                                onClick={() => void handleSimulate()}
+                                disabled={simulating || rewards.length === 0}
+                                className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#145de7]/20 bg-[#eef4ff] px-4 py-2.5 text-xs font-bold text-[#145de7] transition hover:bg-[#dfeaff] disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {simulating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Gift className="w-3.5 h-3.5" />}
+                                จำลอง {SIMULATION_RUNS.toLocaleString()} ครั้ง
+                            </button>
+                        </div>
+
+                        {simulationResults ? (
+                            <>
+                                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                                    <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
+                                        <p className="text-[11px] text-muted-foreground">จำนวนรางวัลที่นำมาคิด</p>
+                                        <p className="mt-1 text-sm font-bold text-foreground">{simulationResults.length.toLocaleString()} รายการ</p>
+                                    </div>
+                                    <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
+                                        <p className="text-[11px] text-muted-foreground">รอบจำลองล่าสุด</p>
+                                        <p className="mt-1 text-sm font-bold text-foreground">{simulationRounds.toLocaleString()} ครั้ง</p>
+                                    </div>
+                                    <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
+                                        <p className="text-[11px] text-muted-foreground">เปอร์เซ็นต์รวมของรางวัลที่ใช้จริง</p>
+                                        <p className="mt-1 text-sm font-bold text-foreground">
+                                            {simulationResults.reduce((sum, row) => sum + row.configuredProbability, 0).toFixed(2)}%
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="mt-3 overflow-hidden rounded-xl border border-[#d9e5ff] bg-white">
+                                    <div className="grid grid-cols-[minmax(0,1.5fr)_90px_90px_90px] gap-2 border-b border-border bg-[#f7faff] px-3 py-2 text-[11px] font-bold text-[#145de7]">
+                                        <span>รางวัล</span>
+                                        <span className="text-right">ตั้งไว้</span>
+                                        <span className="text-right">สุ่มได้</span>
+                                        <span className="text-right">จำนวน</span>
+                                    </div>
+                                    {simulationResults.map((row) => (
+                                        <div key={row.id} className="grid grid-cols-[minmax(0,1.5fr)_90px_90px_90px] gap-2 border-b border-border/60 px-3 py-2 text-[12px] last:border-b-0">
+                                            <span className="truncate font-medium text-foreground">{row.name}</span>
+                                            <span className="text-right text-muted-foreground">{row.configuredProbability}%</span>
+                                            <span className="text-right font-semibold text-[#145de7]">{row.simulatedRate}%</span>
+                                            <span className="text-right text-muted-foreground">{row.simulatedCount.toLocaleString()}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        ) : (
+                            <div className="mt-3 rounded-lg border border-dashed border-[#cbdcff] bg-[#f7faff] px-3 py-4 text-xs text-muted-foreground">
+                                กดปุ่มจำลองเพื่อดูว่าค่าเปอร์เซ็นต์ที่ตั้งไว้ตอนนี้ออกจริงประมาณไหนเมื่อสุ่ม {SIMULATION_RUNS.toLocaleString()} ครั้ง
+                            </div>
+                        )}
+                    </div>
                 </div>
 
                 <AddRewardForm

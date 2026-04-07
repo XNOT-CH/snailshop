@@ -125,10 +125,18 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
             const data = await response.json();
 
             if (data.success) {
-                await showPurchaseSuccessModal({
+                const result = await showPurchaseSuccessModal({
                     productName: data.productName,
+                    title: "ซื้อสำเร็จ",
+                    text: "ต้องการเข้าไปดูสินค้าที่ซื้อเลยไหม",
+                    confirmText: "ไปดูสินค้าเลย",
+                    cancelText: "อยู่หน้านี้",
+                    showCancelButton: true,
                 });
                 router.refresh();
+                if (result.isConfirmed) {
+                    router.push("/dashboard/inventory");
+                }
             } else {
                 showWarning(data.message);
             }

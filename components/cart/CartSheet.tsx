@@ -68,7 +68,17 @@ function CartSheetContent() {
                 const label = data.purchasedCount === 1
                     ? data.orders?.[0]?.productName
                     : `${data.purchasedCount} รายการ รวม ฿${totalDisplay.toLocaleString()}`;
-                await showPurchaseSuccessModal({ productName: label });
+                const result = await showPurchaseSuccessModal({
+                    productName: label,
+                    title: "ซื้อสำเร็จ",
+                    text: "ต้องการเข้าไปดูสินค้าที่ซื้อเลยไหม",
+                    confirmText: "ไปดูสินค้าเลย",
+                    cancelText: "อยู่หน้านี้",
+                    showCancelButton: true,
+                });
+                if (result.isConfirmed) {
+                    router.push("/dashboard/inventory");
+                }
             } else {
                 showError(`ไม่สามารถซื้อได้: ${data.message}`);
                 if (data.soldProductIds && Array.isArray(data.soldProductIds)) {

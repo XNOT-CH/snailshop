@@ -51,7 +51,7 @@ function mapShippingAddress(shippingAddress: any, updateData: any) {
 }
 
 /**
- * เธญเธฑเธเน€เธ”เธ•เนเธเธฃเนเธเธฅเนเธเธนเนเนเธเน
+ * อัปเดตข้อมูลโปรไฟล์ของผู้ใช้ปัจจุบัน
  */
 export async function updateProfile(formData: UpdateProfileInput): Promise<ActionResult> {
     try {
@@ -170,7 +170,7 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
 }
 
 /**
- * เธ”เธถเธเธเนเธญเธกเธนเธฅเนเธเธฃเนเธเธฅเนเธเธนเนเนเธเนเธเธฑเธเธเธธเธเธฑเธ
+ * ดึงข้อมูลโปรไฟล์ของผู้ใช้ปัจจุบันสำหรับแสดงผลในหน้าโปรไฟล์
  */
 export async function getCurrentUserProfile() {
     try {

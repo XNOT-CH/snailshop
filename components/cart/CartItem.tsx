@@ -72,3 +72,4 @@ export function CartItem({ item, onRemove, onUpdateQuantity }: Readonly<CartItem
         </div>
     );
 }
+

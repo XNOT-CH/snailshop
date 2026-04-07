@@ -1,11 +1,11 @@
-import Swal from "sweetalert2";
+﻿import Swal from "sweetalert2";
 
 const modalDefaults = {
     scrollbarPadding: false,
     heightAuto: false,
 } as const;
 
-// Custom SweetAlert Toast (สำหรับแจ้งเตือนเล็กๆ)
+// Custom SweetAlert Toast (สำหรับแจ้งเตือนเล็ก ๆ)
 const Toast = Swal.mixin({
     toast: true,
     position: "top-end",
@@ -141,7 +141,7 @@ export const showPurchaseConfirm = async (params: {
                 </div>
 
                 <div class="max-w-sm mx-auto bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm">
-                    <p class="text-sm text-gray-500 mb-1">รายการซื้อ</p>
+                    <p class="text-sm text-gray-500 mb-1">รายการสั่งซื้อ</p>
                     ${params.productName ? `<p class="font-bold text-gray-900 text-base">${params.productName}</p>` : ""}
                     <div class="font-semibold text-blue-500 text-xl mt-2">
                         ${params.priceText}
@@ -177,6 +177,8 @@ export const showPurchaseSuccessModal = (params: {
     text?: string;
     html?: string;
     confirmText?: string;
+    cancelText?: string;
+    showCancelButton?: boolean;
 }) => {
     return Swal.fire({
         ...modalDefaults,
@@ -186,17 +188,21 @@ export const showPurchaseSuccessModal = (params: {
         html:
             params.html ||
             (params.productName
-                ? `ซื้อ <strong>${params.productName}</strong> เรียบร้อยแล้ว<br><small>ดูข้อมูลบัญชีได้ที่ประวัติการสั่งซื้อ</small>`
+                ? `ซื้อ <strong>${params.productName}</strong> เรียบร้อยแล้ว<br><small>ดูข้อมูลสินค้าได้ที่หน้าคลังสินค้า</small>`
                 : undefined),
         width: "min(92vw, 36rem)",
+        showCancelButton: params.showCancelButton ?? false,
         confirmButtonColor: "#3b82f6",
         confirmButtonText: params.confirmText || "ตกลง",
+        cancelButtonText: params.cancelText || "อยู่หน้านี้",
+        reverseButtons: true,
         customClass: {
             popup: "rounded-3xl !p-6 sm:!p-8",
             title: "!text-3xl !font-bold",
             htmlContainer: "!text-lg",
-            actions: "w-full",
+            actions: "flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-center",
             confirmButton: "w-full sm:w-auto rounded-xl px-8 py-2 !text-base",
+            cancelButton: "w-full sm:w-auto rounded-xl px-8 py-2 !text-base",
         },
     });
 };
@@ -253,3 +259,5 @@ export const hideLoading = () => {
 };
 
 export default Swal;
+
+

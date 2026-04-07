@@ -14,7 +14,7 @@ export async function GET() {
 
         const user = await db.query.users.findFirst({
             where: eq(users.id, authCheck.userId),
-            columns: { creditBalance: true, pointBalance: true },
+            columns: { creditBalance: true, pointBalance: true, ticketBalance: true },
         });
 
         if (!user) {
@@ -25,6 +25,7 @@ export async function GET() {
             success: true,
             creditBalance: Number(user.creditBalance ?? 0),
             pointBalance: Number(user.pointBalance ?? 0),
+            ticketBalance: Number(user.ticketBalance ?? 0),
         });
     } catch {
         return NextResponse.json({ success: false, message: "เกิดข้อผิดพลาด" }, { status: 503 });

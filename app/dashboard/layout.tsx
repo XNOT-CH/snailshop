@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";

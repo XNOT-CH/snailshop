@@ -11,6 +11,7 @@ import {
     CircleAlert,
     Clock3,
     Coins,
+    Crown,
     Gift,
     ShieldCheck,
     Ticket,
@@ -95,10 +96,6 @@ export default async function SeasonPassPurchasePage() {
                                         </Link>
                                     </Button>
                                 )}
-
-                                <Button asChild variant="outline" className="rounded-full px-5">
-                                    <Link href="/dashboard/season-pass">ไปหน้า Season Pass</Link>
-                                </Button>
                             </div>
 
                             <div className="grid gap-3 sm:grid-cols-2">
@@ -255,3 +252,4 @@ export default async function SeasonPassPurchasePage() {
         </div>
     );
 }
+

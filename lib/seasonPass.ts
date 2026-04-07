@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, gte, lt } from "drizzle-orm";
-import { db, seasonPassClaims, seasonPassPlans, seasonPassRewards, seasonPassSubscriptions } from "@/lib/db";
+import { db, seasonPassClaims, seasonPassPlans, seasonPassRewards, seasonPassSubscriptions, users } from "@/lib/db";
 import { formatDateInTimeZone, mysqlDateTimeToIso, mysqlNow, TH_TIME_ZONE } from "@/lib/utils/date";
 
 export type SeasonPassRewardType = "credits" | "points" | "tickets";
@@ -500,6 +500,30 @@ export async function getAdminSeasonPassRewards(planId?: string) {
         dayNumber: reward.day,
         rewardType: reward.type,
     }));
+}
+
+export async function getAdminSeasonPassClaimLogs(limit = 100) {
+    await ensureSeasonPassSchema();
+
+    return db
+        .select({
+            id: seasonPassClaims.id,
+            dayNumber: seasonPassClaims.dayNumber,
+            rewardType: seasonPassClaims.rewardType,
+            rewardLabel: seasonPassClaims.rewardLabel,
+            rewardAmount: seasonPassClaims.rewardAmount,
+            claimDateKey: seasonPassClaims.claimDateKey,
+            createdAt: seasonPassClaims.createdAt,
+            username: users.username,
+            displayName: users.name,
+            subscriptionStartAt: seasonPassSubscriptions.startAt,
+            subscriptionEndAt: seasonPassSubscriptions.endAt,
+        })
+        .from(seasonPassClaims)
+        .innerJoin(users, eq(users.id, seasonPassClaims.userId))
+        .innerJoin(seasonPassSubscriptions, eq(seasonPassSubscriptions.id, seasonPassClaims.subscriptionId))
+        .orderBy(desc(seasonPassClaims.createdAt))
+        .limit(limit);
 }
 
 export async function updateAdminSeasonPassRewards(

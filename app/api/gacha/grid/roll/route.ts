@@ -9,6 +9,7 @@ import {
     deductUserBalanceOrThrow,
     grantCurrencyReward,
 } from "@/lib/gachaExecution";
+import { pickWeightedCandidate } from "@/lib/gachaProbability";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkGachaRateLimit, getClientIp } from "@/lib/rateLimit";
 
@@ -67,6 +68,8 @@ function getRewardDetails(chosen: {
         rewardName = chosen.rewardName;
     } else if (chosen.rewardType === "CREDIT") {
         rewardName = "เครดิต";
+    } else if (chosen.rewardType === "TICKET") {
+        rewardName = "ตั๋วสุ่ม";
     } else {
         rewardName = "พอยต์";
     }
@@ -173,8 +176,10 @@ async function handleGridRoll(userId: string, machineId: string | null, costType
         return { error: "ไม่มีรางวัลในขณะนี้", status: 400 };
     }
 
-    const randomIndex = crypto.randomInt(0, eligible.length);
-    const chosen = eligible[randomIndex];
+    const chosen = pickWeightedCandidate(eligible);
+    if (!chosen) {
+        return { error: "ไม่พบรางวัลที่สามารถสุ่มได้", status: 400 };
+    }
     const wonIndex = rewardList.findIndex((reward) => reward.id === chosen.id);
     const { rewardName, imageUrl, rewardAmount } = getRewardDetails(chosen);
 
@@ -252,6 +257,10 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, data: result.data });
     } catch (e) {
         const error = e as Error;
+        if (error.message?.includes("ตั๋วสุ่มไม่เพียงพอ")) {
+            return NextResponse.json({ success: false, message: error.message }, { status: 400 });
+        }
+
         if (error.message && [
             "ตู้กาชานี้ปิดอยู่ชั่วคราว",
             "ระบบกาชาปิดอยู่ชั่วคราว",

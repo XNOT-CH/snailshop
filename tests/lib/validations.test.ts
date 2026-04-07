@@ -141,11 +141,18 @@ describe("gacha validations", () => {
       const result = gachaMachineSchema.safeParse({ name: "Box", costType: "CREDIT", costAmount: 100 });
       expect(result.success).toBe(true);
     });
+    it("accepts TICKET as machine cost type", () => {
+      const result = gachaMachineSchema.safeParse({ name: "Ticket Box", costType: "TICKET", costAmount: 1 });
+      expect(result.success).toBe(true);
+    });
   });
 
   describe("gachaRewardSchema", () => {
     it("accepts valid reward", () => {
       expect(gachaRewardSchema.safeParse({ rewardType: "CREDIT", tier: "common", probability: 50 }).success).toBe(true);
+    });
+    it("accepts TICKET reward type", () => {
+      expect(gachaRewardSchema.safeParse({ rewardType: "TICKET", tier: "rare", probability: 10, rewardName: "ตั๋วสุ่ม", rewardAmount: 3 }).success).toBe(true);
     });
     it("rejects probability over 100", () => {
       expect(gachaRewardSchema.safeParse({ rewardType: "CREDIT", probability: 150 }).success).toBe(false);
@@ -155,6 +162,9 @@ describe("gacha validations", () => {
   describe("gachaSettingsSchema", () => {
     it("accepts valid settings", () => {
       expect(gachaSettingsSchema.safeParse({ isEnabled: true, costType: "FREE" }).success).toBe(true);
+    });
+    it("accepts TICKET as settings cost type", () => {
+      expect(gachaSettingsSchema.safeParse({ isEnabled: true, costType: "TICKET", costAmount: 2 }).success).toBe(true);
     });
   });
 });
