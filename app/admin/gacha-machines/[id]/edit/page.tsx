@@ -416,7 +416,7 @@ export default function EditGachaMachinePage() {
             .catch(() => { /* ignore */ });
     }, [loadMachine, loadRewards]);
 
-    // โ”€โ”€ Add reward โ”€โ”€
+    // Add reward
     const handleAddReward = async () => {
         const error = validateReward(addForm, rewards);
         if (error) return showError(error);
@@ -512,7 +512,7 @@ export default function EditGachaMachinePage() {
         clearCropDialog();
     }, [clearCropDialog, uploadRewardImage]);
 
-    // โ”€โ”€ Delete reward โ”€โ”€
+    // Delete reward
     const handleDeleteReward = async (rewardId: string) => {
         if (!await showDeleteConfirm("รางวัลนี้")) return;
         setDeletingId(rewardId);
@@ -522,7 +522,7 @@ export default function EditGachaMachinePage() {
         } finally { setDeletingId(null); }
     };
 
-    // โ”€โ”€ Edit reward โ”€โ”€
+    // Edit reward
     const openEdit = (r: GachaReward) => {
         setEditReward(r);
         setEditForm({
@@ -608,7 +608,7 @@ export default function EditGachaMachinePage() {
         }
     };
 
-    // โ”€โ”€ Pagination & Sorting โ”€โ”€
+    // Pagination and sorting
     const [sortField, setSortField] = useState<"name" | "probability" | "tier" | null>(null);
     const [sortAsc, setSortAsc] = useState(true);
 
@@ -633,7 +633,7 @@ export default function EditGachaMachinePage() {
     const totalRewardPages = Math.max(1, Math.ceil(sortedRewards.length / rewardPerPage));
     const paginatedRewards = sortedRewards.slice((rewardPage - 1) * rewardPerPage, rewardPage * rewardPerPage);
 
-    // โ”€โ”€ Total probability used โ”€โ”€
+    // Total probability used
     const totalUsed = Math.round(rewards.reduce((sum, r) => sum + Number(r.probability ?? 0), 0) * 100) / 100;
     const remaining = Math.max(0, Math.round((100 - totalUsed) * 100) / 100);
 
@@ -664,7 +664,7 @@ export default function EditGachaMachinePage() {
                 </div>
             </div>
 
-            {/* โ”€โ”€ จัดการรางวัล โ”€โ”€ */}
+            {/* จัดการรางวัล */}
             <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
 
                 {/* Section header */}
@@ -734,20 +734,24 @@ export default function EditGachaMachinePage() {
                                 </div>
 
                                 <div className="mt-3 overflow-hidden rounded-xl border border-[#d9e5ff] bg-white">
-                                    <div className="grid grid-cols-[minmax(0,1.5fr)_90px_90px_90px] gap-2 border-b border-border bg-[#f7faff] px-3 py-2 text-[11px] font-bold text-[#145de7]">
-                                        <span>รางวัล</span>
-                                        <span className="text-right">ตั้งไว้</span>
-                                        <span className="text-right">สุ่มได้</span>
-                                        <span className="text-right">จำนวน</span>
-                                    </div>
-                                    {simulationResults.map((row) => (
-                                        <div key={row.id} className="grid grid-cols-[minmax(0,1.5fr)_90px_90px_90px] gap-2 border-b border-border/60 px-3 py-2 text-[12px] last:border-b-0">
-                                            <span className="truncate font-medium text-foreground">{row.name}</span>
-                                            <span className="text-right text-muted-foreground">{row.configuredProbability}%</span>
-                                            <span className="text-right font-semibold text-[#145de7]">{row.simulatedRate}%</span>
-                                            <span className="text-right text-muted-foreground">{row.simulatedCount.toLocaleString()}</span>
+                                    <div className="overflow-x-auto">
+                                        <div className="min-w-[420px]">
+                                            <div className="grid grid-cols-[minmax(0,1.5fr)_90px_90px_90px] gap-2 border-b border-border bg-[#f7faff] px-3 py-2 text-[11px] font-bold text-[#145de7]">
+                                                <span>รางวัล</span>
+                                                <span className="text-right">ตั้งไว้</span>
+                                                <span className="text-right">สุ่มได้</span>
+                                                <span className="text-right">จำนวน</span>
+                                            </div>
+                                            {simulationResults.map((row) => (
+                                                <div key={row.id} className="grid grid-cols-[minmax(0,1.5fr)_90px_90px_90px] gap-2 border-b border-border/60 px-3 py-2 text-[12px] last:border-b-0">
+                                                    <span className="truncate font-medium text-foreground">{row.name}</span>
+                                                    <span className="text-right text-muted-foreground">{row.configuredProbability}%</span>
+                                                    <span className="text-right font-semibold text-[#145de7]">{row.simulatedRate}%</span>
+                                                    <span className="text-right text-muted-foreground">{row.simulatedCount.toLocaleString()}</span>
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
+                                    </div>
                                 </div>
                             </>
                         ) : (
@@ -789,7 +793,7 @@ export default function EditGachaMachinePage() {
                 )}
 
                 {/* Toolbar */}
-                <div className="px-4 py-3 border-b border-border flex flex-wrap items-center gap-3 justify-between">
+                <div className="px-4 py-3 border-b border-border flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>แสดง</span>
                         <select value={rewardPerPage} onChange={e => { setRewardPerPage(Number(e.target.value)); setRewardPage(1); }} className="border border-border rounded px-2 py-1 text-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-[#145de7]">
@@ -799,13 +803,67 @@ export default function EditGachaMachinePage() {
                     </div>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <span>ค้นหา</span>
-                        <input value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setRewardPage(1); }} placeholder="" className="border border-border rounded px-2 py-1.5 text-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-[#145de7] w-40" />
+                        <input value={searchQuery} onChange={e => { setSearchQuery(e.target.value); setRewardPage(1); }} placeholder="" className="border border-border rounded px-2 py-1.5 text-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-[#145de7] w-full sm:w-40" />
                     </div>
                 </div>
 
                 {/* Table */}
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                <div className="space-y-3 px-4 py-4 md:hidden">
+                    {rewardsLoading && (
+                        <div className="text-center py-10"><Loader2 className="w-5 h-5 animate-spin text-muted-foreground mx-auto" /></div>
+                    )}
+                    {!rewardsLoading && paginatedRewards.length === 0 && (
+                        <div className="text-center py-10 text-muted-foreground text-sm">ไม่พบรายการ</div>
+                    )}
+                    {!rewardsLoading && paginatedRewards.length > 0 && paginatedRewards.map((r, i) => {
+                        const imgUrl = r.rewardType === "PRODUCT" ? r.product?.imageUrl : r.rewardImageUrl;
+                        const name = r.rewardType === "PRODUCT" ? (r.product?.name ?? "—") : (r.rewardName ?? "—");
+                        const isBeingEdited = editReward?.id === r.id;
+                        return (
+                            <div key={r.id} className={`rounded-xl border border-border p-4 ${isBeingEdited ? "bg-violet-50/60 dark:bg-violet-950/20" : ""}`}>
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="flex min-w-0 items-center gap-3">
+                                        {validImageUrl(imgUrl) ? (
+                                            <Image src={imgUrl!} alt={name} width={36} height={36} className="w-10 h-10 rounded-full object-cover flex-shrink-0" unoptimized />
+                                        ) : (
+                                            <div className="w-10 h-10 rounded-full bg-[#eff6ff] flex items-center justify-center flex-shrink-0">
+                                                <LayoutGrid className="w-4 h-4 text-[#145de7]/40" />
+                                            </div>
+                                        )}
+                                        <div className="min-w-0">
+                                            <p className="font-medium text-foreground truncate">{name}</p>
+                                            <p className="text-xs text-muted-foreground">ลำดับ {(rewardPage - 1) * rewardPerPage + i + 1}</p>
+                                        </div>
+                                    </div>
+                                    <span className={`text-xs px-2.5 py-1 rounded-md font-semibold ${TIER_COLORS[r.tier] ?? TIER_COLORS.common}`}>
+                                        {TIER_OPTIONS.find(t => t.value === r.tier)?.label ?? r.tier}
+                                    </span>
+                                </div>
+                                <div className="mt-3 flex items-center justify-between gap-3 text-sm">
+                                    <span className="text-muted-foreground">โอกาสได้รับ</span>
+                                    <span className="font-medium text-foreground">{r.probability}%</span>
+                                </div>
+                                <div className="mt-4 flex items-center justify-end gap-2">
+                                    <button
+                                        onClick={() => openEdit(r)}
+                                        className="w-8 h-8 rounded-lg text-muted-foreground hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-500/10 dark:hover:text-violet-400 flex items-center justify-center transition"
+                                    >
+                                        <Pencil className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                        onClick={() => void handleDeleteReward(r.id)}
+                                        className="w-8 h-8 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 flex items-center justify-center transition"
+                                    >
+                                        {deletingId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+
+                <div className="hidden overflow-x-auto md:block">
+                    <table className="w-full min-w-[760px] text-sm">
                         <thead>
                             <tr className="border-b border-border bg-muted/40">
                                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ลำดับ</th>

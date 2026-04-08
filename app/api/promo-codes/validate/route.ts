@@ -5,12 +5,6 @@ import {
     calculatePromoDiscountAmount,
     validatePromoCode,
 } from "@/lib/promo";
-import {
-    checkPromoValidationRateLimit,
-    clearPromoValidationAttempts,
-    getClientIp,
-    recordFailedPromoValidation,
-} from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
     try {
@@ -19,21 +13,12 @@ export async function POST(request: NextRequest) {
         if (!code || typeof code !== "string") {
             return NextResponse.json({
                 valid: false,
-                message: "กรุณากรอกโค้ดส่วนลด",
+                message: "กรุณากรอกโค้ด",
             });
         }
 
         const session = await auth();
         const userId = session?.user?.id ?? null;
-        const identifier = userId ? `user:${userId}` : `ip:${getClientIp(request)}`;
-
-        const limit = checkPromoValidationRateLimit(identifier);
-        if (limit.blocked) {
-            return NextResponse.json({
-                valid: false,
-                message: limit.message || "กรุณาลองใหม่ภายหลัง",
-            }, { status: 429 });
-        }
 
         const result = await validatePromoCode({
             code,
@@ -43,23 +28,24 @@ export async function POST(request: NextRequest) {
         });
 
         if (!result.valid) {
-            recordFailedPromoValidation(identifier);
             return NextResponse.json(result);
         }
-
-        clearPromoValidationAttempts(identifier);
 
         const { minPurchase, discountAmount } = calculatePromoDiscountAmount(
             result.promo,
             typeof totalPrice === "number" ? totalPrice : null
         );
+        const finalPrice = typeof totalPrice === "number"
+            ? Math.max(0, Math.round((totalPrice - (discountAmount ?? 0)) * 100) / 100)
+            : null;
 
         return NextResponse.json({
             valid: true,
             discount: Number(result.promo.discountValue),
             discountType: result.promo.discountType,
             discountAmount,
-            maxDiscount: result.promo.maxDiscount ? Number(result.promo.maxDiscount) : null,
+            finalPrice,
+            maxDiscount: result.maxDiscount,
             minPurchase,
             usagePerUser: result.promo.usagePerUser ?? null,
             isNewUserOnly: Boolean(result.promo.isNewUserOnly),

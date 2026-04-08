@@ -517,8 +517,145 @@ export default function AdminNewsPage() {
                 )}
 
                 {!loading && news.length > 0 && (
-                    <div className="overflow-x-auto">
-                        <Table className="min-w-[860px]">
+                    <>
+                        <div className="space-y-3 p-4 md:hidden">
+                            {sortedNews.map((article, index) => (
+                                <div
+                                    key={article.id}
+                                    className="rounded-2xl border border-border bg-card p-4 shadow-sm"
+                                >
+                                    <div className="flex items-start gap-3">
+                                        {article.imageUrl ? (
+                                            <div className="relative h-16 w-24 flex-shrink-0 overflow-hidden rounded-xl border border-border bg-muted shadow-sm">
+                                                <Image
+                                                    src={article.imageUrl}
+                                                    alt={article.title}
+                                                    fill
+                                                    sizes="96px"
+                                                    className="object-cover"
+                                                    unoptimized
+                                                />
+                                            </div>
+                                        ) : (
+                                            <div className="flex h-16 w-24 flex-shrink-0 items-center justify-center rounded-xl border border-dashed border-border bg-muted/40 text-muted-foreground">
+                                                <ImageIcon className="h-4 w-4" />
+                                            </div>
+                                        )}
+
+                                        <div className="min-w-0 flex-1 space-y-2">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <p className="font-semibold text-foreground">
+                                                    {article.title}
+                                                </p>
+                                                <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600">
+                                                    ลำดับ {index + 1}
+                                                </span>
+                                                <span
+                                                    className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${
+                                                        article.isActive
+                                                            ? "bg-emerald-100 text-emerald-700"
+                                                            : "bg-slate-100 text-slate-500"
+                                                    }`}
+                                                >
+                                                    {article.isActive ? "แสดง" : "ซ่อน"}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm leading-6 text-muted-foreground">
+                                                {getExcerpt(article.description, 120)}
+                                            </p>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground">
+                                                    <span>เปิด/ปิด</span>
+                                                    <Switch
+                                                        checked={article.isActive}
+                                                        onCheckedChange={() =>
+                                                            void toggleActive(article)
+                                                        }
+                                                    />
+                                                </div>
+                                                {article.link ? (
+                                                    <Button
+                                                        asChild
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="rounded-xl"
+                                                    >
+                                                        <a
+                                                            href={article.link}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                        >
+                                                            <ExternalLink className="mr-1.5 h-4 w-4" />
+                                                            เปิดลิงก์
+                                                        </a>
+                                                    </Button>
+                                                ) : null}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+                                        <div className="flex items-center gap-1.5">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-9 w-9 rounded-xl text-muted-foreground hover:bg-muted"
+                                                disabled={index === 0 || reorderingId === article.id}
+                                                onClick={() => void handleReorder(article.id, "up")}
+                                                aria-label={`เลื่อน ${article.title} ขึ้น`}
+                                            >
+                                                {reorderingId === article.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <ArrowUp className="h-4 w-4" />
+                                                )}
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-9 w-9 rounded-xl text-muted-foreground hover:bg-muted"
+                                                disabled={
+                                                    index === sortedNews.length - 1 ||
+                                                    reorderingId === article.id
+                                                }
+                                                onClick={() => void handleReorder(article.id, "down")}
+                                                aria-label={`เลื่อน ${article.title} ลง`}
+                                            >
+                                                {reorderingId === article.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <ArrowDown className="h-4 w-4" />
+                                                )}
+                                            </Button>
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="rounded-xl text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
+                                                onClick={() => openDialog(article)}
+                                                aria-label={`แก้ไขข่าว ${article.title}`}
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="rounded-xl text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                                                onClick={() => void handleDelete(article)}
+                                                aria-label={`ลบข่าว ${article.title}`}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="hidden overflow-x-auto md:block">
+                            <Table className="min-w-[860px]">
                             <TableHeader>
                                 <TableRow className="bg-muted/30">
                                     <TableHead className="w-[110px]">รูป</TableHead>
@@ -665,8 +802,9 @@ export default function AdminNewsPage() {
                                     </TableRow>
                                 ))}
                             </TableBody>
-                        </Table>
-                    </div>
+                            </Table>
+                        </div>
+                    </>
                 )}
             </div>
         </div>

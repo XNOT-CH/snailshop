@@ -139,6 +139,19 @@ describe("API: /api/promo-codes/validate (POST)", () => {
     expect(body.maxDiscount).toBe(30);
   });
 
+  it("treats maxDiscount=0 as uncapped percentage discount", async () => {
+    (db.query.promoCodes.findFirst as any).mockResolvedValue(
+      mkPromo({ code: "NOTGOD", discountValue: "10", discountType: "PERCENTAGE", minPurchase: "500.00", maxDiscount: "0.00" })
+    );
+    const { POST } = await import("@/app/api/promo-codes/validate/route");
+    const res = await POST(mkReq({ code: "NOTGOD", totalPrice: 600 }));
+    const body = await res.json();
+    expect(body.valid).toBe(true);
+    expect(body.discountAmount).toBe(60);
+    expect(body.finalPrice).toBe(540);
+    expect(body.maxDiscount).toBeNull();
+  });
+
   it("valid PERCENTAGE promo without totalPrice returns null discountAmount", async () => {
     (db.query.promoCodes.findFirst as any).mockResolvedValue(mkPromo());
     const { POST } = await import("@/app/api/promo-codes/validate/route");

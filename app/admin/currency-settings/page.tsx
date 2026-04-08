@@ -114,7 +114,7 @@ export default function CurrencySettingsPage() {
                     {/* Symbol */}
                     <div className="space-y-3">
                         <Label>สัญลักษณ์ *</Label>
-                        <div className="grid grid-cols-8 gap-2">
+                        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8">
                             {SYMBOL_OPTIONS.map((symbol) => {
                                 const isSelected = settings.symbol === symbol;
                                 return (

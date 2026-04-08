@@ -46,8 +46,8 @@ export function ShopControls({ currentPage, totalPages, currentSort }: Readonly<
         <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 
             {/* ─── Sort pill bar ─── */}
-            <div className="overflow-x-auto pb-1">
-                <div className="flex min-w-max items-center gap-1.5">
+            <div className="pb-1">
+                <div className="flex flex-wrap items-center gap-1.5">
                     <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
                     {sortOptions.map((opt) => {
                         const isActive = activeSort === opt.value;

@@ -211,7 +211,7 @@ export default function NavItemsAdminPage() {
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleAddItem} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                             <div className="space-y-2">
                                 <Label htmlFor="newLabel">ชื่อเมนูที่แสดง</Label>
                                 <Input
@@ -232,7 +232,7 @@ export default function NavItemsAdminPage() {
                             </div>
                         </div>
                         <div className="flex justify-end">
-                            <Button type="submit" disabled={saving}>
+                            <Button type="submit" disabled={saving} className="w-full sm:w-auto">
                                 {saving ? (
                                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                                 ) : (
@@ -262,81 +262,150 @@ export default function NavItemsAdminPage() {
                             ยังไม่มีเมนู เพิ่มเมนูแรกของคุณด้านบน
                         </div>
                     ) : (
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead className="w-[50px]"></TableHead>
-                                    <TableHead>ชื่อเมนูที่แสดง</TableHead>
-                                    <TableHead>เส้นทาง URL</TableHead>
-                                    <TableHead className="text-center">ลำดับการแสดงผล</TableHead>
-                                    <TableHead className="text-center">สถานะการมองเห็น</TableHead>
-                                    <TableHead className="text-center">แสดงผล / ซ่อน</TableHead>
-                                    <TableHead className="text-right">จัดการ</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
+                        <>
+                            <div className="space-y-3 md:hidden">
                                 {[...items]
                                     .sort((a, b) => a.sortOrder - b.sortOrder)
                                     .map((item) => (
-                                        <TableRow key={item.id}>
-                                            <TableCell>
-                                                <GripVertical className="h-4 w-4 text-muted-foreground" />
-                                            </TableCell>
-                                            <TableCell className="font-medium">
-                                                {item.label}
-                                            </TableCell>
-                                            <TableCell className="text-muted-foreground">
-                                                {item.href}
-                                            </TableCell>
-                                            <TableCell className="text-center">
-                                                {item.sortOrder}
-                                            </TableCell>
-                                            <TableCell className="text-center">
-                                                <span
-                                                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${item.isActive
-                                                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                                                        : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
-                                                        }`}
-                                                >
-                                                    {item.isActive ? "แสดง" : "ซ่อน"}
-                                                </span>
-                                            </TableCell>
-                                            <TableCell className="text-center">
+                                        <div key={item.id} className="rounded-xl border border-border p-4">
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <div className="flex items-center gap-2">
+                                                        <GripVertical className="h-4 w-4 text-muted-foreground" />
+                                                        <p className="font-medium">{item.label}</p>
+                                                    </div>
+                                                    <p className="mt-2 break-all text-sm text-muted-foreground">
+                                                        {item.href}
+                                                    </p>
+                                                </div>
                                                 <Switch
                                                     checked={item.isActive}
                                                     onCheckedChange={() => handleToggleActive(item)}
                                                 />
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => openEditModal(item)}
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="text-destructive hover:text-destructive"
-                                                        onClick={() => handleDeleteItem(item)}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
+                                            </div>
+
+                                            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                                                <div className="rounded-lg bg-muted/40 p-3">
+                                                    <p className="text-xs text-muted-foreground">
+                                                        ลำดับการแสดงผล
+                                                    </p>
+                                                    <p className="mt-1 font-medium">{item.sortOrder}</p>
                                                 </div>
-                                            </TableCell>
-                                        </TableRow>
+                                                <div className="rounded-lg bg-muted/40 p-3">
+                                                    <p className="text-xs text-muted-foreground">
+                                                        สถานะการมองเห็น
+                                                    </p>
+                                                    <span
+                                                        className={`mt-1 inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${item.isActive
+                                                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                                            : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
+                                                            }`}
+                                                    >
+                                                        {item.isActive ? "แสดง" : "ซ่อน"}
+                                                    </span>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-4 flex gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    className="flex-1"
+                                                    onClick={() => openEditModal(item)}
+                                                >
+                                                    <Pencil className="mr-2 h-4 w-4" />
+                                                    แก้ไข
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    className="flex-1 text-destructive hover:text-destructive"
+                                                    onClick={() => handleDeleteItem(item)}
+                                                >
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    ลบ
+                                                </Button>
+                                            </div>
+                                        </div>
                                     ))}
-                            </TableBody>
-                        </Table>
+                            </div>
+
+                            <div className="hidden overflow-x-auto md:block">
+                                <Table className="min-w-[760px]">
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead className="w-[50px]"></TableHead>
+                                            <TableHead>ชื่อเมนูที่แสดง</TableHead>
+                                            <TableHead>เส้นทาง URL</TableHead>
+                                            <TableHead className="text-center">ลำดับการแสดงผล</TableHead>
+                                            <TableHead className="text-center">สถานะการมองเห็น</TableHead>
+                                            <TableHead className="text-center">แสดงผล / ซ่อน</TableHead>
+                                            <TableHead className="text-right">จัดการ</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {[...items]
+                                            .sort((a, b) => a.sortOrder - b.sortOrder)
+                                            .map((item) => (
+                                                <TableRow key={item.id}>
+                                                    <TableCell>
+                                                        <GripVertical className="h-4 w-4 text-muted-foreground" />
+                                                    </TableCell>
+                                                    <TableCell className="font-medium">
+                                                        {item.label}
+                                                    </TableCell>
+                                                    <TableCell className="text-muted-foreground">
+                                                        {item.href}
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        {item.sortOrder}
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <span
+                                                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${item.isActive
+                                                                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                                                : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
+                                                                }`}
+                                                        >
+                                                            {item.isActive ? "แสดง" : "ซ่อน"}
+                                                        </span>
+                                                    </TableCell>
+                                                    <TableCell className="text-center">
+                                                        <Switch
+                                                            checked={item.isActive}
+                                                            onCheckedChange={() => handleToggleActive(item)}
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell className="text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => openEditModal(item)}
+                                                            >
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="text-destructive hover:text-destructive"
+                                                                onClick={() => handleDeleteItem(item)}
+                                                            >
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </>
                     )}
                 </CardContent>
             </Card>
 
             {/* Edit Modal */}
             <Dialog open={Boolean(editingItem)} onOpenChange={() => setEditingItem(null)}>
-                <DialogContent>
+                <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto p-4 sm:max-w-md sm:p-6">
                     <DialogHeader>
                         <DialogTitle>แก้ไขเมนู</DialogTitle>
                         <DialogDescription>
@@ -370,11 +439,11 @@ export default function NavItemsAdminPage() {
                             />
                         </div>
                     </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setEditingItem(null)}>
+                    <DialogFooter className="flex-col gap-2 sm:flex-row">
+                        <Button variant="outline" onClick={() => setEditingItem(null)} className="w-full sm:w-auto">
                             ยกเลิก
                         </Button>
-                        <Button onClick={handleEditItem} disabled={saving}>
+                        <Button onClick={handleEditItem} disabled={saving} className="w-full sm:w-auto">
                             {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                             บันทึก
                         </Button>

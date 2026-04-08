@@ -444,7 +444,15 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
         <button onClick={() => setShowDropRate(true)} className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full border border-border/60 bg-background/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground shadow-sm transition-all hover:bg-background hover:text-[#145de7]">
           ℹ อัตราดรอป
         </button>
-        <div style={{ width: gridWidth * scale, height: gridHeight * scale, position: "relative", flexShrink: 0 }}>
+        <div
+          style={{
+            width: "100%",
+            maxWidth: `${gridWidth}px`,
+            aspectRatio: `${gridWidth} / ${gridHeight}`,
+            position: "relative",
+            flexShrink: 0,
+          }}
+        >
           <div className="absolute left-0 top-0" style={{ width: gridWidth, height: gridHeight, transform: `scale(${scale})`, transformOrigin: "top left" }}>
             <AnimatePresence>
               {showBurst && (
@@ -508,17 +516,17 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
         {maintenance?.enabled && <div className="w-full rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-center shadow-sm"><p className="text-sm font-semibold text-amber-900">ระบบกาชากำลังปิดปรับปรุงชั่วคราว</p><p className="mt-1 text-xs text-amber-800/90">{maintenance.message}</p></div>}
         <div className="min-h-[20px]">
           <AnimatePresence mode="wait">
-            {phase === "waitSpin2" && selectedLLabel && <motion.p key="wait2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-xs text-muted-foreground">เลือกแล้ว <span className="font-semibold text-violet-400">{selectedLLabel}</span>{" - กดสุ่มครั้งที่ 2 เพื่อเลือกแถวขวา"}</motion.p>}
-            {phase === "revealing" && selectedLLabel && selectedRLabel && <motion.p key="reveal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-xs text-muted-foreground"><span className="font-semibold text-violet-400">{selectedLLabel}</span>{" × "}<span className="font-semibold text-emerald-400">{selectedRLabel}</span>{" -> "}<span className="font-semibold text-white">จุดตัด</span></motion.p>}
+            {phase === "waitSpin2" && selectedLLabel && <motion.p key="wait2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-xs text-slate-500">เลือกแล้ว <span className="font-semibold text-violet-500">{selectedLLabel}</span>{" - กดสุ่มครั้งที่ 2 เพื่อเลือกแถวขวา"}</motion.p>}
+            {phase === "revealing" && selectedLLabel && selectedRLabel && <motion.p key="reveal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-xs text-slate-500"><span className="font-semibold text-violet-500">{selectedLLabel}</span>{" × "}<span className="font-semibold text-emerald-500">{selectedRLabel}</span>{" -> "}<span className="font-semibold text-slate-900">จุดตัด</span></motion.p>}
           </AnimatePresence>
         </div>
 
         <div className="mt-3 flex w-full flex-col items-center">
           <div className="mb-4 space-y-1 text-center">
             <h2 className="text-[18px] font-bold text-[#145de7] md:text-[22px]">สุ่มรางวัลครั้งละ {settings.costAmount.toLocaleString()} {currencyWord}</h2>
-            <p className="text-[13px] font-medium text-gray-800 dark:text-gray-200 md:text-[14px]">* เมื่อกดสุ่มแล้วไม่สามารถขอคืน{currencyWord}ได้ในทุกกรณี *</p>
+            <p className="text-[13px] font-medium text-black md:text-[14px]">* เมื่อกดสุ่มแล้วไม่สามารถขอคืน{currencyWord}ได้ในทุกกรณี *</p>
           </div>
-          <div className="mb-5 w-full rounded-xl border border-[#bcd6ff] bg-[#d0e3ff]/70 px-4 py-3 text-center text-sm font-bold text-[#145de7] dark:border-[#2b4f8f] dark:bg-[#d0e3ff]/10 dark:text-[#7ba2f5]">ยอด{currencyWord}คงเหลือ: {displayedBalance.toLocaleString()} {currencyWord} <span className="font-normal opacity-90">(ตรวจยอดล่าสุดก่อนกดสุ่มได้)</span></div>
+          <div className="mb-5 w-full rounded-xl border border-[#bcd6ff] bg-[#d0e3ff]/70 px-4 py-3 text-center text-sm font-bold text-[#145de7]">ยอด{currencyWord}คงเหลือ: {displayedBalance.toLocaleString()} {currencyWord} <span className="font-normal text-[#145de7]/90">(ตรวจยอดล่าสุดก่อนกดสุ่มได้)</span></div>
           <label className="mb-4 flex cursor-pointer items-center gap-3 self-start rounded-full border border-[#158e4d]/20 bg-[#158e4d]/5 px-3 py-2 text-sm font-medium text-[#158e4d]">
             <input
               type="checkbox"

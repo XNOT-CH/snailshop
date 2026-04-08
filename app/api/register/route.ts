@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
             username,
             password: hashedPassword,
             role: "USER",
-            creditBalance: "100", // Welcome bonus
+            creditBalance: "0",
             createdAt: mysqlNow(),
             updatedAt: mysqlNow(),
         });

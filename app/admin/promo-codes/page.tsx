@@ -36,6 +36,7 @@ import { showDeleteConfirm, showError, showSuccess } from "@/lib/swal";
 interface PromoCode {
     id: string;
     code: string;
+    codeType: string;
     discountType: string;
     discountValue: number;
     minPurchase: number | null;
@@ -50,6 +51,7 @@ interface PromoCode {
 
 type PromoFormState = {
     code: string;
+    codeType: string;
     discountType: string;
     discountValue: string;
     minPurchase: string;
@@ -61,6 +63,7 @@ type PromoFormState = {
 
 const initialFormData: PromoFormState = {
     code: "",
+    codeType: "DISCOUNT",
     discountType: "PERCENTAGE",
     discountValue: "",
     minPurchase: "",
@@ -88,7 +91,7 @@ export default function AdminPromoCodesPage() {
             }
         } catch (error) {
             console.error("[PROMO_CODE_FETCH]", error);
-            showError("ไม่สามารถโหลดข้อมูลโค้ดส่วนลดได้");
+            showError("ไม่สามารถโหลดข้อมูลโค้ดโปรโมชั่นได้");
         } finally {
             setIsLoading(false);
         }
@@ -112,6 +115,7 @@ export default function AdminPromoCodesPage() {
         setEditingCode(promoCode);
         setFormData({
             code: promoCode.code,
+            codeType: promoCode.codeType || "DISCOUNT",
             discountType: promoCode.discountType,
             discountValue: promoCode.discountValue.toString(),
             minPurchase: promoCode.minPurchase?.toString() || "",
@@ -143,10 +147,11 @@ export default function AdminPromoCodesPage() {
                 }
                 : {
                     code: formData.code,
+                    codeType: formData.codeType,
                     discountType: formData.discountType,
                     discountValue: formData.discountValue,
-                    minOrderAmount: formData.minPurchase || 0,
-                    maxDiscount: formData.maxDiscount || 0,
+                    minOrderAmount: formData.codeType === "DISCOUNT" ? formData.minPurchase || 0 : 0,
+                    maxDiscount: formData.codeType === "DISCOUNT" ? formData.maxDiscount || 0 : 0,
                     maxUses: formData.usageLimit || 0,
                     usagePerUser: 0,
                     startsAt: null,
@@ -165,7 +170,7 @@ export default function AdminPromoCodesPage() {
             const data = await response.json();
 
             if (data.success) {
-                showSuccess(editingCode ? "แก้ไขโค้ดสำเร็จ" : "สร้างโค้ดส่วนลดสำเร็จ");
+                showSuccess(editingCode ? "แก้ไขโค้ดสำเร็จ" : "สร้างโค้ดสำเร็จ");
                 setIsDialogOpen(false);
                 resetForm();
                 fetchPromoCodes();
@@ -229,6 +234,10 @@ export default function AdminPromoCodesPage() {
     };
 
     const formatDiscount = (code: PromoCode) => {
+        if (code.codeType === "CREDIT") {
+            return `เครดิต ฿${code.discountValue.toLocaleString()}`;
+        }
+
         if (code.discountType === "PERCENTAGE") {
             return `${code.discountValue}%`;
         }
@@ -246,6 +255,9 @@ export default function AdminPromoCodesPage() {
         return new Date(expiresAt).toLocaleDateString("th-TH");
     };
 
+    const getCodeTypeLabel = (codeType: string) =>
+        codeType === "CREDIT" ? "โค้ดเติมเครดิต" : "โค้ดส่วนลด";
+
     if (isLoading) {
         return (
             <div className="flex items-center justify-center py-12">
@@ -259,10 +271,10 @@ export default function AdminPromoCodesPage() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
                     <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground sm:text-3xl">
-                        โค้ดส่วนลด <span className="text-2xl sm:text-3xl">🎟️</span>
+                        โค้ดโปรโมชั่น <span className="text-2xl sm:text-3xl">🎟️</span>
                     </h1>
                     <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
-                        จัดการโปรโมชั่นและส่วนลด พร้อมเปิดปิดการใช้งานได้จากหน้านี้
+                        จัดการทั้งโค้ดส่วนลดและโค้ดเติมเครดิต พร้อมเปิดปิดการใช้งานได้จากหน้านี้
                     </p>
                 </div>
 
@@ -275,10 +287,10 @@ export default function AdminPromoCodesPage() {
                     <DialogContent className="max-h-[calc(100vh-2rem)] overflow-y-auto p-4 sm:max-w-md sm:p-6">
                         <DialogHeader>
                             <DialogTitle>
-                                {editingCode ? "แก้ไขโค้ดส่วนลด" : "สร้างโค้ดส่วนลดใหม่"}
+                                {editingCode ? "แก้ไขโค้ดโปรโมชั่น" : "สร้างโค้ดโปรโมชั่นใหม่"}
                             </DialogTitle>
                             <DialogDescription>
-                                กรอกรายละเอียดโค้ดส่วนลดและกำหนดเงื่อนไขเบื้องต้น
+                                เลือกประเภทโค้ด แล้วกำหนดรายละเอียดการใช้งานตามต้องการ
                             </DialogDescription>
                         </DialogHeader>
 
@@ -299,36 +311,77 @@ export default function AdminPromoCodesPage() {
                                 />
                             </div>
 
+                            <div className="space-y-2">
+                                <Label>ประเภทโค้ด</Label>
+                                <Select
+                                    value={formData.codeType}
+                                    onValueChange={(value) =>
+                                        setFormData((current) => ({
+                                            ...current,
+                                            codeType: value,
+                                            discountType: value === "CREDIT" ? "FIXED" : current.discountType,
+                                            minPurchase: value === "CREDIT" ? "" : current.minPurchase,
+                                            maxDiscount: value === "CREDIT" ? "" : current.maxDiscount,
+                                        }))
+                                    }
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="DISCOUNT">โค้ดส่วนลด</SelectItem>
+                                        <SelectItem value="CREDIT">โค้ดเติมเครดิต</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label>ประเภทส่วนลด</Label>
-                                    <Select
-                                        value={formData.discountType}
-                                        onValueChange={(value) =>
-                                            setFormData((current) => ({
-                                                ...current,
-                                                discountType: value,
-                                            }))
-                                        }
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="PERCENTAGE">เปอร์เซ็นต์ (%)</SelectItem>
-                                            <SelectItem value="FIXED">จำนวนเงิน (฿)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                                {formData.codeType === "DISCOUNT" ? (
+                                    <div className="space-y-2">
+                                        <Label>ประเภทส่วนลด</Label>
+                                        <Select
+                                            value={formData.discountType}
+                                            onValueChange={(value) =>
+                                                setFormData((current) => ({
+                                                    ...current,
+                                                    discountType: value,
+                                                }))
+                                            }
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="PERCENTAGE">เปอร์เซ็นต์ (%)</SelectItem>
+                                                <SelectItem value="FIXED">จำนวนเงิน (฿)</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-2">
+                                        <Label>ลักษณะการเติม</Label>
+                                        <Input value="เติมเครดิตเข้าบัญชี" disabled />
+                                    </div>
+                                )}
 
                                 <div className="space-y-2">
                                     <Label htmlFor="discountValue">
-                                        {formData.discountType === "PERCENTAGE" ? "เปอร์เซ็นต์" : "จำนวนเงิน"}
+                                        {formData.codeType === "CREDIT"
+                                            ? "จำนวนเครดิต"
+                                            : formData.discountType === "PERCENTAGE"
+                                                ? "เปอร์เซ็นต์"
+                                                : "จำนวนเงิน"}
                                     </Label>
                                     <Input
                                         id="discountValue"
                                         type="number"
-                                        placeholder={formData.discountType === "PERCENTAGE" ? "10" : "50"}
+                                        placeholder={
+                                            formData.codeType === "CREDIT"
+                                                ? "100"
+                                                : formData.discountType === "PERCENTAGE"
+                                                    ? "10"
+                                                    : "50"
+                                        }
                                         value={formData.discountValue}
                                         onChange={(e) =>
                                             setFormData((current) => ({
@@ -341,39 +394,41 @@ export default function AdminPromoCodesPage() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                                <div className="space-y-2">
-                                    <Label htmlFor="minPurchase">ยอดขั้นต่ำ (฿)</Label>
-                                    <Input
-                                        id="minPurchase"
-                                        type="number"
-                                        placeholder="ไม่บังคับ"
-                                        value={formData.minPurchase}
-                                        onChange={(e) =>
-                                            setFormData((current) => ({
-                                                ...current,
-                                                minPurchase: e.target.value,
-                                            }))
-                                        }
-                                    />
-                                </div>
+                            {formData.codeType === "DISCOUNT" ? (
+                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="minPurchase">ยอดขั้นต่ำ (฿)</Label>
+                                        <Input
+                                            id="minPurchase"
+                                            type="number"
+                                            placeholder="ไม่บังคับ"
+                                            value={formData.minPurchase}
+                                            onChange={(e) =>
+                                                setFormData((current) => ({
+                                                    ...current,
+                                                    minPurchase: e.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="maxDiscount">ส่วนลดสูงสุด (฿)</Label>
-                                    <Input
-                                        id="maxDiscount"
-                                        type="number"
-                                        placeholder="ไม่จำกัด"
-                                        value={formData.maxDiscount}
-                                        onChange={(e) =>
-                                            setFormData((current) => ({
-                                                ...current,
-                                                maxDiscount: e.target.value,
-                                            }))
-                                        }
-                                    />
+                                    <div className="space-y-2">
+                                        <Label htmlFor="maxDiscount">ส่วนลดสูงสุด (฿)</Label>
+                                        <Input
+                                            id="maxDiscount"
+                                            type="number"
+                                            placeholder="ไม่จำกัด"
+                                            value={formData.maxDiscount}
+                                            onChange={(e) =>
+                                                setFormData((current) => ({
+                                                    ...current,
+                                                    maxDiscount: e.target.value,
+                                                }))
+                                            }
+                                        />
+                                    </div>
                                 </div>
-                            </div>
+                            ) : null}
 
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
@@ -453,7 +508,8 @@ export default function AdminPromoCodesPage() {
                     {promoCodes.length === 0 ? (
                         <div className="py-12 text-center">
                             <Ticket className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                            <p className="mt-4 text-muted-foreground">ยังไม่มีโค้ดส่วนลด</p>
+                            <p className="mt-4 text-muted-foreground">ยังไม่มีโค้ดโปรโมชั่น</p>
+                            <p className="mt-2 text-sm text-muted-foreground">เริ่มสร้างโค้ดส่วนลดหรือโค้ดเติมเครดิตได้เลย</p>
                             <Button onClick={handleOpenCreate} className="mt-4 gap-2">
                                 <Plus className="h-4 w-4" />
                                 สร้างโค้ดแรก
@@ -473,6 +529,7 @@ export default function AdminPromoCodesPage() {
                                                     <code className="rounded bg-muted px-2 py-1 font-mono text-sm">
                                                         {code.code}
                                                     </code>
+                                                    <Badge variant="outline">{getCodeTypeLabel(code.codeType)}</Badge>
                                                     <Button
                                                         variant="ghost"
                                                         size="icon"
@@ -519,7 +576,7 @@ export default function AdminPromoCodesPage() {
                                             </div>
                                         </div>
 
-                                        {code.minPurchase ? (
+                                        {code.codeType === "DISCOUNT" && code.minPurchase ? (
                                             <p className="mt-3 text-xs text-muted-foreground">
                                                 ขั้นต่ำ ฿{code.minPurchase.toLocaleString()}
                                             </p>
@@ -555,7 +612,7 @@ export default function AdminPromoCodesPage() {
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>โค้ด</TableHead>
-                                            <TableHead>ส่วนลด</TableHead>
+                                            <TableHead>มูลค่า</TableHead>
                                             <TableHead>การใช้งาน</TableHead>
                                             <TableHead>หมดอายุ</TableHead>
                                             <TableHead>สถานะ</TableHead>
@@ -571,6 +628,7 @@ export default function AdminPromoCodesPage() {
                                                         <code className="rounded bg-muted px-2 py-1 font-mono text-sm">
                                                             {code.code}
                                                         </code>
+                                                        <Badge variant="outline">{getCodeTypeLabel(code.codeType)}</Badge>
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
@@ -585,7 +643,7 @@ export default function AdminPromoCodesPage() {
 
                                                 <TableCell>
                                                     <Badge variant="secondary">{formatDiscount(code)}</Badge>
-                                                    {code.minPurchase ? (
+                                                    {code.codeType === "DISCOUNT" && code.minPurchase ? (
                                                         <p className="mt-1 text-xs text-muted-foreground">
                                                             ขั้นต่ำ ฿{code.minPurchase.toLocaleString()}
                                                         </p>

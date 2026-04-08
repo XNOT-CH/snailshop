@@ -10,7 +10,7 @@ export function ThemeProvider({ children, ...props }: Readonly<ThemeProviderProp
         <NextThemesProvider
             attribute="class"
             defaultTheme="light"
-            enableSystem
+            enableSystem={false}
             disableTransitionOnChange
             {...props}
         >

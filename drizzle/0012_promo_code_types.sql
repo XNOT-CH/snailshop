@@ -1,0 +1,2 @@
+ALTER TABLE `PromoCode`
+ADD COLUMN `codeType` varchar(20) NOT NULL DEFAULT 'DISCOUNT' AFTER `code`;

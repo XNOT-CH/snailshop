@@ -137,10 +137,10 @@ export default async function ProductDetailPage({
     ];
 
     return (
-        <div className="animate-page-enter rounded-2xl bg-muted/60 py-6 dark:bg-background sm:py-10">
+        <div className="animate-page-enter rounded-none bg-muted/60 py-6 dark:bg-background sm:py-10">
             <StructuredData data={structuredData} />
 
-            <div className="relative max-w-screen-2xl mx-auto bg-card rounded-2xl border border-border overflow-hidden" style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.14)" }}>
+            <div className="relative mx-auto max-w-screen-2xl overflow-hidden rounded-none border border-border bg-card" style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.14)" }}>
                 <div className="p-6 sm:p-8">
                     <PageBreadcrumb
                         items={[
@@ -211,7 +211,7 @@ export default async function ProductDetailPage({
             </div>
 
             {relatedProducts.length > 0 && (
-                <div className="max-w-screen-2xl mx-auto mt-10 mb-2 rounded-2xl border border-border bg-card p-4 sm:mt-16 sm:mb-8 sm:p-6" style={{ boxShadow: "0 12px 48px rgba(0,0,0,0.10)" }}>
+                <div className="mx-auto mt-10 mb-2 max-w-screen-2xl rounded-none border border-border bg-card p-4 sm:mt-16 sm:mb-8 sm:p-6" style={{ boxShadow: "0 12px 48px rgba(0,0,0,0.10)" }}>
                     <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
                         รายการสินค้าอื่น ๆ
                     </h2>

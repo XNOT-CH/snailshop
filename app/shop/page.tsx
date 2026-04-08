@@ -132,12 +132,12 @@ export default async function ShopPage(props: ShopPageProps) {
 
             <Separator className="mb-8" />
 
-            <div className="-mx-1 mb-4 overflow-x-auto px-1 pb-2">
-                <div className="flex min-w-max gap-2">
+            <div className="mb-4 px-1 pb-2">
+                <div className="flex flex-wrap gap-2">
                     <Link
                         href={`/shop?category=all&sort=${currentSort}`}
                         scroll={false}
-                        className={`inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-150 h-8 px-4 rounded-full flex-shrink-0 ${currentCategory === "all"
+                            className={`inline-flex h-8 items-center justify-center whitespace-nowrap rounded-full px-4 text-sm font-medium transition-all duration-150 ${currentCategory === "all"
                             ? "bg-primary text-primary-foreground shadow-sm"
                             : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
                             }`}
@@ -149,7 +149,7 @@ export default async function ShopPage(props: ShopPageProps) {
                             key={category.category}
                             href={`/shop?category=${encodeURIComponent(category.category)}&sort=${currentSort}`}
                             scroll={false}
-                            className={`inline-flex items-center justify-center whitespace-nowrap text-sm font-medium transition-all duration-150 h-8 px-4 rounded-full flex-shrink-0 ${currentCategory === category.category
+                            className={`inline-flex h-8 items-center justify-center whitespace-nowrap rounded-full px-4 text-sm font-medium transition-all duration-150 ${currentCategory === category.category
                                 ? "bg-primary text-primary-foreground shadow-sm"
                                 : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
                                 }`}
@@ -171,7 +171,7 @@ export default async function ShopPage(props: ShopPageProps) {
             {paginatedProducts.length === 0 ? (
                 <EmptyState />
             ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+                <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                     {paginatedProducts.map((product, index) => (
                         <ProductCard
                             key={product.id}

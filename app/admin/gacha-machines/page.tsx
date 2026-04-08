@@ -200,7 +200,7 @@ export default function GachaMachinesAdminPage() {
                 {/* ประเภทมินิเกม */}
                 <div className="mb-5">
                     <span className={labelCls}>ประเภทมินิเกม *</span>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         {GAME_TYPES.map(gt => (
                             <button
                                 key={gt.value}
@@ -283,7 +283,7 @@ export default function GachaMachinesAdminPage() {
                     <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL รูปภาพ — รองรับ JPG, PNG, WebP, GIF ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนอัปโหลด</p>
 
                     {/* Preview + upload zone */}
-                    <div className="flex items-start gap-3">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
                         {/* Preview / Drop box */}
                         <button
                             type="button"
@@ -395,7 +395,7 @@ export default function GachaMachinesAdminPage() {
     );
 }
 
-// โ”€โ”€ Sortable row component โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€โ”€
+// Sortable row component
 function SortableRow({
     m,
     i,
@@ -446,7 +446,7 @@ function SortableRow({
                     <span className="text-xs">{(page - 1) * perPage + i + 1}</span>
                 </div>
             </td>
-            <td className="px-3 py-2.5">
+            <td className="hidden px-3 py-2.5 sm:table-cell">
                 {validImageUrl(m.imageUrl) ? (
                     <Image src={m.imageUrl!} alt={m.name} width={36} height={36} className="w-9 h-9 rounded-lg object-cover" />
                 ) : (
@@ -455,7 +455,7 @@ function SortableRow({
                     </div>
                 )}
             </td>
-            <td className="px-3 py-2.5 font-medium text-foreground max-w-[160px] truncate">{m.name}</td>
+            <td className="px-3 py-2.5 font-medium text-foreground max-w-[120px] truncate sm:max-w-[160px]">{m.name}</td>
             <td className="px-3 py-2.5">
                 <span className="text-xs px-2 py-0.5 rounded-md bg-[#eef4ff] text-[#145de7] font-semibold">
                     {gameTypeLabel(m.gameType)}
@@ -467,7 +467,7 @@ function SortableRow({
                 {m.costType === "POINT" && `${Number(m.costAmount).toLocaleString()} พอยต์`}
                 {m.costType === "TICKET" && `${Number(m.costAmount).toLocaleString()} ตั๋วสุ่ม`}
             </td>
-            <td className="px-3 py-2.5 text-muted-foreground">{m._count.rewards}</td>
+            <td className="hidden px-3 py-2.5 text-muted-foreground md:table-cell">{m._count.rewards}</td>
             <td className="px-3 py-2.5">
                 <button
                     onClick={() => handleToggle(m.id, "isActive", !m.isActive)}
@@ -480,7 +480,7 @@ function SortableRow({
                     </span>
                 </button>
             </td>
-            <td className="px-3 py-2.5">
+            <td className="hidden px-3 py-2.5 sm:table-cell">
                 <button
                     onClick={() => handleDuplicate(m.id, m.name)}
                     disabled={duplicatingId === m.id}
@@ -633,7 +633,7 @@ function MachineTable({
                 </div>
             </div>
             {/* Header */}
-            <div className="px-4 py-3 border-b border-border flex flex-wrap items-center gap-3 justify-between">
+            <div className="px-4 py-3 border-b border-border flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>แสดง</span>
                     <select
@@ -651,7 +651,7 @@ function MachineTable({
                         value={search}
                         onChange={e => { setSearch(e.target.value); setPage(1); }}
                         placeholder=""
-                        className="border border-border rounded px-2 py-1.5 text-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-[#145de7] w-40"
+                        className="border border-border rounded px-2 py-1.5 text-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-[#145de7] w-full sm:w-40"
                     />
                 </div>
             </div>
@@ -659,11 +659,11 @@ function MachineTable({
             {/* Table */}
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleDragEnd(e)}>
                 <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="w-full min-w-[640px] text-sm md:min-w-[960px]">
                         <thead>
                             <tr className="border-b border-border bg-muted/40">
                                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ลำดับ</th>
-                                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">รูป</th>
+                                <th className="hidden px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap sm:table-cell">รูป</th>
                                 <th
                                     className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap cursor-pointer hover:text-foreground select-none group"
                                     onClick={() => handleSort("name")}
@@ -677,14 +677,14 @@ function MachineTable({
                                 >
                                     <div className="flex items-center gap-1">ราคา {sortField === "costAmount" && (sortAsc ? "↑" : "↓")}</div>
                                 </th>
-                                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">รางวัล</th>
+                                <th className="hidden px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap md:table-cell">รางวัล</th>
                                 <th
                                     className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap cursor-pointer hover:text-foreground select-none group"
                                     onClick={() => handleSort("isActive")}
                                 >
                                     <div className="flex items-center gap-1">สถานะ {sortField === "isActive" && (sortAsc ? "↑" : "↓")}</div>
                                 </th>
-                                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">คัดลอก</th>
+                                <th className="hidden px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap sm:table-cell">คัดลอก</th>
                                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">แก้ไข</th>
                                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap">ลบ</th>
                             </tr>

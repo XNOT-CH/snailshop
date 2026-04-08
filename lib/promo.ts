@@ -5,6 +5,7 @@ type CategoryList = string[] | null | undefined;
 export interface PromoRecord {
     id: string;
     code: string;
+    codeType?: string;
     discountType: string;
     discountValue: string | number;
     minPurchase: string | number | null;
@@ -57,6 +58,27 @@ function normalizeCategoryList(value: CategoryList) {
         .filter(Boolean);
 }
 
+function normalizeCodeType(value: string | undefined) {
+    return value?.trim().toUpperCase() || "DISCOUNT";
+}
+
+function normalizeDiscountType(value: string | undefined) {
+    return value?.trim().toUpperCase() || "FIXED";
+}
+
+function normalizeOptionalAmount(value: string | number | null | undefined) {
+    if (value === null || value === undefined || value === "") {
+        return null;
+    }
+
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+        return null;
+    }
+
+    return parsed;
+}
+
 export function getPromoValidationMessage(
     promo: PromoRecord,
     {
@@ -68,6 +90,12 @@ export function getPromoValidationMessage(
         now = new Date(),
     }: PromoValidationContext
 ) {
+    const codeType = normalizeCodeType(promo.codeType);
+
+    if (codeType !== "DISCOUNT") {
+        return "โค้ดนี้ไม่สามารถใช้เป็นโค้ดส่วนลดได้";
+    }
+
     if (!promo.isActive) {
         return "โค้ดนี้ถูกปิดใช้งานแล้ว";
     }
@@ -84,9 +112,9 @@ export function getPromoValidationMessage(
         return "โค้ดนี้ถูกใช้ครบจำนวนแล้ว";
     }
 
-    const minPurchase = promo.minPurchase ? Number(promo.minPurchase) : null;
+    const minPurchase = normalizeOptionalAmount(promo.minPurchase);
     if (minPurchase !== null && typeof totalPrice === "number" && totalPrice < minPurchase) {
-        return `ต้องซื้อขั้นต่ำ ฿${minPurchase.toLocaleString()} เพื่อใช้โค้ดนี้`;
+        return `ยอดซื้อไม่ถึงขั้นต่ำ ${minPurchase.toLocaleString()} บาท`;
     }
 
     const normalizedCategory = normalizeCategory(productCategory);
@@ -130,12 +158,19 @@ export function getPromoValidationMessage(
 }
 
 export function calculatePromoDiscountAmount(promo: PromoRecord, totalPrice: number | null | undefined) {
-    const minPurchase = promo.minPurchase ? Number(promo.minPurchase) : null;
+    const codeType = normalizeCodeType(promo.codeType);
+    const discountType = normalizeDiscountType(promo.discountType);
+
+    if (codeType !== "DISCOUNT") {
+        return { minPurchase: null, discountAmount: null };
+    }
+
+    const minPurchase = normalizeOptionalAmount(promo.minPurchase);
     if (typeof totalPrice !== "number") {
         return { minPurchase, discountAmount: null };
     }
 
-    if (promo.discountType === "FIXED") {
+    if (discountType === "FIXED") {
         return {
             minPurchase,
             discountAmount: Math.min(totalPrice, Number(promo.discountValue)),
@@ -143,7 +178,7 @@ export function calculatePromoDiscountAmount(promo: PromoRecord, totalPrice: num
     }
 
     let discountAmount = (totalPrice * Number(promo.discountValue)) / 100;
-    const maxDiscount = promo.maxDiscount ? Number(promo.maxDiscount) : null;
+    const maxDiscount = normalizeOptionalAmount(promo.maxDiscount);
     if (maxDiscount !== null && discountAmount > maxDiscount) {
         discountAmount = maxDiscount;
     }
@@ -155,7 +190,14 @@ export function calculatePromoDiscountAmount(promo: PromoRecord, totalPrice: num
 }
 
 export function buildPromoSuccessMessage(promo: PromoRecord) {
-    return promo.discountType === "PERCENTAGE"
+    const codeType = normalizeCodeType(promo.codeType);
+    const discountType = normalizeDiscountType(promo.discountType);
+
+    if (codeType === "CREDIT") {
+        return `โค้ด "${promo.code}" ใช้ได้ รับเครดิต ฿${Number(promo.discountValue).toLocaleString()}`;
+    }
+
+    return discountType === "PERCENTAGE"
         ? `โค้ด "${promo.code}" ใช้ได้ ลด ${promo.discountValue}%`
         : `โค้ด "${promo.code}" ใช้ได้ ลด ฿${Number(promo.discountValue).toLocaleString()}`;
 }
@@ -212,9 +254,9 @@ export async function validatePromoCode({
         valid: true,
         promo,
         discount: Number(promo.discountValue),
-        discountType: promo.discountType,
+        discountType: normalizeDiscountType(promo.discountType),
         discountAmount,
-        maxDiscount: promo.maxDiscount ? Number(promo.maxDiscount) : null,
+        maxDiscount: normalizeOptionalAmount(promo.maxDiscount),
         minPurchase,
         message: buildPromoSuccessMessage(promo),
     };

@@ -348,8 +348,130 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <Table className="min-w-[980px]">
+          <>
+            <div className="space-y-3 p-4 md:hidden">
+              {filteredUsers.map((user) => {
+                const initials = user.username
+                  .split("_")
+                  .map((part) => part.charAt(0).toUpperCase())
+                  .join("")
+                  .slice(0, 2);
+                const isVIP = Number(user.totalTopup) > VIP_TOPUP_THRESHOLD;
+                const hasGoldBorder = user.lifetimePoints > GOLD_BORDER_POINTS_THRESHOLD;
+                const creditBalance = Number(user.creditBalance);
+                const totalTopup = Number(user.totalTopup);
+
+                return (
+                  <div
+                    key={user.id}
+                    className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-3">
+                        <Avatar
+                          className={`h-11 w-11 ${
+                            hasGoldBorder ? "ring-2 ring-amber-400 ring-offset-2" : ""
+                          }`}
+                        >
+                          {user.image ? <AvatarImage src={user.image} alt={user.username} /> : null}
+                          <AvatarFallback
+                            className={`font-semibold ${
+                              hasGoldBorder
+                                ? "bg-gradient-to-br from-amber-200 to-amber-400 text-amber-900"
+                                : "bg-blue-100 text-[#1a56db]"
+                            }`}
+                          >
+                            {initials}
+                          </AvatarFallback>
+                        </Avatar>
+
+                        <div className="min-w-0 space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="truncate font-semibold text-slate-900">{user.username}</p>
+                            <Badge
+                              variant="secondary"
+                              className={`rounded-full px-2.5 py-1 ${
+                                user.role === "ADMIN"
+                                  ? "bg-blue-100 text-blue-700"
+                                  : user.role === "MODERATOR"
+                                    ? "bg-violet-100 text-violet-700"
+                                    : user.role === "SELLER"
+                                      ? "bg-emerald-100 text-emerald-700"
+                                      : "bg-slate-100 text-slate-700"
+                              }`}
+                            >
+                              {formatRoleLabel(user.role)}
+                            </Badge>
+                            {isVIP ? (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-2 py-0.5 text-xs font-semibold text-white shadow-sm">
+                                <Crown className="h-3 w-3" />
+                                VIP
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {user.name || user.email || "-"}
+                          </p>
+                          {user.email && user.name ? (
+                            <p className="text-xs text-muted-foreground">{user.email}</p>
+                          ) : null}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3">
+                      <div className="rounded-2xl bg-emerald-50 px-3 py-2">
+                        <p className="text-xs text-emerald-700/80">เครดิตคงเหลือ</p>
+                        <p className="mt-1 text-base font-semibold text-emerald-700">
+                          {formatCurrency(creditBalance)}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-amber-50 px-3 py-2">
+                        <p className="text-xs text-amber-700/80">ยอดเติมสะสม</p>
+                        <p className="mt-1 text-base font-semibold text-amber-700">
+                          {formatCurrency(totalTopup)}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-violet-50 px-3 py-2">
+                        <p className="text-xs text-violet-700/80">พอยต์คงเหลือ</p>
+                        <p className="mt-1 text-base font-semibold text-violet-700">
+                          {user.pointBalance.toLocaleString()}
+                        </p>
+                      </div>
+                      <div className="rounded-2xl bg-slate-50 px-3 py-2">
+                        <p className="text-xs text-slate-500">พอยต์สะสม</p>
+                        <p className="mt-1 text-base font-semibold text-slate-900">
+                          {user.lifetimePoints.toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <p className="text-xs text-muted-foreground">
+                        สมัครเมื่อ{" "}
+                        {new Date(user.createdAt).toLocaleDateString("th-TH", {
+                          year: "numeric",
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </p>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditDialog(user)}
+                        className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#1a56db]"
+                      >
+                        <Pencil className="mr-1.5 h-4 w-4" />
+                        แก้ไข
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="hidden overflow-x-auto md:block">
+              <Table className="min-w-[980px]">
               <TableHeader>
                 <TableRow className="bg-slate-50/70 hover:bg-slate-50/70">
                   <TableHead>ข้อมูลสมาชิก</TableHead>
@@ -502,8 +624,9 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                   );
                 })}
               </TableBody>
-            </Table>
-          </div>
+              </Table>
+            </div>
+          </>
         )}
       </div>
 

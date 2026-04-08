@@ -99,8 +99,84 @@ export default async function AdminSeasonPassLogsPage() {
                         ยังไม่มี log การรับกล่องในระบบ
                     </div>
                 ) : (
-                    <div className="mt-5 overflow-x-auto rounded-2xl border border-border">
-                        <table className="min-w-full text-sm">
+                    <>
+                        <div className="mt-5 space-y-3 md:hidden">
+                            {logs.map((log) => (
+                                <div key={log.id} className="rounded-2xl border border-border p-4">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <div className="flex items-start gap-2">
+                                                <UserRound className="mt-0.5 h-4 w-4 text-slate-400" />
+                                                <div>
+                                                    <p className="font-medium text-slate-900">
+                                                        {log.displayName || log.username}
+                                                    </p>
+                                                    <p className="text-xs text-slate-500">@{log.username}</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <Badge variant="secondary" className="rounded-full px-3 py-1">
+                                            Day {log.dayNumber}
+                                        </Badge>
+                                    </div>
+
+                                    <div className="mt-4 grid grid-cols-1 gap-3 text-sm">
+                                        <div className="rounded-xl bg-slate-50 px-3 py-3">
+                                            <div className="flex items-start gap-2">
+                                                <Gift className="mt-0.5 h-4 w-4 text-blue-600" />
+                                                <div>
+                                                    <p className="font-medium text-slate-900">{log.rewardLabel}</p>
+                                                    <p className="text-xs text-slate-500">
+                                                        {getRewardTypeLabel(log.rewardType)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-3">
+                                            <div className="rounded-xl bg-slate-50 px-3 py-3">
+                                                <p className="text-xs text-slate-500">จำนวน</p>
+                                                <p className="mt-1 font-medium text-slate-900">
+                                                    {log.rewardAmount}
+                                                </p>
+                                            </div>
+                                            <div className="rounded-xl bg-slate-50 px-3 py-3">
+                                                <p className="text-xs text-slate-500">คีย์วันที่</p>
+                                                <p className="mt-1 font-medium text-slate-900">
+                                                    {log.claimDateKey}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="rounded-xl bg-slate-50 px-3 py-3">
+                                            <div className="flex items-start gap-2">
+                                                <CalendarDays className="mt-0.5 h-4 w-4 text-slate-400" />
+                                                <div>
+                                                    <p className="font-medium text-slate-900">
+                                                        {formatDateTime(log.createdAt)}
+                                                    </p>
+                                                    <p className="text-xs text-slate-500">วันที่รับรางวัล</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="rounded-xl bg-slate-50 px-3 py-3">
+                                            <div className="flex items-start gap-2">
+                                                <PackageCheck className="mt-0.5 h-4 w-4 text-emerald-600" />
+                                                <div>
+                                                    <p className="text-xs text-slate-500">
+                                                        เริ่ม {formatDateTime(log.subscriptionStartAt)}
+                                                    </p>
+                                                    <p className="text-xs text-slate-500">
+                                                        หมดอายุ {formatDateTime(log.subscriptionEndAt)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="mt-5 hidden overflow-x-auto rounded-2xl border border-border md:block">
+                            <table className="min-w-full text-sm">
                             <thead className="bg-slate-50 text-slate-600">
                                 <tr>
                                     <th className="px-4 py-3 text-left font-semibold">สมาชิก</th>
@@ -159,8 +235,9 @@ export default async function AdminSeasonPassLogsPage() {
                                     </tr>
                                 ))}
                             </tbody>
-                        </table>
-                    </div>
+                            </table>
+                        </div>
+                    </>
                 )}
 
                 <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50/70 p-4 text-sm text-slate-600">

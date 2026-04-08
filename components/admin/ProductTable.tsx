@@ -235,7 +235,7 @@ export default function ProductTable({ products }: ProductTableProps) {
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative min-w-[260px] flex-1 sm:min-w-[320px]">
+          <div className="relative w-full flex-1 sm:min-w-0">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
@@ -270,7 +270,175 @@ export default function ProductTable({ products }: ProductTableProps) {
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+      <div className="space-y-3 md:hidden">
+        {paginatedProducts.length === 0 ? (
+          <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-16 text-center text-slate-500 shadow-sm">
+            <div className="mx-auto flex max-w-sm flex-col items-center gap-3">
+              <div className="rounded-full bg-slate-100 p-3 text-slate-400">
+                <Package className="h-6 w-6" />
+              </div>
+              <div>
+                      <p className="text-base font-semibold text-slate-700">ไม่พบสินค้าที่ตรงเงื่อนไข</p>
+                      <p className="mt-1 text-sm text-slate-500">ลองค้นหาด้วยชื่ออื่นหรือเปลี่ยนหมวดหมู่ที่เลือก</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          paginatedProducts.map((product) => {
+            const hasDiscount =
+              product.discountPrice !== null &&
+              product.discountPrice !== undefined &&
+              product.discountPrice < product.price;
+            const displayStockCount = product.stockCount ?? (product.isSold ? 0 : 1);
+            const autoDeleteLabel = formatAutoDelete(product.autoDeleteAfterSale);
+            const isPointProduct = product.currency === "POINT";
+            const activePrice = hasDiscount ? product.discountPrice : product.price;
+
+            return (
+              <div key={product.id} className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <Avatar className="h-14 w-14 rounded-2xl border border-slate-200 shadow-sm">
+                    <AvatarImage src={product.imageUrl || undefined} alt={product.name} className="object-cover" />
+                    <AvatarFallback className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 text-xs font-semibold text-blue-700">
+                      {product.name.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="truncate font-semibold text-slate-900">{product.name}</p>
+                        <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+                          {product.description || "ไม่มีรายละเอียดเพิ่มเติม"}
+                        </p>
+                      </div>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 rounded-full border border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-700"
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/product/${product.id}`} className="flex items-center gap-2">
+                              <Eye className="h-4 w-4" />
+                              ดูสินค้า
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link href={`/admin/products/${product.id}/edit`} className="flex items-center gap-2">
+                              <Pencil className="h-4 w-4" />
+                              แก้ไขสินค้า
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDuplicate(product.id)}
+                            disabled={loadingId === product.id}
+                            className="flex items-center gap-2"
+                          >
+                            <Copy className="h-4 w-4" />
+                            คัดลอกสินค้า
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(product.id, product.name)}
+                            disabled={loadingId === product.id}
+                            className="flex items-center gap-2 text-rose-600 focus:text-rose-600"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                            ลบสินค้า
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Badge variant="secondary" className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
+                        {product.category || "ทั่วไป"}
+                      </Badge>
+                      <Badge
+                        className={cn(
+                          "rounded-full px-2.5 py-1 text-xs font-semibold",
+                          product.isSold
+                            ? "bg-rose-100 text-rose-700 hover:bg-rose-100"
+                            : "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
+                        )}
+                      >
+                        {product.isSold ? "ขายแล้ว" : "พร้อมขาย"}
+                      </Badge>
+                      {autoDeleteLabel ? (
+                        <Badge
+                          variant="outline"
+                          className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700"
+                        >
+                          <Timer className="mr-1 h-3 w-3" />
+                          {autoDeleteLabel}
+                        </Badge>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-xs text-slate-500">ราคา</p>
+                    <div className="mt-1 flex items-center gap-1.5 text-base font-semibold text-slate-900">
+                      {isPointProduct ? <Gem className="h-4 w-4 text-violet-500" /> : null}
+                      <span>
+                        {isPointProduct
+                          ? Number(activePrice).toLocaleString()
+                          : `฿${Number(activePrice).toLocaleString()}`}
+                      </span>
+                    </div>
+                    {hasDiscount ? (
+                      <p className="mt-1 text-xs text-slate-400 line-through">
+                        {isPointProduct
+                          ? `${Number(product.price).toLocaleString()} พอยท์`
+                          : `฿${Number(product.price).toLocaleString()}`}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  <div className="rounded-xl bg-slate-50 p-3">
+                    <p className="text-xs text-slate-500">สต็อก</p>
+                    <div className="mt-1 flex items-center gap-1 text-base font-semibold text-slate-900">
+                      <Package className="h-4 w-4 text-slate-400" />
+                      {displayStockCount}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+                  <div className="text-sm font-medium text-slate-600">แนะนำ</div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    disabled={loadingId === product.id}
+                    onClick={() => handleToggleFeatured(product.id, product.isFeatured)}
+                    className={cn(
+                      "h-9 w-9 rounded-full border transition",
+                      product.isFeatured
+                        ? "border-amber-200 bg-amber-50 text-amber-500 hover:bg-amber-100"
+                        : "border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-100 hover:text-slate-600"
+                    )}
+                  >
+                    <Star className={cn("h-4 w-4", product.isFeatured ? "fill-current" : "")} />
+                  </Button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      <div className="hidden overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm md:block">
         <Table>
           <TableHeader>
             <TableRow className="border-slate-200 bg-slate-50/80 hover:bg-slate-50/80">

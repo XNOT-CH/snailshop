@@ -141,7 +141,7 @@ function LockedSeasonPassPage(props: Readonly<{ latestEndAtText: string | null }
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
                                 {[1, 2, 3, 4, 5, 6].map((day) => (
                                     <div key={day} className="rounded-[20px] border border-border/70 bg-white/80 p-3 opacity-80">
                                         <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-500">
@@ -342,7 +342,7 @@ export default async function SeasonPassPage() {
                             <span className="h-2.5 w-2.5 rounded-full bg-blue-500" />
                         </div>
 
-                        <div className="grid grid-cols-3 gap-3 md:grid-cols-4 xl:grid-cols-6">
+                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
                             {boardState.board.map((reward) => (
                                 <RewardTile key={reward.day} reward={reward} />
                             ))}

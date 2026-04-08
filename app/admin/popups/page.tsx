@@ -228,7 +228,7 @@ export default function AdminPopupsPage() {
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-gray-700">รูปภาพ Pop-up *</label>
                         <div class="rounded-2xl border border-gray-200 bg-gray-50/70 p-3">
-                            <div class="mb-3 flex items-center gap-2">
+                            <div class="mb-3 flex flex-col items-start gap-2 sm:flex-row sm:items-center">
                                 <button
                                     id="swal-upload-btn"
                                     type="button"
@@ -281,7 +281,7 @@ export default function AdminPopupsPage() {
                             </p>
                         </div>
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div>
                             <label class="mb-1.5 block text-sm font-medium text-gray-700">ลำดับการแสดง</label>
                             <input
@@ -491,8 +491,104 @@ export default function AdminPopupsPage() {
                 )}
 
                 {!loading && popups.length > 0 && (
-                    <div className="overflow-x-auto">
-                        <Table className="min-w-[860px]">
+                    <>
+                        <div className="space-y-3 p-4 md:hidden">
+                            {sortedPopups.map((popup) => (
+                                <div key={popup.id} className="rounded-xl border border-border p-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-2xl border border-border bg-muted shadow-sm">
+                                            <Image
+                                                src={popup.imageUrl}
+                                                alt={popup.title || "Popup"}
+                                                fill
+                                                sizes="64px"
+                                                className="object-cover"
+                                                unoptimized
+                                            />
+                                        </div>
+                                        <div className="min-w-0 flex-1 space-y-1">
+                                            <p className="font-semibold text-foreground">
+                                                {popup.title?.trim() || "ไม่มีชื่อ"}
+                                            </p>
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                {popup.linkUrl ? (
+                                                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                                                        <Link2 className="h-3 w-3" />
+                                                        มีลิงก์
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                                                        ไม่มีลิงก์
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <Switch
+                                            checked={popup.isActive}
+                                            onCheckedChange={() => void toggleActive(popup)}
+                                        />
+                                    </div>
+
+                                    <div className="mt-4 space-y-1.5">
+                                        {popup.linkUrl ? (
+                                            <a
+                                                href={popup.linkUrl}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex max-w-full items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                            >
+                                                <span className="truncate">{popup.linkUrl}</span>
+                                                <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
+                                            </a>
+                                        ) : (
+                                            <span className="text-sm text-muted-foreground">
+                                                ไม่มีลิงก์ปลายทาง
+                                            </span>
+                                        )}
+                                        <p className="text-xs text-muted-foreground">
+                                            {getDismissLabel(popup.dismissOption)}
+                                        </p>
+                                    </div>
+
+                                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                                        <div className="rounded-lg bg-muted/40 p-3">
+                                            <p className="text-xs text-muted-foreground">ลำดับ</p>
+                                            <p className="mt-1 font-medium">{popup.sortOrder}</p>
+                                        </div>
+                                        <div className="rounded-lg bg-muted/40 p-3">
+                                            <p className="text-xs text-muted-foreground">สถานะ</p>
+                                            <p className="mt-1 font-medium">
+                                                {popup.isActive ? "เปิดใช้งาน" : "ปิดใช้งาน"}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4 flex gap-2">
+                                        <Button
+                                            variant="outline"
+                                            className="flex-1"
+                                            onClick={() => openDialog(popup)}
+                                            aria-label={`แก้ไข Pop-up ${popup.title || "ไม่มีชื่อ"}`}
+                                        >
+                                            <Pencil className="mr-2 h-4 w-4" />
+                                            แก้ไข
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="flex-1 text-red-500 hover:text-red-600"
+                                            onClick={() => void handleDelete(popup)}
+                                            aria-label={`ลบ Pop-up ${popup.title || "ไม่มีชื่อ"}`}
+                                        >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            ลบ
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="hidden overflow-x-auto md:block">
+                            <Table className="min-w-[860px]">
                             <TableHeader>
                                 <TableRow className="bg-muted/30">
                                     <TableHead className="w-[110px]">รูป</TableHead>
@@ -595,8 +691,9 @@ export default function AdminPopupsPage() {
                                     </TableRow>
                                 ))}
                             </TableBody>
-                        </Table>
-                    </div>
+                            </Table>
+                        </div>
+                    </>
                 )}
             </div>
         </div>

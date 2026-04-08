@@ -74,7 +74,7 @@ export default async function GachaGridPage({
     }
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-[linear-gradient(180deg,#fff7ed_0%,#ffffff_28%,#ffffff_100%)]">
             <div className="relative overflow-hidden bg-gradient-to-br from-[#1a56db] via-[#1f4fc2] to-[#10284d] px-6 py-10 text-center">
                 <div
                     className="absolute inset-0 opacity-10"
@@ -93,8 +93,8 @@ export default async function GachaGridPage({
                 </p>
             </div>
 
-            <div className="mx-auto max-w-lg px-4 py-8">
-                <div className="rounded-[1.75rem] border border-border/80 bg-card/95 p-4 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.45)] backdrop-blur-sm">
+            <div className="mx-auto w-full max-w-none px-2 py-6 sm:max-w-lg sm:px-4 sm:py-8">
+                <div className="rounded-[1.75rem] border border-border/80 bg-card/95 p-2 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.45)] backdrop-blur-sm sm:p-4">
                     <GachaGridMachine
                         machineId={machineId}
                         machineName={machine.name}

@@ -445,8 +445,8 @@ export default function ProfileSettingsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background py-8 px-4">
-            <div className="max-w-6xl mx-auto space-y-5">
+        <div className="min-h-screen bg-background px-3 py-6 sm:px-4 sm:py-8">
+            <div className="mx-auto w-full max-w-[84rem] space-y-5">
                 {/* Breadcrumb */}
                 <PageBreadcrumb
                     items={[
@@ -692,9 +692,6 @@ export default function ProfileSettingsPage() {
                                                                 {profileInitial}
                                                             </div>
                                                         )}
-                                                        <span className="absolute -bottom-1 left-1/2 inline-flex -translate-x-1/2 rounded-full bg-blue-600 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm">
-                                                            เปลี่ยนรูป
-                                                        </span>
                                                     </button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="start" className="w-48 rounded-2xl border-slate-200 p-2">
@@ -725,10 +722,7 @@ export default function ProfileSettingsPage() {
                                             <div className="space-y-1.5">
                                                 <p className="text-sm font-medium text-foreground">อัปโหลดรูปจากเครื่องได้</p>
                                                 <p className="text-xs leading-5 text-muted-foreground">
-                                                    รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก
-                                                </p>
-                                                <p className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600">
-                                                    อัปโหลดแล้วระบบจะบันทึกรูปให้ทันที ไม่ต้องกดปุ่มบันทึกด้านล่าง
+                                                    รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB
                                                 </p>
                                             </div>
                                         </div>

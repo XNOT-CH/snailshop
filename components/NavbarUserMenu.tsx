@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Package, Settings, Wallet } from "lucide-react";
+import { CreditCard, Package, Settings, Wallet } from "lucide-react";
 import { LogoutMenuItem } from "@/components/LogoutMenuItem";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -96,7 +96,7 @@ export function NavbarUserMenu({
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                     <Link href="/dashboard/topup" className="flex cursor-pointer items-center gap-2 text-foreground">
-                        <Wallet className="h-4 w-4" />
+                        <CreditCard className="h-4 w-4" />
                         {"\u0E40\u0E15\u0E34\u0E21\u0E40\u0E07\u0E34\u0E19"}
                     </Link>
                 </DropdownMenuItem>
@@ -108,7 +108,7 @@ export function NavbarUserMenu({
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
                     <Link href="/dashboard/wallet" className="flex cursor-pointer items-center gap-2 text-foreground">
-                        <Package className="h-4 w-4" />
+                        <Wallet className="h-4 w-4" />
                         {"\u0E01\u0E23\u0E30\u0E40\u0E1B\u0E4B\u0E32"}
                     </Link>
                 </DropdownMenuItem>

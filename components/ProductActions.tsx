@@ -37,6 +37,8 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
         discountType: string;
         discountValue: number;
         maxDiscount: number | null;
+        discountAmount: number;
+        finalPrice: number | null;
     } | null>(null);
     const inCart = isInCart(product.id);
 
@@ -45,16 +47,10 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
     // Calculate final price after promo
     const calcFinalPrice = (total: number) => {
         if (!appliedPromo) return total;
-        let discount = 0;
-        if (appliedPromo.discountType === "PERCENTAGE") {
-            discount = (total * appliedPromo.discountValue) / 100;
-            if (appliedPromo.maxDiscount !== null && discount > appliedPromo.maxDiscount) {
-                discount = appliedPromo.maxDiscount;
-            }
-        } else {
-            discount = appliedPromo.discountValue;
+        if (typeof appliedPromo.finalPrice === "number" && Number.isFinite(appliedPromo.finalPrice)) {
+            return appliedPromo.finalPrice;
         }
-        return Math.max(0, Math.round((total - discount) * 100) / 100);
+        return Math.max(0, Math.round((total - appliedPromo.discountAmount) * 100) / 100);
     };
 
     const finalPrice = calcFinalPrice(basePrice);
@@ -79,6 +75,8 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
                     discountType: data.discountType,
                     discountValue: data.discount,
                     maxDiscount: data.maxDiscount,
+                    discountAmount: Number(data.discountAmount ?? 0),
+                    finalPrice: typeof data.finalPrice === "number" ? data.finalPrice : Number(data.finalPrice ?? basePrice),
                 });
                 showWarning(data.message);
             } else {

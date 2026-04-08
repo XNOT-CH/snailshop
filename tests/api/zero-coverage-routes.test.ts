@@ -5,7 +5,7 @@
  * - /api/admin/promo-codes/[id]   (GET + PUT + DELETE)
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 // ─── Mocks ────────────────────────────────────────────────────────
 vi.mock("react", () => ({ cache: (fn: unknown) => fn }));
@@ -208,7 +208,20 @@ describe("API: /api/admin/gacha-rewards (GET + POST)", () => {
 // /api/admin/promo-codes/[id]  (GET + PUT + DELETE)
 // ════════════════════════════════════════════════════════════════
 describe("API: /api/admin/promo-codes/[id] (GET + PUT + DELETE)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (validateBody as any).mockImplementation(async (req: Request, schema: { safeParse: (raw: unknown) => { success: boolean; data?: unknown; error?: { issues?: Array<{ message: string; path: Array<string | number> }> } } }) => {
+      const raw = await req.json();
+      const result = schema.safeParse(raw);
+      if (!result.success) {
+        const firstMessage = result.error?.issues?.[0]?.message ?? "ข้อมูลไม่ถูกต้อง";
+        return {
+          error: NextResponse.json({ success: false, message: firstMessage }, { status: 400 }),
+        };
+      }
+      return { data: result.data };
+    });
+  });
 
   const existingPromo = {
     id: "pc1", code: "SAVE10", discountType: "PERCENTAGE",
@@ -287,7 +300,7 @@ describe("API: /api/admin/promo-codes/[id] (GET + PUT + DELETE)", () => {
       body: JSON.stringify({
         code: "SAVE20", discountType: "PERCENTAGE", discountValue: "20",
         minPurchase: "200", maxDiscount: "100", usageLimit: "10",
-        startsAt: "2026-01-01", expiresAt: "2026-12-31", isActive: true,
+        startsAt: "2026-01-01T00:00:00.000Z", expiresAt: "2026-12-31T00:00:00.000Z", isActive: true,
       }),
     });
     const res = await PUT(req, mkParams("pc1"));
@@ -312,6 +325,19 @@ describe("API: /api/admin/promo-codes/[id] (GET + PUT + DELETE)", () => {
     expect(res.status).toBe(200);
   });
 
+  it("PUT returns 400 when percentage discount exceeds 100", async () => {
+    (isAdmin as any).mockResolvedValue(ADMIN_OK);
+    const { PUT } = await import("@/app/api/admin/promo-codes/[id]/route");
+    const req = new NextRequest("http://localhost", {
+      method: "PUT",
+      body: JSON.stringify({ discountType: "PERCENTAGE", discountValue: 150 }),
+    });
+    const res = await PUT(req, mkParams("pc1"));
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.message).toContain("เปอร์เซ็นต์ต้องไม่เกิน 100%");
+  });
+
   // ── DELETE ───────────────────────────────────────────────────
   it("DELETE returns 401 when not admin", async () => {
     (isAdmin as any).mockResolvedValue(UNAUTH);
@@ -322,7 +348,7 @@ describe("API: /api/admin/promo-codes/[id] (GET + PUT + DELETE)", () => {
 
   it("DELETE returns 404 when not found", async () => {
     (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (db.query.promoCodes.findFirst as any).mockResolvedValue(null);
+    (db.query.promoCodes.findFirst as any).mockResolvedValueOnce(null);
     const { DELETE } = await import("@/app/api/admin/promo-codes/[id]/route");
     const res = await DELETE(new NextRequest("http://localhost"), mkParams("pc_none"));
     expect(res.status).toBe(404);

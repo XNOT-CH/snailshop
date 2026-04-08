@@ -49,7 +49,7 @@ export default async function GachaGridIndexPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-[linear-gradient(180deg,#fff7ed_0%,#ffffff_28%,#ffffff_100%)]">
             <div className="relative overflow-hidden bg-gradient-to-br from-[#047857] via-[#0f9b76] to-[#0b4e3d] px-6 py-10 text-center">
                 <div
                     className="absolute inset-0 opacity-10"
@@ -68,8 +68,8 @@ export default async function GachaGridIndexPage() {
                 </p>
             </div>
 
-            <div className="mx-auto max-w-lg px-4 py-8">
-                <div className="rounded-[1.75rem] border border-border/80 bg-card/95 p-4 shadow-[0_24px_60px_-38px_rgba(8,145,115,0.4)] backdrop-blur-sm">
+            <div className="mx-auto w-full max-w-none px-2 py-6 sm:max-w-lg sm:px-4 sm:py-8">
+                <div className="rounded-[1.75rem] border border-border/80 bg-card/95 p-2 shadow-[0_24px_60px_-38px_rgba(8,145,115,0.4)] backdrop-blur-sm sm:p-4">
                     <GachaGridMachine
                         machineName="สุ่มกงล้อ"
                         costType={costType}

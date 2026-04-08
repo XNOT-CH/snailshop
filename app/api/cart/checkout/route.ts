@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { db, orders, products, users } from "@/lib/db";
+import { db, orders, products, promoCodes, promoUsages, users } from "@/lib/db";
 import { eq, inArray, sql } from "drizzle-orm";
 import { decrypt, encrypt } from "@/lib/encryption";
 import { splitStock, getDelimiter } from "@/lib/stock";
@@ -8,6 +8,7 @@ import { sendEmail } from "@/lib/mail";
 import { PurchaseReceiptEmail } from "@/components/emails/PurchaseReceiptEmail";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkPurchaseRateLimit, getClientIp } from "@/lib/rateLimit";
+import { validatePromoCode } from "@/lib/promo";
 
 type ProductRow = {
     id: string;
@@ -15,15 +16,23 @@ type ProductRow = {
     price: string | number;
     discountPrice?: string | number | null;
     currency?: string | null;
+    category?: string | null;
     isSold: boolean;
     secretData?: string | null;
     stockSeparator?: string | null;
     autoDeleteAfterSale?: string | number | null;
 };
 
+type AppliedPromo = {
+    id: string;
+    code: string;
+    discountAmount: number;
+};
+
 type PurchaseContext = {
     productIds: string[];
     userId: string;
+    promoCode?: string | null;
     user: {
         creditBalance: string | number;
         pointBalance?: string | number | null;
@@ -39,6 +48,87 @@ const MSG_INSUFFICIENT_CREDIT = "เครดิตไม่เพียงพ�
 const MSG_INSUFFICIENT_POINTS = "Point ไม่เพียงพอ";
 const MSG_PURCHASE_ERROR = "เกิดข้อผิดพลาดในการซื้อ";
 const MSG_GENERIC_ERROR = "เกิดข้อผิดพลาด";
+
+function toCents(value: string | number) {
+    return Math.round(Number(value) * 100);
+}
+
+function fromCents(value: number) {
+    return value / 100;
+}
+
+function getActivePrice(product: ProductRow) {
+    return Number(product.discountPrice ?? product.price);
+}
+
+function getCartPromoCategory(productList: ProductRow[]) {
+    const categories = Array.from(
+        new Set(
+            productList
+                .filter((product) => product.currency === "THB" || !product.currency)
+                .map((product) => product.category?.trim())
+                .filter(Boolean)
+        )
+    );
+
+    return categories.length === 1 ? categories[0] ?? null : null;
+}
+
+async function getAppliedPromo(
+    promoCode: string | null | undefined,
+    totalTHB: number,
+    productList: ProductRow[],
+    userId: string
+): Promise<AppliedPromo | null> {
+    if (!promoCode || totalTHB <= 0) {
+        return null;
+    }
+
+    const result = await validatePromoCode({
+        code: promoCode,
+        totalPrice: totalTHB,
+        productCategory: getCartPromoCategory(productList),
+        userId,
+    });
+
+    if (!result.valid) {
+        throw new Error(result.message);
+    }
+
+    return {
+        id: result.promo.id,
+        code: result.promo.code,
+        discountAmount: result.discountAmount ?? 0,
+    };
+}
+
+function buildDiscountedThbPriceMap(productList: ProductRow[], discountAmount: number) {
+    const thbProducts = productList.filter((product) => product.currency === "THB" || !product.currency);
+    const totalThbCents = thbProducts.reduce((sum, product) => sum + toCents(getActivePrice(product)), 0);
+    const totalDiscountCents = Math.min(toCents(discountAmount), totalThbCents);
+    const priceMap = new Map<string, number>();
+
+    if (thbProducts.length === 0 || totalDiscountCents <= 0 || totalThbCents <= 0) {
+        thbProducts.forEach((product) => {
+            priceMap.set(product.id, getActivePrice(product));
+        });
+        return priceMap;
+    }
+
+    let distributedDiscountCents = 0;
+
+    thbProducts.forEach((product, index) => {
+        const baseCents = toCents(getActivePrice(product));
+        const discountCents = index === thbProducts.length - 1
+            ? totalDiscountCents - distributedDiscountCents
+            : Math.min(baseCents, Math.floor((totalDiscountCents * baseCents) / totalThbCents));
+
+        distributedDiscountCents += discountCents;
+        priceMap.set(product.id, fromCents(Math.max(0, baseCents - discountCents)));
+    });
+
+    return priceMap;
+}
 
 function getAutoDeleteTimestamp(delayMinutes?: string | number | null) {
     if (!delayMinutes) return null;
@@ -79,7 +169,7 @@ function validateAndSummarizeProducts(productList: ProductRow[], productIds: str
     return { totalTHB, totalPoints };
 }
 
-async function executeWithRawConnection({ productIds, userId, user }: PurchaseContext) {
+async function executeWithRawConnection({ productIds, userId, user, promoCode }: PurchaseContext) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const conn = await (db as any).$client.getConnection();
 
@@ -87,13 +177,18 @@ async function executeWithRawConnection({ productIds, userId, user }: PurchaseCo
         await conn.beginTransaction();
 
         const [rows] = await conn.execute(
-            `SELECT id, name, price, discountPrice, currency, isSold, secretData, stockSeparator, autoDeleteAfterSale
+            `SELECT id, name, price, discountPrice, currency, category, isSold, secretData, stockSeparator, autoDeleteAfterSale
              FROM Product WHERE id IN (${productIds.map(() => "?").join(",")}) FOR UPDATE`,
             productIds
         );
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const productList = rows as any as ProductRow[];
         const { totalTHB, totalPoints } = validateAndSummarizeProducts(productList, productIds, user);
+        const appliedPromo = await getAppliedPromo(promoCode, totalTHB, productList, userId);
+        const discountedPriceMap = buildDiscountedThbPriceMap(productList, appliedPromo?.discountAmount ?? 0);
+        const finalTotalTHB = productList
+            .filter((product) => product.currency === "THB" || !product.currency)
+            .reduce((sum, product) => sum + (discountedPriceMap.get(product.id) ?? getActivePrice(product)), 0);
 
         const orderResults = [];
         for (const product of productList) {
@@ -107,7 +202,9 @@ async function executeWithRawConnection({ productIds, userId, user }: PurchaseCo
             const remainingData = remaining.join(getDelimiter(separatorType));
             const isLastStock = remaining.length === 0;
             const orderId = crypto.randomUUID();
-            const unitPrice = Number(product.discountPrice ?? product.price);
+            const unitPrice = product.currency === "THB" || !product.currency
+                ? (discountedPriceMap.get(product.id) ?? getActivePrice(product))
+                : getActivePrice(product);
 
             await conn.execute(
                 "INSERT INTO `Order` (id, userId, totalPrice, status, givenData) VALUES (?, ?, ?, 'COMPLETED', ?)",
@@ -136,7 +233,7 @@ async function executeWithRawConnection({ productIds, userId, user }: PurchaseCo
         if (totalTHB > 0) {
             await conn.execute(
                 "UPDATE User SET creditBalance = creditBalance - ? WHERE id = ?",
-                [totalTHB, userId]
+                [finalTotalTHB, userId]
             );
         }
         if (totalPoints > 0) {
@@ -146,8 +243,26 @@ async function executeWithRawConnection({ productIds, userId, user }: PurchaseCo
             );
         }
 
+        if (appliedPromo) {
+            await conn.execute(
+                "UPDATE PromoCode SET usedCount = usedCount + 1 WHERE id = ?",
+                [appliedPromo.id]
+            );
+            await conn.execute(
+                "INSERT INTO PromoUsage (id, promoCodeId, userId, orderId, promoCode, discountAmount, status, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, 'COMPLETED', NOW(), NOW())",
+                [
+                    crypto.randomUUID(),
+                    appliedPromo.id,
+                    userId,
+                    orderResults[0]?.orderId ?? null,
+                    appliedPromo.code,
+                    appliedPromo.discountAmount.toFixed(2),
+                ]
+            );
+        }
+
         await conn.commit();
-        return { orderResults, totalTHB, totalPoints };
+        return { orderResults, totalTHB: finalTotalTHB, totalPoints, promoCode: appliedPromo?.code ?? null, discountAmount: appliedPromo?.discountAmount ?? 0 };
     } catch (error) {
         await conn.rollback();
         throw error;
@@ -156,10 +271,15 @@ async function executeWithRawConnection({ productIds, userId, user }: PurchaseCo
     }
 }
 
-async function executeWithDrizzleTransaction({ productIds, userId, user }: PurchaseContext) {
+async function executeWithDrizzleTransaction({ productIds, userId, user, promoCode }: PurchaseContext) {
     return db.transaction(async (tx) => {
         const productList = await tx.select().from(products).where(inArray(products.id, productIds)) as ProductRow[];
         const { totalTHB, totalPoints } = validateAndSummarizeProducts(productList, productIds, user);
+        const appliedPromo = await getAppliedPromo(promoCode, totalTHB, productList, userId);
+        const discountedPriceMap = buildDiscountedThbPriceMap(productList, appliedPromo?.discountAmount ?? 0);
+        const finalTotalTHB = productList
+            .filter((product) => product.currency === "THB" || !product.currency)
+            .reduce((sum, product) => sum + (discountedPriceMap.get(product.id) ?? getActivePrice(product)), 0);
 
         const orderResults = [];
         for (const product of productList) {
@@ -173,7 +293,9 @@ async function executeWithDrizzleTransaction({ productIds, userId, user }: Purch
             const remainingData = remaining.join(getDelimiter(separatorType));
             const isLastStock = remaining.length === 0;
             const orderId = crypto.randomUUID();
-            const unitPrice = Number(product.discountPrice ?? product.price);
+            const unitPrice = product.currency === "THB" || !product.currency
+                ? (discountedPriceMap.get(product.id) ?? getActivePrice(product))
+                : getActivePrice(product);
 
             await tx.insert(orders).values({
                 id: orderId,
@@ -201,7 +323,7 @@ async function executeWithDrizzleTransaction({ productIds, userId, user }: Purch
         if (totalTHB > 0) {
             await tx.update(users).set({
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                creditBalance: sql`creditBalance - ${totalTHB}` as any,
+                creditBalance: sql`creditBalance - ${finalTotalTHB}` as any,
             }).where(eq(users.id, userId));
         }
         if (totalPoints > 0) {
@@ -211,7 +333,24 @@ async function executeWithDrizzleTransaction({ productIds, userId, user }: Purch
             }).where(eq(users.id, userId));
         }
 
-        return { orderResults, totalTHB, totalPoints };
+        if (appliedPromo) {
+            await tx.update(promoCodes).set({
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                usedCount: sql`usedCount + 1` as any,
+            }).where(eq(promoCodes.id, appliedPromo.id));
+
+            await tx.insert(promoUsages).values({
+                id: crypto.randomUUID(),
+                promoCodeId: appliedPromo.id,
+                userId,
+                orderId: orderResults[0]?.orderId ?? null,
+                promoCode: appliedPromo.code,
+                discountAmount: appliedPromo.discountAmount.toFixed(2),
+                status: "COMPLETED",
+            });
+        }
+
+        return { orderResults, totalTHB: finalTotalTHB, totalPoints, promoCode: appliedPromo?.code ?? null, discountAmount: appliedPromo?.discountAmount ?? 0 };
     });
 }
 
@@ -253,7 +392,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const { productIds } = await request.json();
+        const { productIds, promoCode } = await request.json();
 
         if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
             return NextResponse.json({ success: false, message: MSG_SELECT_PRODUCTS }, { status: 400 });
@@ -278,6 +417,7 @@ export async function POST(request: NextRequest) {
                 productIds,
                 userId,
                 user,
+                promoCode: typeof promoCode === "string" ? promoCode : null,
             });
 
             if (session?.user?.email) {
@@ -300,6 +440,7 @@ export async function POST(request: NextRequest) {
                 purchasedCount: orderResults.length,
                 totalTHB,
                 totalPoints,
+                promoCode: typeof promoCode === "string" ? promoCode.trim().toUpperCase() : null,
                 orders: orderResults,
             });
         } catch (txError) {

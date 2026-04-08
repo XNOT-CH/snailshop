@@ -8,7 +8,6 @@ import {
     BadgeCheck,
     CalendarDays,
     CheckCircle2,
-    CircleAlert,
     Clock3,
     Coins,
     Crown,
@@ -162,17 +161,6 @@ export default async function SeasonPassPurchasePage() {
                                         </div>
                                     </div>
                                 ) : null}
-                                <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4">
-                                    <div className="flex items-center gap-3">
-                                        <CircleAlert className="h-4 w-4 text-amber-700" />
-                                        <div>
-                                            <p className="text-sm font-medium text-amber-900">กติกาสำคัญ</p>
-                                            <p className="mt-1 text-sm text-amber-900/85">
-                                                สิทธิ์รับรางวัลจะรีเซ็ตใหม่ทุกวัน หากไม่ได้กดรับภายในวันนั้น จะถือว่าสละสิทธิ์
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
                             </div>
                         </div>
                     </div>

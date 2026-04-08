@@ -560,8 +560,73 @@ export default function AdminAuditLogsPage() {
                 )}
 
                 {!loading && quickFilteredLogs.length > 0 && (
-                    <div className="overflow-x-auto">
-                        <Table>
+                    <>
+                    <div className="space-y-3 p-4 md:hidden">
+                        {quickFilteredLogs.map((log) => {
+                            const details = parseDetails(log.details);
+                            const changes = details?.changes ?? [];
+                            const hasChanges = changes.length > 0;
+
+                            return (
+                                <div key={log.id} className="rounded-xl border border-border p-4">
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium">{log.user?.username || "-"}</p>
+                                            <p className="text-xs text-muted-foreground">{formatDate(log.createdAt)}</p>
+                                        </div>
+                                        <Badge
+                                            variant="outline"
+                                            className={
+                                                log.status === "SUCCESS"
+                                                    ? "border-green-600 text-green-600"
+                                                    : "border-red-600 text-red-600"
+                                            }
+                                        >
+                                            {log.status === "SUCCESS" ? "สำเร็จ" : "ล้มเหลว"}
+                                        </Badge>
+                                    </div>
+
+                                    <div className="mt-3 flex flex-wrap gap-2">
+                                        <Badge variant="secondary" className={getActionBadgeClass(log.action)}>
+                                            {getActionLabel(log.action)}
+                                        </Badge>
+                                    </div>
+
+                                    {(details?.resourceName || log.resource) ? (
+                                        <div className="mt-3">
+                                            {details?.resourceName ? (
+                                                <p className="truncate font-medium">{details.resourceName}</p>
+                                            ) : null}
+                                            {log.resource ? (
+                                                <p className="text-xs text-muted-foreground">
+                                                    {RESOURCE_LABELS[log.resource] || log.resource}
+                                                </p>
+                                            ) : null}
+                                        </div>
+                                    ) : null}
+
+                                    <div className="mt-4 flex items-center justify-between gap-3">
+                                        <p className="font-mono text-xs text-muted-foreground" title={log.ipAddress || "-"}>
+                                            {formatIpAddress(log.ipAddress)}
+                                        </p>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => openDetail(log)}
+                                            className={hasChanges ? "text-primary" : ""}
+                                            title={hasChanges ? `ดูรายละเอียด (${changes.length} รายการเปลี่ยนแปลง)` : "ดูรายละเอียด"}
+                                        >
+                                            <Eye className="h-4 w-4" />
+                                            {hasChanges && <span className="ml-1 text-xs">({changes.length})</span>}
+                                        </Button>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+
+                    <div className="hidden overflow-x-auto md:block">
+                        <Table className="min-w-[860px]">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>เวลา</TableHead>
@@ -647,11 +712,12 @@ export default function AdminAuditLogsPage() {
                             </TableBody>
                         </Table>
                     </div>
+                    </>
                 )}
             </div>
 
             {totalPages > 1 && (
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm text-muted-foreground">
                         แสดง {page * limit + 1} - {Math.min((page + 1) * limit, total)} จาก {total} รายการ
                     </p>

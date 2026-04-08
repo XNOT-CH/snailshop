@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "check:deploy": "node scripts/validate-deploy.mjs",
+    "check:encoding": "node scripts/check-encoding.mjs",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",

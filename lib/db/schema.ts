@@ -346,6 +346,7 @@ export const newsArticles = mysqlTable("NewsArticle", {
 export const promoCodes = mysqlTable("PromoCode", {
     id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
     code: varchar("code", { length: 50 }).unique().notNull(),
+    codeType: varchar("codeType", { length: 20 }).default("DISCOUNT").notNull(),
     discountType: varchar("discountType", { length: 20 }).default("PERCENTAGE").notNull(),
     discountValue: decimal("discountValue", { precision: 10, scale: 2 }).notNull(),
     minPurchase: decimal("minPurchase", { precision: 10, scale: 2 }),

@@ -38,6 +38,11 @@ vi.mock("@/components/emails/PurchaseReceiptEmail", () => ({
   PurchaseReceiptEmail: vi.fn(() => null),
 }));
 
+vi.mock("@/lib/rateLimit", () => ({
+  checkPurchaseRateLimit: vi.fn(() => ({ blocked: false, remainingAttempts: 12 })),
+  getClientIp: vi.fn(() => "127.0.0.1"),
+}));
+
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { splitStock } from "@/lib/stock";
@@ -227,6 +232,36 @@ describe("API: /api/purchase (POST)", () => {
     const { POST } = await import("@/app/api/purchase/route");
     const res = await POST(req({ productId: "p1", promoCode: "BIG50" }));
     expect(res.status).toBe(200);
+  });
+
+  it("treats maxDiscount=0 as uncapped during purchase", async () => {
+    (auth as any).mockResolvedValue({ user: { id: "u1" } });
+    (db.query.users.findFirst as any).mockResolvedValue({ ...MOCK_USER, creditBalance: "2000" });
+    (splitStock as any).mockReturnValue(["item1"]);
+    const product600 = { ...MOCK_PRODUCT, price: "600" };
+    const conn = mkConn(product600, {
+      id: "promo6", code: "NOTGOD", isActive: true,
+      startsAt: new Date(Date.now() - 1000),
+      expiresAt: null, usageLimit: null, usedCount: 0,
+      usagePerUser: null,
+      applicableCategories: null,
+      excludedCategories: null,
+      isNewUserOnly: false,
+      codeType: "DISCOUNT",
+      discountType: "PERCENTAGE",
+      discountValue: "10",
+      maxDiscount: "0.00",
+      minPurchase: "500.00",
+    });
+    (db.$client.getConnection as any).mockResolvedValue(conn);
+
+    const { POST } = await import("@/app/api/purchase/route");
+    const res = await POST(req({ productId: "p1", promoCode: "NOTGOD" }));
+    expect(res.status).toBe(200);
+    expect(conn.execute).toHaveBeenCalledWith(
+      "UPDATE User SET creditBalance = creditBalance - ? WHERE id = ?",
+      [540, "u1"]
+    );
   });
 
   it("rejects expired promo code", async () => {

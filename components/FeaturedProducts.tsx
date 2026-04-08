@@ -236,8 +236,8 @@ export function FeaturedProducts() {
 
           return (
             <div key={product.id} className="swipe-item w-40 flex-shrink-0 snap-start sm:w-52">
-              <div className="group relative overflow-hidden rounded-2xl border border-border/50 bg-card shadow-sm transition-all duration-300 hover:shadow-lg">
-                <div className="relative aspect-square overflow-hidden bg-muted">
+              <div className="group relative overflow-hidden rounded-2xl border border-slate-300/80 bg-white shadow-sm transition-all duration-300 hover:shadow-lg">
+                <div className="relative aspect-square overflow-hidden border-b border-slate-300/80 bg-muted">
                   {discounted ? (
                     <div className="absolute left-3 top-3 z-10">
                       <span className="flex items-center gap-1 rounded-full bg-red-500 px-2 py-1 text-xs font-bold text-white">

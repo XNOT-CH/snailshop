@@ -316,8 +316,8 @@ export default function AdminGachaSettingsPage() {
     return (
         <div className="space-y-8 animate-page-enter">
             {/* Header */}
-            <div className="sticky top-0 z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 bg-background/85 backdrop-blur border-b">
-                <div className="flex items-center justify-between py-4">
+            <div className="sticky top-0 z-20 -mx-4 border-b bg-background/85 px-4 backdrop-blur sm:-mx-6 sm:px-6">
+                <div className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
                             <Dices className="h-7 w-7 text-primary" />
@@ -671,7 +671,124 @@ export default function AdminGachaSettingsPage() {
                         </div>
                     )}
                     {!isRewardLoading && rewardRows.length > 0 && (
-                        <Table>
+                        <>
+                        <div className="space-y-3 md:hidden">
+                            {rewardRows.map((r) => {
+                                const imgSrc =
+                                    r.rewardType === "PRODUCT"
+                                        ? r.product?.imageUrl
+                                        : r.rewardImageUrl;
+                                const canEditImage = r.rewardType !== "PRODUCT";
+
+                                let rewardSubtext = "";
+                                if (r.rewardType === "PRODUCT" && r.product) {
+                                    rewardSubtext = `฿${r.product.price.toLocaleString()} • ${r.product.category}`;
+                                } else if (r.rewardAmount != null) {
+                                    let prefix = "";
+                                    let suffix = "";
+                                    if (r.rewardType === "CREDIT") prefix = "฿";
+                                    if (r.rewardType === "POINT") suffix = " พอยต์";
+                                    if (r.rewardType === "TICKET") suffix = " ตั๋วสุ่ม";
+                                    rewardSubtext = `${prefix}${r.rewardAmount.toLocaleString()}${suffix}`;
+                                }
+
+                                return (
+                                    <div key={r.id} className="rounded-xl border border-border p-4">
+                                        <div className="flex items-start justify-between gap-3">
+                                            <div className="flex min-w-0 items-center gap-3">
+                                                <div className="h-10 w-10 rounded-md border overflow-hidden bg-white flex items-center justify-center flex-shrink-0">
+                                                    {imgSrc ? (
+                                                        <Image
+                                                            src={imgSrc}
+                                                            alt="reward"
+                                                            width={40}
+                                                            height={40}
+                                                            className="object-contain w-full h-full"
+                                                        />
+                                                    ) : (
+                                                        <ImageIcon className="h-4 w-4 text-muted-foreground" />
+                                                    )}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <p className="font-medium text-foreground">
+                                                        {r.rewardType === "PRODUCT"
+                                                            ? r.product?.name || "(ไม่พบสินค้า)"
+                                                            : r.rewardName || "-"}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {rewardSubtext}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-red-500 hover:text-red-600"
+                                                onClick={() => handleDeleteReward(r.id)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+
+                                        <div className="mt-3">{rewardTypeBadge(r.rewardType)}</div>
+
+                                        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                                            <div className="space-y-2">
+                                                <Label className="text-xs text-muted-foreground">Tier</Label>
+                                                <Select value={r.tier} onValueChange={(v) => handleUpdateReward(r.id, { tier: v as Tier })}>
+                                                    <SelectTrigger className="h-9 w-full">
+                                                        <SelectValue />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        <SelectItem value="common">🟠 common</SelectItem>
+                                                        <SelectItem value="rare">🟢 rare</SelectItem>
+                                                        <SelectItem value="epic">🔵 epic</SelectItem>
+                                                        <SelectItem value="legendary">🔴 legendary</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            </div>
+                                            <div className="space-y-2">
+                                                <Label className="text-xs text-muted-foreground">สถานะ</Label>
+                                                <div className="flex items-center gap-2">
+                                                    <Switch
+                                                        checked={r.isActive}
+                                                        onCheckedChange={(checked) => handleUpdateReward(r.id, { isActive: checked })}
+                                                    />
+                                                    <Badge variant={r.isActive ? "default" : "secondary"}>
+                                                        {r.isActive ? "เปิด" : "ปิด"}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {canEditImage ? (
+                                            <div className="mt-3">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="gap-2"
+                                                    disabled={isUploadingEditImage && editingImageRewardId === r.id}
+                                                    onClick={() => {
+                                                        setEditingImageRewardId(r.id);
+                                                        editFileInputRef.current?.click();
+                                                    }}
+                                                >
+                                                    {isUploadingEditImage && editingImageRewardId === r.id ? (
+                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                    ) : (
+                                                        <Pencil className="h-3.5 w-3.5" />
+                                                    )}
+                                                    แก้ไขรูปภาพ
+                                                </Button>
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        <div className="hidden overflow-x-auto md:block">
+                        <Table className="min-w-[860px]">
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>รูป</TableHead>
@@ -803,6 +920,8 @@ export default function AdminGachaSettingsPage() {
                                 })}
                             </TableBody>
                         </Table>
+                        </div>
+                        </>
                     )}
                 </CardContent>
             </Card>

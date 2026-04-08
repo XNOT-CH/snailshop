@@ -92,14 +92,14 @@ export function ProductCard({
     return (
         <div
             className={`
-                group relative bg-card rounded-2xl border border-border/50 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300
+                group relative rounded-2xl border border-slate-300/80 bg-white overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300
                 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}
             `}
             style={{
                 transitionDelay: `${index * 50}ms`,
             }}
         >
-            <div className="relative aspect-square overflow-hidden bg-muted">
+            <div className="relative aspect-square overflow-hidden border-b border-slate-300/80 bg-muted">
                 <div className="absolute top-3 left-3 z-10">
                     <span className="px-2 py-1 text-xs font-medium bg-primary/90 text-primary-foreground rounded-full">
                         {category}

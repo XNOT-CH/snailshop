@@ -413,8 +413,85 @@ export default function FooterLinksAdminPage() {
                         ยังไม่มีลิงก์ในส่วนท้าย เพิ่มรายการแรกได้จากฟอร์มด้านบน
                     </div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <Table className="min-w-[860px]">
+                    <>
+                        <div className="space-y-3 p-4 md:hidden">
+                            {sortedLinks.map((link) => (
+                                <div
+                                    key={link.id}
+                                    className="rounded-2xl border border-border bg-card p-4 shadow-sm"
+                                >
+                                    <div className="flex items-start justify-between gap-3">
+                                        <div className="min-w-0 space-y-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <p className="font-semibold text-foreground">
+                                                    {link.label}
+                                                </p>
+                                                <span
+                                                    className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${
+                                                        link.isActive
+                                                            ? "bg-emerald-100 text-emerald-700"
+                                                            : "bg-slate-100 text-slate-500"
+                                                    }`}
+                                                >
+                                                    {link.isActive ? "แสดง" : "ซ่อน"}
+                                                </span>
+                                                <span
+                                                    className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${
+                                                        link.openInNewTab
+                                                            ? "bg-blue-100 text-blue-700"
+                                                            : "bg-slate-100 text-slate-500"
+                                                    }`}
+                                                >
+                                                    {link.openInNewTab
+                                                        ? "เปิดแท็บใหม่"
+                                                        : "แท็บเดิม"}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                {getDomainLabel(link.href)}
+                                            </p>
+                                        </div>
+                                        <GripVertical className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                                    </div>
+
+                                    <div className="mt-3 rounded-2xl bg-muted/30 px-3 py-2.5">
+                                        <a
+                                            href={link.href}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="inline-flex max-w-full items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                                        >
+                                            <span className="truncate">{link.href}</span>
+                                            <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
+                                        </a>
+                                    </div>
+
+                                    <div className="mt-4 flex items-center justify-end gap-1.5">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="rounded-xl text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
+                                            onClick={() => openEditModal(link)}
+                                            aria-label={`แก้ไขลิงก์ ${link.label}`}
+                                        >
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="rounded-xl text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                                            onClick={() => void handleDeleteLink(link)}
+                                            aria-label={`ลบลิงก์ ${link.label}`}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="hidden overflow-x-auto md:block">
+                            <Table className="min-w-[860px]">
                             <TableHeader>
                                 <TableRow className="bg-muted/30">
                                     <TableHead className="w-[50px]"></TableHead>
@@ -499,8 +576,9 @@ export default function FooterLinksAdminPage() {
                                     </TableRow>
                                 ))}
                             </TableBody>
-                        </Table>
-                    </div>
+                            </Table>
+                        </div>
+                    </>
                 )}
             </div>
         </div>

@@ -54,7 +54,10 @@ export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
             /* NOSONAR */ tabIndex={0}
         >
             {/* Embla Carousel Container */}
-            <div className="overflow-hidden" ref={emblaRef}>
+            <div
+                className="overflow-hidden rounded-md [backface-visibility:hidden] [transform:translateZ(0)]"
+                ref={emblaRef}
+            >
                 <div className="flex">
                     {banners.map((banner) => (
                         <div
@@ -62,14 +65,14 @@ export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
                             className="flex-[0_0_100%] min-w-0"
                         >
                             {/* Natural responsive image: scales with page width, maintains original aspect ratio */}
-                            <div className="relative w-full overflow-hidden rounded-xl">
+                            <div className="relative w-full overflow-hidden rounded-md [backface-visibility:hidden] [clip-path:inset(0_round_0.375rem)] [transform:translateZ(0)]">
                                 <Image
                                     src={banner.image}
                                     alt={banner.title}
                                     width={2000}
                                     height={500}
                                     sizes="100vw"
-                                    className="w-full h-auto block rounded-xl"
+                                    className="block h-auto w-full [backface-visibility:hidden] [transform:translateZ(0)]"
                                     priority
                                     onError={(e) => {
                                         (e.target as HTMLImageElement).src =
@@ -101,22 +104,21 @@ export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
                 </div>
             </div>
 
-            {/* Navigation Arrows - Always visible on mobile, hover-reveal on desktop */}
+            {/* Navigation Arrows - Hidden on mobile, hover-reveal on desktop */}
             {banners.length > 1 && (
                 <>
                     {/* Previous Button */}
                     <button
                         onClick={scrollPrev}
                         className={`
-                            absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10
-                            w-9 h-9 sm:w-12 sm:h-12 
-                            flex items-center justify-center
+                            absolute left-2 sm:left-4 top-1/2 z-10
+                            hidden h-9 w-9 -translate-y-1/2 items-center justify-center sm:flex sm:h-12 sm:w-12
                             bg-white/30 hover:bg-white/50 active:bg-white/60
                             backdrop-blur-sm
                             rounded-full
                             text-white
                             transition-all duration-300 ease-out
-                            opacity-100 sm:opacity-0 sm:group-hover:opacity-100
+                            opacity-0 group-hover:opacity-100
                             sm:${isHovered ? "opacity-100 translate-x-0" : "-translate-x-4"}
                             focus:outline-none focus:ring-2 focus:ring-white/50
                             shadow-lg touch-manipulation
@@ -130,15 +132,14 @@ export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
                     <button
                         onClick={scrollNext}
                         className={`
-                            absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10
-                            w-9 h-9 sm:w-12 sm:h-12 
-                            flex items-center justify-center
+                            absolute right-2 sm:right-4 top-1/2 z-10
+                            hidden h-9 w-9 -translate-y-1/2 items-center justify-center sm:flex sm:h-12 sm:w-12
                             bg-white/30 hover:bg-white/50 active:bg-white/60
                             backdrop-blur-sm
                             rounded-full
                             text-white
                             transition-all duration-300 ease-out
-                            opacity-100 sm:opacity-0 sm:group-hover:opacity-100
+                            opacity-0 group-hover:opacity-100
                             sm:${isHovered ? "opacity-100 translate-x-0" : "translate-x-4"}
                             focus:outline-none focus:ring-2 focus:ring-white/50
                             shadow-lg touch-manipulation

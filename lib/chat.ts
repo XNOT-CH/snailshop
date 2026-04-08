@@ -38,7 +38,6 @@ export interface ChatConversationDto {
         username: string;
         name: string | null;
         image: string | null;
-        email: string | null;
     };
     messages: ChatMessageDto[];
 }
@@ -201,7 +200,6 @@ async function enrichConversationSummary(conversation: ChatConversationSummaryRe
             username: conversation.user.username,
             name: conversation.user.name,
             image: conversation.user.image,
-            email: conversation.user.email,
         },
     };
 }
@@ -214,7 +212,6 @@ async function getChatUser(userId: string) {
             username: true,
             name: true,
             image: true,
-            email: true,
         },
     });
 
@@ -263,7 +260,6 @@ async function hydrateConversation(conversation: ChatConversationRecord): Promis
             username: user.username,
             name: user.name,
             image: user.image,
-            email: user.email,
         },
         messages: messages.map(serializeMessage),
     };

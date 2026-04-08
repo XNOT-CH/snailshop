@@ -96,8 +96,8 @@ export function PurchasedItem({
     };
 
     return (
-        <Card className="overflow-hidden rounded-3xl border border-slate-200/80 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-200/70 card-tilt touch-feedback">
-            <div className="relative aspect-[4/3] bg-muted">
+        <Card className="overflow-hidden rounded-3xl border border-slate-300/80 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-slate-200/70 card-tilt touch-feedback">
+            <div className="relative aspect-[4/3] border-b border-slate-300/80 bg-muted">
                 <Image
                     src={image}
                     alt={title}

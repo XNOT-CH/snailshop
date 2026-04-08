@@ -85,8 +85,8 @@ export function GachaHubClient({ machines }: Readonly<GachaHubClientProps>) {
         : machines;
 
     return (
-        <div className="overflow-hidden rounded-[1.6rem] border border-border/80 bg-card/95 shadow-[0_24px_70px_-42px_rgba(15,23,42,0.45)] backdrop-blur-sm">
-            <div className="flex flex-wrap items-center gap-2 border-b border-border/80 bg-muted/30 px-5 py-3">
+        <div className="overflow-hidden rounded-[1.6rem] border border-slate-200 bg-card shadow-[0_24px_70px_-42px_rgba(15,23,42,0.45)] backdrop-blur-sm">
+            <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-muted/30 px-5 py-3">
                 <div className="mr-2 flex items-center gap-2 font-bold text-foreground">
                     <div className="flex h-6 w-6 items-center justify-center rounded bg-[#1a56db]">
                         <LayoutGrid className="h-3.5 w-3.5 text-white" />
@@ -135,7 +135,7 @@ export function GachaHubClient({ machines }: Readonly<GachaHubClientProps>) {
                             <Link
                                 key={machine.id}
                                 href={machine.gameType === "GRID_3X3" ? `/gacha-grid/${machine.id}` : `/gacha/${machine.id}`}
-                                className="group flex flex-col overflow-hidden rounded-2xl border border-border/80 bg-card/90 transition-all duration-200 hover:border-blue-400/60 hover:shadow-[0_22px_48px_-28px_rgba(37,99,235,0.45)]"
+                                className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-card/90 transition-all duration-200 hover:border-blue-400/60 hover:shadow-[0_22px_48px_-28px_rgba(37,99,235,0.45)]"
                             >
                                 <div className="w-full overflow-hidden bg-muted/60" style={{ aspectRatio: "2000/500" }}>
                                     {machine.imageUrl && (machine.imageUrl.startsWith("/") || machine.imageUrl.startsWith("http")) ? (

@@ -84,14 +84,14 @@ export function GachaRecentFeed({ refreshKey }: Readonly<{ refreshKey: number }>
 
             <section
                 aria-label="Recent Winners Feed"
-                className="relative w-full overflow-hidden bg-white dark:bg-zinc-900/50"
+                className="relative w-full overflow-hidden bg-white"
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
                 onFocus={() => setIsHovered(true)}
                 onBlur={() => setIsHovered(false)}
                 /* NOSONAR */ tabIndex={0}
             >
-                <div className="flex py-4 items-start px-2">
+                <div className="flex items-start px-2 py-4">
                     <AnimatePresence mode="popLayout">
                         {logs.map((log) => (
                             <motion.div
@@ -101,9 +101,9 @@ export function GachaRecentFeed({ refreshKey }: Readonly<{ refreshKey: number }>
                                 animate={{ opacity: 1, scale: 1, x: 0 }}
                                 exit={{ opacity: 0, scale: 0.5, transition: { duration: 0.2 } }}
                                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                                className="flex-shrink-0 flex flex-col items-center w-[140px] gap-2 px-2 relative group cursor-pointer"
+                                className="relative flex w-[140px] flex-shrink-0 cursor-pointer flex-col items-center gap-2 px-2 group"
                             >
-                                <div className="w-20 h-20 rounded-full bg-zinc-50 dark:bg-zinc-800 flex items-center justify-center overflow-hidden border border-border transition-transform group-hover:scale-105 shadow-sm relative">
+                                <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-border bg-zinc-50 shadow-sm transition-transform group-hover:scale-105">
                                     {log.rewardImageUrl ? (
                                         <Image
                                             src={log.rewardImageUrl}
@@ -118,14 +118,14 @@ export function GachaRecentFeed({ refreshKey }: Readonly<{ refreshKey: number }>
                                     )}
 
                                     {/* Tier Badge */}
-                                    {log.tier === 'legendary' && <div className="absolute top-0 right-0 w-3 h-3 rounded-full bg-red-500 ring-2 ring-white dark:ring-zinc-900 shadow-sm" />}
-                                    {log.tier === 'epic' && <div className="absolute top-0 right-0 w-3 h-3 rounded-full bg-violet-400 ring-2 ring-white dark:ring-zinc-900 shadow-sm" />}
+                                    {log.tier === 'legendary' && <div className="absolute top-0 right-0 h-3 w-3 rounded-full bg-red-500 ring-2 ring-white shadow-sm" />}
+                                    {log.tier === 'epic' && <div className="absolute top-0 right-0 h-3 w-3 rounded-full bg-violet-400 ring-2 ring-white shadow-sm" />}
                                 </div>
 
                                 <div className="text-center w-full">
-                                    <p className="text-[#145de7] font-bold text-xs truncate w-full">ได้รับ: {log.rewardName}</p>
-                                    <p className="text-xs text-muted-foreground mt-0.5 truncate w-full">{log.username}</p>
-                                    <p className="text-[10px] text-muted-foreground/70 border-b border-border/40 border-dotted inline-block mt-1">
+                                    <p className="w-full truncate text-xs font-bold text-[#145de7]">ได้รับ: {log.rewardName}</p>
+                                    <p className="mt-0.5 w-full truncate text-xs text-slate-500">{log.username}</p>
+                                    <p className="mt-1 inline-block border-b border-slate-300/80 border-dotted text-[10px] text-slate-400">
                                         {new Date(log.createdAt).toLocaleString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
                                     </p>
                                 </div>

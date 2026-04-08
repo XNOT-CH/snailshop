@@ -323,7 +323,7 @@ export default function AdminExportPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1a56db]">
                     <FileSpreadsheet className="h-5 w-5 text-white" />
                 </div>
@@ -335,7 +335,7 @@ export default function AdminExportPage() {
                 </div>
             </div>
 
-            <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+            <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
                 <div>
                     <span className="font-semibold">UTF-8 BOM ถูกเพิ่มอัตโนมัติ</span>{" "}
@@ -344,7 +344,7 @@ export default function AdminExportPage() {
             </div>
 
             <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
-                <div className="mb-4 flex items-center gap-2">
+                <div className="mb-4 flex flex-wrap items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-semibold text-foreground">กรองตามช่วงวันที่</span>
                     <span className="text-xs text-muted-foreground">(ใช้กับ: คำสั่งซื้อ, เติมเงิน, กาชา)</span>
@@ -365,8 +365,8 @@ export default function AdminExportPage() {
                     </Button>
                 </div>
 
-                <div className="flex flex-wrap gap-4">
-                    <div className="min-w-[160px] flex-1">
+                <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">
+                    <div className="min-w-0 flex-1 sm:min-w-[160px]">
                         <Label htmlFor="export-from" className="mb-1 block text-xs text-muted-foreground">
                             วันที่เริ่มต้น
                         </Label>
@@ -381,7 +381,7 @@ export default function AdminExportPage() {
                             className="h-9 text-sm tabular-nums"
                         />
                     </div>
-                    <div className="min-w-[160px] flex-1">
+                    <div className="min-w-0 flex-1 sm:min-w-[160px]">
                         <Label htmlFor="export-to" className="mb-1 block text-xs text-muted-foreground">
                             วันที่สิ้นสุด
                         </Label>
@@ -401,7 +401,7 @@ export default function AdminExportPage() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="h-9 text-xs"
+                            className="h-9 w-full text-xs sm:w-auto"
                             onClick={() => applyRange(monthRange)}
                         >
                             รีเซ็ต
@@ -410,12 +410,12 @@ export default function AdminExportPage() {
                 </div>
 
                 {dateRangeError ? (
-                    <div role="alert" className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600 dark:border-red-800 dark:bg-red-900/30 dark:text-red-400">
+                    <div role="alert" className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-600">
                         {dateRangeError}
                     </div>
                 ) : null}
 
-                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300">
+                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
                     ส่งออกได้สูงสุด {EXPORT_ROW_LIMIT.toLocaleString()} แถวต่อไฟล์ ถ้าข้อมูลเยอะให้แบ่งช่วงวันที่แล้วส่งออกหลายครั้ง
                 </div>
             </div>

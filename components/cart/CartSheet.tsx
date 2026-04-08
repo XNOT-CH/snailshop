@@ -11,12 +11,13 @@ import {
     SheetTrigger,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ShoppingCart, Trash2, Loader2, ShoppingBag } from "lucide-react";
+import { ShoppingCart, Trash2, Loader2, ShoppingBag, Search, Tag } from "lucide-react";
 import { useCart } from "@/components/providers/CartContext";
 import { CartItem } from "./CartItem";
 import { CartIcon } from "./CartIcon";
-import { showPurchaseSuccessModal, showPurchaseConfirm, showError } from "@/lib/swal";
+import { showPurchaseSuccessModal, showPurchaseConfirm, showError, showWarning } from "@/lib/swal";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 
 function CartSheetContent() {
@@ -25,6 +26,56 @@ function CartSheetContent() {
     const { items, removeFromCart, updateQuantity, clearCart, total, itemCount, isLoading } = useCart();
     const [isOpen, setIsOpen] = useState(false);
     const [isCheckingOut, setIsCheckingOut] = useState(false);
+    const [promoCode, setPromoCode] = useState("");
+    const [isCheckingPromo, setIsCheckingPromo] = useState(false);
+    const [appliedPromo, setAppliedPromo] = useState<{
+        code: string;
+        discountAmount: number;
+        finalPrice: number;
+    } | null>(null);
+
+    useEffect(() => {
+        setAppliedPromo(null);
+    }, [items, total]);
+
+    const finalTotal = appliedPromo?.finalPrice ?? total;
+
+    const handleCheckPromo = async () => {
+        if (!promoCode.trim() || isCheckingPromo || items.length === 0) return;
+
+        setIsCheckingPromo(true);
+        try {
+            const categories = Array.from(new Set(items.map((item) => item.category).filter(Boolean)));
+            const res = await fetch("/api/promo-codes/validate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    code: promoCode,
+                    totalPrice: total,
+                    productCategory: categories.length === 1 ? categories[0] : null,
+                }),
+            });
+            const data = await res.json();
+
+            if (data.valid) {
+                setAppliedPromo({
+                    code: promoCode.trim().toUpperCase(),
+                    discountAmount: Number(data.discountAmount ?? 0),
+                    finalPrice: Number(data.finalPrice ?? total),
+                });
+                showWarning(data.message);
+                return;
+            }
+
+            setAppliedPromo(null);
+            showWarning(data.message || "โค้ดส่วนลดไม่ถูกต้อง");
+        } catch (error) {
+            console.error("Cart promo validation error:", error);
+            showWarning("ไม่สามารถตรวจสอบโค้ดได้ กรุณาลองใหม่");
+        } finally {
+            setIsCheckingPromo(false);
+        }
+    };
 
     const handleCheckout = async () => {
         if (maintenance?.enabled) {
@@ -42,7 +93,10 @@ function CartSheetContent() {
 
         const confirmed = await showPurchaseConfirm({
             productName: itemCount > 1 ? `${itemCount} รายการ` : items[0]?.name,
-            priceText: `฿${total.toLocaleString()}`,
+            priceText: `฿${finalTotal.toLocaleString()}`,
+            extraHtml: appliedPromo
+                ? `<small>โค้ดส่วนลด: <strong>${appliedPromo.code}</strong> ลด ฿${appliedPromo.discountAmount.toLocaleString()}</small>`
+                : undefined,
             confirmText: "ยืนยันการสั่งซื้อ",
             cancelText: "ยกเลิก",
         });
@@ -56,7 +110,10 @@ function CartSheetContent() {
             const response = await fetch("/api/cart/checkout", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ productIds: items.map((item) => item.id) }),
+                body: JSON.stringify({
+                    productIds: items.map((item) => item.id),
+                    promoCode: appliedPromo?.code || undefined,
+                }),
             });
 
             const data = await response.json();
@@ -163,10 +220,53 @@ function CartSheetContent() {
                                     <span>รวมสินค้า ({itemCount} รายการ)</span>
                                     <span>฿{total.toLocaleString()}</span>
                                 </div>
+                                <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
+                                    <div className="flex flex-col gap-2 sm:flex-row">
+                                        <Input
+                                            placeholder="กรอกโค้ดส่วนลด"
+                                            value={promoCode}
+                                            onChange={(event) => {
+                                                setPromoCode(event.target.value);
+                                                setAppliedPromo(null);
+                                            }}
+                                            onKeyDown={(event) => event.key === "Enter" && handleCheckPromo()}
+                                            className="h-10 border-white/10 bg-white text-sm text-slate-900 placeholder:text-slate-400"
+                                            disabled={isCheckingPromo || isCheckingOut}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="h-10 shrink-0 border-white/10 bg-white/10 text-white hover:bg-white/20"
+                                            onClick={handleCheckPromo}
+                                            disabled={isCheckingPromo || !promoCode.trim() || isCheckingOut}
+                                        >
+                                            {isCheckingPromo ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <>
+                                                    <Search className="mr-1.5 h-4 w-4" />
+                                                    ตรวจสอบ
+                                                </>
+                                            )}
+                                        </Button>
+                                    </div>
+                                    {appliedPromo ? (
+                                        <div className="flex items-center gap-1.5 text-sm font-medium text-emerald-300">
+                                            <Tag className="h-3.5 w-3.5" />
+                                            ใช้โค้ด {appliedPromo.code} ลด ฿{appliedPromo.discountAmount.toLocaleString()}
+                                        </div>
+                                    ) : null}
+                                </div>
+                                {appliedPromo ? (
+                                    <div className="flex justify-between text-emerald-300">
+                                        <span>ส่วนลด</span>
+                                        <span>-฿{appliedPromo.discountAmount.toLocaleString()}</span>
+                                    </div>
+                                ) : null}
                                 <div className="flex justify-between items-baseline">
                                     <span className="font-bold text-base text-white">ยอดรวมทั้งหมด</span>
                                     <span className="font-bold text-xl text-blue-400">
-                                        ฿{total.toLocaleString()}
+                                        ฿{finalTotal.toLocaleString()}
                                     </span>
                                 </div>
                             </div>
@@ -185,7 +285,7 @@ function CartSheetContent() {
                                 ) : (
                                     <>
                                         <ShoppingCart className="h-4 w-4" />
-                                        {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : `ชำระเงิน ฿${total.toLocaleString()}`}
+                                        {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : `ชำระเงิน ฿${finalTotal.toLocaleString()}`}
                                     </>
                                 )}
                             </Button>

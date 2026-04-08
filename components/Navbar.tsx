@@ -5,9 +5,9 @@ import { db, users, navItems } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { Button } from "@/components/ui/button";
-import { NavbarUserMenu } from "@/components/NavbarUserMenu";
 import { ShopDropdown } from "@/components/ShopDropdown";
 import { NavigationDrawer } from "@/components/NavigationDrawer";
+import { NavbarInteractive } from "@/components/NavbarInteractive";
 import {
     Dices,
     Gamepad2,
@@ -20,7 +20,6 @@ import {
     Wallet,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { NavbarCartButton } from "@/components/NavbarCartButton";
 
 export default async function Navbar() {
     const session = await auth();
@@ -97,7 +96,7 @@ export default async function Navbar() {
           })();
 
     return (
-        <header id="main-navbar" className="sticky top-0 z-50 w-full border-b border-white/6 bg-background/78 backdrop-blur-xl">
+        <header id="main-navbar" className="sticky top-0 z-50 w-full border-b border-slate-300/80 bg-background/78 backdrop-blur-xl">
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 lg:px-6 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:gap-4 xl:px-8">
                 <Link href="/" className="flex min-w-0 items-center gap-2.5 text-lg font-semibold text-primary xl:min-w-0">
                     {siteSettings?.logoUrl ? (
@@ -119,7 +118,7 @@ export default async function Navbar() {
                     </span>
                 </Link>
 
-                <nav className="hidden items-center justify-center gap-1 rounded-full border border-white/8 bg-white/[0.03] px-1.5 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] xl:flex">
+                <nav className="hidden items-center justify-center gap-1 rounded-full bg-white/[0.03] px-1.5 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] xl:flex">
                     {navLinks.map((link) => {
                         const Icon = link.icon;
 
@@ -142,7 +141,10 @@ export default async function Navbar() {
 
                 <div className="flex shrink-0 items-center gap-1.5 xl:justify-self-end">
                     <ThemeToggle />
-                    <NavbarCartButton />
+                    <NavbarInteractive
+                        user={user ? { username: user.username, image: user.image, creditBalance: Number(user.creditBalance) } : null}
+                        imageVersion={avatarVersion}
+                    />
 
                     {user ? (
                         <>
@@ -154,13 +156,6 @@ export default async function Navbar() {
                                     </span>
                                 </Button>
                             </Link>
-
-                            <NavbarUserMenu
-                                username={user.username}
-                                image={user.image}
-                                imageVersion={avatarVersion}
-                                creditBalance={Number(user.creditBalance)}
-                            />
                         </>
                     ) : (
                         <div className="hidden items-center gap-2 lg:flex">

@@ -430,11 +430,11 @@ export default function AdminSettingsPage() {
                                             {settings.backgroundBlur ? "🌫️ เบลอ" : "🖼️ สีชัด"}
                                         </span>
                                     </div>
-                                ) : (
-                                    <div className="w-full aspect-video rounded-xl border bg-muted flex items-center justify-center">
-                                        <p className="text-sm text-muted-foreground">อัพโหลดหรือใส่ URL เพื่อดูตัวอย่าง</p>
-                                    </div>
-                                )}
+                                  ) : (
+                                      <div className="w-full aspect-video rounded-xl border border-border bg-white flex items-center justify-center">
+                                          <p className="text-sm text-muted-foreground">ค่าเริ่มต้นพื้นหลังเว็บ: #ffffff</p>
+                                      </div>
+                                  )}
 
                                 {/* Controls row */}
                                 <div className="flex flex-wrap items-center gap-2">

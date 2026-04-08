@@ -208,18 +208,6 @@ export default function StockManagementPage() {
                     <Badge variant="secondary" className="px-3 py-1 text-base">
                         {stockItems.length} รายการ
                     </Badge>
-                    <Button
-                        onClick={handleSave}
-                        disabled={isSaving || !hasChanges}
-                        className="w-full gap-2 sm:w-auto"
-                    >
-                        {isSaving ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                            <Save className="h-4 w-4" />
-                        )}
-                        บันทึก
-                    </Button>
                 </div>
             </div>
 
@@ -338,27 +326,6 @@ export default function StockManagementPage() {
                                                             จะถูกส่งก่อน
                                                         </Badge>
                                                     )}
-
-                                                    <div className="ml-auto flex gap-1">
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-6 w-6 text-muted-foreground hover:text-blue-600"
-                                                            onClick={() => handleEditStock(index, item)}
-                                                        >
-                                                            <Pencil className="h-3 w-3" />
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-6 w-6 text-muted-foreground hover:text-red-600"
-                                                            onClick={() => handleDeleteStock(index)}
-                                                        >
-                                                            <Trash2 className="h-3 w-3" />
-                                                        </Button>
-                                                    </div>
                                                 </div>
 
                                                 <div className="mt-1 space-y-1 font-mono text-xs">
@@ -373,6 +340,29 @@ export default function StockManagementPage() {
                                                         </div>
                                                     )}
                                                 </div>
+
+                                                <div className="mt-3 flex items-center justify-end gap-2 border-t border-slate-200 pt-3">
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-8 gap-1.5 text-xs"
+                                                        onClick={() => handleEditStock(index, item)}
+                                                    >
+                                                        <Pencil className="h-3.5 w-3.5" />
+                                                        แก้ไข
+                                                    </Button>
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="h-8 gap-1.5 border-red-200 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                        onClick={() => handleDeleteStock(index)}
+                                                    >
+                                                        <Trash2 className="h-3.5 w-3.5" />
+                                                        ลบ
+                                                    </Button>
+                                                </div>
                                             </>
                                         )}
                                     </div>
@@ -381,6 +371,21 @@ export default function StockManagementPage() {
                         )}
                     </CardContent>
                 </Card>
+            </div>
+
+            <div className="flex justify-end">
+                <Button
+                    onClick={handleSave}
+                    disabled={isSaving || !hasChanges}
+                    className="w-full gap-2 sm:w-auto"
+                >
+                    {isSaving ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                        <Save className="h-4 w-4" />
+                    )}
+                    บันทึก
+                </Button>
             </div>
         </div>
     );

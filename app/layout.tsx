@@ -7,7 +7,7 @@ import { DynamicBackground } from "@/components/DynamicBackground";
 import { DynamicFavicon } from "@/components/DynamicFavicon";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { CartProvider } from "@/components/providers/CartContext";
-import { FloatingChatButton } from "@/components/FloatingChatButton";
+import { FloatingChatButtonWrapper } from "@/components/FloatingChatButtonWrapper";
 import { SweetAlertProvider } from "@/components/SweetAlertProvider";
 import { AnnouncementPopupWrapper } from "@/components/AnnouncementPopupWrapper";
 import { GlobalLoadingWrapper } from "@/components/GlobalLoadingWrapper";
@@ -129,7 +129,7 @@ export default async function RootLayout({
 
               {/* Floating Chat Button */}
               <div id="main-chat">
-                <FloatingChatButton />
+                <FloatingChatButtonWrapper />
               </div>
 
               {/* Announcement Popup - Client Side Only */}

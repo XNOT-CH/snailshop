@@ -43,9 +43,8 @@ export default async function GachaHubPage() {
             url: absoluteUrl(machine.gameType === "GRID_3X3" ? `/gacha-grid/${machine.id}` : `/gacha/${machine.id}`),
         })),
     };
-
     return (
-        <div className="min-h-screen bg-background">
+        <div className="min-h-screen bg-[linear-gradient(180deg,#fff7ed_0%,#ffffff_28%,#ffffff_100%)]">
             <StructuredData data={structuredData} />
 
             <div className="relative overflow-hidden bg-gradient-to-br from-[#1a56db] via-[#1f4fc2] to-[#10284d] py-10 px-6 text-center">

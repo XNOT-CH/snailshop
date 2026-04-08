@@ -404,7 +404,7 @@ export default function AdminSeasonPassEditPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center gap-3">
+            <div className="flex items-start gap-3">
                 <Button asChild variant="outline" size="icon" className="rounded-full">
                     <Link href="/admin/season-pass">
                         <ArrowLeft className="h-4 w-4" />
@@ -479,7 +479,7 @@ export default function AdminSeasonPassEditPage() {
                         />
                     </div>
 
-                    <div className="flex items-center justify-between rounded-2xl border border-border bg-background/70 p-4">
+                    <div className="flex flex-col gap-3 rounded-2xl border border-border bg-background/70 p-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                             <p className="font-medium text-slate-900">เปิดขายแพ็กเกจนี้</p>
                             <p className="text-sm text-muted-foreground">
@@ -530,10 +530,10 @@ export default function AdminSeasonPassEditPage() {
                     <div className="text-sm text-slate-500">วันพิเศษ: {rewardSummary || "ยังไม่ได้เลือก"}</div>
                 </div>
 
-                <div className="grid gap-4 p-6 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid gap-4 p-4 sm:p-6 md:grid-cols-2 xl:grid-cols-3">
                     {rewards.map((reward) => (
                         <div key={reward.dayNumber} className="rounded-2xl border border-border bg-background/70 p-4">
-                            <div className="mb-4 flex items-center justify-between">
+                            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                                 <p className="text-base font-semibold text-slate-900">Day {String(reward.dayNumber).padStart(2, "0")}</p>
                                 <div className="flex items-center gap-2 text-xs text-slate-500">
                                     <span>พิเศษ</span>
@@ -563,7 +563,7 @@ export default function AdminSeasonPassEditPage() {
 
                                 <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-3">
                                     <p className="text-xs font-medium text-amber-700">รูปของรางวัล {rewardTypeDisplayName[reward.rewardType]}</p>
-                                    <div className="mt-3 flex items-center gap-3">
+                                    <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
                                         <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
                                             {reward.imageUrl ? (
                                                 <Image

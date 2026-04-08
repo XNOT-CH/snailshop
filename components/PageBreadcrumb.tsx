@@ -30,9 +30,9 @@ export function PageBreadcrumb({ items, className, showBackButton = true }: Read
 
     return (
         <div className={cn("flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between", className)}>
-            <div className="overflow-x-auto">
-                <Breadcrumb className="w-fit min-w-0">
-                    <BreadcrumbList className="min-w-max flex-nowrap gap-1 px-1 py-1 text-sm sm:gap-1.5 sm:text-base">
+            <div className="min-w-0">
+                <Breadcrumb className="w-full min-w-0">
+                    <BreadcrumbList className="min-w-0 flex-wrap gap-1 px-1 py-1 text-sm sm:gap-1.5 sm:text-base">
                     {/* Home */}
                     <BreadcrumbItem>
                         <BreadcrumbLink asChild>
@@ -56,14 +56,14 @@ export function PageBreadcrumb({ items, className, showBackButton = true }: Read
                                 </BreadcrumbSeparator>
                                 <BreadcrumbItem>
                                     {isLast || !item.href ? (
-                                        <BreadcrumbPage className="max-w-[200px] rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary sm:max-w-none">
+                                        <BreadcrumbPage className="max-w-full break-words rounded-full bg-primary/10 px-2.5 py-1 font-semibold text-primary">
                                             {item.label}
                                         </BreadcrumbPage>
                                     ) : (
                                         <BreadcrumbLink asChild>
                                             <Link
                                                 href={item.href}
-                                                className="rounded-full px-2 py-1 text-muted-foreground/90 hover:text-primary transition-colors duration-200"
+                                                className="break-words rounded-full px-2 py-1 text-muted-foreground/90 transition-colors duration-200 hover:text-primary"
                                             >
                                                 {item.label}
                                             </Link>

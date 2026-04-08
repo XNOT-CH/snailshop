@@ -91,11 +91,11 @@ export function DashboardClient({ }: Readonly<DashboardClientProps>) {
 
     return (
         <Tabs defaultValue="topup" className="w-full">
-            <div className="mb-6 overflow-x-auto pb-1">
-                <TabsList className="grid h-11 min-w-max grid-cols-2 rounded-xl bg-muted/80 p-1 backdrop-blur-sm w-full">
+            <div className="mb-6">
+                <TabsList className="grid h-auto w-full grid-cols-2 rounded-xl bg-muted/80 p-1 backdrop-blur-sm">
                 <TabsTrigger
                     value="topup"
-                    className="gap-1.5 rounded-lg text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 transition-all duration-200"
+                    className="min-h-10 gap-1.5 rounded-lg px-2 py-2 text-xs whitespace-normal sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 transition-all duration-200"
                 >
                     <Wallet className="h-4 w-4" />
                     <span className="hidden sm:inline">สรุปเติมเงิน</span>
@@ -103,7 +103,7 @@ export function DashboardClient({ }: Readonly<DashboardClientProps>) {
                 </TabsTrigger>
                 <TabsTrigger
                     value="purchases"
-                    className="gap-1.5 rounded-lg text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 transition-all duration-200"
+                    className="min-h-10 gap-1.5 rounded-lg px-2 py-2 text-xs whitespace-normal sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 transition-all duration-200"
                 >
                     <Package className="h-4 w-4" />
                     <span className="hidden sm:inline">สินค้าล่าสุด</span>

@@ -187,8 +187,8 @@ export function SaleProducts() {
             >
                 {products.map((product) => (
                     <div key={product.id} className="flex-shrink-0 w-40 sm:w-52 snap-start">
-                        <div className="group relative bg-card rounded-2xl border border-border/50 overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300">
-                            <div className="relative aspect-square overflow-hidden bg-muted">
+                        <div className="group relative overflow-hidden rounded-2xl border border-slate-300/80 bg-white shadow-sm transition-all duration-300 hover:shadow-lg">
+                            <div className="relative aspect-square overflow-hidden border-b border-slate-300/80 bg-muted">
                                 <div className="absolute top-3 left-3 z-10">
                                     <span className="px-2 py-1 text-xs font-bold bg-red-500 text-white rounded-full flex items-center gap-1">
                                         <Percent className="h-3 w-3" />

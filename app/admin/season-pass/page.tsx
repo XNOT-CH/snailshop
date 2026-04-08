@@ -186,7 +186,7 @@ export default function AdminSeasonPassPage() {
                             <div>
                                 <p className="font-medium text-slate-900">จุดที่ควรต่อเพิ่มบนหน้าแรกของผู้ใช้</p>
                                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                                    ควรมีแบนเนอร์ “วันนี้คุณยังไม่ได้รับกล่อง Season Pass” พร้อมปุ่มลัดเข้า
+                                    ควรมีแบนเนอร์ "วันนี้คุณยังไม่ได้รับกล่อง Season Pass" พร้อมปุ่มลัดเข้า
                                     `/dashboard/season-pass` เพื่อช่วยลดการลืมล็อกอินแล้วเสียสิทธิ์
                                 </p>
                             </div>

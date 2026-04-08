@@ -14,14 +14,22 @@ vi.mock("@/lib/db", () => ({
   users: { id: "id", creditBalance: "creditBalance", pointBalance: "pointBalance" },
   products: { id: "id", isSold: "isSold" },
   orders: { id: "id" },
+  promoCodes: { id: "id", usedCount: "usedCount" },
+  promoUsages: { id: "id" },
 }));
 
 vi.mock("drizzle-orm", () => ({ eq: vi.fn(), inArray: vi.fn(), sql: Object.assign(vi.fn(), { join: vi.fn(() => ({})) }) }));
 vi.mock("@/lib/mail", () => ({ sendEmail: vi.fn().mockResolvedValue({}) }));
 vi.mock("@/components/emails/PurchaseReceiptEmail", () => ({ PurchaseReceiptEmail: vi.fn(() => null) }));
+vi.mock("@/lib/promo", () => ({ validatePromoCode: vi.fn() }));
+vi.mock("@/lib/rateLimit", () => ({
+  checkPurchaseRateLimit: vi.fn(() => ({ blocked: false, remainingAttempts: 12 })),
+  getClientIp: vi.fn(() => "127.0.0.1"),
+}));
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { validatePromoCode } from "@/lib/promo";
 
 const mkReq = (body: object) =>
   new NextRequest("http://localhost/api/cart/checkout", { method: "POST", body: JSON.stringify(body) });
@@ -184,6 +192,23 @@ describe("API: /api/cart/checkout (POST)", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.totalTHB).toBe(80);
+  });
+
+  it("applies promo code to cart checkout total", async () => {
+    (auth as any).mockResolvedValue({ user: { id: "u1", email: null, name: "Test" } });
+    (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
+    (validatePromoCode as any).mockResolvedValue({
+      valid: true,
+      promo: { id: "promo1", code: "SAVE10" },
+      discountAmount: 10,
+    });
+    mockTransaction(mkProducts([{ price: "100" }]));
+    const { POST } = await import("@/app/api/cart/checkout/route");
+    const res = await POST(mkReq({ productIds: ["p1"], promoCode: "SAVE10" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.totalTHB).toBe(90);
+    expect(body.promoCode).toBe("SAVE10");
   });
 
   it("succeeds with multiple products in cart", async () => {

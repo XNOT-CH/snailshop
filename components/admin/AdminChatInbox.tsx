@@ -68,7 +68,6 @@ interface ChatConversationSummary {
         username: string;
         name: string | null;
         image: string | null;
-        email: string | null;
     };
 }
 
@@ -150,34 +149,54 @@ export default function AdminChatInbox() {
     const endOfMessagesRef = useRef<HTMLDivElement | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
 
+    const visibleConversations = useMemo(
+        () =>
+            conversations.filter(
+                (conversation) =>
+                    conversation.lastMessageSenderType !== null &&
+                    conversation.lastMessagePreview.trim().length > 0
+            ),
+        [conversations]
+    );
+
     const filteredConversations = useMemo(() => {
         const normalizedQuery = searchQuery.trim().toLowerCase();
 
         if (!normalizedQuery) {
-            return conversations;
+            return visibleConversations;
         }
 
-        return conversations.filter((conversation) => {
+        return visibleConversations.filter((conversation) => {
             const haystacks = [
                 conversation.user.username,
                 conversation.user.name ?? "",
-                conversation.user.email ?? "",
                 conversation.lastMessagePreview,
             ];
 
             return haystacks.some((value) => value.toLowerCase().includes(normalizedQuery));
         });
-    }, [conversations, searchQuery]);
+    }, [searchQuery, visibleConversations]);
 
     useEffect(() => {
         void refreshList();
     }, []);
 
     useEffect(() => {
-        if (!selectedConversationId && conversations[0]?.id && window.matchMedia("(min-width: 1024px)").matches) {
-            setSelectedConversationId(conversations[0].id);
+        if (!selectedConversationId && filteredConversations[0]?.id && window.matchMedia("(min-width: 1024px)").matches) {
+            setSelectedConversationId(filteredConversations[0].id);
         }
-    }, [conversations, selectedConversationId]);
+    }, [filteredConversations, selectedConversationId]);
+
+    useEffect(() => {
+        if (
+            selectedConversationId &&
+            !visibleConversations.some((conversation) => conversation.id === selectedConversationId)
+        ) {
+            setSelectedConversationId(null);
+            setSelectedConversation(null);
+            setDraft("");
+        }
+    }, [selectedConversationId, visibleConversations]);
 
     useEffect(() => {
         if (!selectedConversationId) {
@@ -506,7 +525,7 @@ export default function AdminChatInbox() {
                     <Input
                         value={searchQuery}
                         onChange={(event) => setSearchQuery(event.target.value)}
-                        placeholder="ค้นหาจากชื่อผู้ใช้ อีเมล หรือข้อความล่าสุด"
+                        placeholder="ค้นหาจากชื่อผู้ใช้หรือข้อความล่าสุด"
                         className="pl-10"
                     />
                 </div>
@@ -602,7 +621,7 @@ export default function AdminChatInbox() {
                                                     </div>
 
                                                     <p className="mt-2 line-clamp-2 text-sm text-slate-600">
-                                                        {conversation.lastMessagePreview || "ยังไม่มีข้อความ"}
+                                                        {conversation.lastMessagePreview}
                                                     </p>
 
                                                     {conversation.tags.length > 0 ? (
@@ -623,7 +642,7 @@ export default function AdminChatInbox() {
 
                                                     <div className="mt-3 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
                                                         <span className="max-w-full truncate text-xs text-slate-400">
-                                                            {conversation.user.email || "ไม่มีอีเมล"}
+                                                            @{conversation.user.username}
                                                         </span>
                                                         {conversation.unreadByAdmin > 0 ? (
                                                             <span className="rounded-full bg-[#145de7] px-2 py-0.5 text-xs font-semibold text-white">
@@ -686,7 +705,7 @@ export default function AdminChatInbox() {
                                                 {selectedConversation.user.name || selectedConversation.user.username}
                                             </p>
                                             <p className="truncate text-sm text-slate-500">
-                                                {selectedConversation.user.email || `@${selectedConversation.user.username}`}
+                                                @{selectedConversation.user.username}
                                             </p>
                                             {selectedConversation.tags.length > 0 ? (
                                                 <div className="mt-2 flex flex-wrap gap-1.5">
@@ -783,15 +802,11 @@ export default function AdminChatInbox() {
 
                             <ScrollArea className="min-h-[18rem] flex-1 bg-slate-50/80 p-4 sm:p-5 lg:min-h-0 [&_[data-slot=scroll-area-viewport]]:h-full">
                                 <div className="space-y-4">
-                                    {selectedConversation.messages.length === 0 ? (
-                                        <div className="flex min-h-[280px] items-center justify-center rounded-3xl border border-dashed border-slate-200 bg-white px-4 text-center text-sm text-muted-foreground sm:min-h-[320px]">
-                                            ลูกค้ายังไม่ได้ส่งข้อความเข้ามา
-                                        </div>
-                                    ) : (
+                                    {selectedConversation.messages.length > 0 ? (
                                         selectedConversation.messages.map((message) => (
                                             <MessageBubble key={message.id} message={message} />
                                         ))
-                                    )}
+                                    ) : null}
                                     <div ref={endOfMessagesRef} />
                                 </div>
                             </ScrollArea>

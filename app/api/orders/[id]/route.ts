@@ -21,7 +21,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         const session = await auth();
         const userId = session?.user?.id;
         if (!userId) {
-            return NextResponse.json({ success: false, message: "เธเธฃเธธเธ“เธฒเน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเธเนเธญเธ" }, { status: 401 });
+            return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
         }
 
         const { id } = await params;
@@ -29,7 +29,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 
         // Return 404 for both "not found" and "not your order" to prevent ID enumeration.
         if (!order || !order.product) {
-            return NextResponse.json({ success: false, message: "เนเธกเนเธเธเธฃเธฒเธขเธเธฒเธฃเธเธตเน" }, { status: 404 });
+            return NextResponse.json({ success: false, message: "ไม่พบรายการสั่งซื้อ" }, { status: 404 });
         }
 
         return NextResponse.json({
@@ -46,7 +46,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         });
     } catch (error) {
         console.error("[ORDER_GET]", error);
-        return NextResponse.json({ success: false, message: "เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”" }, { status: 500 });
+        return NextResponse.json({ success: false, message: "เกิดข้อผิดพลาด" }, { status: 500 });
     }
 }
 
@@ -59,7 +59,7 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
         const session = await auth();
         const userId = session?.user?.id;
         if (!userId) {
-            return NextResponse.json({ success: false, message: "เธเธฃเธธเธ“เธฒเน€เธเนเธฒเธชเธนเนเธฃเธฐเธเธเธเนเธญเธ" }, { status: 401 });
+            return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
         }
 
         const { id } = await params;
@@ -67,14 +67,14 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
 
         // Return 404 for both "not found" and "not your order" to prevent ID enumeration.
         if (!order) {
-            return NextResponse.json({ success: false, message: "เนเธกเนเธเธเธฃเธฒเธขเธเธฒเธฃเธเธตเน" }, { status: 404 });
+            return NextResponse.json({ success: false, message: "ไม่พบรายการสั่งซื้อ" }, { status: 404 });
         }
 
         await db.delete(orders).where(and(eq(orders.id, id), eq(orders.userId, userId)));
 
-        return NextResponse.json({ success: true, message: "เธฅเธเธฃเธฒเธขเธเธฒเธฃเน€เธฃเธตเธขเธเธฃเนเธญเธขเนเธฅเนเธง" });
+        return NextResponse.json({ success: true, message: "ลบรายการเรียบร้อยแล้ว" });
     } catch (error) {
         console.error("[ORDER_DELETE]", error);
-        return NextResponse.json({ success: false, message: "เน€เธเธดเธ”เธเนเธญเธเธดเธ”เธเธฅเธฒเธ”" }, { status: 500 });
+        return NextResponse.json({ success: false, message: "เกิดข้อผิดพลาด" }, { status: 500 });
     }
 }

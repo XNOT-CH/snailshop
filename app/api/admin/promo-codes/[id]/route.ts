@@ -3,6 +3,8 @@ import { isAdmin } from "@/lib/auth";
 import { deletePromoCode, updatePromoCode } from "@/lib/features/promo/mutations";
 import { findPromoByCode, findPromoById } from "@/lib/features/promo/queries";
 import { serializePromo, type PromoUpdateInput } from "@/lib/features/promo/shared";
+import { validateBody } from "@/lib/validations/validate";
+import { promoCodeUpdateSchema } from "@/lib/validations/promoCode";
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -36,7 +38,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     try {
         const { id } = await params;
-        const body = await request.json() as PromoUpdateInput;
+        const result = await validateBody(request, promoCodeUpdateSchema);
+        if ("error" in result) return result.error;
+        const body = result.data as PromoUpdateInput;
         const existing = await findPromoById(id);
 
         if (!existing) {
