@@ -161,6 +161,30 @@ describe("API: /api/admin/users/[id] PATCH (comprehensive)", () => {
     expect(res.status).toBe(400);
   });
 
+  it("returns 400 for non-numeric creditBalance", async () => {
+    (isAdmin as any).mockResolvedValue({ success: true });
+    const { PATCH } = await import("@/app/api/admin/users/[id]/route");
+    const req = new NextRequest("http://localhost", { method: "PATCH", body: JSON.stringify({ creditBalance: "abc" }) });
+    const res = await PATCH(req, mkParams("u1"));
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 when creditBalance exceeds decimal precision", async () => {
+    (isAdmin as any).mockResolvedValue({ success: true });
+    const { PATCH } = await import("@/app/api/admin/users/[id]/route");
+    const req = new NextRequest("http://localhost", { method: "PATCH", body: JSON.stringify({ creditBalance: 100000000 }) });
+    const res = await PATCH(req, mkParams("u1"));
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 400 when pointBalance exceeds int max", async () => {
+    (isAdmin as any).mockResolvedValue({ success: true });
+    const { PATCH } = await import("@/app/api/admin/users/[id]/route");
+    const req = new NextRequest("http://localhost", { method: "PATCH", body: JSON.stringify({ pointBalance: 2147483648 }) });
+    const res = await PATCH(req, mkParams("u1"));
+    expect(res.status).toBe(400);
+  });
+
   it("returns 404 when user not found", async () => {
     (isAdmin as any).mockResolvedValue({ success: true });
     (db.query.users.findFirst as any).mockResolvedValue(null);

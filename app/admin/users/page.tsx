@@ -7,7 +7,7 @@ export default async function AdminUsersPage() {
     const userList = await db.query.users.findMany({
         orderBy: (t, { desc }) => desc(t.createdAt),
         columns: {
-            id: true, username: true, name: true, email: true, image: true,
+            id: true, username: true, name: true, email: true, phone: true, image: true,
             role: true, creditBalance: true, totalTopup: true,
             pointBalance: true, lifetimePoints: true, createdAt: true,
         },

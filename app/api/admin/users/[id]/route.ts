@@ -5,12 +5,15 @@ import { z } from "zod";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { isAdmin } from "@/lib/auth";
 
+const MAX_DECIMAL_BALANCE = 99999999.99;
+const MAX_INTEGER_BALANCE = 2147483647;
+
 // Admin user update: เลือกส่งได้อย่างน้อย 1 ฟิลด์
 const adminUserUpdateSchema = z.object({
-    creditBalance: z.coerce.number().min(0, "เครดิตต้องไม่ติดลบ").optional(),
-    totalTopup: z.coerce.number().min(0, "ยอดเติมสะสมต้องไม่ติดลบ").optional(),
-    pointBalance: z.coerce.number().int().min(0, "พอยต์ต้องเป็นจำนวนเต็มที่ไม่ติดลบ").optional(),
-    lifetimePoints: z.coerce.number().int().min(0, "พอยต์สะสมต้องเป็นจำนวนเต็มที่ไม่ติดลบ").optional(),
+    creditBalance: z.coerce.number().finite("เครดิตต้องเป็นตัวเลข").min(0, "เครดิตต้องไม่ติดลบ").max(MAX_DECIMAL_BALANCE, "เครดิตต้องไม่เกิน 99,999,999.99").optional(),
+    totalTopup: z.coerce.number().finite("ยอดเติมสะสมต้องเป็นตัวเลข").min(0, "ยอดเติมสะสมต้องไม่ติดลบ").max(MAX_DECIMAL_BALANCE, "ยอดเติมสะสมต้องไม่เกิน 99,999,999.99").optional(),
+    pointBalance: z.coerce.number().finite("พอยต์ต้องเป็นตัวเลข").int("พอยต์ต้องเป็นจำนวนเต็ม").min(0, "พอยต์ต้องเป็นจำนวนเต็มที่ไม่ติดลบ").max(MAX_INTEGER_BALANCE, "พอยต์ต้องไม่เกิน 2,147,483,647").optional(),
+    lifetimePoints: z.coerce.number().finite("พอยต์สะสมต้องเป็นตัวเลข").int("พอยต์สะสมต้องเป็นจำนวนเต็ม").min(0, "พอยต์สะสมต้องเป็นจำนวนเต็มที่ไม่ติดลบ").max(MAX_INTEGER_BALANCE, "พอยต์สะสมต้องไม่เกิน 2,147,483,647").optional(),
     role: z.string().trim().min(1).optional(),
 }).refine(
     (data) => Object.values(data).some((v) => v !== undefined),

@@ -19,12 +19,15 @@ import { Coins, Crown, Gem, Pencil, Search, Users, X } from "lucide-react";
 
 const VIP_TOPUP_THRESHOLD = 10000;
 const GOLD_BORDER_POINTS_THRESHOLD = 5000;
+const MAX_DECIMAL_BALANCE = 99999999.99;
+const MAX_INTEGER_BALANCE = 2147483647;
 
 interface User {
   id: string;
   username: string;
   name: string | null;
   email: string | null;
+  phone: string | null;
   image: string | null;
   role: string;
   creditBalance: string;
@@ -39,6 +42,11 @@ interface Role {
   name: string;
   code: string;
   iconUrl: string | null;
+}
+
+interface RoleOption {
+  code: string;
+  label: string;
 }
 
 interface AdminUsersClientProps {
@@ -60,6 +68,93 @@ function formatRoleLabel(role: string) {
     default:
       return "ผู้ใช้";
   }
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function isInternalRoleCode(code: string) {
+  return /^ROLE_[A-Z0-9]+$/.test(code);
+}
+
+function getSystemRoleLabel(role: string) {
+  switch (role) {
+    case "ADMIN":
+    case "MODERATOR":
+    case "SELLER":
+    case "USER":
+      return formatRoleLabel(role);
+    default:
+      return null;
+  }
+}
+
+function sanitizeDecimalInput(value: string) {
+  const sanitized = value.replace(/[^\d.]/g, "");
+  const [integerPart = "", ...fractionParts] = sanitized.split(".");
+  const mergedFraction = fractionParts.join("");
+  const limitedInteger = integerPart.slice(0, 8);
+  const limitedFraction = mergedFraction.slice(0, 2);
+
+  if (!sanitized.includes(".")) {
+    return limitedInteger;
+  }
+
+  return `${limitedInteger}.${limitedFraction}`;
+}
+
+function sanitizeIntegerInput(value: string) {
+  return value.replace(/\D/g, "").slice(0, 10);
+}
+
+function isValidDecimalInput(value: string) {
+  return /^\d+(\.\d{1,2})?$/.test(value);
+}
+
+function isValidIntegerInput(value: string) {
+  return /^\d+$/.test(value);
+}
+
+function buildRoleOptions(roles: Role[]): RoleOption[] {
+  const systemRoleOrder = ["USER", "MODERATOR", "SELLER", "ADMIN"] as const;
+  const optionMap = new Map<string, RoleOption>();
+
+  for (const code of systemRoleOrder) {
+    optionMap.set(code, {
+      code,
+      label: `${formatRoleLabel(code)} (${code})`,
+    });
+  }
+
+  for (const role of roles) {
+    const normalizedCode = role.code.trim().toUpperCase();
+    const normalizedName = role.name.trim();
+    if (!normalizedCode) {
+      continue;
+    }
+
+    if (optionMap.has(normalizedCode) && systemRoleOrder.includes(normalizedCode as typeof systemRoleOrder[number])) {
+      continue;
+    }
+
+    const readableLabel =
+      normalizedName.length > 0 ? normalizedName : formatRoleLabel(normalizedCode);
+
+    optionMap.set(normalizedCode, {
+      code: normalizedCode,
+      label: isInternalRoleCode(normalizedCode)
+        ? readableLabel
+        : `${readableLabel} (${normalizedCode})`,
+    });
+  }
+
+  return Array.from(optionMap.values());
 }
 
 export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersClientProps>) {
@@ -84,7 +179,8 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
       (user) =>
         user.username.toLowerCase().includes(query) ||
         user.name?.toLowerCase().includes(query) ||
-        user.email?.toLowerCase().includes(query)
+        user.email?.toLowerCase().includes(query) ||
+        user.phone?.toLowerCase().includes(query)
     );
   }, [users, searchQuery]);
 
@@ -92,6 +188,33 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
   const totalCredits = users.reduce((sum, user) => sum + Number(user.creditBalance), 0);
   const totalPoints = users.reduce((sum, user) => sum + user.pointBalance, 0);
   const searchActive = searchQuery.trim().length > 0;
+  const roleOptions = useMemo(() => buildRoleOptions(roles), [roles]);
+  const roleNameByCode = useMemo(() => {
+    const entries = roles
+      .map((role) => {
+        const code = role.code.trim().toUpperCase();
+        const name = role.name.trim();
+        return code && name ? [code, name] : null;
+      })
+      .filter((entry): entry is [string, string] => entry !== null);
+
+    return new Map<string, string>(entries);
+  }, [roles]);
+
+  const getRoleDisplayName = (roleCode: string) => {
+    const normalizedCode = roleCode.trim().toUpperCase();
+    const systemLabel = getSystemRoleLabel(normalizedCode);
+    if (systemLabel) {
+      return systemLabel;
+    }
+
+    const customRoleName = roleNameByCode.get(normalizedCode);
+    if (customRoleName) {
+      return customRoleName;
+    }
+
+    return isInternalRoleCode(normalizedCode) ? "บทบาทพิเศษ" : normalizedCode;
+  };
 
   const handleEditConfirm = async (
     result: { isConfirmed: boolean; value?: Record<string, unknown> },
@@ -138,17 +261,69 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
   };
 
   const openEditDialog = (user: User) => {
-    const customRoles = roles.filter(
-      (role) => !["USER", "MODERATOR", "SELLER", "ADMIN"].includes(role.code)
-    );
-    const customOptions = customRoles
+    const currentRoleCode = user.role.trim().toUpperCase();
+    const availableRoleOptions = roleOptions.some((role) => role.code === currentRoleCode)
+      ? roleOptions
+      : [
+          ...roleOptions,
+          {
+            code: currentRoleCode,
+            label: isInternalRoleCode(currentRoleCode)
+              ? formatRoleLabel(currentRoleCode)
+              : `${formatRoleLabel(currentRoleCode)} (${currentRoleCode})`,
+          },
+        ];
+
+    const selectOptions = availableRoleOptions
       .map(
         (role) =>
-          `<option value="${role.code}" ${
+          `<option value="${escapeHtml(role.code)}" ${
             user.role === role.code ? "selected" : ""
-          }>${role.name} (${role.code})</option>`
+          }>${escapeHtml(role.label)}</option>`
       )
       .join("");
+
+    const bindNumericInput = (
+      elementId: string,
+      sanitizer: (value: string) => string,
+      options?: { allowDecimalPoint?: boolean }
+    ) => {
+      const input = document.getElementById(elementId) as HTMLInputElement | null;
+      if (!input) {
+        return;
+      }
+
+      input.addEventListener("input", () => {
+        input.value = sanitizer(input.value);
+      });
+
+      input.addEventListener("keydown", (event) => {
+        const allowedKeys = new Set([
+          "Backspace",
+          "Delete",
+          "Tab",
+          "ArrowLeft",
+          "ArrowRight",
+          "Home",
+          "End",
+        ]);
+
+        if (allowedKeys.has(event.key)) {
+          return;
+        }
+
+        if (options?.allowDecimalPoint && event.key === ".") {
+          if (input.value.includes(".")) {
+            event.preventDefault();
+          }
+          return;
+        }
+
+        if (!/^\d$/.test(event.key)) {
+          event.preventDefault();
+        }
+      });
+    };
 
     Swal.fire({
       title: `แก้ไขข้อมูล: ${user.username}`,
@@ -165,19 +340,25 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
         confirmButton: "rounded-xl px-6 py-2",
         cancelButton: "rounded-xl px-6 py-2",
       },
+      didOpen: () => {
+        bindNumericInput("swal-credit", sanitizeDecimalInput, { allowDecimalPoint: true });
+        bindNumericInput("swal-topup", sanitizeDecimalInput, { allowDecimalPoint: true });
+        bindNumericInput("swal-point", sanitizeIntegerInput);
+        bindNumericInput("swal-lifetime", sanitizeIntegerInput);
+      },
       html: `
         <p class="mb-4 text-sm text-gray-500">แก้ไขเครดิต พอยต์ และบทบาทของสมาชิก</p>
         <div class="space-y-4 text-left">
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label class="mb-1 block text-sm font-medium text-gray-700">เครดิตคงเหลือ (บาท)</label>
-              <input id="swal-credit" type="number" min="0" step="0.01" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${Number(
+              <input id="swal-credit" type="text" inputmode="decimal" autocomplete="off" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${Number(
                 user.creditBalance
               )}">
             </div>
             <div>
               <label class="mb-1 block text-sm font-medium text-gray-700">ยอดเติมสะสม (บาท)</label>
-              <input id="swal-topup" type="number" min="0" step="0.01" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${Number(
+              <input id="swal-topup" type="text" inputmode="decimal" autocomplete="off" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${Number(
                 user.totalTopup
               )}">
             </div>
@@ -185,33 +366,56 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
               <label class="mb-1 block text-sm font-medium text-gray-700">พอยต์คงเหลือ</label>
-              <input id="swal-point" type="number" min="0" step="1" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${user.pointBalance}">
+              <input id="swal-point" type="text" inputmode="numeric" autocomplete="off" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${user.pointBalance}">
             </div>
             <div>
               <label class="mb-1 block text-sm font-medium text-gray-700">พอยต์สะสม</label>
-              <input id="swal-lifetime" type="number" min="0" step="1" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${user.lifetimePoints}">
+              <input id="swal-lifetime" type="text" inputmode="numeric" autocomplete="off" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${user.lifetimePoints}">
             </div>
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium text-gray-700">บทบาท</label>
             <select id="swal-role" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-              <option value="USER" ${user.role === "USER" ? "selected" : ""}>ผู้ใช้ทั่วไป (USER)</option>
-              <option value="MODERATOR" ${user.role === "MODERATOR" ? "selected" : ""}>ผู้ดูแล (MODERATOR)</option>
-              <option value="SELLER" ${user.role === "SELLER" ? "selected" : ""}>ผู้ขาย (SELLER)</option>
-              <option value="ADMIN" ${user.role === "ADMIN" ? "selected" : ""}>แอดมิน (ADMIN)</option>
-              ${customOptions}
+              ${selectOptions}
             </select>
             <p class="mt-1 text-xs text-gray-400">เลือกบทบาทปัจจุบันของสมาชิก</p>
           </div>
         </div>
       `,
-      preConfirm: () => ({
-        creditBalance: (document.getElementById("swal-credit") as HTMLInputElement)?.value,
-        totalTopup: (document.getElementById("swal-topup") as HTMLInputElement)?.value,
-        pointBalance: (document.getElementById("swal-point") as HTMLInputElement)?.value,
-        lifetimePoints: (document.getElementById("swal-lifetime") as HTMLInputElement)?.value,
-        role: (document.getElementById("swal-role") as HTMLSelectElement)?.value,
-      }),
+      preConfirm: () => {
+        const creditBalance = (document.getElementById("swal-credit") as HTMLInputElement)?.value.trim();
+        const totalTopup = (document.getElementById("swal-topup") as HTMLInputElement)?.value.trim();
+        const pointBalance = (document.getElementById("swal-point") as HTMLInputElement)?.value.trim();
+        const lifetimePoints = (document.getElementById("swal-lifetime") as HTMLInputElement)?.value.trim();
+
+        if (!isValidDecimalInput(creditBalance) || Number(creditBalance) > MAX_DECIMAL_BALANCE) {
+          Swal.showValidationMessage("เครดิตคงเหลือต้องเป็นตัวเลข 0-99,999,999.99");
+          return;
+        }
+
+        if (!isValidDecimalInput(totalTopup) || Number(totalTopup) > MAX_DECIMAL_BALANCE) {
+          Swal.showValidationMessage("ยอดเติมสะสมต้องเป็นตัวเลข 0-99,999,999.99");
+          return;
+        }
+
+        if (!isValidIntegerInput(pointBalance) || Number(pointBalance) > MAX_INTEGER_BALANCE) {
+          Swal.showValidationMessage("พอยต์คงเหลือต้องเป็นจำนวนเต็ม 0-2,147,483,647");
+          return;
+        }
+
+        if (!isValidIntegerInput(lifetimePoints) || Number(lifetimePoints) > MAX_INTEGER_BALANCE) {
+          Swal.showValidationMessage("พอยต์สะสมต้องเป็นจำนวนเต็ม 0-2,147,483,647");
+          return;
+        }
+
+        return {
+          creditBalance,
+          totalTopup,
+          pointBalance,
+          lifetimePoints,
+          role: (document.getElementById("swal-role") as HTMLSelectElement)?.value,
+        };
+      },
     }).then((result) => handleEditConfirm(result, user));
   };
 
@@ -400,7 +604,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                                       : "bg-slate-100 text-slate-700"
                               }`}
                             >
-                              {formatRoleLabel(user.role)}
+                              {getRoleDisplayName(user.role)}
                             </Badge>
                             {isVIP ? (
                               <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-2 py-0.5 text-xs font-semibold text-white shadow-sm">
@@ -597,7 +801,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                                   : "bg-slate-100 text-slate-700"
                           }`}
                         >
-                          {formatRoleLabel(user.role)}
+                          {getRoleDisplayName(user.role)}
                         </Badge>
                       </TableCell>
 
