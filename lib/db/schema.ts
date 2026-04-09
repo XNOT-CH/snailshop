@@ -64,33 +64,11 @@ export const users = mysqlTable("User", {
 export const usersRelations = relations(users, ({ many }) => ({
     orders: many(orders),
     topups: many(topups),
-    sessions: many(sessions),
     apiKeys: many(apiKeys),
     auditLogs: many(auditLogs),
     gachaRollLogs: many(gachaRollLogs),
     chatConversations: many(chatConversations),
     chatMessages: many(chatMessages),
-}));
-
-// ─────────────────────────────────────────────
-// Session
-// ─────────────────────────────────────────────
-export const sessions = mysqlTable("Session", {
-    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-    token: varchar("token", { length: 255 }).unique().notNull(),
-    userId: varchar("userId", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
-    expiresAt: datetime("expiresAt", { mode: "string" }).notNull(),
-    lastActivity: datetime("lastActivity", { mode: "string" }).default(sql`now()`).notNull(),
-    userAgent: text("userAgent"),
-    ipAddress: varchar("ipAddress", { length: 45 }),
-    createdAt: now(),
-}, (t) => [
-    index("idx_session_userId").on(t.userId),
-    index("idx_session_expiresAt").on(t.expiresAt),
-]);
-
-export const sessionsRelations = relations(sessions, ({ one }) => ({
-    user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }));
 
 // ─────────────────────────────────────────────
