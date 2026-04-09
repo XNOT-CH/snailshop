@@ -20,6 +20,7 @@ const configuredOrigin =
   "http://localhost:3000";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   turbopack: {
     root: path.resolve(__dirname),
   },
@@ -62,6 +63,10 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "*.pic.in.th",
+      },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
       },
     ],
   },

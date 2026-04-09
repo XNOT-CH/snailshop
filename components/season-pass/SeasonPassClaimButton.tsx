@@ -11,12 +11,21 @@ type SeasonPassClaimButtonProps = {
     canClaim: boolean;
     rewardLabel: string;
     rewardAmount: string;
+    mockDate?: string | null;
+    onClaimSuccess?: (payload: {
+        dayNumber: number;
+        rewardLabel: string;
+        rewardAmount: string;
+        claimedAtText: string;
+    }) => void;
 };
 
 export function SeasonPassClaimButton({
     canClaim,
     rewardLabel,
     rewardAmount,
+    mockDate,
+    onClaimSuccess,
 }: Readonly<SeasonPassClaimButtonProps>) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
@@ -29,7 +38,8 @@ export function SeasonPassClaimButton({
         setIsLoading(true);
 
         try {
-            const response = await fetchWithCsrf("/api/season-pass/claim", {
+            const endpoint = mockDate ? `/api/season-pass/claim?mockDate=${encodeURIComponent(mockDate)}` : "/api/season-pass/claim";
+            const response = await fetchWithCsrf(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
             });
@@ -40,8 +50,16 @@ export function SeasonPassClaimButton({
                 return;
             }
 
-            showSuccess(`รับ ${rewardLabel} x${rewardAmount} แล้ว`);
-            router.refresh();
+            onClaimSuccess?.({
+                dayNumber: data.dayNumber,
+                rewardLabel: data.rewardLabel ?? rewardLabel,
+                rewardAmount: data.rewardAmount ?? rewardAmount,
+                claimedAtText: data.claimedAtText,
+            });
+            showSuccess("รับรางวัลสำเร็จ");
+            if (!onClaimSuccess) {
+                router.refresh();
+            }
         } catch (error) {
             console.error("[SEASON_PASS_CLAIM]", error);
             showError("เกิดข้อผิดพลาดในการรับของวันนี้");

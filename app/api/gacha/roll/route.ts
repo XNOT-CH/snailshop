@@ -84,8 +84,15 @@ function buildChosenRewardId(reward: {
     id: string;
     rewardType: string;
     productId: string | null;
+    product?: {
+        id: string;
+    } | null;
 }) {
-    return reward.rewardType === "PRODUCT" ? reward.productId : `reward:${reward.id}`;
+    if (reward.rewardType === "PRODUCT") {
+        return reward.productId ?? reward.product?.id ?? `reward:${reward.id}`;
+    }
+
+    return `reward:${reward.id}`;
 }
 
 async function fetchRewards(machineId: string | null) {

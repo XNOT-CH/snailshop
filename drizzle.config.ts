@@ -1,9 +1,15 @@
 import { defineConfig } from "drizzle-kit";
 import { config } from "dotenv";
+import fs from "node:fs";
 
-config({ path: ".env.local" });
+const explicitDbUrl = process.env.DATABASE_URL;
+const envPath = process.env.APP_ENV === "development" && fs.existsSync(".env.development.local")
+    ? ".env.development.local"
+    : ".env.local";
 
-const rawUrl = process.env.DATABASE_URL || "mysql://root:@localhost:3306/my_game_store";
+config({ path: envPath });
+
+const rawUrl = explicitDbUrl || process.env.DATABASE_URL || "mysql://root:@localhost:3306/my_game_store";
 
 export default defineConfig({
     schema: "./lib/db/schema.ts",

@@ -11,7 +11,8 @@ export async function GET(request: NextRequest) {
     const cronSecret = process.env.CRON_SECRET;
     const isProduction = process.env.NODE_ENV === "production";
     const adminCheck = await isAdmin();
-    const isAdminRequest = adminCheck.success && !!adminCheck.userId;
+    const adminUserId = adminCheck.success ? adminCheck.userId : undefined;
+    const isAdminRequest = !!adminUserId;
     const isCronRequest = !!cronSecret && secret === cronSecret;
 
     if (isProduction && !cronSecret) {
@@ -26,9 +27,9 @@ export async function GET(request: NextRequest) {
     try {
         const { deleted, names, deletedItems } = await runAutoDelete();
 
-        if (deleted > 0) {
+        if (deleted > 0 && adminUserId) {
             await auditFromRequest(request, {
-                userId: adminCheck.userId,
+                userId: adminUserId,
                 action: AUDIT_ACTIONS.PRODUCT_DELETE,
                 resource: "Product",
                 resourceId: "auto-delete",

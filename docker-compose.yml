@@ -1,6 +1,46 @@
 services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        DATABASE_URL: mysql://root:rootpassword@host.docker.internal:3307/my_game_store
+        AUTH_URL: https://www.snailshop.app
+        NEXT_PUBLIC_SITE_URL: https://www.snailshop.app
+        ALLOWED_ORIGIN: https://www.snailshop.app
+        NEXT_PUBLIC_CUBEJS_API_URL: ${NEXT_PUBLIC_CUBEJS_API_URL}
+        NEXT_PUBLIC_CUBEJS_API_TOKEN: ${NEXT_PUBLIC_CUBEJS_API_TOKEN}
+    container_name: my_game_store_web
+    restart: always
+    env_file:
+      - .env.local
+    environment:
+      NODE_ENV: production
+      HOSTNAME: 0.0.0.0
+      PORT: 3000
+      DATABASE_URL: mysql://root:rootpassword@app_db:3306/my_game_store
+      AUTH_URL: https://www.snailshop.app
+      NEXT_PUBLIC_SITE_URL: https://www.snailshop.app
+      ALLOWED_ORIGIN: https://www.snailshop.app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./storage:/app/storage
+      - ./public/uploads:/app/public/uploads
+    depends_on:
+      - app_db
+    networks:
+      - sonarqube-network
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
   sonarqube:
     image: sonarqube:community
+    restart: always
     ports:
       - "9000:9000"
     volumes:
@@ -17,6 +57,7 @@ services:
 
   db:
     image: postgres:15
+    restart: always
     environment:
       - POSTGRES_USER=sonar
       - POSTGRES_PASSWORD=sonar
@@ -41,6 +82,21 @@ services:
     networks:
       - sonarqube-network
 
+  app_db_dev:
+    image: mysql:8.0
+    container_name: my_game_store_db_dev
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_DATABASE: my_game_store_dev
+    ports:
+      - "3308:3306"
+    volumes:
+      - mysql_dev_data:/var/lib/mysql
+    networks:
+      - sonarqube-network
+
 networks:
   sonarqube-network:
     driver: bridge
@@ -49,3 +105,4 @@ volumes:
   sonarqube_data:
   postgresql_data:
   mysql_data:
+  mysql_dev_data:

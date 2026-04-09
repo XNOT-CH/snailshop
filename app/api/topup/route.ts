@@ -774,7 +774,8 @@ export async function POST(request: NextRequest) {
             });
         }
 
-        const verifiedAmount = verificationResult.data.amount?.amount || 0;
+        const verifiedSlip = verificationResult.data;
+        const verifiedAmount = verifiedSlip.amount?.amount || 0;
         if (verifiedAmount <= 0) {
             return NextResponse.json(
                 { success: false, message: "ไม่สามารถอ่านจำนวนเงินจากสลิปได้" },
@@ -789,11 +790,11 @@ export async function POST(request: NextRequest) {
                 amount: String(verifiedAmount),
                 proofImage: savedSlip?.url ?? imageUrl ?? null,
                 status: "APPROVED",
-                transactionRef: verificationResult.data.transRef,
-                senderName: verificationResult.data.sender.account?.name?.th || null,
-                senderBank: verificationResult.data.sender.bank?.name || null,
-                receiverName: verificationResult.data.receiver.account?.name?.th || null,
-                receiverBank: verificationResult.data.receiver.bank?.name || null,
+                transactionRef: verifiedSlip.transRef,
+                senderName: verifiedSlip.sender.account?.name?.th || null,
+                senderBank: verifiedSlip.sender.bank?.name || null,
+                receiverName: verifiedSlip.receiver.account?.name?.th || null,
+                receiverBank: verifiedSlip.receiver.bank?.name || null,
                 createdAt: mysqlNow(),
             }));
 
@@ -811,8 +812,8 @@ export async function POST(request: NextRequest) {
             details: {
                 amount: verifiedAmount,
                 requestedAmount,
-                transRef: verificationResult.data.transRef,
-                senderNameStored: Boolean(verificationResult.data.sender.account?.name?.th),
+                transRef: verifiedSlip.transRef,
+                senderNameStored: Boolean(verifiedSlip.sender.account?.name?.th),
                 proofImageStored: Boolean(savedSlip?.url ?? imageUrl),
                 status: "APPROVED",
                 verification: "automatic",
@@ -827,9 +828,9 @@ export async function POST(request: NextRequest) {
             data: {
                 topupId,
                 amount: verifiedAmount,
-                senderName: verificationResult.data.sender.account?.name?.th,
-                senderBank: verificationResult.data.sender.bank?.name,
-                transRef: verificationResult.data.transRef,
+                senderName: verifiedSlip.sender.account?.name?.th,
+                senderBank: verifiedSlip.sender.bank?.name,
+                transRef: verifiedSlip.transRef,
                 proofImage: savedSlip?.url ?? imageUrl ?? null,
                 status: "APPROVED",
             },

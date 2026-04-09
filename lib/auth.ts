@@ -3,11 +3,17 @@ import { getCsrfTokenFromRequest, validateCsrfToken } from "@/lib/csrf";
 import { db, roles } from "@/lib/db";
 import { eq } from "drizzle-orm";
 
-interface AuthCheckResult {
-    success: boolean;
-    error?: string;
-    userId?: string;
-}
+type AuthCheckResult =
+    | {
+        success: true;
+        userId: string;
+        error?: undefined;
+    }
+    | {
+        success: false;
+        error: string;
+        userId?: undefined;
+    };
 
 /**
  * Check if the current request is from an authenticated admin.
@@ -25,6 +31,7 @@ export async function isAdmin(): Promise<AuthCheckResult> {
     const session = await auth();
 
     if (!session?.user) return { success: false, error: "ไม่ได้เข้าสู่ระบบ" };
+    if (!session.user.id) return { success: false, error: "ไม่พบข้อมูลผู้ใช้งาน" };
 
     const role = (session.user as { role?: string }).role;
     if (role !== "ADMIN") return { success: false, error: "ไม่มีสิทธิ์เข้าถึง" };
@@ -63,6 +70,7 @@ export async function isAuthenticated(): Promise<AuthCheckResult> {
     const session = await auth();
 
     if (!session?.user) return { success: false, error: "ไม่ได้เข้าสู่ระบบ" };
+    if (!session.user.id) return { success: false, error: "ไม่พบข้อมูลผู้ใช้งาน" };
 
     return { success: true, userId: session.user.id };
 }

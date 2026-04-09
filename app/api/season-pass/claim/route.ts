@@ -8,20 +8,29 @@ import {
     getSeasonPassRewardCatalog,
     getSeasonPassRewardByDay,
 } from "@/lib/seasonPass";
-import { formatDateInTimeZone } from "@/lib/utils/date";
+import {
+    buildThaiDateAtCurrentTime,
+    formatDateInTimeZone,
+    parseMockDateKey,
+    TH_TIME_ZONE,
+} from "@/lib/utils/date";
 
 type LockedSubscriptionRow = {
     id: string;
     startAt: string;
 };
 
-export async function POST() {
+export async function POST(request: Request) {
     const session = await auth();
     const userId = session?.user?.id;
+    const role = session?.user?.role;
 
     if (!userId) {
         return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
     }
+
+    const mockDate = role === "ADMIN" ? parseMockDateKey(new URL(request.url).searchParams.get("mockDate")) : null;
+    const now = mockDate ? buildThaiDateAtCurrentTime(mockDate) : new Date();
 
     const plan = await getOrCreateSeasonPassPlan();
     const rewardCatalog = await getSeasonPassRewardCatalog(plan.id);
@@ -39,6 +48,7 @@ export async function POST() {
         durationDays: plan.durationDays,
         claims: [],
         rewardCatalog,
+        now,
     });
 
     const reward = await getSeasonPassRewardByDay(boardState.currentDay, plan.id);
@@ -49,7 +59,7 @@ export async function POST() {
         );
     }
 
-    const todayKey = formatDateInTimeZone(new Date(), "Asia/Bangkok");
+    const todayKey = formatDateInTimeZone(now, TH_TIME_ZONE);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const conn = await (db as any).$client.getConnection();
@@ -77,6 +87,7 @@ export async function POST() {
             durationDays: plan.durationDays,
             claims: [],
             rewardCatalog,
+            now,
         });
 
         const currentReward = await getSeasonPassRewardByDay(lockedBoardState.currentDay, plan.id);
@@ -142,8 +153,15 @@ export async function POST() {
         return NextResponse.json({
             success: true,
             message: "รับของวันนี้สำเร็จ",
+            dayNumber: lockedBoardState.currentDay,
             rewardLabel: currentReward.label,
             rewardAmount: currentReward.amount,
+            claimedAtText: new Intl.DateTimeFormat("th-TH", {
+                timeZone: TH_TIME_ZONE,
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+            }).format(now),
         });
     } catch (error) {
         await conn.rollback();

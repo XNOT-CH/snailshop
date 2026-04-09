@@ -8,10 +8,15 @@ const nextBin = path.join(projectRoot, "node_modules", "next", "dist", "bin", "n
 
 process.chdir(projectRoot);
 
+const env = {
+  ...process.env,
+  PORT: process.env.PORT || "3001",
+};
+
 const child = spawn(process.execPath, [nextBin, "dev"], {
   cwd: projectRoot,
   stdio: "inherit",
-  env: process.env,
+  env,
 });
 
 child.on("exit", (code, signal) => {

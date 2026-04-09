@@ -32,6 +32,26 @@ describe("lib/seasonPass", () => {
         expect(board.board[6]?.status).toBe("locked");
     });
 
+    it("marks skipped days as missed and unlocks the current day only", () => {
+        const board = buildSeasonPassBoard({
+            startAt: "2026-04-01 00:00:00",
+            durationDays: 30,
+            claims: [
+                { dayNumber: 1, createdAt: "2026-04-01 00:10:00" },
+            ] as never,
+            now: new Date("2026-04-04T05:00:00Z"),
+        });
+
+        expect(board.currentDay).toBe(4);
+        expect(board.claimedCount).toBe(1);
+        expect(board.missedCount).toBe(2);
+        expect(board.remainingCount).toBe(27);
+        expect(board.board[0]?.status).toBe("claimed");
+        expect(board.board[1]?.status).toBe("missed");
+        expect(board.board[2]?.status).toBe("missed");
+        expect(board.board[3]?.status).toBe("today");
+    });
+
     it("returns reward definition for a given day", async () => {
         const reward = await getSeasonPassRewardByDay(30, "mock-plan-id");
 

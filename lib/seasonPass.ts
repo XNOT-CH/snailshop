@@ -451,7 +451,7 @@ export function buildSeasonPassBoard(params: {
     };
 }
 
-export async function getSeasonPassDashboardState(userId: string) {
+export async function getSeasonPassDashboardState(userId: string, now?: Date) {
     const plan = await getOrCreateSeasonPassPlan();
     const rewardCatalog = await getSeasonPassRewardCatalog(plan.id);
     const activeSubscription = await getCurrentSeasonPassSubscription(userId);
@@ -473,6 +473,7 @@ export async function getSeasonPassDashboardState(userId: string) {
         durationDays: plan.durationDays,
         claims,
         rewardCatalog,
+        now,
     });
 
     const history = claims.slice(0, 5).map((claim) => ({
@@ -598,6 +599,23 @@ export function calculateSeasonPassWindow(params: { endAt: string; now?: Date })
         hours,
         minutes,
         text: `${days} วัน ${hours} ชม. ${minutes} นาที`,
+    };
+}
+
+export function calculateSeasonPassDailyResetWindow(params?: { now?: Date }) {
+    const now = params?.now ?? new Date();
+    const todayKey = formatDateInTimeZone(now, TH_TIME_ZONE);
+    const [year, month, day] = todayKey.split("-").map(Number);
+    const nextResetAt = new Date(Date.UTC(year, month - 1, day + 1, -7, 0, 0));
+    const diffMs = Math.max(nextResetAt.getTime() - now.getTime(), 0);
+    const totalMinutes = Math.floor(diffMs / 60_000);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+
+    return {
+        hours,
+        minutes,
+        text: `${hours} ชม. ${minutes} นาที`,
     };
 }
 
