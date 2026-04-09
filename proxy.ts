@@ -4,6 +4,11 @@ import { auth } from "@/auth";
 export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
+    // Allow local/container healthchecks to probe plain HTTP without redirect loops.
+    if (pathname === "/api/health") {
+        return;
+    }
+
     // ─── HTTPS Redirect (Production only) ─────────────────────────────
     if (process.env.NODE_ENV === "production") {
         const proto = request.headers.get("x-forwarded-proto");
