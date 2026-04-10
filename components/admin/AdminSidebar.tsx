@@ -114,7 +114,7 @@ const navigationSections: NavSection[] = [
     },
 ];
 
-function canAccessEntry(entry: NavEntry, permissions: Set<string>) {
+function canAccessEntry(entry: NavEntry, permissions: Set<string>): boolean {
     if (isNavGroup(entry)) {
         if (entry.requiredPermission && !permissions.has(entry.requiredPermission)) {
             return false;
