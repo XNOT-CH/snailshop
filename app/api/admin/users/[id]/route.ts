@@ -3,7 +3,8 @@ import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
-import { isAdmin } from "@/lib/auth";
+import { requireAnyPermission, requirePermission } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const MAX_DECIMAL_BALANCE = 99999999.99;
 const MAX_INTEGER_BALANCE = 2147483647;
@@ -24,7 +25,7 @@ export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const authCheck = await isAdmin();
+    const authCheck = await requireAnyPermission([PERMISSIONS.USER_EDIT, PERMISSIONS.USER_MANAGE_ROLE]);
     if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { id } = await params;
@@ -49,6 +50,13 @@ export async function PATCH(
             );
         }
         const { creditBalance, totalTopup, pointBalance, lifetimePoints, role } = parsed.data;
+
+        if (role !== undefined) {
+            const rolePermissionCheck = await requirePermission(PERMISSIONS.USER_MANAGE_ROLE);
+            if (!rolePermissionCheck.success) {
+                return NextResponse.json({ error: "ไม่มีสิทธิ์เปลี่ยนบทบาทผู้ใช้" }, { status: 403 });
+            }
+        }
 
         const existingUser = await db.query.users.findFirst({ where: eq(users.id, id) });
         if (!existingUser) return NextResponse.json({ error: "ไม่พบผู้ใช้" }, { status: 404 });

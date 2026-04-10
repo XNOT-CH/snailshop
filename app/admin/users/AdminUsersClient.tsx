@@ -16,6 +16,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Coins, Crown, Gem, Pencil, Search, Users, X } from "lucide-react";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const VIP_TOPUP_THRESHOLD = 10000;
 const GOLD_BORDER_POINTS_THRESHOLD = 5000;
@@ -158,16 +160,29 @@ function buildRoleOptions(roles: Role[]): RoleOption[] {
 }
 
 export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersClientProps>) {
+  const permissions = useAdminPermissions();
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [roles, setRoles] = useState<Role[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const canEditUsers = permissions.includes(PERMISSIONS.USER_EDIT);
+  const canManageRoles = permissions.includes(PERMISSIONS.USER_MANAGE_ROLE);
 
   useEffect(() => {
+    if (!canManageRoles) {
+      return;
+    }
+
     fetch("/api/admin/roles")
-      .then((response) => response.json())
-      .then((data) => setRoles(data))
-      .catch(console.error);
-  }, []);
+      .then(async (response) => {
+        if (!response.ok) {
+          return [];
+        }
+
+        return response.json();
+      })
+      .then((data) => setRoles(Array.isArray(data) ? data : []))
+      .catch(() => setRoles([]));
+  }, [canManageRoles]);
 
   const filteredUsers = useMemo(() => {
     if (!searchQuery.trim()) {
@@ -375,10 +390,12 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
           </div>
           <div>
             <label class="mb-1 block text-sm font-medium text-gray-700">บทบาท</label>
-            <select id="swal-role" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select id="swal-role" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" ${canManageRoles ? "" : "disabled"}>
               ${selectOptions}
             </select>
-            <p class="mt-1 text-xs text-gray-400">เลือกบทบาทปัจจุบันของสมาชิก</p>
+            <p class="mt-1 text-xs text-gray-400">${
+              canManageRoles ? "เลือกบทบาทปัจจุบันของสมาชิก" : "บัญชีนี้ไม่มีสิทธิ์เปลี่ยนบทบาท"
+            }</p>
           </div>
         </div>
       `,
@@ -413,7 +430,9 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
           totalTopup,
           pointBalance,
           lifetimePoints,
-          role: (document.getElementById("swal-role") as HTMLSelectElement)?.value,
+          role: canManageRoles
+            ? (document.getElementById("swal-role") as HTMLSelectElement)?.value
+            : user.role,
         };
       },
     }).then((result) => handleEditConfirm(result, user));
@@ -659,15 +678,17 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                           day: "numeric",
                         })}
                       </p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditDialog(user)}
-                        className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#1a56db]"
-                      >
-                        <Pencil className="mr-1.5 h-4 w-4" />
-                        แก้ไข
-                      </Button>
+                      {canEditUsers || canManageRoles ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(user)}
+                          className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#1a56db]"
+                        >
+                          <Pencil className="mr-1.5 h-4 w-4" />
+                          แก้ไข
+                        </Button>
+                      ) : null}
                     </div>
                   </div>
                 );
@@ -814,15 +835,17 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                       </TableCell>
 
                       <TableCell className="text-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(user)}
-                          className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#1a56db]"
-                        >
-                          <Pencil className="mr-1.5 h-4 w-4" />
-                          แก้ไข
-                        </Button>
+                        {canEditUsers || canManageRoles ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditDialog(user)}
+                            className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#1a56db]"
+                          >
+                            <Pencil className="mr-1.5 h-4 w-4" />
+                            แก้ไข
+                          </Button>
+                        ) : null}
                       </TableCell>
                     </TableRow>
                   );

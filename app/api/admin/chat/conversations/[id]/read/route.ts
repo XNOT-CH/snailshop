@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminConversation, markConversationRead } from "@/lib/chat";
-import { isAdminWithCsrf } from "@/lib/auth";
+import { requirePermissionWithCsrf } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
 }
 
 export async function POST(_request: NextRequest, context: RouteContext) {
-    const authCheck = await isAdminWithCsrf(_request);
+    const authCheck = await requirePermissionWithCsrf(_request, PERMISSIONS.CHAT_VIEW);
 
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error ?? "Unauthorized" }, { status: 401 });

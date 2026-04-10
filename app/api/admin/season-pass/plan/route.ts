@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { db, seasonPassPlans } from "@/lib/db";
 import { getOrCreateSeasonPassPlan } from "@/lib/seasonPass";
+import { PERMISSIONS } from "@/lib/permissions";
 
 function normalizePrice(value: unknown) {
     const price = Number(value);
@@ -23,7 +24,7 @@ function normalizeDuration(value: unknown) {
 }
 
 export async function GET() {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.SEASON_PASS_VIEW);
     if (!authCheck.success) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -37,7 +38,7 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.SEASON_PASS_EDIT);
     if (!authCheck.success) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }

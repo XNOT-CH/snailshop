@@ -12,7 +12,13 @@ import {
   X,
 } from "lucide-react";
 import { showDeleteConfirm, showError, showSuccess, showWarning } from "@/lib/swal";
-import { PERMISSIONS } from "@/lib/permissions";
+import {
+  PERMISSIONS,
+  getRequiredPermissions,
+  isPermissionImpliedBySelection,
+  normalizePermissionSelection,
+  type Permission,
+} from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -25,6 +31,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 
 interface Role {
   id: string;
@@ -39,23 +46,11 @@ interface Role {
 }
 
 function normalizeRolePermissions(raw: Role["permissions"] | string[] | null | undefined) {
-  if (!raw) {
-    return [] as string[];
-  }
-
-  if (Array.isArray(raw)) {
-    return raw;
-  }
-
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+  return normalizePermissionSelection(raw);
 }
 
 const PERMISSION_GROUPS = {
+  "แดชบอร์ด": [{ key: PERMISSIONS.DASHBOARD_VIEW, label: "ดูแดชบอร์ด" }],
   "สินค้า": [
     { key: PERMISSIONS.PRODUCT_VIEW, label: "ดูสินค้า" },
     { key: PERMISSIONS.PRODUCT_CREATE, label: "เพิ่มสินค้า" },
@@ -86,6 +81,27 @@ const PERMISSION_GROUPS = {
     { key: PERMISSIONS.AUDIT_LOG_VIEW, label: "ดู Audit Log" },
     { key: PERMISSIONS.API_KEY_MANAGE, label: "จัดการ API Key" },
   ],
+  "แชท": [
+    { key: PERMISSIONS.CHAT_VIEW, label: "ดูแชทลูกค้า" },
+    { key: PERMISSIONS.CHAT_MANAGE, label: "ตอบและจัดการแชท" },
+  ],
+  "คอนเทนต์": [
+    { key: PERMISSIONS.CONTENT_VIEW, label: "ดูคอนเทนต์" },
+    { key: PERMISSIONS.CONTENT_EDIT, label: "แก้ไขคอนเทนต์" },
+  ],
+  "โปรโมชัน": [
+    { key: PERMISSIONS.PROMO_VIEW, label: "ดูโปรโมชัน" },
+    { key: PERMISSIONS.PROMO_EDIT, label: "แก้ไขโปรโมชัน" },
+  ],
+  "กาชา": [
+    { key: PERMISSIONS.GACHA_VIEW, label: "ดูกาชา" },
+    { key: PERMISSIONS.GACHA_EDIT, label: "แก้ไขกาชา" },
+  ],
+  "Season Pass": [
+    { key: PERMISSIONS.SEASON_PASS_VIEW, label: "ดู Season Pass" },
+    { key: PERMISSIONS.SEASON_PASS_EDIT, label: "แก้ไข Season Pass" },
+  ],
+  "รายงาน/ส่งออก": [{ key: PERMISSIONS.EXPORT_DATA, label: "ส่งออกข้อมูล" }],
 } as const;
 
 const ALL_PERMISSION_KEYS = Object.values(PERMISSION_GROUPS).flatMap((permissions) =>
@@ -93,6 +109,8 @@ const ALL_PERMISSION_KEYS = Object.values(PERMISSION_GROUPS).flatMap((permission
 );
 
 export default function AdminRolesPage() {
+  const permissions = useAdminPermissions();
+  const canManageRoles = permissions.includes(PERMISSIONS.USER_MANAGE_ROLE);
   const [roles, setRoles] = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -108,9 +126,16 @@ export default function AdminRolesPage() {
     sortOrder: 0,
   });
 
-  const selectedPermissionCount = formData.permissions.length;
+  const normalizedSelectedPermissions = useMemo(
+    () => normalizePermissionSelection(formData.permissions),
+    [formData.permissions]
+  );
+  const selectedPermissionCount = normalizedSelectedPermissions.length;
   const totalPermissionCount = ALL_PERMISSION_KEYS.length;
-  const selectedPermissionSet = useMemo(() => new Set(formData.permissions), [formData.permissions]);
+  const selectedPermissionSet = useMemo(
+    () => new Set(normalizedSelectedPermissions),
+    [normalizedSelectedPermissions]
+  );
 
   const fetchRoles = useCallback(async () => {
     try {
@@ -131,6 +156,11 @@ export default function AdminRolesPage() {
   }, [fetchRoles]);
 
   const openPanel = (role?: Role) => {
+    if (!canManageRoles) {
+      showError("คุณไม่มีสิทธิ์จัดการยศ");
+      return;
+    }
+
     if (role) {
       setSelectedRole(role);
       const permissions = normalizeRolePermissions(role.permissions);
@@ -164,15 +194,25 @@ export default function AdminRolesPage() {
   };
 
   const togglePermission = (permission: string) => {
+    if (!canManageRoles) {
+      return;
+    }
+
+    const normalizedPermission = permission as Permission;
+
     setFormData((previous) => ({
       ...previous,
-      permissions: previous.permissions.includes(permission)
-        ? previous.permissions.filter((item) => item !== permission)
-        : [...previous.permissions, permission],
+      permissions: previous.permissions.includes(normalizedPermission)
+        ? previous.permissions.filter((item) => item !== normalizedPermission)
+        : normalizePermissionSelection([...previous.permissions, normalizedPermission]),
     }));
   };
 
   const togglePermissionGroup = (permissions: readonly { key: string; label: string }[]) => {
+    if (!canManageRoles) {
+      return;
+    }
+
     setFormData((previous) => {
       const keys = permissions.map((permission) => permission.key);
       const allSelected = keys.every((key) => previous.permissions.includes(key));
@@ -186,20 +226,31 @@ export default function AdminRolesPage() {
 
       return {
         ...previous,
-        permissions: Array.from(new Set([...previous.permissions, ...keys])),
+        permissions: normalizePermissionSelection([...previous.permissions, ...keys]),
       };
     });
   };
 
   const toggleAllPermissions = () => {
+    if (!canManageRoles) {
+      return;
+    }
+
     setFormData((previous) => ({
       ...previous,
       permissions:
-        previous.permissions.length === totalPermissionCount ? [] : [...ALL_PERMISSION_KEYS],
+        previous.permissions.length === totalPermissionCount
+          ? []
+          : normalizePermissionSelection(ALL_PERMISSION_KEYS),
     }));
   };
 
   const handleSave = async () => {
+    if (!canManageRoles) {
+      showError("คุณไม่มีสิทธิ์จัดการยศ");
+      return;
+    }
+
     if (!formData.name.trim()) {
       showWarning("กรุณาระบุชื่อยศ");
       return;
@@ -231,6 +282,11 @@ export default function AdminRolesPage() {
   };
 
   const handleDelete = async (role: Role) => {
+    if (!canManageRoles) {
+      showError("คุณไม่มีสิทธิ์จัดการยศ");
+      return;
+    }
+
     if (role.isSystem) {
       showWarning("ไม่สามารถลบยศระบบได้");
       return;
@@ -268,6 +324,7 @@ export default function AdminRolesPage() {
 
         <Button
           onClick={() => openPanel()}
+          disabled={!canManageRoles}
           className="w-full bg-[#1a56db] hover:bg-[#1e40af] sm:w-auto"
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -293,7 +350,7 @@ export default function AdminRolesPage() {
           <div className="py-12 text-center text-muted-foreground">
             <Shield className="mx-auto mb-4 h-12 w-12 opacity-30" />
             <p>ยังไม่มียศ</p>
-            <Button variant="link" className="mt-2" onClick={() => openPanel()}>
+            <Button variant="link" className="mt-2" onClick={() => openPanel()} disabled={!canManageRoles}>
               เพิ่มยศแรก
             </Button>
           </div>
@@ -353,6 +410,7 @@ export default function AdminRolesPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => openPanel(role)}
+                          disabled={!canManageRoles}
                           title={`แก้ไข ${role.name}`}
                           aria-label={`แก้ไขยศ ${role.name}`}
                           className="rounded-xl border border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-[#1a56db]"
@@ -363,7 +421,7 @@ export default function AdminRolesPage() {
                           variant="ghost"
                           size="icon"
                           onClick={() => handleDelete(role)}
-                          disabled={role.isSystem}
+                          disabled={!canManageRoles || role.isSystem}
                           title={role.isSystem ? "ยศระบบลบไม่ได้" : `ลบ ${role.name}`}
                           aria-label={`ลบยศ ${role.name}`}
                           className="rounded-xl border border-transparent text-rose-500 hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-40"
@@ -420,6 +478,7 @@ export default function AdminRolesPage() {
                   onChange={(event) =>
                     setFormData((previous) => ({ ...previous, name: event.target.value }))
                   }
+                  disabled={!canManageRoles}
                   placeholder="เช่น แอดมินผู้ช่วย"
                 />
               </div>
@@ -435,6 +494,7 @@ export default function AdminRolesPage() {
                       description: event.target.value,
                     }))
                   }
+                  disabled={!canManageRoles}
                   placeholder="สรุปหน้าที่ของยศนี้แบบสั้นๆ"
                 />
               </div>
@@ -447,6 +507,7 @@ export default function AdminRolesPage() {
                     variant="outline"
                     size="sm"
                     onClick={toggleAllPermissions}
+                    disabled={!canManageRoles}
                     className="rounded-full"
                   >
                     {selectedPermissionCount === totalPermissionCount
@@ -481,6 +542,7 @@ export default function AdminRolesPage() {
                             variant="ghost"
                             size="sm"
                             onClick={() => togglePermissionGroup(permissions)}
+                            disabled={!canManageRoles}
                             className="h-8 rounded-full px-3 text-xs text-slate-600 hover:bg-white"
                           >
                             {groupAllSelected ? "ล้างทั้งหมวด" : "เลือกทั้งหมวด"}
@@ -492,12 +554,33 @@ export default function AdminRolesPage() {
                             <div key={permission.key} className="flex items-center gap-2 py-2">
                               <Checkbox
                                 id={`panel-${permission.key}`}
-                                checked={formData.permissions.includes(permission.key)}
+                                checked={selectedPermissionSet.has(permission.key)}
+                                disabled={
+                                  !canManageRoles ||
+                                  (selectedPermissionSet.has(permission.key) &&
+                                    isPermissionImpliedBySelection(
+                                      permission.key,
+                                      formData.permissions
+                                    ))
+                                }
                                 onCheckedChange={() => togglePermission(permission.key)}
                               />
                               <label
                                 htmlFor={`panel-${permission.key}`}
                                 className="cursor-pointer select-none text-sm"
+                                title={
+                                  selectedPermissionSet.has(permission.key) &&
+                                  isPermissionImpliedBySelection(
+                                    permission.key,
+                                    formData.permissions
+                                  )
+                                    ? `สิทธิ์นี้ถูกเลือกอัตโนมัติเพราะ ${
+                                        getRequiredPermissions(permission.key).length > 0
+                                          ? "มีสิทธิ์ที่ต้องพึ่งพา"
+                                          : "เป็นสิทธิ์ที่เกี่ยวข้อง"
+                                      }`
+                                    : undefined
+                                }
                               >
                                 {permission.label}
                               </label>
@@ -522,7 +605,7 @@ export default function AdminRolesPage() {
               </Button>
               <Button
                 onClick={handleSave}
-                disabled={saving}
+                disabled={!canManageRoles || saving}
                 className="flex-1 bg-[#1a56db] hover:bg-[#1e40af]"
               >
                 {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}

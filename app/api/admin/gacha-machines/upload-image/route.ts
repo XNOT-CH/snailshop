@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import path from "node:path";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { saveOptimizedImageUpload } from "@/lib/serverImageUpload";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function POST(request: NextRequest) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.GACHA_EDIT);
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }

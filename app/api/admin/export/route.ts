@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, orders, users, topups, gachaRollLogs, products } from "@/lib/db";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { desc, gte, lte, and } from "drizzle-orm";
 import { maskTransactionRef } from "@/lib/dataProtection";
 import { formatDateInTimeZone } from "@/lib/utils/date";
 import { decryptTopupSensitiveFields } from "@/lib/sensitiveData";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const EXPORT_ROW_LIMIT = 50000;
 
@@ -208,7 +209,7 @@ async function exportProducts(dateTag: string) {
 }
 
 export async function GET(request: NextRequest) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.EXPORT_DATA);
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }

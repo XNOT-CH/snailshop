@@ -7,6 +7,8 @@ import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 import { compressImage } from "@/lib/compressImage";
 import { resizeFileToSquare } from "@/lib/imageResize";
 import { RewardImageCropDialog } from "@/components/gacha/RewardImageCropDialog";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { PERMISSIONS } from "@/lib/permissions";
 import Image from "next/image";
 
 interface GachaReward {
@@ -191,6 +193,7 @@ interface FormComponentProps {
     readonly setProductCategory: (v: string) => void;
     readonly onSave: () => void;
     readonly saving: boolean;
+    readonly canEdit: boolean;
     readonly onImageUpload: (file: File, setUrl: (url: string) => void, setUploading: (v: boolean) => void) => Promise<void>;
 }
 
@@ -198,7 +201,7 @@ interface EditRewardFormProps extends FormComponentProps {
     readonly onCancel: () => void;
 }
 
-function AddRewardForm({ form, setForm, products, productSearch, setProductSearch, productCategory, setProductCategory, onSave, saving, onImageUpload }: FormComponentProps) {
+function AddRewardForm({ form, setForm, products, productSearch, setProductSearch, productCategory, setProductCategory, onSave, saving, canEdit, onImageUpload }: FormComponentProps) {
     const [uploadingImage, setUploadingImage] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -208,15 +211,15 @@ function AddRewardForm({ form, setForm, products, productSearch, setProductSearc
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label htmlFor="addRewardName" className={labelCls}>ชื่อรางวัล *</label>
-                    <input id="addRewardName" value={form.rewardName} onChange={e => setForm((f: any) => ({ ...f, rewardName: e.target.value }))} placeholder="จำเป็น" className={inputCls} />
+                    <input id="addRewardName" value={form.rewardName} onChange={e => setForm((f: any) => ({ ...f, rewardName: e.target.value }))} placeholder="จำเป็น" className={inputCls} disabled={!canEdit} />
                 </div>
                 <div>
                     <label htmlFor="addProbability" className={labelCls}>โอกาสได้รับ (%) *</label>
-                    <input id="addProbability" type="number" value={form.probability} onChange={e => setForm((f: any) => ({ ...f, probability: e.target.value }))} placeholder="รวมโอกาสของรางวัลทั้งหมดต้องไม่เกิน 100%" min={0.01} max={100} step={0.01} className={inputCls} />
+                    <input id="addProbability" type="number" value={form.probability} onChange={e => setForm((f: any) => ({ ...f, probability: e.target.value }))} placeholder="รวมโอกาสของรางวัลทั้งหมดต้องไม่เกิน 100%" min={0.01} max={100} step={0.01} className={inputCls} disabled={!canEdit} />
                 </div>
                 <div>
                     <label htmlFor="addRewardType" className={labelCls}>ประเภทรางวัล *</label>
-                    <select id="addRewardType" value={form.rewardType} onChange={e => setForm((f: any) => ({ ...f, rewardType: e.target.value, productId: "", rewardAmount: "" }))} className={inputCls}>
+                    <select id="addRewardType" value={form.rewardType} onChange={e => setForm((f: any) => ({ ...f, rewardType: e.target.value, productId: "", rewardAmount: "" }))} className={inputCls} disabled={!canEdit}>
                         <option value="POINT">พอยต์</option>
                         <option value="CREDIT">เครดิต</option>
                         <option value="PRODUCT">สินค้าในเว็บ</option>
@@ -225,27 +228,27 @@ function AddRewardForm({ form, setForm, products, productSearch, setProductSearc
                 {form.rewardType === "PRODUCT" ? (
                     <div className="md:col-span-1">
                         <label htmlFor="addProductCategory" className={labelCls}>เลือกสินค้า *</label>
-                        <select id="addProductCategory" value={productCategory} onChange={e => { setProductCategory(e.target.value); setProductSearch(""); setForm((f: any) => ({ ...f, productId: "", rewardName: "" })); }} className={inputCls + " mb-2"}>
+                        <select id="addProductCategory" value={productCategory} onChange={e => { setProductCategory(e.target.value); setProductSearch(""); setForm((f: any) => ({ ...f, productId: "", rewardName: "" })); }} className={inputCls + " mb-2"} disabled={!canEdit}>
                             <option value="">- เลือกหมวดหมู่ -</option>
                             {[...new Set(products.map(p => p.category))].sort((a, b) => a.localeCompare(b)).map(cat => (
                                 <option key={cat} value={cat}>{cat}</option>
                             ))}
                         </select>
                         <div className="relative">
-                            <input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="ค้นหาชื่อสินค้า..." className={inputCls} />
-                            <ProductPickerDropdown products={products} search={productSearch} category={productCategory} onSelect={(p) => { setForm((f: any) => ({ ...f, productId: p.id, rewardName: p.name })); setProductSearch(""); setProductCategory(""); }} />
+                            <input value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="ค้นหาชื่อสินค้า..." className={inputCls} disabled={!canEdit} />
+                            {canEdit && <ProductPickerDropdown products={products} search={productSearch} category={productCategory} onSelect={(p) => { setForm((f: any) => ({ ...f, productId: p.id, rewardName: p.name })); setProductSearch(""); setProductCategory(""); }} />}
                         </div>
                         {form.productId && <p className="mt-1 text-xs text-[#145de7] font-medium">เลือก: {form.rewardName}</p>}
                     </div>
                 ) : (
                     <div>
                         <label htmlFor="addRewardAmount" className={labelCls}>จำนวนที่จะได้รับ *</label>
-                        <input id="addRewardAmount" type="number" value={form.rewardAmount} onChange={e => setForm((f: any) => ({ ...f, rewardAmount: e.target.value }))} placeholder="เช่น 100" min={0} className={inputCls} />
+                        <input id="addRewardAmount" type="number" value={form.rewardAmount} onChange={e => setForm((f: any) => ({ ...f, rewardAmount: e.target.value }))} placeholder="เช่น 100" min={0} className={inputCls} disabled={!canEdit} />
                     </div>
                 )}
                 <div>
                     <label htmlFor="addRewardTier" className={labelCls}>ระดับรางวัล *</label>
-                    <select id="addRewardTier" value={form.tier} onChange={e => setForm((f: any) => ({ ...f, tier: e.target.value }))} className={inputCls}>
+                    <select id="addRewardTier" value={form.tier} onChange={e => setForm((f: any) => ({ ...f, tier: e.target.value }))} className={inputCls} disabled={!canEdit}>
                         {TIER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
                     </select>
                 </div>
@@ -254,26 +257,26 @@ function AddRewardForm({ form, setForm, products, productSearch, setProductSearc
             <div className="mt-4">
                 <label htmlFor="addRewardImageFile" className={labelCls}>รูปภาพรางวัล</label>
                 <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF ระบบจะครอปตรงกลางและย่ออัตโนมัติให้พอดีกับวงกลมรางวัลก่อนอัปโหลด</p>
-                <input id="addRewardImageFile" ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={e => { const file = e.target.files?.[0]; if (file) { void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); } e.target.value = ""; }} />
+                <input id="addRewardImageFile" ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" disabled={!canEdit} onChange={e => { const file = e.target.files?.[0]; if (file) { void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); } e.target.value = ""; }} />
                 <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => fileInputRef.current?.click()} className={`w-12 h-12 rounded-full border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors cursor-pointer ${isDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/20"}`} onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={(e) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); }}>
+                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={!canEdit} className={`w-12 h-12 rounded-full border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors ${canEdit ? "cursor-pointer" : "cursor-not-allowed opacity-50"} ${isDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/20"}`} onDragOver={(e) => { if (!canEdit) return; e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={(e) => { if (!canEdit) return; e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); }}>
                         {validImageUrl(String(form.rewardImageUrl)) ? <Image src={String(form.rewardImageUrl)} alt="preview" width={48} height={48} className="w-full h-full object-cover pointer-events-none" /> : <ImageIcon className={`w-5 h-5 ${isDragging ? "text-[#145de7]" : "text-muted-foreground/40"}`} />}
                     </button>
-                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border hover:bg-muted/50 text-xs font-medium transition disabled:opacity-50 flex-shrink-0">
+                    <button type="button" onClick={() => fileInputRef.current?.click()} disabled={!canEdit || uploadingImage} className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border hover:bg-muted/50 text-xs font-medium transition disabled:opacity-50 flex-shrink-0">
                         {uploadingImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />} {uploadingImage ? "กำลังอัปโหลด..." : "อัปโหลด"}
                     </button>
-                    <input value={String(form.rewardImageUrl)} onChange={e => setForm((f: any) => ({ ...f, rewardImageUrl: e.target.value }))} placeholder="หรือวาง URL รูปภาพ" className={inputCls} />
-                    {form.rewardImageUrl && <button type="button" onClick={() => setForm((f: any) => ({ ...f, rewardImageUrl: "" }))} className="text-red-400 hover:text-red-600 transition flex-shrink-0"><X className="w-4 h-4" /></button>}
+                    <input value={String(form.rewardImageUrl)} onChange={e => setForm((f: any) => ({ ...f, rewardImageUrl: e.target.value }))} placeholder="หรือวาง URL รูปภาพ" className={inputCls} disabled={!canEdit} />
+                    {form.rewardImageUrl && <button type="button" onClick={() => setForm((f: any) => ({ ...f, rewardImageUrl: "" }))} disabled={!canEdit} className="text-red-400 hover:text-red-600 transition flex-shrink-0 disabled:opacity-50"><X className="w-4 h-4" /></button>}
                 </div>
             </div>
-            <button onClick={onSave} disabled={saving} className="mt-4 w-full py-3 rounded-xl bg-[#145de7] hover:bg-[#1048b8] text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
+            <button onClick={onSave} disabled={!canEdit || saving} className="mt-4 w-full py-3 rounded-xl bg-[#145de7] hover:bg-[#1048b8] text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />} เพิ่มรางวัล
             </button>
         </div>
     );
 }
 
-function EditRewardForm({ form, setForm, products, productSearch, setProductSearch, productCategory, setProductCategory, onSave, saving, onImageUpload, onCancel }: EditRewardFormProps) {
+function EditRewardForm({ form, setForm, products, productSearch, setProductSearch, productCategory, setProductCategory, onSave, saving, canEdit, onImageUpload, onCancel }: EditRewardFormProps) {
     const [uploadingImage, setUploadingImage] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -285,45 +288,45 @@ function EditRewardForm({ form, setForm, products, productSearch, setProductSear
                 <button onClick={onCancel} className="p-1.5 rounded-lg hover:bg-muted transition text-muted-foreground"><X className="w-4 h-4" /></button>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label htmlFor="editRewardName" className={labelCls}>ชื่อรางวัล *</label><input id="editRewardName" value={form.rewardName} onChange={e => setForm((f: any) => ({ ...f, rewardName: e.target.value }))} placeholder="จำเป็น" className={inputCls} /></div>
-                <div><label htmlFor="editProbability" className={labelCls}>โอกาสได้รับ (%) *</label><input id="editProbability" type="number" value={form.probability} onChange={e => setForm((f: any) => ({ ...f, probability: Number(e.target.value) }))} placeholder="รวมโอกาสของรางวัลทั้งหมดต้องไม่เกิน 100%" min={0.01} max={100} step={0.01} className={inputCls} /></div>
-                <div><label htmlFor="editRewardType" className={labelCls}>ประเภทรางวัล *</label><select id="editRewardType" value={form.rewardType ?? "POINT"} onChange={e => setForm((f: any) => ({ ...f, rewardType: e.target.value, productId: "", rewardAmount: 0 }))} className={inputCls}><option value="POINT">พอยต์</option><option value="CREDIT">เครดิต</option><option value="PRODUCT">สินค้าในเว็บ</option></select></div>
+                <div><label htmlFor="editRewardName" className={labelCls}>ชื่อรางวัล *</label><input id="editRewardName" value={form.rewardName} onChange={e => setForm((f: any) => ({ ...f, rewardName: e.target.value }))} placeholder="จำเป็น" className={inputCls} disabled={!canEdit} /></div>
+                <div><label htmlFor="editProbability" className={labelCls}>โอกาสได้รับ (%) *</label><input id="editProbability" type="number" value={form.probability} onChange={e => setForm((f: any) => ({ ...f, probability: Number(e.target.value) }))} placeholder="รวมโอกาสของรางวัลทั้งหมดต้องไม่เกิน 100%" min={0.01} max={100} step={0.01} className={inputCls} disabled={!canEdit} /></div>
+                <div><label htmlFor="editRewardType" className={labelCls}>ประเภทรางวัล *</label><select id="editRewardType" value={form.rewardType ?? "POINT"} onChange={e => setForm((f: any) => ({ ...f, rewardType: e.target.value, productId: "", rewardAmount: 0 }))} className={inputCls} disabled={!canEdit}><option value="POINT">พอยต์</option><option value="CREDIT">เครดิต</option><option value="PRODUCT">สินค้าในเว็บ</option></select></div>
                 {form.rewardType === "PRODUCT" ? (
                     <div>
                         <label htmlFor="editProductCategory" className={labelCls}>เลือกสินค้า *</label>
-                        <select id="editProductCategory" value={productCategory} onChange={e => { setProductCategory(e.target.value); setProductSearch(""); setForm((f: any) => ({ ...f, productId: "", rewardName: "" })); }} className={inputCls + " mb-2"}>
+                        <select id="editProductCategory" value={productCategory} onChange={e => { setProductCategory(e.target.value); setProductSearch(""); setForm((f: any) => ({ ...f, productId: "", rewardName: "" })); }} className={inputCls + " mb-2"} disabled={!canEdit}>
                             <option value="">- เลือกหมวดหมู่ -</option>
                             {[...new Set(products.map(p => p.category))].sort((a, b) => a.localeCompare(b)).map(cat => (
                                 <option key={cat} value={cat}>{cat}</option>
                             ))}
                         </select>
                         <div className="relative">
-                            <input id="editProductSearch" value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="ค้นหาชื่อสินค้า..." className={inputCls} />
-                            <ProductPickerDropdown products={products} search={productSearch} category={productCategory} onSelect={(p) => { setForm((f: any) => ({ ...f, productId: p.id, rewardName: p.name })); setProductSearch(""); setProductCategory(""); }} />
+                            <input id="editProductSearch" value={productSearch} onChange={e => setProductSearch(e.target.value)} placeholder="ค้นหาชื่อสินค้า..." className={inputCls} disabled={!canEdit} />
+                            {canEdit && <ProductPickerDropdown products={products} search={productSearch} category={productCategory} onSelect={(p) => { setForm((f: any) => ({ ...f, productId: p.id, rewardName: p.name })); setProductSearch(""); setProductCategory(""); }} />}
                         </div>
                         {form.productId && <p className="mt-1 text-xs text-[#145de7] font-medium">เลือก: {form.rewardName}</p>}
                     </div>
                 ) : (
-                    <div><label htmlFor="editRewardAmount" className={labelCls}>จำนวนที่จะได้รับ *</label><input id="editRewardAmount" type="number" value={form.rewardAmount} onChange={e => setForm((f: any) => ({ ...f, rewardAmount: Number(e.target.value) }))} placeholder="เช่น 100" min={0} className={inputCls} /></div>
+                    <div><label htmlFor="editRewardAmount" className={labelCls}>จำนวนที่จะได้รับ *</label><input id="editRewardAmount" type="number" value={form.rewardAmount} onChange={e => setForm((f: any) => ({ ...f, rewardAmount: Number(e.target.value) }))} placeholder="เช่น 100" min={0} className={inputCls} disabled={!canEdit} /></div>
                 )}
-                <div><label htmlFor="editRewardTier" className={labelCls}>ระดับรางวัล *</label><select id="editRewardTier" value={form.tier} onChange={e => setForm((f: any) => ({ ...f, tier: e.target.value }))} className={inputCls}>{TIER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
+                <div><label htmlFor="editRewardTier" className={labelCls}>ระดับรางวัล *</label><select id="editRewardTier" value={form.tier} onChange={e => setForm((f: any) => ({ ...f, tier: e.target.value }))} className={inputCls} disabled={!canEdit}>{TIER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
                 <div className="md:col-span-2 mt-4">
                     <label htmlFor="editRewardImageFile" className={labelCls}>รูปภาพรางวัล</label>
                     <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF ระบบจะครอปตรงกลางและย่ออัตโนมัติให้พอดีกับวงกลมรางวัลก่อนอัปโหลด</p>
-                    <input id="editRewardImageFile" ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={e => { const file = e.target.files?.[0]; if (file) { void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); } e.target.value = ""; }} />
+                    <input id="editRewardImageFile" ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" disabled={!canEdit} onChange={e => { const file = e.target.files?.[0]; if (file) { void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); } e.target.value = ""; }} />
                     <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => fileInputRef.current?.click()} className={`w-12 h-12 rounded-full border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors cursor-pointer ${isDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/20"}`} onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={(e) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); }}>
+                        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={!canEdit} className={`w-12 h-12 rounded-full border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors ${canEdit ? "cursor-pointer" : "cursor-not-allowed opacity-50"} ${isDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/20"}`} onDragOver={(e) => { if (!canEdit) return; e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={(e) => { if (!canEdit) return; e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); }}>
                             {validImageUrl(form.rewardImageUrl) ? <Image src={form.rewardImageUrl} alt="preview" width={48} height={48} className="w-full h-full object-cover pointer-events-none" /> : <ImageIcon className={`w-5 h-5 ${isDragging ? "text-[#145de7]" : "text-muted-foreground/40"}`} />}
                         </button>
-                        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={uploadingImage} className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border hover:bg-muted/50 text-xs font-medium transition disabled:opacity-50 flex-shrink-0">
+                        <button type="button" onClick={() => fileInputRef.current?.click()} disabled={!canEdit || uploadingImage} className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border hover:bg-muted/50 text-xs font-medium transition disabled:opacity-50 flex-shrink-0">
                             {uploadingImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />} {uploadingImage ? "กำลังอัปโหลด..." : "อัปโหลด"}
                         </button>
-                        <input value={form.rewardImageUrl} onChange={e => setForm((f: any) => ({ ...f, rewardImageUrl: e.target.value }))} placeholder="หรือวาง URL รูปภาพ" className={inputCls} />
-                        {form.rewardImageUrl && <button type="button" onClick={() => setForm((f: any) => ({ ...f, rewardImageUrl: "" }))} className="text-red-400 hover:text-red-600 transition flex-shrink-0"><X className="w-4 h-4" /></button>}
+                        <input value={form.rewardImageUrl} onChange={e => setForm((f: any) => ({ ...f, rewardImageUrl: e.target.value }))} placeholder="หรือวาง URL รูปภาพ" className={inputCls} disabled={!canEdit} />
+                        {form.rewardImageUrl && <button type="button" onClick={() => setForm((f: any) => ({ ...f, rewardImageUrl: "" }))} disabled={!canEdit} className="text-red-400 hover:text-red-600 transition flex-shrink-0 disabled:opacity-50"><X className="w-4 h-4" /></button>}
                     </div>
                 </div>
             </div>
-            <button onClick={onSave} disabled={saving} className="mt-4 w-full py-3 rounded-xl bg-[#145de7] hover:bg-[#1048b8] text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
+            <button onClick={onSave} disabled={!canEdit || saving} className="mt-4 w-full py-3 rounded-xl bg-[#145de7] hover:bg-[#1048b8] text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} บันทึกรางวัล
             </button>
         </div>
@@ -334,6 +337,8 @@ export default function EditGachaMachinePage() {
     const params = useParams();
     const router = useRouter();
     const id = params.id as string;
+    const permissions = useAdminPermissions();
+    const canEditGacha = permissions.includes(PERMISSIONS.GACHA_EDIT);
     const cropUrlRef = useRef<string | null>(null);
     const pendingUploadRef = useRef<{
         setUrl: (url: string) => void;
@@ -418,6 +423,11 @@ export default function EditGachaMachinePage() {
 
     // Add reward
     const handleAddReward = async () => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์แก้ไขตู้กาชา");
+            return;
+        }
+
         const error = validateReward(addForm, rewards);
         if (error) return showError(error);
         
@@ -454,6 +464,11 @@ export default function EditGachaMachinePage() {
         setUrl: (url: string) => void,
         setUploading: (v: boolean) => void
     ) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์แก้ไขตู้กาชา");
+            return;
+        }
+
         setUploading(true);
         try {
             const keepsOriginalFrames = file.type === "image/gif" || file.type === "image/svg+xml";
@@ -476,7 +491,7 @@ export default function EditGachaMachinePage() {
             }
         } catch { showError("เกิดข้อผิดพลาดในการอัปโหลด"); }
         finally { setUploading(false); }
-    }, []);
+    }, [canEditGacha]);
 
     // Upload image (shared)
     const handleImageUpload = async (
@@ -484,6 +499,11 @@ export default function EditGachaMachinePage() {
         setUrl: (url: string) => void,
         setUploading: (v: boolean) => void
     ) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์แก้ไขตู้กาชา");
+            return;
+        }
+
         if (file.type === "image/gif" || file.type === "image/svg+xml") {
             await uploadRewardImage(file, setUrl, setUploading);
             return;
@@ -502,6 +522,12 @@ export default function EditGachaMachinePage() {
     };
 
     const handleCropConfirm = useCallback(async (croppedFile: File) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์แก้ไขตู้กาชา");
+            clearCropDialog();
+            return;
+        }
+
         const pendingUpload = pendingUploadRef.current;
         if (!pendingUpload) {
             clearCropDialog();
@@ -510,10 +536,15 @@ export default function EditGachaMachinePage() {
 
         await uploadRewardImage(croppedFile, pendingUpload.setUrl, pendingUpload.setUploading);
         clearCropDialog();
-    }, [clearCropDialog, uploadRewardImage]);
+    }, [canEditGacha, clearCropDialog, uploadRewardImage]);
 
     // Delete reward
     const handleDeleteReward = async (rewardId: string) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์ลบรางวัลกาชา");
+            return;
+        }
+
         if (!await showDeleteConfirm("รางวัลนี้")) return;
         setDeletingId(rewardId);
         try {
@@ -524,6 +555,11 @@ export default function EditGachaMachinePage() {
 
     // Edit reward
     const openEdit = (r: GachaReward) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์แก้ไขตู้กาชา");
+            return;
+        }
+
         setEditReward(r);
         setEditForm({
             rewardName: r.rewardType === "PRODUCT" ? (r.product?.name ?? "") : (r.rewardName ?? ""),
@@ -539,6 +575,11 @@ export default function EditGachaMachinePage() {
     const closeEdit = () => setEditReward(null);
 
     const handleEditSave = async () => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์แก้ไขตู้กาชา");
+            return;
+        }
+
         if (!editReward) return;
         const error = validateReward(editForm, rewards, editReward.id);
         if (error) return showError(error);
@@ -772,6 +813,7 @@ export default function EditGachaMachinePage() {
                     setProductCategory={setProductCategory}
                     onSave={() => void handleAddReward()}
                     saving={addSaving}
+                    canEdit={canEditGacha}
                     onImageUpload={handleImageUpload}
                 />
 
@@ -787,6 +829,7 @@ export default function EditGachaMachinePage() {
                         setProductCategory={setEditProductCategory}
                         onSave={() => void handleEditSave()}
                         saving={editSaving}
+                        canEdit={canEditGacha}
                         onImageUpload={handleImageUpload}
                         onCancel={closeEdit}
                     />
@@ -846,12 +889,14 @@ export default function EditGachaMachinePage() {
                                 <div className="mt-4 flex items-center justify-end gap-2">
                                     <button
                                         onClick={() => openEdit(r)}
+                                        disabled={!canEditGacha}
                                         className="w-8 h-8 rounded-lg text-muted-foreground hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-500/10 dark:hover:text-violet-400 flex items-center justify-center transition"
                                     >
                                         <Pencil className="w-3.5 h-3.5" />
                                     </button>
                                     <button
                                         onClick={() => void handleDeleteReward(r.id)}
+                                        disabled={!canEditGacha}
                                         className="w-8 h-8 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 flex items-center justify-center transition"
                                     >
                                         {deletingId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
@@ -923,6 +968,7 @@ export default function EditGachaMachinePage() {
                                         <td className="px-3 py-2.5">
                                             <button
                                                 onClick={() => openEdit(r)}
+                                                disabled={!canEditGacha}
                                                 className="w-8 h-8 rounded-lg text-muted-foreground hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-500/10 dark:hover:text-violet-400 flex items-center justify-center transition"
                                             >
                                                 <Pencil className="w-3.5 h-3.5" />
@@ -931,6 +977,7 @@ export default function EditGachaMachinePage() {
                                         <td className="px-3 py-2.5">
                                             <button
                                                 onClick={() => void handleDeleteReward(r.id)}
+                                                disabled={!canEditGacha}
                                                 className="w-8 h-8 rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/10 dark:hover:text-red-400 flex items-center justify-center transition"
                                             >
                                                 {deletingId === r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}

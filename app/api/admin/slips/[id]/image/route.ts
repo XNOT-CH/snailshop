@@ -2,10 +2,11 @@ import path from "node:path";
 import { readFile } from "node:fs/promises";
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { db, topups } from "@/lib/db";
 import { decryptTopupSensitiveFields } from "@/lib/sensitiveData";
 import { resolveStoredSlipPath } from "@/lib/slipStorage";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface RouteParams {
     params: Promise<{ id: string }>;
@@ -26,7 +27,7 @@ function getMimeType(filePath: string) {
 }
 
 export async function GET(_request: NextRequest, { params }: RouteParams) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.SLIP_VIEW);
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }

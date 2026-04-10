@@ -11,8 +11,10 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { showError, showSuccess } from "@/lib/swal";
 import { compressImage } from "@/lib/compressImage";
+import { PERMISSIONS } from "@/lib/permissions";
 import {
     ArrowLeft,
     Banknote,
@@ -51,6 +53,8 @@ export default function EditProductPage() {
     const router = useRouter();
     const params = useParams();
     const productId = params.id as string;
+    const permissions = useAdminPermissions();
+    const canEditProduct = permissions.includes(PERMISSIONS.PRODUCT_EDIT);
 
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
@@ -122,6 +126,11 @@ export default function EditProductPage() {
     }, [productId, router]);
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!canEditProduct) {
+            showError("คุณไม่มีสิทธิ์แก้ไขสินค้า");
+            return;
+        }
+
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -152,12 +161,21 @@ export default function EditProductPage() {
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        if (!canEditProduct) {
+            return;
+        }
+
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!canEditProduct) {
+            showError("คุณไม่มีสิทธิ์แก้ไขสินค้า");
+            return;
+        }
+
         const hasDiscountPrice = formData.discountPrice.trim().length > 0;
         const priceNumber = Number(formData.price);
         const discountInputNumber = Number(formData.discountPrice);
@@ -265,7 +283,7 @@ export default function EditProductPage() {
                     กลับไปรายการสินค้า
                 </Link>
                 <Link href={`/admin/products/${productId}/stock`}>
-                    <Button variant="outline" size="sm" className="gap-2 rounded-xl">
+                    <Button variant="outline" size="sm" className="gap-2 rounded-xl" disabled={!canEditProduct}>
                         <Package className="h-4 w-4" />
                         จัดการสต๊อก
                     </Button>
@@ -319,6 +337,7 @@ export default function EditProductPage() {
                                                 value={formData.title}
                                                 onChange={handleChange}
                                                 required
+                                                disabled={!canEditProduct}
                                                 className="bg-white"
                                             />
                                         </div>
@@ -335,6 +354,7 @@ export default function EditProductPage() {
                                                     setFormData((prev) => ({ ...prev, currency: value }))
                                                 }
                                                 className="grid gap-3 sm:grid-cols-2"
+                                                disabled={!canEditProduct}
                                             >
                                                 <Label
                                                     htmlFor="currency-thb"
@@ -400,6 +420,7 @@ export default function EditProductPage() {
                                                             variant={discountMode === "amount" ? "default" : "outline"}
                                                             className="rounded-xl"
                                                             onClick={() => setDiscountMode("amount")}
+                                                            disabled={!canEditProduct}
                                                         >
                                                             ลดเป็น{isPointCurrency ? "พอยท์" : "บาท"}
                                                         </Button>
@@ -408,6 +429,7 @@ export default function EditProductPage() {
                                                             variant={discountMode === "percent" ? "default" : "outline"}
                                                             className="rounded-xl"
                                                             onClick={() => setDiscountMode("percent")}
+                                                            disabled={!canEditProduct}
                                                         >
                                                             ลดเป็น %
                                                         </Button>
@@ -422,6 +444,7 @@ export default function EditProductPage() {
                                                         step={discountMode === "percent" ? "0.01" : isPointCurrency ? "1" : "0.01"}
                                                         value={formData.discountPrice}
                                                         onChange={handleChange}
+                                                        disabled={!canEditProduct}
                                                         className="border-rose-200 bg-white focus-visible:ring-rose-200"
                                                     />
                                                     <div className="flex items-center justify-between text-xs">
@@ -461,6 +484,7 @@ export default function EditProductPage() {
                                                 value={formData.category}
                                                 onChange={handleChange}
                                                 required
+                                                disabled={!canEditProduct}
                                                 className="bg-white"
                                             />
                                         </div>
@@ -474,6 +498,7 @@ export default function EditProductPage() {
                                                 rows={5}
                                                 value={formData.description}
                                                 onChange={handleChange}
+                                                disabled={!canEditProduct}
                                                 className="bg-white"
                                             />
                                         </div>
@@ -521,6 +546,7 @@ export default function EditProductPage() {
                                                 type="file"
                                                 accept="image/jpeg,image/png,image/webp,image/gif"
                                                 className="hidden"
+                                                disabled={!canEditProduct}
                                                 onChange={handleFileUpload}
                                             />
                                             <Button
@@ -528,7 +554,7 @@ export default function EditProductPage() {
                                                 variant="outline"
                                                 className="h-11 justify-center gap-2 rounded-xl border-slate-300 bg-white"
                                                 onClick={() => fileInputRef.current?.click()}
-                                                disabled={isUploading}
+                                                disabled={!canEditProduct || isUploading}
                                             >
                                                 {isUploading ? (
                                                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -543,6 +569,7 @@ export default function EditProductPage() {
                                                     type="button"
                                                     variant="ghost"
                                                     onClick={() => setFormData((prev) => ({ ...prev, image: "" }))}
+                                                    disabled={!canEditProduct}
                                                     className="h-11 gap-2 rounded-xl text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                                                 >
                                                     <X className="h-4 w-4" />
@@ -559,6 +586,7 @@ export default function EditProductPage() {
                                                 placeholder="วาง URL รูปภาพ หรือใช้ path ที่อัปโหลดแล้ว"
                                                 value={formData.image}
                                                 onChange={handleChange}
+                                                disabled={!canEditProduct}
                                                 className="bg-white"
                                             />
                                         </div>
@@ -596,7 +624,8 @@ export default function EditProductPage() {
                                     สินค้าจะถูกลบออกอัตโนมัติหลังถูกซื้อตามเวลาที่กำหนด
                                 </p>
                             </div>
-                            <Switch checked={autoDeleteEnabled} onCheckedChange={setAutoDeleteEnabled} />
+                            <Switch checked={autoDeleteEnabled} onCheckedChange={setAutoDeleteEnabled} disabled={!canEditProduct} />
+                            
                         </div>
 
                         {autoDeleteEnabled && (
@@ -609,6 +638,7 @@ export default function EditProductPage() {
                                                 key={preset.value}
                                                 type="button"
                                                 onClick={() => setFormData((prev) => ({ ...prev, autoDeleteAfterSale: preset.value }))}
+                                                disabled={!canEditProduct}
                                                 className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
                                                     formData.autoDeleteAfterSale === preset.value
                                                         ? "border-amber-500 bg-amber-500 text-white shadow-sm"
@@ -635,6 +665,7 @@ export default function EditProductPage() {
                                             placeholder="เช่น 60"
                                             value={formData.autoDeleteAfterSale}
                                             onChange={handleChange}
+                                            disabled={!canEditProduct}
                                             className="w-36 border-amber-200 bg-white focus-visible:ring-amber-200"
                                         />
                                         <span className="text-sm text-slate-500">นาที</span>
@@ -655,7 +686,7 @@ export default function EditProductPage() {
                     type="submit"
                     className="h-12 w-full rounded-2xl bg-[#1a56db] text-white shadow-[0_20px_45px_-25px_rgba(37,99,235,0.7)] hover:bg-[#1e40af]"
                     size="lg"
-                    disabled={isLoading}
+                    disabled={!canEditProduct || isLoading}
                 >
                     {isLoading ? (
                         <>

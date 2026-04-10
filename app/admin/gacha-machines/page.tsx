@@ -1,11 +1,13 @@
 ﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, Loader2, LayoutGrid, Upload, X, ImageIcon, Copy, GripVertical, Sparkles } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 import { compressImage } from "@/lib/compressImage";
 import Image from "next/image";
+import { PERMISSIONS } from "@/lib/permissions";
 import {
     DndContext,
     closestCenter,
@@ -68,6 +70,8 @@ const GAME_TYPES = [
 ];
 
 export default function GachaMachinesAdminPage() {
+    const permissions = useAdminPermissions();
+    const canEditGacha = permissions.includes(PERMISSIONS.GACHA_EDIT);
     const [machines, setMachines] = useState<GachaMachine[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -101,6 +105,10 @@ export default function GachaMachinesAdminPage() {
 
 
     const handleImageUpload = async (file: File) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์แก้ไขกาชา");
+            return;
+        }
         setUploadingImage(true);
         try {
             const preparedFile = await compressImage(file, 4.5 * 1024 * 1024);
@@ -122,6 +130,7 @@ export default function GachaMachinesAdminPage() {
     };
 
     const addMachine = async () => {
+        if (!canEditGacha) return showError("คุณไม่มีสิทธิ์เพิ่มตู้กาชา");
         if (!machineForm.name.trim()) return showError("กรุณากรอกชื่อตู้กาชา");
         setSavingMachine(true);
         try {
@@ -145,6 +154,10 @@ export default function GachaMachinesAdminPage() {
     };
 
     const toggleMachine = async (id: string, field: "isActive" | "isEnabled", val: boolean) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์แก้ไขกาชา");
+            return;
+        }
         // Optimistic update: no full reload so page doesn't scroll
         setMachines(prev => prev.map(m => m.id === id ? { ...m, [field]: val } : m));
         try {
@@ -161,6 +174,10 @@ export default function GachaMachinesAdminPage() {
     };
 
     const deleteMachine = async (id: string) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์ลบตู้กาชา");
+            return;
+        }
         if (!await showDeleteConfirm("ตู้กาชานี้")) return;
         // Optimistic: remove from state immediately
         setMachines(prev => prev.filter(m => m.id !== id));
@@ -206,6 +223,7 @@ export default function GachaMachinesAdminPage() {
                                 key={gt.value}
                                 type="button"
                                 onClick={() => setMachineForm(f => ({ ...f, gameType: gt.value }))}
+                                disabled={!canEditGacha}
                                 className={[
                                     "flex items-center gap-3 rounded-xl border-2 px-4 py-3.5 text-left transition",
                                     machineForm.gameType === gt.value
@@ -240,6 +258,7 @@ export default function GachaMachinesAdminPage() {
                             value={machineForm.name}
                             onChange={e => setMachineForm(f => ({ ...f, name: e.target.value }))}
                             placeholder="จำเป็น"
+                            disabled={!canEditGacha}
                             className={inputCls}
                         />
                     </div>
@@ -251,6 +270,7 @@ export default function GachaMachinesAdminPage() {
                             id="addCostType"
                             value={machineForm.costType}
                             onChange={e => setMachineForm(f => ({ ...f, costType: e.target.value, costAmount: 0 }))}
+                            disabled={!canEditGacha}
                             className={inputCls}
                         >
                             <option value="FREE">ฟรี</option>
@@ -270,7 +290,7 @@ export default function GachaMachinesAdminPage() {
                             onChange={e => setMachineForm(f => ({ ...f, costAmount: Number(e.target.value) }))}
                             min={0}
                             placeholder={machineForm.costType === "FREE" ? "-" : "0"}
-                            disabled={machineForm.costType === "FREE"}
+                            disabled={machineForm.costType === "FREE" || !canEditGacha}
                             className={`${inputCls} disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:opacity-100`}
                         />
                     </div>
@@ -288,6 +308,7 @@ export default function GachaMachinesAdminPage() {
                         <button
                             type="button"
                             onClick={() => fileInputRef.current?.click()}
+                            disabled={!canEditGacha}
                             className={`w-20 h-20 rounded-xl border-2 border-dashed flex-shrink-0 overflow-hidden flex items-center justify-center transition-colors cursor-pointer
                                 ${isDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/30"}
                             `}
@@ -315,6 +336,7 @@ export default function GachaMachinesAdminPage() {
                                 type="file"
                                 accept="image/jpeg,image/png,image/webp,image/gif"
                                 className="hidden"
+                                disabled={!canEditGacha}
                                 onChange={e => {
                                     const file = e.target.files?.[0];
                                     if (file) handleImageUpload(file);
@@ -326,7 +348,7 @@ export default function GachaMachinesAdminPage() {
                             <button
                                 type="button"
                                 onClick={() => fileInputRef.current?.click()}
-                                disabled={uploadingImage}
+                                disabled={uploadingImage || !canEditGacha}
                                 className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted/50 text-sm font-medium transition disabled:opacity-50"
                             >
                                 {uploadingImage ? (
@@ -343,12 +365,14 @@ export default function GachaMachinesAdminPage() {
                                     value={machineForm.imageUrl}
                                     onChange={e => setMachineForm(f => ({ ...f, imageUrl: e.target.value }))}
                                     placeholder="หรือวาง URL รูปภาพเช่น https://..."
+                                    disabled={!canEditGacha}
                                     className={inputCls}
                                 />
                                 {machineForm.imageUrl && (
                                     <button
                                         type="button"
                                         onClick={() => setMachineForm(f => ({ ...f, imageUrl: "" }))}
+                                        disabled={!canEditGacha}
                                         className="text-red-400 hover:text-red-600 transition flex-shrink-0"
                                     >
                                         <X className="w-4 h-4" />
@@ -368,13 +392,14 @@ export default function GachaMachinesAdminPage() {
                         onChange={e => setMachineForm(f => ({ ...f, description: e.target.value }))}
                         placeholder="อธิบายตู้กาชานี้ เช่น ประเภทรางวัล โอกาสชนะ หรือกติกาพิเศษ..."
                         rows={3}
+                        disabled={!canEditGacha}
                         className={inputCls + " resize-none"}
                     />
                 </div>
 
                 <button
                     onClick={() => addMachine()}
-                    disabled={savingMachine}
+                    disabled={savingMachine || !canEditGacha}
                     className="mt-6 w-full py-3 rounded-xl bg-[#145de7] hover:bg-[#1148c0] text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                     {savingMachine ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
@@ -389,6 +414,7 @@ export default function GachaMachinesAdminPage() {
                     onToggle={toggleMachine}
                     onDelete={deleteMachine}
                     onRefresh={() => loadAll(true)}
+                    canEditGacha={canEditGacha}
                 />
             )}
         </div>
@@ -407,6 +433,7 @@ function SortableRow({
     handleDuplicate,
     onDelete,
     gameTypeLabel,
+    canEditGacha,
 }: Readonly<{
     m: GachaMachine;
     i: number;
@@ -418,6 +445,7 @@ function SortableRow({
     handleDuplicate: (id: string, name: string) => void;
     onDelete: (id: string) => void;
     gameTypeLabel: (gt: string) => string;
+    canEditGacha: boolean;
 }>) {
     const router = useRouter();
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: m.id });
@@ -438,6 +466,7 @@ function SortableRow({
                     <button
                         {...attributes}
                         {...listeners}
+                        disabled={!canEditGacha}
                         className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground p-0.5 rounded touch-none"
                         title="ลากเพื่อเรียงลำดับ"
                     >
@@ -471,7 +500,7 @@ function SortableRow({
             <td className="px-3 py-2.5">
                 <button
                     onClick={() => handleToggle(m.id, "isActive", !m.isActive)}
-                    disabled={togglingMap[m.id]}
+                    disabled={togglingMap[m.id] || !canEditGacha}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${m.isActive ? "bg-[#145de7]" : "bg-gray-300 dark:bg-zinc-600"}`}
                     title={m.isActive ? "คลิกเพื่อซ่อน" : "คลิกเพื่อแสดง"}
                 >
@@ -483,7 +512,7 @@ function SortableRow({
             <td className="hidden px-3 py-2.5 sm:table-cell">
                 <button
                     onClick={() => handleDuplicate(m.id, m.name)}
-                    disabled={duplicatingId === m.id}
+                    disabled={duplicatingId === m.id || !canEditGacha}
                     className="w-8 h-8 rounded-l-xl rounded-r-md border border-r-0 border-slate-200 bg-white text-muted-foreground hover:bg-blue-50 hover:text-blue-600 flex items-center justify-center transition disabled:opacity-50"
                     title="คัดลอก"
                 >
@@ -493,6 +522,7 @@ function SortableRow({
             <td className="px-3 py-2.5">
                 <button
                     onClick={() => router.push(`/admin/gacha-machines/${m.id}/edit`)}
+                    disabled={!canEditGacha}
                     className="w-8 h-8 border-y border-slate-200 bg-white text-muted-foreground hover:bg-violet-50 hover:text-violet-600 flex items-center justify-center transition"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
@@ -501,6 +531,7 @@ function SortableRow({
             <td className="px-3 py-2.5">
                 <button
                     onClick={() => onDelete(m.id)}
+                    disabled={!canEditGacha}
                     className="w-8 h-8 rounded-l-md rounded-r-xl border border-l-0 border-slate-200 bg-white text-muted-foreground hover:bg-red-50 hover:text-red-600 flex items-center justify-center transition"
                 >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -516,12 +547,14 @@ function MachineTable({
     onToggle,
     onDelete,
     onRefresh,
+    canEditGacha,
 }: Readonly<{
     machines: GachaMachine[];
 
     onToggle: (id: string, field: "isActive" | "isEnabled", val: boolean) => Promise<void> | void;
     onDelete: (id: string) => void;
     onRefresh: () => void;
+    canEditGacha: boolean;
 }>) {
     const [search, setSearch] = useState("");
     const filterCategory = "";
@@ -542,6 +575,7 @@ function MachineTable({
     );
 
     const handleDragEnd = async (event: DragEndEvent) => {
+        if (!canEditGacha) return;
         const { active, over } = event;
         if (!over || active.id === over.id) return;
 
@@ -575,6 +609,10 @@ function MachineTable({
     };
 
     const handleDuplicate = async (id: string, name: string) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์คัดลอกตู้กาชา");
+            return;
+        }
         setDuplicatingId(id);
         try {
             const res = await fetch(`/api/admin/gacha-machines/${id}/duplicate`, { method: "POST" });
@@ -708,6 +746,7 @@ function MachineTable({
                                         handleDuplicate={handleDuplicate}
                                         onDelete={onDelete}
                                         gameTypeLabel={gameTypeLabel}
+                                        canEditGacha={canEditGacha}
                                     />
                                 ))}
                             </tbody>

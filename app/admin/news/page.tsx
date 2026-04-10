@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import {
     showDeleteConfirm,
     showError,
@@ -33,6 +34,7 @@ import {
     Trash2,
 } from "lucide-react";
 import Image from "next/image";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface NewsArticle {
     id: string;
@@ -61,6 +63,8 @@ function getExcerpt(text: string, maxLength = 100) {
 }
 
 export default function AdminNewsPage() {
+    const permissions = useAdminPermissions();
+    const canEditContent = permissions.includes(PERMISSIONS.CONTENT_EDIT);
     const [news, setNews] = useState<NewsArticle[]>([]);
     const [loading, setLoading] = useState(true);
     const [reorderingId, setReorderingId] = useState<string | null>(null);
@@ -197,6 +201,10 @@ export default function AdminNewsPage() {
     };
 
     const openDialog = (article?: NewsArticle) => {
+        if (!canEditContent) {
+            showError("คุณไม่มีสิทธิ์แก้ไขข่าวสาร");
+            return;
+        }
         uploadedUrlRef.current = article?.imageUrl || "";
 
         void Swal.fire({
@@ -384,6 +392,10 @@ export default function AdminNewsPage() {
     };
 
     const handleDelete = async (article: NewsArticle) => {
+        if (!canEditContent) {
+            showError("คุณไม่มีสิทธิ์ลบข่าวสาร");
+            return;
+        }
         const confirmed = await showDeleteConfirm(article.title);
         if (!confirmed) return;
 
@@ -406,6 +418,10 @@ export default function AdminNewsPage() {
     };
 
     const toggleActive = async (article: NewsArticle) => {
+        if (!canEditContent) {
+            showError("คุณไม่มีสิทธิ์เปลี่ยนสถานะข่าวสาร");
+            return;
+        }
         try {
             const res = await fetch(`/api/admin/news/${article.id}`, {
                 method: "PUT",
@@ -427,6 +443,10 @@ export default function AdminNewsPage() {
     });
 
     const handleReorder = async (articleId: string, direction: "up" | "down") => {
+        if (!canEditContent) {
+            showError("คุณไม่มีสิทธิ์จัดลำดับข่าวสาร");
+            return;
+        }
         const currentIndex = sortedNews.findIndex((item) => item.id === articleId);
         if (currentIndex === -1) return;
 
@@ -478,7 +498,7 @@ export default function AdminNewsPage() {
                         เพิ่ม แก้ไข หรือซ่อนข่าวสารที่แสดงบนหน้าแรกของร้าน
                     </p>
                 </div>
-                <Button onClick={() => openDialog()} className="w-full rounded-xl sm:w-auto">
+                <Button onClick={() => openDialog()} className="w-full rounded-xl sm:w-auto" disabled={!canEditContent}>
                     <Plus className="mr-2 h-4 w-4" />
                     เพิ่มข่าวสาร
                 </Button>
@@ -510,7 +530,7 @@ export default function AdminNewsPage() {
                     <div className="py-14 text-center text-muted-foreground">
                         <Newspaper className="mx-auto mb-4 h-12 w-12 opacity-40" />
                         <p>ยังไม่มีข่าวสารในระบบ</p>
-                        <Button variant="link" className="mt-2" onClick={() => openDialog()}>
+                        <Button variant="link" className="mt-2" onClick={() => openDialog()} disabled={!canEditContent}>
                             เพิ่มข่าวสารรายการแรก
                         </Button>
                     </div>
@@ -571,6 +591,7 @@ export default function AdminNewsPage() {
                                                         onCheckedChange={() =>
                                                             void toggleActive(article)
                                                         }
+                                                        disabled={!canEditContent}
                                                     />
                                                 </div>
                                                 {article.link ? (
@@ -600,7 +621,7 @@ export default function AdminNewsPage() {
                                                 variant="ghost"
                                                 size="icon"
                                                 className="h-9 w-9 rounded-xl text-muted-foreground hover:bg-muted"
-                                                disabled={index === 0 || reorderingId === article.id}
+                                                disabled={!canEditContent || index === 0 || reorderingId === article.id}
                                                 onClick={() => void handleReorder(article.id, "up")}
                                                 aria-label={`เลื่อน ${article.title} ขึ้น`}
                                             >
@@ -615,6 +636,7 @@ export default function AdminNewsPage() {
                                                 size="icon"
                                                 className="h-9 w-9 rounded-xl text-muted-foreground hover:bg-muted"
                                                 disabled={
+                                                    !canEditContent ||
                                                     index === sortedNews.length - 1 ||
                                                     reorderingId === article.id
                                                 }
@@ -630,24 +652,28 @@ export default function AdminNewsPage() {
                                         </div>
 
                                         <div className="flex items-center gap-1.5">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="rounded-xl text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
-                                                onClick={() => openDialog(article)}
-                                                aria-label={`แก้ไขข่าว ${article.title}`}
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="rounded-xl text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                                                onClick={() => void handleDelete(article)}
-                                                aria-label={`ลบข่าว ${article.title}`}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
+                                            {canEditContent ? (
+                                                <>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="rounded-xl text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
+                                                        onClick={() => openDialog(article)}
+                                                        aria-label={`แก้ไขข่าว ${article.title}`}
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="rounded-xl text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                                                        onClick={() => void handleDelete(article)}
+                                                        aria-label={`ลบข่าว ${article.title}`}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </>
+                                            ) : null}
                                         </div>
                                     </div>
                                 </div>
@@ -720,7 +746,7 @@ export default function AdminNewsPage() {
                                                     variant="ghost"
                                                     size="icon"
                                                     className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted"
-                                                    disabled={index === 0 || reorderingId === article.id}
+                                                    disabled={!canEditContent || index === 0 || reorderingId === article.id}
                                                     onClick={() => void handleReorder(article.id, "up")}
                                                     aria-label={`เลื่อน ${article.title} ขึ้น`}
                                                 >
@@ -738,6 +764,7 @@ export default function AdminNewsPage() {
                                                     size="icon"
                                                     className="h-8 w-8 rounded-lg text-muted-foreground hover:bg-muted"
                                                     disabled={
+                                                        !canEditContent ||
                                                         index === sortedNews.length - 1 ||
                                                         reorderingId === article.id
                                                     }
@@ -757,6 +784,7 @@ export default function AdminNewsPage() {
                                                 <Switch
                                                     checked={article.isActive}
                                                     onCheckedChange={() => void toggleActive(article)}
+                                                    disabled={!canEditContent}
                                                 />
                                             </div>
                                         </TableCell>
@@ -779,24 +807,28 @@ export default function AdminNewsPage() {
                                                         </a>
                                                     </Button>
                                                 ) : null}
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="rounded-lg text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
-                                                    onClick={() => openDialog(article)}
-                                                    aria-label={`แก้ไขข่าว ${article.title}`}
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                                                    onClick={() => void handleDelete(article)}
-                                                    aria-label={`ลบข่าว ${article.title}`}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                {canEditContent ? (
+                                                    <>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="rounded-lg text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
+                                                            onClick={() => openDialog(article)}
+                                                            aria-label={`แก้ไขข่าว ${article.title}`}
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                                                            onClick={() => void handleDelete(article)}
+                                                            aria-label={`ลบข่าว ${article.title}`}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </>
+                                                ) : null}
                                             </div>
                                         </TableCell>
                                     </TableRow>

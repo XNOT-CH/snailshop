@@ -56,6 +56,9 @@ interface Product {
 
 interface ProductTableProps {
   products: Product[];
+  canCreate?: boolean;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
 const ITEMS_PER_PAGE_OPTIONS = [10, 20, 50] as const;
@@ -80,7 +83,12 @@ function formatAutoDelete(minutes?: number | null) {
   return `${minutes} นาที`;
 }
 
-export default function ProductTable({ products }: ProductTableProps) {
+export default function ProductTable({
+  products,
+  canCreate = true,
+  canEdit = true,
+  canDelete = true,
+}: ProductTableProps) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
@@ -331,29 +339,35 @@ export default function ProductTable({ products }: ProductTableProps) {
                               ดูสินค้า
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/admin/products/${product.id}/edit`} className="flex items-center gap-2">
-                              <Pencil className="h-4 w-4" />
-                              แก้ไขสินค้า
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDuplicate(product.id)}
-                            disabled={loadingId === product.id}
-                            className="flex items-center gap-2"
-                          >
-                            <Copy className="h-4 w-4" />
-                            คัดลอกสินค้า
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(product.id, product.name)}
-                            disabled={loadingId === product.id}
-                            className="flex items-center gap-2 text-rose-600 focus:text-rose-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            ลบสินค้า
-                          </DropdownMenuItem>
+                          {canEdit ? (
+                            <DropdownMenuItem asChild>
+                              <Link href={`/admin/products/${product.id}/edit`} className="flex items-center gap-2">
+                                <Pencil className="h-4 w-4" />
+                                แก้ไขสินค้า
+                              </Link>
+                            </DropdownMenuItem>
+                          ) : null}
+                          {canCreate ? (
+                            <DropdownMenuItem
+                              onClick={() => handleDuplicate(product.id)}
+                              disabled={loadingId === product.id}
+                              className="flex items-center gap-2"
+                            >
+                              <Copy className="h-4 w-4" />
+                              คัดลอกสินค้า
+                            </DropdownMenuItem>
+                          ) : null}
+                          {canDelete ? <DropdownMenuSeparator /> : null}
+                          {canDelete ? (
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(product.id, product.name)}
+                              disabled={loadingId === product.id}
+                              className="flex items-center gap-2 text-rose-600 focus:text-rose-600"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              ลบสินค้า
+                            </DropdownMenuItem>
+                          ) : null}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
@@ -416,21 +430,30 @@ export default function ProductTable({ products }: ProductTableProps) {
 
                 <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
                   <div className="text-sm font-medium text-slate-600">แนะนำ</div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    disabled={loadingId === product.id}
-                    onClick={() => handleToggleFeatured(product.id, product.isFeatured)}
-                    className={cn(
-                      "h-9 w-9 rounded-full border transition",
-                      product.isFeatured
-                        ? "border-amber-200 bg-amber-50 text-amber-500 hover:bg-amber-100"
-                        : "border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-100 hover:text-slate-600"
-                    )}
-                  >
-                    <Star className={cn("h-4 w-4", product.isFeatured ? "fill-current" : "")} />
-                  </Button>
+                  {canEdit ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      disabled={loadingId === product.id}
+                      onClick={() => handleToggleFeatured(product.id, product.isFeatured)}
+                      className={cn(
+                        "h-9 w-9 rounded-full border transition",
+                        product.isFeatured
+                          ? "border-amber-200 bg-amber-50 text-amber-500 hover:bg-amber-100"
+                          : "border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-100 hover:text-slate-600"
+                      )}
+                    >
+                      <Star className={cn("h-4 w-4", product.isFeatured ? "fill-current" : "")} />
+                    </Button>
+                  ) : (
+                    <Star
+                      className={cn(
+                        "h-4 w-4",
+                        product.isFeatured ? "fill-current text-amber-500" : "text-slate-300"
+                      )}
+                    />
+                  )}
                 </div>
               </div>
             );
@@ -587,21 +610,30 @@ export default function ProductTable({ products }: ProductTableProps) {
                     </TableCell>
 
                     <TableCell className="text-center">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        disabled={loadingId === product.id}
-                        onClick={() => handleToggleFeatured(product.id, product.isFeatured)}
-                        className={cn(
-                          "mx-auto rounded-full border transition",
-                          product.isFeatured
-                            ? "border-amber-200 bg-amber-50 text-amber-500 hover:bg-amber-100"
-                            : "border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-600"
-                        )}
-                      >
-                        <Star className={cn("h-4 w-4", product.isFeatured ? "fill-current" : "")} />
-                      </Button>
+                      {canEdit ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          disabled={loadingId === product.id}
+                          onClick={() => handleToggleFeatured(product.id, product.isFeatured)}
+                          className={cn(
+                            "mx-auto rounded-full border transition",
+                            product.isFeatured
+                              ? "border-amber-200 bg-amber-50 text-amber-500 hover:bg-amber-100"
+                              : "border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-600"
+                          )}
+                        >
+                          <Star className={cn("h-4 w-4", product.isFeatured ? "fill-current" : "")} />
+                        </Button>
+                      ) : (
+                        <Star
+                          className={cn(
+                            "mx-auto h-4 w-4",
+                            product.isFeatured ? "fill-current text-amber-500" : "text-slate-300"
+                          )}
+                        />
+                      )}
                     </TableCell>
 
                     <TableCell className="text-right">
@@ -623,29 +655,35 @@ export default function ProductTable({ products }: ProductTableProps) {
                               ดูสินค้า
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link href={`/admin/products/${product.id}/edit`} className="flex items-center gap-2">
-                              <Pencil className="h-4 w-4" />
-                              แก้ไขสินค้า
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDuplicate(product.id)}
-                            disabled={loadingId === product.id}
-                            className="flex items-center gap-2"
-                          >
-                            <Copy className="h-4 w-4" />
-                            คัดลอกสินค้า
-                          </DropdownMenuItem>
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(product.id, product.name)}
-                            disabled={loadingId === product.id}
-                            className="flex items-center gap-2 text-rose-600 focus:text-rose-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                            ลบสินค้า
-                          </DropdownMenuItem>
+                          {canEdit ? (
+                            <DropdownMenuItem asChild>
+                              <Link href={`/admin/products/${product.id}/edit`} className="flex items-center gap-2">
+                                <Pencil className="h-4 w-4" />
+                                แก้ไขสินค้า
+                              </Link>
+                            </DropdownMenuItem>
+                          ) : null}
+                          {canCreate ? (
+                            <DropdownMenuItem
+                              onClick={() => handleDuplicate(product.id)}
+                              disabled={loadingId === product.id}
+                              className="flex items-center gap-2"
+                            >
+                              <Copy className="h-4 w-4" />
+                              คัดลอกสินค้า
+                            </DropdownMenuItem>
+                          ) : null}
+                          {canDelete ? <DropdownMenuSeparator /> : null}
+                          {canDelete ? (
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(product.id, product.name)}
+                              disabled={loadingId === product.id}
+                              className="flex items-center gap-2 text-rose-600 focus:text-rose-600"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                              ลบสินค้า
+                            </DropdownMenuItem>
+                          ) : null}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>

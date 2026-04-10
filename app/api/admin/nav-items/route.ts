@@ -2,9 +2,10 @@ import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, navItems } from "@/lib/db";
 import { max, count } from "drizzle-orm";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { navItemSchema } from "@/lib/validations/content";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const DEFAULT_NAV_ITEMS = [
     { label: "หน้าแรก", href: "/", icon: "home", sortOrder: 0 },
@@ -14,6 +15,8 @@ const DEFAULT_NAV_ITEMS = [
 ];
 
 export async function GET() {
+    const authCheck = await requirePermission(PERMISSIONS.SETTINGS_VIEW);
+    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const [{ count: navCount }] = await db.select({ count: count() }).from(navItems);
         if (Number(navCount) === 0) {
@@ -28,7 +31,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.SETTINGS_EDIT);
     if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const result = await validateBody(request, navItemSchema);

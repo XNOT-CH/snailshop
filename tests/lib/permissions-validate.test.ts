@@ -8,7 +8,7 @@ import {
   hasPermission, hasAllPermissions, hasAnyPermission,
   getUserPermissions, roleHasPermission,
   addCustomPermission, removeCustomPermission,
-  PERMISSIONS, ROLE_PERMISSIONS,
+  PERMISSIONS, ROLE_PERMISSIONS, normalizePermissionSelection,
 } from "@/lib/permissions";
 
 // ─── permissions.ts ───────────────────────────────────────────────────────────
@@ -149,6 +149,15 @@ describe("lib/permissions", () => {
         PERMISSIONS.SLIP_VIEW
       );
       expect(result).not.toContain(PERMISSIONS.SLIP_VIEW);
+    });
+  });
+
+  describe("normalizePermissionSelection", () => {
+    it("applies nested permission dependencies", () => {
+      const result = normalizePermissionSelection([PERMISSIONS.SLIP_APPROVE]);
+      expect(result).toContain(PERMISSIONS.SLIP_APPROVE);
+      expect(result).toContain(PERMISSIONS.SLIP_VIEW);
+      expect(result).toContain(PERMISSIONS.ADMIN_PANEL);
     });
   });
 });

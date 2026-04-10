@@ -27,6 +27,8 @@ import { Loader2, Grid3X3, Plus, Trash2, Upload, ImageIcon, Pencil, X } from "lu
 import Image from "next/image";
 import { resizeFileToSquare } from "@/lib/imageResize";
 import { RewardImageCropDialog } from "@/components/gacha/RewardImageCropDialog";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { PERMISSIONS } from "@/lib/permissions";
 
 type Tier = "common" | "rare" | "epic" | "legendary";
 type RewardType = "CREDIT" | "POINT";
@@ -45,6 +47,8 @@ interface RewardRow {
 export default function AdminGachaGridPage() {
     const cropUrlRef = useRef<string | null>(null);
     const pendingEditRewardIdRef = useRef<string | null>(null);
+    const permissions = useAdminPermissions();
+    const canEditGacha = permissions.includes(PERMISSIONS.GACHA_EDIT);
     const [rewards, setRewards] = useState<RewardRow[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
@@ -113,6 +117,11 @@ export default function AdminGachaGridPage() {
     };
 
     const handleUploadNew = async (file: File) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์แก้ไขรางวัลกาชา");
+            return;
+        }
+
         if (file.type !== "image/gif" && file.type !== "image/svg+xml") {
             if (cropUrlRef.current) {
                 URL.revokeObjectURL(cropUrlRef.current);
@@ -134,6 +143,11 @@ export default function AdminGachaGridPage() {
     };
 
     const handleUploadEdit = async (file: File, rewardId: string) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์แก้ไขรางวัลกาชา");
+            return;
+        }
+
         if (file.type !== "image/gif" && file.type !== "image/svg+xml") {
             if (cropUrlRef.current) {
                 URL.revokeObjectURL(cropUrlRef.current);
@@ -164,6 +178,12 @@ export default function AdminGachaGridPage() {
     };
 
     const handleCropConfirm = async (croppedFile: File) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์แก้ไขรางวัลกาชา");
+            clearCropDialog();
+            return;
+        }
+
         if (cropTarget === "new") {
             setIsUploadingNew(true);
             try {
@@ -199,6 +219,11 @@ export default function AdminGachaGridPage() {
     };
 
     const handleAdd = async () => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์เพิ่มรางวัลกาชา");
+            return;
+        }
+
         if (!newName.trim()) { showError("กรุณากรอกชื่อรางวัล"); return; }
         if (newAmount <= 0) { showError("กรุณากรอกจำนวนรางวัล (ต้องมากกว่า 0)"); return; }
         setIsAdding(true);
@@ -225,6 +250,11 @@ export default function AdminGachaGridPage() {
     };
 
     const handleUpdate = async (id: string, patch: Partial<RewardRow>) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์แก้ไขรางวัลกาชา");
+            return;
+        }
+
         const res = await fetch(`/api/admin/gacha-rewards/${id}`, {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
@@ -236,6 +266,11 @@ export default function AdminGachaGridPage() {
     };
 
     const handleDelete = async (id: string) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์ลบรางวัลกาชา");
+            return;
+        }
+
         const res = await fetch(`/api/admin/gacha-rewards/${id}`, { method: "DELETE" });
         const data = await res.json();
         if (!res.ok || !data.success) { showError(data.message || "ลบไม่สำเร็จ"); return; }
@@ -271,7 +306,7 @@ export default function AdminGachaGridPage() {
                         {/* type */}
                         <div className="space-y-2">
                             <Label>ประเภทรางวัล</Label>
-                            <Select value={newType} onValueChange={(v) => setNewType(v as RewardType)}>
+                            <Select value={newType} onValueChange={(v) => setNewType(v as RewardType)} disabled={!canEditGacha}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="CREDIT">💰 เครดิต</SelectItem>
@@ -283,7 +318,7 @@ export default function AdminGachaGridPage() {
                         {/* tier */}
                         <div className="space-y-2">
                             <Label>Tier</Label>
-                            <Select value={newTier} onValueChange={(v) => setNewTier(v as Tier)}>
+                            <Select value={newTier} onValueChange={(v) => setNewTier(v as Tier)} disabled={!canEditGacha}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="common">🟠 ธรรมดา</SelectItem>
@@ -301,6 +336,7 @@ export default function AdminGachaGridPage() {
                                 value={newName}
                                 onChange={(e) => setNewName(e.target.value)}
                                 placeholder={newType === "CREDIT" ? "เช่น เครดิต 50 บาท" : "เช่น พอยต์ 100 แต้ม"}
+                                disabled={!canEditGacha}
                             />
                         </div>
 
@@ -313,6 +349,7 @@ export default function AdminGachaGridPage() {
                                 value={newAmount || ""}
                                 onChange={(e) => setNewAmount(Number(e.target.value) || 0)}
                                 placeholder="0"
+                                disabled={!canEditGacha}
                             />
                         </div>
                     </div>
@@ -329,13 +366,14 @@ export default function AdminGachaGridPage() {
                                 type="file"
                                 accept="image/jpeg,image/png,image/webp,image/gif"
                                 className="hidden"
+                                disabled={!canEditGacha}
                                 onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleUploadNew(f); }}
                             />
                             <Button
                                 type="button"
                                 variant="outline"
                                 className="gap-2"
-                                disabled={isUploadingNew}
+                                disabled={!canEditGacha || isUploadingNew}
                                 onClick={() => newFileRef.current?.click()}
                             >
                                 {isUploadingNew ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
@@ -349,6 +387,7 @@ export default function AdminGachaGridPage() {
                                     </div>
                                     <button
                                         onClick={() => setNewImageUrl("")}
+                                        disabled={!canEditGacha}
                                         className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full w-4 h-4 flex items-center justify-center"
                                     >
                                         <X className="h-2.5 w-2.5" />
@@ -363,7 +402,7 @@ export default function AdminGachaGridPage() {
                     </div>
 
                     <div className="flex justify-end">
-                        <Button onClick={() => void handleAdd()} disabled={isAdding} className="gap-2">
+                        <Button onClick={() => void handleAdd()} disabled={!canEditGacha || isAdding} className="gap-2">
                             {isAdding ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                             เพิ่มรางวัล
                         </Button>
@@ -377,6 +416,7 @@ export default function AdminGachaGridPage() {
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 className="hidden"
+                disabled={!canEditGacha}
                 onChange={(e) => {
                     const f = e.target.files?.[0];
                     if (f && editingId) void handleUploadEdit(f, editingId);
@@ -434,6 +474,7 @@ export default function AdminGachaGridPage() {
                                             variant="ghost"
                                             size="icon"
                                             className="h-8 w-8 text-red-500 hover:text-red-600"
+                                            disabled={!canEditGacha}
                                             onClick={() => void handleDelete(r.id)}
                                         >
                                             <Trash2 className="h-4 w-4" />
@@ -451,6 +492,7 @@ export default function AdminGachaGridPage() {
                                             <Label className="text-xs text-muted-foreground">Tier</Label>
                                             <Select
                                                 value={r.tier}
+                                                disabled={!canEditGacha}
                                                 onValueChange={(v) => void handleUpdate(r.id, { tier: v as Tier })}
                                             >
                                                 <SelectTrigger className="h-9 w-full"><SelectValue /></SelectTrigger>
@@ -467,6 +509,7 @@ export default function AdminGachaGridPage() {
                                             <div className="flex items-center gap-2">
                                                 <Switch
                                                     checked={r.isActive}
+                                                    disabled={!canEditGacha}
                                                     onCheckedChange={(checked) => void handleUpdate(r.id, { isActive: checked })}
                                                 />
                                                 <Badge variant={r.isActive ? "default" : "secondary"}>
@@ -481,7 +524,7 @@ export default function AdminGachaGridPage() {
                                             variant="outline"
                                             size="sm"
                                             className="gap-2"
-                                            disabled={isUploadingEdit && editingId === r.id}
+                                            disabled={!canEditGacha || (isUploadingEdit && editingId === r.id)}
                                             onClick={() => {
                                                 setEditingId(r.id);
                                                 editFileRef.current?.click();
@@ -532,7 +575,7 @@ export default function AdminGachaGridPage() {
                                                     variant="ghost"
                                                     size="icon"
                                                     className="h-7 w-7 text-muted-foreground hover:text-primary"
-                                                    disabled={isUploadingEdit && editingId === r.id}
+                                                    disabled={!canEditGacha || (isUploadingEdit && editingId === r.id)}
                                                     title="แก้ไขรูปภาพ"
                                                     onClick={() => {
                                                         setEditingId(r.id);
@@ -571,6 +614,7 @@ export default function AdminGachaGridPage() {
                                         <TableCell>
                                             <Select
                                                 value={r.tier}
+                                                disabled={!canEditGacha}
                                                 onValueChange={(v) => void handleUpdate(r.id, { tier: v as Tier })}
                                             >
                                                 <SelectTrigger className="h-9 w-36"><SelectValue /></SelectTrigger>
@@ -588,6 +632,7 @@ export default function AdminGachaGridPage() {
                                             <div className="flex items-center gap-2">
                                                 <Switch
                                                     checked={r.isActive}
+                                                    disabled={!canEditGacha}
                                                     onCheckedChange={(checked) => void handleUpdate(r.id, { isActive: checked })}
                                                 />
                                                 <Badge variant={r.isActive ? "default" : "secondary"}>
@@ -602,6 +647,7 @@ export default function AdminGachaGridPage() {
                                                 variant="ghost"
                                                 size="icon"
                                                 className="text-red-500 hover:text-red-600"
+                                                disabled={!canEditGacha}
                                                 onClick={() => void handleDelete(r.id)}
                                             >
                                                 <Trash2 className="h-4 w-4" />

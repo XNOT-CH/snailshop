@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
 import { db, gachaRewards } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { gachaRewardSchema } from "@/lib/validations/gacha";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface RouteParams { params: Promise<{ id: string }> }
 
 export async function PUT(request: Request, { params }: RouteParams) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.GACHA_EDIT);
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     try {
         const { id } = await params;
@@ -45,7 +46,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(_request: Request, { params }: RouteParams) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.GACHA_EDIT);
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     try {
         const { id } = await params;

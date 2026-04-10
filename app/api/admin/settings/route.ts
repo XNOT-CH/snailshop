@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, siteSettings } from "@/lib/db";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS, getChanges } from "@/lib/auditLog";
 import { mysqlNow } from "@/lib/utils/date";
 import { validateBody } from "@/lib/validations/validate";
 import { siteSettingsSchema } from "@/lib/validations/settings";
 import { SITE_SETTINGS_SINGLETON_ID } from "@/lib/db/singletons";
+import { PERMISSIONS } from "@/lib/permissions";
 
 async function getSiteSettingsRecord() {
     return (
@@ -17,7 +18,7 @@ async function getSiteSettingsRecord() {
 }
 
 export async function GET() {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.SETTINGS_VIEW);
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }
@@ -60,7 +61,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.SETTINGS_EDIT);
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }

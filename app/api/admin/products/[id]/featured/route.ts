@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, products } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { invalidateProductCaches } from "@/lib/cache";
 import { z } from "zod";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const featuredSchema = z.object({
     isFeatured: z.boolean({ message: "isFeatured ต้องเป็น boolean" }),
 });
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.PRODUCT_EDIT);
     if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { id } = await params;

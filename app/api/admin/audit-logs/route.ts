@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { getAuditLogs } from "@/lib/auditLog";
 import { db, auditLogs } from "@/lib/db";
 import { and, eq, gte, lte, count } from "drizzle-orm";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 
 function parseDateParam(value: string | null, label: string): Date | null {
     if (!value) return null;
@@ -16,7 +17,7 @@ function parseDateParam(value: string | null, label: string): Date | null {
 }
 
 export async function GET(request: Request) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.AUDIT_LOG_VIEW);
     if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { searchParams } = new URL(request.url);

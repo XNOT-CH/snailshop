@@ -2,12 +2,13 @@ import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
 import { db, gachaRewards } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { gachaRewardSchema } from "@/lib/validations/gacha";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function GET(request: Request) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.GACHA_VIEW);
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     try {
         const { searchParams } = new URL(request.url);
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.GACHA_EDIT);
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     try {
         const result = await validateBody(request, gachaRewardSchema);

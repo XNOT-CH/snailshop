@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { requirePermission } from "@/lib/auth";
 import {
     CalendarDays,
     CheckCircle2,
@@ -12,6 +13,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { PERMISSIONS } from "@/lib/permissions";
 import { buildPageMetadata } from "@/lib/seo";
 
 export const metadata = buildPageMetadata({
@@ -40,7 +42,10 @@ const subscribers = [
     { user: "sunnyshop", status: "พลาดสิทธิ์", progress: "09/30 วัน", expiresAt: "22 เม.ย. 2026", note: "พลาด 2 วันติด" },
 ] as const;
 
-export default function AdminSeasonPassPage() {
+export default async function AdminSeasonPassPage() {
+    const access = await requirePermission(PERMISSIONS.SEASON_PASS_VIEW);
+    const canEditSeasonPass = access.success && access.permissions?.includes(PERMISSIONS.SEASON_PASS_EDIT);
+
     return (
         <div className="space-y-6">
             <section className="flex flex-col gap-4 rounded-[28px] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(239,246,255,0.88))] px-5 py-6 shadow-[0_24px_60px_-42px_rgba(37,99,235,0.32)] sm:px-7 sm:py-8 lg:flex-row lg:items-end lg:justify-between">
@@ -58,9 +63,11 @@ export default function AdminSeasonPassPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                    <Button asChild className="rounded-full px-5">
-                        <Link href="/admin/season-pass/edit">แก้ไขแพ็กเกจ</Link>
-                    </Button>
+                    {canEditSeasonPass ? (
+                        <Button asChild className="rounded-full px-5">
+                            <Link href="/admin/season-pass/edit">แก้ไขแพ็กเกจ</Link>
+                        </Button>
+                    ) : null}
                     <Button asChild variant="outline" className="rounded-full px-5">
                         <Link href="/admin/season-pass/logs">ดู log การรับกล่อง</Link>
                     </Button>
@@ -186,7 +193,7 @@ export default function AdminSeasonPassPage() {
                             <div>
                                 <p className="font-medium text-slate-900">จุดที่ควรต่อเพิ่มบนหน้าแรกของผู้ใช้</p>
                                 <p className="mt-2 text-sm leading-6 text-slate-600">
-                                    ควรมีแบนเนอร์ "วันนี้คุณยังไม่ได้รับกล่อง Season Pass" พร้อมปุ่มลัดเข้า
+                                    ควรมีแบนเนอร์ &quot;วันนี้คุณยังไม่ได้รับกล่อง Season Pass&quot; พร้อมปุ่มลัดเข้า
                                     `/dashboard/season-pass` เพื่อช่วยลดการลืมล็อกอินแล้วเสียสิทธิ์
                                 </p>
                             </div>

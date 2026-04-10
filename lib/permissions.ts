@@ -8,6 +8,9 @@
 
 // Available permissions in the system
 export const PERMISSIONS = {
+    // Dashboard permissions
+    DASHBOARD_VIEW: "dashboard:view",
+
     // Product permissions
     PRODUCT_VIEW: "product:view",
     PRODUCT_CREATE: "product:create",
@@ -37,9 +40,62 @@ export const PERMISSIONS = {
     ADMIN_PANEL: "admin:panel",
     AUDIT_LOG_VIEW: "audit:view",
     API_KEY_MANAGE: "apikey:manage",
+
+    // Chat permissions
+    CHAT_VIEW: "chat:view",
+    CHAT_MANAGE: "chat:manage",
+
+    // Content permissions
+    CONTENT_VIEW: "content:view",
+    CONTENT_EDIT: "content:edit",
+
+    // Promo permissions
+    PROMO_VIEW: "promo:view",
+    PROMO_EDIT: "promo:edit",
+
+    // Gacha permissions
+    GACHA_VIEW: "gacha:view",
+    GACHA_EDIT: "gacha:edit",
+
+    // Season pass permissions
+    SEASON_PASS_VIEW: "seasonpass:view",
+    SEASON_PASS_EDIT: "seasonpass:edit",
+
+    // Export permissions
+    EXPORT_DATA: "export:data",
 } as const;
 
 export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
+
+export const PERMISSION_DEPENDENCIES: Partial<Record<Permission, Permission[]>> = {
+    [PERMISSIONS.DASHBOARD_VIEW]: [PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.PRODUCT_CREATE]: [PERMISSIONS.PRODUCT_VIEW, PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.PRODUCT_EDIT]: [PERMISSIONS.PRODUCT_VIEW, PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.PRODUCT_DELETE]: [PERMISSIONS.PRODUCT_VIEW, PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.USER_VIEW]: [PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.USER_EDIT]: [PERMISSIONS.USER_VIEW],
+    [PERMISSIONS.USER_DELETE]: [PERMISSIONS.USER_VIEW],
+    [PERMISSIONS.USER_MANAGE_ROLE]: [PERMISSIONS.USER_VIEW],
+    [PERMISSIONS.ORDER_VIEW_ALL]: [PERMISSIONS.ORDER_VIEW, PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.SLIP_VIEW]: [PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.SLIP_APPROVE]: [PERMISSIONS.SLIP_VIEW],
+    [PERMISSIONS.SLIP_REJECT]: [PERMISSIONS.SLIP_VIEW],
+    [PERMISSIONS.SETTINGS_VIEW]: [PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.SETTINGS_EDIT]: [PERMISSIONS.SETTINGS_VIEW],
+    [PERMISSIONS.AUDIT_LOG_VIEW]: [PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.API_KEY_MANAGE]: [PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.CHAT_VIEW]: [PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.CHAT_MANAGE]: [PERMISSIONS.CHAT_VIEW],
+    [PERMISSIONS.CONTENT_VIEW]: [PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.CONTENT_EDIT]: [PERMISSIONS.CONTENT_VIEW],
+    [PERMISSIONS.PROMO_VIEW]: [PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.PROMO_EDIT]: [PERMISSIONS.PROMO_VIEW],
+    [PERMISSIONS.GACHA_VIEW]: [PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.GACHA_EDIT]: [PERMISSIONS.GACHA_VIEW],
+    [PERMISSIONS.SEASON_PASS_VIEW]: [PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.SEASON_PASS_EDIT]: [PERMISSIONS.SEASON_PASS_VIEW],
+    [PERMISSIONS.EXPORT_DATA]: [PERMISSIONS.ADMIN_PANEL],
+};
 
 // Role definitions with default permissions
 export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
@@ -49,6 +105,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     ],
 
     SELLER: [
+        PERMISSIONS.DASHBOARD_VIEW,
         PERMISSIONS.PRODUCT_VIEW,
         PERMISSIONS.PRODUCT_CREATE,
         PERMISSIONS.PRODUCT_EDIT,
@@ -57,6 +114,7 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     ],
 
     MODERATOR: [
+        PERMISSIONS.DASHBOARD_VIEW,
         PERMISSIONS.PRODUCT_VIEW,
         PERMISSIONS.PRODUCT_EDIT,
         PERMISSIONS.USER_VIEW,
@@ -64,6 +122,8 @@ export const ROLE_PERMISSIONS: Record<string, Permission[]> = {
         PERMISSIONS.SLIP_APPROVE,
         PERMISSIONS.SLIP_REJECT,
         PERMISSIONS.ORDER_VIEW_ALL,
+        PERMISSIONS.CONTENT_VIEW,
+        PERMISSIONS.CHAT_VIEW,
         PERMISSIONS.ADMIN_PANEL,
     ],
 
@@ -81,6 +141,46 @@ function normalisePermissions(raw: string[] | string | null | undefined): string
     if (Array.isArray(raw)) return raw;
     // Legacy: stored as JSON string
     try { return JSON.parse(raw) as string[]; } catch { return []; }
+}
+
+function isPermission(value: string): value is Permission {
+    return Object.values(PERMISSIONS).includes(value as Permission);
+}
+
+export function normalizePermissionSelection(rawPermissions: string[] | string | null | undefined): Permission[] {
+    const selected = new Set<Permission>(
+        normalisePermissions(rawPermissions).filter(isPermission)
+    );
+    const queue = [...selected];
+
+    while (queue.length > 0) {
+        const current = queue.shift();
+        if (!current) continue;
+
+        for (const dependency of PERMISSION_DEPENDENCIES[current] ?? []) {
+            if (!selected.has(dependency)) {
+                selected.add(dependency);
+                queue.push(dependency);
+            }
+        }
+    }
+
+    return Array.from(selected);
+}
+
+export function getRequiredPermissions(permission: Permission): Permission[] {
+    return PERMISSION_DEPENDENCIES[permission] ?? [];
+}
+
+export function isPermissionImpliedBySelection(
+    permission: Permission,
+    selectedPermissions: string[] | string | null | undefined
+): boolean {
+    const selected = normalisePermissions(selectedPermissions).filter(isPermission);
+
+    return selected.some((selectedPermission) =>
+        getRequiredPermissions(selectedPermission).includes(permission)
+    );
 }
 
 /**
@@ -101,7 +201,7 @@ export function getUserPermissions(
     customPermissions?: CustomPermissionsInput
 ): Permission[] {
     const rolePerms = ROLE_PERMISSIONS[role] || [];
-    const custom = normalisePermissions(customPermissions) as Permission[];
+    const custom = normalizePermissionSelection(customPermissions);
     return Array.from(new Set(rolePerms.concat(custom)));
 }
 

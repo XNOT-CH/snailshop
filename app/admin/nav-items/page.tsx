@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, Loader2, Navigation, GripVertical } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface NavItem {
     id: string;
@@ -35,6 +37,8 @@ interface NavItem {
 }
 
 export default function NavItemsAdminPage() {
+    const permissions = useAdminPermissions();
+    const canEditSettings = permissions.includes(PERMISSIONS.SETTINGS_EDIT);
     const [items, setItems] = useState<NavItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -69,6 +73,10 @@ export default function NavItemsAdminPage() {
     }, [fetchData]);
 
     const handleToggleActive = async (item: NavItem) => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขเมนู");
+            return;
+        }
         try {
             const res = await fetch(`/api/admin/nav-items/${item.id}`, {
                 method: "PUT",
@@ -88,6 +96,10 @@ export default function NavItemsAdminPage() {
 
     const handleAddItem = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์เพิ่มเมนู");
+            return;
+        }
         if (!newLabel.trim() || !newHref.trim()) {
             showError("กรุณากรอกข้อมูลให้ครบ");
             return;
@@ -122,6 +134,10 @@ export default function NavItemsAdminPage() {
     };
 
     const openEditModal = (item: NavItem) => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขเมนู");
+            return;
+        }
         setEditingItem(item);
         setEditLabel(item.label);
         setEditHref(item.href);
@@ -129,6 +145,10 @@ export default function NavItemsAdminPage() {
     };
 
     const handleEditItem = async () => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขเมนู");
+            return;
+        }
         if (!editingItem || !editLabel.trim() || !editHref.trim()) {
             showError("กรุณากรอกข้อมูลให้ครบ");
             return;
@@ -163,6 +183,10 @@ export default function NavItemsAdminPage() {
     };
 
     const handleDeleteItem = async (item: NavItem) => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์ลบเมนู");
+            return;
+        }
         const confirmed = await showDeleteConfirm(item.label);
         if (!confirmed) return;
 
@@ -219,6 +243,7 @@ export default function NavItemsAdminPage() {
                                     placeholder="เช่น หน้าแรก, ร้านค้า"
                                     value={newLabel}
                                     onChange={(e) => setNewLabel(e.target.value)}
+                                    disabled={!canEditSettings}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -228,11 +253,12 @@ export default function NavItemsAdminPage() {
                                     placeholder="เช่น /, /shop, /help"
                                     value={newHref}
                                     onChange={(e) => setNewHref(e.target.value)}
+                                    disabled={!canEditSettings}
                                 />
                             </div>
                         </div>
                         <div className="flex justify-end">
-                            <Button type="submit" disabled={saving} className="w-full sm:w-auto">
+                            <Button type="submit" disabled={saving || !canEditSettings} className="w-full sm:w-auto">
                                 {saving ? (
                                     <Loader2 className="h-4 w-4 animate-spin mr-2" />
                                 ) : (
@@ -281,6 +307,7 @@ export default function NavItemsAdminPage() {
                                                 <Switch
                                                     checked={item.isActive}
                                                     onCheckedChange={() => handleToggleActive(item)}
+                                                    disabled={!canEditSettings}
                                                 />
                                             </div>
 
@@ -306,24 +333,26 @@ export default function NavItemsAdminPage() {
                                                 </div>
                                             </div>
 
-                                            <div className="mt-4 flex gap-2">
-                                                <Button
-                                                    variant="outline"
-                                                    className="flex-1"
-                                                    onClick={() => openEditModal(item)}
-                                                >
-                                                    <Pencil className="mr-2 h-4 w-4" />
-                                                    แก้ไข
-                                                </Button>
-                                                <Button
-                                                    variant="outline"
-                                                    className="flex-1 text-destructive hover:text-destructive"
-                                                    onClick={() => handleDeleteItem(item)}
-                                                >
-                                                    <Trash2 className="mr-2 h-4 w-4" />
-                                                    ลบ
-                                                </Button>
-                                            </div>
+                                            {canEditSettings ? (
+                                                <div className="mt-4 flex gap-2">
+                                                    <Button
+                                                        variant="outline"
+                                                        className="flex-1"
+                                                        onClick={() => openEditModal(item)}
+                                                    >
+                                                        <Pencil className="mr-2 h-4 w-4" />
+                                                        แก้ไข
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        className="flex-1 text-destructive hover:text-destructive"
+                                                        onClick={() => handleDeleteItem(item)}
+                                                    >
+                                                        <Trash2 className="mr-2 h-4 w-4" />
+                                                        ลบ
+                                                    </Button>
+                                                </div>
+                                            ) : null}
                                         </div>
                                     ))}
                             </div>
@@ -372,26 +401,31 @@ export default function NavItemsAdminPage() {
                                                         <Switch
                                                             checked={item.isActive}
                                                             onCheckedChange={() => handleToggleActive(item)}
+                                                            disabled={!canEditSettings}
                                                         />
                                                     </TableCell>
                                                     <TableCell className="text-right">
-                                                        <div className="flex items-center justify-end gap-2">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => openEditModal(item)}
-                                                            >
-                                                                <Pencil className="h-4 w-4" />
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="text-destructive hover:text-destructive"
-                                                                onClick={() => handleDeleteItem(item)}
-                                                            >
-                                                                <Trash2 className="h-4 w-4" />
-                                                            </Button>
-                                                        </div>
+                                                        {canEditSettings ? (
+                                                            <div className="flex items-center justify-end gap-2">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => openEditModal(item)}
+                                                                >
+                                                                    <Pencil className="h-4 w-4" />
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="text-destructive hover:text-destructive"
+                                                                    onClick={() => handleDeleteItem(item)}
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-xs text-slate-400">ดูได้อย่างเดียว</span>
+                                                        )}
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
@@ -419,6 +453,7 @@ export default function NavItemsAdminPage() {
                                 id="editLabel"
                                 value={editLabel}
                                 onChange={(e) => setEditLabel(e.target.value)}
+                                disabled={!canEditSettings}
                             />
                         </div>
                         <div className="space-y-2">
@@ -427,6 +462,7 @@ export default function NavItemsAdminPage() {
                                 id="editHref"
                                 value={editHref}
                                 onChange={(e) => setEditHref(e.target.value)}
+                                disabled={!canEditSettings}
                             />
                         </div>
                         <div className="space-y-2">
@@ -436,6 +472,7 @@ export default function NavItemsAdminPage() {
                                 type="number"
                                 value={editSortOrder}
                                 onChange={(e) => setEditSortOrder(Number.parseInt(e.target.value) || 0)}
+                                disabled={!canEditSettings}
                             />
                         </div>
                     </div>
@@ -443,7 +480,7 @@ export default function NavItemsAdminPage() {
                         <Button variant="outline" onClick={() => setEditingItem(null)} className="w-full sm:w-auto">
                             ยกเลิก
                         </Button>
-                        <Button onClick={handleEditItem} disabled={saving} className="w-full sm:w-auto">
+                        <Button onClick={handleEditItem} disabled={saving || !canEditSettings} className="w-full sm:w-auto">
                             {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                             บันทึก
                         </Button>

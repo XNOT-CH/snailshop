@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, navItems } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { navItemSchema } from "@/lib/validations/content";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.SETTINGS_EDIT);
     if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { id } = await params;
@@ -30,7 +31,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.SETTINGS_EDIT);
     if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { id } = await params;

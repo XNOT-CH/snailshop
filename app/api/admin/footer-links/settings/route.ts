@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, footerWidgetSettings } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { FOOTER_WIDGET_SETTINGS_SINGLETON_ID } from "@/lib/db/singletons";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 
 async function getFooterWidgetSettingsRecord() {
     return (
@@ -13,6 +15,8 @@ async function getFooterWidgetSettingsRecord() {
 }
 
 export async function GET() {
+    const authCheck = await requirePermission(PERMISSIONS.SETTINGS_VIEW);
+    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         let settings = await getFooterWidgetSettingsRecord();
         if (!settings) {
@@ -26,6 +30,8 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+    const authCheck = await requirePermission(PERMISSIONS.SETTINGS_EDIT);
+    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const body = await request.json();
         const { isActive, title } = body;

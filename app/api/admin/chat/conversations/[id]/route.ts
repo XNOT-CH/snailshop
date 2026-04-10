@@ -2,14 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { deleteConversation, getAdminConversation, updateConversationAdminMeta, updateConversationStatus } from "@/lib/chat";
 import { sanitizeChatTags } from "@/lib/chatAdmin";
-import { isAdmin, isAdminWithCsrf } from "@/lib/auth";
+import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
 }
 
 export async function GET(_request: NextRequest, context: RouteContext) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.CHAT_VIEW);
 
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error ?? "Unauthorized" }, { status: 401 });
@@ -32,7 +33,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-    const authCheck = await isAdminWithCsrf(request);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CHAT_MANAGE);
 
     if (!authCheck.success || !authCheck.userId) {
         return NextResponse.json({ success: false, message: authCheck.error ?? "Unauthorized" }, { status: 401 });
@@ -111,7 +112,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
-    const authCheck = await isAdminWithCsrf(request);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CHAT_MANAGE);
 
     if (!authCheck.success || !authCheck.userId) {
         return NextResponse.json({ success: false, message: authCheck.error ?? "Unauthorized" }, { status: 401 });

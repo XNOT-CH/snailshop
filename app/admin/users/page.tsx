@@ -1,9 +1,17 @@
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 import AdminUsersClient from "./AdminUsersClient";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminUsersPage() {
+    const access = await requirePermission(PERMISSIONS.USER_VIEW);
+    if (!access.success) {
+        redirect("/admin?error=คุณไม่มีสิทธิ์ดูผู้ใช้");
+    }
+
     const userList = await db.query.users.findMany({
         orderBy: (t, { desc }) => desc(t.createdAt),
         columns: {

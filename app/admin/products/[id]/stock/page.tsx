@@ -22,11 +22,15 @@ import {
 } from "lucide-react";
 import { showSuccess, showError } from "@/lib/swal";
 import { splitStock } from "@/lib/stock";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export default function StockManagementPage() {
     const router = useRouter();
     const params = useParams();
     const productId = params.id as string;
+    const permissions = useAdminPermissions();
+    const canEditProduct = permissions.includes(PERMISSIONS.PRODUCT_EDIT);
 
     const [isFetching, setIsFetching] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -84,6 +88,11 @@ export default function StockManagementPage() {
     };
 
     const handleAddSingleStock = () => {
+        if (!canEditProduct) {
+            showError("คุณไม่มีสิทธิ์แก้ไขสินค้า");
+            return;
+        }
+
         if (!singleUser.trim() || !singlePass.trim()) {
             showError("กรุณากรอก User และ Pass");
             return;
@@ -109,6 +118,11 @@ export default function StockManagementPage() {
     };
 
     const handleEditStock = (index: number, item: string) => {
+        if (!canEditProduct) {
+            showError("คุณไม่มีสิทธิ์แก้ไขสินค้า");
+            return;
+        }
+
         const parts = item.split(" / ");
         setEditUser(parts[0]?.trim() || item);
         setEditPass(parts[1]?.trim() || "");
@@ -116,6 +130,11 @@ export default function StockManagementPage() {
     };
 
     const handleSaveEditStock = () => {
+        if (!canEditProduct) {
+            showError("คุณไม่มีสิทธิ์แก้ไขสินค้า");
+            return;
+        }
+
         if (editingIndex === null) return;
 
         if (!editUser.trim() || !editPass.trim()) {
@@ -148,6 +167,11 @@ export default function StockManagementPage() {
     };
 
     const handleDeleteStock = (index: number) => {
+        if (!canEditProduct) {
+            showError("คุณไม่มีสิทธิ์แก้ไขสินค้า");
+            return;
+        }
+
         const items = stockItems.filter((_, itemIndex) => itemIndex !== index);
         rebuildSecretData(items);
         if (editingIndex === index) setEditingIndex(null);
@@ -155,6 +179,11 @@ export default function StockManagementPage() {
     };
 
     const handleSave = async () => {
+        if (!canEditProduct) {
+            showError("คุณไม่มีสิทธิ์แก้ไขสินค้า");
+            return;
+        }
+
         setIsSaving(true);
 
         try {
@@ -228,6 +257,7 @@ export default function StockManagementPage() {
                                     placeholder="เช่น username123"
                                     value={singleUser}
                                     onChange={(e) => setSingleUser(e.target.value)}
+                                    disabled={!canEditProduct}
                                     className="font-mono"
                                 />
                             </div>
@@ -239,6 +269,7 @@ export default function StockManagementPage() {
                                     placeholder="เช่น password456"
                                     value={singlePass}
                                     onChange={(e) => setSinglePass(e.target.value)}
+                                    disabled={!canEditProduct}
                                     className="font-mono"
                                 />
                             </div>
@@ -247,6 +278,7 @@ export default function StockManagementPage() {
                                 type="button"
                                 className="w-full gap-2"
                                 onClick={handleAddSingleStock}
+                                disabled={!canEditProduct}
                             >
                                 <Plus className="h-4 w-4" />
                                 เพิ่มสต็อก
@@ -297,17 +329,19 @@ export default function StockManagementPage() {
                                                     placeholder="User"
                                                     value={editUser}
                                                     onChange={(e) => setEditUser(e.target.value)}
+                                                    disabled={!canEditProduct}
                                                     className="h-8 font-mono text-xs"
                                                 />
                                                 <Input
                                                     placeholder="Pass"
                                                     value={editPass}
                                                     onChange={(e) => setEditPass(e.target.value)}
+                                                    disabled={!canEditProduct}
                                                     className="h-8 font-mono text-xs"
                                                 />
 
                                                 <div className="flex gap-1">
-                                                    <Button type="button" size="sm" className="h-7 gap-1 text-xs" onClick={handleSaveEditStock}>
+                                                    <Button type="button" size="sm" className="h-7 gap-1 text-xs" onClick={handleSaveEditStock} disabled={!canEditProduct}>
                                                         <Check className="h-3 w-3" /> บันทึก
                                                     </Button>
                                                     <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingIndex(null)}>
@@ -348,6 +382,7 @@ export default function StockManagementPage() {
                                                         size="sm"
                                                         className="h-8 gap-1.5 text-xs"
                                                         onClick={() => handleEditStock(index, item)}
+                                                        disabled={!canEditProduct}
                                                     >
                                                         <Pencil className="h-3.5 w-3.5" />
                                                         แก้ไข
@@ -358,6 +393,7 @@ export default function StockManagementPage() {
                                                         size="sm"
                                                         className="h-8 gap-1.5 border-red-200 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
                                                         onClick={() => handleDeleteStock(index)}
+                                                        disabled={!canEditProduct}
                                                     >
                                                         <Trash2 className="h-3.5 w-3.5" />
                                                         ลบ
@@ -376,7 +412,7 @@ export default function StockManagementPage() {
             <div className="flex justify-end">
                 <Button
                     onClick={handleSave}
-                    disabled={isSaving || !hasChanges}
+                    disabled={!canEditProduct || isSaving || !hasChanges}
                     className="w-full gap-2 sm:w-auto"
                 >
                     {isSaving ? (

@@ -22,7 +22,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { compressImage } from "@/lib/compressImage";
+import { PERMISSIONS } from "@/lib/permissions";
 import { showError, showSuccess } from "@/lib/swal";
 import { splitStock, type StockSeparatorType } from "@/lib/stock";
 
@@ -39,6 +41,8 @@ function formatDiscountValue(value: number, currency: string) {
 
 export default function AddProductPage() {
     const router = useRouter();
+    const permissions = useAdminPermissions();
+    const canCreateProduct = permissions.includes(PERMISSIONS.PRODUCT_CREATE);
     const [isLoading, setIsLoading] = useState(false);
     const [formData, setFormData] = useState({
         title: "",
@@ -84,6 +88,11 @@ export default function AddProductPage() {
         calculatedDiscountPrice !== null && calculatedDiscountPrice > 0 ? calculatedDiscountPrice : null;
 
     const handleAddSingleStock = () => {
+        if (!canCreateProduct) {
+            showError("คุณไม่มีสิทธิ์เพิ่มสินค้า");
+            return;
+        }
+
         if (!singleUser.trim() || !singlePass.trim()) {
             showError("กรุณากรอก User และ Pass");
             return;
@@ -104,6 +113,11 @@ export default function AddProductPage() {
     };
 
     const handleDeleteStock = (index: number) => {
+        if (!canCreateProduct) {
+            showError("คุณไม่มีสิทธิ์แก้ไขสต๊อกสินค้า");
+            return;
+        }
+
         const items = stockItems.filter((_, itemIndex) => itemIndex !== index);
         rebuildSecretData(items);
         if (editingIndex === index) {
@@ -113,6 +127,11 @@ export default function AddProductPage() {
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!canCreateProduct) {
+            showError("คุณไม่มีสิทธิ์เพิ่มสินค้า");
+            return;
+        }
+
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -143,12 +162,21 @@ export default function AddProductPage() {
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        if (!canCreateProduct) {
+            return;
+        }
+
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!canCreateProduct) {
+            showError("คุณไม่มีสิทธิ์เพิ่มสินค้า");
+            return;
+        }
 
         if (!formData.title.trim()) {
             showError("กรุณากรอกชื่อสินค้า");
@@ -233,6 +261,7 @@ export default function AddProductPage() {
                                     value={formData.title}
                                     onChange={handleChange}
                                     required
+                                    disabled={!canCreateProduct}
                                 />
                             </div>
 
@@ -244,6 +273,7 @@ export default function AddProductPage() {
                                         setFormData((prev) => ({ ...prev, currency: value }))
                                     }
                                     className="grid gap-3 sm:grid-cols-2"
+                                    disabled={!canCreateProduct}
                                 >
                                     <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 transition hover:border-slate-300">
                                         <RadioGroupItem value="THB" id="currency-thb" />
@@ -289,6 +319,7 @@ export default function AddProductPage() {
                                         value={formData.price}
                                         onChange={handleChange}
                                         required
+                                        disabled={!canCreateProduct}
                                         className={
                                             formData.currency === "POINT"
                                                 ? "border-purple-300 focus:border-purple-500"
@@ -309,6 +340,7 @@ export default function AddProductPage() {
                                                 variant={discountMode === "amount" ? "default" : "outline"}
                                                 className="rounded-xl"
                                                 onClick={() => setDiscountMode("amount")}
+                                                disabled={!canCreateProduct}
                                             >
                                                 ลดเป็น{formData.currency === "POINT" ? "พอยท์" : "บาท"}
                                             </Button>
@@ -317,6 +349,7 @@ export default function AddProductPage() {
                                                 variant={discountMode === "percent" ? "default" : "outline"}
                                                 className="rounded-xl"
                                                 onClick={() => setDiscountMode("percent")}
+                                                disabled={!canCreateProduct}
                                             >
                                                 ลดเป็น %
                                             </Button>
@@ -337,6 +370,7 @@ export default function AddProductPage() {
                                             step={discountMode === "percent" ? "0.01" : formData.currency === "POINT" ? "1" : "0.01"}
                                             value={formData.discountPrice}
                                             onChange={handleChange}
+                                            disabled={!canCreateProduct}
                                             className={
                                                 hasDiscountPrice
                                                     ? "border-amber-300 bg-amber-50/40 focus:border-amber-500"
@@ -366,7 +400,7 @@ export default function AddProductPage() {
                                         </div>
                                     </div>
                                     <p className="text-xs text-muted-foreground">
-                                        หากตั้งค่าส่วนลด สินค้าจะแสดงใน "สินค้าลดราคา"
+                                        หากตั้งค่าส่วนลด สินค้าจะแสดงใน &quot;สินค้าลดราคา&quot;
                                     </p>
                                 </div>
                             </div>
@@ -380,6 +414,7 @@ export default function AddProductPage() {
                                     value={formData.category}
                                     onChange={handleChange}
                                     required
+                                    disabled={!canCreateProduct}
                                 />
                             </div>
 
@@ -394,6 +429,7 @@ export default function AddProductPage() {
                                                     type="file"
                                                     accept="image/jpeg,image/png,image/webp,image/gif"
                                                     className="hidden"
+                                                    disabled={!canCreateProduct}
                                                     onChange={handleFileUpload}
                                                 />
                                                 <Button
@@ -401,7 +437,7 @@ export default function AddProductPage() {
                                                     variant="outline"
                                                     className="gap-2 rounded-xl bg-white"
                                                     onClick={() => fileInputRef.current?.click()}
-                                                    disabled={isUploading}
+                                                    disabled={!canCreateProduct || isUploading}
                                                 >
                                                     {isUploading ? (
                                                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -422,6 +458,7 @@ export default function AddProductPage() {
                                                     placeholder="วาง URL รูปภาพ..."
                                                     value={formData.image}
                                                     onChange={handleChange}
+                                                    disabled={!canCreateProduct}
                                                     className="flex-1 bg-white"
                                                 />
                                                 {formData.image && (
@@ -432,6 +469,7 @@ export default function AddProductPage() {
                                                         onClick={() =>
                                                             setFormData((prev) => ({ ...prev, image: "" }))
                                                         }
+                                                        disabled={!canCreateProduct}
                                                         className="shrink-0 text-red-500 hover:text-red-600"
                                                     >
                                                         <X className="h-4 w-4" />
@@ -478,6 +516,7 @@ export default function AddProductPage() {
                                     rows={4}
                                     value={formData.description}
                                     onChange={handleChange}
+                                    disabled={!canCreateProduct}
                                 />
                             </div>
                         </div>
@@ -516,6 +555,7 @@ export default function AddProductPage() {
                                         placeholder="เช่น username123"
                                         value={singleUser}
                                         onChange={(e) => setSingleUser(e.target.value)}
+                                        disabled={!canCreateProduct}
                                         className="font-mono"
                                     />
                                 </div>
@@ -527,6 +567,7 @@ export default function AddProductPage() {
                                         placeholder="เช่น password456"
                                         value={singlePass}
                                         onChange={(e) => setSinglePass(e.target.value)}
+                                        disabled={!canCreateProduct}
                                         className="font-mono"
                                     />
                                 </div>
@@ -535,6 +576,7 @@ export default function AddProductPage() {
                                     type="button"
                                     className="w-full gap-2 rounded-xl bg-[#1a56db] text-white hover:bg-[#1e40af]"
                                     onClick={handleAddSingleStock}
+                                    disabled={!canCreateProduct}
                                 >
                                     <Plus className="h-4 w-4" />
                                     เพิ่มสต๊อก
@@ -579,6 +621,7 @@ export default function AddProductPage() {
                                                     size="icon"
                                                     className="h-7 w-7 text-muted-foreground hover:text-red-600"
                                                     onClick={() => handleDeleteStock(index)}
+                                                    disabled={!canCreateProduct}
                                                 >
                                                     <Trash2 className="h-3.5 w-3.5" />
                                                 </Button>
@@ -601,7 +644,7 @@ export default function AddProductPage() {
                             type="submit"
                             className="min-w-[150px] rounded-xl bg-[#1a56db] text-white hover:bg-[#1e40af]"
                             size="lg"
-                            disabled={isLoading}
+                            disabled={!canCreateProduct || isLoading}
                         >
                             {isLoading ? (
                                 <>

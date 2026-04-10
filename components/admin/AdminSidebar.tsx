@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { PERMISSIONS, type Permission } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
 import {
     Sheet,
@@ -39,12 +40,14 @@ type NavItem = {
     label: string;
     icon: React.ElementType;
     badge?: string;
+    requiredPermission?: Permission;
 };
 
 type NavGroup = {
     label: string;
     icon: React.ElementType;
     items: NavItem[];
+    requiredPermission?: Permission;
 };
 
 type NavEntry = NavItem | ({ group: true } & NavGroup);
@@ -64,27 +67,28 @@ const navigationSections: NavSection[] = [
         title: "ใช้งานบ่อย",
         hint: "เมนูที่แอดมินเปิดบ่อยที่สุด",
         items: [
-            { href: "/admin", label: "แดชบอร์ด", icon: LayoutDashboard, badge: "หลัก" },
-            { href: "/admin/chat", label: "แชทลูกค้า", icon: MessagesSquare, badge: "สด" },
-            { href: "/admin/slips", label: "ตรวจสอบสลิป", icon: FileCheck },
+            { href: "/admin", label: "แดชบอร์ด", icon: LayoutDashboard, badge: "หลัก", requiredPermission: PERMISSIONS.DASHBOARD_VIEW },
+            { href: "/admin/chat", label: "แชทลูกค้า", icon: MessagesSquare, badge: "สด", requiredPermission: PERMISSIONS.CHAT_VIEW },
+            { href: "/admin/slips", label: "ตรวจสอบสลิป", icon: FileCheck, requiredPermission: PERMISSIONS.SLIP_VIEW },
         ],
     },
     {
         title: "จัดการร้าน",
         hint: "สินค้า ผู้ใช้ และสิทธิ์พิเศษ",
         items: [
-            { href: "/admin/products", label: "จัดการสินค้า", icon: Package },
-            { href: "/admin/promo-codes", label: "โค้ดส่วนลด", icon: Ticket },
-            { href: "/admin/season-pass", label: "Season Pass", icon: Gift },
-            { href: "/admin/users", label: "จัดการผู้ใช้", icon: Users },
-            { href: "/admin/roles", label: "จัดการสิทธิ์", icon: Shield },
+            { href: "/admin/products", label: "จัดการสินค้า", icon: Package, requiredPermission: PERMISSIONS.PRODUCT_VIEW },
+            { href: "/admin/promo-codes", label: "โค้ดส่วนลด", icon: Ticket, requiredPermission: PERMISSIONS.PROMO_VIEW },
+            { href: "/admin/season-pass", label: "Season Pass", icon: Gift, requiredPermission: PERMISSIONS.SEASON_PASS_VIEW },
+            { href: "/admin/users", label: "จัดการผู้ใช้", icon: Users, requiredPermission: PERMISSIONS.USER_VIEW },
+            { href: "/admin/roles", label: "จัดการสิทธิ์", icon: Shield, requiredPermission: PERMISSIONS.USER_MANAGE_ROLE },
             {
                 group: true,
                 label: "กาชา",
                 icon: Gamepad2,
+                requiredPermission: PERMISSIONS.GACHA_VIEW,
                 items: [
-                    { href: "/admin/gacha-machines", label: "หมวดหมู่กาชา", icon: Layers },
-                    { href: "/admin/season-pass", label: "Season Pass Box", icon: Gift },
+                    { href: "/admin/gacha-machines", label: "หมวดหมู่กาชา", icon: Layers, requiredPermission: PERMISSIONS.GACHA_VIEW },
+                    { href: "/admin/season-pass", label: "Season Pass Box", icon: Gift, requiredPermission: PERMISSIONS.SEASON_PASS_VIEW },
                 ],
             },
         ],
@@ -93,22 +97,34 @@ const navigationSections: NavSection[] = [
         title: "คอนเทนต์",
         hint: "สิ่งที่ลูกค้าเห็นบนหน้าร้าน",
         items: [
-            { href: "/admin/news", label: "จัดการข่าวสาร", icon: Newspaper },
-            { href: "/admin/popups", label: "จัดการป๊อปอัพ", icon: Megaphone },
-            { href: "/admin/footer-links", label: "ลิงก์ท้ายเว็บ", icon: LinkIcon },
+            { href: "/admin/news", label: "จัดการข่าวสาร", icon: Newspaper, requiredPermission: PERMISSIONS.CONTENT_VIEW },
+            { href: "/admin/popups", label: "จัดการป๊อปอัพ", icon: Megaphone, requiredPermission: PERMISSIONS.CONTENT_VIEW },
+            { href: "/admin/footer-links", label: "ลิงก์ท้ายเว็บ", icon: LinkIcon, requiredPermission: PERMISSIONS.SETTINGS_VIEW },
         ],
     },
     {
         title: "ตั้งค่าและระบบ",
         hint: "เครื่องมือหลังบ้านและค่าระบบ",
         items: [
-            { href: "/admin/currency-settings", label: "ตั้งค่าสกุลเงิน", icon: Gem },
-            { href: "/admin/export", label: "ส่งออกข้อมูล", icon: FileSpreadsheet },
-            { href: "/admin/audit-logs", label: "บันทึกการใช้งาน", icon: FileText },
-            { href: "/admin/settings", label: "ตั้งค่าเว็บไซต์", icon: Settings },
+            { href: "/admin/currency-settings", label: "ตั้งค่าสกุลเงิน", icon: Gem, requiredPermission: PERMISSIONS.SETTINGS_VIEW },
+            { href: "/admin/export", label: "ส่งออกข้อมูล", icon: FileSpreadsheet, requiredPermission: PERMISSIONS.EXPORT_DATA },
+            { href: "/admin/audit-logs", label: "บันทึกการใช้งาน", icon: FileText, requiredPermission: PERMISSIONS.AUDIT_LOG_VIEW },
+            { href: "/admin/settings", label: "ตั้งค่าเว็บไซต์", icon: Settings, requiredPermission: PERMISSIONS.SETTINGS_VIEW },
         ],
     },
 ];
+
+function canAccessEntry(entry: NavEntry, permissions: Set<string>) {
+    if (isNavGroup(entry)) {
+        if (entry.requiredPermission && !permissions.has(entry.requiredPermission)) {
+            return false;
+        }
+
+        return entry.items.some((item) => canAccessEntry(item, permissions));
+    }
+
+    return !entry.requiredPermission || permissions.has(entry.requiredPermission);
+}
 
 function NavLink({
     href,
@@ -280,13 +296,23 @@ function SidebarSection({
     );
 }
 
-function SidebarNav({ onLinkClick }: Readonly<{ onLinkClick?: () => void }>) {
+function SidebarNav({
+    onLinkClick,
+    permissions,
+}: Readonly<{ onLinkClick?: () => void; permissions: string[] }>) {
     const pathname = usePathname();
+    const permissionSet = new Set(permissions);
+    const visibleSections = navigationSections
+        .map((section) => ({
+            ...section,
+            items: section.items.filter((entry) => canAccessEntry(entry, permissionSet)),
+        }))
+        .filter((section) => section.items.length > 0);
 
     return (
         <>
             <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-3">
-                {navigationSections.map((section) => (
+                {visibleSections.map((section) => (
                     <SidebarSection
                         key={section.title}
                         title={section.title}
@@ -312,7 +338,7 @@ function SidebarNav({ onLinkClick }: Readonly<{ onLinkClick?: () => void }>) {
     );
 }
 
-export function AdminSidebar() {
+export function AdminSidebar({ permissions }: Readonly<{ permissions: string[] }>) {
     const [open, setOpen] = useState(false);
 
     return (
@@ -328,7 +354,7 @@ export function AdminSidebar() {
                     </div>
                 </div>
 
-                <SidebarNav />
+                <SidebarNav permissions={permissions} />
             </aside>
 
             <div className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm md:hidden">
@@ -365,7 +391,7 @@ export function AdminSidebar() {
                         </SheetHeader>
 
                         <div className="flex h-[calc(100%-4rem)] flex-col">
-                            <SidebarNav onLinkClick={() => setOpen(false)} />
+                            <SidebarNav permissions={permissions} onLinkClick={() => setOpen(false)} />
                         </div>
                     </SheetContent>
                 </Sheet>

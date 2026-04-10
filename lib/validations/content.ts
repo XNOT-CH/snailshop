@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizePermissionSelection } from "@/lib/permissions";
 
 // Nav item
 export const navItemSchema = z.object({
@@ -80,5 +81,8 @@ export const roleSchema = z.object({
   name: z.string().min(1, "กรุณากรอกชื่อ Role").max(100),
   description: z.string().max(500).optional().or(z.literal("")),
   permissions: z.array(z.string()).default([]),
-});
+}).transform((data) => ({
+  ...data,
+  permissions: normalizePermissionSelection(data.permissions),
+}));
 export type RoleInput = z.infer<typeof roleSchema>;

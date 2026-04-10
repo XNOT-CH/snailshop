@@ -4,8 +4,9 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { authConfig } from "@/auth.config";
-import { db, users, auditLogs } from "@/lib/db";
+import { db, users, auditLogs, roles } from "@/lib/db";
 import { loginSchema } from "@/lib/validations";
+import { getUserPermissions } from "@/lib/permissions";
 import {
     checkLoginRateLimit,
     recordFailedLogin,
@@ -119,6 +120,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     ipAddress,
                 });
 
+                const roleRecord = await db.query.roles.findFirst({
+                    where: eq(roles.code, user.role),
+                    columns: { permissions: true },
+                });
+
                 return {
                     id: user.id,
                     name: user.name ?? user.username,
@@ -127,6 +133,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                     // Custom fields
                     role: user.role,
                     username: user.username,
+                    permissions: getUserPermissions(user.role, roleRecord?.permissions ?? null),
                 };
             },
         }),

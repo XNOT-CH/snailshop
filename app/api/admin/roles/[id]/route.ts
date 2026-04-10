@@ -4,10 +4,15 @@ import { NextResponse } from "next/server";
 import { db, roles } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS, normalizePermissionSelection } from "@/lib/permissions";
+import { resolveUniqueRoleCode } from "@/lib/roleCode";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 export async function GET(_req: Request, { params }: RouteParams) {
+    const authCheck = await requirePermission(PERMISSIONS.USER_MANAGE_ROLE);
+    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { id } = await params;
         const role = await db.query.roles.findFirst({ where: eq(roles.id, id) });
@@ -19,6 +24,8 @@ export async function GET(_req: Request, { params }: RouteParams) {
 }
 
 export async function PUT(request: Request, { params }: RouteParams) {
+    const authCheck = await requirePermission(PERMISSIONS.USER_MANAGE_ROLE);
+    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { id } = await params;
         const body = await request.json();
@@ -28,21 +35,22 @@ export async function PUT(request: Request, { params }: RouteParams) {
         const existingRole = await db.query.roles.findFirst({ where: eq(roles.id, id) });
         if (!existingRole) return NextResponse.json({ error: "Role not found" }, { status: 404 });
 
-        const normalizedCode = String(code || existingRole.code || name)
-            .toUpperCase()
-            .replaceAll(/\s+/g, "_")
-            .replaceAll(/[^A-Z0-9_]/g, "");
+        const safeRoleCode = await resolveUniqueRoleCode({
+            name,
+            requestedCode: code,
+            currentCode: existingRole.code,
+            fallbackSeed: id,
+            isTaken: async (candidate) => {
+                const conflict = await db.query.roles.findFirst({ where: eq(roles.code, candidate) });
+                return Boolean(conflict && conflict.id !== existingRole.id);
+            },
+        });
 
-        const safeRoleCode = normalizedCode || `ROLE_${id.replaceAll("-", "").slice(0, 8).toUpperCase()}`;
-
-        if (safeRoleCode !== existingRole.code) {
-            const conflict = await db.query.roles.findFirst({ where: eq(roles.code, safeRoleCode) });
-            if (conflict) return NextResponse.json({ error: "Role code already exists" }, { status: 400 });
-        }
+        const normalizedPermissions = normalizePermissionSelection(permissions);
 
         const newData = {
             name, code: safeRoleCode, iconUrl: iconUrl || null, description: description || null,
-            permissions: permissions || null,
+            permissions: normalizedPermissions.length > 0 ? normalizedPermissions : null,
             sortOrder: sortOrder === undefined ? existingRole.sortOrder : sortOrder,
         };
         await db.update(roles).set(newData).where(eq(roles.id, id));
@@ -64,6 +72,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
+    const authCheck = await requirePermission(PERMISSIONS.USER_MANAGE_ROLE);
+    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { id } = await params;
         const role = await db.query.roles.findFirst({ where: eq(roles.id, id) });

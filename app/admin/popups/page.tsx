@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import {
     showDeleteConfirm,
     showError,
@@ -22,7 +23,6 @@ import {
 } from "@/components/ui/table";
 import {
     ExternalLink,
-    Image as ImageIcon,
     Link2,
     Loader2,
     Megaphone,
@@ -31,6 +31,7 @@ import {
     Trash2,
 } from "lucide-react";
 import Image from "next/image";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface AnnouncementPopup {
     id: string;
@@ -65,6 +66,8 @@ function getDismissLabel(value: string) {
 }
 
 export default function AdminPopupsPage() {
+    const permissions = useAdminPermissions();
+    const canEditContent = permissions.includes(PERMISSIONS.CONTENT_EDIT);
     const [popups, setPopups] = useState<AnnouncementPopup[]>([]);
     const [loading, setLoading] = useState(true);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -194,6 +197,10 @@ export default function AdminPopupsPage() {
     };
 
     const openDialog = (popup?: AnnouncementPopup) => {
+        if (!canEditContent) {
+            showError("คุณไม่มีสิทธิ์แก้ไข Pop-up");
+            return;
+        }
         void Swal.fire({
             title: popup ? "แก้ไข Pop-up" : "เพิ่ม Pop-up ใหม่",
             width: "min(96vw, 620px)",
@@ -394,6 +401,10 @@ export default function AdminPopupsPage() {
     };
 
     const handleDelete = async (popup: AnnouncementPopup) => {
+        if (!canEditContent) {
+            showError("คุณไม่มีสิทธิ์ลบ Pop-up");
+            return;
+        }
         const confirmed = await showDeleteConfirm(popup.title || "Pop-up ไม่มีชื่อ");
         if (!confirmed) return;
 
@@ -416,6 +427,10 @@ export default function AdminPopupsPage() {
     };
 
     const toggleActive = async (popup: AnnouncementPopup) => {
+        if (!canEditContent) {
+            showError("คุณไม่มีสิทธิ์เปลี่ยนสถานะ Pop-up");
+            return;
+        }
         try {
             const res = await fetch(`/api/admin/popups/${popup.id}`, {
                 method: "PUT",
@@ -452,7 +467,7 @@ export default function AdminPopupsPage() {
                         เพิ่ม แก้ไข หรือซ่อน Pop-up ที่แสดงเมื่อผู้ใช้เข้าเว็บไซต์
                     </p>
                 </div>
-                <Button onClick={() => openDialog()} className="w-full rounded-xl sm:w-auto">
+                <Button onClick={() => openDialog()} className="w-full rounded-xl sm:w-auto" disabled={!canEditContent}>
                     <Plus className="mr-2 h-4 w-4" />
                     เพิ่ม Pop-up
                 </Button>
@@ -484,7 +499,7 @@ export default function AdminPopupsPage() {
                     <div className="py-14 text-center text-muted-foreground">
                         <Megaphone className="mx-auto mb-4 h-12 w-12 opacity-40" />
                         <p>ยังไม่มี Pop-up ในระบบ</p>
-                        <Button variant="link" className="mt-2" onClick={() => openDialog()}>
+                        <Button variant="link" className="mt-2" onClick={() => openDialog()} disabled={!canEditContent}>
                             เพิ่ม Pop-up รายการแรก
                         </Button>
                     </div>
@@ -526,6 +541,7 @@ export default function AdminPopupsPage() {
                                         <Switch
                                             checked={popup.isActive}
                                             onCheckedChange={() => void toggleActive(popup)}
+                                            disabled={!canEditContent}
                                         />
                                     </div>
 
@@ -564,24 +580,28 @@ export default function AdminPopupsPage() {
                                     </div>
 
                                     <div className="mt-4 flex gap-2">
-                                        <Button
-                                            variant="outline"
-                                            className="flex-1"
-                                            onClick={() => openDialog(popup)}
-                                            aria-label={`แก้ไข Pop-up ${popup.title || "ไม่มีชื่อ"}`}
-                                        >
-                                            <Pencil className="mr-2 h-4 w-4" />
-                                            แก้ไข
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            className="flex-1 text-red-500 hover:text-red-600"
-                                            onClick={() => void handleDelete(popup)}
-                                            aria-label={`ลบ Pop-up ${popup.title || "ไม่มีชื่อ"}`}
-                                        >
-                                            <Trash2 className="mr-2 h-4 w-4" />
-                                            ลบ
-                                        </Button>
+                                        {canEditContent ? (
+                                            <>
+                                                <Button
+                                                    variant="outline"
+                                                    className="flex-1"
+                                                    onClick={() => openDialog(popup)}
+                                                    aria-label={`แก้ไข Pop-up ${popup.title || "ไม่มีชื่อ"}`}
+                                                >
+                                                    <Pencil className="mr-2 h-4 w-4" />
+                                                    แก้ไข
+                                                </Button>
+                                                <Button
+                                                    variant="outline"
+                                                    className="flex-1 text-red-500 hover:text-red-600"
+                                                    onClick={() => void handleDelete(popup)}
+                                                    aria-label={`ลบ Pop-up ${popup.title || "ไม่มีชื่อ"}`}
+                                                >
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    ลบ
+                                                </Button>
+                                            </>
+                                        ) : null}
                                     </div>
                                 </div>
                             ))}
@@ -663,29 +683,36 @@ export default function AdminPopupsPage() {
                                                 <Switch
                                                     checked={popup.isActive}
                                                     onCheckedChange={() => void toggleActive(popup)}
+                                                    disabled={!canEditContent}
                                                 />
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center justify-center gap-1.5">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="rounded-lg text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
-                                                    onClick={() => openDialog(popup)}
-                                                    aria-label={`แก้ไข Pop-up ${popup.title || "ไม่มีชื่อ"}`}
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                                                    onClick={() => void handleDelete(popup)}
-                                                    aria-label={`ลบ Pop-up ${popup.title || "ไม่มีชื่อ"}`}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
+                                                {canEditContent ? (
+                                                    <>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="rounded-lg text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
+                                                            onClick={() => openDialog(popup)}
+                                                            aria-label={`แก้ไข Pop-up ${popup.title || "ไม่มีชื่อ"}`}
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                                                            onClick={() => void handleDelete(popup)}
+                                                            aria-label={`ลบ Pop-up ${popup.title || "ไม่มีชื่อ"}`}
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </>
+                                                ) : (
+                                                    <span className="text-xs text-slate-400">ดูได้อย่างเดียว</span>
+                                                )}
                                             </div>
                                         </TableCell>
                                     </TableRow>

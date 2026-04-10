@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
-import { isAdminWithCsrf } from "@/lib/auth";
+import { requirePermissionWithCsrf } from "@/lib/auth";
 import { deleteChatQuickReply, updateChatQuickReply } from "@/lib/chatQuickReplies";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
 }
 
 export async function PATCH(request: NextRequest, context: RouteContext) {
-    const authCheck = await isAdminWithCsrf(request);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CHAT_MANAGE);
 
     if (!authCheck.success || !authCheck.userId) {
         return NextResponse.json({ success: false, message: authCheck.error ?? "Unauthorized" }, { status: 401 });
@@ -46,7 +47,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(request: NextRequest, context: RouteContext) {
-    const authCheck = await isAdminWithCsrf(request);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CHAT_MANAGE);
 
     if (!authCheck.success || !authCheck.userId) {
         return NextResponse.json({ success: false, message: authCheck.error ?? "Unauthorized" }, { status: 401 });

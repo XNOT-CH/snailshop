@@ -8,6 +8,7 @@ import {
   hasAnyPermission,
   addCustomPermission,
   removeCustomPermission,
+  normalizePermissionSelection,
 } from "@/lib/permissions";
 
 describe("lib/permissions", () => {
@@ -114,6 +115,27 @@ describe("lib/permissions", () => {
     it("does nothing if permission not found", () => {
       const result = removeCustomPermission([PERMISSIONS.PRODUCT_VIEW], PERMISSIONS.PRODUCT_CREATE);
       expect(result).toHaveLength(1);
+    });
+  });
+
+  describe("normalizePermissionSelection", () => {
+    it("adds view and admin panel dependencies for product edit", () => {
+      const result = normalizePermissionSelection([PERMISSIONS.PRODUCT_EDIT]);
+      expect(result).toContain(PERMISSIONS.PRODUCT_EDIT);
+      expect(result).toContain(PERMISSIONS.PRODUCT_VIEW);
+      expect(result).toContain(PERMISSIONS.ADMIN_PANEL);
+    });
+
+    it("adds own-order view when order:view_all is selected", () => {
+      const result = normalizePermissionSelection([PERMISSIONS.ORDER_VIEW_ALL]);
+      expect(result).toContain(PERMISSIONS.ORDER_VIEW_ALL);
+      expect(result).toContain(PERMISSIONS.ORDER_VIEW);
+    });
+
+    it("preserves storefront product:view without forcing admin panel", () => {
+      const result = normalizePermissionSelection([PERMISSIONS.PRODUCT_VIEW]);
+      expect(result).toContain(PERMISSIONS.PRODUCT_VIEW);
+      expect(result).not.toContain(PERMISSIONS.ADMIN_PANEL);
     });
   });
 });

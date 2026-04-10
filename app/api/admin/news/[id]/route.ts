@@ -1,16 +1,17 @@
 import { NextResponse } from "next/server";
 import { db, newsArticles } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { invalidateNewsCaches } from "@/lib/cache";
 import { auditFromRequest, auditUpdate, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
 import { newsItemSchema } from "@/lib/validations/content";
+import { PERMISSIONS } from "@/lib/permissions";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 export async function GET(_req: Request, { params }: RouteParams) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.CONTENT_VIEW);
     if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { id } = await params;
@@ -21,7 +22,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
 }
 
 export async function PUT(request: Request, { params }: RouteParams) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
     if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { id } = await params;
@@ -40,7 +41,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
     if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { id } = await params;

@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { invalidateProductCaches } from "@/lib/cache";
 import { clearProductOrder, deleteProduct, updateProduct } from "@/lib/features/products/mutations";
 import { findProductById } from "@/lib/features/products/queries";
 import { decryptProductSecret, parseProductPrice, validateDiscountPrice, type ProductPayloadInput } from "@/lib/features/products/shared";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface RouteParams { params: Promise<{ id: string }> }
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.PRODUCT_VIEW);
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
 
     try {
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.PRODUCT_EDIT);
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
 
     try {
@@ -77,7 +78,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.PRODUCT_DELETE);
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
 
     try {

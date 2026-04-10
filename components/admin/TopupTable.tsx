@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { showConfirm, showSuccess, showError } from "@/lib/swal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { PERMISSIONS } from "@/lib/permissions";
 import {
     Check,
     X,
@@ -74,6 +76,9 @@ function StatusBadge({ status }: Readonly<{ status: string }>) {
 // ─── Component ──────────────────────────────────────────
 export function TopupTable({ topups }: Readonly<TopupTableProps>) {
     const router = useRouter();
+    const permissions = useAdminPermissions();
+    const canApproveSlip = permissions.includes(PERMISSIONS.SLIP_APPROVE);
+    const canRejectSlip = permissions.includes(PERMISSIONS.SLIP_REJECT);
     const [processingId, setProcessingId] = useState<string | null>(null);
     const [filter, setFilter] = useState<"ALL" | "PENDING" | "APPROVED" | "REJECTED">("ALL");
     const [searchQuery, setSearchQuery] = useState("");
@@ -91,6 +96,16 @@ export function TopupTable({ topups }: Readonly<TopupTableProps>) {
     });
 
     const handleAction = async (topupId: string, action: "APPROVE" | "REJECT") => {
+        if (action === "APPROVE" && !canApproveSlip) {
+            showError("คุณไม่มีสิทธิ์อนุมัติสลิป");
+            return;
+        }
+
+        if (action === "REJECT" && !canRejectSlip) {
+            showError("คุณไม่มีสิทธิ์ปฏิเสธสลิป");
+            return;
+        }
+
         const actionText = action === "APPROVE" ? "อนุมัติ" : "ปฏิเสธ";
         const confirmed = await showConfirm(
             "ยืนยันการดำเนินการ",
@@ -278,41 +293,45 @@ export function TopupTable({ topups }: Readonly<TopupTableProps>) {
                                     <td className="py-3 px-4 text-right">
                                         {topup.status === "PENDING" ? (
                                             <div className="flex flex-col items-stretch justify-end gap-1.5 sm:flex-row">
-                                                <Button
-                                                    size="sm"
-                                                    className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white"
-                                                    onClick={() =>
-                                                        handleAction(topup.id, "APPROVE")
-                                                    }
-                                                    disabled={processingId === topup.id}
-                                                >
-                                                    {processingId === topup.id ? (
-                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                    ) : (
-                                                        <>
-                                                            <Check className="h-3.5 w-3.5 mr-1" />
-                                                            อนุมัติ
-                                                        </>
-                                                    )}
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="destructive"
-                                                    className="h-8"
-                                                    onClick={() =>
-                                                        handleAction(topup.id, "REJECT")
-                                                    }
-                                                    disabled={processingId === topup.id}
-                                                >
-                                                    {processingId === topup.id ? (
-                                                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                                                    ) : (
-                                                        <>
-                                                            <X className="h-3.5 w-3.5 mr-1" />
-                                                            ปฏิเสธ
-                                                        </>
-                                                    )}
-                                                </Button>
+                                                {canApproveSlip && (
+                                                    <Button
+                                                        size="sm"
+                                                        className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white"
+                                                        onClick={() =>
+                                                            handleAction(topup.id, "APPROVE")
+                                                        }
+                                                        disabled={processingId === topup.id}
+                                                    >
+                                                        {processingId === topup.id ? (
+                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                        ) : (
+                                                            <>
+                                                                <Check className="h-3.5 w-3.5 mr-1" />
+                                                                อนุมัติ
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                )}
+                                                {canRejectSlip && (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="destructive"
+                                                        className="h-8"
+                                                        onClick={() =>
+                                                            handleAction(topup.id, "REJECT")
+                                                        }
+                                                        disabled={processingId === topup.id}
+                                                    >
+                                                        {processingId === topup.id ? (
+                                                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                                        ) : (
+                                                            <>
+                                                                <X className="h-3.5 w-3.5 mr-1" />
+                                                                ปฏิเสธ
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                )}
                                             </div>
                                         ) : (
                                             <span className="text-xs text-muted-foreground">

@@ -1,8 +1,11 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { runAutoDelete } from "@/lib/autoDelete";
 import { getStockCount } from "@/lib/stock";
 import { decrypt } from "@/lib/encryption";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Package, Trash2 } from "lucide-react";
@@ -11,6 +14,12 @@ import ProductTable from "@/components/admin/ProductTable";
 export const dynamic = "force-dynamic";
 
 export default async function AdminProductsPage() {
+    const access = await requirePermission(PERMISSIONS.PRODUCT_VIEW);
+    if (!access.success) {
+        redirect("/admin?error=คุณไม่มีสิทธิ์ดูสินค้า");
+    }
+    const permissionSet = new Set(access.permissions ?? []);
+
     await runAutoDelete();
 
     const productList = await db.query.products.findMany({
@@ -69,12 +78,14 @@ export default async function AdminProductsPage() {
                             ถังขยะสินค้า
                         </Button>
                     </Link>
-                    <Link href="/admin/products/new">
-                        <Button className="gap-2 w-full sm:w-auto">
-                            <Plus className="h-4 w-4" />
-                            เพิ่มสินค้าใหม่
-                        </Button>
-                    </Link>
+                    {permissionSet.has(PERMISSIONS.PRODUCT_CREATE) ? (
+                        <Link href="/admin/products/new">
+                            <Button className="gap-2 w-full sm:w-auto">
+                                <Plus className="h-4 w-4" />
+                                เพิ่มสินค้าใหม่
+                            </Button>
+                        </Link>
+                    ) : null}
                 </div>
             </div>
 
@@ -91,12 +102,14 @@ export default async function AdminProductsPage() {
                         <div className="py-12 text-center">
                             <Package className="mx-auto h-12 w-12 text-muted-foreground/50" />
                             <p className="mt-4 text-muted-foreground">ยังไม่มีสินค้า</p>
-                            <Link href="/admin/products/new">
-                                <Button className="mt-4 gap-2">
-                                    <Plus className="h-4 w-4" />
-                                    เพิ่มสินค้าแรกของคุณ
-                                </Button>
-                            </Link>
+                            {permissionSet.has(PERMISSIONS.PRODUCT_CREATE) ? (
+                                <Link href="/admin/products/new">
+                                    <Button className="mt-4 gap-2">
+                                        <Plus className="h-4 w-4" />
+                                        เพิ่มสินค้าแรกของคุณ
+                                    </Button>
+                                </Link>
+                            ) : null}
                         </div>
                     ) : (
                         <ProductTable
@@ -112,6 +125,9 @@ export default async function AdminProductsPage() {
                                 stockCount: p.stockCount,
                                 autoDeleteAfterSale: p.autoDeleteAfterSale,
                             }))}
+                            canCreate={permissionSet.has(PERMISSIONS.PRODUCT_CREATE)}
+                            canEdit={permissionSet.has(PERMISSIONS.PRODUCT_EDIT)}
+                            canDelete={permissionSet.has(PERMISSIONS.PRODUCT_DELETE)}
                         />
                     )}
                 </CardContent>

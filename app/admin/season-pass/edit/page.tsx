@@ -11,6 +11,8 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { showError, showSuccess } from "@/lib/swal";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { PERMISSIONS } from "@/lib/permissions";
 
 type SeasonPassPlanSettings = {
     id: string;
@@ -103,6 +105,8 @@ function fallbackRewards(): SeasonPassRewardRow[] {
 
 export default function AdminSeasonPassEditPage() {
     const cropUrlRef = useRef<string | null>(null);
+    const permissions = useAdminPermissions();
+    const canEditSeasonPass = permissions.includes(PERMISSIONS.SEASON_PASS_EDIT);
     const [loading, setLoading] = useState(true);
     const [savingPlan, setSavingPlan] = useState(false);
     const [savingRewards, setSavingRewards] = useState(false);
@@ -198,6 +202,11 @@ export default function AdminSeasonPassEditPage() {
     };
 
     const handleSavePlan = async () => {
+        if (!canEditSeasonPass) {
+            showError("คุณไม่มีสิทธิ์แก้ไข Season Pass");
+            return;
+        }
+
         if (!plan.name.trim()) {
             showError("กรุณากรอกชื่อแพ็กเกจ");
             return;
@@ -243,6 +252,11 @@ export default function AdminSeasonPassEditPage() {
     };
 
     const handleSaveRewards = async () => {
+        if (!canEditSeasonPass) {
+            showError("คุณไม่มีสิทธิ์แก้ไข Season Pass");
+            return;
+        }
+
         for (const reward of rewards) {
             if (!reward.label.trim() || !reward.amount.trim()) {
                 showError(`กรุณากรอกชื่อและจำนวนของ Day ${reward.dayNumber}`);
@@ -304,12 +318,20 @@ export default function AdminSeasonPassEditPage() {
     };
 
     const updateReward = <K extends keyof SeasonPassRewardRow>(dayNumber: number, key: K, value: SeasonPassRewardRow[K]) => {
+        if (!canEditSeasonPass) {
+            return;
+        }
+
         setRewards((current) =>
             current.map((reward) => (reward.dayNumber === dayNumber ? { ...reward, [key]: value } : reward)),
         );
     };
 
     const updateRewardType = (dayNumber: number, nextType: RewardType) => {
+        if (!canEditSeasonPass) {
+            return;
+        }
+
         setRewards((current) =>
             current.map((reward) => {
                 if (reward.dayNumber !== dayNumber) {
@@ -334,6 +356,11 @@ export default function AdminSeasonPassEditPage() {
     };
 
     const uploadRewardImage = async (dayNumber: number, file: File) => {
+        if (!canEditSeasonPass) {
+            showError("คุณไม่มีสิทธิ์แก้ไข Season Pass");
+            return false;
+        }
+
         setUploadingDay(dayNumber);
 
         try {
@@ -362,6 +389,11 @@ export default function AdminSeasonPassEditPage() {
     };
 
     const handleRewardImageUpload = async (dayNumber: number, file: File | null) => {
+        if (!canEditSeasonPass) {
+            showError("คุณไม่มีสิทธิ์แก้ไข Season Pass");
+            return;
+        }
+
         if (!file) {
             return;
         }
@@ -384,6 +416,12 @@ export default function AdminSeasonPassEditPage() {
     };
 
     const handleCropConfirm = async (croppedFile: File) => {
+        if (!canEditSeasonPass) {
+            showError("คุณไม่มีสิทธิ์แก้ไข Season Pass");
+            clearCropDialog();
+            return;
+        }
+
         if (!cropDayNumber) {
             return;
         }
@@ -434,6 +472,7 @@ export default function AdminSeasonPassEditPage() {
                                 id="season-pass-name"
                                 value={plan.name}
                                 onChange={(event) => setPlan((current) => ({ ...current, name: event.target.value }))}
+                                disabled={!canEditSeasonPass}
                             />
                         </div>
 
@@ -451,6 +490,7 @@ export default function AdminSeasonPassEditPage() {
                                 step="0.01"
                                 value={plan.price}
                                 onChange={(event) => setPlan((current) => ({ ...current, price: event.target.value }))}
+                                disabled={!canEditSeasonPass}
                             />
                         </div>
 
@@ -465,6 +505,7 @@ export default function AdminSeasonPassEditPage() {
                                 onChange={(event) =>
                                     setPlan((current) => ({ ...current, durationDays: Number(event.target.value) || 0 }))
                                 }
+                                disabled={!canEditSeasonPass}
                             />
                         </div>
                     </div>
@@ -476,6 +517,7 @@ export default function AdminSeasonPassEditPage() {
                             rows={4}
                             value={plan.description ?? ""}
                             onChange={(event) => setPlan((current) => ({ ...current, description: event.target.value }))}
+                            disabled={!canEditSeasonPass}
                         />
                     </div>
 
@@ -488,6 +530,7 @@ export default function AdminSeasonPassEditPage() {
                         </div>
                         <Switch
                             checked={plan.isActive}
+                            disabled={!canEditSeasonPass}
                             onCheckedChange={(checked) => setPlan((current) => ({ ...current, isActive: checked }))}
                         />
                     </div>
@@ -500,7 +543,7 @@ export default function AdminSeasonPassEditPage() {
                         <p className="mt-1 text-sm text-slate-500">{plan.description || "ยังไม่ได้ตั้งคำอธิบายแพ็กเกจ"}</p>
                     </div>
 
-                    <Button onClick={() => void handleSavePlan()} disabled={savingPlan} className="w-full sm:w-auto">
+                    <Button onClick={() => void handleSavePlan()} disabled={!canEditSeasonPass || savingPlan} className="w-full sm:w-auto">
                         {savingPlan ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -539,6 +582,7 @@ export default function AdminSeasonPassEditPage() {
                                     <span>พิเศษ</span>
                                     <Switch
                                         checked={reward.highlight}
+                                        disabled={!canEditSeasonPass}
                                         onCheckedChange={(checked) => updateReward(reward.dayNumber, "highlight", checked)}
                                     />
                                 </div>
@@ -551,6 +595,7 @@ export default function AdminSeasonPassEditPage() {
                                         id={`reward-type-${reward.dayNumber}`}
                                         value={reward.rewardType}
                                         onChange={(event) => updateRewardType(reward.dayNumber, event.target.value as RewardType)}
+                                        disabled={!canEditSeasonPass}
                                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                                     >
                                         {rewardTypeOptions.map((option) => (
@@ -597,7 +642,7 @@ export default function AdminSeasonPassEditPage() {
                                                         type="file"
                                                         accept="image/png,image/jpeg,image/webp,image/gif"
                                                         className="hidden"
-                                                        disabled={uploadingDay === reward.dayNumber}
+                                                        disabled={!canEditSeasonPass || uploadingDay === reward.dayNumber}
                                                         onChange={(event) => {
                                                             const file = event.target.files?.[0] ?? null;
                                                             void handleRewardImageUpload(reward.dayNumber, file);
@@ -610,6 +655,7 @@ export default function AdminSeasonPassEditPage() {
                                                     variant="outline"
                                                     size="sm"
                                                     className="rounded-full"
+                                                    disabled={!canEditSeasonPass}
                                                     onClick={() =>
                                                         updateReward(
                                                             reward.dayNumber,
@@ -632,6 +678,7 @@ export default function AdminSeasonPassEditPage() {
                                         id={`reward-label-${reward.dayNumber}`}
                                         value={reward.label}
                                         onChange={(event) => updateReward(reward.dayNumber, "label", event.target.value)}
+                                        disabled={!canEditSeasonPass}
                                     />
                                 </div>
 
@@ -641,6 +688,7 @@ export default function AdminSeasonPassEditPage() {
                                         id={`reward-amount-${reward.dayNumber}`}
                                         value={reward.amount}
                                         onChange={(event) => updateReward(reward.dayNumber, "amount", event.target.value)}
+                                        disabled={!canEditSeasonPass}
                                     />
                                 </div>
 
@@ -653,7 +701,7 @@ export default function AdminSeasonPassEditPage() {
                 </div>
 
                 <div className="border-t border-border px-6 py-4">
-                    <Button onClick={() => void handleSaveRewards()} disabled={savingRewards} className="w-full sm:w-auto">
+                    <Button onClick={() => void handleSaveRewards()} disabled={!canEditSeasonPass || savingRewards} className="w-full sm:w-auto">
                         {savingRewards ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

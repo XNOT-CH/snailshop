@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { getAdminConversation, sendConversationMessage } from "@/lib/chat";
-import { isAdminWithCsrf } from "@/lib/auth";
+import { requirePermissionWithCsrf } from "@/lib/auth";
 import { parseChatMessagePayload } from "@/lib/chatSecurity";
 import { checkChatMessageRateLimit, getClientIp } from "@/lib/rateLimit";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface RouteContext {
     params: Promise<{ id: string }>;
 }
 
 export async function POST(request: NextRequest, context: RouteContext) {
-    const authCheck = await isAdminWithCsrf(request);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CHAT_MANAGE);
 
     if (!authCheck.success || !authCheck.userId) {
         return NextResponse.json({ success: false, message: authCheck.error ?? "Unauthorized" }, { status: 401 });

@@ -31,7 +31,9 @@ import {
 } from "@/lib/chatConstraints";
 import { compressImage } from "@/lib/compressImage";
 import { CHAT_TAG_OPTIONS } from "@/lib/chatAdmin";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { fetchWithCsrf } from "@/lib/csrf-client";
+import { PERMISSIONS } from "@/lib/permissions";
 import { showDeleteConfirm, showError, showSuccess } from "@/lib/swal";
 import { cn } from "@/lib/utils";
 
@@ -136,6 +138,8 @@ function MessageBubble({ message }: Readonly<{ message: ChatMessage }>) {
 }
 
 export default function AdminChatInbox() {
+    const permissions = useAdminPermissions();
+    const canManageChat = permissions.includes(PERMISSIONS.CHAT_MANAGE);
     const [conversations, setConversations] = useState<ChatConversationSummary[]>([]);
     const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
     const [selectedConversation, setSelectedConversation] = useState<ChatConversationDetail | null>(null);
@@ -290,6 +294,10 @@ export default function AdminChatInbox() {
     }
 
     function handleSendMessage() {
+        if (!canManageChat) {
+            showError("คุณไม่มีสิทธิ์ตอบกลับหรือจัดการแชต");
+            return;
+        }
         const message = draft.trim();
 
         if (!message || !selectedConversationId) {
@@ -321,6 +329,11 @@ export default function AdminChatInbox() {
     }
 
     async function handleImageSelected(event: ChangeEvent<HTMLInputElement>) {
+        if (!canManageChat) {
+            showError("คุณไม่มีสิทธิ์ส่งรูปในแชต");
+            event.target.value = "";
+            return;
+        }
         const originalFile = event.target.files?.[0];
 
         if (!originalFile || !selectedConversationId) {
@@ -372,6 +385,10 @@ export default function AdminChatInbox() {
     }
 
     function updateConversationMeta(patch: Partial<Pick<ChatConversationSummary, "isPinned" | "tags">>) {
+        if (!canManageChat) {
+            showError("คุณไม่มีสิทธิ์จัดการแชต");
+            return;
+        }
         if (!selectedConversation) {
             return;
         }
@@ -429,6 +446,10 @@ export default function AdminChatInbox() {
     }
 
     async function handleToggleStatus() {
+        if (!canManageChat) {
+            showError("คุณไม่มีสิทธิ์จัดการแชต");
+            return;
+        }
         if (!selectedConversation) {
             return;
         }
@@ -458,6 +479,10 @@ export default function AdminChatInbox() {
     }
 
     async function handleDeleteConversation() {
+        if (!canManageChat) {
+            showError("คุณไม่มีสิทธิ์ลบแชต");
+            return;
+        }
         if (!selectedConversation) {
             return;
         }
@@ -730,7 +755,7 @@ export default function AdminChatInbox() {
                                             variant="outline"
                                             size="sm"
                                             onClick={handleTogglePin}
-                                            disabled={isUpdatingMeta}
+                                            disabled={isUpdatingMeta || !canManageChat}
                                         >
                                             {selectedConversation.isPinned ? (
                                                 <PinOff className="mr-2 h-4 w-4" />
@@ -751,7 +776,7 @@ export default function AdminChatInbox() {
                                                 ? "กำลังคุยอยู่"
                                                 : "ปิดเคสแล้ว"}
                                         </Badge>
-                                        <Button variant="outline" size="sm" onClick={handleToggleStatus}>
+                                        <Button variant="outline" size="sm" onClick={handleToggleStatus} disabled={!canManageChat}>
                                             <UserRoundCheck className="mr-2 h-4 w-4" />
                                             {selectedConversation.status === "OPEN"
                                                 ? "ปิดเคส"
@@ -761,6 +786,7 @@ export default function AdminChatInbox() {
                                             variant="outline"
                                             size="sm"
                                             onClick={handleDeleteConversation}
+                                            disabled={!canManageChat}
                                             className="text-destructive hover:text-destructive"
                                         >
                                             <Trash2 className="mr-2 h-4 w-4" />
@@ -783,7 +809,7 @@ export default function AdminChatInbox() {
                                                     key={tag}
                                                     type="button"
                                                     onClick={() => handleToggleTag(tag)}
-                                                    disabled={isUpdatingMeta}
+                                                    disabled={isUpdatingMeta || !canManageChat}
                                                     className={cn(
                                                         "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition",
                                                         active
@@ -818,6 +844,7 @@ export default function AdminChatInbox() {
                                         type="file"
                                         accept={CHAT_IMAGE_ACCEPT_ATTRIBUTE}
                                         className="hidden"
+                                        disabled={!canManageChat}
                                         onChange={handleImageSelected}
                                     />
                                     <Textarea
@@ -826,6 +853,7 @@ export default function AdminChatInbox() {
                                         onKeyDown={handleComposerKeyDown}
                                         placeholder="พิมพ์ข้อความตอบกลับลูกค้า"
                                         maxLength={CHAT_MAX_MESSAGE_LENGTH}
+                                        disabled={!canManageChat}
                                         className="min-h-20 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 sm:min-h-24"
                                     />
                                     <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -843,7 +871,7 @@ export default function AdminChatInbox() {
                                                 type="button"
                                                 variant="outline"
                                                 onClick={() => fileInputRef.current?.click()}
-                                                disabled={isUploading || isSending || !selectedConversationId}
+                                                disabled={isUploading || isSending || !selectedConversationId || !canManageChat}
                                                 className="w-full rounded-full sm:w-auto"
                                             >
                                                 {isUploading ? (
@@ -855,7 +883,7 @@ export default function AdminChatInbox() {
                                             </Button>
                                             <Button
                                                 onClick={handleSendMessage}
-                                                disabled={isSending || isUploading || !draft.trim()}
+                                                disabled={isSending || isUploading || !draft.trim() || !canManageChat}
                                                 className="w-full rounded-full bg-[#145de7] px-5 hover:bg-[#0f4fc9] sm:w-auto"
                                             >
                                                 {isSending ? (

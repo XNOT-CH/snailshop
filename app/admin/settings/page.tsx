@@ -12,6 +12,8 @@ import { compressImage } from "@/lib/compressImage";
 import { Save, Loader2, Image as ImageIcon, Type, Megaphone, Wallpaper, LayoutGrid, Upload, X, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { Switch } from "@/components/ui/switch";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface ExtraBanner {
     image: string;
@@ -40,6 +42,7 @@ interface SiteSettings {
 }
 
 export default function AdminSettingsPage() {
+    const permissions = useAdminPermissions();
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isUploadingLogo, setIsUploadingLogo] = useState(false);
@@ -113,6 +116,11 @@ export default function AdminSettingsPage() {
     };
 
     const handleSave = async () => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขตั้งค่า");
+            return;
+        }
+
         setIsSaving(true);
         try {
             const payload = {
@@ -140,18 +148,36 @@ export default function AdminSettingsPage() {
     };
 
     const addExtraBanner = () => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขตั้งค่า");
+            return;
+        }
+
         setExtraBanners(prev => [...prev, { image: "", title: "", subtitle: "" }]);
     };
 
     const removeExtraBanner = (index: number) => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขตั้งค่า");
+            return;
+        }
+
         setExtraBanners(prev => prev.filter((_, i) => i !== index));
     };
 
     const updateExtraBanner = (index: number, field: keyof ExtraBanner, value: string) => {
+        if (!canEditSettings) {
+            return;
+        }
+
         setExtraBanners(prev => prev.map((b, i) => i === index ? { ...b, [field]: value } : b));
     };
 
     const updateSetting = (key: keyof SiteSettings, value: string | boolean) => {
+        if (!canEditSettings) {
+            return;
+        }
+
         setSettings(prev => ({ ...prev, [key]: value }));
     };
 
@@ -164,9 +190,15 @@ export default function AdminSettingsPage() {
     const activeBannerCount = allBannerImages.filter((image) => image && image.trim() !== "").length;
     const totalBannerCount = allBannerImages.length;
     const assetPanelClass = "rounded-2xl border border-border bg-slate-50/50 p-4";
+    const canEditSettings = permissions.includes(PERMISSIONS.SETTINGS_EDIT);
 
     // Handle file upload for logo
     const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขตั้งค่า");
+            return;
+        }
+
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -198,6 +230,11 @@ export default function AdminSettingsPage() {
 
     // Handle file upload for background
     const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขตั้งค่า");
+            return;
+        }
+
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -244,7 +281,7 @@ export default function AdminSettingsPage() {
                         <h1 className="text-2xl font-bold text-foreground">ตั้งค่าเว็บไซต์</h1>
                         <p className="text-muted-foreground">จัดการรูปภาพและข้อความบนเว็บไซต์</p>
                     </div>
-                    <Button onClick={handleSave} disabled={isSaving} className="w-full gap-2 sm:w-auto">
+                    <Button onClick={handleSave} disabled={isSaving || !canEditSettings} className="w-full gap-2 sm:w-auto">
                         {isSaving ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
@@ -532,6 +569,7 @@ export default function AdminSettingsPage() {
                                         onImageChange={(v) => updateSetting(`bannerImage${num}` as keyof SiteSettings, v)}
                                         onTitleChange={(v) => updateSetting(`bannerTitle${num}` as keyof SiteSettings, v)}
                                         onSubtitleChange={(v) => updateSetting(`bannerSubtitle${num}` as keyof SiteSettings, v)}
+                                        canEdit={canEditSettings}
                                     />
                                 ))}
                                 {extraBanners.map((banner, idx) => (
@@ -545,6 +583,7 @@ export default function AdminSettingsPage() {
                                         onTitleChange={(v) => updateExtraBanner(idx, "title", v)}
                                         onSubtitleChange={(v) => updateExtraBanner(idx, "subtitle", v)}
                                         onRemove={() => removeExtraBanner(idx)}
+                                        canEdit={canEditSettings}
                                     />
                                 ))}
                             </div>
@@ -558,6 +597,7 @@ export default function AdminSettingsPage() {
                                     variant="outline"
                                     className="gap-2 border-dashed"
                                     onClick={addExtraBanner}
+                                    disabled={!canEditSettings}
                                 >
                                     <Plus className="h-4 w-4" />
                                     เพิ่มป้าย
@@ -573,7 +613,7 @@ export default function AdminSettingsPage() {
                                 <p className="text-sm font-semibold text-foreground">พร้อมบันทึกการเปลี่ยนแปลง</p>
                                 <p className="text-xs text-muted-foreground">ตรวจสอบข้อความ โลโก้ รูปพื้นหลัง และแบนเนอร์ให้เรียบร้อยก่อนกดบันทึก</p>
                             </div>
-                            <Button onClick={handleSave} disabled={isSaving} size="lg" className="gap-2 sm:min-w-[180px]">
+                            <Button onClick={handleSave} disabled={isSaving || !canEditSettings} size="lg" className="gap-2 sm:min-w-[180px]">
                                 {isSaving ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />
                                 ) : (
@@ -599,6 +639,7 @@ function BannerCard({
     onTitleChange,
     onSubtitleChange,
     onRemove,
+    canEdit,
 }: Readonly<{
     number: number;
     image: string;
@@ -608,6 +649,7 @@ function BannerCard({
     onTitleChange: (v: string) => void;
     onSubtitleChange: (v: string) => void;
     onRemove?: () => void;
+    canEdit: boolean;
 }>) {
     const [isUploading, setIsUploading] = React.useState(false);
     const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -630,6 +672,11 @@ function BannerCard({
 
     // Handle file upload
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!canEdit) {
+            showError("คุณไม่มีสิทธิ์แก้ไขตั้งค่า");
+            return;
+        }
+
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -670,6 +717,7 @@ function BannerCard({
                         size="icon"
                         className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
                         onClick={onRemove}
+                        disabled={!canEdit}
                         title="ลบป้ายนี้"
                     >
                         <Trash2 className="h-3.5 w-3.5" />
@@ -686,6 +734,7 @@ function BannerCard({
                         type="file"
                         accept="image/jpeg,image/png,image/webp,image/gif"
                         className="hidden"
+                        disabled={!canEdit}
                         onChange={handleFileUpload}
                     />
 
@@ -693,6 +742,7 @@ function BannerCard({
                         type="button"
                         className="relative w-full aspect-[4/1] rounded-xl overflow-hidden bg-muted border group"
                         onClick={() => fileInputRef.current?.click()}
+                        disabled={!canEdit}
                     >
                         {hasValidImage ? (
                             <>
@@ -735,6 +785,7 @@ function BannerCard({
                             size="sm"
                             className="px-0"
                             onClick={() => setShowUrlInput((v) => !v)}
+                            disabled={!canEdit}
                         >
                             {showUrlInput ? "ซ่อน URL" : "ใส่ URL"}
                         </Button>
@@ -745,6 +796,7 @@ function BannerCard({
                                 size="sm"
                                 className="text-red-500 hover:text-red-600"
                                 onClick={() => onImageChange("")}
+                                disabled={!canEdit}
                             >
                                 ล้างรูป
                             </Button>
@@ -757,6 +809,7 @@ function BannerCard({
                                 value={image}
                                 onChange={(e) => onImageChange(e.target.value)}
                                 placeholder="วาง URL รูปภาพ..."
+                                disabled={!canEdit}
                                 className="flex-1"
                             />
                             {image && (
@@ -765,6 +818,7 @@ function BannerCard({
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => onImageChange("")}
+                                    disabled={!canEdit}
                                     className="text-red-500 hover:text-red-600"
                                 >
                                     <X className="h-4 w-4" />
@@ -781,6 +835,7 @@ function BannerCard({
                             value={title}
                             onChange={(e) => onTitleChange(e.target.value)}
                             placeholder="Game ID Marketplace"
+                            disabled={!canEdit}
                             className="rounded-md"
                         />
                     </div>
@@ -790,6 +845,7 @@ function BannerCard({
                             value={subtitle}
                             onChange={(e) => onSubtitleChange(e.target.value)}
                             placeholder="ซื้อขายไอดีเกมปลอดภัย 100%"
+                            disabled={!canEdit}
                             className="rounded-md"
                         />
                     </div>

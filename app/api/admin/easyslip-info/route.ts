@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface InfoResponse {
     success: true;
@@ -79,7 +80,7 @@ function mapEasySlipInfoError(code?: string, message?: string) {
 }
 
 export async function GET() {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.SETTINGS_VIEW);
     if (!authCheck.success) {
         return NextResponse.json(
             { success: false, message: authCheck.error },

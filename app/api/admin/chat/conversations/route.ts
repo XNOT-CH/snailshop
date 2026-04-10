@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { listAdminConversations } from "@/lib/chat";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function GET() {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.CHAT_VIEW);
 
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error ?? "Unauthorized" }, { status: 401 });

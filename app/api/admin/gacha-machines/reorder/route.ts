@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { db, gachaMachines } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function POST(req: Request) {
-    const auth = await isAdmin();
+    const auth = await requirePermission(PERMISSIONS.GACHA_EDIT);
     if (!auth.success) return NextResponse.json({ success: false }, { status: 401 });
     try {
         const body = await req.json() as { orders: { id: string; sortOrder: number }[] };

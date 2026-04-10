@@ -2,14 +2,15 @@ import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
 import { db, announcementPopups } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { invalidatePopupCaches } from "@/lib/cache";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
 import { popupSchema } from "@/lib/validations/content";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function GET(request: Request) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.CONTENT_VIEW);
     if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { searchParams } = new URL(request.url);
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
     if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const result = await validateBody(request, popupSchema);

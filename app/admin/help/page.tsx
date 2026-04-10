@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, HelpCircle, Eye, EyeOff } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface HelpArticle {
     id: string;
@@ -41,6 +43,8 @@ const CATEGORIES = [
 ];
 
 export default function AdminHelpPage() {
+    const permissions = useAdminPermissions();
+    const canEditContent = permissions.includes(PERMISSIONS.CONTENT_EDIT);
     const [articles, setArticles] = useState<HelpArticle[]>([]);
     const [loading, setLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -72,6 +76,10 @@ export default function AdminHelpPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!canEditContent) {
+            showError("คุณไม่มีสิทธิ์แก้ไขศูนย์ช่วยเหลือ");
+            return;
+        }
         try {
             const url = editingArticle
                 ? `/api/admin/help/${editingArticle.id}`
@@ -100,6 +108,10 @@ export default function AdminHelpPage() {
     };
 
     const handleEdit = (article: HelpArticle) => {
+        if (!canEditContent) {
+            showError("คุณไม่มีสิทธิ์แก้ไขศูนย์ช่วยเหลือ");
+            return;
+        }
         setEditingArticle(article);
         setFormData({
             question: article.question,
@@ -110,6 +122,10 @@ export default function AdminHelpPage() {
     };
 
     const handleDelete = async (id: string) => {
+        if (!canEditContent) {
+            showError("คุณไม่มีสิทธิ์ลบรายการ");
+            return;
+        }
         const confirmed = await showDeleteConfirm("รายการนี้");
         if (!confirmed) return;
         try {
@@ -125,6 +141,10 @@ export default function AdminHelpPage() {
     };
 
     const handleToggleActive = async (article: HelpArticle) => {
+        if (!canEditContent) {
+            showError("คุณไม่มีสิทธิ์เปลี่ยนสถานะ");
+            return;
+        }
         try {
             const res = await fetch(`/api/admin/help/${article.id}`, {
                 method: "PUT",
@@ -176,34 +196,36 @@ export default function AdminHelpPage() {
                                     {article.answer}
                                 </p>
                             </div>
-                            <div className="flex gap-1">
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleToggleActive(article)}
-                                >
-                                    {article.isActive ? (
-                                        <Eye className="h-4 w-4" />
-                                    ) : (
-                                        <EyeOff className="h-4 w-4" />
-                                    )}
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    onClick={() => handleEdit(article)}
-                                >
-                                    <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="text-destructive"
-                                    onClick={() => handleDelete(article.id)}
-                                >
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
-                            </div>
+                            {canEditContent ? (
+                                <div className="flex gap-1">
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleToggleActive(article)}
+                                    >
+                                        {article.isActive ? (
+                                            <Eye className="h-4 w-4" />
+                                        ) : (
+                                            <EyeOff className="h-4 w-4" />
+                                        )}
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => handleEdit(article)}
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="text-destructive"
+                                        onClick={() => handleDelete(article.id)}
+                                    >
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            ) : null}
                         </div>
                     </div>
                 ))}
@@ -228,7 +250,7 @@ export default function AdminHelpPage() {
                     }
                 }}>
                     <DialogTrigger asChild>
-                        <Button className="gap-2">
+                        <Button className="gap-2" disabled={!canEditContent}>
                             <Plus className="h-4 w-4" />
                             เพิ่มคำถาม
                         </Button>
@@ -248,7 +270,7 @@ export default function AdminHelpPage() {
                                         setFormData({ ...formData, category: value })
                                     }
                                 >
-                                    <SelectTrigger>
+                                    <SelectTrigger disabled={!canEditContent}>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -262,32 +284,34 @@ export default function AdminHelpPage() {
                             </div>
                             <div className="space-y-2">
                                 <Label>คำถาม</Label>
-                                <Input
-                                    value={formData.question}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, question: e.target.value })
-                                    }
-                                    placeholder="เช่น ฉันสามารถเติมเงินได้อย่างไร?"
-                                    required
-                                />
+                                    <Input
+                                        value={formData.question}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, question: e.target.value })
+                                        }
+                                        placeholder="เช่น ฉันสามารถเติมเงินได้อย่างไร?"
+                                        disabled={!canEditContent}
+                                        required
+                                    />
                             </div>
                             <div className="space-y-2">
                                 <Label>คำตอบ</Label>
-                                <Textarea
-                                    value={formData.answer}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, answer: e.target.value })
-                                    }
-                                    placeholder="คำตอบ..."
-                                    rows={5}
-                                    required
-                                />
+                                    <Textarea
+                                        value={formData.answer}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, answer: e.target.value })
+                                        }
+                                        placeholder="คำตอบ..."
+                                        rows={5}
+                                        disabled={!canEditContent}
+                                        required
+                                    />
                             </div>
                             <div className="flex gap-2 justify-end">
                                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                                     ยกเลิก
                                 </Button>
-                                <Button type="submit">
+                                <Button type="submit" disabled={!canEditContent}>
                                     {editingArticle ? "บันทึก" : "เพิ่ม"}
                                 </Button>
                             </div>

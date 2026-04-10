@@ -2,14 +2,15 @@ import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, currencySettings } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { currencySettingsSchema } from "@/lib/validations/content";
+import { PERMISSIONS } from "@/lib/permissions";
 
 const DEFAULT_SETTINGS = { id: "default", name: "พอยท์", symbol: "💎", code: "POINT", description: null, isActive: true, updatedAt: "" };
 
 export async function GET() {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.SETTINGS_VIEW);
     if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         let settings = await db.query.currencySettings.findFirst({ where: eq(currencySettings.id, "default") });
@@ -24,7 +25,7 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.SETTINGS_EDIT);
     if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const result = await validateBody(request, currencySettingsSchema);

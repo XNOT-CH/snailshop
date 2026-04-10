@@ -1,20 +1,28 @@
 "use client";
 
 import { useState } from "react";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Trash2, Loader2 } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface TrashRunButtonProps {
     count: number;
 }
 
 export function TrashRunButton({ count }: TrashRunButtonProps) {
+    const permissions = useAdminPermissions();
+    const canDeleteProducts = permissions.includes(PERMISSIONS.PRODUCT_DELETE);
     const router = useRouter();
     const [isRunning, setIsRunning] = useState(false);
 
     const handleRun = async () => {
+        if (!canDeleteProducts) {
+            showError("คุณไม่มีสิทธิ์ลบสินค้า");
+            return;
+        }
         const confirmed = await showDeleteConfirm(`สินค้าครบกำหนด ${count} รายการ`);
         if (!confirmed) return;
 
@@ -39,7 +47,7 @@ export function TrashRunButton({ count }: TrashRunButtonProps) {
         <Button
             variant="destructive"
             onClick={handleRun}
-            disabled={isRunning}
+            disabled={isRunning || !canDeleteProducts}
             className="gap-2"
         >
             {isRunning ? (

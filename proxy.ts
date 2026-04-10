@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { auth } from "@/auth";
+import { getRequiredPermissionForAdminApi, getRequiredPermissionForAdminPage } from "@/lib/adminAccess";
 
 export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
@@ -43,21 +44,24 @@ export async function proxy(request: NextRequest) {
             return Response.redirect(loginUrl);
         }
 
-        // Not admin → block admin paths
-        const isAdminPath =
-            pathname.startsWith("/admin") ||
-            pathname.startsWith("/api/admin");
+        if (pathname.startsWith("/admin")) {
+            const permissions = (session.user as { permissions?: string[] }).permissions ?? [];
+            const requiredPermission = getRequiredPermissionForAdminPage(pathname);
 
-        if (isAdminPath) {
-            const role = (session.user as { role?: string }).role;
-            if (role !== "ADMIN") {
-                if (isApiRoute) {
-                    return new Response(
-                        JSON.stringify({ success: false, message: "ไม่มีสิทธิ์เข้าถึง" }),
-                        { status: 403, headers: { "Content-Type": "application/json" } }
-                    );
-                }
+            if (requiredPermission && !permissions.includes(requiredPermission)) {
                 return Response.redirect(new URL("/", request.nextUrl.origin));
+            }
+        }
+
+        if (pathname.startsWith("/api/admin")) {
+            const permissions = (session.user as { permissions?: string[] }).permissions ?? [];
+            const requiredPermission = getRequiredPermissionForAdminApi(pathname);
+
+            if (requiredPermission && !permissions.includes(requiredPermission)) {
+                return new Response(
+                    JSON.stringify({ success: false, message: "ไม่มีสิทธิ์เข้าถึง" }),
+                    { status: 403, headers: { "Content-Type": "application/json" } }
+                );
             }
         }
     }

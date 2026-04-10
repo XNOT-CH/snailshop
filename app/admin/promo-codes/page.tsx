@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { Copy, Loader2, Pencil, Plus, Ticket, Trash2 } from "lucide-react";
 import { showDeleteConfirm, showError, showSuccess } from "@/lib/swal";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface PromoCode {
     id: string;
@@ -74,6 +76,8 @@ const initialFormData: PromoFormState = {
 };
 
 export default function AdminPromoCodesPage() {
+    const permissions = useAdminPermissions();
+    const canEditPromo = permissions.includes(PERMISSIONS.PROMO_EDIT);
     const [promoCodes, setPromoCodes] = useState<PromoCode[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -107,11 +111,19 @@ export default function AdminPromoCodesPage() {
     };
 
     const handleOpenCreate = () => {
+        if (!canEditPromo) {
+            showError("คุณไม่มีสิทธิ์สร้างโค้ดโปรโมชั่น");
+            return;
+        }
         resetForm();
         setIsDialogOpen(true);
     };
 
     const handleOpenEdit = (promoCode: PromoCode) => {
+        if (!canEditPromo) {
+            showError("คุณไม่มีสิทธิ์แก้ไขโค้ดโปรโมชั่น");
+            return;
+        }
         setEditingCode(promoCode);
         setFormData({
             code: promoCode.code,
@@ -132,6 +144,10 @@ export default function AdminPromoCodesPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!canEditPromo) {
+            showError("คุณไม่มีสิทธิ์แก้ไขโค้ดโปรโมชั่น");
+            return;
+        }
         setIsSaving(true);
 
         try {
@@ -187,6 +203,10 @@ export default function AdminPromoCodesPage() {
     };
 
     const handleDelete = async (id: string) => {
+        if (!canEditPromo) {
+            showError("คุณไม่มีสิทธิ์ลบโค้ดโปรโมชั่น");
+            return;
+        }
         const confirmed = await showDeleteConfirm("โค้ดนี้");
         if (!confirmed) return;
 
@@ -210,6 +230,10 @@ export default function AdminPromoCodesPage() {
     };
 
     const handleToggleActive = async (promoCode: PromoCode) => {
+        if (!canEditPromo) {
+            showError("คุณไม่มีสิทธิ์เปลี่ยนสถานะโค้ดโปรโมชั่น");
+            return;
+        }
         try {
             const response = await fetch(`/api/admin/promo-codes/${promoCode.id}`, {
                 method: "PUT",
@@ -279,7 +303,7 @@ export default function AdminPromoCodesPage() {
                 </div>
 
                 <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                    <Button onClick={handleOpenCreate} className="w-full gap-2 sm:w-auto">
+                    <Button onClick={handleOpenCreate} className="w-full gap-2 sm:w-auto" disabled={!canEditPromo}>
                         <Plus className="h-4 w-4" />
                         สร้างโค้ดใหม่
                     </Button>
@@ -307,6 +331,7 @@ export default function AdminPromoCodesPage() {
                                             code: e.target.value.toUpperCase(),
                                         }))
                                     }
+                                    disabled={!canEditPromo || Boolean(editingCode)}
                                     required
                                 />
                             </div>
@@ -325,7 +350,7 @@ export default function AdminPromoCodesPage() {
                                         }))
                                     }
                                 >
-                                    <SelectTrigger>
+                                    <SelectTrigger disabled={!canEditPromo || Boolean(editingCode)}>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -348,7 +373,7 @@ export default function AdminPromoCodesPage() {
                                                 }))
                                             }
                                         >
-                                            <SelectTrigger>
+                                            <SelectTrigger disabled={!canEditPromo}>
                                                 <SelectValue />
                                             </SelectTrigger>
                                             <SelectContent>
@@ -389,6 +414,7 @@ export default function AdminPromoCodesPage() {
                                                 discountValue: e.target.value,
                                             }))
                                         }
+                                        disabled={!canEditPromo}
                                         required
                                     />
                                 </div>
@@ -409,6 +435,7 @@ export default function AdminPromoCodesPage() {
                                                     minPurchase: e.target.value,
                                                 }))
                                             }
+                                            disabled={!canEditPromo}
                                         />
                                     </div>
 
@@ -425,6 +452,7 @@ export default function AdminPromoCodesPage() {
                                                     maxDiscount: e.target.value,
                                                 }))
                                             }
+                                            disabled={!canEditPromo}
                                         />
                                     </div>
                                 </div>
@@ -444,6 +472,7 @@ export default function AdminPromoCodesPage() {
                                                 usageLimit: e.target.value,
                                             }))
                                         }
+                                        disabled={!canEditPromo}
                                     />
                                 </div>
 
@@ -459,6 +488,7 @@ export default function AdminPromoCodesPage() {
                                                 expiresAt: e.target.value,
                                             }))
                                         }
+                                        disabled={!canEditPromo}
                                     />
                                 </div>
                             </div>
@@ -474,11 +504,12 @@ export default function AdminPromoCodesPage() {
                                             isActive: checked,
                                         }))
                                     }
+                                    disabled={!canEditPromo}
                                 />
                             </div>
 
                             <DialogFooter>
-                                <Button type="submit" disabled={isSaving} className="w-full">
+                                <Button type="submit" disabled={isSaving || !canEditPromo} className="w-full">
                                     {isSaving ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -510,7 +541,7 @@ export default function AdminPromoCodesPage() {
                             <Ticket className="mx-auto h-12 w-12 text-muted-foreground/50" />
                             <p className="mt-4 text-muted-foreground">ยังไม่มีโค้ดโปรโมชั่น</p>
                             <p className="mt-2 text-sm text-muted-foreground">เริ่มสร้างโค้ดส่วนลดหรือโค้ดเติมเครดิตได้เลย</p>
-                            <Button onClick={handleOpenCreate} className="mt-4 gap-2">
+                            <Button onClick={handleOpenCreate} className="mt-4 gap-2" disabled={!canEditPromo}>
                                 <Plus className="h-4 w-4" />
                                 สร้างโค้ดแรก
                             </Button>
@@ -546,7 +577,7 @@ export default function AdminPromoCodesPage() {
                                             <Switch
                                                 checked={code.isActive && !isExpired(code.expiresAt)}
                                                 onCheckedChange={() => handleToggleActive(code)}
-                                                disabled={isExpired(code.expiresAt)}
+                                                disabled={isExpired(code.expiresAt) || !canEditPromo}
                                             />
                                         </div>
 
@@ -582,27 +613,29 @@ export default function AdminPromoCodesPage() {
                                             </p>
                                         ) : null}
 
-                                        <div className="mt-4 flex gap-2">
-                                            <Button
-                                                variant="outline"
-                                                className="flex-1"
-                                                onClick={() => handleOpenEdit(code)}
-                                                aria-label={`แก้ไขโค้ด ${code.code}`}
-                                            >
-                                                <Pencil className="mr-2 h-4 w-4" />
-                                                แก้ไข
-                                            </Button>
+                                        {canEditPromo ? (
+                                            <div className="mt-4 flex gap-2">
+                                                <Button
+                                                    variant="outline"
+                                                    className="flex-1"
+                                                    onClick={() => handleOpenEdit(code)}
+                                                    aria-label={`แก้ไขโค้ด ${code.code}`}
+                                                >
+                                                    <Pencil className="mr-2 h-4 w-4" />
+                                                    แก้ไข
+                                                </Button>
 
-                                            <Button
-                                                variant="outline"
-                                                className="flex-1 text-red-500 hover:text-red-600"
-                                                onClick={() => handleDelete(code.id)}
-                                                aria-label={`ลบโค้ด ${code.code}`}
-                                            >
-                                                <Trash2 className="mr-2 h-4 w-4" />
-                                                ลบ
-                                            </Button>
-                                        </div>
+                                                <Button
+                                                    variant="outline"
+                                                    className="flex-1 text-red-500 hover:text-red-600"
+                                                    onClick={() => handleDelete(code.id)}
+                                                    aria-label={`ลบโค้ด ${code.code}`}
+                                                >
+                                                    <Trash2 className="mr-2 h-4 w-4" />
+                                                    ลบ
+                                                </Button>
+                                            </div>
+                                        ) : null}
                                     </div>
                                 ))}
                             </div>
@@ -667,27 +700,31 @@ export default function AdminPromoCodesPage() {
                                                     <Switch
                                                         checked={code.isActive && !isExpired(code.expiresAt)}
                                                         onCheckedChange={() => handleToggleActive(code)}
-                                                        disabled={isExpired(code.expiresAt)}
+                                                        disabled={isExpired(code.expiresAt) || !canEditPromo}
                                                     />
                                                 </TableCell>
 
                                                 <TableCell className="text-right">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => handleOpenEdit(code)}
-                                                        aria-label={`แก้ไขโค้ด ${code.code}`}
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => handleDelete(code.id)}
-                                                        aria-label={`ลบโค้ด ${code.code}`}
-                                                    >
-                                                        <Trash2 className="h-4 w-4 text-red-500" />
-                                                    </Button>
+                                                    {canEditPromo ? (
+                                                        <>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => handleOpenEdit(code)}
+                                                                aria-label={`แก้ไขโค้ด ${code.code}`}
+                                                            >
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                onClick={() => handleDelete(code.id)}
+                                                                aria-label={`ลบโค้ด ${code.code}`}
+                                                            >
+                                                                <Trash2 className="h-4 w-4 text-red-500" />
+                                                            </Button>
+                                                        </>
+                                                    ) : null}
                                                 </TableCell>
                                             </TableRow>
                                         ))}

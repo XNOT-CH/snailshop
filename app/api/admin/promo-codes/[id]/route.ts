@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { deletePromoCode, updatePromoCode } from "@/lib/features/promo/mutations";
 import { findPromoByCode, findPromoById } from "@/lib/features/promo/queries";
 import { serializePromo, type PromoUpdateInput } from "@/lib/features/promo/shared";
 import { validateBody } from "@/lib/validations/validate";
 import { promoCodeUpdateSchema } from "@/lib/validations/promoCode";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface RouteParams {
     params: Promise<{ id: string }>;
 }
 
 export async function GET(_request: NextRequest, { params }: RouteParams) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.PROMO_VIEW);
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }
@@ -31,7 +32,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 }
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.PROMO_EDIT);
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }
@@ -70,7 +71,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.PROMO_EDIT);
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }

@@ -8,6 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Gem, Save } from "lucide-react";
 import { showSuccess, showError } from "@/lib/swal";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface CurrencySettings {
     id: string;
@@ -21,6 +23,7 @@ interface CurrencySettings {
 const SYMBOL_OPTIONS = ["💎", "🪙", "⭐", "💰", "🎮", "🔮", "⚡", "🏆"];
 
 export default function CurrencySettingsPage() {
+    const permissions = useAdminPermissions();
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [settings, setSettings] = useState<CurrencySettings>({
@@ -31,8 +34,17 @@ export default function CurrencySettingsPage() {
         description: null,
         isActive: true,
     });
+    const canEditSettings = permissions.includes(PERMISSIONS.SETTINGS_EDIT);
 
     useEffect(() => { fetchSettings(); }, []);
+
+    const updateSettings = (patch: Partial<CurrencySettings>) => {
+        if (!canEditSettings) {
+            return;
+        }
+
+        setSettings((previous) => ({ ...previous, ...patch }));
+    };
 
     const fetchSettings = async () => {
         try {
@@ -46,6 +58,11 @@ export default function CurrencySettingsPage() {
     };
 
     const handleSave = async () => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขตั้งค่า");
+            return;
+        }
+
         if (!settings.name.trim() || !settings.symbol.trim()) {
             showError("กรุณากรอกชื่อและสัญลักษณ์");
             return;
@@ -105,8 +122,9 @@ export default function CurrencySettingsPage() {
                         <Input
                             id="name"
                             value={settings.name}
-                            onChange={(e) => setSettings({ ...settings, name: e.target.value })}
+                            onChange={(e) => updateSettings({ name: e.target.value })}
                             placeholder="เช่น พอยท์, เพชร, เหรียญ"
+                            disabled={!canEditSettings}
                         />
                         <p className="text-xs text-muted-foreground">ชื่อนี้จะแสดงในหน้าสินค้าและ checkout</p>
                     </div>
@@ -121,7 +139,8 @@ export default function CurrencySettingsPage() {
                                     <button
                                         key={symbol}
                                         type="button"
-                                        onClick={() => setSettings({ ...settings, symbol })}
+                                        onClick={() => updateSettings({ symbol })}
+                                        disabled={!canEditSettings}
                                         className={`
                                             relative flex items-center justify-center h-12 w-full rounded-xl text-2xl
                                             transition-all duration-150 select-none
@@ -148,9 +167,10 @@ export default function CurrencySettingsPage() {
                             <Input
                                 id="custom-symbol"
                                 value={settings.symbol}
-                                onChange={(e) => setSettings({ ...settings, symbol: e.target.value })}
+                                onChange={(e) => updateSettings({ symbol: e.target.value })}
                                 className="w-20 text-center text-xl font-bold"
                                 maxLength={2}
+                                disabled={!canEditSettings}
                             />
                         </div>
                     </div>
@@ -175,9 +195,10 @@ export default function CurrencySettingsPage() {
                         <Textarea
                             id="description"
                             value={settings.description || ""}
-                            onChange={(e) => setSettings({ ...settings, description: e.target.value })}
+                            onChange={(e) => updateSettings({ description: e.target.value })}
                             placeholder="อธิบายวิธีการได้รับหรือใช้สกุลเงินนี้..."
                             rows={3}
+                            disabled={!canEditSettings}
                         />
                     </div>
 
@@ -191,14 +212,15 @@ export default function CurrencySettingsPage() {
                         </div>
                         <Switch
                             checked={settings.isActive}
-                            onCheckedChange={(checked) => setSettings({ ...settings, isActive: checked })}
+                            onCheckedChange={(checked) => updateSettings({ isActive: checked })}
+                            disabled={!canEditSettings}
                         />
                     </div>
 
                     {/* Save Button */}
                     <Button
                         onClick={handleSave}
-                        disabled={saving}
+                        disabled={saving || !canEditSettings}
                         className="w-full bg-[#1a56db] hover:bg-[#1e40af]"
                         size="lg"
                     >

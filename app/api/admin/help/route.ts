@@ -2,12 +2,15 @@ import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, helpArticles } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
 import { helpItemSchema } from "@/lib/validations/content";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function GET() {
+    const authCheck = await requirePermission(PERMISSIONS.CONTENT_VIEW);
+    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const articles = await db.query.helpArticles.findMany({
             orderBy: (t, { asc }) => [asc(t.category), asc(t.sortOrder)],
@@ -19,7 +22,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
     if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const result = await validateBody(request, helpItemSchema);

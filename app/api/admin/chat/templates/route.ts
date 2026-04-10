@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
-import { isAdmin, isAdminWithCsrf } from "@/lib/auth";
+import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { createChatQuickReply, listChatQuickReplies } from "@/lib/chatQuickReplies";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function GET() {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.CHAT_VIEW);
 
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error ?? "Unauthorized" }, { status: 401 });
@@ -20,7 +21,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-    const authCheck = await isAdminWithCsrf(request);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CHAT_MANAGE);
 
     if (!authCheck.success || !authCheck.userId) {
         return NextResponse.json({ success: false, message: authCheck.error ?? "Unauthorized" }, { status: 401 });

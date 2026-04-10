@@ -2,12 +2,13 @@ import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
 import { db, gachaSettings } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { gachaSettingsSchema } from "@/lib/validations/gacha";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function GET() {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.GACHA_VIEW);
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     try {
         let settings = await db.query.gachaSettings.findFirst();
@@ -23,7 +24,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.GACHA_EDIT);
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     try {
         const result = await validateBody(request, gachaSettingsSchema);

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef } from "react";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,6 +27,7 @@ import { showSuccess, showError } from "@/lib/swal";
 import { Save, Loader2, Dices, Coins, Timer, Layers, Plus, Trash2, Upload, ImageIcon, X, Pencil } from "lucide-react";
 import Image from "next/image";
 import { resizeFileToSquare } from "@/lib/imageResize";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface GachaSettings {
     isEnabled: boolean;
@@ -59,6 +61,8 @@ interface RewardRow {
 }
 
 export default function AdminGachaSettingsPage() {
+    const permissions = useAdminPermissions();
+    const canEditGacha = permissions.includes(PERMISSIONS.GACHA_EDIT);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isRewardLoading, setIsRewardLoading] = useState(true);
@@ -140,6 +144,10 @@ export default function AdminGachaSettingsPage() {
     };
 
     const handleUploadImage = async (file: File) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์แก้ไขกาชา");
+            return;
+        }
         setIsUploadingImage(true);
         try {
             // Auto-resize to 400×400 square WebP before upload
@@ -164,6 +172,10 @@ export default function AdminGachaSettingsPage() {
     };
 
     const handleAddReward = async () => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์เพิ่มรางวัลกาชา");
+            return;
+        }
         if (newRewardType === "PRODUCT" && !newRewardProductId) {
             showError("กรุณาเลือกสินค้า");
             return;
@@ -219,6 +231,10 @@ export default function AdminGachaSettingsPage() {
     };
 
     const handleUploadEditImage = async (file: File, rewardId: string) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์แก้ไขกาชา");
+            return;
+        }
         setIsUploadingEditImage(true);
         try {
             // Auto-resize to 400×400 square WebP before upload
@@ -245,6 +261,10 @@ export default function AdminGachaSettingsPage() {
     };
 
     const handleUpdateReward = async (id: string, patch: Partial<Pick<RewardRow, "tier" | "isActive"> & { rewardImageUrl?: string }>) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์แก้ไขกาชา");
+            return;
+        }
         try {
             const res = await fetch(`/api/admin/gacha-rewards/${id}`, {
                 method: "PUT",
@@ -263,6 +283,10 @@ export default function AdminGachaSettingsPage() {
     };
 
     const handleDeleteReward = async (id: string) => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์ลบรางวัลกาชา");
+            return;
+        }
         try {
             const res = await fetch(`/api/admin/gacha-rewards/${id}`, { method: "DELETE" });
             const data = await res.json();
@@ -278,6 +302,10 @@ export default function AdminGachaSettingsPage() {
     };
 
     const handleSave = async () => {
+        if (!canEditGacha) {
+            showError("คุณไม่มีสิทธิ์บันทึกการตั้งค่ากาชา");
+            return;
+        }
         setIsSaving(true);
         try {
             const res = await fetch("/api/admin/gacha-settings", {
@@ -325,7 +353,7 @@ export default function AdminGachaSettingsPage() {
                         </h1>
                         <p className="text-muted-foreground">จัดการระบบสุ่มไอเท็ม Gacha Rhombus Grid</p>
                     </div>
-                    <Button onClick={handleSave} disabled={isSaving} className="gap-2">
+                    <Button onClick={handleSave} disabled={isSaving || !canEditGacha} className="gap-2">
                         {isSaving ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
@@ -363,6 +391,7 @@ export default function AdminGachaSettingsPage() {
                                     onCheckedChange={(checked) =>
                                         setSettings((prev) => ({ ...prev, isEnabled: checked }))
                                     }
+                                    disabled={!canEditGacha}
                                 />
                             </div>
                         </div>
@@ -387,7 +416,7 @@ export default function AdminGachaSettingsPage() {
                                     setSettings((prev) => ({ ...prev, costType: value }))
                                 }
                             >
-                                <SelectTrigger>
+                                <SelectTrigger disabled={!canEditGacha}>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -415,6 +444,7 @@ export default function AdminGachaSettingsPage() {
                                         }))
                                     }
                                     placeholder="0"
+                                    disabled={!canEditGacha}
                                 />
                             </div>
                         )}
@@ -443,6 +473,7 @@ export default function AdminGachaSettingsPage() {
                                 }))
                             }
                             placeholder="0"
+                            disabled={!canEditGacha}
                         />
                         <p className="text-sm text-muted-foreground">
                             {settings.dailySpinLimit === 0
@@ -469,7 +500,7 @@ export default function AdminGachaSettingsPage() {
                                 setSettings((prev) => ({ ...prev, tierMode: value }))
                             }
                         >
-                            <SelectTrigger>
+                            <SelectTrigger disabled={!canEditGacha}>
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -500,7 +531,7 @@ export default function AdminGachaSettingsPage() {
                             <div className="space-y-2">
                                 <Label>ประเภทรางวัล</Label>
                                 <Select value={newRewardType} onValueChange={(v) => setNewRewardType(v as RewardType)}>
-                                    <SelectTrigger>
+                                    <SelectTrigger disabled={!canEditGacha}>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -516,7 +547,7 @@ export default function AdminGachaSettingsPage() {
                             <div className="space-y-2">
                                 <Label>Tier</Label>
                                 <Select value={newRewardTier} onValueChange={(v) => setNewRewardTier(v as Tier)}>
-                                    <SelectTrigger>
+                                    <SelectTrigger disabled={!canEditGacha}>
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
@@ -533,7 +564,7 @@ export default function AdminGachaSettingsPage() {
                                 <div className="space-y-2 md:col-span-2">
                                     <Label>เลือกสินค้า</Label>
                                     <Select value={newRewardProductId} onValueChange={setNewRewardProductId}>
-                                        <SelectTrigger>
+                                        <SelectTrigger disabled={!canEditGacha}>
                                             <SelectValue placeholder="เลือกสินค้า..." />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -556,6 +587,7 @@ export default function AdminGachaSettingsPage() {
                                             value={newRewardName}
                                             onChange={(e) => setNewRewardName(e.target.value)}
                                             placeholder={newRewardType === "CREDIT" ? "เช่น เครดิต 50 บาท" : newRewardType === "POINT" ? "เช่น พอยต์ 100 แต้ม" : "เช่น ตั๋วสุ่ม 3 ใบ"}
+                                            disabled={!canEditGacha}
                                         />
                                     </div>
                                     <div className="space-y-2">
@@ -566,6 +598,7 @@ export default function AdminGachaSettingsPage() {
                                             value={newRewardAmount || ""}
                                             onChange={(e) => setNewRewardAmount(Number(e.target.value) || 0)}
                                             placeholder="0"
+                                            disabled={!canEditGacha}
                                         />
                                     </div>
                                 </>
@@ -587,6 +620,7 @@ export default function AdminGachaSettingsPage() {
                                         type="file"
                                         accept="image/jpeg,image/png,image/webp,image/gif"
                                         className="hidden"
+                                        disabled={!canEditGacha}
                                         onChange={(e) => {
                                             const file = e.target.files?.[0];
                                             if (file) handleUploadImage(file);
@@ -596,7 +630,7 @@ export default function AdminGachaSettingsPage() {
                                         type="button"
                                         variant="outline"
                                         className="gap-2"
-                                        disabled={isUploadingImage}
+                                        disabled={isUploadingImage || !canEditGacha}
                                         onClick={() => fileInputRef.current?.click()}
                                     >
                                         {isUploadingImage ? (
@@ -620,6 +654,7 @@ export default function AdminGachaSettingsPage() {
                                             </div>
                                             <button
                                                 onClick={() => setNewRewardImageUrl("")}
+                                                disabled={!canEditGacha}
                                                 className="absolute -top-1.5 -right-1.5 bg-destructive text-destructive-foreground rounded-full w-4 h-4 flex items-center justify-center"
                                             >
                                                 <X className="h-2.5 w-2.5" />
@@ -637,7 +672,7 @@ export default function AdminGachaSettingsPage() {
                         )}
 
                         <div className="flex justify-end">
-                            <Button onClick={handleAddReward} disabled={isAddingReward} className="gap-2">
+                            <Button onClick={handleAddReward} disabled={isAddingReward || !canEditGacha} className="gap-2">
                                 {isAddingReward ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
                                 เพิ่มรางวัล
                             </Button>
@@ -650,6 +685,7 @@ export default function AdminGachaSettingsPage() {
                         type="file"
                         accept="image/jpeg,image/png,image/webp,image/gif"
                         className="hidden"
+                        disabled={!canEditGacha}
                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                             const file = e.target.files?.[0];
                             if (file && editingImageRewardId) {
@@ -736,7 +772,7 @@ export default function AdminGachaSettingsPage() {
                                             <div className="space-y-2">
                                                 <Label className="text-xs text-muted-foreground">Tier</Label>
                                                 <Select value={r.tier} onValueChange={(v) => handleUpdateReward(r.id, { tier: v as Tier })}>
-                                                    <SelectTrigger className="h-9 w-full">
+                                                    <SelectTrigger className="h-9 w-full" disabled={!canEditGacha}>
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -753,6 +789,7 @@ export default function AdminGachaSettingsPage() {
                                                     <Switch
                                                         checked={r.isActive}
                                                         onCheckedChange={(checked) => handleUpdateReward(r.id, { isActive: checked })}
+                                                        disabled={!canEditGacha}
                                                     />
                                                     <Badge variant={r.isActive ? "default" : "secondary"}>
                                                         {r.isActive ? "เปิด" : "ปิด"}
@@ -767,7 +804,7 @@ export default function AdminGachaSettingsPage() {
                                                     variant="outline"
                                                     size="sm"
                                                     className="gap-2"
-                                                    disabled={isUploadingEditImage && editingImageRewardId === r.id}
+                                                    disabled={!canEditGacha || (isUploadingEditImage && editingImageRewardId === r.id)}
                                                     onClick={() => {
                                                         setEditingImageRewardId(r.id);
                                                         editFileInputRef.current?.click();
@@ -842,7 +879,7 @@ export default function AdminGachaSettingsPage() {
                                                             variant="ghost"
                                                             size="icon"
                                                             className="h-7 w-7 text-muted-foreground hover:text-primary"
-                                                            disabled={isUploadingEditImage && editingImageRewardId === r.id}
+                                                            disabled={!canEditGacha || (isUploadingEditImage && editingImageRewardId === r.id)}
                                                             title="แก้ไขรูปภาพ"
                                                             onClick={() => {
                                                                 setEditingImageRewardId(r.id);
@@ -879,7 +916,7 @@ export default function AdminGachaSettingsPage() {
                                             {/* Tier */}
                                             <TableCell>
                                                 <Select value={r.tier} onValueChange={(v) => handleUpdateReward(r.id, { tier: v as Tier })}>
-                                                    <SelectTrigger className="h-9 w-32">
+                                                    <SelectTrigger className="h-9 w-32" disabled={!canEditGacha}>
                                                         <SelectValue />
                                                     </SelectTrigger>
                                                     <SelectContent>
@@ -897,6 +934,7 @@ export default function AdminGachaSettingsPage() {
                                                     <Switch
                                                         checked={r.isActive}
                                                         onCheckedChange={(checked) => handleUpdateReward(r.id, { isActive: checked })}
+                                                        disabled={!canEditGacha}
                                                     />
                                                     <Badge variant={r.isActive ? "default" : "secondary"}>
                                                         {r.isActive ? "เปิด" : "ปิด"}
@@ -911,6 +949,7 @@ export default function AdminGachaSettingsPage() {
                                                     size="icon"
                                                     className="text-red-500 hover:text-red-600"
                                                     onClick={() => handleDeleteReward(r.id)}
+                                                    disabled={!canEditGacha}
                                                 >
                                                     <Trash2 className="h-4 w-4" />
                                                 </Button>
@@ -928,7 +967,7 @@ export default function AdminGachaSettingsPage() {
 
             {/* Save button bottom */}
             <div className="flex justify-end">
-                <Button onClick={handleSave} disabled={isSaving} size="lg" className="gap-2">
+                <Button onClick={handleSave} disabled={isSaving || !canEditGacha} size="lg" className="gap-2">
                     {isSaving ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (

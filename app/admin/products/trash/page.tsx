@@ -1,10 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { History, Package, Timer, Trash2, ArrowLeft } from "lucide-react";
 import { and, eq, gt, isNotNull, lte, sql } from "drizzle-orm";
 import { AUDIT_ACTIONS } from "@/lib/auditLog";
 import { runAutoDelete } from "@/lib/autoDelete";
 import { db, products } from "@/lib/db";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 import { TrashRunButton } from "@/components/admin/TrashRunButton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -34,6 +37,11 @@ function formatDate(dateStr: string | null) {
 }
 
 export default async function ProductTrashPage() {
+    const access = await requirePermission(PERMISSIONS.PRODUCT_VIEW);
+    if (!access.success) {
+        redirect("/admin?error=คุณไม่มีสิทธิ์ดูสินค้า");
+    }
+
     await runAutoDelete();
 
     const nowStr = new Date().toISOString().slice(0, 19).replace("T", " ");

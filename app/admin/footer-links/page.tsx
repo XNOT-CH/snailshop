@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import Swal from "sweetalert2";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -25,6 +26,7 @@ import {
     Trash2,
 } from "lucide-react";
 import { showDeleteConfirm, showError, showSuccess } from "@/lib/swal";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface FooterLink {
     id: string;
@@ -51,6 +53,8 @@ function getDomainLabel(href: string) {
 }
 
 export default function FooterLinksAdminPage() {
+    const permissions = useAdminPermissions();
+    const canEditSettings = permissions.includes(PERMISSIONS.SETTINGS_EDIT);
     const [settings, setSettings] = useState<FooterSettings | null>(null);
     const [links, setLinks] = useState<FooterLink[]>([]);
     const [loading, setLoading] = useState(true);
@@ -91,6 +95,10 @@ export default function FooterLinksAdminPage() {
     );
 
     const handleToggleActive = async (isActive: boolean) => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขลิงก์ส่วนท้าย");
+            return;
+        }
         try {
             const res = await fetch("/api/admin/footer-links/settings", {
                 method: "PUT",
@@ -111,6 +119,10 @@ export default function FooterLinksAdminPage() {
 
     const handleAddLink = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์เพิ่มลิงก์");
+            return;
+        }
         if (!newLabel.trim() || !newHref.trim()) {
             showError("กรุณากรอกข้อมูลให้ครบ");
             return;
@@ -150,6 +162,10 @@ export default function FooterLinksAdminPage() {
         result: { isConfirmed: boolean; value?: Record<string, unknown> },
         link: FooterLink,
     ) => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขลิงก์");
+            return;
+        }
         if (!result.isConfirmed || !result.value) return;
         if (!result.value.label || !result.value.href) {
             showError("กรุณากรอกข้อมูลให้ครบ");
@@ -179,6 +195,10 @@ export default function FooterLinksAdminPage() {
     };
 
     const openEditModal = (link: FooterLink) => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขลิงก์");
+            return;
+        }
         void Swal.fire({
             title: "แก้ไขลิงก์",
             width: "min(96vw, 540px)",
@@ -256,6 +276,10 @@ export default function FooterLinksAdminPage() {
     };
 
     const handleDeleteLink = async (link: FooterLink) => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์ลบลิงก์");
+            return;
+        }
         const confirmed = await showDeleteConfirm(link.label);
         if (!confirmed) return;
 
@@ -320,6 +344,7 @@ export default function FooterLinksAdminPage() {
                     <Switch
                         checked={settings?.isActive ?? false}
                         onCheckedChange={handleToggleActive}
+                        disabled={!canEditSettings}
                     />
                 </div>
             </div>
@@ -345,6 +370,7 @@ export default function FooterLinksAdminPage() {
                                 placeholder="เช่น วิธีเติมเงิน, ติดต่อเรา"
                                 value={newLabel}
                                 onChange={(e) => setNewLabel(e.target.value)}
+                                disabled={!canEditSettings}
                             />
                         </div>
                         <div className="space-y-2">
@@ -354,12 +380,13 @@ export default function FooterLinksAdminPage() {
                                 placeholder="เช่น /how-to-topup หรือ https://facebook.com/..."
                                 value={newHref}
                                 onChange={(e) => setNewHref(e.target.value)}
+                                disabled={!canEditSettings}
                             />
                         </div>
                         <div className="flex items-end">
                             <Button
                                 type="submit"
-                                disabled={saving}
+                                disabled={saving || !canEditSettings}
                                 className="w-full rounded-xl bg-[#145de7] hover:bg-[#1048b8] md:w-auto"
                             >
                                 {saving ? (
@@ -377,6 +404,7 @@ export default function FooterLinksAdminPage() {
                                 id="newOpenInNewTab"
                                 checked={newOpenInNewTab}
                                 onCheckedChange={(checked) => setNewOpenInNewTab(checked === true)}
+                                disabled={!canEditSettings}
                             />
                             <Label
                                 htmlFor="newOpenInNewTab"
@@ -466,26 +494,28 @@ export default function FooterLinksAdminPage() {
                                         </a>
                                     </div>
 
-                                    <div className="mt-4 flex items-center justify-end gap-1.5">
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="rounded-xl text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
-                                            onClick={() => openEditModal(link)}
-                                            aria-label={`แก้ไขลิงก์ ${link.label}`}
-                                        >
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                            variant="ghost"
-                                            size="icon"
-                                            className="rounded-xl text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                                            onClick={() => void handleDeleteLink(link)}
-                                            aria-label={`ลบลิงก์ ${link.label}`}
-                                        >
-                                            <Trash2 className="h-4 w-4" />
-                                        </Button>
-                                    </div>
+                                    {canEditSettings ? (
+                                        <div className="mt-4 flex items-center justify-end gap-1.5">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="rounded-xl text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
+                                                onClick={() => openEditModal(link)}
+                                                aria-label={`แก้ไขลิงก์ ${link.label}`}
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                            </Button>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="rounded-xl text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                                                onClick={() => void handleDeleteLink(link)}
+                                                aria-label={`ลบลิงก์ ${link.label}`}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
+                                    ) : null}
                                 </div>
                             ))}
                         </div>
@@ -552,26 +582,30 @@ export default function FooterLinksAdminPage() {
                                             </span>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <div className="flex items-center justify-end gap-1.5">
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="rounded-lg text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
-                                                    onClick={() => openEditModal(link)}
-                                                    aria-label={`แก้ไขลิงก์ ${link.label}`}
-                                                >
-                                                    <Pencil className="h-4 w-4" />
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                                                    onClick={() => void handleDeleteLink(link)}
-                                                    aria-label={`ลบลิงก์ ${link.label}`}
-                                                >
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
+                                            {canEditSettings ? (
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="rounded-lg text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
+                                                        onClick={() => openEditModal(link)}
+                                                        aria-label={`แก้ไขลิงก์ ${link.label}`}
+                                                    >
+                                                        <Pencil className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                                                        onClick={() => void handleDeleteLink(link)}
+                                                        aria-label={`ลบลิงก์ ${link.label}`}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <span className="text-xs text-slate-400">ดูได้อย่างเดียว</span>
+                                            )}
                                         </TableCell>
                                     </TableRow>
                                 ))}

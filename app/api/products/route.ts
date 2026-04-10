@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdmin } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { invalidateProductCaches } from "@/lib/cache";
 import { createProduct } from "@/lib/features/products/mutations";
 import { parseProductPrice, validateDiscountPrice, type ProductPayloadInput } from "@/lib/features/products/shared";
+import { PERMISSIONS } from "@/lib/permissions";
 
 export async function POST(request: NextRequest) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.PRODUCT_CREATE);
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }

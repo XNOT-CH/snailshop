@@ -1,5 +1,8 @@
+import { redirect } from "next/navigation";
 import { db, orders, products, users } from "@/lib/db";
 import { sum, count } from "drizzle-orm";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 import {
     DollarSign,
     Users,
@@ -17,6 +20,31 @@ import { AdminDashboardHeader } from "@/components/admin/AdminDashboardHeader";
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
+    const access = await requirePermission(PERMISSIONS.ADMIN_PANEL);
+    if (!access.success || !access.permissions) {
+        redirect("/?error=คุณไม่มีสิทธิ์เข้าถึงหน้านี้");
+    }
+
+    if (!access.permissions.includes(PERMISSIONS.DASHBOARD_VIEW)) {
+        const fallbackAdminRoute =
+            access.permissions.includes(PERMISSIONS.PRODUCT_VIEW) ? "/admin/products" :
+            access.permissions.includes(PERMISSIONS.CHAT_VIEW) ? "/admin/chat" :
+            access.permissions.includes(PERMISSIONS.SLIP_VIEW) ? "/admin/slips" :
+            access.permissions.includes(PERMISSIONS.USER_VIEW) ? "/admin/users" :
+            access.permissions.includes(PERMISSIONS.CONTENT_VIEW) ? "/admin/news" :
+            access.permissions.includes(PERMISSIONS.PROMO_VIEW) ? "/admin/promo-codes" :
+            access.permissions.includes(PERMISSIONS.GACHA_VIEW) ? "/admin/gacha-machines" :
+            access.permissions.includes(PERMISSIONS.SEASON_PASS_VIEW) ? "/admin/season-pass" :
+            access.permissions.includes(PERMISSIONS.SETTINGS_VIEW) ? "/admin/settings" :
+            access.permissions.includes(PERMISSIONS.AUDIT_LOG_VIEW) ? "/admin/audit-logs" :
+            access.permissions.includes(PERMISSIONS.EXPORT_DATA) ? "/admin/export" :
+            null;
+
+        if (fallbackAdminRoute) {
+            redirect(fallbackAdminRoute);
+        }
+    }
+
     const [[{ totalRevenue: rawRevenue, salesCount: rawCount }], , [{ count: rawUsers }]] = await Promise.all([
         db.select({ totalRevenue: sum(orders.totalPrice), salesCount: count() }).from(orders),
         db.select({ count: count() }).from(products),

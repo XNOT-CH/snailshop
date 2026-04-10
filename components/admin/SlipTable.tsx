@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { showConfirm, showError, showSuccess } from "@/lib/swal";
 import { Button } from "@/components/ui/button";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import {
     Table,
     TableBody,
@@ -14,6 +15,7 @@ import {
 } from "@/components/ui/table";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, ExternalLink, ImageOff, Loader2, X } from "lucide-react";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface Slip {
     id: string;
@@ -33,8 +35,15 @@ interface SlipTableProps {
 export function SlipTable({ slips }: Readonly<SlipTableProps>) {
     const router = useRouter();
     const [processingId, setProcessingId] = useState<string | null>(null);
+    const permissions = useAdminPermissions();
+    const canApprove = permissions.includes(PERMISSIONS.SLIP_APPROVE);
+    const canReject = permissions.includes(PERMISSIONS.SLIP_REJECT);
 
     const handleAction = async (slipId: string, action: "APPROVE" | "REJECT") => {
+        if ((action === "APPROVE" && !canApprove) || (action === "REJECT" && !canReject)) {
+            showError("คุณไม่มีสิทธิ์ดำเนินการนี้");
+            return;
+        }
         const actionText = action === "APPROVE" ? "อนุมัติ" : "ปฏิเสธ";
         const confirmed = await showConfirm(
             "ยืนยันการดำเนินการ",
@@ -136,40 +145,48 @@ export function SlipTable({ slips }: Readonly<SlipTableProps>) {
                                 )}
                             </TableCell>
                             <TableCell className="text-right">
-                                <div className="flex flex-col justify-end gap-2 sm:flex-row">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="border-emerald-200 bg-emerald-50 font-semibold text-emerald-700 shadow-none hover:bg-emerald-100 hover:text-emerald-800"
-                                        onClick={() => handleAction(slip.id, "APPROVE")}
-                                        disabled={processingId === slip.id}
-                                    >
-                                        {processingId === slip.id ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <>
-                                                <Check className="mr-1 h-4 w-4" />
-                                                อนุมัติ
-                                            </>
-                                        )}
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        className="border-rose-200 bg-rose-50 font-semibold text-rose-600 shadow-none hover:bg-rose-100 hover:text-rose-700"
-                                        onClick={() => handleAction(slip.id, "REJECT")}
-                                        disabled={processingId === slip.id}
-                                    >
-                                        {processingId === slip.id ? (
-                                            <Loader2 className="h-4 w-4 animate-spin" />
-                                        ) : (
-                                            <>
-                                                <X className="mr-1 h-4 w-4" />
-                                                ปฏิเสธ
-                                            </>
-                                        )}
-                                    </Button>
-                                </div>
+                                {canApprove || canReject ? (
+                                    <div className="flex flex-col justify-end gap-2 sm:flex-row">
+                                        {canApprove ? (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="border-emerald-200 bg-emerald-50 font-semibold text-emerald-700 shadow-none hover:bg-emerald-100 hover:text-emerald-800"
+                                                onClick={() => handleAction(slip.id, "APPROVE")}
+                                                disabled={processingId === slip.id}
+                                            >
+                                                {processingId === slip.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <>
+                                                        <Check className="mr-1 h-4 w-4" />
+                                                        อนุมัติ
+                                                    </>
+                                                )}
+                                            </Button>
+                                        ) : null}
+                                        {canReject ? (
+                                            <Button
+                                                size="sm"
+                                                variant="outline"
+                                                className="border-rose-200 bg-rose-50 font-semibold text-rose-600 shadow-none hover:bg-rose-100 hover:text-rose-700"
+                                                onClick={() => handleAction(slip.id, "REJECT")}
+                                                disabled={processingId === slip.id}
+                                            >
+                                                {processingId === slip.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <>
+                                                        <X className="mr-1 h-4 w-4" />
+                                                        ปฏิเสธ
+                                                    </>
+                                                )}
+                                            </Button>
+                                        ) : null}
+                                    </div>
+                                ) : (
+                                    <span className="text-xs text-slate-400">ดูได้อย่างเดียว</span>
+                                )}
                             </TableCell>
                         </TableRow>
                     ))}
