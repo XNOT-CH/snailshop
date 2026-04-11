@@ -1,5 +1,10 @@
 import { z } from "zod";
 import { normalizePermissionSelection } from "@/lib/permissions";
+import {
+  NEWS_DESCRIPTION_MAX_LENGTH,
+  NEWS_TITLE_MAX_LENGTH,
+  normalizeNewsTextInput,
+} from "@/lib/newsValidation";
 
 // Nav item
 export const navItemSchema = z.object({
@@ -34,12 +39,28 @@ const requiredUrl = z.string().refine(
   { message: "URL ไม่ถูกต้อง (ต้องขึ้นต้นด้วย / หรือ http:// หรือ https://)" }
 );
 
+const normalizedOptionalUrl = z.preprocess(
+  (value) => (typeof value === "string" ? value.trim() : value),
+  optionalUrl,
+);
+
+const requiredNewsText = (label: string, maxLength: number) =>
+  z
+    .string()
+    .transform((value) => normalizeNewsTextInput(value))
+    .refine((value) => value.length > 0, {
+      message: `กรุณากรอก${label}`,
+    })
+    .refine((value) => value.length <= maxLength, {
+      message: `${label}ต้องไม่เกิน ${maxLength} ตัวอักษร`,
+    });
+
 // News item
 export const newsItemSchema = z.object({
-  title: z.string().min(1, "กรุณากรอกหัวข้อข่าว").max(300),
-  description: z.string().min(1, "กรุณากรอกรายละเอียด").max(5000),
-  imageUrl: optionalUrl,
-  link: optionalUrl,
+  title: requiredNewsText("หัวข้อข่าว", NEWS_TITLE_MAX_LENGTH),
+  description: requiredNewsText("รายละเอียด", NEWS_DESCRIPTION_MAX_LENGTH),
+  imageUrl: normalizedOptionalUrl,
+  link: normalizedOptionalUrl,
   sortOrder: z.coerce.number().int().min(0).default(0),
   isActive: z.boolean().default(true),
 });
@@ -63,6 +84,7 @@ export const footerLinkSchema = z.object({
   label: z.string().min(1, "กรุณากรอกชื่อลิงก์").max(100),
   href: z.string().min(1, "กรุณากรอก URL").max(500),
   openInNewTab: z.boolean().default(false),
+  sortOrder: z.coerce.number().int().min(0).optional(),
 });
 export type FooterLinkInput = z.infer<typeof footerLinkSchema>;
 

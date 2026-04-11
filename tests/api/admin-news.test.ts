@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/auth", () => ({ isAdmin: vi.fn() }));
+vi.mock("@/lib/auth", () => ({ requirePermission: vi.fn() }));
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -31,9 +31,9 @@ vi.mock("@/lib/validations/validate", () => ({
   validateBody: vi.fn(),
 }));
 
-import { isAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { validateBody } from "@/lib/validations/validate";
+import { requirePermission } from "@/lib/auth";
 
 const mkReq = (url = "http://localhost/api/admin/news", opts?: RequestInit) =>
   new NextRequest(url, opts);
@@ -46,14 +46,14 @@ describe("API: /api/admin/news", () => {
 
   // ── GET ──────────────────────────────────────────────────────────────────
   it("GET returns 401 when not admin", async () => {
-    (isAdmin as any).mockResolvedValue(UNAUTH);
+    (requirePermission as any).mockResolvedValue(UNAUTH);
     const { GET } = await import("@/app/api/admin/news/route");
     const res = await GET(mkReq());
     expect(res.status).toBe(401);
   });
 
   it("GET returns all articles (no filter)", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
+    (requirePermission as any).mockResolvedValue(ADMIN_OK);
     (db.query.newsArticles.findMany as any).mockResolvedValue([
       { id: "n1", title: "News 1", isActive: true },
       { id: "n2", title: "News 2", isActive: false },
@@ -66,7 +66,7 @@ describe("API: /api/admin/news", () => {
   });
 
   it("GET filters active-only when ?active=true", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
+    (requirePermission as any).mockResolvedValue(ADMIN_OK);
     (db.query.newsArticles.findMany as any).mockResolvedValue([
       { id: "n1", title: "Active News", isActive: true },
     ]);
@@ -79,14 +79,14 @@ describe("API: /api/admin/news", () => {
 
   // ── POST ─────────────────────────────────────────────────────────────────
   it("POST returns 401 when not admin", async () => {
-    (isAdmin as any).mockResolvedValue(UNAUTH);
+    (requirePermission as any).mockResolvedValue(UNAUTH);
     const { POST } = await import("@/app/api/admin/news/route");
     const res = await POST(mkReq("http://localhost/api/admin/news", { method: "POST" }));
     expect(res.status).toBe(401);
   });
 
   it("POST returns validation error when body invalid", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
+    (requirePermission as any).mockResolvedValue(ADMIN_OK);
     const errorRes = new Response(JSON.stringify({ message: "invalid" }), { status: 400 });
     (validateBody as any).mockResolvedValue({ error: errorRes });
     const { POST } = await import("@/app/api/admin/news/route");
@@ -98,7 +98,7 @@ describe("API: /api/admin/news", () => {
   });
 
   it("POST creates news article and returns 201", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
+    (requirePermission as any).mockResolvedValue(ADMIN_OK);
     (validateBody as any).mockResolvedValue({
       data: {
         title: "Big Sale!", description: "50% OFF everything",
@@ -119,9 +119,9 @@ describe("API: /api/admin/news", () => {
   });
 
   it("POST handles null imageUrl and link", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
+    (requirePermission as any).mockResolvedValue(ADMIN_OK);
     (validateBody as any).mockResolvedValue({
-      data: { title: "Plain News", description: null, imageUrl: null, link: null, sortOrder: 0, isActive: false },
+      data: { title: "Plain News", description: "News without link", imageUrl: "", link: "", sortOrder: 0, isActive: false },
     });
     (db.query.newsArticles.findFirst as any).mockResolvedValue({ id: "n2", title: "Plain News" });
     const { POST } = await import("@/app/api/admin/news/route");

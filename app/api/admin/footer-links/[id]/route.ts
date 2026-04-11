@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { db, footerLinks } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { requirePermission } from "@/lib/auth";
@@ -19,6 +19,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         if (body.label !== undefined) updateData.label = body.label;
         if (body.href !== undefined) updateData.href = body.href;
         if (body.openInNewTab !== undefined) updateData.openInNewTab = body.openInNewTab;
+        if (body.sortOrder !== undefined) updateData.sortOrder = body.sortOrder;
         await db.update(footerLinks).set(updateData).where(eq(footerLinks.id, id));
         const link = await db.query.footerLinks.findFirst({ where: (t, { eq }) => eq(t.id, id) });
         return NextResponse.json(link);

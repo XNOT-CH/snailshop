@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
@@ -35,6 +35,18 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { PERMISSIONS } from "@/lib/permissions";
+import {
+    NEWS_DESCRIPTION_MAX_LENGTH,
+    NEWS_MAX_UPLOAD_BYTES,
+    NEWS_TITLE_MAX_LENGTH,
+    normalizeNewsUrlInput,
+    normalizeNewsTextInput,
+    validateNewsImageDimensions,
+    validateNewsTextInput,
+    validateNewsUploadFile,
+    validateNewsUrlInput,
+    isValidNewsUrl,
+} from "@/lib/newsValidation";
 
 interface NewsArticle {
     id: string;
@@ -57,7 +69,7 @@ interface NewsFormValue {
 }
 
 function getExcerpt(text: string, maxLength = 100) {
-    const normalized = text.trim().replace(/\s+/g, " ");
+    const normalized = normalizeNewsTextInput(text);
     if (normalized.length <= maxLength) return normalized;
     return `${normalized.slice(0, maxLength).trim()}...`;
 }
@@ -68,7 +80,19 @@ export default function AdminNewsPage() {
     const [news, setNews] = useState<NewsArticle[]>([]);
     const [loading, setLoading] = useState(true);
     const [reorderingId, setReorderingId] = useState<string | null>(null);
+    const [savingNews, setSavingNews] = useState(false);
+    const [togglingIds, setTogglingIds] = useState<string[]>([]);
     const uploadedUrlRef = useRef("");
+    const dialogSubmittingRef = useRef(false);
+
+    const setTogglePending = (articleId: string, pending: boolean) => {
+        setTogglingIds((current) => {
+            if (pending) {
+                return current.includes(articleId) ? current : [...current, articleId];
+            }
+            return current.filter((id) => id !== articleId);
+        });
+    };
 
     const initializeNewsModalUpload = () => {
         const urlInput = document.getElementById("swal-imageUrl") as HTMLInputElement | null;
@@ -101,12 +125,18 @@ export default function AdminNewsPage() {
 
         if (linkInput) {
             const syncLinkPreview = () => {
-                const nextLink = linkInput.value.trim();
+                const nextLink = normalizeNewsUrlInput(linkInput.value);
                 if (!linkPreview || !linkHint) return;
 
                 if (!nextLink) {
                     linkPreview.classList.add("hidden");
                     linkHint.textContent = "ใส่เฉพาะเมื่อต้องการให้ลูกค้ากดอ่านต่อหรือออกไปยังหน้าภายนอก";
+                    return;
+                }
+
+                if (!isValidNewsUrl(nextLink)) {
+                    linkPreview.classList.add("hidden");
+                    linkHint.textContent = "ลิงก์ต้องขึ้นต้นด้วย / หรือ http:// หรือ https://";
                     return;
                 }
 
@@ -144,9 +174,23 @@ export default function AdminNewsPage() {
         uploadBtn?: HTMLElement,
     ): Promise<string | null> => {
         try {
+            const fileError = validateNewsUploadFile(file);
+            if (fileError) {
+                Swal.showValidationMessage(fileError);
+                return null;
+            }
+
             if (uploadBtn) {
                 uploadBtn.textContent = "กำลังอัปโหลด...";
                 (uploadBtn as HTMLButtonElement).disabled = true;
+            }
+
+            const imageBitmap = await createImageBitmap(file);
+            const dimensionError = validateNewsImageDimensions(imageBitmap.width, imageBitmap.height);
+            imageBitmap.close();
+            if (dimensionError) {
+                Swal.showValidationMessage(dimensionError);
+                return null;
             }
 
             const compressed = await compressImage(file);
@@ -170,8 +214,10 @@ export default function AdminNewsPage() {
 
             Swal.showValidationMessage(data.message || "อัปโหลดรูปไม่สำเร็จ");
             return null;
-        } catch {
-            Swal.showValidationMessage("เกิดข้อผิดพลาดในการอัปโหลดรูป");
+        } catch (error) {
+            const message =
+                error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัปโหลดรูป";
+            Swal.showValidationMessage(message);
             return null;
         } finally {
             if (uploadBtn) {
@@ -206,6 +252,7 @@ export default function AdminNewsPage() {
             return;
         }
         uploadedUrlRef.current = article?.imageUrl || "";
+        dialogSubmittingRef.current = false;
 
         void Swal.fire({
             title: article ? "แก้ไขข่าวสาร" : "เพิ่มข่าวสารใหม่",
@@ -223,6 +270,10 @@ export default function AdminNewsPage() {
                 cancelButton: "rounded-xl px-6 py-2.5",
                 actions: "mt-6 border-t border-gray-100 px-0 pt-4",
             },
+            didClose: () => {
+                dialogSubmittingRef.current = false;
+                uploadedUrlRef.current = "";
+            },
             html: `
                 <div class="space-y-4 text-left">
                     <div class="rounded-2xl border border-blue-100 bg-gradient-to-br from-blue-50 to-white px-4 py-3">
@@ -233,19 +284,23 @@ export default function AdminNewsPage() {
                         <label class="mb-1.5 block text-sm font-medium text-gray-700">หัวข้อ *</label>
                         <input
                             id="swal-title"
+                            maxlength="${NEWS_TITLE_MAX_LENGTH}"
                             class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="เช่น โปรโมชันเติมเกมสุดคุ้ม"
                             value="${article?.title || ""}"
                         />
+                        <p class="mt-1 text-xs text-gray-500">กรอกได้สูงสุด ${NEWS_TITLE_MAX_LENGTH} ตัวอักษร และห้ามเว้นว่างล้วน</p>
                     </div>
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-gray-700">คำโปรย / รายละเอียด *</label>
                         <textarea
                             id="swal-description"
                             rows="4"
+                            maxlength="${NEWS_DESCRIPTION_MAX_LENGTH}"
                             class="w-full resize-none rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="สรุปข่าวสารหรือโปรโมชันแบบสั้น กระชับ และอ่านง่าย"
                         >${article?.description || ""}</textarea>
+                        <p class="mt-1 text-xs text-gray-500">กรอกได้สูงสุด ${NEWS_DESCRIPTION_MAX_LENGTH} ตัวอักษร ระบบจะย่อช่องว่างที่เกินจำเป็นให้อัตโนมัติ</p>
                     </div>
                     <div>
                         <label class="mb-1.5 block text-sm font-medium text-gray-700">รูปภาพหน้าปก</label>
@@ -274,7 +329,7 @@ export default function AdminNewsPage() {
                                 />
                             </div>
                             <p class="mt-2 text-xs text-gray-500">
-                                รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก
+                                รองรับ JPG, PNG, WebP, GIF สูงสุด ${(NEWS_MAX_UPLOAD_BYTES / (1024 * 1024)).toFixed(0)}MB และจะไม่รับรูปที่สัดส่วนยาวเกินไป
                             </p>
                         </div>
                     </div>
@@ -324,22 +379,22 @@ export default function AdminNewsPage() {
                             </select>
                         </div>
                     </div>
-                    <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50/40 px-4 py-3">
-                        <p class="text-xs font-medium text-slate-700">พร้อมบันทึกเมื่อกรอกหัวข้อและคำโปรยครบแล้ว</p>
-                        <p class="mt-1 text-xs leading-5 text-slate-500">ตรวจสอบรูปตัวอย่าง ลิงก์ปลายทาง และลำดับการแสดงอีกครั้งก่อนกดบันทึก</p>
-                    </div>
                 </div>
             `,
             didOpen: initializeNewsModalUpload,
             preConfirm: () => {
-                const title = (document.getElementById("swal-title") as HTMLInputElement)?.value?.trim();
-                const description = (
+                const rawTitle = (document.getElementById("swal-title") as HTMLInputElement)?.value ?? "";
+                const rawDescription = (
                     document.getElementById("swal-description") as HTMLTextAreaElement
-                )?.value?.trim();
+                )?.value ?? "";
+                const title = normalizeNewsTextInput(rawTitle);
+                const description = normalizeNewsTextInput(rawDescription);
                 const imageUrl = (
                     document.getElementById("swal-imageUrl") as HTMLInputElement
                 )?.value?.trim();
-                const link = (document.getElementById("swal-link") as HTMLInputElement)?.value?.trim();
+                const link = normalizeNewsUrlInput(
+                    (document.getElementById("swal-link") as HTMLInputElement)?.value ?? "",
+                );
                 const sortOrder =
                     Number.parseInt(
                         (document.getElementById("swal-sortOrder") as HTMLInputElement)?.value,
@@ -349,11 +404,36 @@ export default function AdminNewsPage() {
                     (document.getElementById("swal-isActive") as HTMLSelectElement)?.value ===
                     "true";
 
-                if (!title || !description) {
-                    Swal.showValidationMessage("กรุณากรอกหัวข้อและรายละเอียดให้ครบ");
+                const titleError = validateNewsTextInput(rawTitle, {
+                    label: "หัวข้อข่าว",
+                    maxLength: NEWS_TITLE_MAX_LENGTH,
+                });
+                if (titleError) {
+                    Swal.showValidationMessage(titleError);
                     return false;
                 }
 
+                const descriptionError = validateNewsTextInput(rawDescription, {
+                    label: "รายละเอียด",
+                    maxLength: NEWS_DESCRIPTION_MAX_LENGTH,
+                });
+                if (descriptionError) {
+                    Swal.showValidationMessage(descriptionError);
+                    return false;
+                }
+
+                const linkError = validateNewsUrlInput(link);
+                if (linkError) {
+                    Swal.showValidationMessage(linkError);
+                    return false;
+                }
+
+                if (dialogSubmittingRef.current || savingNews) {
+                    Swal.showValidationMessage("กำลังบันทึกข้อมูล กรุณารอสักครู่");
+                    return false;
+                }
+
+                dialogSubmittingRef.current = true;
                 return { title, description, imageUrl, link, sortOrder, isActive };
             },
         }).then((result) => void handleDialogResult(result, article));
@@ -363,8 +443,16 @@ export default function AdminNewsPage() {
         result: { isConfirmed: boolean; value?: NewsFormValue },
         article?: NewsArticle,
     ) => {
-        if (!result.isConfirmed || !result.value) return;
+        if (!result.isConfirmed || !result.value) {
+            dialogSubmittingRef.current = false;
+            return;
+        }
 
+        if (savingNews) {
+            return;
+        }
+
+        setSavingNews(true);
         showLoading("กำลังบันทึก...");
         try {
             const url = article ? `/api/admin/news/${article.id}` : "/api/admin/news";
@@ -388,6 +476,9 @@ export default function AdminNewsPage() {
         } catch {
             hideLoading();
             showError("เกิดข้อผิดพลาดในการบันทึก");
+        } finally {
+            dialogSubmittingRef.current = false;
+            setSavingNews(false);
         }
     };
 
@@ -422,7 +513,11 @@ export default function AdminNewsPage() {
             showError("คุณไม่มีสิทธิ์เปลี่ยนสถานะข่าวสาร");
             return;
         }
+        if (togglingIds.includes(article.id)) {
+            return;
+        }
         try {
+            setTogglePending(article.id, true);
             const res = await fetch(`/api/admin/news/${article.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
@@ -431,9 +526,14 @@ export default function AdminNewsPage() {
 
             if (res.ok) {
                 void fetchNews();
+                return;
             }
+            showError("อัปเดตสถานะข่าวสารไม่สำเร็จ");
         } catch (error) {
             console.error("Error toggling active:", error);
+            showError("อัปเดตสถานะข่าวสารไม่สำเร็จ");
+        } finally {
+            setTogglePending(article.id, false);
         }
     };
 
@@ -591,10 +691,10 @@ export default function AdminNewsPage() {
                                                         onCheckedChange={() =>
                                                             void toggleActive(article)
                                                         }
-                                                        disabled={!canEditContent}
+                                                        disabled={!canEditContent || togglingIds.includes(article.id)}
                                                     />
                                                 </div>
-                                                {article.link ? (
+                                                {article.link && isValidNewsUrl(article.link) ? (
                                                     <Button
                                                         asChild
                                                         variant="outline"
@@ -715,7 +815,7 @@ export default function AdminNewsPage() {
                                         </TableCell>
                                         <TableCell>
                                             <div className="space-y-1">
-                                                <p className="font-semibold text-foreground">
+                                                <p className="min-w-0 whitespace-normal break-words font-semibold text-foreground">
                                                     {article.title}
                                                 </p>
                                                 <div className="flex flex-wrap items-center gap-2">
@@ -735,8 +835,8 @@ export default function AdminNewsPage() {
                                                 </div>
                                             </div>
                                         </TableCell>
-                                        <TableCell>
-                                            <p className="max-w-md text-sm leading-6 text-muted-foreground">
+                                        <TableCell className="min-w-0 whitespace-normal">
+                                            <p className="max-w-md whitespace-normal break-words text-sm leading-6 text-muted-foreground">
                                                 {getExcerpt(article.description)}
                                             </p>
                                         </TableCell>
@@ -784,13 +884,13 @@ export default function AdminNewsPage() {
                                                 <Switch
                                                     checked={article.isActive}
                                                     onCheckedChange={() => void toggleActive(article)}
-                                                    disabled={!canEditContent}
+                                                    disabled={!canEditContent || togglingIds.includes(article.id)}
                                                 />
                                             </div>
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center justify-center gap-1.5">
-                                                {article.link ? (
+                                                {article.link && isValidNewsUrl(article.link) ? (
                                                     <Button
                                                         asChild
                                                         variant="ghost"

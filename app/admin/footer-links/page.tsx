@@ -27,6 +27,26 @@ import {
 } from "lucide-react";
 import { showDeleteConfirm, showError, showSuccess } from "@/lib/swal";
 import { PERMISSIONS } from "@/lib/permissions";
+import {
+    DndContext,
+    DragOverlay,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+    type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
 
 interface FooterLink {
     id: string;
@@ -52,6 +72,244 @@ function getDomainLabel(href: string) {
     }
 }
 
+// ── Sortable row (desktop table) ──────────────────────────────────────────────
+interface SortableRowProps {
+    link: FooterLink;
+    canEditSettings: boolean;
+    onEdit: (link: FooterLink) => void;
+    onDelete: (link: FooterLink) => void;
+}
+
+function SortableRow({ link, canEditSettings, onEdit, onDelete }: SortableRowProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: link.id });
+
+    // When dragging, hide the original — DragOverlay renders the visual clone
+    const style: React.CSSProperties = {
+        transition: isDragging ? undefined : transition,
+        opacity: isDragging ? 0 : 1,
+        transform: CSS.Transform.toString(transform),
+    };
+
+    return (
+        <TableRow ref={setNodeRef} style={style} className="hover:bg-muted/20">
+            <TableCell>
+                <GripVertical
+                    className={`h-4 w-4 touch-none select-none text-muted-foreground ${canEditSettings ? "cursor-grab active:cursor-grabbing" : "cursor-not-allowed opacity-40"}`}
+                    {...(canEditSettings ? { ...attributes, ...listeners } : {})}
+                />
+            </TableCell>
+            <TableCell>
+                <div className="space-y-1">
+                    <p className="font-semibold text-foreground">{link.label}</p>
+                    <p className="text-xs text-muted-foreground">{getDomainLabel(link.href)}</p>
+                </div>
+            </TableCell>
+            <TableCell>
+                <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex max-w-[300px] items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                    <span className="truncate">{link.href}</span>
+                    <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
+                </a>
+            </TableCell>
+            <TableCell className="text-center">
+                <span
+                    className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                        link.openInNewTab
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-slate-100 text-slate-500"
+                    }`}
+                >
+                    {link.openInNewTab ? "เปิดแท็บใหม่" : "แท็บเดิม"}
+                </span>
+            </TableCell>
+            <TableCell className="text-center">
+                <span
+                    className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                        link.isActive
+                            ? "bg-emerald-100 text-emerald-700"
+                            : "bg-slate-100 text-slate-500"
+                    }`}
+                >
+                    {link.isActive ? "แสดง" : "ซ่อน"}
+                </span>
+            </TableCell>
+            <TableCell className="text-right">
+                {canEditSettings ? (
+                    <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="rounded-lg text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
+                            onClick={() => onEdit(link)}
+                            aria-label={`แก้ไขลิงก์ ${link.label}`}
+                        >
+                            <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                            onClick={() => onDelete(link)}
+                            aria-label={`ลบลิงก์ ${link.label}`}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ) : (
+                    <span className="text-xs text-slate-400">ดูได้อย่างเดียว</span>
+                )}
+            </TableCell>
+        </TableRow>
+    );
+}
+
+// ── Sortable card (mobile) ────────────────────────────────────────────────────
+interface SortableCardProps {
+    link: FooterLink;
+    canEditSettings: boolean;
+    onEdit: (link: FooterLink) => void;
+    onDelete: (link: FooterLink) => void;
+}
+
+function SortableCard({ link, canEditSettings, onEdit, onDelete }: SortableCardProps) {
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: link.id });
+
+    // When dragging, hide the original — DragOverlay renders the visual clone
+    const style: React.CSSProperties = {
+        transition: isDragging ? undefined : transition,
+        opacity: isDragging ? 0 : 1,
+        transform: CSS.Transform.toString(transform),
+    };
+
+    return (
+        <div
+            ref={setNodeRef}
+            style={style}
+            className="rounded-2xl border border-border bg-card p-4 shadow-sm"
+        >
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold text-foreground">{link.label}</p>
+                        <span
+                            className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${
+                                link.isActive
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : "bg-slate-100 text-slate-500"
+                            }`}
+                        >
+                            {link.isActive ? "แสดง" : "ซ่อน"}
+                        </span>
+                        <span
+                            className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${
+                                link.openInNewTab
+                                    ? "bg-blue-100 text-blue-700"
+                                    : "bg-slate-100 text-slate-500"
+                            }`}
+                        >
+                            {link.openInNewTab ? "เปิดแท็บใหม่" : "แท็บเดิม"}
+                        </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{getDomainLabel(link.href)}</p>
+                </div>
+                <GripVertical
+                    className={`h-4 w-4 flex-shrink-0 touch-none select-none text-muted-foreground ${canEditSettings ? "cursor-grab active:cursor-grabbing" : "cursor-not-allowed opacity-40"}`}
+                    {...(canEditSettings ? { ...attributes, ...listeners } : {})}
+                />
+            </div>
+
+            <div className="mt-3 rounded-2xl bg-muted/30 px-3 py-2.5">
+                <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex max-w-full items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                    <span className="truncate">{link.href}</span>
+                    <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
+                </a>
+            </div>
+
+            {canEditSettings ? (
+                <div className="mt-4 flex items-center justify-end gap-1.5">
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-xl text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
+                        onClick={() => onEdit(link)}
+                        aria-label={`แก้ไขลิงก์ ${link.label}`}
+                    >
+                        <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="rounded-xl text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                        onClick={() => onDelete(link)}
+                        aria-label={`ลบลิงก์ ${link.label}`}
+                    >
+                        <Trash2 className="h-4 w-4" />
+                    </Button>
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
+function DragPreview({ link }: Readonly<{ link: FooterLink }>) {
+    return (
+        <div className="w-[min(92vw,860px)] rounded-2xl border border-border bg-card/95 px-4 py-3 shadow-2xl backdrop-blur-sm">
+            <div className="flex items-start gap-3">
+                <GripVertical className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold text-foreground">{link.label}</p>
+                        <span
+                            className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${
+                                link.openInNewTab
+                                    ? "bg-blue-100 text-blue-700"
+                                    : "bg-slate-100 text-slate-500"
+                            }`}
+                        >
+                            {link.openInNewTab ? "เปิดแท็บใหม่" : "แท็บเดิม"}
+                        </span>
+                        <span
+                            className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${
+                                link.isActive
+                                    ? "bg-emerald-100 text-emerald-700"
+                                    : "bg-slate-100 text-slate-500"
+                            }`}
+                        >
+                            {link.isActive ? "แสดง" : "ซ่อน"}
+                        </span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{getDomainLabel(link.href)}</p>
+                    <p className="mt-2 truncate text-sm text-blue-600">{link.href}</p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
 export default function FooterLinksAdminPage() {
     const permissions = useAdminPermissions();
     const canEditSettings = permissions.includes(PERMISSIONS.SETTINGS_EDIT);
@@ -59,10 +317,17 @@ export default function FooterLinksAdminPage() {
     const [links, setLinks] = useState<FooterLink[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
+    const [reordering, setReordering] = useState(false);
 
     const [newLabel, setNewLabel] = useState("");
     const [newHref, setNewHref] = useState("");
     const [newOpenInNewTab, setNewOpenInNewTab] = useState(false);
+    const [activeLink, setActiveLink] = useState<FooterLink | null>(null);
+
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    );
 
     const fetchData = useCallback(async () => {
         try {
@@ -94,6 +359,41 @@ export default function FooterLinksAdminPage() {
         [links],
     );
 
+    // ── Drag end ──────────────────────────────────────────────────────────────
+    const handleDragEnd = async (event: DragEndEvent) => {
+        const { active, over } = event;
+        setActiveLink(null);
+        if (!over || active.id === over.id) return;
+
+        const oldIndex = sortedLinks.findIndex((l) => l.id === active.id);
+        const newIndex = sortedLinks.findIndex((l) => l.id === over.id);
+        if (oldIndex === -1 || newIndex === -1) return;
+
+        const reordered = arrayMove(sortedLinks, oldIndex, newIndex);
+
+        // Optimistic update
+        setLinks(reordered.map((l, i) => ({ ...l, sortOrder: i })));
+
+        setReordering(true);
+        try {
+            await Promise.all(
+                reordered.map((l, i) =>
+                    fetch(`/api/admin/footer-links/${l.id}`, {
+                        method: "PUT",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ sortOrder: i }),
+                    }),
+                ),
+            );
+        } catch {
+            showError("เกิดข้อผิดพลาดในการจัดลำดับ");
+            void fetchData();
+        } finally {
+            setReordering(false);
+        }
+    };
+
+    // ── Settings toggle ───────────────────────────────────────────────────────
     const handleToggleActive = async (isActive: boolean) => {
         if (!canEditSettings) {
             showError("คุณไม่มีสิทธิ์แก้ไขลิงก์ส่วนท้าย");
@@ -117,6 +417,7 @@ export default function FooterLinksAdminPage() {
         }
     };
 
+    // ── Add link ──────────────────────────────────────────────────────────────
     const handleAddLink = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!canEditSettings) {
@@ -158,6 +459,7 @@ export default function FooterLinksAdminPage() {
         }
     };
 
+    // ── Edit link ─────────────────────────────────────────────────────────────
     const handleConfirmEdit = async (
         result: { isConfirmed: boolean; value?: Record<string, unknown> },
         link: FooterLink,
@@ -275,6 +577,7 @@ export default function FooterLinksAdminPage() {
         }).then((result) => void handleConfirmEdit(result, link));
     };
 
+    // ── Delete link ───────────────────────────────────────────────────────────
     const handleDeleteLink = async (link: FooterLink) => {
         if (!canEditSettings) {
             showError("คุณไม่มีสิทธิ์ลบลิงก์");
@@ -322,6 +625,7 @@ export default function FooterLinksAdminPage() {
                 </p>
             </div>
 
+            {/* Settings toggle */}
             <div className="rounded-2xl border border-border bg-card shadow-sm">
                 <div className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -349,6 +653,7 @@ export default function FooterLinksAdminPage() {
                 </div>
             </div>
 
+            {/* Add link form */}
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                 <div className="border-b border-border px-5 py-4">
                     <div className="flex items-center gap-2">
@@ -420,6 +725,7 @@ export default function FooterLinksAdminPage() {
                 </form>
             </div>
 
+            {/* Links list */}
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                 <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
@@ -427,12 +733,19 @@ export default function FooterLinksAdminPage() {
                             รายการลิงก์ {links.length} รายการ
                         </p>
                         <p className="text-xs text-muted-foreground">
-                            ตรวจสอบลิงก์ที่ใช้งานอยู่ พร้อมสถานะและรูปแบบการเปิดลิงก์
+                            {canEditSettings
+                                ? "ลากปุ่ม ⠿ เพื่อเรียงลำดับ"
+                                : "ตรวจสอบลิงก์ที่ใช้งานอยู่ พร้อมสถานะและรูปแบบการเปิดลิงก์"}
                         </p>
                     </div>
-                    <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground">
-                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                        พร้อมแสดง {links.filter((item) => item.isActive).length} รายการ
+                    <div className="flex items-center gap-2">
+                        {reordering && (
+                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                        )}
+                        <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground">
+                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                            พร้อมแสดง {links.filter((item) => item.isActive).length} รายการ
+                        </div>
                     </div>
                 </div>
 
@@ -441,178 +754,66 @@ export default function FooterLinksAdminPage() {
                         ยังไม่มีลิงก์ในส่วนท้าย เพิ่มรายการแรกได้จากฟอร์มด้านบน
                     </div>
                 ) : (
-                    <>
-                        <div className="space-y-3 p-4 md:hidden">
-                            {sortedLinks.map((link) => (
-                                <div
-                                    key={link.id}
-                                    className="rounded-2xl border border-border bg-card p-4 shadow-sm"
-                                >
-                                    <div className="flex items-start justify-between gap-3">
-                                        <div className="min-w-0 space-y-1">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <p className="font-semibold text-foreground">
-                                                    {link.label}
-                                                </p>
-                                                <span
-                                                    className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${
-                                                        link.isActive
-                                                            ? "bg-emerald-100 text-emerald-700"
-                                                            : "bg-slate-100 text-slate-500"
-                                                    }`}
-                                                >
-                                                    {link.isActive ? "แสดง" : "ซ่อน"}
-                                                </span>
-                                                <span
-                                                    className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${
-                                                        link.openInNewTab
-                                                            ? "bg-blue-100 text-blue-700"
-                                                            : "bg-slate-100 text-slate-500"
-                                                    }`}
-                                                >
-                                                    {link.openInNewTab
-                                                        ? "เปิดแท็บใหม่"
-                                                        : "แท็บเดิม"}
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground">
-                                                {getDomainLabel(link.href)}
-                                            </p>
-                                        </div>
-                                        <GripVertical className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                                    </div>
-
-                                    <div className="mt-3 rounded-2xl bg-muted/30 px-3 py-2.5">
-                                        <a
-                                            href={link.href}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="inline-flex max-w-full items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                                        >
-                                            <span className="truncate">{link.href}</span>
-                                            <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
-                                        </a>
-                                    </div>
-
-                                    {canEditSettings ? (
-                                        <div className="mt-4 flex items-center justify-end gap-1.5">
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="rounded-xl text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
-                                                onClick={() => openEditModal(link)}
-                                                aria-label={`แก้ไขลิงก์ ${link.label}`}
-                                            >
-                                                <Pencil className="h-4 w-4" />
-                                            </Button>
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="rounded-xl text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                                                onClick={() => void handleDeleteLink(link)}
-                                                aria-label={`ลบลิงก์ ${link.label}`}
-                                            >
-                                                <Trash2 className="h-4 w-4" />
-                                            </Button>
-                                        </div>
-                                    ) : null}
-                                </div>
-                            ))}
-                        </div>
-
-                        <div className="hidden overflow-x-auto md:block">
-                            <Table className="min-w-[860px]">
-                            <TableHeader>
-                                <TableRow className="bg-muted/30">
-                                    <TableHead className="w-[50px]"></TableHead>
-                                    <TableHead className="min-w-[220px]">ข้อความ</TableHead>
-                                    <TableHead className="min-w-[280px]">ลิงก์</TableHead>
-                                    <TableHead className="w-[130px] text-center">แท็บใหม่</TableHead>
-                                    <TableHead className="w-[100px] text-center">สถานะ</TableHead>
-                                    <TableHead className="w-[130px] text-right">จัดการ</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+                        onDragStart={({ active }: DragStartEvent) => {
+                            setActiveLink(
+                                sortedLinks.find((link) => link.id === active.id) ?? null,
+                            );
+                        }}
+                        onDragCancel={() => setActiveLink(null)}
+                        onDragEnd={(e) => void handleDragEnd(e)}
+                    >
+                        <SortableContext
+                            items={sortedLinks.map((l) => l.id)}
+                            strategy={verticalListSortingStrategy}
+                        >
+                            {/* Mobile cards */}
+                            <div className="space-y-3 p-4 md:hidden">
                                 {sortedLinks.map((link) => (
-                                    <TableRow key={link.id} className="hover:bg-muted/20">
-                                        <TableCell>
-                                            <GripVertical className="h-4 w-4 text-muted-foreground" />
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="space-y-1">
-                                                <p className="font-semibold text-foreground">
-                                                    {link.label}
-                                                </p>
-                                                <p className="text-xs text-muted-foreground">
-                                                    {getDomainLabel(link.href)}
-                                                </p>
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>
-                                            <a
-                                                href={link.href}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="inline-flex max-w-[300px] items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline"
-                                            >
-                                                <span className="truncate">{link.href}</span>
-                                                <ExternalLink className="h-3.5 w-3.5 flex-shrink-0" />
-                                            </a>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <span
-                                                className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                                                    link.openInNewTab
-                                                        ? "bg-blue-100 text-blue-700"
-                                                        : "bg-slate-100 text-slate-500"
-                                                }`}
-                                            >
-                                                {link.openInNewTab ? "เปิดแท็บใหม่" : "แท็บเดิม"}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <span
-                                                className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                                                    link.isActive
-                                                        ? "bg-emerald-100 text-emerald-700"
-                                                        : "bg-slate-100 text-slate-500"
-                                                }`}
-                                            >
-                                                {link.isActive ? "แสดง" : "ซ่อน"}
-                                            </span>
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            {canEditSettings ? (
-                                                <div className="flex items-center justify-end gap-1.5">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="rounded-lg text-muted-foreground hover:bg-blue-50 hover:text-blue-600"
-                                                        onClick={() => openEditModal(link)}
-                                                        aria-label={`แก้ไขลิงก์ ${link.label}`}
-                                                    >
-                                                        <Pencil className="h-4 w-4" />
-                                                    </Button>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="rounded-lg text-muted-foreground hover:bg-red-50 hover:text-red-600"
-                                                        onClick={() => void handleDeleteLink(link)}
-                                                        aria-label={`ลบลิงก์ ${link.label}`}
-                                                    >
-                                                        <Trash2 className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            ) : (
-                                                <span className="text-xs text-slate-400">ดูได้อย่างเดียว</span>
-                                            )}
-                                        </TableCell>
-                                    </TableRow>
+                                    <SortableCard
+                                        key={link.id}
+                                        link={link}
+                                        canEditSettings={canEditSettings}
+                                        onEdit={openEditModal}
+                                        onDelete={(l) => void handleDeleteLink(l)}
+                                    />
                                 ))}
-                            </TableBody>
-                            </Table>
-                        </div>
-                    </>
+                            </div>
+
+                            {/* Desktop table */}
+                            <div className="hidden overflow-x-auto md:block">
+                                <Table className="min-w-[860px]">
+                                    <TableHeader>
+                                        <TableRow className="bg-muted/30">
+                                            <TableHead className="w-[50px]" />
+                                            <TableHead className="min-w-[220px]">ข้อความ</TableHead>
+                                            <TableHead className="min-w-[280px]">ลิงก์</TableHead>
+                                            <TableHead className="w-[130px] text-center">แท็บใหม่</TableHead>
+                                            <TableHead className="w-[100px] text-center">สถานะ</TableHead>
+                                            <TableHead className="w-[130px] text-right">จัดการ</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {sortedLinks.map((link) => (
+                                            <SortableRow
+                                                key={link.id}
+                                                link={link}
+                                                canEditSettings={canEditSettings}
+                                                onEdit={openEditModal}
+                                                onDelete={(l) => void handleDeleteLink(l)}
+                                            />
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </SortableContext>
+                        <DragOverlay dropAnimation={null}>
+                            {activeLink ? <DragPreview link={activeLink} /> : null}
+                        </DragOverlay>
+                    </DndContext>
                 )}
             </div>
         </div>

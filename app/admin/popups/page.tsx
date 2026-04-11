@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
@@ -327,10 +327,6 @@ export default function AdminPopupsPage() {
                         <p class="mt-1 text-xs text-gray-500">
                             กำหนดว่าหลังผู้ใช้กดปิดแล้ว Pop-up นี้จะกลับมาแสดงอีกเมื่อไร
                         </p>
-                    </div>
-                    <div class="rounded-2xl border border-dashed border-gray-200 bg-gray-50/40 px-4 py-3">
-                        <p class="text-xs font-medium text-slate-700">พร้อมบันทึกเมื่อมีรูปภาพและตั้งค่าสถานะเรียบร้อยแล้ว</p>
-                        <p class="mt-1 text-xs leading-5 text-slate-500">เช็กภาพตัวอย่าง ลิงก์ปลายทาง และรูปแบบการซ่อนก่อนกดบันทึกอีกครั้ง</p>
                     </div>
                 </div>
             `,
