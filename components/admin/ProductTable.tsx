@@ -182,12 +182,14 @@ export default function ProductTable({
     setLoadingId(productId);
 
     try {
-      const response = await fetch(`/api/admin/products/${productId}`, {
+      const response = await fetch(`/api/products/${productId}`, {
         method: "DELETE",
       });
 
+      const payload = await response.json().catch(() => null) as { message?: string } | null;
+
       if (!response.ok) {
-        throw new Error("ไม่สามารถลบสินค้าได้");
+        throw new Error(payload?.message || "ไม่สามารถลบสินค้าได้");
       }
 
       showSuccess("ลบสินค้าเรียบร้อยแล้ว");

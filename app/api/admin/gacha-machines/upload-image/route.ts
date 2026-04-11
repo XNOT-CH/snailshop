@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import path from "node:path";
 import { requirePermission } from "@/lib/auth";
 import { saveOptimizedImageUpload } from "@/lib/serverImageUpload";
 import { PERMISSIONS } from "@/lib/permissions";
+import { getRuntimeUploadDir } from "@/lib/runtimeUploads";
 
 export async function POST(request: NextRequest) {
     const authCheck = await requirePermission(PERMISSIONS.GACHA_EDIT);
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
             maxInputBytes: 5 * 1024 * 1024,
             maxDimension: 1080,
             outputQuality: 82,
-            uploadDir: path.join(process.cwd(), "public", "uploads", "gacha-machines"),
+            uploadDir: getRuntimeUploadDir("/uploads/gacha-machines"),
             publicPath: "/uploads/gacha-machines",
         });
 

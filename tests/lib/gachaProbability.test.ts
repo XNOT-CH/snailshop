@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getNormalizedProbability, pickWeightedCandidate } from "@/lib/gachaProbability";
+import { getNormalizedProbability, hasExactProbabilityTotal, pickWeightedCandidate, sumProbability } from "@/lib/gachaProbability";
 
 describe("lib/gachaProbability", () => {
     it("normalizes invalid probability values to zero", () => {
@@ -28,5 +28,26 @@ describe("lib/gachaProbability", () => {
         ];
 
         expect(pickWeightedCandidate(candidates, 0.8)?.id).toBe("a");
+    });
+
+    it("sums probabilities with stable two-decimal rounding", () => {
+        const candidates = [
+            { id: "a", probability: "33.33" },
+            { id: "b", probability: 33.33 },
+            { id: "c", probability: 33.34 },
+        ];
+
+        expect(sumProbability(candidates)).toBe(100);
+    });
+
+    it("requires an exact 100 percent total", () => {
+        expect(hasExactProbabilityTotal([
+            { id: "a", probability: 35 },
+        ])).toBe(false);
+
+        expect(hasExactProbabilityTotal([
+            { id: "a", probability: 65 },
+            { id: "b", probability: 35 },
+        ])).toBe(true);
     });
 });

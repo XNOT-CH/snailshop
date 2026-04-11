@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
 import { saveOptimizedImageUpload } from "@/lib/serverImageUpload";
-import path from "node:path";
+import { getRuntimeUploadDir } from "@/lib/runtimeUploads";
 
 export async function POST(request: NextRequest) {
     // Check if user is admin
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const uploadDir = path.join(process.cwd(), "public", "uploads", "products");
+        const uploadDir = getRuntimeUploadDir("/uploads/products");
         const savedFile = await saveOptimizedImageUpload(file, {
             allowedTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
             maxInputBytes: 5 * 1024 * 1024,

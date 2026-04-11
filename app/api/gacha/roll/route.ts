@@ -19,7 +19,7 @@ import {
     type GachaProductLite,
     type GachaTier,
 } from "@/lib/gachaGrid";
-import { pickWeightedCandidate } from "@/lib/gachaProbability";
+import { hasExactProbabilityTotal, pickWeightedCandidate } from "@/lib/gachaProbability";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkGachaRateLimit, getClientIp } from "@/lib/rateLimit";
 import { isRedisAvailable, redis } from "@/lib/redis";
@@ -34,8 +34,13 @@ type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 type PendingSpinPayload = {
     userId: string;
     lLabel: string;
+    rLabel: string;
+    selectorLabel: string;
     chosenRewardId: string;
     machineId: string | null;
+    orderId: string | null;
+    product: GachaProductLite;
+    message?: string;
     iat: number;
     nonce: string;
 };
@@ -78,6 +83,19 @@ function getCurrencyRewardLabel(rewardType: string) {
     if (rewardType === "CREDIT") return "เครดิต";
     if (rewardType === "POINT") return "พอยต์";
     return "ตั๋วสุ่ม";
+}
+
+function shouldFallbackProductReward(error: unknown) {
+    if (!(error instanceof Error)) {
+        return false;
+    }
+
+    return error.message.includes("สต็อกของรางวัลหมดแล้ว")
+        || error.message.includes("รางวัลนี้ถูกใช้งานไปแล้ว กรุณาสุ่มใหม่");
+}
+
+function buildPendingSpinKey(nonce: string) {
+    return `${PENDING_SPIN_PREFIX}:${nonce}`;
 }
 
 function buildChosenRewardId(reward: {
@@ -170,7 +188,7 @@ async function fetchUserOrError(userId: string) {
     return { user };
 }
 
-async function handleSpin1(userId: string, machineId: string | null, _costType: string, _costAmount: number, dailySpinLimit: number) {
+async function handleSpin1(userId: string, machineId: string | null, costType: string, costAmount: number, dailySpinLimit: number) {
     const userRes = await fetchUserOrError(userId);
     if ("error" in userRes) {
         return { error: userRes.error, status: userRes.status };
@@ -196,6 +214,10 @@ async function handleSpin1(userId: string, machineId: string | null, _costType: 
             ? reward.product && !reward.product.isSold && !reward.product.orderId
             : reward.rewardName && reward.rewardAmount && Number(reward.rewardAmount) > 0
     );
+    if (!hasExactProbabilityTotal(eligibleRewards)) {
+        return { error: "ตู้กาชานี้ยังตั้งค่าอัตราสุ่มไม่ครบ 100% จึงยังไม่สามารถสุ่มได้", status: 400 };
+    }
+
     const chosenReward = pickWeightedCandidate(eligibleRewards);
     if (!chosenReward) {
         return { error: "ไม่พบรางวัลที่สามารถสุ่มได้", status: 400 };
@@ -206,88 +228,285 @@ async function handleSpin1(userId: string, machineId: string | null, _costType: 
         ["R1", "R2", "R3", "R4"].some((candidateRLabel) => {
             const tile = getIntersectionTile(tiles, candidateLLabel, candidateRLabel);
             return tile?.product?.id === chosenRewardId;
-        })
+        }),
     );
     if (validLSelectors.length === 0) {
         return { error: "ไม่พบเส้นทางสำหรับรางวัลที่สุ่มได้", status: 400 };
     }
 
     const lLabel = validLSelectors[crypto.randomInt(0, validLSelectors.length)];
-    const nonce = crypto.randomUUID();
-    const pendingPayload: PendingSpinPayload = { userId, lLabel, chosenRewardId, machineId, iat: Date.now(), nonce };
-    const payload = encrypt(JSON.stringify(pendingPayload));
+    const validRSelectors = getValidRSelectorsFor(tiles, lLabel).filter((candidateRLabel) => {
+        const tile = getIntersectionTile(tiles, lLabel, candidateRLabel);
+        return tile?.product?.id === chosenRewardId;
+    });
 
-    const cookieStore = await cookies();
-    cookieStore.set(COOKIE_NAME, payload, { httpOnly: true, maxAge: COOKIE_TTL, path: "/" });
-
-    purgeExpiredPendingSpinState(pendingPayload.iat);
-    pendingSpinMemoryStore.set(nonce, pendingPayload);
-    pendingSpinMemoryLocks.delete(nonce);
-
-    if (isRedisAvailable() && redis) {
-        await redis.set(`${PENDING_SPIN_PREFIX}:${nonce}`, pendingPayload, { ex: COOKIE_TTL });
+    if (validRSelectors.length === 0) {
+        return { error: "ไม่พบเส้นทางสำหรับรางวัลที่สุ่มได้", status: 400 };
     }
+
+    const rLabel = validRSelectors[crypto.randomInt(0, validRSelectors.length)];
+    const selectorLabel = `${lLabel}+${rLabel}`;
+    const rewardMeta = tieredProducts.find((product) => product.id === chosenRewardId);
+    const tier: GachaTier = rewardMeta?.tier ?? "common";
+    const chosenProductReward = allRewards.find((reward) =>
+        reward.rewardType === "PRODUCT" && (reward.productId === chosenRewardId || reward.product?.id === chosenRewardId),
+    );
+
+    const finalizedResult = await db.transaction(async (tx) => {
+        if (chosenRewardId.startsWith("reward:")) {
+            const rewardRowId = chosenRewardId.replace("reward:", "");
+            const chosenRewardRow = allRewards.find((reward) => reward.id === rewardRowId);
+            const rewardType = chosenRewardRow?.rewardType as "CREDIT" | "POINT" | "TICKET";
+            const rewardAmount = Number(chosenRewardRow?.rewardAmount ?? 0);
+
+            await finalizeCurrencyRewardRoll(
+                tx,
+                userId,
+                selectorLabel,
+                machineId,
+                costType,
+                costAmount,
+                rewardType,
+                rewardAmount,
+                rewardMeta,
+                tier,
+            );
+
+            return {
+                message: undefined as string | undefined,
+                orderId: null,
+                product: {
+                    id: chosenRewardId,
+                    imageUrl: rewardMeta?.imageUrl ?? null,
+                    name: rewardMeta?.name ?? "รางวัล",
+                    price: rewardMeta?.price ?? 0,
+                    rewardAmount,
+                    rewardType,
+                    tier,
+                },
+                rLabel,
+                selectorLabel,
+            };
+        }
+
+        const product = await tx.query.products.findFirst({
+            where: eq(products.id, chosenRewardId),
+            columns: {
+                id: true,
+                imageUrl: true,
+                isSold: true,
+                name: true,
+                orderId: true,
+                price: true,
+                secretData: true,
+                stockSeparator: true,
+            },
+        });
+
+        if (!product) {
+            throw new Error("รางวัลนี้ถูกใช้งานไปแล้ว กรุณาสุ่มใหม่");
+        }
+
+        try {
+            const claimedReward = await claimProductRewardOrThrow(tx, {
+                costAmount,
+                isSold: product.isSold,
+                orderId: product.orderId,
+                productId: product.id,
+                secretData: product.secretData,
+                stockSeparator: product.stockSeparator,
+                userId,
+            });
+
+            await deductUserBalanceOrThrow(tx, userId, costType, costAmount);
+
+            await tx.insert(gachaRollLogs).values({
+                costAmount: String(costAmount),
+                costType,
+                gachaMachineId: machineId,
+                id: crypto.randomUUID(),
+                productId: product.id,
+                rewardImageUrl: product.imageUrl ?? null,
+                rewardName: product.name,
+                selectorLabel,
+                tier,
+                userId,
+            });
+
+            return {
+                message: undefined as string | undefined,
+                orderId: claimedReward.orderId,
+                product: {
+                    id: product.id,
+                    imageUrl: product.imageUrl,
+                    name: product.name,
+                    price: Number(product.price),
+                    tier,
+                },
+                rLabel,
+                selectorLabel,
+            };
+        } catch (error) {
+            if (!shouldFallbackProductReward(error)) {
+                throw error;
+            }
+
+            const fallbackAmount = Math.max(0, Number(chosenProductReward?.rewardAmount ?? product.price ?? 0));
+
+            await finalizeCurrencyRewardRoll(
+                tx,
+                userId,
+                selectorLabel,
+                machineId,
+                costType,
+                costAmount,
+                "CREDIT",
+                fallbackAmount,
+                {
+                    id: `fallback-credit:${product.id}`,
+                    imageUrl: product.imageUrl,
+                    name: `เครดิตชดเชยแทน ${product.name}`,
+                    price: fallbackAmount,
+                    rewardAmount: fallbackAmount,
+                    rewardType: "CREDIT",
+                    tier,
+                },
+                tier,
+            );
+
+            return {
+                message: "สินค้ารางวัลหมดชั่วคราว ระบบโอนเครดิตมูลค่าเท่ากันให้แทนอัตโนมัติแล้ว",
+                orderId: null,
+                product: {
+                    id: `fallback-credit:${product.id}`,
+                    imageUrl: product.imageUrl,
+                    name: `เครดิตชดเชยแทน ${product.name}`,
+                    price: fallbackAmount,
+                    rewardAmount: fallbackAmount,
+                    rewardType: "CREDIT",
+                    tier,
+                },
+                rLabel,
+                selectorLabel,
+            };
+        }
+    });
+
+    const pendingPayload: PendingSpinPayload = {
+        userId,
+        lLabel,
+        rLabel: finalizedResult.rLabel,
+        selectorLabel: finalizedResult.selectorLabel,
+        chosenRewardId,
+        machineId,
+        orderId: finalizedResult.orderId,
+        product: finalizedResult.product,
+        message: finalizedResult.message,
+        iat: Date.now(),
+        nonce: crypto.randomUUID(),
+    };
+
+    await persistPendingSpin(pendingPayload);
 
     return { data: { lLabel } };
 }
 
-async function validatePendingSpin(userId: string, machineId: string | null) {
+async function persistPendingSpin(pendingPayload: PendingSpinPayload) {
+    const payload = encrypt(JSON.stringify(pendingPayload));
+    const cookieStore = await cookies();
+    cookieStore.set(COOKIE_NAME, payload, { httpOnly: true, maxAge: COOKIE_TTL, path: "/" });
+
+    purgeExpiredPendingSpinState(pendingPayload.iat);
+    pendingSpinMemoryStore.set(pendingPayload.nonce, pendingPayload);
+    pendingSpinMemoryLocks.delete(pendingPayload.nonce);
+
+    if (isRedisAvailable() && redis) {
+        await redis.set(buildPendingSpinKey(pendingPayload.nonce), pendingPayload, { ex: COOKIE_TTL });
+    }
+}
+
+async function readPendingSpin(userId: string, machineId: string | null) {
     const cookieStore = await cookies();
     const rawCookie = cookieStore.get(COOKIE_NAME)?.value;
     if (!rawCookie) {
         return { error: "กรุณากดสุ่มครั้งที่ 1 ก่อน", status: 400 };
     }
 
-    let lLabel: string;
-    let nonce: string | null = null;
-    let chosenRewardId: string;
+    let payload: PendingSpinPayload;
 
     try {
-        const parsed = JSON.parse(decrypt(rawCookie)) as PendingSpinPayload;
-        if (parsed.userId !== userId) throw new Error("user mismatch");
-        if (Date.now() - parsed.iat > COOKIE_TTL * 1000) throw new Error("expired");
-        if ((parsed.machineId ?? null) !== machineId) throw new Error("machine mismatch");
-
-        lLabel = parsed.lLabel;
-        nonce = parsed.nonce;
-        chosenRewardId = parsed.chosenRewardId;
+        payload = JSON.parse(decrypt(rawCookie)) as PendingSpinPayload;
+        if (payload.userId !== userId) throw new Error("user mismatch");
+        if (Date.now() - payload.iat > COOKIE_TTL * 1000) throw new Error("expired");
+        if ((payload.machineId ?? null) !== machineId) throw new Error("machine mismatch");
     } catch {
         cookieStore.delete(COOKIE_NAME);
         return { error: "เซสชันการสุ่มหมดอายุ กรุณาเริ่มใหม่", status: 400 };
     }
 
-    cookieStore.delete(COOKIE_NAME);
     purgeExpiredPendingSpinState();
+
+    if (isRedisAvailable() && redis) {
+        const redisPayload = await redis.get<PendingSpinPayload>(buildPendingSpinKey(payload.nonce));
+        if (!redisPayload || redisPayload.userId !== userId || (redisPayload.machineId ?? null) !== machineId) {
+            return { error: "เซสชันการสุ่มไม่ถูกต้อง กรุณาเริ่มใหม่", status: 400 };
+        }
+
+        payload = redisPayload;
+    } else {
+        const memoryPayload = pendingSpinMemoryStore.get(payload.nonce);
+        if (!memoryPayload || memoryPayload.userId !== userId || (memoryPayload.machineId ?? null) !== machineId) {
+            return { error: "เซสชันการสุ่มไม่ถูกต้อง กรุณาเริ่มใหม่", status: 400 };
+        }
+
+        payload = memoryPayload;
+    }
+
+    return payload;
+}
+
+async function validatePendingSpin(userId: string, machineId: string | null) {
+    const pendingState = await readPendingSpin(userId, machineId);
+    if ("error" in pendingState) {
+        return pendingState;
+    }
+
+    const nonce = pendingState.nonce;
 
     if (nonce && isRedisAvailable() && redis) {
         const lockKey = `${PENDING_SPIN_LOCK_PREFIX}:${nonce}`;
         const lockSet = await redis.set(lockKey, userId, { nx: true, ex: COOKIE_TTL });
         if (!lockSet) {
-            return { error: "คำขอนี้ถูกใช้งานไปแล้ว กรุณาเริ่มสุ่มใหม่", status: 409 };
+            return { error: "กำลังประมวลผลการสุ่มก่อนหน้าอยู่ กรุณารอสักครู่แล้วลองใหม่", status: 409 };
         }
-
-        const pendingKey = `${PENDING_SPIN_PREFIX}:${nonce}`;
-        const pendingPayload = await redis.get<PendingSpinPayload>(pendingKey);
-        if (!pendingPayload || pendingPayload.userId !== userId || pendingPayload.lLabel !== lLabel || pendingPayload.chosenRewardId !== chosenRewardId || (pendingPayload.machineId ?? null) !== machineId) {
-            return { error: "เซสชันการสุ่มไม่ถูกต้อง กรุณาเริ่มใหม่", status: 400 };
-        }
-
-        await redis.del(pendingKey);
     } else if (nonce) {
         if (pendingSpinMemoryLocks.has(nonce)) {
-            return { error: "คำขอนี้ถูกใช้งานไปแล้ว กรุณาเริ่มสุ่มใหม่", status: 409 };
+            return { error: "กำลังประมวลผลการสุ่มก่อนหน้าอยู่ กรุณารอสักครู่แล้วลองใหม่", status: 409 };
         }
 
         pendingSpinMemoryLocks.set(nonce, Date.now() + COOKIE_TTL * 1000);
-        const pendingPayload = pendingSpinMemoryStore.get(nonce);
-        if (!pendingPayload || pendingPayload.userId !== userId || pendingPayload.lLabel !== lLabel || pendingPayload.chosenRewardId !== chosenRewardId || (pendingPayload.machineId ?? null) !== machineId) {
-            return { error: "เซสชันการสุ่มไม่ถูกต้อง กรุณาเริ่มใหม่", status: 400 };
-        }
-
-        pendingSpinMemoryStore.delete(nonce);
     }
 
-    return { lLabel, chosenRewardId };
+    return pendingState;
+}
+
+async function resumePendingSpin(userId: string, machineId: string | null) {
+    const pendingState = await readPendingSpin(userId, machineId);
+    if ("error" in pendingState) {
+        return pendingState;
+    }
+
+    return {
+        data: {
+            lLabel: pendingState.lLabel,
+            orderId: pendingState.orderId,
+            product: pendingState.product,
+            rLabel: pendingState.rLabel,
+            selectorLabel: pendingState.selectorLabel,
+            tier: pendingState.product.tier,
+        },
+        message: pendingState.message,
+    };
 }
 
 async function finalizeCurrencyRewardRoll(
@@ -325,153 +544,26 @@ async function handleSpin2(userId: string, machineId: string | null, costType: s
         return { error: pendingRes.error, status: pendingRes.status };
     }
 
-    const { lLabel, chosenRewardId } = pendingRes;
+    const { lLabel, message, orderId, product, rLabel, selectorLabel } = pendingRes;
     const userRes = await fetchUserOrError(userId);
     if ("error" in userRes) {
         return { error: userRes.error, status: userRes.status };
     }
-    const user = userRes.user;
 
     if (dailySpinLimit > 0) {
         await checkDailySpinLimit(userId, machineId, dailySpinLimit);
     }
 
-    const { allRewards, tieredProducts } = await fetchTieredProducts(machineId);
-    if (tieredProducts.length === 0) {
-        return { error: "ไม่มีรางวัลสำหรับกาชาในขณะนี้", status: 400 };
-    }
-
-    const tiles = buildGrid(tieredProducts);
-    const validRSelectors = getValidRSelectorsFor(tiles, lLabel);
-    if (validRSelectors.length === 0) {
-        return { error: "ไม่มีแถวขวาที่สามารถสุ่มได้", status: 400 };
-    }
-
-    const chosenId = chosenRewardId;
-    const selectorPairs = validRSelectors
-        .map((candidateRLabel) => {
-            const tile = getIntersectionTile(tiles, lLabel, candidateRLabel);
-            return tile?.product?.id === chosenId ? { rLabel: candidateRLabel, tile } : null;
-        })
-        .filter((pair): pair is { rLabel: string; tile: NonNullable<ReturnType<typeof getIntersectionTile>> } => Boolean(pair));
-
-    if (selectorPairs.length === 0) {
-        return { error: "ไม่พบรางวัลที่จุดตัด กรุณาสุ่มใหม่", status: 400 };
-    }
-
-    const selectedPair = selectorPairs[crypto.randomInt(0, selectorPairs.length)];
-    const rLabel = selectedPair.rLabel;
-    const selectorLabel = `${lLabel}+${rLabel}`;
-
-    const rewardMeta = tieredProducts.find((product) => product.id === chosenId);
-    const tier: GachaTier = rewardMeta?.tier ?? "common";
-
-    if (chosenId.startsWith("reward:")) {
-        const rewardRowId = chosenId.replace("reward:", "");
-        const chosenRewardRow = allRewards.find((reward) => reward.id === rewardRowId);
-        const rewardType = chosenRewardRow?.rewardType as "CREDIT" | "POINT" | "TICKET";
-        const rewardAmount = Number(chosenRewardRow?.rewardAmount ?? 0);
-
-        await db.transaction(async (tx) => {
-            await finalizeCurrencyRewardRoll(
-                tx,
-                user.id,
-                selectorLabel,
-                machineId,
-                costType,
-                costAmount,
-                rewardType,
-                rewardAmount,
-                rewardMeta,
-                tier,
-            );
-        });
-
-        return {
-            data: {
-                lLabel,
-                orderId: null,
-                product: {
-                    id: chosenId,
-                    imageUrl: rewardMeta?.imageUrl ?? null,
-                    name: rewardMeta?.name ?? "รางวัล",
-                    price: rewardMeta?.price ?? 0,
-                    rewardAmount,
-                    rewardType,
-                    tier,
-                },
-                rLabel,
-                selectorLabel,
-                tier,
-            },
-        };
-    }
-
-    const result = await db.transaction(async (tx) => {
-        const product = await tx.query.products.findFirst({
-            where: eq(products.id, chosenId),
-            columns: {
-                id: true,
-                imageUrl: true,
-                isSold: true,
-                name: true,
-                orderId: true,
-                price: true,
-                secretData: true,
-                stockSeparator: true,
-            },
-        });
-
-        if (!product) {
-            throw new Error("รางวัลนี้ถูกใช้งานไปแล้ว กรุณาสุ่มใหม่");
-        }
-
-        const claimedReward = await claimProductRewardOrThrow(tx, {
-            costAmount,
-            isSold: product.isSold,
-            orderId: product.orderId,
-            productId: product.id,
-            secretData: product.secretData,
-            stockSeparator: product.stockSeparator,
-            userId: user.id,
-        });
-
-        await deductUserBalanceOrThrow(tx, user.id, costType, costAmount);
-
-        await tx.insert(gachaRollLogs).values({
-            costAmount: String(costAmount),
-            costType,
-            gachaMachineId: machineId,
-            id: crypto.randomUUID(),
-            productId: product.id,
-            rewardImageUrl: product.imageUrl ?? null,
-            rewardName: product.name,
-            selectorLabel,
-            tier,
-            userId: user.id,
-        });
-
-        return {
-            orderId: claimedReward.orderId,
-            product: {
-                id: product.id,
-                imageUrl: product.imageUrl,
-                name: product.name,
-                price: Number(product.price),
-                tier,
-            },
-        };
-    });
-
     return {
         data: {
             lLabel,
-            orderId: result.orderId,
-            product: result.product,
+            orderId,
+            product,
             rLabel,
             selectorLabel,
-            tier,
+            tier: product.tier,
         },
+        message: message ?? undefined,
     };
 }
 
@@ -517,9 +609,9 @@ export async function POST(req: Request) {
         // Ignore missing body and use defaults.
     }
 
-    const executionLock = spin === 2
-        ? await acquireGachaExecutionLock(authCheck.userId, machineId)
-        : { acquired: true, release: async () => {} };
+    const executionLock = spin === 3
+        ? { acquired: true, release: async () => {} }
+        : await acquireGachaExecutionLock(authCheck.userId, machineId);
 
     if (!executionLock.acquired) {
         return NextResponse.json(
@@ -533,6 +625,15 @@ export async function POST(req: Request) {
 
         if (!isEnabled) {
             return NextResponse.json({ success: false, message: "ระบบกาชาปิดอยู่ชั่วคราว" }, { status: 400 });
+        }
+
+        if (spin === 3) {
+            const res = await resumePendingSpin(authCheck.userId, machineId);
+            if ("error" in res) {
+                return NextResponse.json({ success: false, message: res.error }, { status: res.status || 400 });
+            }
+
+            return NextResponse.json({ success: true, data: res.data, message: res.message });
         }
 
         if (spin === 1) {
@@ -549,7 +650,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: false, message: res.error }, { status: res.status || 400 });
         }
 
-        return NextResponse.json({ success: true, data: res.data });
+        return NextResponse.json({ success: true, data: res.data, message: res.message });
     } catch (error) {
         const normalizedError = error as Error;
         const passthroughMessages = [

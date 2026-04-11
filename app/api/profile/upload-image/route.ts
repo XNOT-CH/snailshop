@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import path from "node:path";
 import { isAuthenticatedWithCsrf } from "@/lib/auth";
 import { deleteManagedUpload, saveOptimizedImageUpload } from "@/lib/serverImageUpload";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { getLegacyPublicUploadDir, getRuntimeUploadDir } from "@/lib/runtimeUploads";
 
 export const runtime = "nodejs";
-const PROFILE_UPLOAD_DIR = path.join(process.cwd(), "public", "uploads", "profiles");
+const PROFILE_UPLOAD_DIR = getRuntimeUploadDir("/uploads/profiles");
+const PROFILE_LEGACY_UPLOAD_DIR = getLegacyPublicUploadDir("/uploads/profiles");
 const PROFILE_PUBLIC_PATH = "/uploads/profiles";
 
 export async function POST(request: NextRequest) {
@@ -43,7 +44,7 @@ export async function POST(request: NextRequest) {
             .set({ image: savedFile.url })
             .where(eq(users.id, authCheck.userId));
 
-        await deleteManagedUpload(currentUser?.image, PROFILE_UPLOAD_DIR, PROFILE_PUBLIC_PATH);
+        await deleteManagedUpload(currentUser?.image, PROFILE_UPLOAD_DIR, PROFILE_PUBLIC_PATH, [PROFILE_LEGACY_UPLOAD_DIR]);
 
         return NextResponse.json({ success: true, url: savedFile.url, filename: savedFile.filename }, { status: 201 });
     } catch (error) {
@@ -73,7 +74,7 @@ export async function DELETE(request: NextRequest) {
             .set({ image: null })
             .where(eq(users.id, authCheck.userId));
 
-        await deleteManagedUpload(currentUser?.image, PROFILE_UPLOAD_DIR, PROFILE_PUBLIC_PATH);
+        await deleteManagedUpload(currentUser?.image, PROFILE_UPLOAD_DIR, PROFILE_PUBLIC_PATH, [PROFILE_LEGACY_UPLOAD_DIR]);
 
         return NextResponse.json({ success: true }, { status: 200 });
     } catch (error) {

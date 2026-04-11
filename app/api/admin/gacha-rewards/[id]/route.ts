@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { gachaRewardSchema } from "@/lib/validations/gacha";
 import { PERMISSIONS } from "@/lib/permissions";
+import { disableMachineIfProbabilityInvalid } from "@/lib/gachaMachineProbability";
 
 interface RouteParams { params: Promise<{ id: string }> }
 
@@ -13,6 +14,13 @@ export async function PUT(request: Request, { params }: RouteParams) {
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     try {
         const { id } = await params;
+        const existingReward = await db.query.gachaRewards.findFirst({
+            where: eq(gachaRewards.id, id),
+            columns: {
+                gachaMachineId: true,
+            },
+        });
+
         const result = await validateBody(request, gachaRewardSchema.partial());
         if ("error" in result) return result.error;
         const body = result.data;
@@ -23,13 +31,12 @@ export async function PUT(request: Request, { params }: RouteParams) {
         if (body.tier !== undefined) updateData.tier = body.tier;
         if (body.isActive !== undefined) updateData.isActive = body.isActive;
         if (body.rewardName !== undefined) updateData.rewardName = body.rewardName;
-        if (body.rewardAmount !== undefined) updateData.rewardAmount = String(body.rewardAmount);
+        if (body.rewardAmount !== undefined) updateData.rewardAmount = body.rewardAmount == null ? null : String(body.rewardAmount);
         if (body.rewardImageUrl !== undefined) updateData.rewardImageUrl = body.rewardImageUrl;
         if (body.probability !== undefined) updateData.probability = String(body.probability);
 
         if (body.rewardType === "PRODUCT") {
             updateData.rewardName = null;
-            updateData.rewardAmount = null;
             if (body.rewardImageUrl === undefined) {
                 updateData.rewardImageUrl = null;
             }
@@ -38,6 +45,9 @@ export async function PUT(request: Request, { params }: RouteParams) {
         }
 
         await db.update(gachaRewards).set(updateData).where(eq(gachaRewards.id, id));
+        if (existingReward?.gachaMachineId) {
+            await disableMachineIfProbabilityInvalid(existingReward.gachaMachineId);
+        }
         const updated = await db.query.gachaRewards.findFirst({ where: eq(gachaRewards.id, id) });
         return NextResponse.json({ success: true, data: updated });
     } catch (error) {
@@ -50,7 +60,16 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     try {
         const { id } = await params;
+        const existingReward = await db.query.gachaRewards.findFirst({
+            where: eq(gachaRewards.id, id),
+            columns: {
+                gachaMachineId: true,
+            },
+        });
         await db.delete(gachaRewards).where(eq(gachaRewards.id, id));
+        if (existingReward?.gachaMachineId) {
+            await disableMachineIfProbabilityInvalid(existingReward.gachaMachineId);
+        }
         return NextResponse.json({ success: true });
     } catch (error) {
         return NextResponse.json({ success: false, message: `เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : "Unknown"}` }, { status: 500 });

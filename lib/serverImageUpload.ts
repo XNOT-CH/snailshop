@@ -3,6 +3,7 @@ import path from "node:path";
 import { existsSync } from "node:fs";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import sharp from "sharp";
+import { getLegacyPublicUploadDir } from "@/lib/runtimeUploads";
 
 const IMAGE_SIGNATURES = {
     "image/png": (buffer: Buffer) =>
@@ -172,16 +173,52 @@ export function resolveManagedUploadPath(fileUrl: string, uploadDir: string, pub
     return path.join(uploadDir, filename);
 }
 
-export async function deleteManagedUpload(fileUrl: string | null | undefined, uploadDir: string, publicPath: string) {
+export function resolveManagedUploadPaths(
+    fileUrl: string,
+    uploadDir: string,
+    publicPath: string,
+    fallbackUploadDirs: string[] = []
+) {
+    const candidateDirs = [uploadDir, ...fallbackUploadDirs];
+    const uniquePaths = new Set<string>();
+
+    for (const candidateDir of candidateDirs) {
+        const resolvedPath = resolveManagedUploadPath(fileUrl, candidateDir, publicPath);
+        if (resolvedPath) {
+            uniquePaths.add(resolvedPath);
+        }
+    }
+
+    const legacyUploadDir = getLegacyPublicUploadDir(publicPath);
+    const legacyPath = resolveManagedUploadPath(fileUrl, legacyUploadDir, publicPath);
+    if (legacyPath) {
+        uniquePaths.add(legacyPath);
+    }
+
+    return [...uniquePaths];
+}
+
+export async function deleteManagedUpload(
+    fileUrl: string | null | undefined,
+    uploadDir: string,
+    publicPath: string,
+    fallbackUploadDirs: string[] = []
+) {
     if (!fileUrl) {
         return false;
     }
 
-    const filePath = resolveManagedUploadPath(fileUrl, uploadDir, publicPath);
-    if (!filePath || !existsSync(filePath)) {
-        return false;
+    const filePaths = resolveManagedUploadPaths(fileUrl, uploadDir, publicPath, fallbackUploadDirs);
+    let deleted = false;
+
+    for (const filePath of filePaths) {
+        if (!existsSync(filePath)) {
+            continue;
+        }
+
+        await unlink(filePath);
+        deleted = true;
     }
 
-    await unlink(filePath);
-    return true;
+    return deleted;
 }

@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { gachaRewardSchema } from "@/lib/validations/gacha";
 import { PERMISSIONS } from "@/lib/permissions";
+import { disableMachineIfProbabilityInvalid } from "@/lib/gachaMachineProbability";
 
 export async function GET(request: Request) {
     const authCheck = await requirePermission(PERMISSIONS.GACHA_VIEW);
@@ -50,6 +51,7 @@ export async function POST(request: Request) {
             await db.insert(gachaRewards).values({
                 id: newId, productId: body.productId, tier: body.tier, isActive: body.isActive,
                 rewardType: "PRODUCT", gachaMachineId: body.gachaMachineId ?? null,
+                rewardAmount: body.rewardAmount == null ? null : String(body.rewardAmount),
                 probability: String(body.probability),
                 createdAt: mysqlNow(),
                 updatedAt: mysqlNow(),
@@ -59,12 +61,15 @@ export async function POST(request: Request) {
             if (!body.rewardName) return NextResponse.json({ success: false, message: "กรุณากรอกชื่อรางวัล" }, { status: 400 });
             await db.insert(gachaRewards).values({
                 id: newId, rewardType: body.rewardType, rewardName: body.rewardName,
-                rewardAmount: String(body.rewardAmount), rewardImageUrl: body.rewardImageUrl || null,
+                rewardAmount: body.rewardAmount == null ? null : String(body.rewardAmount), rewardImageUrl: body.rewardImageUrl || null,
                 tier: body.tier, isActive: body.isActive, gachaMachineId: body.gachaMachineId ?? null,
                 probability: String(body.probability),
                 createdAt: mysqlNow(),
                 updatedAt: mysqlNow(),
             });
+        }
+        if (body.gachaMachineId) {
+            await disableMachineIfProbabilityInvalid(body.gachaMachineId);
         }
         const created = await db.query.gachaRewards.findFirst({ where: eq(gachaRewards.id, newId) });
         return NextResponse.json({ success: true, data: created });

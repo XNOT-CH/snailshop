@@ -43,6 +43,8 @@ interface GachaMachine {
     sortOrder: number;
     category: { name: string } | null;
     _count: { rewards: number };
+    probabilityTotal?: number;
+    isProbabilityComplete?: boolean;
 }
 
 function validImageUrl(url: string | null): boolean {
@@ -161,15 +163,19 @@ export default function GachaMachinesAdminPage() {
         // Optimistic update: no full reload so page doesn't scroll
         setMachines(prev => prev.map(m => m.id === id ? { ...m, [field]: val } : m));
         try {
-            await fetch(`/api/admin/gacha-machines/${id}`, {
+            const response = await fetch(`/api/admin/gacha-machines/${id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ [field]: val }),
             });
-        } catch {
+            const payload = await response.json().catch(() => null) as { success?: boolean; message?: string } | null;
+            if (!response.ok || payload?.success === false) {
+                throw new Error(payload?.message ?? "บันทึกสถานะไม่สำเร็จ");
+            }
+        } catch (error) {
             // Revert on failure
             setMachines(prev => prev.map(m => m.id === id ? { ...m, [field]: !val } : m));
-            showError("บันทึกสถานะไม่สำเร็จ");
+            showError(error instanceof Error ? error.message : "บันทึกสถานะไม่สำเร็จ");
         }
     };
 
@@ -449,6 +455,10 @@ function SortableRow({
 }>) {
     const router = useRouter();
     const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: m.id });
+    const isActivationLocked = !m.isProbabilityComplete;
+    const activationTitle = isActivationLocked
+        ? `เปิดใช้งานไม่ได้: โอกาสรวม ${Number(m.probabilityTotal ?? 0).toFixed(2)}% / 100%`
+        : (m.isActive ? "คลิกเพื่อซ่อน" : "คลิกเพื่อแสดง");
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -497,12 +507,17 @@ function SortableRow({
                 {m.costType === "TICKET" && `${Number(m.costAmount).toLocaleString()} ตั๋วสุ่ม`}
             </td>
             <td className="hidden px-3 py-2.5 text-muted-foreground md:table-cell">{m._count.rewards}</td>
+            <td className="hidden px-3 py-2.5 lg:table-cell">
+                <span className={m.isProbabilityComplete ? "font-semibold text-emerald-600" : "font-semibold text-red-600"}>
+                    {Number(m.probabilityTotal ?? 0).toFixed(2)}%
+                </span>
+            </td>
             <td className="px-3 py-2.5">
                 <button
                     onClick={() => handleToggle(m.id, "isActive", !m.isActive)}
-                    disabled={togglingMap[m.id] || !canEditGacha}
+                    disabled={togglingMap[m.id] || !canEditGacha || isActivationLocked}
                     className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${m.isActive ? "bg-[#145de7]" : "bg-gray-300 dark:bg-zinc-600"}`}
-                    title={m.isActive ? "คลิกเพื่อซ่อน" : "คลิกเพื่อแสดง"}
+                    title={activationTitle}
                 >
                     <span className={`inline-flex h-4 w-4 items-center justify-center transform rounded-full bg-white shadow transition-transform duration-200 ${m.isActive ? "translate-x-6" : "translate-x-1"}`}>
                         {togglingMap[m.id] && <Loader2 className="w-3 h-3 text-muted-foreground animate-spin" />}
@@ -716,6 +731,7 @@ function MachineTable({
                                     <div className="flex items-center gap-1">ราคา {sortField === "costAmount" && (sortAsc ? "↑" : "↓")}</div>
                                 </th>
                                 <th className="hidden px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap md:table-cell">รางวัล</th>
+                                <th className="hidden px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap lg:table-cell">โอกาสรวม</th>
                                 <th
                                     className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground whitespace-nowrap cursor-pointer hover:text-foreground select-none group"
                                     onClick={() => handleSort("isActive")}
@@ -731,7 +747,7 @@ function MachineTable({
                             <tbody>
                                 {paged.length === 0 ? (
                                     <tr>
-                                        <td colSpan={10} className="text-center py-10 text-muted-foreground text-sm">ไม่พบรายการ</td>
+                                        <td colSpan={11} className="text-center py-10 text-muted-foreground text-sm">ไม่พบรายการ</td>
                                     </tr>
                                 ) : paged.map((m, i) => (
                                     <SortableRow

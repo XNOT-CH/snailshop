@@ -4,7 +4,7 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion";
 import { Dices, Loader2, Gamepad2 } from "lucide-react";
 import Image from "next/image";
-import { showError } from "@/lib/swal";
+import { showError, showSuccess } from "@/lib/swal";
 import { GachaResultModal } from "@/components/GachaResultModal";
 import { GachaRecentFeed } from "@/components/GachaRecentFeed";
 import { DropRateModal } from "@/components/DropRateModal";
@@ -152,6 +152,7 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
   const pendingSecondSpinRef = useRef<{ rLabel: string; product: GachaProductLite } | null>(null);
   const skipRequestedPhaseRef = useRef<"rolling1" | "rolling2" | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
+  const restoringPendingRef = useRef(false);
 
   const queueTimeout = useCallback((cb: () => void, delay: number) => {
     const id = setTimeout(() => {
@@ -284,7 +285,7 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
     }, 500);
   }, [finalizeResult, queueTimeout, tiles]);
 
-  const callRollApi = useCallback(async (spinNum: 1 | 2) => {
+  const callRollApi = useCallback(async (spinNum: 1 | 2 | 3) => {
     const res = await fetch("/api/gacha/roll", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -313,6 +314,27 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
     setAuraTiles([]);
     setSelectedLAuraTiles([]);
   }, [clearQueuedTimeouts]);
+
+  useEffect(() => {
+    if (restoringPendingRef.current) return;
+    restoringPendingRef.current = true;
+
+    void (async () => {
+      try {
+        const data = await callRollApi(3);
+        if (!data.success) return;
+        if (data.message) {
+          showSuccess(data.message);
+        }
+        const { lLabel, rLabel, product } = data.data ?? {};
+        if (!lLabel || !rLabel || !product) return;
+        finalizeResult(lLabel, rLabel, product, false);
+        void refreshBalances();
+      } catch {
+        // Ignore resume failures and let the user start a new spin manually.
+      }
+    })();
+  }, [callRollApi, finalizeResult, refreshBalances]);
 
   const handleFirstSpin = useCallback(async () => {
     if (phase !== "idle") return;
@@ -367,6 +389,9 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
         showError(data.message || "สุ่มไม่สำเร็จ");
         reset();
         return;
+      }
+      if (data.message) {
+        showSuccess(data.message);
       }
       const { rLabel, product } = data.data ?? {};
       if (!rLabel || !product) {

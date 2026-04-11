@@ -10,6 +10,7 @@ import { RewardImageCropDialog } from "@/components/gacha/RewardImageCropDialog"
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { PERMISSIONS } from "@/lib/permissions";
 import Image from "next/image";
+import { hasExactProbabilityTotal } from "@/lib/gachaProbability";
 
 interface GachaReward {
     id: string;
@@ -78,6 +79,7 @@ function buildRewardPayload(form: { rewardType: string; productId?: string; prob
             rewardType: "PRODUCT",
             productId: form.productId,
             probability: form.probability,
+            rewardAmount: Number(form.rewardAmount) || null,
             tier: form.tier,
             ...(machineId ? { gachaMachineId: machineId } : {})
         };
@@ -138,6 +140,7 @@ function isRewardEligibleForSimulation(reward: GachaReward) {
 
 function validateReward(form: any, rewards: GachaReward[], ignoreId?: string): string | null {
     if (form.rewardType === "PRODUCT" && !form.productId) return "กรุณาเลือกสินค้า";
+    if (form.rewardType === "PRODUCT" && String(form.rewardAmount ?? "").trim() !== "" && Number(form.rewardAmount) <= 0) return "เครดิตชดเชยเมื่อของหมดต้องมากกว่า 0";
     if (form.rewardType !== "PRODUCT" && !String(form.rewardName).trim()) return "กรุณากรอกชื่อรางวัล";
     if (form.rewardType !== "PRODUCT" && Number(form.rewardAmount) <= 0) return "จำนวนที่จะได้รับต้องมากกว่า 0";
     const prob = Number(form.probability);
@@ -246,6 +249,22 @@ function AddRewardForm({ form, setForm, products, productSearch, setProductSearc
                         <input id="addRewardAmount" type="number" value={form.rewardAmount} onChange={e => setForm((f: any) => ({ ...f, rewardAmount: e.target.value }))} placeholder="เช่น 100" min={0} className={inputCls} disabled={!canEdit} />
                     </div>
                 )}
+                {form.rewardType === "PRODUCT" && (
+                    <div>
+                        <label htmlFor="addFallbackCreditAmount" className={labelCls}>เครดิตชดเชยเมื่อของหมด</label>
+                        <input
+                            id="addFallbackCreditAmount"
+                            type="number"
+                            value={form.rewardAmount}
+                            onChange={e => setForm((f: any) => ({ ...f, rewardAmount: e.target.value }))}
+                            placeholder="ไม่กรอก = ใช้ราคาสินค้า"
+                            min={0}
+                            className={inputCls}
+                            disabled={!canEdit}
+                        />
+                        <p className="mt-1 text-[11px] text-muted-foreground">ถ้าสินค้าหมดระหว่างแจก ระบบจะโอนเครดิตจำนวนนี้แทนให้อัตโนมัติ</p>
+                    </div>
+                )}
                 <div>
                     <label htmlFor="addRewardTier" className={labelCls}>ระดับรางวัล *</label>
                     <select id="addRewardTier" value={form.tier} onChange={e => setForm((f: any) => ({ ...f, tier: e.target.value }))} className={inputCls} disabled={!canEdit}>
@@ -308,6 +327,22 @@ function EditRewardForm({ form, setForm, products, productSearch, setProductSear
                     </div>
                 ) : (
                     <div><label htmlFor="editRewardAmount" className={labelCls}>จำนวนที่จะได้รับ *</label><input id="editRewardAmount" type="number" value={form.rewardAmount} onChange={e => setForm((f: any) => ({ ...f, rewardAmount: Number(e.target.value) }))} placeholder="เช่น 100" min={0} className={inputCls} disabled={!canEdit} /></div>
+                )}
+                {form.rewardType === "PRODUCT" && (
+                    <div>
+                        <label htmlFor="editFallbackCreditAmount" className={labelCls}>เครดิตชดเชยเมื่อของหมด</label>
+                        <input
+                            id="editFallbackCreditAmount"
+                            type="number"
+                            value={form.rewardAmount || ""}
+                            onChange={e => setForm((f: any) => ({ ...f, rewardAmount: e.target.value === "" ? "" : Number(e.target.value) }))}
+                            placeholder="ไม่กรอก = ใช้ราคาสินค้า"
+                            min={0}
+                            className={inputCls}
+                            disabled={!canEdit}
+                        />
+                        <p className="mt-1 text-[11px] text-muted-foreground">ถ้าสินค้าหมดระหว่างแจก ระบบจะโอนเครดิตจำนวนนี้แทนให้อัตโนมัติ</p>
+                    </div>
                 )}
                 <div><label htmlFor="editRewardTier" className={labelCls}>ระดับรางวัล *</label><select id="editRewardTier" value={form.tier} onChange={e => setForm((f: any) => ({ ...f, tier: e.target.value }))} className={inputCls} disabled={!canEdit}>{TIER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
                 <div className="md:col-span-2 mt-4">
@@ -677,10 +712,14 @@ export default function EditGachaMachinePage() {
     // Total probability used
     const totalUsed = Math.round(rewards.reduce((sum, r) => sum + Number(r.probability ?? 0), 0) * 100) / 100;
     const remaining = Math.max(0, Math.round((100 - totalUsed) * 100) / 100);
+    const isProbabilityComplete = hasExactProbabilityTotal(rewards);
 
-    let totalUsedColorText = "text-emerald-500";
-    let totalUsedColorBg = "bg-emerald-500";
-    if (totalUsed >= 100) {
+    let totalUsedColorText = "text-red-500";
+    let totalUsedColorBg = "bg-red-500";
+    if (isProbabilityComplete) {
+        totalUsedColorText = "text-emerald-500";
+        totalUsedColorBg = "bg-emerald-500";
+    } else if (totalUsed > 100) {
         totalUsedColorText = "text-red-500";
         totalUsedColorBg = "bg-red-500";
     } else if (totalUsed >= 80) {
@@ -733,9 +772,11 @@ export default function EditGachaMachinePage() {
                         />
                     </div>
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                        {totalUsed >= 100
-                            ? "ไม่สามารถเพิ่มรางวัลได้อีก (ใช้ครบ 100%)"
-                            : `เหลือโอกาส ${remaining}% สำหรับรางวัลเพิ่มเติม`}
+                        {totalUsed > 100
+                            ? "โอกาสรวมเกิน 100% ต้องแก้ไขก่อนใช้งานตู้"
+                            : isProbabilityComplete
+                                ? "โอกาสรวมครบ 100% พร้อมสำหรับการเปิดใช้งานตู้"
+                                : `โอกาสรวมยังไม่ครบ 100% ตอนนี้เหลืออีก ${remaining}% และตู้จะถูกล็อกไม่ให้เปิดใช้งาน`}
                     </p>
                     <div className="mt-4 rounded-xl border border-[#d9e5ff] bg-white p-4 shadow-sm">
                         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

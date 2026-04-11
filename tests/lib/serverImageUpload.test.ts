@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deleteManagedUpload, isManagedUploadPath, optimizeImageUpload, resolveManagedUploadPath, validateImageFile } from "@/lib/serverImageUpload";
+import { deleteManagedUpload, isManagedUploadPath, optimizeImageUpload, resolveManagedUploadPath, resolveManagedUploadPaths, validateImageFile } from "@/lib/serverImageUpload";
 
 const PNG_BASE64 = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aR0YAAAAASUVORK5CYII=";
 const GIF_BASE64 = "R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==";
@@ -69,5 +69,16 @@ describe("lib/serverImageUpload", () => {
         await expect(
             deleteManagedUpload("/uploads/profiles/missing.webp", "C:/repo/public/uploads/profiles", "/uploads/profiles")
         ).resolves.toBe(false);
+    });
+
+    it("includes legacy public upload paths as a fallback candidate", () => {
+        const resolved = resolveManagedUploadPaths(
+            "/uploads/profiles/avatar.webp",
+            "C:/repo/storage/uploads/profiles",
+            "/uploads/profiles"
+        );
+
+        expect(resolved.some((item) => item.endsWith("storage\\uploads\\profiles\\avatar.webp"))).toBe(true);
+        expect(resolved.some((item) => item.endsWith("public\\uploads\\profiles\\avatar.webp"))).toBe(true);
     });
 });
