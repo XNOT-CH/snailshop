@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import Swal from "sweetalert2";
 import { PERMISSIONS } from "@/lib/permissions";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 
 interface AuditChange {
     field: string;
@@ -514,7 +515,7 @@ export default function AdminAuditLogsPage() {
 
         setDeleteMode(mode);
         try {
-            const response = await fetch("/api/admin/audit-logs", {
+            const response = await fetchWithCsrf("/api/admin/audit-logs", {
                 method: "DELETE",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
