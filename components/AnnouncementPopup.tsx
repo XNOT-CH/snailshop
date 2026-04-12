@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import Image from "next/image";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,72 +16,112 @@ interface PopupData {
 const DISMISS_STORAGE_KEY = "popup_dismissed_until";
 const DISMISS_DURATION_MS = 60 * 60 * 1000; // 1 hour
 
+interface PopupDismissState {
+    dismissUntil: number;
+    popupIds: string[];
+}
+
+function readDismissState(): PopupDismissState | null {
+    if (globalThis.window === undefined) return null;
+
+    const rawValue = localStorage.getItem(DISMISS_STORAGE_KEY);
+    if (!rawValue) return null;
+
+    try {
+        const parsed = JSON.parse(rawValue) as Partial<PopupDismissState>;
+        if (
+            typeof parsed.dismissUntil !== "number" ||
+            !Array.isArray(parsed.popupIds) ||
+            parsed.popupIds.some((id) => typeof id !== "string")
+        ) {
+            localStorage.removeItem(DISMISS_STORAGE_KEY);
+            return null;
+        }
+
+        return {
+            dismissUntil: parsed.dismissUntil,
+            popupIds: parsed.popupIds,
+        };
+    } catch {
+        const legacyDismissUntil = Number.parseInt(rawValue, 10);
+        if (Number.isNaN(legacyDismissUntil)) {
+            localStorage.removeItem(DISMISS_STORAGE_KEY);
+            return null;
+        }
+
+        return {
+            dismissUntil: legacyDismissUntil,
+            popupIds: [],
+        };
+    }
+}
+
+function shouldShowPopup(popups: PopupData[]) {
+    if (popups.length === 0 || globalThis.window === undefined) return false;
+
+    const dismissOption = popups[0]?.dismissOption || "show_always";
+    if (dismissOption !== "hide_1_hour") {
+        localStorage.removeItem(DISMISS_STORAGE_KEY);
+        return true;
+    }
+
+    const dismissState = readDismissState();
+    if (!dismissState) return true;
+
+    if (Date.now() >= dismissState.dismissUntil) {
+        localStorage.removeItem(DISMISS_STORAGE_KEY);
+        return true;
+    }
+
+    const activePopupIds = popups.map((popup) => popup.id).sort();
+    const dismissedPopupIds = [...dismissState.popupIds].sort();
+
+    if (
+        dismissedPopupIds.length === activePopupIds.length &&
+        dismissedPopupIds.every((id, index) => id === activePopupIds[index])
+    ) {
+        return false;
+    }
+
+    localStorage.removeItem(DISMISS_STORAGE_KEY);
+    return true;
+}
+
 export default function AnnouncementPopup() {
     const [popups, setPopups] = useState<PopupData[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isVisible, setIsVisible] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
 
-    // Check if popup should be shown based on localStorage
-    const shouldShowPopup = useCallback(() => {
-        if (globalThis.window === undefined) return true;
-
-        const dismissedUntil = localStorage.getItem(DISMISS_STORAGE_KEY);
-        if (dismissedUntil) {
-            const dismissedTime = Number.parseInt(dismissedUntil, 10);
-            if (Date.now() < dismissedTime) {
-                return false; // Still dismissed
-            }
-            // Dismiss period expired, remove the key
-            localStorage.removeItem(DISMISS_STORAGE_KEY);
-        }
-        return true;
-    }, []);
-
     // Fetch popups on mount
     useEffect(() => {
-        console.log("[Popup] Component mounted, checking shouldShowPopup...");
-
         const fetchPopups = async () => {
-            // Check localStorage first
-            const canShow = shouldShowPopup();
-            console.log("[Popup] shouldShowPopup result:", canShow);
-
-            if (!canShow) {
-                console.log("[Popup] Blocked by localStorage, not fetching");
-                setIsLoaded(true);
-                return;
-            }
-
             try {
-                console.log("[Popup] Fetching /api/popups...");
                 const res = await fetch("/api/popups");
-                console.log("[Popup] Response status:", res.status);
 
                 if (res.ok) {
-                    const data = await res.json();
-                    console.log("[Popup] Data received:", data);
+                    const data = await res.json() as PopupData[];
 
                     if (data && data.length > 0) {
                         setPopups(data);
-                        // Small delay before showing for smoother UX
-                        setTimeout(() => {
-                            console.log("[Popup] Setting visible to true");
-                            setIsVisible(true);
-                        }, 500);
-                    } else {
-                        console.log("[Popup] No active popups in response");
+
+                        if (shouldShowPopup(data)) {
+                            // Small delay before showing for smoother UX
+                            setTimeout(() => {
+                                setIsVisible(true);
+                            }, 500);
+                        }
                     }
                 }
             } catch (error) {
-                console.error("[Popup] Error fetching popups:", error);
+                console.error("Error fetching popups:", error);
             } finally {
                 setIsLoaded(true);
             }
         };
 
-        fetchPopups();
-    }, [shouldShowPopup]);
+        void fetchPopups();
+    }, []);
 
     // Handle close with animation
     const handleClose = () => {
@@ -91,9 +131,13 @@ export default function AnnouncementPopup() {
         // If dismiss option is "hide_1_hour", save to localStorage
         if (dismissOption === "hide_1_hour") {
             const dismissUntil = Date.now() + DISMISS_DURATION_MS;
-            localStorage.setItem(DISMISS_STORAGE_KEY, dismissUntil.toString());
+            localStorage.setItem(DISMISS_STORAGE_KEY, JSON.stringify({
+                dismissUntil,
+                popupIds: popups.map((popup) => popup.id),
+            }));
+        } else {
+            localStorage.removeItem(DISMISS_STORAGE_KEY);
         }
-        // "show_always" means do nothing - popup will show again next visit
 
         setIsVisible(false);
     };
