@@ -301,6 +301,19 @@ export const helpArticles = mysqlTable("HelpArticle", {
     index("idx_help_article_active_category_sort").on(t.isActive, t.category, t.sortOrder),
 ]);
 
+export const helpVideos = mysqlTable("HelpVideo", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    title: varchar("title", { length: 255 }).notNull(),
+    youtubeUrl: text("youtubeUrl").notNull(),
+    videoId: varchar("videoId", { length: 32 }).notNull(),
+    sortOrder: int("sortOrder").default(0).notNull(),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: now(),
+    updatedAt: updatedAt(),
+}, (t) => [
+    index("idx_help_video_active_sort").on(t.isActive, t.sortOrder, t.createdAt),
+]);
+
 // ─────────────────────────────────────────────
 // NewsArticle
 // ─────────────────────────────────────────────

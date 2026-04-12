@@ -16,7 +16,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         const { id } = await params;
         const result = await validateBody(request, helpItemSchema.partial());
         if ("error" in result) return result.error;
-        const { title, content, category, isActive } = result.data as Partial<HelpItemInput>;
+        const { title, content, category, sortOrder, isActive } = result.data as Partial<HelpItemInput>;
 
         const existing = await db.query.helpArticles.findFirst({ where: eq(helpArticles.id, id) });
         if (!existing) return NextResponse.json({ error: "Article not found" }, { status: 404 });
@@ -25,10 +25,11 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (title) updateData.question = title;
         if (content) updateData.answer = content;
         if (category) updateData.category = category;
+        if (typeof sortOrder === "number") updateData.sortOrder = sortOrder;
         if (typeof isActive === "boolean") updateData.isActive = isActive;
         await db.update(helpArticles).set(updateData).where(eq(helpArticles.id, id));
 
-        const changes = generateChanges(existing, title, content, isActive);
+        const changes = generateChanges(existing, title, content, category, sortOrder, isActive);
         await auditFromRequest(request, { action: AUDIT_ACTIONS.HELP_UPDATE, resource: "HelpArticle", resourceId: id, resourceName: existing.question, details: { resourceName: existing.question, changes } });
 
         const updated = await db.query.helpArticles.findFirst({ where: eq(helpArticles.id, id) });
@@ -36,7 +37,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     } catch { return NextResponse.json({ error: "Failed to update article" }, { status: 500 }); }
 }
 
-function generateChanges(existing: { question: string; answer: string; isActive: boolean }, title?: string, content?: string, isActive?: boolean) {
+function generateChanges(
+    existing: { question: string; answer: string; category: string; sortOrder: number; isActive: boolean },
+    title?: string,
+    content?: string,
+    category?: string,
+    sortOrder?: number,
+    isActive?: boolean,
+) {
     const changes: { field: string; old: string; new: string }[] = [];
     const truncate = (str: string) => str.substring(0, 50) + "...";
     
@@ -45,6 +53,12 @@ function generateChanges(existing: { question: string; answer: string; isActive:
     }
     if (content && existing.answer !== content) {
         changes.push({ field: "content", old: truncate(existing.answer), new: truncate(content) });
+    }
+    if (category && existing.category !== category) {
+        changes.push({ field: "category", old: existing.category, new: category });
+    }
+    if (typeof sortOrder === "number" && existing.sortOrder !== sortOrder) {
+        changes.push({ field: "sortOrder", old: String(existing.sortOrder), new: String(sortOrder) });
     }
     if (typeof isActive === "boolean" && existing.isActive !== isActive) {
         changes.push({ field: "isActive", old: existing.isActive ? "เปิด" : "ปิด", new: isActive ? "เปิด" : "ปิด" });

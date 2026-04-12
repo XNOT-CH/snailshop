@@ -5,6 +5,7 @@ import {
   NEWS_TITLE_MAX_LENGTH,
   normalizeNewsTextInput,
 } from "@/lib/newsValidation";
+import { extractYouTubeVideoId } from "@/lib/helpVideos";
 
 // Nav item
 export const navItemSchema = z.object({
@@ -97,6 +98,20 @@ export const helpItemSchema = z.object({
   isActive: z.boolean().default(true),
 });
 export type HelpItemInput = z.infer<typeof helpItemSchema>;
+
+export const helpVideoSchema = z.object({
+  title: z.string().min(1, "กรุณากรอกชื่อคลิป").max(255),
+  youtubeUrl: z
+    .string()
+    .min(1, "กรุณากรอกลิงก์ YouTube")
+    .max(1000)
+    .refine((value) => extractYouTubeVideoId(value) !== null, {
+      message: "ลิงก์ YouTube ไม่ถูกต้อง",
+    }),
+  sortOrder: z.coerce.number().int().min(0).default(0),
+  isActive: z.boolean().default(true),
+});
+export type HelpVideoInput = z.infer<typeof helpVideoSchema>;
 
 // Role
 export const roleSchema = z.object({

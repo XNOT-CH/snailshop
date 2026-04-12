@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { db, helpArticles } from "@/lib/db";
+import { db, helpArticles, helpVideos } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, PlayCircle } from "lucide-react";
 import {
     Accordion,
     AccordionContent,
@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/accordion";
 import { StructuredData } from "@/components/StructuredData";
 import { buildPageMetadata } from "@/lib/seo";
+import { getYouTubeEmbedUrl } from "@/lib/helpVideos";
 
 export const dynamic = "force-dynamic";
 
@@ -31,10 +32,16 @@ const CATEGORIES: Record<string, string> = {
 };
 
 export default async function HelpPage() {
-    const articles = await db.query.helpArticles.findMany({
-        where: eq(helpArticles.isActive, true),
-        orderBy: (t, { asc }) => [asc(t.category), asc(t.sortOrder)],
-    });
+    const [articles, videos] = await Promise.all([
+        db.query.helpArticles.findMany({
+            where: eq(helpArticles.isActive, true),
+            orderBy: (t, { asc }) => [asc(t.category), asc(t.sortOrder)],
+        }),
+        db.query.helpVideos.findMany({
+            where: eq(helpVideos.isActive, true),
+            orderBy: (t, { asc, desc }) => [asc(t.sortOrder), desc(t.createdAt)],
+        }),
+    ]);
 
     const groupedArticles = articles.reduce((acc, article) => {
         if (!acc[article.category]) {
@@ -58,7 +65,7 @@ export default async function HelpPage() {
     };
 
     return (
-        <div className="animate-page-enter max-w-4xl mx-auto">
+        <div className="animate-page-enter max-w-6xl mx-auto">
             {articles.length > 0 && <StructuredData data={faqStructuredData} />}
 
             <div className="py-6 sm:py-8 bg-card/90 backdrop-blur-sm px-4 sm:px-6 shadow-xl shadow-primary/10 border border-border/50">
@@ -74,49 +81,90 @@ export default async function HelpPage() {
                     </p>
                 </div>
 
-                {articles.length === 0 ? (
-                    <Card>
-                        <CardContent className="py-12 text-center text-muted-foreground">
-                            ยังไม่มีคำถามในขณะนี้
-                        </CardContent>
-                    </Card>
-                ) : (
-                    <div className="space-y-6">
-                        {Object.entries(groupedArticles).map(([category, items]) => (
-                            <Card key={category}>
-                                <CardHeader>
-                                    <CardTitle className="flex items-center gap-2">
-                                        <Badge variant="secondary" className="text-sm">
-                                            {CATEGORIES[category] || category}
-                                        </Badge>
-                                        <span className="text-sm font-normal text-muted-foreground">
-                                            ({items.length} คำถาม)
-                                        </span>
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <Accordion type="single" collapsible className="w-full">
-                                        {items.map((article, index) => (
-                                            <AccordionItem key={article.id} value={article.id}>
-                                                <AccordionTrigger className="text-left hover:no-underline">
-                                                    <span className="flex items-center gap-2">
-                                                        <span className="text-primary font-medium">
-                                                            Q{index + 1}.
+                <div className="space-y-6">
+                    {videos.length > 0 && (
+                        <Card className="overflow-hidden border-primary/10 shadow-lg shadow-primary/5">
+                            <CardHeader className="border-b border-border/60 bg-gradient-to-r from-blue-50 via-white to-cyan-50 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-800">
+                                <CardTitle className="flex items-center gap-2">
+                                    <PlayCircle className="h-5 w-5 text-red-500" />
+                                    วิดีโอช่วยเหลือ
+                                </CardTitle>
+                                <p className="text-sm text-muted-foreground">
+                                    ถ้าลูกค้ากำลังงง สามารถเริ่มดูวิธีแก้ปัญหาจากคลิปด้านล่างได้ทันที
+                                </p>
+                            </CardHeader>
+                            <CardContent className="pt-6">
+                                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                                    {videos.map((video) => (
+                                        <div
+                                            key={video.id}
+                                            className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+                                        >
+                                            <div className="relative aspect-video overflow-hidden bg-black">
+                                                <iframe
+                                                    src={getYouTubeEmbedUrl(video.videoId)}
+                                                    title={video.title}
+                                                    className="h-full w-full"
+                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                    allowFullScreen
+                                                />
+                                            </div>
+                                            <div className="p-4">
+                                                <p className="line-clamp-2 text-sm font-semibold text-foreground">
+                                                    {video.title}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {articles.length === 0 ? (
+                        <Card>
+                            <CardContent className="py-12 text-center text-muted-foreground">
+                                ยังไม่มีคำถามในขณะนี้
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <>
+                            {Object.entries(groupedArticles).map(([category, items]) => (
+                                <Card key={category}>
+                                    <CardHeader>
+                                        <CardTitle className="flex items-center gap-2">
+                                            <Badge variant="secondary" className="text-sm">
+                                                {CATEGORIES[category] || category}
+                                            </Badge>
+                                            <span className="text-sm font-normal text-muted-foreground">
+                                                ({items.length} คำถาม)
+                                            </span>
+                                        </CardTitle>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Accordion type="single" collapsible className="w-full">
+                                            {items.map((article, index) => (
+                                                <AccordionItem key={article.id} value={article.id}>
+                                                    <AccordionTrigger className="text-left hover:no-underline">
+                                                        <span className="flex items-center gap-2">
+                                                            <span className="text-primary font-medium">
+                                                                Q{index + 1}.
+                                                            </span>
+                                                            {article.question}
                                                         </span>
-                                                        {article.question}
-                                                    </span>
-                                                </AccordionTrigger>
-                                                <AccordionContent className="text-muted-foreground whitespace-pre-wrap pl-8">
-                                                    {article.answer}
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                        ))}
-                                    </Accordion>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                )}
+                                                    </AccordionTrigger>
+                                                    <AccordionContent className="text-muted-foreground whitespace-pre-wrap pl-8">
+                                                        {article.answer}
+                                                    </AccordionContent>
+                                                </AccordionItem>
+                                            ))}
+                                        </Accordion>
+                                    </CardContent>
+                                </Card>
+                            ))}
+                        </>
+                    )}
+                </div>
             </div>
         </div>
     );
