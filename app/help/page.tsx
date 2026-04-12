@@ -32,16 +32,20 @@ const CATEGORIES: Record<string, string> = {
 };
 
 export default async function HelpPage() {
-    const [articles, videos] = await Promise.all([
-        db.query.helpArticles.findMany({
-            where: eq(helpArticles.isActive, true),
-            orderBy: (t, { asc }) => [asc(t.category), asc(t.sortOrder)],
-        }),
-        db.query.helpVideos.findMany({
+    const articles = await db.query.helpArticles.findMany({
+        where: eq(helpArticles.isActive, true),
+        orderBy: (t, { asc }) => [asc(t.category), asc(t.sortOrder)],
+    });
+
+    let videos: Awaited<ReturnType<typeof db.query.helpVideos.findMany>> = [];
+    try {
+        videos = await db.query.helpVideos.findMany({
             where: eq(helpVideos.isActive, true),
             orderBy: (t, { asc, desc }) => [asc(t.sortOrder), desc(t.createdAt)],
-        }),
-    ]);
+        });
+    } catch (error) {
+        console.error("[HELP_VIDEOS_FETCH]", error);
+    }
 
     const groupedArticles = articles.reduce((acc, article) => {
         if (!acc[article.category]) {
@@ -65,14 +69,14 @@ export default async function HelpPage() {
     };
 
     return (
-        <div className="animate-page-enter max-w-6xl mx-auto">
+        <div className="animate-page-enter mx-auto max-w-6xl">
             {articles.length > 0 && <StructuredData data={faqStructuredData} />}
 
-            <div className="py-6 sm:py-8 bg-card/90 backdrop-blur-sm px-4 sm:px-6 shadow-xl shadow-primary/10 border border-border/50">
+            <div className="border border-border/50 bg-card/90 px-4 py-6 shadow-xl shadow-primary/10 backdrop-blur-sm sm:px-6 sm:py-8">
                 <PageBreadcrumb items={[{ label: "ศูนย์ช่วยเหลือ" }]} className="mb-6" />
 
-                <div className="text-center mb-8">
-                    <div className="flex items-center justify-center gap-3 mb-4">
+                <div className="mb-8 text-center">
+                    <div className="mb-4 flex items-center justify-center gap-3">
                         <HelpCircle className="h-10 w-10 text-primary" />
                         <h1 className="text-3xl font-bold">ศูนย์ช่วยเหลือ</h1>
                     </div>
@@ -147,13 +151,13 @@ export default async function HelpPage() {
                                                 <AccordionItem key={article.id} value={article.id}>
                                                     <AccordionTrigger className="text-left hover:no-underline">
                                                         <span className="flex items-center gap-2">
-                                                            <span className="text-primary font-medium">
+                                                            <span className="font-medium text-primary">
                                                                 Q{index + 1}.
                                                             </span>
                                                             {article.question}
                                                         </span>
                                                     </AccordionTrigger>
-                                                    <AccordionContent className="text-muted-foreground whitespace-pre-wrap pl-8">
+                                                    <AccordionContent className="whitespace-pre-wrap pl-8 text-muted-foreground">
                                                         {article.answer}
                                                     </AccordionContent>
                                                 </AccordionItem>
