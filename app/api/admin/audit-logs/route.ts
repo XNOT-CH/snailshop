@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getAuditLogs } from "@/lib/auditLog";
+import { AUDIT_ACTIONS, auditFromRequest, getAuditLogs } from "@/lib/auditLog";
 import { db, auditLogs } from "@/lib/db";
-import { and, eq, gte, lte, count } from "drizzle-orm";
-import { requirePermission } from "@/lib/auth";
+import { and, count, eq, gte, inArray, lte } from "drizzle-orm";
+import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
 
 function parseDateParam(value: string | null, label: string): Date | null {
@@ -53,5 +53,73 @@ export async function GET(request: Request) {
 
         console.error("Error fetching audit logs:", error);
         return NextResponse.json({ error: "Failed to fetch audit logs" }, { status: 500 });
+    }
+}
+
+type DeleteAuditLogsPayload =
+    | { mode: "single"; id?: string }
+    | { mode: "selected"; ids?: string[] }
+    | { mode: "all" };
+
+export async function DELETE(request: Request) {
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.AUDIT_LOG_DELETE);
+    if (!authCheck.success) {
+        return NextResponse.json({ error: authCheck.error ?? "Unauthorized" }, { status: 401 });
+    }
+
+    try {
+        const body = await request.json().catch(() => null) as DeleteAuditLogsPayload | null;
+        const mode = body?.mode;
+
+        if (!mode || !["single", "selected", "all"].includes(mode)) {
+            return NextResponse.json({ error: "Invalid delete mode" }, { status: 400 });
+        }
+
+        let deletedCount = 0;
+
+        if (mode === "single") {
+            if (!body.id) {
+                return NextResponse.json({ error: "Missing audit log id" }, { status: 400 });
+            }
+
+            const result = await db.delete(auditLogs).where(eq(auditLogs.id, body.id));
+            deletedCount = result[0]?.affectedRows ?? 0;
+        }
+
+        if (mode === "selected") {
+            const ids = Array.isArray(body.ids)
+                ? Array.from(new Set(body.ids.filter((id): id is string => typeof id === "string" && id.trim().length > 0)))
+                : [];
+
+            if (ids.length === 0) {
+                return NextResponse.json({ error: "No audit logs selected" }, { status: 400 });
+            }
+
+            const result = await db.delete(auditLogs).where(inArray(auditLogs.id, ids));
+            deletedCount = result[0]?.affectedRows ?? 0;
+        }
+
+        if (mode === "all") {
+            const result = await db.delete(auditLogs);
+            deletedCount = result[0]?.affectedRows ?? 0;
+        }
+
+        await auditFromRequest(request, {
+            userId: authCheck.userId,
+            action: AUDIT_ACTIONS.AUDIT_LOG_DELETE,
+            resource: "AuditLog",
+            resourceId: mode === "single" ? body.id ?? "single" : mode,
+            resourceName: mode === "all" ? "ลบ Audit Logs ทั้งหมด" : "ลบ Audit Logs",
+            details: {
+                mode,
+                deletedCount,
+                ids: mode === "selected" ? body.ids ?? [] : undefined,
+            },
+        });
+
+        return NextResponse.json({ success: true, deletedCount });
+    } catch (error) {
+        console.error("Error deleting audit logs:", error);
+        return NextResponse.json({ error: "Failed to delete audit logs" }, { status: 500 });
     }
 }

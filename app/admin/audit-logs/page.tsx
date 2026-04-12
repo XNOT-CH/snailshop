@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
+import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import {
     Select,
@@ -28,8 +30,10 @@ import {
     Filter,
     RefreshCw,
     Eye,
+    Trash2,
 } from "lucide-react";
 import Swal from "sweetalert2";
+import { PERMISSIONS } from "@/lib/permissions";
 
 interface AuditChange {
     field: string;
@@ -79,6 +83,7 @@ const ACTION_COLORS: Record<string, string> = {
     PROFILE_UPDATE: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300",
     API_KEY_CREATE: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300",
     API_KEY_REVOKE: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300",
+    AUDIT_LOG_DELETE: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -129,6 +134,7 @@ const ACTION_LABELS: Record<string, string> = {
     SETTINGS_UPDATE: "แก้ไขตั้งค่า",
     API_KEY_CREATE: "สร้าง API Key",
     API_KEY_REVOKE: "ยกเลิก API Key",
+    AUDIT_LOG_DELETE: "ลบ Audit Log",
     RATE_LIMIT_EXCEEDED: "เกินการจำกัดความถี่",
     UNAUTHORIZED_ACCESS: "เข้าถึงโดยไม่ได้รับอนุญาต",
 };
@@ -181,6 +187,7 @@ const ACTION_ORDER = [
     "CHAT_TEMPLATE_DELETE",
     "API_KEY_CREATE",
     "API_KEY_REVOKE",
+    "AUDIT_LOG_DELETE",
     "RATE_LIMIT_EXCEEDED",
     "UNAUTHORIZED_ACCESS",
 ] as const;
@@ -258,6 +265,7 @@ function getChangeValue(change: AuditChange, key: "old" | "new") {
 }
 
 export default function AdminAuditLogsPage() {
+    const permissions = useAdminPermissions();
     const [isMounted, setIsMounted] = useState(false);
     const [logs, setLogs] = useState<AuditLog[]>([]);
     const [loading, setLoading] = useState(true);
@@ -267,6 +275,8 @@ export default function AdminAuditLogsPage() {
     const [actionFilter, setActionFilter] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
     const [quickFilter, setQuickFilter] = useState<QuickFilterKey>("all");
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [deleteMode, setDeleteMode] = useState<"single" | "selected" | "all" | null>(null);
 
     useEffect(() => {
         setIsMounted(true);
@@ -299,6 +309,7 @@ export default function AdminAuditLogsPage() {
 
     const getFieldLabel = (field: string) => FIELD_LABELS[field] || field;
     const getActionLabel = (action: string) => ACTION_LABELS[action] || action;
+    const canDeleteAuditLogs = permissions.includes(PERMISSIONS.AUDIT_LOG_DELETE);
 
     const openDetail = (log: AuditLog) => {
         const details = parseDetails(log.details);
@@ -403,6 +414,7 @@ export default function AdminAuditLogsPage() {
             const data = await res.json();
             setLogs(Array.isArray(data.logs) ? data.logs : []);
             setTotal(Number(data.total) || 0);
+            setSelectedIds([]);
         } catch (error) {
             console.error("Error fetching audit logs:", error);
             setLogs([]);
@@ -451,6 +463,97 @@ export default function AdminAuditLogsPage() {
     const successCount = filteredLogs.filter((log) => log.status === "SUCCESS").length;
     const failedCount = filteredLogs.filter((log) => log.status !== "SUCCESS").length;
     const totalPages = Math.ceil(total / limit);
+    const allVisibleSelected = quickFilteredLogs.length > 0 && quickFilteredLogs.every((log) => selectedIds.includes(log.id));
+    const someVisibleSelected = quickFilteredLogs.some((log) => selectedIds.includes(log.id));
+
+    const toggleSelectLog = useCallback((logId: string, checked: boolean) => {
+        setSelectedIds((previous) => (
+            checked
+                ? Array.from(new Set([...previous, logId]))
+                : previous.filter((id) => id !== logId)
+        ));
+    }, []);
+
+    const toggleSelectAllVisible = useCallback((checked: boolean) => {
+        setSelectedIds((previous) => {
+            if (checked) {
+                return Array.from(new Set([...previous, ...quickFilteredLogs.map((log) => log.id)]));
+            }
+
+            const visibleIds = new Set(quickFilteredLogs.map((log) => log.id));
+            return previous.filter((id) => !visibleIds.has(id));
+        });
+    }, [quickFilteredLogs]);
+
+    const handleDeleteLogs = useCallback(async (
+        mode: "single" | "selected" | "all",
+        payload?: { id?: string; ids?: string[]; label?: string },
+    ) => {
+        if (!canDeleteAuditLogs || deleteMode) return;
+
+        const selectedCount = payload?.ids?.length ?? 0;
+        const confirmText =
+            mode === "all"
+                ? "ลบ Audit Logs ทั้งหมด"
+                : mode === "selected"
+                    ? `ลบ Audit Logs ที่เลือก ${selectedCount} รายการ`
+                    : `ลบรายการนี้${payload?.label ? `: ${payload.label}` : ""}`;
+
+        const result = await Swal.fire({
+            title: "ยืนยันการลบ",
+            text: `${confirmText} ใช่หรือไม่? การลบนี้ไม่สามารถย้อนกลับได้`,
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "ลบ",
+            cancelButtonText: "ยกเลิก",
+            confirmButtonColor: "#dc2626",
+            reverseButtons: true,
+        });
+
+        if (!result.isConfirmed) return;
+
+        setDeleteMode(mode);
+        try {
+            const response = await fetch("/api/admin/audit-logs", {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    mode,
+                    ...(mode === "single" ? { id: payload?.id } : {}),
+                    ...(mode === "selected" ? { ids: payload?.ids } : {}),
+                }),
+            });
+
+            const data = await response.json().catch(() => ({})) as { error?: string; deletedCount?: number };
+            if (!response.ok) {
+                throw new Error(data.error || "ลบ Audit Logs ไม่สำเร็จ");
+            }
+
+            if (mode === "single" && payload?.id) {
+                setSelectedIds((previous) => previous.filter((id) => id !== payload.id));
+            } else {
+                setSelectedIds([]);
+            }
+
+            await Swal.fire({
+                title: "ลบสำเร็จ",
+                text: `ลบข้อมูลแล้ว ${data.deletedCount ?? 0} รายการ`,
+                icon: "success",
+                timer: 1600,
+                showConfirmButton: false,
+            });
+
+            await fetchLogs();
+        } catch (error) {
+            await Swal.fire({
+                title: "ลบไม่สำเร็จ",
+                text: error instanceof Error ? error.message : "เกิดข้อผิดพลาด",
+                icon: "error",
+            });
+        } finally {
+            setDeleteMode(null);
+        }
+    }, [canDeleteAuditLogs, deleteMode, fetchLogs]);
 
     if (!isMounted) {
         return (
@@ -480,7 +583,7 @@ export default function AdminAuditLogsPage() {
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                        placeholder="ค้นหา username, IP, ชื่อ resource..."
+                        placeholder="ค้นหา username, ชื่อกิจกรรม, ชื่อ resource..."
                         value={searchQuery}
                         onChange={(e) => {
                             setSearchQuery(e.target.value);
@@ -537,6 +640,40 @@ export default function AdminAuditLogsPage() {
                     </button>
                 ))}
             </div>
+
+            {canDeleteAuditLogs && (
+                <div className="flex flex-col gap-3 rounded-xl border border-red-100 bg-red-50/60 p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="text-sm text-red-700">
+                        {selectedIds.length > 0
+                            ? `เลือกแล้ว ${selectedIds.length} รายการ`
+                            : "ลบได้ทั้งแบบทีละรายการ, แบบติ๊กเลือกหลายรายการ, และลบทั้งหมด"}
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={selectedIds.length === 0 || deleteMode !== null}
+                            onClick={() => void handleDeleteLogs("selected", { ids: selectedIds })}
+                            className="border-red-200 text-red-700 hover:bg-red-100 hover:text-red-800"
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            ลบที่เลือก
+                        </Button>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            disabled={deleteMode !== null || total === 0}
+                            onClick={() => void handleDeleteLogs("all")}
+                            className="border-red-200 text-red-700 hover:bg-red-100 hover:text-red-800"
+                        >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            ลบทั้งหมด
+                        </Button>
+                    </div>
+                </div>
+            )}
 
             <div className="overflow-hidden rounded-xl border border-border bg-white shadow-sm dark:bg-zinc-900">
                 <div className="flex items-center gap-2 border-b border-border px-5 py-3">
@@ -605,6 +742,18 @@ export default function AdminAuditLogsPage() {
                                         </div>
                                     ) : null}
 
+                                    {canDeleteAuditLogs && (
+                                        <div className="mt-3">
+                                            <label className="inline-flex items-center gap-2 text-xs text-muted-foreground">
+                                                <Checkbox
+                                                    checked={selectedIds.includes(log.id)}
+                                                    onCheckedChange={(checked) => toggleSelectLog(log.id, checked === true)}
+                                                />
+                                                เลือกรายการนี้
+                                            </label>
+                                        </div>
+                                    )}
+
                                     <div className="mt-4 flex items-center justify-between gap-3">
                                         <p className="font-mono text-xs text-muted-foreground" title={log.ipAddress || "-"}>
                                             {formatIpAddress(log.ipAddress)}
@@ -619,6 +768,21 @@ export default function AdminAuditLogsPage() {
                                             <Eye className="h-4 w-4" />
                                             {hasChanges && <span className="ml-1 text-xs">({changes.length})</span>}
                                         </Button>
+                                        {canDeleteAuditLogs && (
+                                            <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                disabled={deleteMode !== null}
+                                                onClick={() => void handleDeleteLogs("single", {
+                                                    id: log.id,
+                                                    label: details?.resourceName || getActionLabel(log.action),
+                                                })}
+                                                className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                title="ลบรายการนี้"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        )}
                                     </div>
                                 </div>
                             );
@@ -629,6 +793,15 @@ export default function AdminAuditLogsPage() {
                         <Table className="min-w-[860px]">
                             <TableHeader>
                                 <TableRow>
+                                    {canDeleteAuditLogs && (
+                                        <TableHead className="w-12 text-center">
+                                            <Checkbox
+                                                checked={allVisibleSelected ? true : (someVisibleSelected ? "indeterminate" : false)}
+                                                onCheckedChange={(checked) => toggleSelectAllVisible(checked === true)}
+                                                aria-label="เลือกทั้งหมด"
+                                            />
+                                        </TableHead>
+                                    )}
                                     <TableHead>เวลา</TableHead>
                                     <TableHead>ผู้ใช้</TableHead>
                                     <TableHead>กิจกรรม</TableHead>
@@ -646,6 +819,15 @@ export default function AdminAuditLogsPage() {
 
                                     return (
                                         <TableRow key={log.id}>
+                                            {canDeleteAuditLogs && (
+                                                <TableCell className="text-center">
+                                                    <Checkbox
+                                                        checked={selectedIds.includes(log.id)}
+                                                        onCheckedChange={(checked) => toggleSelectLog(log.id, checked === true)}
+                                                        aria-label={`เลือก ${log.id}`}
+                                                    />
+                                                </TableCell>
+                                            )}
                                             <TableCell className="whitespace-nowrap text-sm">
                                                 {formatDate(log.createdAt)}
                                             </TableCell>
@@ -695,6 +877,7 @@ export default function AdminAuditLogsPage() {
                                                 </Badge>
                                             </TableCell>
                                             <TableCell className="text-center">
+                                                <div className="flex items-center justify-center gap-1">
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
@@ -705,6 +888,22 @@ export default function AdminAuditLogsPage() {
                                                     <Eye className="h-4 w-4" />
                                                     {hasChanges && <span className="ml-1 text-xs">({changes.length})</span>}
                                                 </Button>
+                                                {canDeleteAuditLogs && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        disabled={deleteMode !== null}
+                                                        onClick={() => void handleDeleteLogs("single", {
+                                                            id: log.id,
+                                                            label: details?.resourceName || getActionLabel(log.action),
+                                                        })}
+                                                        className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                        title="ลบรายการนี้"
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     );
@@ -747,3 +946,4 @@ export default function AdminAuditLogsPage() {
         </div>
     );
 }
+
