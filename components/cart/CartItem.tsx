@@ -4,14 +4,16 @@ import Image from "next/image";
 import { CartItem as CartItemType } from "@/components/providers/CartContext";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { Package, X } from "lucide-react";
+import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
 
 interface CartItemProps {
     item: CartItemType;
     onRemove: (id: string) => void;
     onUpdateQuantity: (id: string, quantity: number) => void;
+    currencySettings?: PublicCurrencySettings;
 }
 
-export function CartItem({ item, onRemove, onUpdateQuantity }: Readonly<CartItemProps>) {
+export function CartItem({ item, onRemove, onUpdateQuantity, currencySettings }: Readonly<CartItemProps>) {
     const displayPrice = item.discountPrice ?? item.price;
     const quantity = item.quantity || 1;
     const subtotal = displayPrice * quantity;
@@ -59,7 +61,9 @@ export function CartItem({ item, onRemove, onUpdateQuantity }: Readonly<CartItem
                         />
                     </div>
                     <div className="text-right">
-                        <p className="text-sm font-bold text-blue-400">฿{subtotal.toLocaleString()}</p>
+                        <p className="text-sm font-bold text-blue-400">
+                            {formatCurrencyAmount(subtotal, item.currency, currencySettings)}
+                        </p>
                         {item.stock != null && (
                             <p className="text-[10px] text-white/30 flex items-center justify-end gap-0.5">
                                 <Package className="h-2.5 w-2.5" />

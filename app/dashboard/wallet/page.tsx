@@ -5,6 +5,8 @@ import { eq } from "drizzle-orm";
 import { CalendarDays, Eye, Gift } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
+import { formatCurrencyAmount } from "@/lib/currencySettings";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { ensureTicketBalanceColumn } from "@/lib/wallet";
 
 export const dynamic = "force-dynamic";
@@ -19,14 +21,17 @@ export default async function DashboardWalletPage() {
 
     await ensureTicketBalanceColumn();
 
-    const user = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-        columns: {
-            creditBalance: true,
-            pointBalance: true,
-            ticketBalance: true,
-        },
-    });
+    const [user, currencySettings] = await Promise.all([
+        db.query.users.findFirst({
+            where: eq(users.id, userId),
+            columns: {
+                creditBalance: true,
+                pointBalance: true,
+                ticketBalance: true,
+            },
+        }),
+        getCurrencySettings(),
+    ]);
 
     if (!user) {
         redirect("/login");
@@ -40,8 +45,8 @@ export default async function DashboardWalletPage() {
             image: "/season-pass-credit.png",
         },
         {
-            title: "พอยต์",
-            value: Number(user.pointBalance ?? 0).toLocaleString(),
+            title: currencySettings.name,
+            value: formatCurrencyAmount(Number(user.pointBalance ?? 0), "POINT", currencySettings),
             detail: "แต้มสะสมจากกิจกรรมและรางวัลต่างๆ",
             image: "/season-pass-points.png",
         },
@@ -61,7 +66,7 @@ export default async function DashboardWalletPage() {
                 <div className="space-y-2">
                     <h1 className="text-2xl font-semibold tracking-tight text-slate-900">กระเป๋าของฉัน</h1>
                     <p className="text-sm leading-6 text-slate-500">
-                        รวมยอดคงเหลือของเครดิต พอยต์ และตั๋วสุ่มในบัญชีนี้
+                        รวมยอดคงเหลือของเครดิต {currencySettings.name} และตั๋วสุ่มในบัญชีนี้
                     </p>
                 </div>
 

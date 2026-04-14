@@ -16,10 +16,9 @@ import { getSiteSettings } from "@/lib/getSiteSettings";
 import {
   DEFAULT_SITE_DESCRIPTION,
   SITE_LOCALE,
-  SITE_NAME,
-  SITE_TITLE,
   absoluteUrl,
   getBaseUrl,
+  resolveSiteName,
   toAbsoluteAssetUrl,
 } from "@/lib/seo";
 
@@ -36,34 +35,41 @@ export const viewport: Viewport = {
   maximumScale: 5,
 };
 
-export const metadata: Metadata = {
-  metadataBase: new URL(getBaseUrl()),
-  title: {
-    default: SITE_TITLE,
-    template: `%s | ${SITE_NAME}`,
-  },
-  description: DEFAULT_SITE_DESCRIPTION,
-  alternates: {
-    canonical: "/",
-  },
-  openGraph: {
-    title: SITE_TITLE,
-    description: DEFAULT_SITE_DESCRIPTION,
-    url: absoluteUrl("/"),
-    siteName: SITE_NAME,
-    locale: SITE_LOCALE,
-    type: "website",
-  },
-  twitter: {
-    card: "summary",
-    title: SITE_TITLE,
-    description: DEFAULT_SITE_DESCRIPTION,
-  },
-  robots: {
-    index: true,
-    follow: true,
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSiteSettings();
+  const siteName = resolveSiteName(settings?.heroTitle);
+  const siteDescription = settings?.heroDescription?.trim() || DEFAULT_SITE_DESCRIPTION;
+  const siteTitle = `${siteName} - Game ID Marketplace`;
+
+  return {
+    metadataBase: new URL(getBaseUrl()),
+    title: {
+      default: siteTitle,
+      template: `%s | ${siteName}`,
+    },
+    description: siteDescription,
+    alternates: {
+      canonical: "/",
+    },
+    openGraph: {
+      title: siteTitle,
+      description: siteDescription,
+      url: absoluteUrl("/"),
+      siteName,
+      locale: SITE_LOCALE,
+      type: "website",
+    },
+    twitter: {
+      card: "summary",
+      title: siteTitle,
+      description: siteDescription,
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -71,20 +77,21 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const settings = await getSiteSettings();
+  const siteName = resolveSiteName(settings?.heroTitle);
   const logoUrl = toAbsoluteAssetUrl(settings?.logoUrl);
   const heroDescription = settings?.heroDescription?.trim() || DEFAULT_SITE_DESCRIPTION;
   const structuredData = [
     {
       "@context": "https://schema.org",
       "@type": "Organization",
-      name: SITE_NAME,
+      name: siteName,
       url: absoluteUrl("/"),
       ...(logoUrl ? { logo: logoUrl } : {}),
     },
     {
       "@context": "https://schema.org",
       "@type": "WebSite",
-      name: SITE_NAME,
+      name: siteName,
       url: absoluteUrl("/"),
       inLanguage: "th",
       description: heroDescription,

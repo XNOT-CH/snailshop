@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-export const SITE_NAME = "Manashop";
+export const SITE_NAME = "SNAILSHOP";
 export const SITE_TITLE = `${SITE_NAME} - Game ID Marketplace`;
 export const DEFAULT_SITE_DESCRIPTION = "Trusted marketplace for game accounts and in-game items.";
 export const SITE_LOCALE = "th_TH";
@@ -45,6 +45,11 @@ export function toAbsoluteAssetUrl(assetUrl?: string | null): string | undefined
         : absoluteUrl(assetUrl.startsWith("/") ? assetUrl : `/${assetUrl}`);
 }
 
+export function resolveSiteName(siteName?: string | null): string {
+    const normalized = siteName?.trim();
+    return normalized ? normalized : SITE_NAME;
+}
+
 type PageMetadataOptions = {
     title?: string;
     description?: string;
@@ -52,6 +57,7 @@ type PageMetadataOptions = {
     image?: string | null;
     noIndex?: boolean;
     type?: "website" | "article";
+    siteName?: string | null;
 };
 
 export function buildPageMetadata({
@@ -61,10 +67,12 @@ export function buildPageMetadata({
     image,
     noIndex = false,
     type = "website",
+    siteName,
 }: PageMetadataOptions): Metadata {
     const imageUrl = toAbsoluteAssetUrl(image);
     const canonicalUrl = absoluteUrl(path);
-    const fullTitle = title ? `${title} | ${SITE_NAME}` : SITE_TITLE;
+    const resolvedSiteName = resolveSiteName(siteName);
+    const fullTitle = title ? `${title} | ${resolvedSiteName}` : `${resolvedSiteName} - Game ID Marketplace`;
 
     return {
         title,
@@ -76,7 +84,7 @@ export function buildPageMetadata({
             title: fullTitle,
             description,
             url: canonicalUrl,
-            siteName: SITE_NAME,
+            siteName: resolvedSiteName,
             locale: SITE_LOCALE,
             type,
             ...(imageUrl ? { images: [{ url: imageUrl }] } : {}),

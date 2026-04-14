@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import {
     Gamepad2, Home, ShoppingBag, HelpCircle, Mail, Shield, FileText, ChevronRight,
 } from "lucide-react";
+import { resolveSiteName } from "@/lib/seo";
 
 async function getFooterWidget() {
     try {
@@ -25,7 +26,7 @@ export default async function Footer() {
     const siteSettings = await getSiteSettings();
     const footerWidget = await getFooterWidget();
     const currentYear = new Date().getFullYear();
-    const siteName = siteSettings?.heroTitle ?? "GameStore";
+    const siteName = resolveSiteName(siteSettings?.heroTitle);
     const menuLinks = [
         { href: "/", label: "หน้าหลัก", icon: Home },
         { href: "/shop", label: "สินค้าทั้งหมด", icon: ShoppingBag },

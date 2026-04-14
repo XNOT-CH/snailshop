@@ -20,9 +20,13 @@ import {
     type GachaTier,
 } from "@/lib/gachaGrid";
 import { hasExactProbabilityTotal, pickWeightedCandidate } from "@/lib/gachaProbability";
+import { getPointCurrencyName } from "@/lib/currencySettings";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
+import { getGachaRewardTypeLabel } from "@/lib/gachaCost";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkGachaRateLimit, getClientIp } from "@/lib/rateLimit";
 import { isRedisAvailable, redis } from "@/lib/redis";
+import { normalizeGachaCost } from "@/lib/gachaCost";
 
 const COOKIE_NAME = "gacha_l_pending";
 const COOKIE_TTL = 300;
@@ -77,12 +81,6 @@ function getDayRange(date: Date) {
         start: toMySQLDatetime(start),
         end: toMySQLDatetime(end),
     };
-}
-
-function getCurrencyRewardLabel(rewardType: string) {
-    if (rewardType === "CREDIT") return "เครดิต";
-    if (rewardType === "POINT") return "พอยต์";
-    return "ตั๋วสุ่ม";
 }
 
 function shouldFallbackProductReward(error: unknown) {
@@ -146,6 +144,7 @@ async function fetchRewards(machineId: string | null) {
 
 async function fetchTieredProducts(machineId: string | null) {
     const allRewards = await fetchRewards(machineId);
+    const currencySettings = await getCurrencySettings().catch(() => null);
     type RewardRow = (typeof allRewards)[number];
 
     const tieredProducts: GachaProductLite[] = allRewards
@@ -166,7 +165,7 @@ async function fetchTieredProducts(machineId: string | null) {
                 : {
                     id: `reward:${reward.id}`,
                     imageUrl: reward.rewardImageUrl ?? null,
-                    name: reward.rewardName ?? getCurrencyRewardLabel(reward.rewardType),
+                    name: reward.rewardName ?? getGachaRewardTypeLabel(reward.rewardType, currencySettings),
                     price: Number(reward.rewardAmount ?? 0),
                     tier: (reward.tier as GachaTier) ?? "common",
                 }
@@ -653,18 +652,20 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, data: res.data, message: res.message });
     } catch (error) {
         const normalizedError = error as Error;
+        const currencySettings = await getCurrencySettings().catch(() => null);
+        const pointCurrencyName = getPointCurrencyName(currencySettings);
         const passthroughMessages = [
             "คุณสุ่มครบ",
             "ตู้กาชานี้ปิดอยู่ชั่วคราว",
             "ระบบกาชาปิดอยู่ชั่วคราว",
             "ไม่พบตู้กาชา",
             "เครดิตไม่เพียงพอ",
-            "พอยต์ไม่เพียงพอ",
+            `${pointCurrencyName}ไม่เพียงพอ`,
             "ตั๋วสุ่มไม่เพียงพอ",
             "รางวัลนี้ถูกใช้งานไปแล้ว กรุณาสุ่มใหม่",
             "สต็อกของรางวัลหมดแล้ว",
             "ไม่สามารถหักเครดิตได้",
-            "ไม่สามารถหักพอยต์ได้",
+            `ไม่สามารถหัก${pointCurrencyName}ได้`,
             "ไม่สามารถหักตั๋วสุ่มได้",
         ];
 
@@ -702,8 +703,7 @@ async function getMachineSettingsOrDefaults(machineId: string | null) {
         }
 
         return {
-            costAmount: Number(machine.costAmount ?? 0),
-            costType: machine.costType,
+            ...normalizeGachaCost(machine.costType, machine.costAmount),
             dailySpinLimit: machine.dailySpinLimit ?? 0,
             isEnabled: machine.isEnabled ?? true,
         };
@@ -711,8 +711,7 @@ async function getMachineSettingsOrDefaults(machineId: string | null) {
 
     const settings = await db.query.gachaSettings.findFirst().catch(() => null);
     return {
-        costAmount: Number(settings?.costAmount ?? 0),
-        costType: settings?.costType ?? "FREE",
+        ...normalizeGachaCost(settings?.costType ?? "FREE", settings?.costAmount ?? 0),
         dailySpinLimit: settings?.dailySpinLimit ?? 0,
         isEnabled: settings?.isEnabled ?? true,
     };

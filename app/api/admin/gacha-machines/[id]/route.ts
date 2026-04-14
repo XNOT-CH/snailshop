@@ -3,9 +3,10 @@ import { requirePermission } from "@/lib/auth";
 import { db, gachaMachines } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { validateBody } from "@/lib/validations/validate";
-import { gachaMachineSchema } from "@/lib/validations/gacha";
+import { gachaMachinePatchSchema } from "@/lib/validations/gacha";
 import { PERMISSIONS } from "@/lib/permissions";
 import { getMachineProbabilitySummary } from "@/lib/gachaMachineProbability";
+import { normalizeGachaCost } from "@/lib/gachaCost";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -26,13 +27,23 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     if (!auth.success) return NextResponse.json({ success: false }, { status: 401 });
     const { id } = await params;
 
-    const result = await validateBody(req, gachaMachineSchema.partial());
+    const result = await validateBody(req, gachaMachinePatchSchema);
     if ("error" in result) return result.error;
     const body = result.data;
 
     const set: Record<string, unknown> = {};
+    const normalizedCost = normalizeGachaCost(body.costType, body.costAmount);
     for (const [k, v] of Object.entries(body as Record<string, unknown>)) {
-        if (v !== undefined) set[k] = k === "costAmount" ? String(v as string | number) : v;
+        if (v === undefined) continue;
+        if (k === "costType") {
+            set[k] = normalizedCost.costType;
+            continue;
+        }
+        if (k === "costAmount") {
+            set[k] = String(normalizedCost.costAmount);
+            continue;
+        }
+        set[k] = v;
     }
 
     if (body.isActive === true) {

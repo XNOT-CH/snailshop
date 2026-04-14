@@ -263,10 +263,10 @@ export function FloatingChatButton() {
                 className="h-[100dvh] w-full gap-0 overflow-hidden border-l-0 bg-[#f5f7fb] p-0 sm:inset-y-4 sm:right-4 sm:h-auto sm:w-[min(420px,calc(100vw-2rem))] sm:max-w-none sm:rounded-[32px] sm:border sm:border-slate-200"
             >
                 <SheetHeader className="shrink-0 border-b border-slate-200 bg-white px-4 py-4 pr-12 text-left sm:px-5 sm:pr-14">
-                    <div className="flex items-center gap-3">
-                        <ChatBrandLogo className="h-11 w-11 rounded-2xl" />
-                        <div>
-                            <SheetTitle className="text-base text-slate-900">คุยกับทีมร้าน</SheetTitle>
+                    <div className="flex items-center gap-3.5">
+                        <ChatBrandLogo className="h-14 w-14 rounded-[1.35rem] sm:h-[3.75rem] sm:w-[3.75rem]" />
+                        <div className="min-w-0 flex-1 py-0.5">
+                            <SheetTitle className="truncate pb-0.5 text-lg font-black leading-[1.15] text-slate-900">คุยกับทีมร้าน</SheetTitle>
                             <SheetDescription className="mt-1 text-xs text-slate-500">
                                 ถามเรื่องสินค้า ออเดอร์ หรือปัญหาการใช้งานได้เลย
                             </SheetDescription>

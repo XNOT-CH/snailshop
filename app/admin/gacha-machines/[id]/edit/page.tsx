@@ -5,9 +5,12 @@ import { useParams, useRouter } from "next/navigation";
 import { Loader2, ArrowLeft, Save, Trash2, Pencil, Gift, LayoutGrid, X, Plus, Upload, ImageIcon } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 import { compressImage } from "@/lib/compressImage";
+import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 import { resizeFileToSquare } from "@/lib/imageResize";
 import { RewardImageCropDialog } from "@/components/gacha/RewardImageCropDialog";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { useCurrencySettings } from "@/hooks/useCurrencySettings";
+import { getPointCurrencyName } from "@/lib/currencySettings";
 import { PERMISSIONS } from "@/lib/permissions";
 import Image from "next/image";
 import { hasExactProbabilityTotal } from "@/lib/gachaProbability";
@@ -197,6 +200,7 @@ interface FormComponentProps {
     readonly onSave: () => void;
     readonly saving: boolean;
     readonly canEdit: boolean;
+    readonly pointCurrencyName: string;
     readonly onImageUpload: (file: File, setUrl: (url: string) => void, setUploading: (v: boolean) => void) => Promise<void>;
 }
 
@@ -204,7 +208,7 @@ interface EditRewardFormProps extends FormComponentProps {
     readonly onCancel: () => void;
 }
 
-function AddRewardForm({ form, setForm, products, productSearch, setProductSearch, productCategory, setProductCategory, onSave, saving, canEdit, onImageUpload }: FormComponentProps) {
+function AddRewardForm({ form, setForm, products, productSearch, setProductSearch, productCategory, setProductCategory, onSave, saving, canEdit, pointCurrencyName, onImageUpload }: FormComponentProps) {
     const [uploadingImage, setUploadingImage] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -223,7 +227,7 @@ function AddRewardForm({ form, setForm, products, productSearch, setProductSearc
                 <div>
                     <label htmlFor="addRewardType" className={labelCls}>ประเภทรางวัล *</label>
                     <select id="addRewardType" value={form.rewardType} onChange={e => setForm((f: any) => ({ ...f, rewardType: e.target.value, productId: "", rewardAmount: "" }))} className={inputCls} disabled={!canEdit}>
-                        <option value="POINT">พอยต์</option>
+                        <option value="POINT">{pointCurrencyName}</option>
                         <option value="CREDIT">เครดิต</option>
                         <option value="PRODUCT">สินค้าในเว็บ</option>
                     </select>
@@ -275,7 +279,7 @@ function AddRewardForm({ form, setForm, products, productSearch, setProductSearc
 
             <div className="mt-4">
                 <label htmlFor="addRewardImageFile" className={labelCls}>รูปภาพรางวัล</label>
-                <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF ระบบจะครอปตรงกลางและย่ออัตโนมัติให้พอดีกับวงกลมรางวัลก่อนอัปโหลด</p>
+                <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF ระบบจะครอปตรงกลางและย่ออัตโนมัติให้พอดีกับวงกลมรางวัลก่อนอัปโหลด • {IMAGE_UPLOAD_RECOMMENDATIONS.rewardSquare}</p>
                 <input id="addRewardImageFile" ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" disabled={!canEdit} onChange={e => { const file = e.target.files?.[0]; if (file) { void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); } e.target.value = ""; }} />
                 <div className="flex items-center gap-2">
                     <button type="button" onClick={() => fileInputRef.current?.click()} disabled={!canEdit} className={`w-12 h-12 rounded-full border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors ${canEdit ? "cursor-pointer" : "cursor-not-allowed opacity-50"} ${isDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/20"}`} onDragOver={(e) => { if (!canEdit) return; e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={(e) => { if (!canEdit) return; e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); }}>
@@ -295,7 +299,7 @@ function AddRewardForm({ form, setForm, products, productSearch, setProductSearc
     );
 }
 
-function EditRewardForm({ form, setForm, products, productSearch, setProductSearch, productCategory, setProductCategory, onSave, saving, canEdit, onImageUpload, onCancel }: EditRewardFormProps) {
+function EditRewardForm({ form, setForm, products, productSearch, setProductSearch, productCategory, setProductCategory, onSave, saving, canEdit, pointCurrencyName, onImageUpload, onCancel }: EditRewardFormProps) {
     const [uploadingImage, setUploadingImage] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -309,7 +313,7 @@ function EditRewardForm({ form, setForm, products, productSearch, setProductSear
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div><label htmlFor="editRewardName" className={labelCls}>ชื่อรางวัล *</label><input id="editRewardName" value={form.rewardName} onChange={e => setForm((f: any) => ({ ...f, rewardName: e.target.value }))} placeholder="จำเป็น" className={inputCls} disabled={!canEdit} /></div>
                 <div><label htmlFor="editProbability" className={labelCls}>โอกาสได้รับ (%) *</label><input id="editProbability" type="number" value={form.probability} onChange={e => setForm((f: any) => ({ ...f, probability: Number(e.target.value) }))} placeholder="รวมโอกาสของรางวัลทั้งหมดต้องไม่เกิน 100%" min={0.01} max={100} step={0.01} className={inputCls} disabled={!canEdit} /></div>
-                <div><label htmlFor="editRewardType" className={labelCls}>ประเภทรางวัล *</label><select id="editRewardType" value={form.rewardType ?? "POINT"} onChange={e => setForm((f: any) => ({ ...f, rewardType: e.target.value, productId: "", rewardAmount: 0 }))} className={inputCls} disabled={!canEdit}><option value="POINT">พอยต์</option><option value="CREDIT">เครดิต</option><option value="PRODUCT">สินค้าในเว็บ</option></select></div>
+                <div><label htmlFor="editRewardType" className={labelCls}>ประเภทรางวัล *</label><select id="editRewardType" value={form.rewardType ?? "POINT"} onChange={e => setForm((f: any) => ({ ...f, rewardType: e.target.value, productId: "", rewardAmount: 0 }))} className={inputCls} disabled={!canEdit}><option value="POINT">{pointCurrencyName}</option><option value="CREDIT">เครดิต</option><option value="PRODUCT">สินค้าในเว็บ</option></select></div>
                 {form.rewardType === "PRODUCT" ? (
                     <div>
                         <label htmlFor="editProductCategory" className={labelCls}>เลือกสินค้า *</label>
@@ -347,7 +351,7 @@ function EditRewardForm({ form, setForm, products, productSearch, setProductSear
                 <div><label htmlFor="editRewardTier" className={labelCls}>ระดับรางวัล *</label><select id="editRewardTier" value={form.tier} onChange={e => setForm((f: any) => ({ ...f, tier: e.target.value }))} className={inputCls} disabled={!canEdit}>{TIER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
                 <div className="md:col-span-2 mt-4">
                     <label htmlFor="editRewardImageFile" className={labelCls}>รูปภาพรางวัล</label>
-                    <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF ระบบจะครอปตรงกลางและย่ออัตโนมัติให้พอดีกับวงกลมรางวัลก่อนอัปโหลด</p>
+                    <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF ระบบจะครอปตรงกลางและย่ออัตโนมัติให้พอดีกับวงกลมรางวัลก่อนอัปโหลด • {IMAGE_UPLOAD_RECOMMENDATIONS.rewardSquare}</p>
                     <input id="editRewardImageFile" ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" disabled={!canEdit} onChange={e => { const file = e.target.files?.[0]; if (file) { void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); } e.target.value = ""; }} />
                     <div className="flex items-center gap-2">
                         <button type="button" onClick={() => fileInputRef.current?.click()} disabled={!canEdit} className={`w-12 h-12 rounded-full border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors ${canEdit ? "cursor-pointer" : "cursor-not-allowed opacity-50"} ${isDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/20"}`} onDragOver={(e) => { if (!canEdit) return; e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={(e) => { if (!canEdit) return; e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); }}>
@@ -371,6 +375,8 @@ function EditRewardForm({ form, setForm, products, productSearch, setProductSear
 export default function EditGachaMachinePage() {
     const params = useParams();
     const router = useRouter();
+    const currencySettings = useCurrencySettings();
+    const pointCurrencyName = getPointCurrencyName(currencySettings);
     const id = params.id as string;
     const permissions = useAdminPermissions();
     const canEditGacha = permissions.includes(PERMISSIONS.GACHA_EDIT);
@@ -855,6 +861,7 @@ export default function EditGachaMachinePage() {
                     onSave={() => void handleAddReward()}
                     saving={addSaving}
                     canEdit={canEditGacha}
+                    pointCurrencyName={pointCurrencyName}
                     onImageUpload={handleImageUpload}
                 />
 
@@ -871,6 +878,7 @@ export default function EditGachaMachinePage() {
                         onSave={() => void handleEditSave()}
                         saving={editSaving}
                         canEdit={canEditGacha}
+                        pointCurrencyName={pointCurrencyName}
                         onImageUpload={handleImageUpload}
                         onCancel={closeEdit}
                     />

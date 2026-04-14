@@ -8,8 +8,10 @@ import { showError, showSuccess } from "@/lib/swal";
 import { GachaResultModal } from "@/components/GachaResultModal";
 import { GachaRecentFeed } from "@/components/GachaRecentFeed";
 import { DropRateModal } from "@/components/DropRateModal";
+import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { shouldBypassImageOptimization } from "@/lib/imageUrl";
 import { EMPTY_USER_BALANCES, getBalanceByCostType, type UserBalances } from "@/lib/userBalances";
+import { getGachaCostLabel, normalizeGachaCost } from "@/lib/gachaCost";
 import {
   buildGrid,
   findTileIndex,
@@ -128,6 +130,11 @@ interface GachaRhombusProps {
 }
 
 export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_BALANCES, machineId, maintenance }: GachaRhombusProps) {
+  const currencySettings = useCurrencySettings();
+  const normalizedCost = useMemo(
+    () => normalizeGachaCost(settings.costType, settings.costAmount),
+    [settings.costAmount, settings.costType]
+  );
   const tiles = useMemo(() => buildGrid(products), [products]);
   const [phase, setPhase] = useState<Phase>("idle");
   const [highlightedTile, setHighlightedTile] = useState<number | null>(null);
@@ -181,7 +188,7 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
   }, [skipAnimationEnabled]);
 
   const refreshBalances = useCallback(async () => {
-    if (settings.costType === "FREE") return;
+    if (normalizedCost.costType === "FREE") return;
     try {
       const res = await fetch("/api/user/balance", { cache: "no-store" });
       if (!res.ok) return;
@@ -195,10 +202,10 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
     } catch {
       // Keep the most recent known balance if refresh fails.
     }
-  }, [settings.costType]);
+  }, [normalizedCost.costType]);
 
-  const currencyWord = settings.costType === "CREDIT" ? "เครดิต" : settings.costType === "POINT" ? "พอยต์" : settings.costType === "TICKET" ? "ตั๋วสุ่ม" : "เพชร";
-  const displayedBalance = getBalanceByCostType(balances, settings.costType);
+  const currencyWord = getGachaCostLabel(normalizedCost.costType, currencySettings);
+  const displayedBalance = getBalanceByCostType(balances, normalizedCost.costType);
   const isBlocked = !settings.isEnabled || maintenance?.enabled;
   const lSelectorIndices = useMemo(() => tiles.map((t, i) => (t.type === "selector" && t.side === "left" ? i : -1)).filter((i) => i >= 0), [tiles]);
   const rSelectorIndices = useMemo(() => tiles.map((t, i) => (t.type === "selector" && t.side === "right" ? i : -1)).filter((i) => i >= 0), [tiles]);
@@ -548,7 +555,7 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
 
         <div className="mt-3 flex w-full flex-col items-center">
           <div className="mb-4 space-y-1 text-center">
-            <h2 className="text-[18px] font-bold text-[#145de7] md:text-[22px]">สุ่มรางวัลครั้งละ {settings.costAmount.toLocaleString()} {currencyWord}</h2>
+            <h2 className="text-[18px] font-bold text-[#145de7] md:text-[22px]">สุ่มรางวัลครั้งละ {normalizedCost.costAmount.toLocaleString()} {currencyWord}</h2>
             <p className="text-[13px] font-medium text-black md:text-[14px]">* เมื่อกดสุ่มแล้วไม่สามารถขอคืน{currencyWord}ได้ในทุกกรณี *</p>
           </div>
           <div className="mb-5 w-full rounded-xl border border-[#bcd6ff] bg-[#d0e3ff]/70 px-4 py-3 text-center text-sm font-bold text-[#145de7]">ยอด{currencyWord}คงเหลือ: {displayedBalance.toLocaleString()} {currencyWord} <span className="font-normal text-[#145de7]/90">(ตรวจยอดล่าสุดก่อนกดสุ่มได้)</span></div>

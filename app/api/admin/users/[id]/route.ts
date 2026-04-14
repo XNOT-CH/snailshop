@@ -4,22 +4,25 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { requireAnyPermission, requirePermission } from "@/lib/auth";
+import { getPointCurrencyName } from "@/lib/currencySettings";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { PERMISSIONS } from "@/lib/permissions";
 
 const MAX_DECIMAL_BALANCE = 99999999.99;
 const MAX_INTEGER_BALANCE = 2147483647;
 
-// Admin user update: เลือกส่งได้อย่างน้อย 1 ฟิลด์
-const adminUserUpdateSchema = z.object({
-    creditBalance: z.coerce.number().finite("เครดิตต้องเป็นตัวเลข").min(0, "เครดิตต้องไม่ติดลบ").max(MAX_DECIMAL_BALANCE, "เครดิตต้องไม่เกิน 99,999,999.99").optional(),
-    totalTopup: z.coerce.number().finite("ยอดเติมสะสมต้องเป็นตัวเลข").min(0, "ยอดเติมสะสมต้องไม่ติดลบ").max(MAX_DECIMAL_BALANCE, "ยอดเติมสะสมต้องไม่เกิน 99,999,999.99").optional(),
-    pointBalance: z.coerce.number().finite("พอยต์ต้องเป็นตัวเลข").int("พอยต์ต้องเป็นจำนวนเต็ม").min(0, "พอยต์ต้องเป็นจำนวนเต็มที่ไม่ติดลบ").max(MAX_INTEGER_BALANCE, "พอยต์ต้องไม่เกิน 2,147,483,647").optional(),
-    lifetimePoints: z.coerce.number().finite("พอยต์สะสมต้องเป็นตัวเลข").int("พอยต์สะสมต้องเป็นจำนวนเต็ม").min(0, "พอยต์สะสมต้องเป็นจำนวนเต็มที่ไม่ติดลบ").max(MAX_INTEGER_BALANCE, "พอยต์สะสมต้องไม่เกิน 2,147,483,647").optional(),
-    role: z.string().trim().min(1).optional(),
-}).refine(
-    (data) => Object.values(data).some((v) => v !== undefined),
-    { message: "ต้องระบุข้อมูลที่ต้องการแก้ไขอย่างน้อย 1 ฟิลด์" }
-);
+function createAdminUserUpdateSchema(pointCurrencyName: string) {
+    return z.object({
+        creditBalance: z.coerce.number().finite("เครดิตต้องเป็นตัวเลข").min(0, "เครดิตต้องไม่ติดลบ").max(MAX_DECIMAL_BALANCE, "เครดิตต้องไม่เกิน 99,999,999.99").optional(),
+        totalTopup: z.coerce.number().finite("ยอดเติมสะสมต้องเป็นตัวเลข").min(0, "ยอดเติมสะสมต้องไม่ติดลบ").max(MAX_DECIMAL_BALANCE, "ยอดเติมสะสมต้องไม่เกิน 99,999,999.99").optional(),
+        pointBalance: z.coerce.number().finite(`${pointCurrencyName}ต้องเป็นตัวเลข`).int(`${pointCurrencyName}ต้องเป็นจำนวนเต็ม`).min(0, `${pointCurrencyName}ต้องเป็นจำนวนเต็มที่ไม่ติดลบ`).max(MAX_INTEGER_BALANCE, `${pointCurrencyName}ต้องไม่เกิน 2,147,483,647`).optional(),
+        lifetimePoints: z.coerce.number().finite(`${pointCurrencyName}สะสมต้องเป็นตัวเลข`).int(`${pointCurrencyName}สะสมต้องเป็นจำนวนเต็ม`).min(0, `${pointCurrencyName}สะสมต้องเป็นจำนวนเต็มที่ไม่ติดลบ`).max(MAX_INTEGER_BALANCE, `${pointCurrencyName}สะสมต้องไม่เกิน 2,147,483,647`).optional(),
+        role: z.string().trim().min(1).optional(),
+    }).refine(
+        (data) => Object.values(data).some((v) => v !== undefined),
+        { message: "ต้องระบุข้อมูลที่ต้องการแก้ไขอย่างน้อย 1 ฟิลด์" }
+    );
+}
 
 export async function PATCH(
     request: NextRequest,
@@ -34,7 +37,8 @@ export async function PATCH(
         try { raw = await request.json(); } catch {
             return NextResponse.json({ error: "ข้อมูลไม่ถูกต้อง (invalid JSON)" }, { status: 400 });
         }
-        const parsed = adminUserUpdateSchema.safeParse(raw);
+        const currencySettings = await getCurrencySettings().catch(() => null);
+        const parsed = createAdminUserUpdateSchema(getPointCurrencyName(currencySettings)).safeParse(raw);
         if (!parsed.success) {
             return NextResponse.json(
                 {

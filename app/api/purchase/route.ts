@@ -7,8 +7,16 @@ import { splitStock, getDelimiter } from "@/lib/stock";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { sendEmail } from "@/lib/mail";
 import { PurchaseReceiptEmail } from "@/components/emails/PurchaseReceiptEmail";
+import {
+    formatCurrencyAmount,
+    getPointCurrencyName,
+    type PublicCurrencySettings,
+} from "@/lib/currencySettings";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
+import { getSiteSettings } from "@/lib/getSiteSettings";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkPurchaseRateLimit, getClientIp } from "@/lib/rateLimit";
+import { resolveSiteName } from "@/lib/seo";
 import {
     calculatePromoDiscountAmount,
     getPromoValidationMessage,
@@ -29,6 +37,7 @@ type TransactionProductRow = {
     name: string;
     price: string;
     discountPrice: string | null;
+    currency: string | null;
     isSold: number;
     secretData: string;
     stockSeparator: string | null;
@@ -42,6 +51,7 @@ type AuthUser = {
     name: string | null;
     email: string | null;
     creditBalance: string;
+    pointBalance: number;
 };
 
 async function getAuthUser() {
@@ -56,7 +66,15 @@ async function getAuthUser() {
         return { error: "ไม่พบผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่", status: 404 } as const;
     }
 
-    return { user } as const;
+    return {
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            creditBalance: String(user.creditBalance ?? "0"),
+            pointBalance: Number(user.pointBalance ?? 0),
+        },
+    } as const;
 }
 
 function processStock(decryptedData: string, separatorType: string, qty: number) {
@@ -81,27 +99,33 @@ function processStock(decryptedData: string, separatorType: string, qty: number)
 function sendPurchaseReceipt(
     email: string | null,
     name: string | null,
-    result: { finalPrice: number; product: { name: string } } | undefined
+    result: { finalPrice: number; product: { name: string; currency?: string | null } } | undefined,
+    currencySettings: PublicCurrencySettings | null,
+    siteName: string,
 ) {
     if (!email || !result) {
         return;
     }
 
+    const isPointPurchase = result.product.currency === "POINT";
+
     return sendEmail({
         to: email,
-        subject: `ใบเสร็จรับเงิน SnailShop - สั่งซื้อสินค้า 1 รายการ`,
+        subject: `ใบเสร็จรับเงิน ${siteName} - สั่งซื้อสินค้า 1 รายการ`,
         react: PurchaseReceiptEmail({
+            siteName,
             userName: name || "ลูกค้า",
             orderCount: 1,
-            totalTHB: result.finalPrice,
-            totalPoints: 0,
+            totalTHB: isPointPurchase ? 0 : result.finalPrice,
+            totalPoints: isPointPurchase ? result.finalPrice : 0,
             items: [
                 {
                     productName: result.product.name,
                     price: result.finalPrice,
-                    currency: "THB",
+                    currency: result.product.currency || "THB",
                 },
             ],
+            currencySettings,
         }),
     }).catch((error) => {
         console.error("Failed to send email receipt:", error);
@@ -174,7 +198,8 @@ async function executePurchaseTransaction(
     productId: string,
     qty: number,
     user: AuthUser,
-    promoCode?: string
+    promoCode?: string,
+    currencySettings?: PublicCurrencySettings | null,
 ) {
     try {
         await conn.beginTransaction();
@@ -190,18 +215,34 @@ async function executePurchaseTransaction(
 
         const unitPrice = prod.discountPrice ? Number(prod.discountPrice) : Number(prod.price);
         const baseTotalPrice = unitPrice * qty;
-        const promoData = promoCode
+        const isPointCurrency = prod.currency === "POINT";
+        if (isPointCurrency && promoCode) {
+            throw new Error("โค้ดส่วนลดใช้ได้เฉพาะสินค้าสกุลเงินบาท");
+        }
+
+        const promoData = !isPointCurrency && promoCode
             ? await validatePromoInTransaction(conn, promoCode, user.id, baseTotalPrice, prod.category)
             : null;
         const totalPrice = Math.max(
             0,
             Math.round((baseTotalPrice - (promoData?.discountAmount ?? 0)) * 100) / 100
         );
-        const userBalance = Number(user.creditBalance);
+        const userBalance = isPointCurrency ? Number(user.pointBalance) : Number(user.creditBalance);
 
         if (userBalance < totalPrice) {
+            const requiredAmount = formatCurrencyAmount(
+                totalPrice,
+                isPointCurrency ? "POINT" : "THB",
+                currencySettings,
+            );
+            const currentAmount = formatCurrencyAmount(
+                userBalance,
+                isPointCurrency ? "POINT" : "THB",
+                currencySettings,
+            );
+
             throw new Error(
-                `เครดิตไม่เพียงพอ (ต้องการ ฿${totalPrice.toLocaleString()} แต่มี ฿${userBalance.toLocaleString()})`
+                `${isPointCurrency ? getPointCurrencyName(currencySettings) : "เครดิต"}ไม่เพียงพอ (ต้องการ ${requiredAmount} แต่มี ${currentAmount})`
             );
         }
 
@@ -215,10 +256,17 @@ async function executePurchaseTransaction(
             [orderId, user.id, totalPrice, encrypt(givenJoined)]
         );
 
-        await conn.execute(
-            "UPDATE User SET creditBalance = creditBalance - ? WHERE id = ?",
-            [totalPrice, user.id]
-        );
+        if (isPointCurrency) {
+            await conn.execute(
+                "UPDATE User SET pointBalance = pointBalance - ? WHERE id = ?",
+                [Math.round(totalPrice), user.id]
+            );
+        } else {
+            await conn.execute(
+                "UPDATE User SET creditBalance = creditBalance - ? WHERE id = ?",
+                [totalPrice, user.id]
+            );
+        }
 
         let scheduledDeleteAt: string | null = null;
         if (isLastStock && prod.autoDeleteAfterSale) {
@@ -311,6 +359,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: authRes.error }, { status: authRes.status });
         }
         const { user } = authRes;
+        const [currencySettings, siteSettings] = await Promise.all([
+            getCurrencySettings().catch(() => null),
+            getSiteSettings(),
+        ]);
+        const siteName = resolveSiteName(siteSettings?.heroTitle);
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const conn = await (db as any).$client.getConnection();
@@ -319,7 +372,8 @@ export async function POST(request: NextRequest) {
             productId,
             qty,
             user,
-            typeof promoCode === "string" ? promoCode : undefined
+            typeof promoCode === "string" ? promoCode : undefined,
+            currencySettings,
         );
 
         await auditFromRequest(request, {
@@ -336,12 +390,13 @@ export async function POST(request: NextRequest) {
                 unitPrice: result.product.discountPrice
                     ? Number(result.product.discountPrice)
                     : Number(result.product.price || 0),
+                currency: result.product.currency || "THB",
                 quantity: qty,
                 totalPrice: result.finalPrice,
             },
         });
 
-        void sendPurchaseReceipt(user.email, user.name, result);
+        void sendPurchaseReceipt(user.email, user.name, result, currencySettings, siteName);
 
         return NextResponse.json({
             success: true,

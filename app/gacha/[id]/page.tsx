@@ -9,9 +9,12 @@ import { notFound } from "next/navigation";
 import { GachaRhombus } from "@/components/GachaRhombus";
 import { GachaGridMachine } from "@/components/GachaGridMachine";
 import { type GachaProductLite, type GachaTier } from "@/lib/gachaGrid";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
+import { getGachaRewardTypeLabel } from "@/lib/gachaCost";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { buildPageMetadata } from "@/lib/seo";
 import { EMPTY_USER_BALANCES } from "@/lib/userBalances";
+import { normalizeGachaCost } from "@/lib/gachaCost";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +62,7 @@ export async function generateMetadata({ params }: Readonly<{ params: Promise<{ 
 export default async function GachaPage({ params }: Readonly<{ params: Promise<{ id: string }> }>) {
     const { id } = await params;
     const maintenance = getMaintenanceState("gacha");
+    const currencySettings = await getCurrencySettings().catch(() => null);
 
     const session = await auth();
     const userId = session?.user?.id;
@@ -77,7 +81,7 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
         );
     }
 
-    const costAmount = Number(machine.costAmount);
+    const normalizedCost = normalizeGachaCost(machine.costType, machine.costAmount);
 
     let initialBalances = EMPTY_USER_BALANCES;
     try {
@@ -121,7 +125,7 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
 
                     return {
                         id: `reward:${reward.id}`,
-                        name: reward.rewardName ?? (reward.rewardType === "CREDIT" ? "เครดิต" : reward.rewardType === "POINT" ? "พอยต์" : "ตั๋วสุ่ม"),
+                        name: reward.rewardName ?? getGachaRewardTypeLabel(reward.rewardType, currencySettings),
                         price: Number(reward.rewardAmount ?? 0),
                         imageUrl: reward.rewardImageUrl ?? null,
                         tier: (reward.tier as GachaTier) ?? "common",
@@ -134,8 +138,8 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
 
     const settings = {
         isEnabled: true,
-        costType: machine.costType,
-        costAmount,
+        costType: normalizedCost.costType,
+        costAmount: normalizedCost.costAmount,
         dailySpinLimit: machine.dailySpinLimit,
     };
 
@@ -175,8 +179,8 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
                                 <GachaGridMachine
                                     machineId={machine.id}
                                     machineName={machine.name}
-                                    costType={machine.costType}
-                                    costAmount={costAmount}
+                                    costType={normalizedCost.costType}
+                                    costAmount={normalizedCost.costAmount}
                                     initialBalances={initialBalances}
                                     maintenance={maintenance}
                                 />

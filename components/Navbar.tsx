@@ -3,6 +3,7 @@ import Image from "next/image";
 import { auth } from "@/auth";
 import { db, users, navItems } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { Button } from "@/components/ui/button";
 import { ShopDropdown } from "@/components/ShopDropdown";
@@ -20,16 +21,17 @@ import {
     Wallet,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { resolveSiteName } from "@/lib/seo";
 
 export default async function Navbar() {
     const session = await auth();
     const userId = session?.user?.id;
 
-    const [user, siteSettings, dbNavItems, allProducts] = await Promise.all([
+    const [user, siteSettings, dbNavItems, allProducts, currencySettings] = await Promise.all([
         userId
             ? db.query.users.findFirst({
                   where: eq(users.id, userId),
-                  columns: { username: true, image: true, creditBalance: true },
+                  columns: { username: true, image: true, creditBalance: true, pointBalance: true },
               })
             : Promise.resolve(null),
         getSiteSettings(),
@@ -38,10 +40,12 @@ export default async function Navbar() {
             orderBy: (table, { asc }) => asc(table.sortOrder),
         }),
         db.query.products.findMany({
-            columns: { category: true },
-            where: (table, { eq: equals }) => equals(table.isSold, false),
+                columns: { category: true },
+                where: (table, { eq: equals }) => equals(table.isSold, false),
         }),
+        getCurrencySettings(),
     ]);
+    const siteName = resolveSiteName(siteSettings?.heroTitle);
 
     const avatarVersion = user?.image ?? "default-avatar";
 
@@ -114,7 +118,7 @@ export default async function Navbar() {
                         </div>
                     )}
                     <span className="hidden truncate font-bold tracking-tight text-foreground sm:inline">
-                        {siteSettings?.heroTitle || "GameStore"}
+                        {siteName}
                     </span>
                 </Link>
 
@@ -142,8 +146,14 @@ export default async function Navbar() {
                 <div className="flex shrink-0 items-center gap-1.5 xl:justify-self-end">
                     <ThemeToggle />
                     <NavbarInteractive
-                        user={user ? { username: user.username, image: user.image, creditBalance: Number(user.creditBalance) } : null}
+                        user={user ? {
+                            username: user.username,
+                            image: user.image,
+                            creditBalance: Number(user.creditBalance),
+                            pointBalance: Number(user.pointBalance ?? 0),
+                        } : null}
                         imageVersion={avatarVersion}
+                        currencySettings={currencySettings}
                     />
 
                     {user ? (
@@ -174,11 +184,17 @@ export default async function Navbar() {
 
                     <NavigationDrawer
                         navLinks={navLinks.map(({ href, label }) => ({ href, label }))}
-                        user={user ? { username: user.username, image: user.image, creditBalance: Number(user.creditBalance) } : null}
+                        user={user ? {
+                            username: user.username,
+                            image: user.image,
+                            creditBalance: Number(user.creditBalance),
+                            pointBalance: Number(user.pointBalance ?? 0),
+                        } : null}
                         imageVersion={avatarVersion}
-                        siteName={siteSettings?.heroTitle || "GameStore"}
+                        siteName={siteName}
                         logoUrl={siteSettings?.logoUrl || undefined}
                         categories={shopCategories}
+                        currencySettings={currencySettings}
                     />
                 </div>
             </div>

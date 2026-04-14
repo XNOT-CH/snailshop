@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { showSuccess, showError, showInfo } from "@/lib/swal";
+import { normalizeCurrencyCode, type ProductCurrencyCode } from "@/lib/currencySettings";
 
 // Cart item interface
 export interface CartItem {
@@ -9,6 +10,7 @@ export interface CartItem {
     name: string;
     price: number;
     discountPrice?: number | null;
+    currency?: string | null;
     imageUrl: string | null;
     category: string;
     quantity: number;
@@ -26,6 +28,7 @@ interface CartContextType {
     itemCount: number;
     subtotal: number;
     total: number;
+    totalsByCurrency: Record<ProductCurrencyCode, number>;
     isLoading: boolean;
 }
 
@@ -151,11 +154,19 @@ export function CartProvider({ children }: Readonly<CartProviderProps>) {
     // Calculate subtotal (using discount price if available, multiplied by quantity)
     const subtotal = items.reduce((sum, item) => {
         const price = item.discountPrice ?? item.price;
-        return sum + price * (item.quantity || 1);
+        return normalizeCurrencyCode(item.currency) === "THB"
+            ? sum + price * (item.quantity || 1)
+            : sum;
     }, 0);
 
     // Total (same as subtotal for now, can add fees/discounts later)
     const total = subtotal;
+    const totalsByCurrency = items.reduce<Record<ProductCurrencyCode, number>>((accumulator, item) => {
+        const currency = normalizeCurrencyCode(item.currency);
+        const price = item.discountPrice ?? item.price;
+        accumulator[currency] += price * (item.quantity || 1);
+        return accumulator;
+    }, { THB: 0, POINT: 0 });
 
     const value: CartContextType = React.useMemo(() => ({
         items,
@@ -167,8 +178,9 @@ export function CartProvider({ children }: Readonly<CartProviderProps>) {
         itemCount,
         subtotal,
         total,
+        totalsByCurrency,
         isLoading,
-    }), [items, addToCart, updateQuantity, removeFromCart, clearCart, isInCart, itemCount, subtotal, total, isLoading]);
+    }), [items, addToCart, updateQuantity, removeFromCart, clearCart, isInCart, itemCount, subtotal, total, totalsByCurrency, isLoading]);
 
     return (
         <CartContext.Provider value={value}>

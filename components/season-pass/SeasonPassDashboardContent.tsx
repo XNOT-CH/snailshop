@@ -17,6 +17,8 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { SeasonPassClaimButton } from "@/components/season-pass/SeasonPassClaimButton";
+import { useCurrencySettings } from "@/hooks/useCurrencySettings";
+import { getPointCurrencyName } from "@/lib/currencySettings";
 import type { SeasonPassBoardReward, SeasonPassRewardType } from "@/lib/seasonPass";
 
 type SeasonPassHistoryEntry = {
@@ -93,7 +95,7 @@ const statusConfig = {
 
 const rewardLegend = [
     { key: "credits", title: "เครดิต", detail: "เพิ่มเครดิตเข้าระบบทันทีเมื่อกดรับ" },
-    { key: "points", title: "พอยต์", detail: "เพิ่ม point balance ของผู้ใช้ทันที" },
+    { key: "points", title: "", detail: "" },
     { key: "tickets", title: "ตั๋วสุ่ม", detail: "ใช้เป็นรางวัลตั๋วสุ่มตามจำนวนที่กำหนด" },
 ] as const;
 
@@ -166,8 +168,10 @@ export function SeasonPassDashboardContent({
     mockDate,
 }: Readonly<SeasonPassDashboardContentProps>) {
     const router = useRouter();
+    const currencySettings = useCurrencySettings();
     const [board, setBoard] = useState(initialBoard);
     const [history, setHistory] = useState(initialHistory);
+    const pointCurrencyName = getPointCurrencyName(currencySettings);
 
     const boardSummary = useMemo(() => {
         const claimedCount = board.filter((item) => item.status === "claimed").length;
@@ -391,15 +395,19 @@ export function SeasonPassDashboardContent({
                             {rewardLegend.map((item) => {
                                 const config = rewardConfig[item.key];
                                 const Icon = config.icon;
+                                const title = item.key === "points" ? pointCurrencyName : item.title;
+                                const detail = item.key === "points"
+                                    ? `เพิ่มยอด ${pointCurrencyName} ของผู้ใช้ทันที`
+                                    : item.detail;
 
                                 return (
-                                    <div key={item.title} className="flex items-start gap-3 rounded-2xl border border-border/70 bg-background/80 p-4">
+                                    <div key={item.key} className="flex items-start gap-3 rounded-2xl border border-border/70 bg-background/80 p-4">
                                         <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${config.iconWrap}`}>
                                             <Icon className="h-4 w-4" />
                                         </div>
                                         <div>
-                                            <p className="font-medium text-slate-900">{item.title}</p>
-                                            <p className="mt-1 text-sm leading-6 text-slate-500">{item.detail}</p>
+                                            <p className="font-medium text-slate-900">{title}</p>
+                                            <p className="mt-1 text-sm leading-6 text-slate-500">{detail}</p>
                                         </div>
                                     </div>
                                 );

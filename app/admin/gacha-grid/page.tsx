@@ -23,9 +23,12 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { showSuccess, showError } from "@/lib/swal";
+import { useCurrencySettings } from "@/hooks/useCurrencySettings";
+import { getPointCurrencyName, getPointCurrencySymbol } from "@/lib/currencySettings";
 import { Loader2, Grid3X3, Plus, Trash2, Upload, ImageIcon, Pencil, X } from "lucide-react";
 import Image from "next/image";
 import { resizeFileToSquare } from "@/lib/imageResize";
+import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 import { RewardImageCropDialog } from "@/components/gacha/RewardImageCropDialog";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -48,6 +51,9 @@ export default function AdminGachaGridPage() {
     const cropUrlRef = useRef<string | null>(null);
     const pendingEditRewardIdRef = useRef<string | null>(null);
     const permissions = useAdminPermissions();
+    const currencySettings = useCurrencySettings();
+    const pointCurrencyName = getPointCurrencyName(currencySettings);
+    const pointCurrencySymbol = getPointCurrencySymbol(currencySettings);
     const canEditGacha = permissions.includes(PERMISSIONS.GACHA_EDIT);
     const [rewards, setRewards] = useState<RewardRow[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -299,7 +305,7 @@ export default function AdminGachaGridPage() {
                     <CardTitle className="text-base flex items-center gap-2">
                         <Plus className="h-5 w-5" /> เพิ่มรางวัลใหม่
                     </CardTitle>
-                    <CardDescription>รางวัลประเภท เครดิต หรือ พอยต์ พร้อมรูปภาพ</CardDescription>
+                    <CardDescription>รางวัลประเภท เครดิต หรือ {pointCurrencyName} พร้อมรูปภาพ</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
@@ -310,7 +316,7 @@ export default function AdminGachaGridPage() {
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="CREDIT">💰 เครดิต</SelectItem>
-                                    <SelectItem value="POINT">💎 พอยต์</SelectItem>
+                                    <SelectItem value="POINT">{pointCurrencySymbol} {pointCurrencyName}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -335,14 +341,14 @@ export default function AdminGachaGridPage() {
                             <Input
                                 value={newName}
                                 onChange={(e) => setNewName(e.target.value)}
-                                placeholder={newType === "CREDIT" ? "เช่น เครดิต 50 บาท" : "เช่น พอยต์ 100 แต้ม"}
+                                placeholder={newType === "CREDIT" ? "เช่น เครดิต 50 บาท" : `เช่น ${pointCurrencyName} 100 แต้ม`}
                                 disabled={!canEditGacha}
                             />
                         </div>
 
                         {/* amount */}
                         <div className="space-y-2">
-                            <Label>จำนวน ({newType === "CREDIT" ? "฿" : "พอยต์"})</Label>
+                            <Label>จำนวน ({newType === "CREDIT" ? "฿" : pointCurrencyName})</Label>
                             <Input
                                 type="number"
                                 min={1}
@@ -360,6 +366,7 @@ export default function AdminGachaGridPage() {
                             <Label>รูปภาพรางวัล (ไม่บังคับ)</Label>
                             <span className="text-xs text-muted-foreground">✨ ครอปตรงกลางให้พอดีวงกลมอัตโนมัติ</span>
                         </div>
+                        <p className="text-xs text-muted-foreground">รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และครอปให้อัตโนมัติก่อนบันทึก • {IMAGE_UPLOAD_RECOMMENDATIONS.rewardSquare}</p>
                         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                             <input
                                 ref={newFileRef}
@@ -465,7 +472,7 @@ export default function AdminGachaGridPage() {
                                                     <p className="text-xs text-muted-foreground">
                                                         {r.rewardType === "CREDIT" && "฿"}
                                                         {r.rewardAmount.toLocaleString()}
-                                                        {r.rewardType === "POINT" && " พอยต์"}
+                                                        {r.rewardType === "POINT" && ` ${pointCurrencyName}`}
                                                     </p>
                                                 )}
                                             </div>
@@ -484,7 +491,7 @@ export default function AdminGachaGridPage() {
                                     <div className="mt-3 flex flex-wrap gap-2">
                                         {r.rewardType === "CREDIT"
                                             ? <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30">💰 เครดิต</Badge>
-                                            : <Badge className="bg-purple-500/20 text-purple-600 border-purple-500/30">💎 พอยต์</Badge>}
+                                            : <Badge className="bg-purple-500/20 text-purple-600 border-purple-500/30">{pointCurrencySymbol} {pointCurrencyName}</Badge>}
                                     </div>
 
                                     <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -597,7 +604,7 @@ export default function AdminGachaGridPage() {
                                                     <span className="text-xs text-muted-foreground">
                                                         {r.rewardType === "CREDIT" && "฿"}
                                                         {r.rewardAmount.toLocaleString()}
-                                                        {r.rewardType === "POINT" && " พอยต์"}
+                                                        {r.rewardType === "POINT" && ` ${pointCurrencyName}`}
                                                     </span>
                                                 )}
                                             </div>
@@ -607,7 +614,7 @@ export default function AdminGachaGridPage() {
                                         <TableCell>
                                             {r.rewardType === "CREDIT"
                                                 ? <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30">💰 เครดิต</Badge>
-                                                : <Badge className="bg-purple-500/20 text-purple-600 border-purple-500/30">💎 พอยต์</Badge>}
+                                                : <Badge className="bg-purple-500/20 text-purple-600 border-purple-500/30">{pointCurrencySymbol} {pointCurrencyName}</Badge>}
                                         </TableCell>
 
                                         {/* Tier */}

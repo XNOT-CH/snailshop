@@ -24,9 +24,12 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { showSuccess, showError } from "@/lib/swal";
+import { useCurrencySettings } from "@/hooks/useCurrencySettings";
+import { getPointCurrencyName, getPointCurrencySymbol } from "@/lib/currencySettings";
 import { Save, Loader2, Dices, Coins, Timer, Layers, Plus, Trash2, Upload, ImageIcon, X, Pencil } from "lucide-react";
 import Image from "next/image";
 import { resizeFileToSquare } from "@/lib/imageResize";
+import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 import { PERMISSIONS } from "@/lib/permissions";
 
 interface GachaSettings {
@@ -62,6 +65,9 @@ interface RewardRow {
 
 export default function AdminGachaSettingsPage() {
     const permissions = useAdminPermissions();
+    const currencySettings = useCurrencySettings();
+    const pointCurrencyName = getPointCurrencyName(currencySettings);
+    const pointCurrencySymbol = getPointCurrencySymbol(currencySettings);
     const canEditGacha = permissions.includes(PERMISSIONS.GACHA_EDIT);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
@@ -328,7 +334,7 @@ export default function AdminGachaSettingsPage() {
 
     const rewardTypeBadge = (type: RewardType) => {
         if (type === "CREDIT") return <Badge className="bg-yellow-500/20 text-yellow-600 border-yellow-500/30">💰 เครดิต</Badge>;
-        if (type === "POINT") return <Badge className="bg-purple-500/20 text-purple-600 border-purple-500/30">💎 พอยต์</Badge>;
+        if (type === "POINT") return <Badge className="bg-purple-500/20 text-purple-600 border-purple-500/30">{pointCurrencySymbol} {pointCurrencyName}</Badge>;
         if (type === "TICKET") return <Badge className="bg-emerald-500/20 text-emerald-600 border-emerald-500/30">🎟 ตั๋วสุ่ม</Badge>;
         return <Badge className="bg-blue-500/20 text-blue-600 border-blue-500/30">🎁 สินค้า</Badge>;
     };
@@ -422,7 +428,7 @@ export default function AdminGachaSettingsPage() {
                                 <SelectContent>
                                     <SelectItem value="FREE">🎉 ฟรี (ไม่มีค่าใช้จ่าย)</SelectItem>
                                     <SelectItem value="CREDIT">💰 เครดิต (หักจากยอดเงิน)</SelectItem>
-                                    <SelectItem value="POINT">💎 พอยต์ (หักจากพอยต์)</SelectItem>
+                                    <SelectItem value="POINT">{pointCurrencySymbol} {pointCurrencyName} (หักจาก{pointCurrencyName})</SelectItem>
                                     <SelectItem value="TICKET">🎟 ตั๋วสุ่ม (หักจากตั๋ว)</SelectItem>
                                 </SelectContent>
                             </Select>
@@ -431,7 +437,7 @@ export default function AdminGachaSettingsPage() {
                         {settings.costType !== "FREE" && (
                             <div className="space-y-2">
                                 <Label>
-                                    ราคาต่อครั้ง ({settings.costType === "CREDIT" ? "฿" : settings.costType === "POINT" ? "พอยต์" : "ตั๋ว"})
+                                    ราคาต่อครั้ง ({settings.costType === "CREDIT" ? "฿" : settings.costType === "POINT" ? pointCurrencyName : "ตั๋ว"})
                                 </Label>
                                 <Input
                                     type="number"
@@ -521,7 +527,7 @@ export default function AdminGachaSettingsPage() {
                         <Dices className="h-5 w-5" />
                         จัดการรางวัลกาชา
                     </CardTitle>
-                    <CardDescription>เพิ่มรางวัลแบบสินค้า, เครดิต หรือพอยต์ พร้อมอัปโหลดรูปภาพ</CardDescription>
+                    <CardDescription>เพิ่มรางวัลแบบสินค้า, เครดิต หรือ{pointCurrencyName} พร้อมอัปโหลดรูปภาพ</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     {/* ประเภทรางวัล */}
@@ -537,7 +543,7 @@ export default function AdminGachaSettingsPage() {
                                     <SelectContent>
                                         <SelectItem value="PRODUCT">🎁 สินค้า</SelectItem>
                                         <SelectItem value="CREDIT">💰 เครดิต</SelectItem>
-                                        <SelectItem value="POINT">💎 พอยต์</SelectItem>
+                                        <SelectItem value="POINT">{pointCurrencySymbol} {pointCurrencyName}</SelectItem>
                                         <SelectItem value="TICKET">🎟 ตั๋วสุ่ม</SelectItem>
                                     </SelectContent>
                                 </Select>
@@ -586,12 +592,12 @@ export default function AdminGachaSettingsPage() {
                                         <Input
                                             value={newRewardName}
                                             onChange={(e) => setNewRewardName(e.target.value)}
-                                            placeholder={newRewardType === "CREDIT" ? "เช่น เครดิต 50 บาท" : newRewardType === "POINT" ? "เช่น พอยต์ 100 แต้ม" : "เช่น ตั๋วสุ่ม 3 ใบ"}
+                                            placeholder={newRewardType === "CREDIT" ? "เช่น เครดิต 50 บาท" : newRewardType === "POINT" ? `เช่น ${pointCurrencyName} 100 แต้ม` : "เช่น ตั๋วสุ่ม 3 ใบ"}
                                             disabled={!canEditGacha}
                                         />
                                     </div>
                                     <div className="space-y-2">
-                                        <Label>จำนวน ({newRewardType === "CREDIT" ? "฿" : newRewardType === "POINT" ? "พอยต์" : "ตั๋ว"})</Label>
+                                        <Label>จำนวน ({newRewardType === "CREDIT" ? "฿" : newRewardType === "POINT" ? pointCurrencyName : "ตั๋ว"})</Label>
                                         <Input
                                             type="number"
                                             min={1}
@@ -611,7 +617,7 @@ export default function AdminGachaSettingsPage() {
                                 <div className="flex items-center justify-between">
                                     <Label>รูปภาพรางวัล (ไม่บังคับ)</Label>
                                     <span className="text-xs text-muted-foreground">
-                                        ✨ อัปโหลดรูปขนาดไหนก็ได้ — ระบบปรับให้อัตโนมัติ
+                                        ✨ อัปโหลดรูปขนาดไหนก็ได้ — ระบบปรับให้อัตโนมัติ • {IMAGE_UPLOAD_RECOMMENDATIONS.rewardSquare}
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -723,7 +729,7 @@ export default function AdminGachaSettingsPage() {
                                     let prefix = "";
                                     let suffix = "";
                                     if (r.rewardType === "CREDIT") prefix = "฿";
-                                    if (r.rewardType === "POINT") suffix = " พอยต์";
+                                    if (r.rewardType === "POINT") suffix = ` ${pointCurrencyName}`;
                                     if (r.rewardType === "TICKET") suffix = " ตั๋วสุ่ม";
                                     rewardSubtext = `${prefix}${r.rewardAmount.toLocaleString()}${suffix}`;
                                 }
@@ -851,7 +857,7 @@ export default function AdminGachaSettingsPage() {
                                         let prefix = "";
                                         let suffix = "";
                                         if (r.rewardType === "CREDIT") prefix = "฿";
-                                        if (r.rewardType === "POINT") suffix = " พอยต์";
+                                        if (r.rewardType === "POINT") suffix = ` ${pointCurrencyName}`;
                                         if (r.rewardType === "TICKET") suffix = " ตั๋วสุ่ม";
                                         rewardSubtext = `${prefix}${r.rewardAmount.toLocaleString()}${suffix}`;
                                     }

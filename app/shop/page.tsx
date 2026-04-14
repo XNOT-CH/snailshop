@@ -8,25 +8,22 @@ import { ShopControls } from "@/components/ShopControls";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { db, products } from "@/lib/db";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { buildPageMetadata } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
 type ShopPageProps = Readonly<{
-    searchParams: Promise<{ category?: string; sort?: string; page?: string }>;
+    searchParams: Promise<{ category?: string; sort?: string }>;
 }>;
 
 export async function generateMetadata({ searchParams }: ShopPageProps): Promise<Metadata> {
     const params = await searchParams;
     const currentCategory = params.category || "all";
-    const currentPage = Math.max(1, Number.parseInt(params.page || "1", 10) || 1);
     const canonicalParams = new URLSearchParams();
 
     if (currentCategory !== "all") {
         canonicalParams.set("category", currentCategory);
-    }
-    if (currentPage > 1) {
-        canonicalParams.set("page", String(currentPage));
     }
 
     const path = canonicalParams.size > 0 ? `/shop?${canonicalParams.toString()}` : "/shop";
@@ -43,11 +40,10 @@ export async function generateMetadata({ searchParams }: ShopPageProps): Promise
 }
 
 export default async function ShopPage(props: ShopPageProps) {
+    const currencySettings = await getCurrencySettings();
     const searchParams = await props.searchParams;
     const currentCategory = searchParams.category || "all";
     const currentSort = searchParams.sort || "latest";
-    const currentPage = Math.max(1, Number.parseInt(searchParams.page || "1", 10) || 1);
-    const ITEMS_PER_PAGE = 12;
 
     const availableFilter = eq(products.isSold, false);
     const categoryFilter = currentCategory === "all"
@@ -70,12 +66,10 @@ export default async function ShopPage(props: ShopPageProps) {
     const [
         [{ count: totalProductCount }],
         [{ count: availableProductCount }],
-        [{ count: filteredProductCount = 0 } = { count: 0 }],
         categoryCounts,
     ] = await Promise.all([
         db.select({ count: count() }).from(products),
         db.select({ count: count() }).from(products).where(availableFilter),
-        db.select({ count: count() }).from(products).where(categoryFilter),
         db.select({
             category: products.category,
             count: count(),
@@ -86,15 +80,9 @@ export default async function ShopPage(props: ShopPageProps) {
             .orderBy(asc(products.category)),
     ]);
 
-    const totalItems = Number(filteredProductCount);
-    const totalPages = Math.ceil(totalItems / ITEMS_PER_PAGE) || 1;
-    const validPage = Math.min(currentPage, totalPages);
-
-    const paginatedProducts = await db.query.products.findMany({
+    const filteredProducts = await db.query.products.findMany({
         where: categoryFilter,
         orderBy: productOrder,
-        limit: ITEMS_PER_PAGE,
-        offset: (validPage - 1) * ITEMS_PER_PAGE,
         columns: {
             id: true,
             name: true,
@@ -102,6 +90,7 @@ export default async function ShopPage(props: ShopPageProps) {
             imageUrl: true,
             category: true,
             isSold: true,
+            currency: true,
         },
     });
 
@@ -161,27 +150,25 @@ export default async function ShopPage(props: ShopPageProps) {
             </div>
 
             <div className="w-full mb-6">
-                <ShopControls
-                    currentPage={validPage}
-                    totalPages={totalPages}
-                    currentSort={currentSort}
-                />
+                <ShopControls currentSort={currentSort} />
             </div>
 
-            {paginatedProducts.length === 0 ? (
+            {filteredProducts.length === 0 ? (
                 <EmptyState />
             ) : (
                 <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                    {paginatedProducts.map((product, index) => (
+                    {filteredProducts.map((product, index) => (
                         <ProductCard
                             key={product.id}
                             id={product.id}
                             image={product.imageUrl || "/placeholder.jpg"}
                             title={product.name}
                             price={Number(product.price)}
+                            currency={product.currency}
                             category={product.category}
                             isSold={Boolean(product.isSold)}
                             index={index}
+                            currencySettings={currencySettings}
                         />
                     ))}
                 </div>

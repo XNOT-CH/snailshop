@@ -2,6 +2,8 @@ import crypto from "node:crypto";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { db, orders, products, users } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/encryption";
+import { getPointCurrencyName } from "@/lib/currencySettings";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { isRedisAvailable, redis } from "@/lib/redis";
 import { takeFirstStock } from "@/lib/stock";
 
@@ -87,6 +89,10 @@ export async function deductUserBalanceOrThrow(
     costType: string,
     costAmount: number,
 ) {
+    const currencySettings = costType === "POINT"
+        ? await getCurrencySettings().catch(() => null)
+        : null;
+
     if (costAmount <= 0 || costType === "FREE") {
         return;
     }
@@ -121,7 +127,7 @@ export async function deductUserBalanceOrThrow(
         });
 
         if (Number(currentUser?.pointBalance ?? 0) < costAmount) {
-            throw new Error("พอยต์ไม่เพียงพอ");
+            throw new Error(`${getPointCurrencyName(currencySettings)}ไม่เพียงพอ`);
         }
 
         const result = await tx
@@ -131,7 +137,7 @@ export async function deductUserBalanceOrThrow(
 
         const affectedRows = getAffectedRows(result);
         if (affectedRows !== null && affectedRows !== 1) {
-            throw new Error("ไม่สามารถหักพอยต์ได้");
+            throw new Error(`ไม่สามารถหัก${getPointCurrencyName(currencySettings)}ได้`);
         }
 
         return;

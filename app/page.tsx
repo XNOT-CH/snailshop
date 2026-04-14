@@ -6,8 +6,9 @@ import { FeaturedProducts } from "@/components/FeaturedProducts";
 import { SaleProducts } from "@/components/SaleProducts";
 import { NewsSection } from "@/components/NewsSection";
 import { db } from "@/lib/db";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getSiteSettings } from "@/lib/getSiteSettings";
-import { buildPageMetadata, DEFAULT_SITE_DESCRIPTION } from "@/lib/seo";
+import { buildPageMetadata, DEFAULT_SITE_DESCRIPTION, resolveSiteName } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -19,13 +20,17 @@ export async function generateMetadata(): Promise<Metadata> {
     description: settings?.heroDescription?.trim() || DEFAULT_SITE_DESCRIPTION,
     path: "/",
     image: settings?.bannerImage1 || settings?.logoUrl,
+    siteName: settings?.heroTitle,
   });
 }
 
 export default async function Home() {
-  const siteSettings = await getSiteSettings();
+  const [siteSettings, currencySettings] = await Promise.all([
+    getSiteSettings(),
+    getCurrencySettings(),
+  ]);
   const showAllProducts = siteSettings?.showAllProducts ?? true;
-  const pageHeading = siteSettings?.heroTitle?.trim() || "Manashop ร้านขายไอดีเกม";
+  const pageHeading = `${resolveSiteName(siteSettings?.heroTitle)} ร้านขายไอดีเกม`;
 
   let productList: Awaited<ReturnType<typeof db.query.products.findMany>> = [];
 
@@ -82,9 +87,11 @@ export default async function Home() {
                     image={product.imageUrl || "/placeholder.jpg"}
                     title={product.name}
                     price={Number(product.price)}
+                    currency={product.currency}
                     category={product.category}
                     isSold={Boolean(product.isSold)}
                     index={index}
+                    currencySettings={currencySettings}
                   />
                 ))}
               </div>

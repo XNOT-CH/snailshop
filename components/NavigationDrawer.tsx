@@ -12,17 +12,20 @@ import {
 } from "lucide-react";
 import { useLogout } from "@/components/useLogout";
 import { withImageVersion } from "@/lib/imageUrl";
+import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
+import { SITE_NAME } from "@/lib/seo";
 
 interface SerializableNavLink { href: string; label: string; }
 
 interface NavigationDrawerProps {
     navLinks?: SerializableNavLink[];
-    user?: { username: string; image?: string | null; creditBalance: number; } | null;
+    user?: { username: string; image?: string | null; creditBalance: number; pointBalance: number; } | null;
     imageVersion?: string | number;
     siteName?: string;
     logoUrl?: string;
     walletIconUrl?: string;
     categories?: string[];
+    currencySettings?: PublicCurrencySettings;
 }
 
 // ─── User's color scheme ─────────────────────────────────
@@ -57,7 +60,7 @@ function NavIcon({ href }: { href: string }) {
 }
 
 export function NavigationDrawer({
-    navLinks, user, imageVersion, siteName = "GameStore", logoUrl, walletIconUrl, categories = [],
+    navLinks, user, imageVersion, siteName = SITE_NAME, logoUrl, walletIconUrl, categories = [], currencySettings,
 }: NavigationDrawerProps) {
     const [isOpen, setIsOpen]             = useState(false);
     const [mounted, setMounted]           = useState(false);
@@ -161,6 +164,9 @@ export function NavigationDrawer({
                                         <span className="text-blue-300 text-xs font-medium">
                                             เครดิต: {Number(user.creditBalance).toLocaleString()}
                                         </span>
+                                    </div>
+                                    <div className="mt-1 text-[11px] text-emerald-300/90">
+                                        {formatCurrencyAmount(user.pointBalance, "POINT", currencySettings)}
                                     </div>
                                 </div>
                             </div>

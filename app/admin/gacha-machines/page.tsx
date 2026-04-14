@@ -6,8 +6,12 @@ import { useRouter } from "next/navigation";
 import { Plus, Trash2, Loader2, LayoutGrid, Upload, X, ImageIcon, Copy, GripVertical, Sparkles } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 import { compressImage } from "@/lib/compressImage";
+import { useCurrencySettings } from "@/hooks/useCurrencySettings";
+import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 import Image from "next/image";
 import { PERMISSIONS } from "@/lib/permissions";
+import { getPointCurrencyName } from "@/lib/currencySettings";
+import { getGachaCostLabel, normalizeGachaCost, type GachaCostType } from "@/lib/gachaCost";
 import {
     DndContext,
     closestCenter,
@@ -51,10 +55,53 @@ function validImageUrl(url: string | null): boolean {
     return url !== null && (url.startsWith("/") || url.startsWith("http"));
 }
 
+function renderCostText(
+    costType: string,
+    costAmount: number,
+    currencySettings?: ReturnType<typeof useCurrencySettings>,
+) {
+    const normalizedCost = normalizeGachaCost(costType, costAmount);
+
+    if (normalizedCost.costType === "FREE") {
+        return <span className="text-green-600 font-medium">ฟรี</span>;
+    }
+
+    return `${Number(normalizedCost.costAmount).toLocaleString()} ${getGachaCostLabel(normalizedCost.costType, currencySettings)}`;
+}
+
 const inputCls =
     "w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-[#145de7]/30 focus:border-[#145de7] transition";
 
 const labelCls = "block text-[13px] font-semibold text-[#145de7] mb-1.5";
+
+function getCostAmountFieldCopy(
+    costType: string,
+    currencySettings?: ReturnType<typeof useCurrencySettings>,
+) {
+    const normalizedCostType = normalizeGachaCost(costType, 0).costType;
+
+    if (normalizedCostType === "FREE") {
+        return {
+            label: "ราคาต่อครั้ง",
+            hint: "(ปิดอัตโนมัติเมื่อเลือก ฟรี)",
+            placeholder: "-",
+        };
+    }
+
+    if (normalizedCostType === "TICKET") {
+        return {
+            label: "จำนวนตั๋วสุ่มที่ใช้ต่อครั้ง",
+            hint: "",
+            placeholder: "เช่น 1",
+        };
+    }
+
+    return {
+        label: `จำนวน${getGachaCostLabel(normalizedCostType, currencySettings)}ที่ใช้ต่อครั้ง`,
+        hint: "",
+        placeholder: "0",
+    };
+}
 
 const GAME_TYPES = [
     {
@@ -73,6 +120,8 @@ const GAME_TYPES = [
 
 export default function GachaMachinesAdminPage() {
     const permissions = useAdminPermissions();
+    const currencySettings = useCurrencySettings();
+    const pointCurrencyName = getPointCurrencyName(currencySettings);
     const canEditGacha = permissions.includes(PERMISSIONS.GACHA_EDIT);
     const [machines, setMachines] = useState<GachaMachine[]>([]);
     const [loading, setLoading] = useState(true);
@@ -92,6 +141,7 @@ export default function GachaMachinesAdminPage() {
     const [uploadingImage, setUploadingImage] = useState(false);
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const machineFormRef = useRef<HTMLFormElement>(null);
 
     const loadAll = async (silent = false) => {
         if (!silent) setLoading(true);
@@ -133,25 +183,43 @@ export default function GachaMachinesAdminPage() {
 
     const addMachine = async () => {
         if (!canEditGacha) return showError("คุณไม่มีสิทธิ์เพิ่มตู้กาชา");
-        if (!machineForm.name.trim()) return showError("กรุณากรอกชื่อตู้กาชา");
+        const currentForm = machineFormRef.current;
+        const formData = currentForm ? new FormData(currentForm) : null;
+
+        const rawName = String(formData?.get("name") ?? machineForm.name ?? "").trim();
+        const rawDescription = String(formData?.get("description") ?? machineForm.description ?? "").trim();
+        const rawImageUrl = String(formData?.get("imageUrl") ?? machineForm.imageUrl ?? "").trim();
+        const rawGameType = String(formData?.get("gameType") ?? machineForm.gameType ?? "SPIN_X");
+        const rawCategoryId = String(formData?.get("categoryId") ?? machineForm.categoryId ?? "").trim();
+        const rawCostType = String(formData?.get("costType") ?? machineForm.costType ?? "FREE");
+        const rawCostAmount = Number(formData?.get("costAmount") ?? machineForm.costAmount ?? 0);
+
+        if (!rawName) return showError("กรุณากรอกชื่อตู้กาชา");
+        const normalizedCost = normalizeGachaCost(rawCostType, rawCostAmount);
+        const payload = {
+            name: rawName,
+            description: rawDescription || null,
+            imageUrl: rawImageUrl || null,
+            gameType: rawGameType,
+            categoryId: rawCategoryId || null,
+            costType: normalizedCost.costType,
+            costAmount: normalizedCost.costAmount,
+            dailySpinLimit: machineForm.dailySpinLimit,
+            sortOrder: machineForm.sortOrder,
+        };
         setSavingMachine(true);
         try {
             const res = await fetch("/api/admin/gacha-machines", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ...machineForm,
-                    imageUrl: machineForm.imageUrl || null,
-                    description: machineForm.description || null,
-                    categoryId: machineForm.categoryId || null,
-                }),
+                body: JSON.stringify(payload),
             });
-            const json = await res.json() as { success: boolean };
+            const json = await res.json() as { success: boolean; message?: string };
             if (json.success) {
                 showSuccess("เพิ่มตู้กาชาสำเร็จ");
                 setMachineForm({ name: "", description: "", imageUrl: "", gameType: "SPIN_X", categoryId: "", costType: "FREE", costAmount: 0, dailySpinLimit: 0, sortOrder: 0 });
                 loadAll();
-            } else showError("เพิ่มตู้กาชาไม่สำเร็จ");
+            } else showError(json.message ?? "เพิ่มตู้กาชาไม่สำเร็จ");
         } catch { showError("เกิดข้อผิดพลาด"); } finally { setSavingMachine(false); }
     };
 
@@ -209,12 +277,15 @@ export default function GachaMachinesAdminPage() {
         );
     }
 
+    const costAmountFieldCopy = getCostAmountFieldCopy(machineForm.costType, currencySettings);
+    const normalizedPreviewCost = normalizeGachaCost(machineForm.costType, machineForm.costAmount);
+
     return (
         <div className="space-y-6">
 
 
             {/* เพิ่มตู้กาชา */}
-            <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
+            <form ref={machineFormRef} onSubmit={(e) => { e.preventDefault(); void addMachine(); }} className="bg-card border border-border rounded-2xl p-6 shadow-sm">
                 <div className="mb-5">
                     <h2 className="text-base font-bold text-[#145de7]">ตู้กาชา</h2>
                     <p className="text-xs text-muted-foreground">จัดการตู้กาชา</p>
@@ -261,6 +332,7 @@ export default function GachaMachinesAdminPage() {
                         <label htmlFor="addMachineName" className={labelCls}>ชื่อตู้กาชา *</label>
                         <input
                             id="addMachineName"
+                            name="name"
                             value={machineForm.name}
                             onChange={e => setMachineForm(f => ({ ...f, name: e.target.value }))}
                             placeholder="จำเป็น"
@@ -274,31 +346,38 @@ export default function GachaMachinesAdminPage() {
                         <label htmlFor="addCostType" className={labelCls}>ประเภทราคา</label>
                         <select
                             id="addCostType"
+                            name="costType"
                             value={machineForm.costType}
-                            onChange={e => setMachineForm(f => ({ ...f, costType: e.target.value, costAmount: 0 }))}
+                            onChange={e => setMachineForm(f => ({ ...f, costType: normalizeGachaCost(e.target.value, f.costAmount).costType as GachaCostType, costAmount: 0 }))}
                             disabled={!canEditGacha}
                             className={inputCls}
                         >
                             <option value="FREE">ฟรี</option>
                             <option value="CREDIT">เครดิต</option>
-                            <option value="POINT">พอยต์</option>
+                            <option value="POINT">{pointCurrencyName}</option>
                             <option value="TICKET">ตั๋วสุ่ม</option>
                         </select>
                     </div>
                     <div>
                         <label htmlFor="addCostAmount" className={`${labelCls} ${machineForm.costType === "FREE" ? "opacity-50" : ""}`}>
-                            ราคาต่อครั้ง {machineForm.costType === "FREE" && <span className="font-normal text-muted-foreground">(ปิดอัตโนมัติเมื่อเลือก ฟรี)</span>}
+                            {costAmountFieldCopy.label} {machineForm.costType === "FREE" && <span className="font-normal text-muted-foreground">{costAmountFieldCopy.hint}</span>}
                         </label>
                         <input
                             id="addCostAmount"
+                            name="costAmount"
                             type="number"
                             value={machineForm.costType === "FREE" ? "" : machineForm.costAmount}
                             onChange={e => setMachineForm(f => ({ ...f, costAmount: Number(e.target.value) }))}
                             min={0}
-                            placeholder={machineForm.costType === "FREE" ? "-" : "0"}
+                            placeholder={costAmountFieldCopy.placeholder}
                             disabled={machineForm.costType === "FREE" || !canEditGacha}
                             className={`${inputCls} disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:opacity-100`}
                         />
+                        {machineForm.costType !== "FREE" && (
+                            <p className="mt-1 text-xs text-muted-foreground">
+                                ตู้นี้จะใช้ {normalizedPreviewCost.costAmount.toLocaleString()} {getGachaCostLabel(normalizedPreviewCost.costType, currencySettings)} ต่อการสุ่ม 1 ครั้ง
+                            </p>
+                        )}
                     </div>
 
                 </div>
@@ -306,7 +385,7 @@ export default function GachaMachinesAdminPage() {
                 {/* รูปภาพ */}
                 <div className="mt-4">
                     <label htmlFor="addMachineImageFile" className={labelCls}>รูปภาพตู้กาชา</label>
-                    <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL รูปภาพ — รองรับ JPG, PNG, WebP, GIF ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนอัปโหลด</p>
+                    <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL รูปภาพ — รองรับ JPG, PNG, WebP, GIF ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนอัปโหลด • {IMAGE_UPLOAD_RECOMMENDATIONS.gachaMachineBanner}</p>
 
                     {/* Preview + upload zone */}
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
@@ -368,6 +447,7 @@ export default function GachaMachinesAdminPage() {
                             {/* URL input */}
                             <div className="flex items-center gap-2">
                                 <input
+                                    name="imageUrl"
                                     value={machineForm.imageUrl}
                                     onChange={e => setMachineForm(f => ({ ...f, imageUrl: e.target.value }))}
                                     placeholder="หรือวาง URL รูปภาพเช่น https://..."
@@ -394,6 +474,7 @@ export default function GachaMachinesAdminPage() {
                     <label htmlFor="addMachineDescription" className={labelCls}>รายละเอียด</label>
                     <textarea
                         id="addMachineDescription"
+                        name="description"
                         value={machineForm.description}
                         onChange={e => setMachineForm(f => ({ ...f, description: e.target.value }))}
                         placeholder="อธิบายตู้กาชานี้ เช่น ประเภทรางวัล โอกาสชนะ หรือกติกาพิเศษ..."
@@ -404,24 +485,27 @@ export default function GachaMachinesAdminPage() {
                 </div>
 
                 <button
-                    onClick={() => addMachine()}
+                    type="submit"
                     disabled={savingMachine || !canEditGacha}
                     className="mt-6 w-full py-3 rounded-xl bg-[#145de7] hover:bg-[#1148c0] text-white font-bold text-sm transition flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                     {savingMachine ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                     เพิ่มตู้กาชา
                 </button>
-            </div>
+                <input type="hidden" name="gameType" value={machineForm.gameType} />
+                <input type="hidden" name="categoryId" value={machineForm.categoryId} />
+            </form>
 
             {/* รายการตู้กาชา */}
-            {machines.length > 0 && (
-                <MachineTable
-                    machines={machines}
-                    onToggle={toggleMachine}
-                    onDelete={deleteMachine}
-                    onRefresh={() => loadAll(true)}
-                    canEditGacha={canEditGacha}
-                />
+              {machines.length > 0 && (
+                  <MachineTable
+                      machines={machines}
+                      currencySettings={currencySettings}
+                      onToggle={toggleMachine}
+                      onDelete={deleteMachine}
+                      onRefresh={() => loadAll(true)}
+                      canEditGacha={canEditGacha}
+                  />
             )}
         </div>
     );
@@ -433,6 +517,7 @@ function SortableRow({
     i,
     page,
     perPage,
+    currencySettings,
     togglingMap,
     duplicatingId,
     handleToggle,
@@ -445,6 +530,7 @@ function SortableRow({
     i: number;
     page: number;
     perPage: number;
+    currencySettings?: ReturnType<typeof useCurrencySettings>;
     togglingMap: Record<string, boolean>;
     duplicatingId: string | null;
     handleToggle: (id: string, field: "isActive" | "isEnabled", val: boolean) => void;
@@ -501,10 +587,7 @@ function SortableRow({
                 </span>
             </td>
             <td className="px-3 py-2.5 text-foreground whitespace-nowrap">
-                {m.costType === "FREE" && <span className="text-green-600 font-medium">ฟรี</span>}
-                {m.costType === "CREDIT" && `${Number(m.costAmount).toLocaleString()} เครดิต`}
-                {m.costType === "POINT" && `${Number(m.costAmount).toLocaleString()} พอยต์`}
-                {m.costType === "TICKET" && `${Number(m.costAmount).toLocaleString()} ตั๋วสุ่ม`}
+                {renderCostText(m.costType, Number(m.costAmount), currencySettings)}
             </td>
             <td className="hidden px-3 py-2.5 text-muted-foreground md:table-cell">{m._count.rewards}</td>
             <td className="hidden px-3 py-2.5 lg:table-cell">
@@ -559,13 +642,14 @@ function SortableRow({
 // Data table component
 function MachineTable({
     machines,
+    currencySettings,
     onToggle,
     onDelete,
     onRefresh,
     canEditGacha,
 }: Readonly<{
     machines: GachaMachine[];
-
+    currencySettings?: ReturnType<typeof useCurrencySettings>;
     onToggle: (id: string, field: "isActive" | "isEnabled", val: boolean) => Promise<void> | void;
     onDelete: (id: string) => void;
     onRefresh: () => void;
@@ -754,11 +838,12 @@ function MachineTable({
                                         key={m.id}
                                         m={m}
                                         i={i}
-                                        page={page}
-                                        perPage={perPage}
-                                        togglingMap={togglingMap}
-                                        duplicatingId={duplicatingId}
-                                        handleToggle={handleToggle}
+                                page={page}
+                                perPage={perPage}
+                                currencySettings={currencySettings}
+                                togglingMap={togglingMap}
+                                duplicatingId={duplicatingId}
+                                handleToggle={handleToggle}
                                         handleDuplicate={handleDuplicate}
                                         onDelete={onDelete}
                                         gameTypeLabel={gameTypeLabel}

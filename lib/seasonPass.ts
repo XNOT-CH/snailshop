@@ -1,5 +1,7 @@
 import { and, asc, desc, eq, gte, lt } from "drizzle-orm";
+import { getPointCurrencyName, type PublicCurrencySettings } from "@/lib/currencySettings";
 import { db, seasonPassClaims, seasonPassPlans, seasonPassRewards, seasonPassSubscriptions, users } from "@/lib/db";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { formatDateInTimeZone, mysqlDateTimeToIso, mysqlNow, TH_TIME_ZONE } from "@/lib/utils/date";
 
 export type SeasonPassRewardType = "credits" | "points" | "tickets";
@@ -128,6 +130,20 @@ function normalizeRewardDefinition(reward: SeasonPassRewardDefinition) {
         highlight: Boolean(reward.highlight),
         creditReward: reward.creditReward ?? null,
         pointReward: reward.pointReward ?? null,
+    };
+}
+
+function localizeRewardDefinition(
+    reward: SeasonPassRewardDefinition,
+    settings?: Partial<PublicCurrencySettings> | null,
+): SeasonPassRewardDefinition {
+    if (reward.type !== "points") {
+        return reward;
+    }
+
+    return {
+        ...reward,
+        label: getPointCurrencyName(settings),
     };
 }
 
@@ -297,15 +313,19 @@ function mapDbRewardToDefinition(reward: {
 }
 
 export async function getSeasonPassRewardCatalog(planId?: string) {
+    const currencySettings = await getCurrencySettings().catch(() => null);
+
     // Test environment may mock db without query helpers.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (!(db as any).query?.seasonPassRewards) {
-        return [...DEFAULT_REWARD_CATALOG];
+        return DEFAULT_REWARD_CATALOG.map((reward) => localizeRewardDefinition(reward, currencySettings));
     }
 
     const plan = planId ? { id: planId } : await getOrCreateSeasonPassPlan();
     const rewards = await seedSeasonPassRewards(plan.id);
-    return rewards.map(mapDbRewardToDefinition);
+    return rewards
+        .map(mapDbRewardToDefinition)
+        .map((reward) => localizeRewardDefinition(reward, currencySettings));
 }
 
 export async function getSeasonPassRewardByDay(dayNumber: number, planId?: string) {

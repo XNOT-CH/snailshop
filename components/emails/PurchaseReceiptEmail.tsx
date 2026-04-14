@@ -12,12 +12,15 @@ import {
     Hr,
 } from "@react-email/components";
 import * as React from "react";
+import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
 
 interface PurchaseReceiptEmailProps {
+    siteName?: string;
     userName: string;
     orderCount: number;
     totalTHB: number;
     totalPoints: number;
+    currencySettings?: PublicCurrencySettings | null;
     items: Array<{
         productName: string;
         price: number;
@@ -26,19 +29,21 @@ interface PurchaseReceiptEmailProps {
 }
 
 export const PurchaseReceiptEmail = ({
+    siteName = "SNAILSHOP",
     userName = "ลูกค้าผู้มีอุปการคุณ",
     orderCount = 0,
     totalTHB = 0,
     totalPoints = 0,
+    currencySettings = null,
     items = [],
 }: Readonly<PurchaseReceiptEmailProps>) => {
     return (
         <Html>
             <Head />
-            <Preview>ขอบคุณสำหรับการสั่งซื้อจาก SnailShop 🎉</Preview>
+            <Preview>{`ขอบคุณสำหรับการสั่งซื้อจาก ${siteName} 🎉`}</Preview>
             <Body style={main}>
                 <Container style={container}>
-                    <Heading style={h1}>ใบเสร็จรับเงิน / SnailShop</Heading>
+                    <Heading style={h1}>{`ใบเสร็จรับเงิน / ${siteName}`}</Heading>
                     <Text style={text}>สวัสดีคุณ {userName},</Text>
                     <Text style={text}>
                         ขอบคุณสำหรับการสั่งซื้อสินค้าจำนวน {orderCount} รายการ สำเร็จเรียบร้อยแล้ว
@@ -53,7 +58,7 @@ export const PurchaseReceiptEmail = ({
                                 </Column>
                                 <Column style={itemRight}>
                                     <Text style={itemText}>
-                                        {item.price.toLocaleString()} {item.currency === "THB" ? "บาท" : "Points"}
+                                        {formatCurrencyAmount(item.price, item.currency, currencySettings)}
                                     </Text>
                                 </Column>
                             </Row>
@@ -64,8 +69,8 @@ export const PurchaseReceiptEmail = ({
                                 <Text style={totalTextBold}>ยอดรวมทั้งหมด</Text>
                             </Column>
                             <Column style={totalRight}>
-                                {totalTHB > 0 && <Text style={totalTextBold}>฿{totalTHB.toLocaleString()}</Text>}
-                                {totalPoints > 0 && <Text style={totalTextBold}>💎{totalPoints.toLocaleString()} Points</Text>}
+                                {totalTHB > 0 && <Text style={totalTextBold}>{formatCurrencyAmount(totalTHB, "THB", currencySettings)}</Text>}
+                                {totalPoints > 0 && <Text style={totalTextBold}>{formatCurrencyAmount(totalPoints, "POINT", currencySettings)}</Text>}
                             </Column>
                         </Row>
                     </Section>

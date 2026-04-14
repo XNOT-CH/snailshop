@@ -47,6 +47,7 @@ import {
     validateNewsUrlInput,
     isValidNewsUrl,
 } from "@/lib/newsValidation";
+import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 
 interface NewsArticle {
     id: string;
@@ -329,7 +330,7 @@ export default function AdminNewsPage() {
                                 />
                             </div>
                             <p class="mt-2 text-xs text-gray-500">
-                                รองรับ JPG, PNG, WebP, GIF สูงสุด ${(NEWS_MAX_UPLOAD_BYTES / (1024 * 1024)).toFixed(0)}MB และจะไม่รับรูปที่สัดส่วนยาวเกินไป
+                                รองรับ JPG, PNG, WebP, GIF สูงสุด ${(NEWS_MAX_UPLOAD_BYTES / (1024 * 1024)).toFixed(0)}MB และจะไม่รับรูปที่สัดส่วนยาวเกินไป • ${IMAGE_UPLOAD_RECOMMENDATIONS.newsCover}
                             </p>
                         </div>
                     </div>

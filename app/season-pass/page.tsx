@@ -19,21 +19,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { buildPageMetadata } from "@/lib/seo";
+import { getPointCurrencyName } from "@/lib/currencySettings";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { SeasonPassPurchaseButton } from "@/components/season-pass/SeasonPassPurchaseButton";
 
 export const metadata = buildPageMetadata({
     title: "Season Pass",
     path: "/season-pass",
 });
-
-const rewardsPreview = [
-    { day: "01", title: "เครดิต", amount: "80", icon: Wallet, tone: "bg-blue-50 text-blue-700" },
-    { day: "02", title: "พอยต์", amount: "30", icon: Coins, tone: "bg-emerald-50 text-emerald-700" },
-    { day: "03", title: "ตั๋วสุ่ม", amount: "2", icon: Ticket, tone: "bg-sky-50 text-sky-700" },
-    { day: "04", title: "เครดิต", amount: "120", icon: Wallet, tone: "bg-blue-50 text-blue-700" },
-    { day: "05", title: "พอยต์", amount: "40", icon: Coins, tone: "bg-emerald-50 text-emerald-700" },
-    { day: "06", title: "ตั๋วสุ่ม", amount: "2", icon: Ticket, tone: "bg-sky-50 text-sky-700" },
-] as const;
 
 const perks = [
     "ปลดล็อกกระดานรางวัล 30 วันทันที",
@@ -46,6 +39,8 @@ export default async function SeasonPassPurchasePage() {
     const session = await auth();
     const userId = session?.user?.id;
     const plan = await getOrCreateSeasonPassPlan();
+    const currencySettings = await getCurrencySettings().catch(() => null);
+    const pointCurrencyName = getPointCurrencyName(currencySettings);
     const activeSubscription = userId ? await getCurrentSeasonPassSubscription(userId) : null;
     const user = userId
         ? await db.query.users.findFirst({
@@ -57,6 +52,14 @@ export default async function SeasonPassPurchasePage() {
     const creditBalance = Number(user?.creditBalance ?? 0);
     const price = Number(plan.price);
     const activeWindow = activeSubscription ? calculateSeasonPassWindow({ endAt: activeSubscription.endAt }) : null;
+    const rewardsPreview = [
+        { day: "01", title: "เครดิต", amount: "80", icon: Wallet, tone: "bg-blue-50 text-blue-700" },
+        { day: "02", title: pointCurrencyName, amount: "30", icon: Coins, tone: "bg-emerald-50 text-emerald-700" },
+        { day: "03", title: "ตั๋วสุ่ม", amount: "2", icon: Ticket, tone: "bg-sky-50 text-sky-700" },
+        { day: "04", title: "เครดิต", amount: "120", icon: Wallet, tone: "bg-blue-50 text-blue-700" },
+        { day: "05", title: pointCurrencyName, amount: "40", icon: Coins, tone: "bg-emerald-50 text-emerald-700" },
+        { day: "06", title: "ตั๋วสุ่ม", amount: "2", icon: Ticket, tone: "bg-sky-50 text-sky-700" },
+    ] as const;
 
     return (
         <div className="animate-page-enter">

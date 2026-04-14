@@ -13,7 +13,7 @@ const env = {
   PORT: process.env.PORT || "3001",
 };
 
-const child = spawn(process.execPath, [nextBin, "dev"], {
+const child = spawn(process.execPath, [nextBin, "dev", "--hostname", "127.0.0.1"], {
   cwd: projectRoot,
   stdio: "inherit",
   env,

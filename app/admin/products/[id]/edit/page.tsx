@@ -12,8 +12,11 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { showError, showSuccess } from "@/lib/swal";
 import { compressImage } from "@/lib/compressImage";
+import { getPointCurrencyName } from "@/lib/currencySettings";
+import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 import { PERMISSIONS } from "@/lib/permissions";
 import {
     ArrowLeft,
@@ -51,6 +54,8 @@ function formatDiscountValue(value: number, currency: string) {
 
 export default function EditProductPage() {
     const router = useRouter();
+    const currencySettings = useCurrencySettings();
+    const pointCurrencyName = getPointCurrencyName(currencySettings);
     const params = useParams();
     const productId = params.id as string;
     const permissions = useAdminPermissions();
@@ -375,7 +380,7 @@ export default function EditProductPage() {
                                                     <RadioGroupItem value="POINT" id="currency-point" />
                                                     <Gem className="h-4 w-4 text-violet-600" />
                                                     <div className="space-y-0.5">
-                                                        <p className="text-sm font-medium text-slate-900">พอยท์ (POINT)</p>
+                                                        <p className="text-sm font-medium text-slate-900">{pointCurrencyName} (POINT)</p>
                                                         <p className="text-xs text-slate-500">เหมาะกับสินค้ารางวัลหรือไอเทมพิเศษ</p>
                                                     </div>
                                                 </Label>
@@ -383,7 +388,7 @@ export default function EditProductPage() {
 
                                             {isPointCurrency && (
                                                 <p className="rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-xs font-medium text-violet-700">
-                                                    สินค้านี้จะซื้อได้ด้วย Point เท่านั้น
+                                                    สินค้านี้จะซื้อได้ด้วย {pointCurrencyName} เท่านั้น
                                                 </p>
                                             )}
                                         </div>
@@ -422,7 +427,7 @@ export default function EditProductPage() {
                                                             onClick={() => setDiscountMode("amount")}
                                                             disabled={!canEditProduct}
                                                         >
-                                                            ลดเป็น{isPointCurrency ? "พอยท์" : "บาท"}
+                                                            ลดเป็น{isPointCurrency ? pointCurrencyName : "บาท"}
                                                         </Button>
                                                         <Button
                                                             type="button"
@@ -451,7 +456,7 @@ export default function EditProductPage() {
                                                         <span className="text-slate-500">
                                                             {discountMode === "percent"
                                                                 ? "กรอกเปอร์เซ็นที่ต้องการลด"
-                                                                : `กรอกจำนวน${isPointCurrency ? "พอยท์" : "บาท"}ที่ต้องการลด`}
+                                                                : `กรอกจำนวน${isPointCurrency ? pointCurrencyName : "บาท"}ที่ต้องการลด`}
                                                         </span>
                                                         {hasDiscountPrice && !isDiscountValueValid ? (
                                                             <span className="font-medium text-rose-600">
@@ -462,7 +467,7 @@ export default function EditProductPage() {
                                                         ) : normalizedDiscountPrice !== null && (
                                                             <span className="font-medium text-rose-700">
                                                                 ลด {formatDiscountValue(discountInputNumber, formData.currency)}
-                                                                {discountMode === "percent" ? "%" : isPointCurrency ? " พอยท์" : " บาท"}
+                                                                {discountMode === "percent" ? "%" : isPointCurrency ? ` ${pointCurrencyName}` : " บาท"}
                                                                 {" เหลือ "}
                                                                 {formatDiscountValue(normalizedDiscountPrice, formData.currency)}
                                                             </span>
@@ -592,7 +597,7 @@ export default function EditProductPage() {
                                         </div>
 
                                         <div className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-xs leading-relaxed text-slate-500">
-                                            รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก
+                                            รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก • {IMAGE_UPLOAD_RECOMMENDATIONS.productSquare}
                                         </div>
                                     </div>
                                 </div>

@@ -12,7 +12,10 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { showError, showSuccess } from "@/lib/swal";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { useCurrencySettings } from "@/hooks/useCurrencySettings";
+import { getPointCurrencyName } from "@/lib/currencySettings";
 import { PERMISSIONS } from "@/lib/permissions";
+import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 
 type SeasonPassPlanSettings = {
     id: string;
@@ -45,17 +48,21 @@ const defaultPlan: SeasonPassPlanSettings = {
     isActive: true,
 };
 
-const rewardTypeOptions: Array<{ value: RewardType; label: string }> = [
-    { value: "credits", label: "รางวัลเครดิต" },
-    { value: "points", label: "รางวัลพอยต์" },
-    { value: "tickets", label: "รางวัลตั๋วสุ่ม" },
-];
+function getRewardTypeOptions(pointCurrencyName: string): Array<{ value: RewardType; label: string }> {
+    return [
+        { value: "credits", label: "รางวัลเครดิต" },
+        { value: "points", label: `รางวัล${pointCurrencyName}` },
+        { value: "tickets", label: "รางวัลตั๋วสุ่ม" },
+    ];
+}
 
-const rewardTypeDisplayName: Record<RewardType, string> = {
-    credits: "เครดิต",
-    points: "พอยต์",
-    tickets: "ตั๋วสุ่ม",
-};
+function getRewardTypeDisplayName(pointCurrencyName: string): Record<RewardType, string> {
+    return {
+        credits: "เครดิต",
+        points: pointCurrencyName,
+        tickets: "ตั๋วสุ่ม",
+    };
+}
 
 const rewardTypePreviewImage: Partial<Record<RewardType, { src: string; alt: string }>> = {
     credits: {
@@ -64,7 +71,7 @@ const rewardTypePreviewImage: Partial<Record<RewardType, { src: string; alt: str
     },
     points: {
         src: "/season-pass-points.png",
-        alt: "Points reward preview",
+        alt: "Point reward preview",
     },
     tickets: {
         src: "/season-pass-ticket.png",
@@ -106,6 +113,8 @@ function fallbackRewards(): SeasonPassRewardRow[] {
 export default function AdminSeasonPassEditPage() {
     const cropUrlRef = useRef<string | null>(null);
     const permissions = useAdminPermissions();
+    const currencySettings = useCurrencySettings();
+    const pointCurrencyName = getPointCurrencyName(currencySettings);
     const canEditSeasonPass = permissions.includes(PERMISSIONS.SEASON_PASS_EDIT);
     const [loading, setLoading] = useState(true);
     const [savingPlan, setSavingPlan] = useState(false);
@@ -117,6 +126,11 @@ export default function AdminSeasonPassEditPage() {
     const [cropDayNumber, setCropDayNumber] = useState<number | null>(null);
     const [plan, setPlan] = useState<SeasonPassPlanSettings>(defaultPlan);
     const [rewards, setRewards] = useState<SeasonPassRewardRow[]>(fallbackRewards());
+    const rewardTypeOptions = useMemo(() => getRewardTypeOptions(pointCurrencyName), [pointCurrencyName]);
+    const rewardTypeDisplayName = useMemo(
+        () => getRewardTypeDisplayName(pointCurrencyName),
+        [pointCurrencyName],
+    );
 
     useEffect(() => {
         void Promise.all([fetchPlan(), fetchRewards()]).finally(() => setLoading(false));
@@ -629,6 +643,9 @@ export default function AdminSeasonPassEditPage() {
                                                 {getDefaultRewardImage(reward.rewardType)
                                                     ? "มีรูปเริ่มต้นให้ก่อน และถ้าไม่ชอบสามารถเปลี่ยนรูปพร้อมครอปใหม่ได้จากตรงนี้"
                                                     : "ถ้ายังไม่ตั้งรูป ระบบจะใช้ไอคอนมาตรฐานของรางวัลนี้ไปก่อน และคุณสามารถอัปโหลดรูปพร้อมครอปได้"}
+                                            </p>
+                                            <p className="text-xs text-slate-500">
+                                                รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะครอปและย่อให้อัตโนมัติ • {IMAGE_UPLOAD_RECOMMENDATIONS.rewardSquare}
                                             </p>
                                             <div className="flex flex-wrap gap-2">
                                                 <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700">

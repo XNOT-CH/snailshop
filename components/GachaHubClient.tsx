@@ -4,7 +4,9 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { LayoutGrid } from "lucide-react";
+import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { shouldBypassImageOptimization } from "@/lib/imageUrl";
+import { getGachaCostLabel, normalizeGachaCost, normalizeGachaCostType } from "@/lib/gachaCost";
 
 export interface GachaCategoryLite {
     id: string;
@@ -47,18 +49,22 @@ function HubImage({ src, alt }: { src: string; alt: string }) {
     );
 }
 
-function getMachineCostCopy(costType: string, costAmount: number) {
-    if (costType === "FREE") {
+function getMachineCostCopy(
+    costType: string,
+    costAmount: number,
+    currencySettings?: ReturnType<typeof useCurrencySettings>,
+) {
+    const normalizedCost = normalizeGachaCost(costType, costAmount);
+
+    if (normalizeGachaCostType(normalizedCost.costType) === "FREE") {
         return {
             text: "เล่นฟรี!",
             className: "text-sm font-semibold text-green-600",
         };
     }
 
-    const unit = costType === "CREDIT" ? "เครดิต" : costType === "POINT" ? "พอยต์" : "บาท";
-
     return {
-        text: `( เล่นครั้งละ ${costAmount.toLocaleString()} ${unit} )`,
+        text: `( เล่นครั้งละ ${normalizedCost.costAmount.toLocaleString()} ${getGachaCostLabel(normalizedCost.costType, currencySettings)} )`,
         className: "text-sm font-semibold text-[#1a56db]",
     };
 }
@@ -69,6 +75,7 @@ interface GachaHubClientProps {
 
 export function GachaHubClient({ machines }: Readonly<GachaHubClientProps>) {
     const [selectedCatId, setSelectedCatId] = useState<string | null>(null);
+    const currencySettings = useCurrencySettings();
 
     const categories = useMemo(() => {
         const cats = new Map<string, GachaCategoryLite>();
@@ -129,7 +136,7 @@ export function GachaHubClient({ machines }: Readonly<GachaHubClientProps>) {
                     </div>
                 ) : (
                     filteredMachines.map((machine) => {
-                        const costCopy = getMachineCostCopy(machine.costType, Number(machine.costAmount));
+                        const costCopy = getMachineCostCopy(machine.costType, Number(machine.costAmount), currencySettings);
 
                         return (
                             <Link

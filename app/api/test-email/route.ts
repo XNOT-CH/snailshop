@@ -1,7 +1,9 @@
-import { sendEmail } from "@/lib/mail";
-import { NotificationEmail } from "@/components/emails/NotificationEmail";
 import { NextResponse } from "next/server";
 import { isAdmin } from "@/lib/auth";
+import { NotificationEmail } from "@/components/emails/NotificationEmail";
+import { sendEmail } from "@/lib/mail";
+import { getSiteSettings } from "@/lib/getSiteSettings";
+import { resolveSiteName } from "@/lib/seo";
 
 export async function GET(request: Request) {
     try {
@@ -24,11 +26,14 @@ export async function GET(request: Request) {
             );
         }
 
+        const siteSettings = await getSiteSettings();
+        const siteName = resolveSiteName(siteSettings?.heroTitle);
+
         const { success, error, data } = await sendEmail({
             to,
-            subject: "ทดสอบระบบอีเมลจาก SnailShop 🐌",
+            subject: `ทดสอบระบบอีเมลจาก ${siteName} 🐌`,
             react: NotificationEmail({
-                title: "ยินดีต้อนรับสู่ SnailShop",
+                title: `ยินดีต้อนรับสู่ ${siteName}`,
                 message: "นี่คืออีเมลทดสอบระบบการส่งแจ้งเตือนผ่าน Resend หากคุณได้รับอีเมลฉบับนี้ แปลว่าระบบทำงานได้สมบูรณ์ครับ!",
             }),
         });

@@ -10,6 +10,7 @@ import { ChevronRight } from "lucide-react";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { buildPageMetadata } from "@/lib/seo";
 import { EMPTY_USER_BALANCES } from "@/lib/userBalances";
+import { normalizeGachaCost } from "@/lib/gachaCost";
 
 export const dynamic = "force-dynamic";
 
@@ -52,6 +53,7 @@ export default async function GachaGridPage({
     const { machineId } = await params;
     const maintenance = getMaintenanceState("gacha");
     const machine = await getMachine(machineId);
+    const normalizedCost = machine ? normalizeGachaCost(machine.costType, machine.costAmount) : normalizeGachaCost("FREE", 0);
 
     if (!machine?.isActive || !machine.isEnabled) notFound();
 
@@ -59,7 +61,7 @@ export default async function GachaGridPage({
     const userId = session?.user?.id;
     let initialBalances = EMPTY_USER_BALANCES;
 
-    if (userId && machine.costType !== "FREE") {
+    if (userId && normalizedCost.costType !== "FREE") {
         const user = await db.query.users.findFirst({
             where: eq(users.id, userId),
             columns: { creditBalance: true, pointBalance: true, ticketBalance: true },
@@ -98,8 +100,8 @@ export default async function GachaGridPage({
                     <GachaGridMachine
                         machineId={machineId}
                         machineName={machine.name}
-                        costType={machine.costType ?? "FREE"}
-                        costAmount={Number(machine.costAmount ?? 0)}
+                        costType={normalizedCost.costType}
+                        costAmount={normalizedCost.costAmount}
                         initialBalances={initialBalances}
                         maintenance={maintenance}
                     />

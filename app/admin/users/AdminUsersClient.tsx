@@ -15,6 +15,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useCurrencySettings } from "@/hooks/useCurrencySettings";
+import { getPointCurrencyName, getPointCurrencySymbol } from "@/lib/currencySettings";
 import { Coins, Crown, Gem, Pencil, Search, Users, X } from "lucide-react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -160,6 +162,9 @@ function buildRoleOptions(roles: Role[]): RoleOption[] {
 }
 
 export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersClientProps>) {
+  const currencySettings = useCurrencySettings();
+  const pointCurrencyName = getPointCurrencyName(currencySettings);
+  const pointCurrencySymbol = getPointCurrencySymbol(currencySettings);
   const permissions = useAdminPermissions();
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -362,7 +367,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
         bindNumericInput("swal-lifetime", sanitizeIntegerInput);
       },
       html: `
-        <p class="mb-4 text-sm text-gray-500">แก้ไขเครดิต พอยต์ และบทบาทของสมาชิก</p>
+        <p class="mb-4 text-sm text-gray-500">แก้ไขเครดิต ${pointCurrencyName} และบทบาทของสมาชิก</p>
         <div class="space-y-4 text-left">
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
@@ -380,11 +385,11 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
           </div>
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">พอยต์คงเหลือ</label>
+              <label class="mb-1 block text-sm font-medium text-gray-700">${pointCurrencyName}คงเหลือ</label>
               <input id="swal-point" type="text" inputmode="numeric" autocomplete="off" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${user.pointBalance}">
             </div>
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">พอยต์สะสม</label>
+              <label class="mb-1 block text-sm font-medium text-gray-700">${pointCurrencyName}สะสม</label>
               <input id="swal-lifetime" type="text" inputmode="numeric" autocomplete="off" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${user.lifetimePoints}">
             </div>
           </div>
@@ -416,12 +421,12 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
         }
 
         if (!isValidIntegerInput(pointBalance) || Number(pointBalance) > MAX_INTEGER_BALANCE) {
-          Swal.showValidationMessage("พอยต์คงเหลือต้องเป็นจำนวนเต็ม 0-2,147,483,647");
+          Swal.showValidationMessage(`${pointCurrencyName}คงเหลือต้องเป็นจำนวนเต็ม 0-2,147,483,647`);
           return;
         }
 
         if (!isValidIntegerInput(lifetimePoints) || Number(lifetimePoints) > MAX_INTEGER_BALANCE) {
-          Swal.showValidationMessage("พอยต์สะสมต้องเป็นจำนวนเต็ม 0-2,147,483,647");
+          Swal.showValidationMessage(`${pointCurrencyName}สะสมต้องเป็นจำนวนเต็ม 0-2,147,483,647`);
           return;
         }
 
@@ -464,7 +469,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
       emphasis: "strong",
     },
     {
-      label: "พอยต์รวมทั้งระบบ",
+      label: `${pointCurrencyName}รวมทั้งระบบ`,
       value: totalPoints.toLocaleString(),
       icon: Gem,
       iconBg: "bg-violet-100",
@@ -480,7 +485,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
           <Users className="h-6 w-6 text-[#1a56db]" />
           ระบบบริหารจัดการสมาชิก
         </h1>
-        <p className="mt-1 text-muted-foreground">ดูข้อมูลสมาชิก เครดิต และพอยต์ทั้งหมด</p>
+        <p className="mt-1 text-muted-foreground">ดูข้อมูลสมาชิก เครดิต และ{pointCurrencyName}ทั้งหมด</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -656,13 +661,13 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                         </p>
                       </div>
                       <div className="rounded-2xl bg-violet-50 px-3 py-2">
-                        <p className="text-xs text-violet-700/80">พอยต์คงเหลือ</p>
+                        <p className="text-xs text-violet-700/80">{pointCurrencyName}คงเหลือ</p>
                         <p className="mt-1 text-base font-semibold text-violet-700">
                           {user.pointBalance.toLocaleString()}
                         </p>
                       </div>
                       <div className="rounded-2xl bg-slate-50 px-3 py-2">
-                        <p className="text-xs text-slate-500">พอยต์สะสม</p>
+                        <p className="text-xs text-slate-500">{pointCurrencyName}สะสม</p>
                         <p className="mt-1 text-base font-semibold text-slate-900">
                           {user.lifetimePoints.toLocaleString()}
                         </p>
@@ -702,8 +707,8 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                   <TableHead>ข้อมูลสมาชิก</TableHead>
                   <TableHead className="text-right">เครดิตคงเหลือ</TableHead>
                   <TableHead className="text-right">ยอดเติมสะสม</TableHead>
-                  <TableHead className="text-right">พอยต์คงเหลือ</TableHead>
-                  <TableHead className="text-right">พอยต์สะสม</TableHead>
+                  <TableHead className="text-right">{pointCurrencyName}คงเหลือ</TableHead>
+                  <TableHead className="text-right">{pointCurrencyName}สะสม</TableHead>
                   <TableHead>สถานะ</TableHead>
                   <TableHead>วันที่สมัคร</TableHead>
                   <TableHead className="text-center">จัดการ</TableHead>
@@ -789,7 +794,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                       <TableCell className="text-right">
                         <div className="space-y-0.5">
                           <p className="text-lg font-bold text-violet-600">
-                            <span className="mr-1">💎</span>
+                            <span className="mr-1">{pointCurrencySymbol}</span>
                             {user.pointBalance.toLocaleString()}
                           </p>
                           <p className="text-xs text-muted-foreground">พร้อมใช้งาน</p>
@@ -869,7 +874,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
           </div>
           <div className="flex items-center gap-2">
             <div className="h-6 w-6 rounded-full bg-blue-100 ring-2 ring-amber-400 ring-offset-1" />
-            <span>= พอยต์สะสมมากกว่า 5,000 แต้ม</span>
+            <span>= {pointCurrencyName}สะสมมากกว่า 5,000 แต้ม</span>
           </div>
         </div>
       </div>

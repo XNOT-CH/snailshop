@@ -9,15 +9,18 @@ import { showPurchaseConfirm, showPurchaseSuccessModal, showError, showWarning }
 import { ShoppingCart, Eye, Loader2 } from "lucide-react";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
+import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
 
 interface ProductCardProps {
     id: string;
     image: string;
     title: string;
     price: number;
+    currency?: string | null;
     category: string;
     isSold: boolean;
     index?: number;
+    currencySettings?: PublicCurrencySettings;
 }
 
 export function ProductCard({
@@ -25,9 +28,11 @@ export function ProductCard({
     image,
     title,
     price,
+    currency = "THB",
     category,
     isSold,
     index = 0,
+    currencySettings,
 }: Readonly<ProductCardProps>) {
     const router = useRouter();
     const maintenance = useMaintenanceStatus().purchase;
@@ -50,7 +55,7 @@ export function ProductCard({
         if (isSold || isLoading) return;
         const confirmed = await showPurchaseConfirm({
             productName: title,
-            priceText: `฿${price.toLocaleString()}`,
+            priceText: formatCurrencyAmount(price, currency, currencySettings),
         });
 
         if (!confirmed) return;
@@ -140,7 +145,9 @@ export function ProductCard({
             </div>
             <div className="p-4 text-center">
                 <h3 className="font-semibold text-foreground truncate mb-1 text-center">{title}</h3>
-                <p className="text-lg font-bold text-primary text-center">฿{price.toLocaleString()}</p>
+                <p className="text-lg font-bold text-primary text-center">
+                    {formatCurrencyAmount(price, currency, currencySettings)}
+                </p>
                 <div className="grid grid-cols-2 gap-2 mt-3">
                     {isSold ? (
                         <Button variant="outline" className="col-span-2 w-full" disabled>
@@ -171,6 +178,7 @@ export function ProductCard({
                                     id,
                                     name: title,
                                     price,
+                                    currency,
                                     imageUrl: image,
                                     category,
                                     quantity: 1,

@@ -9,9 +9,13 @@ import {
     deductUserBalanceOrThrow,
     grantCurrencyReward,
 } from "@/lib/gachaExecution";
+import { getPointCurrencyName } from "@/lib/currencySettings";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { pickWeightedCandidate } from "@/lib/gachaProbability";
+import { getGachaRewardTypeLabel } from "@/lib/gachaCost";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkGachaRateLimit, getClientIp } from "@/lib/rateLimit";
+import { normalizeGachaCost } from "@/lib/gachaCost";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -60,18 +64,14 @@ function getRewardDetails(chosen: {
     rewardName?: string | null;
     rewardAmount?: string | number | null;
     rewardImageUrl?: string | null;
-}) {
+}, currencySettings?: Awaited<ReturnType<typeof getCurrencySettings>> | null) {
     let rewardName: string;
     if (chosen.rewardType === "PRODUCT") {
         rewardName = chosen.product?.name ?? "รางวัล";
     } else if (chosen.rewardName) {
         rewardName = chosen.rewardName;
-    } else if (chosen.rewardType === "CREDIT") {
-        rewardName = "เครดิต";
-    } else if (chosen.rewardType === "TICKET") {
-        rewardName = "ตั๋วสุ่ม";
     } else {
-        rewardName = "พอยต์";
+        rewardName = getGachaRewardTypeLabel(chosen.rewardType, currencySettings);
     }
 
     const imageUrl = chosen.rewardType === "PRODUCT" ? chosen.product?.imageUrl : chosen.rewardImageUrl;
@@ -181,7 +181,8 @@ async function handleGridRoll(userId: string, machineId: string | null, costType
         return { error: "ไม่พบรางวัลที่สามารถสุ่มได้", status: 400 };
     }
     const wonIndex = rewardList.findIndex((reward) => reward.id === chosen.id);
-    const { rewardName, imageUrl, rewardAmount } = getRewardDetails(chosen);
+    const currencySettings = await getCurrencySettings().catch(() => null);
+    const { rewardName, imageUrl, rewardAmount } = getRewardDetails(chosen, currencySettings);
 
     await db.transaction(async (tx) => {
         await executeRollTransaction({ tx, user, chosen, costType, costAmount, rewardName, imageUrl, machineId });
@@ -257,6 +258,8 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: true, data: result.data });
     } catch (e) {
         const error = e as Error;
+        const currencySettings = await getCurrencySettings().catch(() => null);
+        const pointCurrencyName = getPointCurrencyName(currencySettings);
         if (error.message?.includes("ตั๋วสุ่มไม่เพียงพอ")) {
             return NextResponse.json({ success: false, message: error.message }, { status: 400 });
         }
@@ -266,7 +269,8 @@ export async function POST(req: Request) {
             "ระบบกาชาปิดอยู่ชั่วคราว",
             "คุณสุ่มครบ",
             "เครดิตไม่เพียงพอ",
-            "พอยต์ไม่เพียงพอ",
+            `${pointCurrencyName}ไม่เพียงพอ`,
+            `ไม่สามารถหัก${pointCurrencyName}ได้`,
             "รางวัลนี้ถูกใช้งานไปแล้ว กรุณาสุ่มใหม่",
             "สต็อกของรางวัลหมดแล้ว",
         ].some((message) => error.message.includes(message))) {
@@ -287,8 +291,7 @@ async function getMachineSettings(machineId: string | null) {
         }
 
         return {
-            costType: machine.costType,
-            costAmount: Number(machine.costAmount ?? 0),
+            ...normalizeGachaCost(machine.costType, machine.costAmount),
             dailySpinLimit: machine.dailySpinLimit ?? 0,
         };
     }
@@ -299,8 +302,7 @@ async function getMachineSettings(machineId: string | null) {
     }
 
     return {
-        costType: settings?.costType ?? "FREE",
-        costAmount: Number(settings?.costAmount ?? 0),
+        ...normalizeGachaCost(settings?.costType ?? "FREE", settings?.costAmount ?? 0),
         dailySpinLimit: settings?.dailySpinLimit ?? 0,
     };
 }

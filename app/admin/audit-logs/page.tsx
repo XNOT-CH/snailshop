@@ -303,11 +303,6 @@ export default function AdminAuditLogsPage() {
         }).format(date);
     };
 
-    const formatIpAddress = (ip: string | null) => {
-        if (!ip) return "-";
-        return ip.length > 14 ? `${ip.slice(0, 11)}...` : ip;
-    };
-
     const getFieldLabel = (field: string) => FIELD_LABELS[field] || field;
     const getActionLabel = (action: string) => ACTION_LABELS[action] || action;
     const canDeleteAuditLogs = permissions.includes(PERMISSIONS.AUDIT_LOG_DELETE);
@@ -755,10 +750,7 @@ export default function AdminAuditLogsPage() {
                                         </div>
                                     )}
 
-                                    <div className="mt-4 flex items-center justify-between gap-3">
-                                        <p className="font-mono text-xs text-muted-foreground" title={log.ipAddress || "-"}>
-                                            {formatIpAddress(log.ipAddress)}
-                                        </p>
+                                    <div className="mt-4 flex items-center justify-end gap-3">
                                         <Button
                                             variant="ghost"
                                             size="sm"
@@ -807,7 +799,6 @@ export default function AdminAuditLogsPage() {
                                     <TableHead>ผู้ใช้</TableHead>
                                     <TableHead>กิจกรรม</TableHead>
                                     <TableHead>รายการที่เกี่ยวข้อง</TableHead>
-                                    <TableHead className="hidden lg:table-cell">IP</TableHead>
                                     <TableHead className="text-center">สถานะ</TableHead>
                                     <TableHead className="text-center">รายละเอียด</TableHead>
                                 </TableRow>
@@ -858,12 +849,6 @@ export default function AdminAuditLogsPage() {
                                                         </p>
                                                     )}
                                                 </div>
-                                            </TableCell>
-                                            <TableCell
-                                                className="hidden font-mono text-sm text-muted-foreground lg:table-cell"
-                                                title={log.ipAddress || "-"}
-                                            >
-                                                {formatIpAddress(log.ipAddress)}
                                             </TableCell>
                                             <TableCell className="text-center">
                                                 <Badge

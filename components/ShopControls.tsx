@@ -1,35 +1,22 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal } from "lucide-react";
 
 interface ShopControlsProps {
-    readonly currentPage: number;
-    readonly totalPages: number;
     readonly currentSort: string;
 }
 
-export function ShopControls({ currentPage, totalPages, currentSort }: Readonly<ShopControlsProps>) {
+export function ShopControls({ currentSort }: Readonly<ShopControlsProps>) {
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
 
-    const createQueryString = (name: string, value: string) => {
-        const params = new URLSearchParams(searchParams.toString());
-        params.set(name, value);
-        return params.toString();
-    };
-
     const handleSortChange = (val: string) => {
         const params = new URLSearchParams(searchParams.toString());
         params.set("sort", val);
-        params.set("page", "1");
+        params.delete("page");
         router.push(`${pathname}?${params.toString()}`, { scroll: false });
-    };
-
-    const handlePageChange = (newPage: number) => {
-        router.push(`${pathname}?${createQueryString("page", newPage.toString())}`, { scroll: false });
     };
 
     const sortOptions = [
@@ -43,9 +30,7 @@ export function ShopControls({ currentPage, totalPages, currentSort }: Readonly<
     const activeSort = currentSort === "all" ? "latest" : currentSort;
 
     return (
-        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-
-            {/* ─── Sort pill bar ─── */}
+        <div className="flex w-full min-w-0">
             <div className="pb-1">
                 <div className="flex flex-wrap items-center gap-1.5">
                     <SlidersHorizontal className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
@@ -68,37 +53,6 @@ export function ShopControls({ currentPage, totalPages, currentSort }: Readonly<
                     })}
                 </div>
             </div>
-
-            {/* ─── Pagination ─── */}
-            <div className="flex flex-shrink-0 items-center justify-between gap-2 sm:justify-end">
-                <span className="text-xs text-muted-foreground tabular-nums">
-                    <span className="font-semibold text-foreground">{currentPage}</span>
-                    <span className="opacity-40"> / {totalPages}</span>
-                </span>
-                <div className="flex gap-1">
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 rounded-full border-border bg-card hover:bg-accent hover:text-primary transition-colors disabled:opacity-30"
-                        disabled={currentPage <= 1}
-                        onClick={() => handlePageChange(currentPage - 1)}
-                        aria-label="หน้าก่อนหน้า"
-                    >
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                    <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-8 w-8 rounded-full border-border bg-card hover:bg-accent hover:text-primary transition-colors disabled:opacity-30"
-                        disabled={currentPage >= totalPages}
-                        onClick={() => handlePageChange(currentPage + 1)}
-                        aria-label="หน้าถัดไป"
-                    >
-                        <ChevronRight className="h-4 w-4" />
-                    </Button>
-                </div>
-            </div>
-
         </div>
     );
 }

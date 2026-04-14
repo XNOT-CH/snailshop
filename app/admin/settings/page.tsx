@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { showSuccess, showError } from "@/lib/swal";
 import { compressImage } from "@/lib/compressImage";
+import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 import { Save, Loader2, Image as ImageIcon, Type, Megaphone, Wallpaper, LayoutGrid, Upload, X, Plus, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { Switch } from "@/components/ui/switch";
@@ -339,7 +340,7 @@ export default function AdminSettingsPage() {
                                 <Input
                                     value={settings.heroTitle}
                                     onChange={(e) => updateSetting("heroTitle", e.target.value)}
-                                    placeholder="GameStore"
+                                    placeholder="SNAILSHOP"
                                 />
                             </div>
                             <div className="space-y-2">
@@ -365,7 +366,7 @@ export default function AdminSettingsPage() {
                             <div className={assetPanelClass}>
                                 <div className="space-y-1">
                                     <Label>โลโก้</Label>
-                                    <p className="text-xs text-muted-foreground">อัปโหลดหรือวาง URL เพื่อใช้เป็นโลโก้หลักของเว็บไซต์</p>
+                                    <p className="text-xs text-muted-foreground">อัปโหลดหรือวาง URL เพื่อใช้เป็นโลโก้หลักของเว็บไซต์ • {IMAGE_UPLOAD_RECOMMENDATIONS.logoSquare}</p>
                                 </div>
                                 <div className="grid gap-4 lg:grid-cols-2">
                                     <div className="space-y-3">
@@ -527,7 +528,7 @@ export default function AdminSettingsPage() {
                                     />
                                 </div>
 
-                                <p className="text-xs text-muted-foreground">แนะนำ: 1920×1080 พิกเซล</p>
+                                <p className="text-xs text-muted-foreground">{IMAGE_UPLOAD_RECOMMENDATIONS.backgroundWide}</p>
                             </div>
                         </div>
                     </div>
@@ -544,7 +545,7 @@ export default function AdminSettingsPage() {
                                         รูปภาพ Banner (Carousel)
                                     </h2>
                                     <p className="mt-1 text-sm text-muted-foreground">
-                                        รองรับไฟล์ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก • แนะนำขนาด 2000x500px
+                                        รองรับไฟล์ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก • {IMAGE_UPLOAD_RECOMMENDATIONS.bannerCarousel}
                                     </p>
                                 </div>
                                 <div className="flex flex-wrap gap-2">

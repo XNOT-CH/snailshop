@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { PERMISSIONS } from "@/lib/permissions";
+import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 
 interface AnnouncementPopup {
     id: string;
@@ -259,7 +260,7 @@ export default function AdminPopupsPage() {
                                 />
                             </div>
                             <p class="mt-2 text-xs text-gray-500">
-                                รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก
+                                รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก • ${IMAGE_UPLOAD_RECOMMENDATIONS.popupSquare}
                             </p>
                         </div>
                     </div>

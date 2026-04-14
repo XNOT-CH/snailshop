@@ -22,12 +22,15 @@ import {
   showWarning,
 } from "@/lib/swal";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
+import { useCurrencySettings } from "@/hooks/useCurrencySettings";
+import { formatCurrencyAmount } from "@/lib/currencySettings";
 
 interface FeaturedProduct {
   id: string;
   name: string;
   price: number;
   discountPrice?: number | null;
+  currency?: string | null;
   imageUrl: string | null;
   category: string;
   isSold: boolean;
@@ -65,6 +68,7 @@ function getDiscountPercent(product: FeaturedProduct) {
 export function FeaturedProducts() {
   const router = useRouter();
   const maintenance = useMaintenanceStatus().purchase;
+  const currencySettings = useCurrencySettings();
   const [products, setProducts] = useState<FeaturedProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [buyingId, setBuyingId] = useState<string | null>(null);
@@ -79,9 +83,9 @@ export function FeaturedProducts() {
     const discounted = hasDiscount(product);
     const confirmed = await showPurchaseConfirm({
       productName: product.name,
-      priceText: `฿${getActivePrice(product).toLocaleString()}`,
+      priceText: formatCurrencyAmount(getActivePrice(product), product.currency, currencySettings),
       extraHtml: discounted
-        ? `<span class="text-sm text-gray-500 line-through">ราคาปกติ: ฿${product.price.toLocaleString()}</span>`
+        ? `<span class="text-sm text-gray-500 line-through">ราคาปกติ: ${formatCurrencyAmount(product.price, product.currency, currencySettings)}</span>`
         : undefined,
       confirmButtonColor: discounted ? "#ef4444" : undefined,
     });
@@ -287,11 +291,11 @@ export function FeaturedProducts() {
                   <h3 className="mb-1 truncate text-center font-semibold text-foreground">{product.name}</h3>
                   <div className={`mb-1 flex items-center justify-center gap-2 ${discounted ? "" : "flex-col"}`}>
                     <p className={`text-lg font-bold ${discounted ? "text-red-500" : "text-primary"}`}>
-                      ฿{Number(activePrice).toLocaleString()}
+                      {formatCurrencyAmount(Number(activePrice), product.currency, currencySettings)}
                     </p>
                     {discounted ? (
                       <p className="text-sm text-muted-foreground line-through">
-                        ฿{Number(product.price).toLocaleString()}
+                        {formatCurrencyAmount(Number(product.price), product.currency, currencySettings)}
                       </p>
                     ) : null}
                   </div>
@@ -326,6 +330,7 @@ export function FeaturedProducts() {
                             name: product.name,
                             price: activePrice,
                             discountPrice: discounted ? activePrice : undefined,
+                            currency: product.currency,
                             imageUrl: product.imageUrl,
                             category: product.category,
                             quantity: 1,

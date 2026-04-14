@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -38,6 +38,7 @@ import { showLoading, hideLoading, showSuccessAlert, showErrorAlert } from "@/li
 import { ThaiAddressSelector } from "@/components/ThaiAddressSelector";
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import { compressImage } from "@/lib/compressImage";
+import { FreeCropDialog } from "@/components/profile/FreeCropDialog";
 
 interface AddressData {
     fullName: string;
@@ -97,6 +98,10 @@ export default function ProfileSettingsPage() {
     const [isUploadingImage, setIsUploadingImage] = useState(false);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const profileImageInputRef = useRef<HTMLInputElement>(null);
+    const cropUrlRef = useRef<string | null>(null);
+    const [cropDialogOpen, setCropDialogOpen] = useState(false);
+    const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+    const [cropFileName, setCropFileName] = useState("");
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -205,6 +210,14 @@ export default function ProfileSettingsPage() {
         fetchProfile();
     }, []);
 
+    useEffect(() => {
+        return () => {
+            if (cropUrlRef.current) {
+                URL.revokeObjectURL(cropUrlRef.current);
+            }
+        };
+    }, []);
+
     const handleSubmit = async (section: "contact" | "personal" | "password" | "tax" | "ship") => {
         setErrors({});
 
@@ -260,10 +273,8 @@ export default function ProfileSettingsPage() {
 
     const passwordsMatch = !formData.confirmPassword || formData.password === formData.confirmPassword;
 
-    const handleProfileImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-
+    const uploadProfileImage = useCallback(async (file: File, options?: { showSuccessAlert?: boolean }) => {
+        const shouldShowSuccessAlert = options?.showSuccessAlert ?? true;
         setIsUploadingImage(true);
         try {
             const compressed = await compressImage(file, 350 * 1024);
@@ -286,17 +297,60 @@ export default function ProfileSettingsPage() {
             }));
             setProfile((prev) => (prev ? { ...prev, image: data.url } : prev));
             router.refresh();
-            await showSuccessAlert("สำเร็จ!", "อัปเดตรูปโปรไฟล์เรียบร้อยแล้ว");
+            if (shouldShowSuccessAlert) {
+                await showSuccessAlert("สำเร็จ!", "อัปเดตรูปโปรไฟล์เรียบร้อยแล้ว");
+            }
+            return true;
         } catch (error) {
             await showErrorAlert(
                 "อัปโหลดไม่สำเร็จ",
                 error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัปโหลดรูปโปรไฟล์"
             );
+            return false;
         } finally {
             setIsUploadingImage(false);
-            event.target.value = "";
         }
-    };
+    }, [router]);
+
+    const clearCropDialog = useCallback(() => {
+        if (cropUrlRef.current) {
+            URL.revokeObjectURL(cropUrlRef.current);
+            cropUrlRef.current = null;
+        }
+
+        setCropDialogOpen(false);
+        setCropImageSrc(null);
+        setCropFileName("");
+
+        if (profileImageInputRef.current) {
+            profileImageInputRef.current.value = "";
+        }
+    }, []);
+
+    const handleProfileImageUpload = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (cropUrlRef.current) {
+            URL.revokeObjectURL(cropUrlRef.current);
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        cropUrlRef.current = objectUrl;
+        setCropFileName(file.name);
+        setCropImageSrc(objectUrl);
+        setCropDialogOpen(true);
+    }, []);
+
+    const handleCropConfirm = useCallback(async (croppedFile: File) => {
+        const uploaded = await uploadProfileImage(croppedFile, { showSuccessAlert: false });
+        if (!uploaded) {
+            return;
+        }
+
+        clearCropDialog();
+        await showSuccessAlert("สำเร็จ!", "อัปเดตรูปโปรไฟล์เรียบร้อยแล้ว");
+    }, [clearCropDialog, uploadProfileImage]);
 
     const clearProfileImage = async () => {
         if (!hasProfileImage) return;
@@ -1024,6 +1078,14 @@ export default function ProfileSettingsPage() {
                     </CardContent>
                 </Card>
             </div>
+
+                <FreeCropDialog
+                    open={cropDialogOpen}
+                    imageSrc={cropImageSrc}
+                    fileName={cropFileName}
+                    onClose={clearCropDialog}
+                    onConfirm={handleCropConfirm}
+            />
         </div>
     );
 }

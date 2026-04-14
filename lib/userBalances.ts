@@ -1,3 +1,5 @@
+import { normalizeGachaCostType } from "@/lib/gachaCost";
+
 export type UserBalances = {
     creditBalance: number;
     pointBalance: number;
@@ -11,8 +13,10 @@ export const EMPTY_USER_BALANCES: UserBalances = {
 };
 
 export function getBalanceByCostType(balances: UserBalances, costType: string) {
-    if (costType === "CREDIT") return balances.creditBalance;
-    if (costType === "POINT") return balances.pointBalance;
-    if (costType === "TICKET") return balances.ticketBalance;
+    const normalizedCostType = normalizeGachaCostType(costType);
+
+    if (normalizedCostType === "CREDIT") return balances.creditBalance;
+    if (normalizedCostType === "POINT") return balances.pointBalance;
+    if (normalizedCostType === "TICKET") return balances.ticketBalance;
     return 0;
 }

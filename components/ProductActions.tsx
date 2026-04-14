@@ -9,6 +9,7 @@ import { QuantitySelector } from "@/components/QuantitySelector";
 import { useCart } from "@/components/providers/CartContext";
 import { showPurchaseConfirm, showPurchaseSuccessModal, showWarning, showErrorAlert } from "@/lib/swal";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
+import { formatCurrencyAmount, normalizeCurrencyCode, type PublicCurrencySettings } from "@/lib/currencySettings";
 
 interface ProductActionsProps {
     product: {
@@ -16,14 +17,21 @@ interface ProductActionsProps {
         name: string;
         price: number;
         discountPrice?: number | null;
+        currency?: string | null;
         imageUrl: string | null;
         category: string;
     };
     disabled?: boolean;
     maxQuantity?: number;
+    currencySettings?: PublicCurrencySettings;
 }
 
-export function ProductActions({ product, disabled = false, maxQuantity = 99 }: Readonly<ProductActionsProps>) {
+export function ProductActions({
+    product,
+    disabled = false,
+    maxQuantity = 99,
+    currencySettings,
+}: Readonly<ProductActionsProps>) {
     const router = useRouter();
     const maintenance = useMaintenanceStatus().purchase;
     const { addToCart, isInCart, isLoading: cartLoading } = useCart();
@@ -41,6 +49,8 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
         finalPrice: number | null;
     } | null>(null);
     const inCart = isInCart(product.id);
+    const normalizedCurrency = normalizeCurrencyCode(product.currency);
+    const isPointCurrency = normalizedCurrency === "POINT";
 
     const basePrice = (product.discountPrice ?? product.price) * quantity;
 
@@ -105,7 +115,7 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
 
         const confirmed = await showPurchaseConfirm({
             productName: product.name,
-            priceText: `฿${finalPrice.toLocaleString()}`,
+            priceText: formatCurrencyAmount(finalPrice, normalizedCurrency, currencySettings),
             extraHtml: discountLine,
         });
 
@@ -160,6 +170,7 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
                 name: product.name,
                 price: product.price,
                 discountPrice: product.discountPrice,
+                currency: normalizedCurrency,
                 imageUrl: product.imageUrl,
                 category: product.category,
                 quantity: quantity,
@@ -195,42 +206,44 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
             )}
 
             {/* 2. Promo Code */}
-            <div>
-                <p className="text-sm text-muted-foreground mb-1.5">ส่วนลด</p>
-                <div className="flex flex-col gap-2 sm:flex-row">
-                    <Input
-                        placeholder="กรอกส่วนลดของท่าน"
-                        value={promoCode}
-                        onChange={(e) => {
-                            setPromoCode(e.target.value);
-                            setAppliedPromo(null); // reset if user changes code
-                        }}
-                        onKeyDown={(e) => e.key === "Enter" && handleCheckPromo()}
-                        className={`flex-1 rounded-full bg-white border-gray-300 focus-visible:ring-blue-500 ${appliedPromo ? "border-green-400" : ""}`}
-                        disabled={isProcessing}
-                    />
-                    <Button
-                        variant="outline"
-                        className="rounded-full gap-1.5 px-4 shrink-0 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
-                        onClick={handleCheckPromo}
-                        disabled={isCheckingPromo || !promoCode.trim()}
-                    >
-                        {isCheckingPromo && (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        )}
-                        {!isCheckingPromo && (
-                            <Search className="h-4 w-4" />
-                        )}
-                        ตรวจสอบ
-                    </Button>
-                </div>
-                {appliedPromo && (
-                    <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm font-medium text-green-600">
-                        <Tag className="h-3.5 w-3.5" />
-                        ใช้โค้ด {appliedPromo.code} — ราคาลดเหลือ ฿{finalPrice.toLocaleString()}
+            {!isPointCurrency && (
+                <div>
+                    <p className="text-sm text-muted-foreground mb-1.5">ส่วนลด</p>
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                        <Input
+                            placeholder="กรอกส่วนลดของท่าน"
+                            value={promoCode}
+                            onChange={(e) => {
+                                setPromoCode(e.target.value);
+                                setAppliedPromo(null);
+                            }}
+                            onKeyDown={(e) => e.key === "Enter" && handleCheckPromo()}
+                            className={`flex-1 rounded-full bg-white border-gray-300 focus-visible:ring-blue-500 ${appliedPromo ? "border-green-400" : ""}`}
+                            disabled={isProcessing}
+                        />
+                        <Button
+                            variant="outline"
+                            className="rounded-full gap-1.5 px-4 shrink-0 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
+                            onClick={handleCheckPromo}
+                            disabled={isCheckingPromo || !promoCode.trim()}
+                        >
+                            {isCheckingPromo && (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            )}
+                            {!isCheckingPromo && (
+                                <Search className="h-4 w-4" />
+                            )}
+                            ตรวจสอบ
+                        </Button>
                     </div>
-                )}
-            </div>
+                    {appliedPromo && (
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm font-medium text-green-600">
+                            <Tag className="h-3.5 w-3.5" />
+                            ใช้โค้ด {appliedPromo.code} — ราคาลดเหลือ {formatCurrencyAmount(finalPrice, normalizedCurrency, currencySettings)}
+                        </div>
+                    )}
+                </div>
+            )}
 
 
             {/* 3. Buy Now */}
@@ -252,7 +265,11 @@ export function ProductActions({ product, disabled = false, maxQuantity = 99 }: 
                 {!isBuying && (
                     <>
                         <ShoppingCart className="h-5 w-5" />
-                        {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : disabled ? "สินค้าหมด 🚫" : `ซื้อเลย - ฿${finalPrice.toLocaleString()}`}
+                        {maintenance?.enabled
+                            ? "ปิดปรับปรุงชั่วคราว"
+                            : disabled
+                                ? "สินค้าหมด 🚫"
+                                : `ซื้อเลย - ${formatCurrencyAmount(finalPrice, normalizedCurrency, currencySettings)}`}
                     </>
                 )}
             </Button>

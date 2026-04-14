@@ -11,7 +11,10 @@ import { db, products } from "@/lib/db";
 import { eq, and, ne, desc } from "drizzle-orm";
 import { getStockCount } from "@/lib/stock";
 import { decrypt } from "@/lib/encryption";
-import { absoluteUrl, buildPageMetadata, toAbsoluteAssetUrl } from "@/lib/seo";
+import { absoluteUrl, buildPageMetadata, resolveSiteName, toAbsoluteAssetUrl } from "@/lib/seo";
+import { formatCurrencyAmount } from "@/lib/currencySettings";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
+import { getSiteSettings } from "@/lib/getSiteSettings";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -25,13 +28,15 @@ interface ProductDetailPageProps {
 
 export async function generateMetadata({ params }: Readonly<ProductDetailPageProps>): Promise<Metadata> {
     const { id } = await params;
-    const product = await getProduct(id);
+    const [product, siteSettings] = await Promise.all([getProduct(id), getSiteSettings()]);
+    const siteName = resolveSiteName(siteSettings?.heroTitle);
 
     if (!product) {
         return buildPageMetadata({
             title: "ไม่พบสินค้า",
             path: `/product/${id}`,
             noIndex: true,
+            siteName,
         });
     }
 
@@ -44,6 +49,7 @@ export async function generateMetadata({ params }: Readonly<ProductDetailPagePro
             description,
             path: `/product/${product.id}`,
             image,
+            siteName,
         }),
         title: product.name,
         description,
@@ -51,15 +57,16 @@ export async function generateMetadata({ params }: Readonly<ProductDetailPagePro
             canonical: `/product/${product.id}`,
         },
         openGraph: {
-            title: `${product.name} | Manashop`,
+            title: `${product.name} | ${siteName}`,
             description,
             url: absoluteUrl(`/product/${product.id}`),
+            siteName,
             type: "website",
             ...(image ? { images: [{ url: image }] } : {}),
         },
         twitter: {
             card: image ? "summary_large_image" : "summary",
-            title: `${product.name} | Manashop`,
+            title: `${product.name} | ${siteName}`,
             description,
             ...(image ? { images: [image] } : {}),
         },
@@ -70,7 +77,10 @@ export default async function ProductDetailPage({
     params,
 }: Readonly<ProductDetailPageProps>) {
     const { id } = await params;
-    const product = await getProduct(id);
+    const [product, currencySettings] = await Promise.all([
+        getProduct(id),
+        getCurrencySettings(),
+    ]);
 
     if (!product) {
         notFound();
@@ -96,7 +106,8 @@ export default async function ProductDetailPage({
     });
 
     const productImage = toAbsoluteAssetUrl(product.imageUrl || "/placeholder.jpg");
-    const productDescription = product.description || `ซื้อ ${product.name} ราคา ${displayPrice.toLocaleString()} บาท`;
+    const productDescription =
+        product.description || `ซื้อ ${product.name} ราคา ${formatCurrencyAmount(displayPrice, product.currency, currencySettings)}`;
     const structuredData = [
         {
             "@context": "https://schema.org",
@@ -166,11 +177,11 @@ export default async function ProductDetailPage({
                             <div>
                                 <div className="flex items-baseline gap-2 flex-wrap">
                                     <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                                        {displayPrice.toLocaleString()}฿ ต่อชิ้น
+                                        {formatCurrencyAmount(displayPrice, product.currency, currencySettings)} ต่อชิ้น
                                     </span>
                                     {discountPrice && (
                                         <span className="text-base text-muted-foreground line-through">
-                                            {price.toLocaleString()}฿
+                                            {formatCurrencyAmount(price, product.currency, currencySettings)}
                                         </span>
                                     )}
                                 </div>
@@ -198,11 +209,13 @@ export default async function ProductDetailPage({
                                         name: product.name,
                                         price,
                                         discountPrice,
+                                        currency: product.currency,
                                         imageUrl: product.imageUrl,
                                         category: product.category,
                                     }}
                                     disabled={!isAvailable}
                                     maxQuantity={stockCount}
+                                    currencySettings={currencySettings}
                                 />
                             </div>
                         </div>
@@ -269,11 +282,11 @@ export default async function ProductDetailPage({
                                                 <div className="text-center">
                                                     {relDiscount && (
                                                         <div className="text-[10px] sm:text-xs text-muted-foreground line-through mb-0.5">
-                                                            ฿{relPrice.toLocaleString()}
+                                                            {formatCurrencyAmount(relPrice, related.currency, currencySettings)}
                                                         </div>
                                                     )}
                                                     <div className="font-semibold text-blue-500 text-sm">
-                                                        ฿{relDisplayPrice.toLocaleString()}
+                                                        {formatCurrencyAmount(relDisplayPrice, related.currency, currencySettings)}
                                                     </div>
                                                 </div>
                                             </div>

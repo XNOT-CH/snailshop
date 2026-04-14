@@ -7,6 +7,7 @@ import { validateBody } from "@/lib/validations/validate";
 import { gachaMachineSchema } from "@/lib/validations/gacha";
 import { PERMISSIONS } from "@/lib/permissions";
 import { getActiveMachineProbabilitySummary } from "@/lib/gachaMachineProbability";
+import { normalizeGachaCost } from "@/lib/gachaCost";
 
 export async function GET() {
     const auth = await requirePermission(PERMISSIONS.GACHA_VIEW);
@@ -39,6 +40,7 @@ export async function POST(req: Request) {
     const result = await validateBody(req, gachaMachineSchema);
     if ("error" in result) return result.error;
     const body = result.data;
+    const normalizedCost = normalizeGachaCost(body.costType, body.costAmount);
 
     const newId = crypto.randomUUID();
     await db.insert(gachaMachines).values({
@@ -48,8 +50,8 @@ export async function POST(req: Request) {
         imageUrl: body.imageUrl || null,
         gameType: body.gameType,
         categoryId: body.categoryId ?? null,
-        costType: body.costType,
-        costAmount: String(body.costAmount),
+        costType: normalizedCost.costType,
+        costAmount: String(normalizedCost.costAmount),
         dailySpinLimit: body.dailySpinLimit,
         tierMode: body.tierMode,
         isActive: false,

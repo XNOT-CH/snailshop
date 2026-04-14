@@ -1,10 +1,12 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { PublicCurrencySettings } from "@/lib/currencySettings";
 
 type NavbarInteractiveProps = {
-    user: { username: string; image?: string | null; creditBalance: number } | null;
+    user: { username: string; image?: string | null; creditBalance: number; pointBalance: number } | null;
     imageVersion?: string | number;
+    currencySettings?: PublicCurrencySettings;
 };
 
 const NavbarUserMenu = dynamic(
@@ -17,7 +19,7 @@ const NavbarCartButton = dynamic(
     { ssr: false }
 );
 
-export function NavbarInteractive({ user, imageVersion }: Readonly<NavbarInteractiveProps>) {
+export function NavbarInteractive({ user, imageVersion, currencySettings }: Readonly<NavbarInteractiveProps>) {
     return (
         <>
             <NavbarCartButton />
@@ -27,6 +29,8 @@ export function NavbarInteractive({ user, imageVersion }: Readonly<NavbarInterac
                     image={user.image}
                     imageVersion={imageVersion}
                     creditBalance={user.creditBalance}
+                    pointBalance={user.pointBalance}
+                    currencySettings={currencySettings}
                 />
             ) : null}
         </>

@@ -100,18 +100,6 @@ function formatCurrency(value: string) {
     });
 }
 
-function getBadgeClasses(tone: "red" | "green" | "violet") {
-    if (tone === "red") {
-        return "border-red-300 bg-red-50 text-red-600";
-    }
-
-    if (tone === "violet") {
-        return "border-blue-300 bg-blue-50 text-blue-700";
-    }
-
-    return "border-emerald-300 bg-emerald-50 text-emerald-600";
-}
-
 export default function TopupPage() {
     const router = useRouter();
     const maintenance = useMaintenanceStatus().topup;
@@ -470,11 +458,6 @@ export default function TopupPage() {
                             </div>
                             <p className="mt-4 text-lg font-extrabold text-slate-900 sm:mt-5 sm:text-xl">{channel.title}</p>
                             <p className="mt-1 text-base text-slate-500 sm:text-lg">{channel.subtitle}</p>
-                            <div className="mt-4 flex items-center justify-center gap-2">
-                                <span className={`rounded-full border px-3 py-1 text-xs font-semibold sm:text-sm ${getBadgeClasses(channel.badgeTone)}`}>
-                                    {channel.badgeTone === "violet" ? "พิเศษ" : channel.fee}
-                                </span>
-                            </div>
                             <p className="mt-4 text-xs text-slate-400">{channel.description}</p>
                         </button>
                     );
@@ -533,12 +516,6 @@ export default function TopupPage() {
                                             />
                                         </div>
                                     </div>
-                                </div>
-
-                                <div className="mt-3 text-center sm:mt-4">
-                                    <p className="text-[0.95rem] font-extrabold text-red-500 sm:text-base">
-                                        ค่าธรรมเนียม <span className="rounded-full border border-red-400 px-2 py-0.5 text-xs sm:text-sm">2.9%</span> สูงสุด 20฿
-                                    </p>
                                 </div>
 
                                 <div className="mt-3 space-y-2 sm:mt-4">

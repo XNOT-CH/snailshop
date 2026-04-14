@@ -22,6 +22,22 @@ export const gachaMachineSchema = z.object({
 });
 export type GachaMachineInput = z.infer<typeof gachaMachineSchema>;
 
+export const gachaMachinePatchSchema = z.object({
+    name: z.string().min(1, "กรุณากรอกชื่อตู้กาชา").max(200).optional(),
+    description: z.string().max(1000).nullish().or(z.literal("")).optional(),
+    imageUrl: z.string().nullish().or(z.literal("")).optional(),
+    categoryId: z.uuid({ error: "Invalid UUID" }).optional().nullable(),
+    gameType: z.enum(["SPIN_X", "GRID_3X3"]).optional(),
+    costType: z.enum(["FREE", "CREDIT", "POINT", "TICKET"]).optional(),
+    costAmount: z.coerce.number().min(0).optional(),
+    dailySpinLimit: z.coerce.number().int().min(0).optional(),
+    tierMode: z.enum(["SINGLE", "MULTI"]).optional(),
+    isActive: z.boolean().optional(),
+    isEnabled: z.boolean().optional(),
+    sortOrder: z.coerce.number().int().min(0).optional(),
+});
+export type GachaMachinePatchInput = z.infer<typeof gachaMachinePatchSchema>;
+
 // ── Gacha Reward ─────────────────────────────────────────
 export const gachaRewardSchema = z.object({
     gachaMachineId: z.uuid({ error: "Invalid UUID" }).optional().nullable(),
@@ -35,6 +51,19 @@ export const gachaRewardSchema = z.object({
     isActive: z.boolean().default(true),
 });
 export type GachaRewardInput = z.infer<typeof gachaRewardSchema>;
+
+export const gachaRewardPatchSchema = z.object({
+    gachaMachineId: z.uuid({ error: "Invalid UUID" }).optional().nullable(),
+    rewardType: z.enum(["PRODUCT", "CREDIT", "POINT", "TICKET"]).optional(),
+    tier: z.enum(["common", "rare", "epic", "legendary"]).optional(),
+    probability: z.coerce.number().min(0).max(100).optional(),
+    productId: z.uuid({ error: "Invalid UUID" }).optional().nullable(),
+    rewardName: z.string().max(200).optional().or(z.literal("")),
+    rewardAmount: z.coerce.number().min(0).optional().nullable(),
+    rewardImageUrl: imageUrlSchema.optional().or(z.literal("")),
+    isActive: z.boolean().optional(),
+});
+export type GachaRewardPatchInput = z.infer<typeof gachaRewardPatchSchema>;
 
 // ── Gacha Settings ───────────────────────────────────────
 export const gachaSettingsSchema = z.object({

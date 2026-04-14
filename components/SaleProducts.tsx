@@ -9,12 +9,15 @@ import { Button } from "@/components/ui/button";
 import { showPurchaseConfirm, showPurchaseSuccessModal, showError, showWarning } from "@/lib/swal";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
+import { useCurrencySettings } from "@/hooks/useCurrencySettings";
+import { formatCurrencyAmount } from "@/lib/currencySettings";
 
 interface SaleProduct {
     id: string;
     name: string;
     price: number;
     discountPrice: number;
+    currency?: string | null;
     imageUrl: string | null;
     category: string;
     isSold: boolean;
@@ -23,6 +26,7 @@ interface SaleProduct {
 export function SaleProducts() {
     const router = useRouter();
     const maintenance = useMaintenanceStatus().purchase;
+    const currencySettings = useCurrencySettings();
     const [products, setProducts] = useState<SaleProduct[]>([]);
     const [loading, setLoading] = useState(true);
     const [buyingId, setBuyingId] = useState<string | null>(null);
@@ -36,8 +40,8 @@ export function SaleProducts() {
 
         const confirmed = await showPurchaseConfirm({
             productName: product.name,
-            priceText: `฿${product.discountPrice.toLocaleString()}`,
-            extraHtml: `<span class="text-sm text-gray-500 line-through">ราคาปกติ: ฿${product.price.toLocaleString()}</span>`,
+            priceText: formatCurrencyAmount(product.discountPrice, product.currency, currencySettings),
+            extraHtml: `<span class="text-sm text-gray-500 line-through">ราคาปกติ: ${formatCurrencyAmount(product.price, product.currency, currencySettings)}</span>`,
             confirmButtonColor: "#ef4444",
         });
         if (!confirmed) return;
@@ -232,8 +236,8 @@ export function SaleProducts() {
                             <div className="p-4 text-center">
                                 <h3 className="font-semibold text-foreground truncate mb-1 text-center">{product.name}</h3>
                                 <div className="flex items-center justify-center gap-2">
-                                    <p className="text-lg font-bold text-red-500">฿{Number(product.discountPrice).toLocaleString()}</p>
-                                    <p className="text-sm text-muted-foreground line-through">฿{Number(product.price).toLocaleString()}</p>
+                                    <p className="text-lg font-bold text-red-500">{formatCurrencyAmount(Number(product.discountPrice), product.currency, currencySettings)}</p>
+                                    <p className="text-sm text-muted-foreground line-through">{formatCurrencyAmount(Number(product.price), product.currency, currencySettings)}</p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 mt-3">
                                     {product.isSold ? (
@@ -266,6 +270,7 @@ export function SaleProducts() {
                                                     name: product.name,
                                                     price: product.price,
                                                     discountPrice: product.discountPrice,
+                                                    currency: product.currency,
                                                     imageUrl: product.imageUrl,
                                                     category: product.category,
                                                     quantity: 1,

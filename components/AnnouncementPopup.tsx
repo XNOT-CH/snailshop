@@ -227,11 +227,13 @@ export default function AnnouncementPopup() {
 
                         {/* Image Container */}
                         {currentPopup.linkUrl ? (
-                            <button
-                                type="button"
-                                className="relative w-full aspect-square cursor-pointer overflow-hidden rounded-[1.75rem] border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)] backdrop-blur-md"
-                                onClick={handleImageClick}
-                            >
+                            <div className="relative w-full aspect-square overflow-hidden rounded-[1.75rem] border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)] backdrop-blur-md">
+                                <button
+                                    type="button"
+                                    className="absolute inset-0 z-0 cursor-pointer"
+                                    onClick={handleImageClick}
+                                    aria-label={currentPopup.title ? `เปิดลิงก์ ${currentPopup.title}` : "เปิดลิงก์ประชาสัมพันธ์"}
+                                />
                                 <Image
                                     src={currentPopup.imageUrl}
                                     alt={currentPopup.title || "ประชาสัมพันธ์"}
@@ -246,7 +248,7 @@ export default function AnnouncementPopup() {
                                     <>
                                         <motion.button
                                             onClick={goToPrevious}
-                                            className="absolute left-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white transition-colors hover:bg-black/65"
+                                            className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white transition-colors hover:bg-black/65"
                                             aria-label="รูปก่อนหน้า"
                                             whileHover={{ scale: 1.1 }}
                                             whileTap={{ scale: 0.9 }}
@@ -255,7 +257,7 @@ export default function AnnouncementPopup() {
                                         </motion.button>
                                         <motion.button
                                             onClick={goToNext}
-                                            className="absolute right-2 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white transition-colors hover:bg-black/65"
+                                            className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white transition-colors hover:bg-black/65"
                                             aria-label="รูปถัดไป"
                                             whileHover={{ scale: 1.1 }}
                                             whileTap={{ scale: 0.9 }}
@@ -264,7 +266,7 @@ export default function AnnouncementPopup() {
                                         </motion.button>
 
                                         {/* Dot Indicators */}
-                                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
+                                        <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-2">
                                             {popups.map((popup, index) => (
                                                 <motion.button
                                                     key={popup.id}
@@ -284,7 +286,7 @@ export default function AnnouncementPopup() {
                                         </div>
                                     </>
                                 )}
-                            </button>
+                            </div>
                         ) : (
                             <div className="relative w-full aspect-square overflow-hidden rounded-[1.75rem] border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)] backdrop-blur-md">
                                 <Image

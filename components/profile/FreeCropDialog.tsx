@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Crop, Move, RefreshCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,7 @@ type ResizeHandle = "nw" | "ne" | "sw" | "se";
 interface CropRect {
   x: number;
   y: number;
-  width: number;
-  height: number;
+  size: number;
 }
 
 interface FreeCropDialogProps {
@@ -30,7 +29,8 @@ interface FreeCropDialogProps {
   onConfirm: (file: File) => Promise<void> | void;
 }
 
-const MIN_CROP_SIZE = 60;
+const MIN_CROP_SIZE = 80;
+const PREVIEW_SIZE = 112;
 
 export function FreeCropDialog({
   open,
@@ -40,11 +40,12 @@ export function FreeCropDialog({
   onConfirm,
 }: FreeCropDialogProps) {
   const imageRef = useRef<HTMLImageElement | null>(null);
-  const [cropRect, setCropRect] = useState<CropRect>({ x: 40, y: 40, width: 220, height: 220 });
+  const [cropRect, setCropRect] = useState<CropRect>({ x: 40, y: 40, size: 220 });
   const [dragMode, setDragMode] = useState<"move" | ResizeHandle | null>(null);
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [naturalSize, setNaturalSize] = useState({ width: 0, height: 0 });
+  const [previewSrc, setPreviewSrc] = useState<string | null>(null);
 
   const fileBaseName = useMemo(() => fileName.replace(/\.[^.]+$/, "") || "profile-image", [fileName]);
 
@@ -56,19 +57,29 @@ export function FreeCropDialog({
     }
   }, [open]);
 
+  useEffect(() => {
+    return () => {
+      if (previewSrc) {
+        URL.revokeObjectURL(previewSrc);
+      }
+    };
+  }, [previewSrc]);
+
   const resetCropRect = () => {
     const image = imageRef.current;
     if (!image) {
       return;
     }
 
-    const width = Math.max(image.clientWidth * 0.62, MIN_CROP_SIZE);
-    const height = Math.max(image.clientHeight * 0.62, MIN_CROP_SIZE);
+    const size = Math.max(
+      Math.min(Math.min(image.clientWidth, image.clientHeight) * 0.68, image.clientWidth, image.clientHeight),
+      MIN_CROP_SIZE,
+    );
+
     setCropRect({
-      x: Math.max((image.clientWidth - width) / 2, 0),
-      y: Math.max((image.clientHeight - height) / 2, 0),
-      width: Math.min(width, image.clientWidth),
-      height: Math.min(height, image.clientHeight),
+      x: Math.max((image.clientWidth - size) / 2, 0),
+      y: Math.max((image.clientHeight - size) / 2, 0),
+      size,
     });
   };
 
@@ -78,31 +89,15 @@ export function FreeCropDialog({
       return nextRect;
     }
 
-    const maxWidth = image.clientWidth;
-    const maxHeight = image.clientHeight;
+    const maxSize = Math.min(image.clientWidth, image.clientHeight);
+    const size = Math.max(Math.min(nextRect.size, maxSize), MIN_CROP_SIZE);
+    const x = Math.min(Math.max(nextRect.x, 0), image.clientWidth - size);
+    const y = Math.min(Math.max(nextRect.y, 0), image.clientHeight - size);
 
-    let width = Math.max(Math.min(nextRect.width, maxWidth), MIN_CROP_SIZE);
-    let height = Math.max(Math.min(nextRect.height, maxHeight), MIN_CROP_SIZE);
-    let x = Math.min(Math.max(nextRect.x, 0), maxWidth - width);
-    let y = Math.min(Math.max(nextRect.y, 0), maxHeight - height);
-
-    if (x + width > maxWidth) {
-      width = maxWidth - x;
-    }
-
-    if (y + height > maxHeight) {
-      height = maxHeight - y;
-    }
-
-    return {
-      x,
-      y,
-      width: Math.max(width, MIN_CROP_SIZE),
-      height: Math.max(height, MIN_CROP_SIZE),
-    };
+    return { x, y, size };
   };
 
-  const updateCropRect = (clientX: number, clientY: number) => {
+  const updateCropRect = useCallback((clientX: number, clientY: number) => {
     if (!dragMode || !lastPoint) {
       return;
     }
@@ -111,34 +106,42 @@ export function FreeCropDialog({
     const deltaY = clientY - lastPoint.y;
 
     setCropRect((current) => {
-      let nextRect = { ...current };
+      const nextRect = { ...current };
 
       if (dragMode === "move") {
         nextRect.x += deltaX;
         nextRect.y += deltaY;
       } else if (dragMode === "nw") {
-        nextRect.x += deltaX;
-        nextRect.y += deltaY;
-        nextRect.width -= deltaX;
-        nextRect.height -= deltaY;
+        const anchorX = current.x + current.size;
+        const anchorY = current.y + current.size;
+        const resizeDelta = Math.max(deltaX, deltaY);
+        nextRect.size = current.size - resizeDelta;
+        nextRect.x = anchorX - nextRect.size;
+        nextRect.y = anchorY - nextRect.size;
       } else if (dragMode === "ne") {
-        nextRect.y += deltaY;
-        nextRect.width += deltaX;
-        nextRect.height -= deltaY;
+        const anchorX = current.x;
+        const anchorY = current.y + current.size;
+        const resizeDelta = Math.max(deltaX, -deltaY);
+        nextRect.size = current.size + resizeDelta;
+        nextRect.x = anchorX;
+        nextRect.y = anchorY - nextRect.size;
       } else if (dragMode === "sw") {
-        nextRect.x += deltaX;
-        nextRect.width -= deltaX;
-        nextRect.height += deltaY;
+        const anchorX = current.x + current.size;
+        const anchorY = current.y;
+        const resizeDelta = Math.max(-deltaX, deltaY);
+        nextRect.size = current.size + resizeDelta;
+        nextRect.x = anchorX - nextRect.size;
+        nextRect.y = anchorY;
       } else if (dragMode === "se") {
-        nextRect.width += deltaX;
-        nextRect.height += deltaY;
+        const resizeDelta = Math.max(deltaX, deltaY);
+        nextRect.size = current.size + resizeDelta;
       }
 
       return clampCropRect(nextRect);
     });
 
     setLastPoint({ x: clientX, y: clientY });
-  };
+  }, [dragMode, lastPoint]);
 
   useEffect(() => {
     if (!dragMode) {
@@ -161,7 +164,7 @@ export function FreeCropDialog({
       window.removeEventListener("pointermove", handlePointerMove);
       window.removeEventListener("pointerup", handlePointerUp);
     };
-  }, [dragMode, lastPoint]);
+  }, [dragMode, updateCropRect]);
 
   const beginDrag = (mode: "move" | ResizeHandle, event: React.PointerEvent) => {
     event.preventDefault();
@@ -182,6 +185,54 @@ export function FreeCropDialog({
     resetCropRect();
   };
 
+  useEffect(() => {
+    const image = imageRef.current;
+    if (!image || !naturalSize.width || !naturalSize.height || !open) {
+      return;
+    }
+
+    const scaleX = naturalSize.width / image.clientWidth;
+    const scaleY = naturalSize.height / image.clientHeight;
+    const sourceX = cropRect.x * scaleX;
+    const sourceY = cropRect.y * scaleY;
+    const sourceSizeX = cropRect.size * scaleX;
+    const sourceSizeY = cropRect.size * scaleY;
+
+    const canvas = document.createElement("canvas");
+    canvas.width = PREVIEW_SIZE;
+    canvas.height = PREVIEW_SIZE;
+
+    const context = canvas.getContext("2d");
+    if (!context) {
+      return;
+    }
+
+    context.drawImage(
+      image,
+      sourceX,
+      sourceY,
+      sourceSizeX,
+      sourceSizeY,
+      0,
+      0,
+      PREVIEW_SIZE,
+      PREVIEW_SIZE,
+    );
+
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        return;
+      }
+
+      setPreviewSrc((current) => {
+        if (current) {
+          URL.revokeObjectURL(current);
+        }
+        return URL.createObjectURL(blob);
+      });
+    }, "image/png", 1);
+  }, [cropRect, naturalSize, open]);
+
   const exportCroppedFile = async () => {
     const image = imageRef.current;
     if (!image || !naturalSize.width || !naturalSize.height) {
@@ -191,18 +242,16 @@ export function FreeCropDialog({
     setIsSaving(true);
 
     try {
-      const displayWidth = image.clientWidth;
-      const displayHeight = image.clientHeight;
-      const scaleX = naturalSize.width / displayWidth;
-      const scaleY = naturalSize.height / displayHeight;
+      const scaleX = naturalSize.width / image.clientWidth;
+      const scaleY = naturalSize.height / image.clientHeight;
       const sourceX = cropRect.x * scaleX;
       const sourceY = cropRect.y * scaleY;
-      const sourceWidth = cropRect.width * scaleX;
-      const sourceHeight = cropRect.height * scaleY;
+      const sourceSizeX = cropRect.size * scaleX;
+      const sourceSizeY = cropRect.size * scaleY;
 
       const canvas = document.createElement("canvas");
-      canvas.width = Math.max(Math.round(sourceWidth), 1);
-      canvas.height = Math.max(Math.round(sourceHeight), 1);
+      canvas.width = 768;
+      canvas.height = 768;
 
       const context = canvas.getContext("2d");
       if (!context) {
@@ -213,8 +262,8 @@ export function FreeCropDialog({
         image,
         sourceX,
         sourceY,
-        sourceWidth,
-        sourceHeight,
+        sourceSizeX,
+        sourceSizeY,
         0,
         0,
         canvas.width,
@@ -242,7 +291,7 @@ export function FreeCropDialog({
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => (!nextOpen ? onClose() : null)}>
-      <DialogContent className="max-w-4xl rounded-[28px] border-slate-200 bg-white p-0 shadow-[0_28px_80px_-36px_rgba(15,23,42,0.4)] sm:max-w-4xl">
+      <DialogContent className="max-w-5xl rounded-[28px] border-slate-200 bg-white p-0 shadow-[0_28px_80px_-36px_rgba(15,23,42,0.4)] sm:max-w-5xl">
         <div className="overflow-hidden rounded-[28px]">
           <DialogHeader className="border-b border-slate-200 bg-gradient-to-r from-blue-50 via-white to-sky-50 px-6 py-5 text-left">
             <div className="flex items-start gap-3">
@@ -251,45 +300,49 @@ export function FreeCropDialog({
               </div>
               <div className="space-y-1">
                 <DialogTitle className="text-xl font-semibold text-slate-900">
-                  ครอปอิสระ (Free Crop)
+                  ครอปรูปโปรไฟล์
                 </DialogTitle>
                 <DialogDescription className="text-sm text-slate-600">
-                  ลากกรอบเอง ปรับขนาดตามใจ เหมาะกับผู้ใช้ทั่วไป
+                  ลากกรอบวงกลมเพื่อจัดตำแหน่งรูปให้พอดีกับโปรไฟล์ก่อนอัปโหลด
                 </DialogDescription>
               </div>
             </div>
           </DialogHeader>
 
-          <div className="space-y-5 px-6 py-6">
+          <div className="grid gap-5 px-6 py-6 lg:grid-cols-[minmax(0,1fr)_240px]">
             <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-3">
               <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-[20px] bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_55%),linear-gradient(180deg,_rgba(15,23,42,0.04),_rgba(15,23,42,0.08))] p-3">
                 {imageSrc ? (
                   <div className="relative inline-block">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       ref={imageRef}
                       src={imageSrc}
                       alt="Preview crop"
-                      className="max-h-[68vh] w-auto max-w-full rounded-2xl object-contain shadow-[0_20px_60px_-30px_rgba(15,23,42,0.45)]"
+                      className="max-h-[68vh] w-auto max-w-full rounded-[22px] object-contain shadow-[0_20px_60px_-30px_rgba(15,23,42,0.45)]"
                       onLoad={handleImageLoad}
                     />
 
                     <div className="pointer-events-none absolute inset-0">
                       <div
-                        className="pointer-events-auto absolute border-2 border-white shadow-[0_0_0_9999px_rgba(15,23,42,0.42),0_14px_40px_-24px_rgba(15,23,42,0.9)]"
+                        className="pointer-events-auto absolute rounded-full border-[3px] border-white shadow-[0_0_0_9999px_rgba(15,23,42,0.48),0_18px_40px_-24px_rgba(15,23,42,0.92)]"
                         style={{
                           left: cropRect.x,
                           top: cropRect.y,
-                          width: cropRect.width,
-                          height: cropRect.height,
+                          width: cropRect.size,
+                          height: cropRect.size,
                         }}
                         onPointerDown={(event) => beginDrag("move", event)}
                       >
-                        <div className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-1 text-[11px] font-medium text-white">
+                        <div className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white">
                           <span className="inline-flex items-center gap-1">
                             <Move className="h-3 w-3" />
-                            ลากกรอบได้
+                            ลากวงกลมได้
                           </span>
                         </div>
+
+                        <div className="pointer-events-none absolute inset-[10%] rounded-full border border-white/55" />
+                        <div className="pointer-events-none absolute inset-[18%] rounded-full border border-white/20" />
 
                         {(["nw", "ne", "sw", "se"] as ResizeHandle[]).map((handle) => {
                           const handlePosition =
@@ -318,20 +371,40 @@ export function FreeCropDialog({
               </div>
             </div>
 
-            <div className="flex flex-col gap-3 rounded-[22px] border border-slate-200 bg-slate-50/90 p-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="font-medium text-slate-900">โหมดครอปอิสระ</p>
-                <p>ลากกรอบเพื่อย้าย และลากจุดมุมทั้ง 4 เพื่อปรับขนาดได้อย่างอิสระ</p>
+            <div className="flex flex-col gap-4">
+              <div className="rounded-[24px] border border-slate-200 bg-slate-50/90 p-4">
+                <p className="text-sm font-semibold text-slate-900">ตัวอย่างรูปโปรไฟล์</p>
+                <p className="mt-1 text-xs text-slate-500">ภาพที่ครอปแล้วจะถูกแสดงแบบวงกลมเหมือนในเมนูผู้ใช้</p>
+                <div className="mt-4 flex justify-center">
+                  <div className="relative h-28 w-28 overflow-hidden rounded-full border-4 border-amber-400 bg-white shadow-[0_12px_32px_-18px_rgba(251,191,36,0.9)]">
+                    {previewSrc ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={previewSrc}
+                          alt="Profile circle preview"
+                          className="pointer-events-none absolute inset-0 h-full w-full object-cover"
+                        />
+                        <div className="pointer-events-none absolute inset-[6px] rounded-full border border-white/35" />
+                      </>
+                    ) : null}
+                  </div>
+                </div>
               </div>
-              <Button
-                type="button"
-                variant="outline"
-                className="h-11 rounded-2xl border-slate-200 bg-white px-4"
-                onClick={resetCropRect}
-              >
-                <RefreshCcw className="mr-2 h-4 w-4" />
-                รีเซ็ตกรอบครอป
-              </Button>
+
+              <div className="rounded-[24px] border border-slate-200 bg-slate-50/90 p-4 text-sm text-slate-600">
+                <p className="font-medium text-slate-900">วิธีใช้งาน</p>
+                <p className="mt-2">ลากวงกลมเพื่อย้ายจุดโฟกัส และลากมุมทั้ง 4 เพื่อขยายหรือย่อพื้นที่ให้พอดีกับหน้ารูปโปรไฟล์</p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="mt-4 h-11 w-full rounded-2xl border-slate-200 bg-white px-4"
+                  onClick={resetCropRect}
+                >
+                  <RefreshCcw className="mr-2 h-4 w-4" />
+                  รีเซ็ตกรอบครอป
+                </Button>
+              </div>
             </div>
           </div>
 

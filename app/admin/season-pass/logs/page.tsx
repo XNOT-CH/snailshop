@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowLeft, CalendarDays, Gift, PackageCheck, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getPointCurrencyName } from "@/lib/currencySettings";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { buildPageMetadata } from "@/lib/seo";
 import { getAdminSeasonPassClaimLogs } from "@/lib/seasonPass";
 import { mysqlDateTimeToIso, TH_TIME_ZONE } from "@/lib/utils/date";
@@ -24,12 +26,12 @@ function formatDateTime(value: string) {
     });
 }
 
-function getRewardTypeLabel(value: string) {
+function getRewardTypeLabel(value: string, pointCurrencyName: string) {
     switch (value) {
         case "credits":
             return "เครดิต";
         case "points":
-            return "พอยต์";
+            return pointCurrencyName;
         case "tickets":
             return "ตั๋วสุ่ม";
         default:
@@ -39,6 +41,8 @@ function getRewardTypeLabel(value: string) {
 
 export default async function AdminSeasonPassLogsPage() {
     const logs = await getAdminSeasonPassClaimLogs(150);
+    const currencySettings = await getCurrencySettings().catch(() => null);
+    const pointCurrencyName = getPointCurrencyName(currencySettings);
 
     return (
         <div className="space-y-6">
@@ -127,7 +131,7 @@ export default async function AdminSeasonPassLogsPage() {
                                                 <div>
                                                     <p className="font-medium text-slate-900">{log.rewardLabel}</p>
                                                     <p className="text-xs text-slate-500">
-                                                        {getRewardTypeLabel(log.rewardType)}
+                                                        {getRewardTypeLabel(log.rewardType, pointCurrencyName)}
                                                     </p>
                                                 </div>
                                             </div>
@@ -209,7 +213,7 @@ export default async function AdminSeasonPassLogsPage() {
                                                 <Gift className="mt-0.5 h-4 w-4 text-blue-600" />
                                                 <div>
                                                     <p className="font-medium text-slate-900">{log.rewardLabel}</p>
-                                                    <p className="text-xs text-slate-500">{getRewardTypeLabel(log.rewardType)}</p>
+                                                    <p className="text-xs text-slate-500">{getRewardTypeLabel(log.rewardType, pointCurrencyName)}</p>
                                                 </div>
                                             </div>
                                         </td>

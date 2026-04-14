@@ -18,12 +18,15 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { compressImage } from "@/lib/compressImage";
+import { getPointCurrencyName } from "@/lib/currencySettings";
+import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 import { PERMISSIONS } from "@/lib/permissions";
 import { showError, showSuccess } from "@/lib/swal";
 import { splitStock, type StockSeparatorType } from "@/lib/stock";
@@ -41,6 +44,8 @@ function formatDiscountValue(value: number, currency: string) {
 
 export default function AddProductPage() {
     const router = useRouter();
+    const currencySettings = useCurrencySettings();
+    const pointCurrencyName = getPointCurrencyName(currencySettings);
     const permissions = useAdminPermissions();
     const canCreateProduct = permissions.includes(PERMISSIONS.PRODUCT_CREATE);
     const [isLoading, setIsLoading] = useState(false);
@@ -286,13 +291,13 @@ export default function AddProductPage() {
                                         <RadioGroupItem value="POINT" id="currency-point" />
                                         <span className="flex items-center gap-2 text-sm font-medium">
                                             <Gem className="h-4 w-4 text-purple-600" />
-                                            พอยท์ (POINT)
+                                            {pointCurrencyName} (POINT)
                                         </span>
                                     </label>
                                 </RadioGroup>
                                 {formData.currency === "POINT" && (
                                     <p className="text-xs text-purple-600">
-                                        สินค้านี้จะซื้อได้ด้วย Point เท่านั้น
+                                        สินค้านี้จะซื้อได้ด้วย {pointCurrencyName} เท่านั้น
                                     </p>
                                 )}
                             </div>
@@ -303,7 +308,7 @@ export default function AddProductPage() {
                                         {formData.currency === "POINT" ? (
                                             <>
                                                 <Gem className="h-4 w-4 text-purple-600" />
-                                                ราคา (Point) *
+                                                ราคา ({pointCurrencyName}) *
                                             </>
                                         ) : (
                                             <>ราคาเต็ม (฿) *</>
@@ -342,7 +347,7 @@ export default function AddProductPage() {
                                                 onClick={() => setDiscountMode("amount")}
                                                 disabled={!canCreateProduct}
                                             >
-                                                ลดเป็น{formData.currency === "POINT" ? "พอยท์" : "บาท"}
+                                                ลดเป็น{formData.currency === "POINT" ? pointCurrencyName : "บาท"}
                                             </Button>
                                             <Button
                                                 type="button"
@@ -381,7 +386,7 @@ export default function AddProductPage() {
                                             <span className="text-muted-foreground">
                                                 {discountMode === "percent"
                                                     ? "กรอกเปอร์เซ็นที่ต้องการลด"
-                                                    : `กรอกจำนวน${formData.currency === "POINT" ? "พอยท์" : "บาท"}ที่ต้องการลด`}
+                                                    : `กรอกจำนวน${formData.currency === "POINT" ? pointCurrencyName : "บาท"}ที่ต้องการลด`}
                                             </span>
                                             {hasDiscountPrice && !isDiscountValueValid ? (
                                                 <span className="font-medium text-rose-600">
@@ -392,7 +397,7 @@ export default function AddProductPage() {
                                             ) : normalizedDiscountPrice !== null && (
                                                 <span className="font-medium text-amber-700">
                                                     ลด {formatDiscountValue(discountInputNumber, formData.currency)}
-                                                    {discountMode === "percent" ? "%" : formData.currency === "POINT" ? " พอยท์" : " บาท"}
+                                                    {discountMode === "percent" ? "%" : formData.currency === "POINT" ? ` ${pointCurrencyName}` : " บาท"}
                                                     {" เหลือ "}
                                                     {formatDiscountValue(normalizedDiscountPrice, formData.currency)}
                                                 </span>
@@ -478,7 +483,7 @@ export default function AddProductPage() {
                                             </div>
 
                                             <p className="text-xs leading-5 text-muted-foreground">
-                                                รองรับไฟล์ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก
+                                                รองรับไฟล์ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก • {IMAGE_UPLOAD_RECOMMENDATIONS.productSquare}
                                             </p>
                                         </div>
 

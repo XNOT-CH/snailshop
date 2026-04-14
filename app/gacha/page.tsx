@@ -5,6 +5,8 @@ import { Lock } from "lucide-react";
 import Link from "next/link";
 import { GachaRhombus } from "@/components/GachaRhombus";
 import { type GachaProductLite, type GachaTier } from "@/lib/gachaGrid";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
+import { getGachaRewardTypeLabel } from "@/lib/gachaCost";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { buildPageMetadata } from "@/lib/seo";
 import { auth } from "@/auth";
@@ -20,6 +22,7 @@ export const metadata: Metadata = buildPageMetadata({
 
 export default async function GachaPage() {
     const maintenance = getMaintenanceState("gacha");
+    const currencySettings = await getCurrencySettings().catch(() => null);
     let settings = { isEnabled: true, costType: "FREE", costAmount: 0, dailySpinLimit: 0 };
 
     const session = await auth();
@@ -74,7 +77,7 @@ export default async function GachaPage() {
 
                 return {
                     id: `reward:${reward.id}`,
-                    name: reward.rewardName ?? (reward.rewardType === "CREDIT" ? "เครดิต" : reward.rewardType === "POINT" ? "พอยต์" : "ตั๋วสุ่ม"),
+                    name: reward.rewardName ?? getGachaRewardTypeLabel(reward.rewardType, currencySettings),
                     price: Number(reward.rewardAmount ?? 0),
                     imageUrl: reward.rewardImageUrl ?? null,
                     tier: (reward.tier as GachaTier) ?? "common",

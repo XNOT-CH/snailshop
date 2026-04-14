@@ -2,11 +2,14 @@ import { NextResponse } from "next/server";
 
 import { db, gachaRewards } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
+import { getGachaRewardTypeLabel } from "@/lib/gachaCost";
 
 /** GET /api/gacha/grid/rewards?machineId=xxx  — fetch up to 9 active rewards for a grid machine */
 export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const machineId = searchParams.get("machineId");
+    const currencySettings = await getCurrencySettings().catch(() => null);
 
     const rewards = await db.query.gachaRewards.findMany({
         where: and(
@@ -27,8 +30,8 @@ export async function GET(req: Request) {
             rewardName = r.rewardName;
         } else if (r.rewardType === "CREDIT") {
             rewardName = "เครดิต";
-        } else if (r.rewardType === "POINT") {
-            rewardName = "พอยต์";
+        } else if (r.rewardType === "POINT" || r.rewardType === "TICKET") {
+            rewardName = getGachaRewardTypeLabel(r.rewardType, currencySettings);
         }
 
         return {

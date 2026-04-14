@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -38,6 +39,7 @@ import {
   Timer,
   Trash2,
 } from "lucide-react";
+import { formatCurrencyAmount } from "@/lib/currencySettings";
 
 interface Product {
   id: string | number;
@@ -89,6 +91,7 @@ export default function ProductTable({
   canEdit = true,
   canDelete = true,
 }: ProductTableProps) {
+  const currencySettings = useCurrencySettings();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
@@ -415,7 +418,7 @@ export default function ProductTable({
                     {hasDiscount ? (
                       <p className="mt-1 text-xs text-slate-400 line-through">
                         {isPointProduct
-                          ? `${Number(product.price).toLocaleString()} พอยท์`
+                          ? formatCurrencyAmount(Number(product.price), "POINT", currencySettings)
                           : `฿${Number(product.price).toLocaleString()}`}
                       </p>
                     ) : null}
@@ -566,7 +569,7 @@ export default function ProductTable({
                           <>
                             <p className="text-xs text-slate-400 line-through">
                               {isPointProduct
-                                ? `${Number(product.price).toLocaleString()} พอยท์`
+                                ? formatCurrencyAmount(Number(product.price), "POINT", currencySettings)
                                 : `฿${Number(product.price).toLocaleString()}`}
                             </p>
                             <Badge className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-50">

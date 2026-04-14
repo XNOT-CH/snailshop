@@ -8,6 +8,7 @@ import { validateBody } from "@/lib/validations/validate";
 import { siteSettingsSchema } from "@/lib/validations/settings";
 import { SITE_SETTINGS_SINGLETON_ID } from "@/lib/db/singletons";
 import { PERMISSIONS } from "@/lib/permissions";
+import { SITE_NAME } from "@/lib/seo";
 
 async function getSiteSettingsRecord() {
     return (
@@ -29,7 +30,7 @@ export async function GET() {
         if (!settings) {
             await db.insert(siteSettings).values({
                 id: SITE_SETTINGS_SINGLETON_ID,
-                heroTitle: "GameStore",
+                heroTitle: SITE_NAME,
                 heroDescription: "Game ID Marketplace",
                 bannerImage1: "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=2000&h=500&fit=crop",
                 bannerTitle1: "Game ID Marketplace",

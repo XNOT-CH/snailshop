@@ -4,6 +4,7 @@ import { db, gachaMachines, gachaRewards } from "@/lib/db";
 import { mysqlNow } from "@/lib/utils/date";
 import { eq } from "drizzle-orm";
 import { PERMISSIONS } from "@/lib/permissions";
+import { normalizeGachaCost } from "@/lib/gachaCost";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const auth = await requirePermission(PERMISSIONS.GACHA_EDIT);
@@ -19,6 +20,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         if (!original) return NextResponse.json({ success: false, message: "ไม่พบข้อมูลเดิม" }, { status: 404 });
 
         const newId = crypto.randomUUID();
+        const normalizedCost = normalizeGachaCost(original.costType, original.costAmount);
         await db.insert(gachaMachines).values({
             id: newId,
             name: original.name + " (Copy)",
@@ -26,8 +28,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             imageUrl: original.imageUrl,
             gameType: original.gameType,
             categoryId: original.categoryId,
-            costType: original.costType,
-            costAmount: original.costAmount,
+            costType: normalizedCost.costType,
+            costAmount: String(normalizedCost.costAmount),
             dailySpinLimit: original.dailySpinLimit,
             tierMode: original.tierMode,
             isActive: false,

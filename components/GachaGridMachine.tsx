@@ -4,9 +4,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { CheckCircle2, Gamepad2, Gift, Loader2, RotateCcw, Sparkles, X } from "lucide-react";
 import Image from "next/image";
 import { GachaResultModal } from "@/components/GachaResultModal";
+import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { showError } from "@/lib/swal";
 import { shouldBypassImageOptimization } from "@/lib/imageUrl";
 import { EMPTY_USER_BALANCES, getBalanceByCostType, type UserBalances } from "@/lib/userBalances";
+import { getGachaCostLabel, normalizeGachaCost } from "@/lib/gachaCost";
 
 interface GridReward {
     id: string;
@@ -56,13 +58,6 @@ const TIER_LABEL: Record<string, string> = {
     rare: "หายาก",
     common: "ธรรมดา",
 };
-
-function getCurrencyWord(costType: string) {
-    if (costType === "CREDIT") return "เครดิต";
-    if (costType === "POINT") return "พอยต์";
-    if (costType === "TICKET") return "ตั๋วสุ่ม";
-    return "สิทธิ์";
-}
 
 function formatRewardLabel(reward: GridReward) {
     if (reward.rewardType !== "PRODUCT" && reward.rewardAmount) {
@@ -171,6 +166,8 @@ export function GachaGridMachine({
     initialBalances = EMPTY_USER_BALANCES,
     maintenance,
 }: Readonly<GachaGridMachineProps>) {
+    const currencySettings = useCurrencySettings();
+    const normalizedCost = normalizeGachaCost(costType, costAmount);
     const [rewards, setRewards] = useState<Array<GridReward | null>>([]);
     const [loading, setLoading] = useState(true);
     const [spinning, setSpinning] = useState(false);
@@ -199,6 +196,23 @@ export function GachaGridMachine({
         timeoutIdsRef.current = [];
     }, []);
 
+    const refreshBalances = useCallback(async () => {
+        if (normalizedCost.costType === "FREE") return;
+        try {
+            const res = await fetch("/api/user/balance", { cache: "no-store" });
+            if (!res.ok) return;
+            const json = await res.json() as ({ success?: boolean } & Partial<UserBalances>);
+            if (!json.success) return;
+            setBalances({
+                creditBalance: Number(json.creditBalance ?? 0),
+                pointBalance: Number(json.pointBalance ?? 0),
+                ticketBalance: Number(json.ticketBalance ?? 0),
+            });
+        } catch {
+            // Keep current values if refresh fails.
+        }
+    }, [normalizedCost.costType]);
+
     const revealWinImmediately = useCallback((wonIdx: number, reward: GridReward) => {
         clearQueuedTimeouts();
         pendingRevealRef.current = null;
@@ -206,7 +220,8 @@ export function GachaGridMachine({
         setWonIndex(wonIdx);
         setWonReward(reward);
         setSpinning(false);
-    }, [clearQueuedTimeouts]);
+        void refreshBalances();
+    }, [clearQueuedTimeouts, refreshBalances]);
 
     const fetchRewards = useCallback(async () => {
         setLoading(true);
@@ -240,23 +255,6 @@ export function GachaGridMachine({
         if (typeof window === "undefined") return;
         window.localStorage.setItem("gacha-skip-animation", String(skipAnimationEnabled));
     }, [skipAnimationEnabled]);
-
-    const refreshBalances = useCallback(async () => {
-        if (costType === "FREE") return;
-        try {
-            const res = await fetch("/api/user/balance", { cache: "no-store" });
-            if (!res.ok) return;
-            const json = await res.json() as ({ success?: boolean } & Partial<UserBalances>);
-            if (!json.success) return;
-            setBalances({
-                creditBalance: Number(json.creditBalance ?? 0),
-                pointBalance: Number(json.pointBalance ?? 0),
-                ticketBalance: Number(json.ticketBalance ?? 0),
-            });
-        } catch {
-            // Keep current values if refresh fails.
-        }
-    }, [costType]);
 
     const handleSpin = useCallback(async () => {
         const actualRewards = rewards.filter((reward): reward is GridReward => Boolean(reward));
@@ -307,7 +305,6 @@ export function GachaGridMachine({
             };
 
             pendingRevealRef.current = { wonIdx, reward: wonRewardData };
-            void refreshBalances();
 
             if (skipAnimationEnabled || skipRequestedRef.current) {
                 revealWinImmediately(wonIdx, wonRewardData);
@@ -369,8 +366,8 @@ export function GachaGridMachine({
         setWonReward(null);
     }, [clearQueuedTimeouts]);
 
-    const currencyWord = getCurrencyWord(costType);
-    const balance = getBalanceByCostType(balances, costType);
+    const currencyWord = getGachaCostLabel(normalizedCost.costType, currencySettings);
+    const balance = getBalanceByCostType(balances, normalizedCost.costType);
     const isBlocked = Boolean(maintenance?.enabled);
     const actualRewards = rewards.filter((reward): reward is GridReward => Boolean(reward));
 
@@ -435,16 +432,16 @@ export function GachaGridMachine({
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div>
                             <p className="text-[24px] font-black tracking-tight text-[#145de7]">
-                                สุ่มรางวัลครั้งละ {costAmount.toLocaleString()} {currencyWord}
+                                สุ่มรางวัลครั้งละ {normalizedCost.costAmount.toLocaleString()} {currencyWord}
                             </p>
-                            {costType !== "FREE" && (
+                            {normalizedCost.costType !== "FREE" && (
                                 <p className="mt-2 text-[12px] font-medium text-slate-500">
                                     เมื่อกดสุ่มแล้วไม่สามารถขอคืน{currencyWord}ได้ในทุกกรณี
                                 </p>
                             )}
                         </div>
 
-                        {costType !== "FREE" && (
+                        {normalizedCost.costType !== "FREE" && (
                             <div className="rounded-2xl border border-[#bcd6ff] bg-[#dce9ff] px-4 py-3 text-[#145de7]">
                                 <p className="text-[11px] font-semibold uppercase tracking-[0.14em] opacity-70">ยอดคงเหลือ</p>
                                 <p className="mt-1 text-[20px] font-black leading-none">
@@ -510,7 +507,7 @@ export function GachaGridMachine({
                         )}
                     </div>
 
-                    {costType !== "FREE" && (
+                    {normalizedCost.costType !== "FREE" && (
                         <p className="text-center text-[11px] font-medium text-slate-400">
                             ระบบจะดึงยอดล่าสุดจากบัญชีก่อนสรุปผลทุกครั้ง
                         </p>

@@ -7,6 +7,7 @@ import { LogoutMenuItem } from "@/components/LogoutMenuItem";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { withImageVersion } from "@/lib/imageUrl";
+import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -21,6 +22,8 @@ interface NavbarUserMenuProps {
     image?: string | null;
     imageVersion?: string | number;
     creditBalance: number;
+    pointBalance: number;
+    currencySettings?: PublicCurrencySettings;
 }
 
 const UserAvatarButton = React.forwardRef<
@@ -68,6 +71,8 @@ export function NavbarUserMenu({
     image,
     imageVersion,
     creditBalance,
+    pointBalance,
+    currencySettings,
 }: Readonly<NavbarUserMenuProps>) {
     const [mounted, setMounted] = React.useState(false);
 
@@ -90,6 +95,9 @@ export function NavbarUserMenu({
                         <p className="text-sm font-medium text-foreground">{username}</p>
                         <p className="text-xs text-muted-foreground">
                             {"\u0E3F"}{creditBalance.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                            {formatCurrencyAmount(pointBalance, "POINT", currencySettings)}
                         </p>
                     </div>
                 </DropdownMenuLabel>

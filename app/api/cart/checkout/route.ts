@@ -6,9 +6,17 @@ import { decrypt, encrypt } from "@/lib/encryption";
 import { splitStock, getDelimiter } from "@/lib/stock";
 import { sendEmail } from "@/lib/mail";
 import { PurchaseReceiptEmail } from "@/components/emails/PurchaseReceiptEmail";
+import {
+    formatCurrencyAmount,
+    getPointCurrencyName,
+    type PublicCurrencySettings,
+} from "@/lib/currencySettings";
+import { getCurrencySettings } from "@/lib/getCurrencySettings";
+import { getSiteSettings } from "@/lib/getSiteSettings";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkPurchaseRateLimit, getClientIp } from "@/lib/rateLimit";
 import { validatePromoCode } from "@/lib/promo";
+import { resolveSiteName } from "@/lib/seo";
 
 type ProductRow = {
     id: string;
@@ -45,7 +53,6 @@ const MSG_LOGIN_REQUIRED = "กรุณาเข้าสู่ระบบก�
 const MSG_USER_NOT_FOUND = "ไม่พบผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่";
 const MSG_PRODUCTS_NOT_FOUND = "บางสินค้าไม่พบในระบบ";
 const MSG_INSUFFICIENT_CREDIT = "เครดิตไม่เพียงพอ";
-const MSG_INSUFFICIENT_POINTS = "Point ไม่เพียงพอ";
 const MSG_PURCHASE_ERROR = "เกิดข้อผิดพลาดในการซื้อ";
 const MSG_GENERIC_ERROR = "เกิดข้อผิดพลาด";
 
@@ -138,7 +145,12 @@ function getAutoDeleteTimestamp(delayMinutes?: string | number | null) {
     return deleteAt.toISOString().slice(0, 19).replace("T", " ");
 }
 
-function validateAndSummarizeProducts(productList: ProductRow[], productIds: string[], user: PurchaseContext["user"]) {
+function validateAndSummarizeProducts(
+    productList: ProductRow[],
+    productIds: string[],
+    user: PurchaseContext["user"],
+    currencySettings?: PublicCurrencySettings | null,
+) {
     if (productList.length !== productIds.length) {
         throw new Error(MSG_PRODUCTS_NOT_FOUND);
     }
@@ -160,16 +172,23 @@ function validateAndSummarizeProducts(productList: ProductRow[], productIds: str
         .reduce((sum, product) => sum + Number(product.discountPrice ?? product.price), 0);
 
     if (totalTHB > 0 && Number(user.creditBalance) < totalTHB) {
-        throw new Error(`${MSG_INSUFFICIENT_CREDIT} (ต้องการ ฿${totalTHB.toLocaleString()} แต่มี ฿${Number(user.creditBalance).toLocaleString()})`);
+        throw new Error(
+            `${MSG_INSUFFICIENT_CREDIT} (ต้องการ ${formatCurrencyAmount(totalTHB, "THB", currencySettings)} แต่มี ${formatCurrencyAmount(Number(user.creditBalance), "THB", currencySettings)})`,
+        );
     }
     if (totalPoints > 0 && Number(user.pointBalance ?? 0) < totalPoints) {
-        throw new Error(`${MSG_INSUFFICIENT_POINTS} (ต้องการ ${totalPoints.toLocaleString()} แต่มี ${Number(user.pointBalance ?? 0).toLocaleString()})`);
+        throw new Error(
+            `${getPointCurrencyName(currencySettings)}ไม่เพียงพอ (ต้องการ ${formatCurrencyAmount(totalPoints, "POINT", currencySettings)} แต่มี ${formatCurrencyAmount(Number(user.pointBalance ?? 0), "POINT", currencySettings)})`,
+        );
     }
 
     return { totalTHB, totalPoints };
 }
 
-async function executeWithRawConnection({ productIds, userId, user, promoCode }: PurchaseContext) {
+async function executeWithRawConnection(
+    { productIds, userId, user, promoCode }: PurchaseContext,
+    currencySettings?: PublicCurrencySettings | null,
+) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const conn = await (db as any).$client.getConnection();
 
@@ -183,7 +202,7 @@ async function executeWithRawConnection({ productIds, userId, user, promoCode }:
         );
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const productList = rows as any as ProductRow[];
-        const { totalTHB, totalPoints } = validateAndSummarizeProducts(productList, productIds, user);
+        const { totalTHB, totalPoints } = validateAndSummarizeProducts(productList, productIds, user, currencySettings);
         const appliedPromo = await getAppliedPromo(promoCode, totalTHB, productList, userId);
         const discountedPriceMap = buildDiscountedThbPriceMap(productList, appliedPromo?.discountAmount ?? 0);
         const finalTotalTHB = productList
@@ -271,10 +290,13 @@ async function executeWithRawConnection({ productIds, userId, user, promoCode }:
     }
 }
 
-async function executeWithDrizzleTransaction({ productIds, userId, user, promoCode }: PurchaseContext) {
+async function executeWithDrizzleTransaction(
+    { productIds, userId, user, promoCode }: PurchaseContext,
+    currencySettings?: PublicCurrencySettings | null,
+) {
     return db.transaction(async (tx) => {
         const productList = await tx.select().from(products).where(inArray(products.id, productIds)) as ProductRow[];
-        const { totalTHB, totalPoints } = validateAndSummarizeProducts(productList, productIds, user);
+        const { totalTHB, totalPoints } = validateAndSummarizeProducts(productList, productIds, user, currencySettings);
         const appliedPromo = await getAppliedPromo(promoCode, totalTHB, productList, userId);
         const discountedPriceMap = buildDiscountedThbPriceMap(productList, appliedPromo?.discountAmount ?? 0);
         const finalTotalTHB = productList
@@ -354,13 +376,16 @@ async function executeWithDrizzleTransaction({ productIds, userId, user, promoCo
     });
 }
 
-async function runCheckoutTransaction(context: PurchaseContext) {
+async function runCheckoutTransaction(
+    context: PurchaseContext,
+    currencySettings?: PublicCurrencySettings | null,
+) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((db as any).$client?.getConnection) {
-        return executeWithRawConnection(context);
+        return executeWithRawConnection(context, currencySettings);
     }
 
-    return executeWithDrizzleTransaction(context);
+    return executeWithDrizzleTransaction(context, currencySettings);
 }
 
 export async function POST(request: NextRequest) {
@@ -411,6 +436,11 @@ export async function POST(request: NextRequest) {
             columns: { id: true, creditBalance: true, pointBalance: true },
         });
         if (!user) return NextResponse.json({ success: false, message: MSG_USER_NOT_FOUND }, { status: 404 });
+        const [currencySettings, siteSettings] = await Promise.all([
+            getCurrencySettings().catch(() => null),
+            getSiteSettings(),
+        ]);
+        const siteName = resolveSiteName(siteSettings?.heroTitle);
 
         try {
             const { orderResults, totalTHB, totalPoints } = await runCheckoutTransaction({
@@ -418,18 +448,20 @@ export async function POST(request: NextRequest) {
                 userId,
                 user,
                 promoCode: typeof promoCode === "string" ? promoCode : null,
-            });
+            }, currencySettings);
 
             if (session?.user?.email) {
                 void sendEmail({
                     to: session.user.email,
-                    subject: `ใบเสร็จรับเงิน SnailShop - คำสั่งซื้อ ${orderResults.length} รายการ`,
+                    subject: `ใบเสร็จรับเงิน ${siteName} - คำสั่งซื้อ ${orderResults.length} รายการ`,
                     react: PurchaseReceiptEmail({
+                        siteName,
                         userName: session?.user?.name || "ลูกค้า",
                         orderCount: orderResults.length,
                         totalTHB,
                         totalPoints,
                         items: orderResults,
+                        currencySettings,
                     }),
                 }).catch((error) => console.error("Failed to send email:", error));
             }

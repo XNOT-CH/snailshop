@@ -3,7 +3,7 @@ import { db, gachaRewards } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { requirePermission } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
-import { gachaRewardSchema } from "@/lib/validations/gacha";
+import { gachaRewardPatchSchema } from "@/lib/validations/gacha";
 import { PERMISSIONS } from "@/lib/permissions";
 import { disableMachineIfProbabilityInvalid } from "@/lib/gachaMachineProbability";
 
@@ -21,7 +21,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
             },
         });
 
-        const result = await validateBody(request, gachaRewardSchema.partial());
+        const result = await validateBody(request, gachaRewardPatchSchema);
         if ("error" in result) return result.error;
         const body = result.data;
 

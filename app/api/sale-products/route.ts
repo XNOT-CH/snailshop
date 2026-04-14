@@ -15,6 +15,7 @@ export async function GET() {
                     name: products.name,
                     price: products.price,
                     discountPrice: products.discountPrice,
+                    currency: products.currency,
                     imageUrl: products.imageUrl,
                     category: products.category,
                     isSold: products.isSold,

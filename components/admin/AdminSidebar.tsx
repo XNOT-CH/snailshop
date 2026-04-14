@@ -20,6 +20,7 @@ import {
     Gamepad2,
     Gem,
     Gift,
+    HelpCircle,
     Layers,
     LayoutDashboard,
     LinkIcon,
@@ -99,6 +100,7 @@ const navigationSections: NavSection[] = [
         items: [
             { href: "/admin/news", label: "จัดการข่าวสาร", icon: Newspaper, requiredPermission: PERMISSIONS.CONTENT_VIEW },
             { href: "/admin/popups", label: "จัดการป๊อปอัพ", icon: Megaphone, requiredPermission: PERMISSIONS.CONTENT_VIEW },
+            { href: "/admin/help", label: "จัดการศูนย์ช่วยเหลือ", icon: HelpCircle, requiredPermission: PERMISSIONS.CONTENT_VIEW },
             { href: "/admin/footer-links", label: "ลิงก์ท้ายเว็บ", icon: LinkIcon, requiredPermission: PERMISSIONS.SETTINGS_VIEW },
         ],
     },
