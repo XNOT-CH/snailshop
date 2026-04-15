@@ -3,11 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { showError } from "@/lib/swal";
+import { normalizeCallbackUrl } from "@/lib/authRedirect";
 import { Loader2, Eye, EyeOff, Gamepad2 } from "lucide-react";
 
 interface LoginFormProps {
@@ -15,10 +17,12 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ logoUrl }: Readonly<LoginFormProps>) {
+    const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
     const [formData, setFormData] = useState({ username: "", password: "" });
+    const callbackUrl = normalizeCallbackUrl(searchParams.get("callbackUrl"));
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -34,7 +38,7 @@ export function LoginForm({ logoUrl }: Readonly<LoginFormProps>) {
             if (result?.error) {
                 showError(result.error);
             } else {
-                globalThis.location.href = "/";
+                globalThis.location.href = callbackUrl;
             }
         } catch {
             showError("เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่");
@@ -146,7 +150,7 @@ export function LoginForm({ logoUrl }: Readonly<LoginFormProps>) {
                         {/* Register Link */}
                         <p className="text-center text-sm text-muted-foreground">
                             ถ้ายังไม่มีบัญชี{" "}
-                            <Link href="/register" className="font-medium text-primary hover:underline">
+                            <Link href={`/register?callbackUrl=${encodeURIComponent(callbackUrl)}`} className="font-medium text-primary hover:underline">
                                 สมัครสมาชิกเลย!
                             </Link>
                         </p>

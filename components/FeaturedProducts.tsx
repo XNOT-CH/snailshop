@@ -24,6 +24,7 @@ import {
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { formatCurrencyAmount } from "@/lib/currencySettings";
+import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
 
 interface FeaturedProduct {
   id: string;
@@ -77,6 +78,11 @@ export function FeaturedProducts() {
   const handleBuyClick = async (product: FeaturedProduct) => {
     if (maintenance?.enabled) {
       showWarning(maintenance.message);
+      return;
+    }
+
+    const authCheck = await requireAuthBeforePurchase(router);
+    if (!authCheck.allowed) {
       return;
     }
 

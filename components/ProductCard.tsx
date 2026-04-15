@@ -10,6 +10,7 @@ import { ShoppingCart, Eye, Loader2 } from "lucide-react";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
+import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
 
 interface ProductCardProps {
     id: string;
@@ -53,6 +54,12 @@ export function ProductCard({
         }
 
         if (isSold || isLoading) return;
+
+        const authCheck = await requireAuthBeforePurchase(router);
+        if (!authCheck.allowed) {
+            return;
+        }
+
         const confirmed = await showPurchaseConfirm({
             productName: title,
             priceText: formatCurrencyAmount(price, currency, currencySettings),

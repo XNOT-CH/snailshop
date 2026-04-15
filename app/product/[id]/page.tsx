@@ -17,6 +17,7 @@ import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import Image from "next/image";
 import Link from "next/link";
+import { getPrimaryProductImage, normalizeProductImageUrls } from "@/lib/productImages";
 
 const getProduct = cache(async (id: string) => {
     return db.query.products.findFirst({ where: eq(products.id, id) });
@@ -41,7 +42,7 @@ export async function generateMetadata({ params }: Readonly<ProductDetailPagePro
     }
 
     const description = product.description || `ซื้อ ${product.name} ราคา ${Number(product.price).toLocaleString()} บาท`;
-    const image = toAbsoluteAssetUrl(product.imageUrl);
+    const image = toAbsoluteAssetUrl(getPrimaryProductImage(product.imageUrls, product.imageUrl));
 
     return {
         ...buildPageMetadata({
@@ -105,7 +106,11 @@ export default async function ProductDetailPage({
         limit: 4,
     });
 
-    const productImage = toAbsoluteAssetUrl(product.imageUrl || "/placeholder.jpg");
+    const productImages = normalizeProductImageUrls(product.imageUrls, product.imageUrl);
+    const productImage = toAbsoluteAssetUrl(getPrimaryProductImage(product.imageUrls, product.imageUrl) || "/placeholder.jpg");
+    const structuredImages = productImages
+        .map((imageUrl) => toAbsoluteAssetUrl(imageUrl))
+        .filter(Boolean) as string[];
     const productDescription =
         product.description || `ซื้อ ${product.name} ราคา ${formatCurrencyAmount(displayPrice, product.currency, currencySettings)}`;
     const structuredData = [
@@ -134,7 +139,7 @@ export default async function ProductDetailPage({
             description: productDescription,
             sku: product.id,
             category: product.category,
-            ...(productImage ? { image: [productImage] } : {}),
+            ...(structuredImages.length > 0 ? { image: structuredImages } : productImage ? { image: [productImage] } : {}),
             offers: {
                 "@type": "Offer",
                 priceCurrency: product.currency || "THB",
@@ -163,7 +168,7 @@ export default async function ProductDetailPage({
 
                     <div className="mt-2 grid grid-cols-1 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
                         <div className="w-full border-b border-border/60 bg-muted/40 px-4 py-6 sm:px-6 lg:border-b-0 lg:border-r">
-                            <ProductGallery mainImage={product.imageUrl || "/placeholder.jpg"} />
+                            <ProductGallery images={productImages} />
                             <div className="mt-4">
                                 <ShareButtons title={product.name} />
                             </div>

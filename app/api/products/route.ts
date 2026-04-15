@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
 
     try {
         const body = await request.json() as ProductPayloadInput;
-        const { title, price, discountPrice, image, category, description, secretData, currency, stockSeparator, autoDeleteAfterSale } = body;
+        const { title, price, discountPrice, image, images, category, description, secretData, currency, stockSeparator, autoDeleteAfterSale } = body;
 
         if (!title || !price || !category) {
             return NextResponse.json({ success: false, message: "Missing required fields: title, price, category" }, { status: 400 });
@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
             price,
             discountPrice,
             image,
+            images,
             category,
             description,
             secretData,

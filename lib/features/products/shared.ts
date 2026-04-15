@@ -7,12 +7,29 @@ export interface ProductPayloadInput {
     price?: string | number;
     discountPrice?: string | number | null;
     image?: string | null;
+    images?: string[] | null;
     category?: string;
     description?: string | null;
     secretData?: string;
     currency?: string | null;
     stockSeparator?: string | null;
     autoDeleteAfterSale?: string | number | null;
+}
+
+function normalizeProductImages(images: string[] | null | undefined, fallbackImage?: string | null) {
+    const normalized = (images ?? [])
+        .map((image) => image?.trim())
+        .filter(Boolean) as string[];
+
+    if (normalized.length > 0) {
+        return Array.from(new Set(normalized));
+    }
+
+    if (fallbackImage?.trim()) {
+        return [fallbackImage.trim()];
+    }
+
+    return [];
 }
 
 export function parseProductPrice(price: string | number) {
@@ -42,13 +59,15 @@ export function validateDiscountPrice(discountPrice: string | number | null | un
 
 export function buildProductInsertValues(input: Required<Pick<ProductPayloadInput, "title" | "category">> & ProductPayloadInput, priceNumber: number, discountPriceNumber: number | null) {
     const now = mysqlNow();
+    const productImages = normalizeProductImages(input.images, input.image);
 
     return {
         id: crypto.randomUUID(),
         name: input.title,
         price: String(priceNumber),
         discountPrice: discountPriceNumber === null ? null : String(discountPriceNumber),
-        imageUrl: input.image || null,
+        imageUrl: productImages[0] || null,
+        imageUrls: productImages,
         category: input.category,
         currency: input.currency || "THB",
         description: input.description || null,
@@ -62,11 +81,14 @@ export function buildProductInsertValues(input: Required<Pick<ProductPayloadInpu
 }
 
 export function buildProductUpdateValues(input: ProductPayloadInput, priceNumber: number, discountPriceNumber: number | null) {
+    const productImages = normalizeProductImages(input.images, input.image);
+
     return {
         name: input.title,
         price: String(priceNumber),
         discountPrice: discountPriceNumber === null ? null : String(discountPriceNumber),
-        imageUrl: input.image || null,
+        imageUrl: productImages[0] || null,
+        imageUrls: productImages,
         category: input.category,
         currency: input.currency || "THB",
         description: input.description || null,

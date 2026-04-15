@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { showSuccess, showError } from "@/lib/swal";
+import { normalizeCallbackUrl } from "@/lib/authRedirect";
 import { Loader2, Eye, EyeOff, Gamepad2 } from "lucide-react";
 
 interface RegisterFormProps {
@@ -15,6 +16,7 @@ interface RegisterFormProps {
 
 export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
     const router = useRouter();
+    const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -45,6 +47,7 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
 
     const passwordStrength = getPasswordStrength(formData.password);
     const passwordsMatch = formData.password && formData.password === formData.confirmPassword;
+    const callbackUrl = normalizeCallbackUrl(searchParams.get("callbackUrl"));
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -77,7 +80,7 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
             if (data.success) {
                 showSuccess("สมัครสมาชิกสำเร็จ! กรุณาเข้าสู่ระบบ");
                 setTimeout(() => {
-                    router.push("/login");
+                    router.push(`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`);
                 }, 1500);
             } else {
                 showError(data.message);
@@ -239,7 +242,7 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
                         {/* Login Link */}
                         <p className="text-center text-sm text-muted-foreground">
                             ถ้ามีบัญชีแล้ว{" "}
-                            <Link href="/login" className="font-medium text-primary hover:underline">
+                            <Link href={`/login?callbackUrl=${encodeURIComponent(callbackUrl)}`} className="font-medium text-primary hover:underline">
                                 เข้าสู่ระบบเลย!
                             </Link>
                         </p>

@@ -13,8 +13,6 @@ import {
     Plus,
     Shield,
     Trash2,
-    Upload,
-    X,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,9 +22,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
-import { compressImage } from "@/lib/compressImage";
+import { ProductImageGalleryField } from "@/components/admin/ProductImageGalleryField";
 import { getPointCurrencyName } from "@/lib/currencySettings";
-import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 import { PERMISSIONS } from "@/lib/permissions";
 import { showError, showSuccess } from "@/lib/swal";
 import { splitStock, type StockSeparatorType } from "@/lib/stock";
@@ -53,7 +50,7 @@ export default function AddProductPage() {
         title: "",
         price: "",
         discountPrice: "",
-        image: "",
+        images: [] as string[],
         category: "",
         description: "",
         secretData: "",
@@ -62,10 +59,8 @@ export default function AddProductPage() {
     });
     const [singleUser, setSingleUser] = useState("");
     const [singlePass, setSinglePass] = useState("");
-    const [isUploading, setIsUploading] = useState(false);
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [discountMode, setDiscountMode] = useState<DiscountMode>("amount");
-    const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     const stockItems = useMemo(
         () => splitStock(formData.secretData, formData.stockSeparator),
@@ -131,41 +126,6 @@ export default function AddProductPage() {
         showSuccess("ลบสต๊อกสำเร็จ");
     };
 
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!canCreateProduct) {
-            showError("คุณไม่มีสิทธิ์เพิ่มสินค้า");
-            return;
-        }
-
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setIsUploading(true);
-        try {
-            const compressed = await compressImage(file);
-            const uploadFormData = new FormData();
-            uploadFormData.append("file", compressed);
-
-            const res = await fetch("/api/upload", {
-                method: "POST",
-                body: uploadFormData,
-            });
-
-            const data = await res.json();
-            if (data.success) {
-                setFormData((prev) => ({ ...prev, image: data.url }));
-                showSuccess("อัปโหลดรูปสำเร็จ!");
-            } else {
-                showError(data.message || "อัปโหลดไม่สำเร็จ");
-            }
-        } catch (error) {
-            console.error("[NEW_PRODUCT_UPLOAD]", error);
-            showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัปโหลด");
-        } finally {
-            setIsUploading(false);
-        }
-    };
-
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         if (!canCreateProduct) {
             return;
@@ -217,6 +177,7 @@ export default function AddProductPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     ...formData,
+                    image: formData.images[0] || "",
                     discountPrice: normalizedDiscountPrice === null ? "" : String(normalizedDiscountPrice),
                 }),
             });
@@ -426,89 +387,11 @@ export default function AddProductPage() {
                             <div className="space-y-3">
                                 <Label>รูปภาพสินค้า</Label>
                                 <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                                    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
-                                        <div className="space-y-3">
-                                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                                <input
-                                                    ref={fileInputRef}
-                                                    type="file"
-                                                    accept="image/jpeg,image/png,image/webp,image/gif"
-                                                    className="hidden"
-                                                    disabled={!canCreateProduct}
-                                                    onChange={handleFileUpload}
-                                                />
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    className="gap-2 rounded-xl bg-white"
-                                                    onClick={() => fileInputRef.current?.click()}
-                                                    disabled={!canCreateProduct || isUploading}
-                                                >
-                                                    {isUploading ? (
-                                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                                    ) : (
-                                                        <Upload className="h-4 w-4" />
-                                                    )}
-                                                    {isUploading ? "กำลังปรับปรุงภาพ..." : "อัปโหลดจากเครื่อง"}
-                                                </Button>
-                                                <span className="self-center text-sm text-muted-foreground">
-                                                    หรือวาง URL
-                                                </span>
-                                            </div>
-
-                                            <div className="flex flex-col gap-2 sm:flex-row">
-                                                <Input
-                                                    id="image"
-                                                    name="image"
-                                                    placeholder="วาง URL รูปภาพ..."
-                                                    value={formData.image}
-                                                    onChange={handleChange}
-                                                    disabled={!canCreateProduct}
-                                                    className="flex-1 bg-white"
-                                                />
-                                                {formData.image && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() =>
-                                                            setFormData((prev) => ({ ...prev, image: "" }))
-                                                        }
-                                                        disabled={!canCreateProduct}
-                                                        className="shrink-0 text-red-500 hover:text-red-600"
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                            </div>
-
-                                            <p className="text-xs leading-5 text-muted-foreground">
-                                                รองรับไฟล์ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก • {IMAGE_UPLOAD_RECOMMENDATIONS.productSquare}
-                                            </p>
-                                        </div>
-
-                                        <div className="overflow-hidden rounded-2xl border border-dashed border-slate-300 bg-white">
-                                            {formData.image ? (
-                                                <div className="relative aspect-video h-full min-h-[140px]">
-                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                                    <img
-                                                        src={formData.image}
-                                                        alt="Preview"
-                                                        className="h-full w-full object-cover"
-                                                        onError={(e) => {
-                                                            (e.target as HTMLImageElement).src =
-                                                                "https://placehold.co/400x300/f1f5f9/64748b?text=Invalid+URL";
-                                                        }}
-                                                    />
-                                                </div>
-                                            ) : (
-                                                <div className="flex min-h-[140px] flex-col items-center justify-center gap-2 px-4 text-center text-sm text-muted-foreground">
-                                                    <Upload className="h-5 w-5" />
-                                                    <span>ภาพตัวอย่างจะแสดงที่นี่</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
+                                    <ProductImageGalleryField
+                                        images={formData.images}
+                                        disabled={!canCreateProduct}
+                                        onChange={(images) => setFormData((prev) => ({ ...prev, images }))}
+                                    />
                                 </div>
                             </div>
 

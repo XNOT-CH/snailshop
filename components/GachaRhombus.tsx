@@ -4,11 +4,13 @@ import React, { useState, useCallback, useRef, useEffect, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion";
 import { Dices, Loader2, Gamepad2 } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { showError, showSuccess } from "@/lib/swal";
 import { GachaResultModal } from "@/components/GachaResultModal";
 import { GachaRecentFeed } from "@/components/GachaRecentFeed";
 import { DropRateModal } from "@/components/DropRateModal";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
+import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
 import { shouldBypassImageOptimization } from "@/lib/imageUrl";
 import { EMPTY_USER_BALANCES, getBalanceByCostType, type UserBalances } from "@/lib/userBalances";
 import { getGachaCostLabel, normalizeGachaCost } from "@/lib/gachaCost";
@@ -130,6 +132,7 @@ interface GachaRhombusProps {
 }
 
 export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_BALANCES, machineId, maintenance }: GachaRhombusProps) {
+  const router = useRouter();
   const currencySettings = useCurrencySettings();
   const normalizedCost = useMemo(
     () => normalizeGachaCost(settings.costType, settings.costAmount),
@@ -345,6 +348,12 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
 
   const handleFirstSpin = useCallback(async () => {
     if (phase !== "idle") return;
+
+    const authCheck = await requireAuthBeforePurchase(router);
+    if (!authCheck.allowed) {
+      return;
+    }
+
     clearQueuedTimeouts();
     pendingFirstSpinRef.current = null;
     pendingSecondSpinRef.current = null;
@@ -380,7 +389,7 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
       showError("เกิดข้อผิดพลาดในการสุ่ม");
       reset();
     }
-  }, [applyFirstSpinSelection, callRollApi, clearQueuedTimeouts, phase, reset, runRoulette, skipAnimationEnabled]);
+  }, [applyFirstSpinSelection, callRollApi, clearQueuedTimeouts, phase, reset, router, runRoulette, skipAnimationEnabled]);
 
   const handleSecondSpin = useCallback(async () => {
     if (phase !== "waitSpin2") return;

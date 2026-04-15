@@ -5,10 +5,12 @@ import { CheckCircle2, Gamepad2, Gift, Loader2, RotateCcw, Sparkles, X } from "l
 import Image from "next/image";
 import { GachaResultModal } from "@/components/GachaResultModal";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
+import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
 import { showError } from "@/lib/swal";
 import { shouldBypassImageOptimization } from "@/lib/imageUrl";
 import { EMPTY_USER_BALANCES, getBalanceByCostType, type UserBalances } from "@/lib/userBalances";
 import { getGachaCostLabel, normalizeGachaCost } from "@/lib/gachaCost";
+import { useRouter } from "next/navigation";
 
 interface GridReward {
     id: string;
@@ -166,6 +168,7 @@ export function GachaGridMachine({
     initialBalances = EMPTY_USER_BALANCES,
     maintenance,
 }: Readonly<GachaGridMachineProps>) {
+    const router = useRouter();
     const currencySettings = useCurrencySettings();
     const normalizedCost = normalizeGachaCost(costType, costAmount);
     const [rewards, setRewards] = useState<Array<GridReward | null>>([]);
@@ -260,6 +263,11 @@ export function GachaGridMachine({
         const actualRewards = rewards.filter((reward): reward is GridReward => Boolean(reward));
         if (spinning || actualRewards.length === 0) return;
 
+        const authCheck = await requireAuthBeforePurchase(router);
+        if (!authCheck.allowed) {
+            return;
+        }
+
         clearQueuedTimeouts();
         skipRequestedRef.current = false;
         pendingRevealRef.current = null;
@@ -339,7 +347,7 @@ export function GachaGridMachine({
             skipRequestedRef.current = false;
             setSpinning(false);
         }
-    }, [clearQueuedTimeouts, machineId, queueTimeout, refreshBalances, revealWinImmediately, rewards, skipAnimationEnabled, spinning]);
+    }, [clearQueuedTimeouts, machineId, queueTimeout, revealWinImmediately, rewards, router, skipAnimationEnabled, spinning]);
 
     const handleSkipAnimation = useCallback(() => {
         if (!spinning) return;

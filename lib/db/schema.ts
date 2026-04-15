@@ -126,6 +126,7 @@ export const products = mysqlTable("Product", {
     price: decimal("price", { precision: 10, scale: 2 }).notNull(),
     discountPrice: decimal("discountPrice", { precision: 10, scale: 2 }),
     imageUrl: varchar("imageUrl", { length: 500 }),
+    imageUrls: json("imageUrls").$type<string[]>(),
     category: varchar("category", { length: 100 }).notNull(),
     currency: varchar("currency", { length: 10 }).default("THB").notNull(),
     secretData: text("secretData").notNull(),

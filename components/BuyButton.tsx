@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart, Loader2 } from "lucide-react";
 import { showPurchaseConfirm, showPurchaseSuccessModal, showWarning, showErrorAlert } from "@/lib/swal";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
+import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
 
 interface BuyButtonProps {
     productId: string;
@@ -26,6 +27,11 @@ export function BuyButton({ productId, price, disabled }: Readonly<BuyButtonProp
         }
 
         if (disabled || isLoading) return;
+
+        const authCheck = await requireAuthBeforePurchase(router);
+        if (!authCheck.allowed) {
+            return;
+        }
 
         const confirmed = await showPurchaseConfirm({
             priceText: `฿${price.toLocaleString()}`,

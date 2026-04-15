@@ -10,6 +10,7 @@ import { useCart } from "@/components/providers/CartContext";
 import { showPurchaseConfirm, showPurchaseSuccessModal, showWarning, showErrorAlert } from "@/lib/swal";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 import { formatCurrencyAmount, normalizeCurrencyCode, type PublicCurrencySettings } from "@/lib/currencySettings";
+import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
 
 interface ProductActionsProps {
     product: {
@@ -108,6 +109,11 @@ export function ProductActions({
         }
 
         if (disabled || isBuying) return;
+
+        const authCheck = await requireAuthBeforePurchase(router);
+        if (!authCheck.allowed) {
+            return;
+        }
 
         const discountLine = appliedPromo
             ? `<small>โค้ดส่วนลด: <strong>${appliedPromo.code}</strong> (ราคาเดิม ฿${basePrice.toLocaleString()})</small>`

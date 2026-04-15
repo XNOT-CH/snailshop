@@ -92,8 +92,8 @@ export default async function SeasonPassPurchasePage() {
                                     />
                                 ) : (
                                     <Button asChild className="rounded-full px-5">
-                                        <Link href="/login">
-                                            เข้าสู่ระบบเพื่อซื้อ
+                                        <Link href="/register?callbackUrl=%2Fseason-pass">
+                                            สมัครสมาชิกเพื่อซื้อ
                                             <ArrowRight className="ml-2 h-4 w-4" />
                                         </Link>
                                     </Button>

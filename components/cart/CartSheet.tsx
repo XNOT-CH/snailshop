@@ -21,6 +21,7 @@ import { showPurchaseSuccessModal, showPurchaseConfirm, showError, showWarning }
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { buildCurrencyBreakdownLabel, formatCurrencyAmount } from "@/lib/currencySettings";
+import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
 
 function CartSheetContent() {
     const router = useRouter();
@@ -101,6 +102,12 @@ function CartSheetContent() {
 
         if (items.length === 0) {
             showError("ตะกร้าว่างเปล่า");
+            return;
+        }
+
+        const authCheck = await requireAuthBeforePurchase(router);
+        if (!authCheck.allowed) {
+            setIsOpen(false);
             return;
         }
 

@@ -32,7 +32,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params;
         const body = await request.json() as ProductPayloadInput;
-        const { title, price, discountPrice, image, category, description, secretData, currency, stockSeparator, autoDeleteAfterSale } = body;
+        const { title, price, discountPrice, image, images, category, description, secretData, currency, stockSeparator, autoDeleteAfterSale } = body;
 
         const existingProduct = await findProductById(id);
         if (!existingProduct) return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
@@ -50,6 +50,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
             price,
             discountPrice,
             image,
+            images,
             category,
             description,
             secretData,

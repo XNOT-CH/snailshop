@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { ProductImageGalleryField } from "@/components/admin/ProductImageGalleryField";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,9 +15,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { showError, showSuccess } from "@/lib/swal";
-import { compressImage } from "@/lib/compressImage";
 import { getPointCurrencyName } from "@/lib/currencySettings";
-import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
+import { normalizeProductImageUrls } from "@/lib/productImages";
 import { PERMISSIONS } from "@/lib/permissions";
 import {
     ArrowLeft,
@@ -27,8 +27,6 @@ import {
     Package,
     Pencil,
     Timer,
-    Upload,
-    X,
 } from "lucide-react";
 
 const AUTO_DELETE_PRESETS = [
@@ -63,16 +61,14 @@ export default function EditProductPage() {
 
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
-    const [isUploading, setIsUploading] = useState(false);
     const [autoDeleteEnabled, setAutoDeleteEnabled] = useState(false);
     const [discountMode, setDiscountMode] = useState<DiscountMode>("amount");
-    const fileInputRef = React.useRef<HTMLInputElement>(null);
 
     const [formData, setFormData] = useState({
         title: "",
         price: "",
         discountPrice: "",
-        image: "",
+        images: [] as string[],
         category: "",
         description: "",
         secretData: "",
@@ -102,7 +98,7 @@ export default function EditProductPage() {
                         title: product.name || "",
                         price: product.price?.toString() || "",
                         discountPrice: discountAmount !== null ? discountAmount.toString() : "",
-                        image: product.imageUrl || "",
+                        images: normalizeProductImageUrls(product.imageUrls, product.imageUrl),
                         category: product.category || "",
                         description: product.description || "",
                         secretData: product.secretData || "",
@@ -129,41 +125,6 @@ export default function EditProductPage() {
 
         fetchProduct();
     }, [productId, router]);
-
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!canEditProduct) {
-            showError("คุณไม่มีสิทธิ์แก้ไขสินค้า");
-            return;
-        }
-
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setIsUploading(true);
-        try {
-            const compressed = await compressImage(file);
-            const uploadFormData = new FormData();
-            uploadFormData.append("file", compressed);
-
-            const res = await fetch("/api/upload", {
-                method: "POST",
-                body: uploadFormData,
-            });
-
-            const data = await res.json();
-            if (data.success) {
-                setFormData((prev) => ({ ...prev, image: data.url }));
-                showSuccess("อัปโหลดรูปสำเร็จ");
-            } else {
-                showError(data.message || "อัปโหลดไม่สำเร็จ");
-            }
-        } catch (error) {
-            console.error("[EDIT_PRODUCT_UPLOAD]", error);
-            showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัปโหลด");
-        } finally {
-            setIsUploading(false);
-        }
-    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         if (!canEditProduct) {
@@ -215,6 +176,7 @@ export default function EditProductPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     ...formData,
+                    image: formData.images[0] || "",
                     discountPrice: normalizedDiscountPrice === null ? "" : String(normalizedDiscountPrice),
                     autoDeleteAfterSale:
                         autoDeleteEnabled && formData.autoDeleteAfterSale
@@ -519,86 +481,11 @@ export default function EditProductPage() {
                                     </div>
 
                                     <div className="space-y-4">
-                                        <div className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
-                                            <div className="relative aspect-[4/3] w-full">
-                                                {formData.image ? (
-                                                    // eslint-disable-next-line @next/next/no-img-element
-                                                    <img
-                                                        src={formData.image}
-                                                        alt="Preview"
-                                                        className="h-full w-full object-cover"
-                                                        onError={(e) => {
-                                                            (e.target as HTMLImageElement).src = "https://placehold.co/400x300/f1f5f9/64748b?text=Invalid+URL";
-                                                        }}
-                                                    />
-                                                ) : (
-                                                    <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_55%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-6 text-center">
-                                                        <div className="space-y-2">
-                                                            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/90 shadow-sm ring-1 ring-slate-200">
-                                                                <Upload className="h-6 w-6 text-sky-600" />
-                                                            </div>
-                                                            <p className="text-sm font-medium text-slate-700">ยังไม่มีรูปสินค้า</p>
-                                                            <p className="text-xs text-slate-500">อัปโหลดจากเครื่องหรือวางลิงก์รูปจากด้านล่าง</p>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-                                            <input
-                                                ref={fileInputRef}
-                                                type="file"
-                                                accept="image/jpeg,image/png,image/webp,image/gif"
-                                                className="hidden"
-                                                disabled={!canEditProduct}
-                                                onChange={handleFileUpload}
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                className="h-11 justify-center gap-2 rounded-xl border-slate-300 bg-white"
-                                                onClick={() => fileInputRef.current?.click()}
-                                                disabled={!canEditProduct || isUploading}
-                                            >
-                                                {isUploading ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <Upload className="h-4 w-4" />
-                                                )}
-                                                {isUploading ? "กำลังปรับรูป..." : "อัปโหลดจากเครื่อง"}
-                                            </Button>
-
-                                            {formData.image && (
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    onClick={() => setFormData((prev) => ({ ...prev, image: "" }))}
-                                                    disabled={!canEditProduct}
-                                                    className="h-11 gap-2 rounded-xl text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                                                >
-                                                    <X className="h-4 w-4" />
-                                                    ล้างรูป
-                                                </Button>
-                                            )}
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label htmlFor="image">ลิงก์รูปภาพ</Label>
-                                            <Input
-                                                id="image"
-                                                name="image"
-                                                placeholder="วาง URL รูปภาพ หรือใช้ path ที่อัปโหลดแล้ว"
-                                                value={formData.image}
-                                                onChange={handleChange}
-                                                disabled={!canEditProduct}
-                                                className="bg-white"
-                                            />
-                                        </div>
-
-                                        <div className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-xs leading-relaxed text-slate-500">
-                                            รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก • {IMAGE_UPLOAD_RECOMMENDATIONS.productSquare}
-                                        </div>
+                                        <ProductImageGalleryField
+                                            images={formData.images}
+                                            disabled={!canEditProduct}
+                                            onChange={(images) => setFormData((prev) => ({ ...prev, images }))}
+                                        />
                                     </div>
                                 </div>
                             </div>
