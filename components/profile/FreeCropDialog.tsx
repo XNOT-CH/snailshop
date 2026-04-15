@@ -291,15 +291,15 @@ export function FreeCropDialog({
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => (!nextOpen ? onClose() : null)}>
-      <DialogContent className="max-w-5xl rounded-[28px] border-slate-200 bg-white p-0 shadow-[0_28px_80px_-36px_rgba(15,23,42,0.4)] sm:max-w-5xl">
-        <div className="overflow-hidden rounded-[28px]">
-          <DialogHeader className="border-b border-slate-200 bg-gradient-to-r from-blue-50 via-white to-sky-50 px-6 py-5 text-left">
+      <DialogContent className="w-[min(100%-0.75rem,72rem)] max-w-5xl overflow-hidden rounded-[28px] border-slate-200 bg-white p-0 shadow-[0_28px_80px_-36px_rgba(15,23,42,0.4)] max-h-[calc(100vh-0.75rem)] sm:max-h-[calc(100vh-2rem)] sm:max-w-5xl">
+        <div className="flex max-h-[calc(100vh-0.75rem)] flex-col overflow-hidden rounded-[28px] sm:max-h-[calc(100vh-2rem)]">
+          <DialogHeader className="shrink-0 border-b border-slate-200 bg-gradient-to-r from-blue-50 via-white to-sky-50 px-4 py-4 text-left sm:px-6 sm:py-5">
             <div className="flex items-start gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_16px_30px_-18px_rgba(37,99,235,0.8)]">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_16px_30px_-18px_rgba(37,99,235,0.8)] sm:h-12 sm:w-12">
                 <Crop className="h-5 w-5" />
               </div>
               <div className="space-y-1">
-                <DialogTitle className="text-xl font-semibold text-slate-900">
+                <DialogTitle className="text-lg font-semibold text-slate-900 sm:text-xl">
                   ครอปรูปโปรไฟล์
                 </DialogTitle>
                 <DialogDescription className="text-sm text-slate-600">
@@ -309,23 +309,25 @@ export function FreeCropDialog({
             </div>
           </DialogHeader>
 
-          <div className="grid gap-5 px-6 py-6 lg:grid-cols-[minmax(0,1fr)_240px]">
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-3">
-              <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-[20px] bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_55%),linear-gradient(180deg,_rgba(15,23,42,0.04),_rgba(15,23,42,0.08))] p-3">
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-6">
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_240px] lg:gap-5">
+            <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-2.5 sm:p-3">
+              <div className="relative flex min-h-[260px] items-center justify-center overflow-hidden rounded-[20px] bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_55%),linear-gradient(180deg,_rgba(15,23,42,0.04),_rgba(15,23,42,0.08))] p-2.5 sm:min-h-[320px] sm:p-3">
                 {imageSrc ? (
-                  <div className="relative inline-block">
+                  <div className="relative inline-block touch-none select-none">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       ref={imageRef}
                       src={imageSrc}
                       alt="Preview crop"
-                      className="max-h-[68vh] w-auto max-w-full rounded-[22px] object-contain shadow-[0_20px_60px_-30px_rgba(15,23,42,0.45)]"
+                      className="max-h-[46vh] w-auto max-w-full rounded-[22px] object-contain shadow-[0_20px_60px_-30px_rgba(15,23,42,0.45)] sm:max-h-[68vh]"
+                      draggable={false}
                       onLoad={handleImageLoad}
                     />
 
                     <div className="pointer-events-none absolute inset-0">
                       <div
-                        className="pointer-events-auto absolute rounded-full border-[3px] border-white shadow-[0_0_0_9999px_rgba(15,23,42,0.48),0_18px_40px_-24px_rgba(15,23,42,0.92)]"
+                        className="pointer-events-auto absolute touch-none rounded-full border-[3px] border-white shadow-[0_0_0_9999px_rgba(15,23,42,0.48),0_18px_40px_-24px_rgba(15,23,42,0.92)]"
                         style={{
                           left: cropRect.x,
                           top: cropRect.y,
@@ -358,7 +360,7 @@ export function FreeCropDialog({
                             <button
                               key={handle}
                               type="button"
-                              className={`absolute h-4 w-4 rounded-full border-2 border-white bg-blue-600 shadow ${handlePosition}`}
+                              className={`absolute h-5 w-5 touch-none rounded-full border-2 border-white bg-blue-600 shadow ${handlePosition}`}
                               onPointerDown={(event) => beginDrag(handle, event)}
                               aria-label={`Resize crop ${handle}`}
                             />
@@ -407,14 +409,15 @@ export function FreeCropDialog({
               </div>
             </div>
           </div>
+          </div>
 
-          <DialogFooter className="border-t border-slate-200 bg-white px-6 py-5 sm:justify-between">
+          <DialogFooter className="shrink-0 border-t border-slate-200 bg-white px-4 py-4 sm:justify-between sm:px-6 sm:py-5">
             <p className="text-sm text-slate-500">หลังครอปแล้ว ระบบจะย่อและบีบอัดรูปให้อัตโนมัติ</p>
             <div className="flex flex-col-reverse gap-2 sm:flex-row">
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 rounded-2xl border-slate-200 bg-white px-5"
+                className="h-11 w-full rounded-2xl border-slate-200 bg-white px-5 sm:w-auto"
                 onClick={onClose}
                 disabled={isSaving}
               >
@@ -422,7 +425,7 @@ export function FreeCropDialog({
               </Button>
               <Button
                 type="button"
-                className="h-11 rounded-2xl bg-blue-600 px-5 text-white hover:bg-blue-700"
+                className="h-11 w-full rounded-2xl bg-blue-600 px-5 text-white hover:bg-blue-700 sm:w-auto"
                 onClick={exportCroppedFile}
                 disabled={isSaving || !imageSrc}
               >
