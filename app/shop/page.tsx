@@ -95,10 +95,10 @@ export default async function ShopPage(props: ShopPageProps) {
     });
 
     return (
-        <div className="border border-border/50 bg-card/90 px-3 py-5 shadow-xl shadow-primary/10 backdrop-blur-sm sm:px-5 sm:py-7 lg:px-6">
+        <div className="-mx-3 border-y border-border/50 bg-card/90 px-3 pb-0 pt-4 shadow-xl shadow-primary/10 backdrop-blur-sm sm:mx-0 sm:border sm:px-5 sm:py-7 lg:px-6">
             <PageBreadcrumb items={[{ label: "ร้านค้า" }]} className="mb-4" />
 
-            <div className="mb-8">
+            <div className="mb-7 sm:mb-8">
                 <div className="flex items-center gap-3 mb-2">
                     <ShoppingBag className="h-8 w-8 text-primary" />
                     <h1 className="text-2xl sm:text-3xl font-bold text-foreground">ร้านค้า</h1>
@@ -119,9 +119,9 @@ export default async function ShopPage(props: ShopPageProps) {
                 </div>
             </div>
 
-            <Separator className="mb-8" />
+            <Separator className="mb-6 sm:mb-8" />
 
-            <div className="mb-4 px-1 pb-2">
+            <div className="mb-4 px-1 pb-1 sm:pb-2">
                 <div className="flex flex-wrap gap-2">
                     <Link
                         href={`/shop?category=all&sort=${currentSort}`}
@@ -149,7 +149,7 @@ export default async function ShopPage(props: ShopPageProps) {
                 </div>
             </div>
 
-            <div className="w-full mb-6">
+            <div className="mb-6 w-full">
                 <ShopControls currentSort={currentSort} />
             </div>
 

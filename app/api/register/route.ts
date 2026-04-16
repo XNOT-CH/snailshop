@@ -7,6 +7,7 @@ import { checkRegisterRateLimit, getClientIp } from "@/lib/rateLimit";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { parseBody } from "@/lib/api";
 import { registerSchema } from "@/lib/validations";
+import { verifyTurnstileToken } from "@/lib/security/turnstile";
 
 export async function POST(request: NextRequest) {
     try {
@@ -25,7 +26,16 @@ export async function POST(request: NextRequest) {
         // Validate inputs with Zod
         const parsed = await parseBody(request, registerSchema);
         if ("error" in parsed) return parsed.error;
-        const { username, password } = parsed.data;
+        const { username, password, turnstileToken } = parsed.data;
+
+        const clientIp = getClientIp(request);
+        const turnstileResult = await verifyTurnstileToken(turnstileToken, clientIp);
+        if (!turnstileResult.success) {
+            return NextResponse.json(
+                { success: false, message: turnstileResult.message },
+                { status: 400 }
+            );
+        }
 
         // Check if username already exists
         const existingUser = await db.query.users.findFirst({

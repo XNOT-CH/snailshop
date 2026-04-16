@@ -46,11 +46,13 @@ export default async function Home() {
 
   return (
     <div className="animate-page-enter">
-      <div className="border border-border/50 bg-card/90 px-3 py-5 shadow-xl shadow-primary/10 backdrop-blur-sm space-y-6 sm:px-5 sm:py-6 lg:px-6">
+      <div className="-mx-3 border-y border-border/50 bg-card/90 px-3 pb-0 pt-4 shadow-xl shadow-primary/10 backdrop-blur-sm space-y-6 sm:mx-0 sm:border sm:px-5 sm:py-6 lg:px-6">
         <h1 className="sr-only">{pageHeading}</h1>
 
         {/* Hero Banner */}
-        <HeroBanner />
+        <div className="relative left-1/2 w-screen -translate-x-1/2 px-2 sm:left-auto sm:w-auto sm:translate-x-0 sm:px-0">
+          <HeroBanner />
+        </div>
 
         {/* Featured Products Carousel */}
         <FeaturedProducts />

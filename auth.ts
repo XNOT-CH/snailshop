@@ -15,6 +15,7 @@ import {
     sleep,
 } from "@/lib/rateLimit";
 import { AUDIT_ACTIONS } from "@/lib/auditLog";
+import { verifyTurnstileToken } from "@/lib/security/turnstile";
 
 
 async function logAudit(params: {
@@ -50,18 +51,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 username: { label: "Username", type: "text" },
                 password: { label: "Password", type: "password" },
                 ipAddress: { label: "IP Address", type: "text" },
+                turnstileToken: { label: "Turnstile Token", type: "text" },
             },
             async authorize(credentials) {
                 // Validate with Zod
                 const parsed = loginSchema.safeParse({
                     username: credentials?.username,
                     password: credentials?.password,
+                    turnstileToken: credentials?.turnstileToken,
                 });
                 if (!parsed.success) return null;
 
-                const { username, password } = parsed.data;
+                const { username, password, turnstileToken } = parsed.data;
                 const ipAddress = (credentials?.ipAddress as string) ?? "unknown";
                 const identifier = `${ipAddress}:${username}`;
+
+                const turnstileResult = await verifyTurnstileToken(turnstileToken, ipAddress);
+                if (!turnstileResult.success) {
+                    throw new Error(turnstileResult.message ?? "การยืนยันความปลอดภัยไม่สำเร็จ");
+                }
 
                 // Check rate limit
                 const rateLimit = checkLoginRateLimit(identifier);

@@ -23,7 +23,7 @@ services:
       NEXT_PUBLIC_SITE_URL: https://www.snailshop.app
       ALLOWED_ORIGIN: https://www.snailshop.app
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     volumes:
       - ./storage:/app/storage
       - ./public/uploads:/app/public/uploads
@@ -37,6 +37,16 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: my_game_store_cloudflared
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - web
+    networks:
+      - sonarqube-network
 
   sonarqube:
     image: sonarqube:community

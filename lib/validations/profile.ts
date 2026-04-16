@@ -48,6 +48,9 @@ export const updateProfileSchema = z.object({
     lastNameEn: z.string().max(100).optional().or(z.literal("")),
     taxAddress: addressSchema.optional(),
     shippingAddress: addressSchema.optional(),
+    currentPassword: z
+        .string()
+        .optional(),
     password: z
         .string()
         .min(6, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร")
@@ -64,6 +67,14 @@ export const updateProfileSchema = z.object({
 }, {
     message: "รหัสผ่านไม่ตรงกัน",
     path: ["confirmPassword"],
+}).refine((data) => {
+    if (data.password && data.password.length > 0) {
+        return !!data.currentPassword && data.currentPassword.length > 0;
+    }
+    return true;
+}, {
+    message: "กรุณากรอกรหัสผ่านปัจจุบัน",
+    path: ["currentPassword"],
 });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

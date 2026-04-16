@@ -535,7 +535,7 @@ export default function AdminAuditLogsPage() {
                 title: "ลบสำเร็จ",
                 text: `ลบข้อมูลแล้ว ${data.deletedCount ?? 0} รายการ`,
                 icon: "success",
-                timer: 1600,
+                timer: 1800,
                 showConfirmButton: false,
             });
 

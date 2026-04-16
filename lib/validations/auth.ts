@@ -10,6 +10,9 @@ export const loginSchema = z.object({
         .string()
         .min(1, "กรุณากรอกรหัสผ่าน")
         .max(200),
+    turnstileToken: z
+        .string()
+        .min(1, "กรุณายืนยันว่าไม่ใช่บอท"),
 });
 export type LoginInput = z.infer<typeof loginSchema>;
 
@@ -29,6 +32,9 @@ export const registerSchema = z.object({
         .min(6, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร")
         .max(200),
     confirmPassword: z.string().min(1, "กรุณายืนยันรหัสผ่าน"),
+    turnstileToken: z
+        .string()
+        .min(1, "กรุณายืนยันว่าไม่ใช่บอท"),
 }).refine((d) => d.password === d.confirmPassword, {
     message: "รหัสผ่านไม่ตรงกัน",
     path: ["confirmPassword"],

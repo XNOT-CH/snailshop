@@ -57,12 +57,12 @@ export default async function Footer() {
                         <p className="text-sm text-muted-foreground leading-relaxed mb-4">
                             {siteSettings?.heroDescription || "แพลตฟอร์มซื้อขายสินค้าดิจิทัลที่น่าเชื่อถือ พร้อมระบบรักษาความปลอดภัยมาตรฐานสากล"}
                         </p>
-                        <div className="flex items-center gap-2 flex-wrap">
-                            <span className="inline-flex items-center gap-1.5 text-xs bg-green-500/10 text-green-600 dark:text-green-400 px-2.5 py-1 rounded-full border border-green-500/20">
-                                <Shield className="h-3 w-3" />ปลอดภัย 100%
+                        <div className="flex flex-wrap items-center gap-2.5">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/70 bg-emerald-50/90 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm">
+                                <Shield className="h-3.5 w-3.5" />ปลอดภัย 100%
                             </span>
-                            <span className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-full border border-primary/20">
-                                <Gamepad2 className="h-3 w-3" />สินค้าคุณภาพ
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-300/70 bg-blue-50/90 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm">
+                                <Gamepad2 className="h-3.5 w-3.5" />สินค้าคุณภาพ
                             </span>
                         </div>
                     </div>

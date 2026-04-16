@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { showSuccess, showError } from "@/lib/swal";
 import { normalizeCallbackUrl } from "@/lib/authRedirect";
+import { TurnstileWidget } from "@/components/TurnstileWidget";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Eye, EyeOff, Gamepad2 } from "lucide-react";
 
 interface RegisterFormProps {
@@ -20,6 +22,9 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+    const [turnstileError, setTurnstileError] = useState<string | null>(null);
+    const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
     const [formData, setFormData] = useState({
         username: "",
         pin: "",
@@ -48,6 +53,14 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
     const passwordStrength = getPasswordStrength(formData.password);
     const passwordsMatch = formData.password && formData.password === formData.confirmPassword;
     const callbackUrl = normalizeCallbackUrl(searchParams.get("callbackUrl"));
+    const hasTurnstile = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+
+    const handleTurnstileChange = useCallback((token: string | null) => {
+        setTurnstileToken(token);
+        if (token) {
+            setTurnstileError(null);
+        }
+    }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -62,6 +75,11 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
             return;
         }
 
+        if (hasTurnstile && !turnstileToken) {
+            setTurnstileError("กรุณายืนยันว่าไม่ใช่บอทก่อนสมัครสมาชิก");
+            return;
+        }
+
         setIsLoading(true);
 
         try {
@@ -72,6 +90,7 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
                     username: formData.username,
                     password: formData.password,
                     confirmPassword: formData.confirmPassword,
+                    turnstileToken,
                 }),
             });
 
@@ -88,6 +107,9 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
         } catch {
             showError("สมัครสมาชิกไม่สำเร็จ กรุณาลองใหม่");
         } finally {
+            if (hasTurnstile) {
+                setTurnstileResetSignal((prev) => prev + 1);
+            }
             setIsLoading(false);
         }
     };
@@ -223,11 +245,29 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
                             </div>
                         )}
 
+                        {hasTurnstile ? (
+                            <div className="space-y-2">
+                                <TurnstileWidget
+                                    onTokenChange={handleTurnstileChange}
+                                    resetSignal={turnstileResetSignal}
+                                />
+                                {turnstileError ? (
+                                    <Alert variant="destructive" className="rounded-xl">
+                                        <AlertDescription>{turnstileError}</AlertDescription>
+                                    </Alert>
+                                ) : null}
+                            </div>
+                        ) : null}
+
                         {/* Submit Button */}
                         <Button
                             type="submit"
                             className="w-full h-12 rounded-xl bg-gradient-to-r from-purple-300 to-blue-300 hover:from-purple-400 hover:to-blue-400 text-primary font-medium shadow-lg shadow-purple-200/50 transition-all mt-6"
-                            disabled={isLoading || Boolean(formData.confirmPassword && !passwordsMatch)}
+                            disabled={
+                                isLoading
+                                || Boolean(formData.confirmPassword && !passwordsMatch)
+                                || (hasTurnstile && !turnstileToken)
+                            }
                         >
                             {isLoading ? (
                                 <>

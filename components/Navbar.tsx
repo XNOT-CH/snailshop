@@ -102,22 +102,22 @@ export default async function Navbar() {
     return (
         <header id="main-navbar" className="sticky top-0 z-50 w-full border-b border-slate-300/80 bg-background/78 backdrop-blur-xl">
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 lg:px-6 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:gap-4 xl:px-8">
-                <Link href="/" className="flex min-w-0 items-center gap-2.5 text-lg font-semibold text-primary xl:min-w-0">
+                <Link href="/" className="flex min-w-0 items-center gap-3.5 text-lg font-semibold text-primary xl:min-w-0">
                     {siteSettings?.logoUrl ? (
                         <Image
                             src={siteSettings.logoUrl}
                             alt="Logo"
-                            width={36}
-                            height={36}
+                            width={60}
+                            height={60}
                             priority
-                            className="h-9 w-9 rounded-lg object-contain"
+                            className="h-12 w-12 object-contain sm:h-14 sm:w-14"
                         />
                     ) : (
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-                            <Gamepad2 className="h-5 w-5 text-white" />
+                        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary sm:h-14 sm:w-14">
+                            <Gamepad2 className="h-6 w-6 text-white sm:h-7 sm:w-7" />
                         </div>
                     )}
-                    <span className="hidden truncate font-bold tracking-tight text-foreground sm:inline">
+                    <span className="hidden truncate font-bold tracking-tight text-foreground sm:inline sm:text-[1.15rem] lg:text-[1.22rem]">
                         {siteName}
                     </span>
                 </Link>

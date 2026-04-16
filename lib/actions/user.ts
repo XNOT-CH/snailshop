@@ -12,6 +12,7 @@ interface ActionResult {
     success: boolean;
     message: string;
     errors?: Record<string, string[]>;
+    passwordChanged?: boolean;
 }
 
 // Helpers to reduce cognitive complexity
@@ -113,6 +114,22 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
         const encryptedUpdateData = encryptUserSensitiveFields(updateData);
 
         if (validatedData.password && validatedData.password.length >= 6) {
+            // Verify current password before allowing change
+            if (!validatedData.currentPassword) {
+                return {
+                    success: false,
+                    message: "กรุณากรอกรหัสผ่านปัจจุบัน",
+                    errors: { currentPassword: ["กรุณากรอกรหัสผ่านปัจจุบัน"] },
+                };
+            }
+            const isCurrentPasswordValid = await bcrypt.compare(validatedData.currentPassword, currentUser.password);
+            if (!isCurrentPasswordValid) {
+                return {
+                    success: false,
+                    message: "รหัสผ่านปัจจุบันไม่ถูกต้อง",
+                    errors: { currentPassword: ["รหัสผ่านปัจจุบันไม่ถูกต้อง"] },
+                };
+            }
             encryptedUpdateData.password = await bcrypt.hash(validatedData.password, 12);
         }
 
@@ -143,7 +160,7 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
 
         await createAuditLog({
             userId,
-            action: AUDIT_ACTIONS.PROFILE_UPDATE,
+            action: encryptedUpdateData.password ? AUDIT_ACTIONS.PASSWORD_CHANGE : AUDIT_ACTIONS.PROFILE_UPDATE,
             resource: "User",
             resourceId: userId,
             changes: changes.map((change) => ({
@@ -157,8 +174,9 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
         return {
             success: true,
             message: encryptedUpdateData.password
-                ? "อัปเดตโปรไฟล์และรหัสผ่านเรียบร้อยแล้ว"
+                ? "เปลี่ยนรหัสผ่านเรียบร้อยแล้ว กรุณาเข้าสู่ระบบใหม่"
                 : "อัปเดตโปรไฟล์เรียบร้อยแล้ว",
+            passwordChanged: !!encryptedUpdateData.password,
         };
     } catch (error) {
         console.error("Update profile error:", error);

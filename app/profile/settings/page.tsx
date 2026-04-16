@@ -31,10 +31,13 @@ import {
     Upload,
     X,
     Image as ImageIcon,
+    Eye,
+    EyeOff,
 } from "lucide-react";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { updateProfile } from "@/lib/actions/user";
 import { showLoading, hideLoading, showSuccessAlert, showErrorAlert } from "@/lib/swal";
+import { signOut } from "next-auth/react";
 import { ThaiAddressSelector } from "@/components/ThaiAddressSelector";
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import { compressImage } from "@/lib/compressImage";
@@ -102,6 +105,8 @@ export default function ProfileSettingsPage() {
     const [cropDialogOpen, setCropDialogOpen] = useState(false);
     const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
     const [cropFileName, setCropFileName] = useState("");
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -113,6 +118,7 @@ export default function ProfileSettingsPage() {
         lastNameEn: "",
         password: "",
         confirmPassword: "",
+        currentPassword: "",
     });
     const [taxAddress, setTaxAddress] = useState<AddressData>({ ...emptyAddress });
     const [shipAddress, setShipAddress] = useState<AddressData>({ ...emptyAddress });
@@ -147,6 +153,7 @@ export default function ProfileSettingsPage() {
                 };
             case "password":
                 return {
+                    currentPassword: formData.currentPassword,
                     password: formData.password,
                     confirmPassword: formData.confirmPassword,
                 };
@@ -182,6 +189,7 @@ export default function ProfileSettingsPage() {
                         lastNameEn: user.lastNameEn || "",
                         password: "",
                         confirmPassword: "",
+                        currentPassword: "",
                     });
                     setTaxAddress({
                         fullName: user.taxFullName || "",
@@ -221,6 +229,12 @@ export default function ProfileSettingsPage() {
     const handleSubmit = async (section: "contact" | "personal" | "password" | "tax" | "ship") => {
         setErrors({});
 
+        // Client-side current password check
+        if (section === "password" && formData.password && !formData.currentPassword) {
+            setErrors({ currentPassword: ["กรุณากรอกรหัสผ่านปัจจุบัน"] });
+            return;
+        }
+
         // Client-side password match check
         if (section === "password" && formData.password && formData.password !== formData.confirmPassword) {
             setErrors({ confirmPassword: ["รหัสผ่านไม่ตรงกัน"] });
@@ -244,7 +258,13 @@ export default function ProfileSettingsPage() {
                         ...prev,
                         password: "",
                         confirmPassword: "",
+                        currentPassword: "",
                     }));
+                    // Sign out after password change
+                    if (result.passwordChanged) {
+                        await signOut({ callbackUrl: "/" });
+                        return;
+                    }
                 }
                 setEditingTax(false);
                 setEditingShip(false);
@@ -988,23 +1008,54 @@ export default function ProfileSettingsPage() {
                         <CardDescription>ปล่อยว่างไว้ถ้าไม่ต้องการเปลี่ยนรหัสผ่าน</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        {/* Current Password */}
+                        <div className="space-y-2">
+                            <Label htmlFor="currentPassword">รหัสผ่านปัจจุบัน</Label>
+                            <Input
+                                id="currentPassword"
+                                type="password"
+                                placeholder="กรอกรหัสผ่านปัจจุบันของคุณ"
+                                value={formData.currentPassword}
+                                onChange={(e) =>
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        currentPassword: e.target.value,
+                                    }))
+                                }
+                                className="bg-muted/50 border-border"
+                            />
+                            {errors.currentPassword && (
+                                <p className="text-sm text-red-500">{errors.currentPassword[0]}</p>
+                            )}
+                        </div>
+
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {/* New Password */}
                             <div className="space-y-2">
                                 <Label htmlFor="password">รหัสผ่านใหม่</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    placeholder="อย่างน้อย 6 ตัวอักษร"
-                                    value={formData.password}
-                                    onChange={(e) =>
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            password: e.target.value,
-                                        }))
-                                    }
-                                    className="bg-muted/50 border-border"
-                                />
+                                <div className="relative">
+                                    <Input
+                                        id="password"
+                                        type={showNewPassword ? "text" : "password"}
+                                        placeholder="อย่างน้อย 6 ตัวอักษร"
+                                        value={formData.password}
+                                        onChange={(e) =>
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                password: e.target.value,
+                                            }))
+                                        }
+                                        className="bg-muted/50 border-border pr-12"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowNewPassword((prev) => !prev)}
+                                        aria-label={showNewPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
+                                    >
+                                        {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                    </button>
+                                </div>
                                 {errors.password && (
                                     <p className="text-sm text-red-500">{errors.password[0]}</p>
                                 )}
@@ -1013,19 +1064,29 @@ export default function ProfileSettingsPage() {
                             {/* Confirm Password */}
                             <div className="space-y-2">
                                 <Label htmlFor="confirmPassword">ยืนยันรหัสผ่าน</Label>
-                                <Input
-                                    id="confirmPassword"
-                                    type="password"
-                                    placeholder="กรอกรหัสผ่านอีกครั้ง"
-                                    value={formData.confirmPassword}
-                                    onChange={(e) =>
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            confirmPassword: e.target.value,
-                                        }))
-                                    }
-                                    className="bg-muted/50 border-border"
-                                />
+                                <div className="relative">
+                                    <Input
+                                        id="confirmPassword"
+                                        type={showConfirmPassword ? "text" : "password"}
+                                        placeholder="กรอกรหัสผ่านอีกครั้ง"
+                                        value={formData.confirmPassword}
+                                        onChange={(e) =>
+                                            setFormData((prev) => ({
+                                                ...prev,
+                                                confirmPassword: e.target.value,
+                                            }))
+                                        }
+                                        className="bg-muted/50 border-border pr-12"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowConfirmPassword((prev) => !prev)}
+                                        aria-label={showConfirmPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
+                                    >
+                                        {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                    </button>
+                                </div>
                                 {errors.confirmPassword && (
                                     <p className="text-sm text-red-500">{errors.confirmPassword[0]}</p>
                                 )}
@@ -1065,7 +1126,7 @@ export default function ProfileSettingsPage() {
                                 type="button"
                                 onClick={() => handleSubmit("password")}
                                 className={saveButtonClass}
-                                disabled={isLoading || !passwordsMatch || !formData.password}
+                                disabled={isLoading || !passwordsMatch || !formData.password || !formData.currentPassword}
                             >
                                 {isLoading ? (
                                     <Loader2 className="h-4 w-4 animate-spin" />

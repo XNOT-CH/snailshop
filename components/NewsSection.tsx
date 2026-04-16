@@ -55,7 +55,7 @@ export function NewsSection() {
     }
 
     return (
-        <section className="mt-6">
+        <section className="mt-0 sm:mt-6">
             {/* Section Header */}
             <div className="mb-5 text-center">
                 <h2 className="text-xl sm:text-2xl font-bold text-foreground">

@@ -64,7 +64,7 @@ export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
                             key={banner.id}
                             className="flex-[0_0_100%] min-w-0"
                         >
-                            {/* Natural responsive image: scales with page width, maintains original aspect ratio */}
+                            {/* Keep the full banner visible while letting it scale naturally with its original aspect ratio */}
                             <div className="relative w-full overflow-hidden rounded-md [backface-visibility:hidden] [clip-path:inset(0_round_0.375rem)] [transform:translateZ(0)]">
                                 <Image
                                     src={banner.image}

@@ -47,6 +47,8 @@ interface ChatConversation {
 }
 
 const HIDDEN_PATH_PREFIXES = ["/login", "/register", "/admin"];
+const MOBILE_BOTTOM_NAV_OFFSET = "bottom-[calc(env(safe-area-inset-bottom)+5.5rem)]";
+const OPEN_CHAT_EVENT = "open-customer-chat";
 
 function isMessageReadByAdmin(message: ChatMessage, adminLastReadAt: string | null) {
     if (!adminLastReadAt) {
@@ -102,6 +104,15 @@ export function FloatingChatButton() {
 
     useEffect(() => {
         setIsMounted(true);
+    }, []);
+
+    useEffect(() => {
+        const handleOpenChat = () => setIsOpen(true);
+        window.addEventListener(OPEN_CHAT_EVENT, handleOpenChat);
+
+        return () => {
+            window.removeEventListener(OPEN_CHAT_EVENT, handleOpenChat);
+        };
     }, []);
 
     useEffect(() => {
@@ -249,7 +260,7 @@ export function FloatingChatButton() {
             <SheetTrigger asChild>
                 <button
                     type="button"
-                    className="fixed bottom-4 right-4 z-50 flex h-[76px] w-[76px] items-center justify-center rounded-[24px] bg-transparent shadow-none ring-0 transition hover:scale-105 sm:bottom-6 sm:right-6 sm:h-[84px] sm:w-[84px]"
+                    className={`fixed right-4 z-50 hidden h-[76px] w-[76px] items-center justify-center rounded-[24px] bg-transparent shadow-none ring-0 transition hover:scale-105 md:flex ${MOBILE_BOTTOM_NAV_OFFSET} sm:bottom-6 sm:right-6 sm:h-[84px] sm:w-[84px]`}
                     aria-label="เปิดแชทลูกค้า"
                 >
                     <ChatBrandLogo

@@ -12,6 +12,7 @@ import { SweetAlertProvider } from "@/components/SweetAlertProvider";
 import { AnnouncementPopupWrapper } from "@/components/AnnouncementPopupWrapper";
 import { GlobalLoadingWrapper } from "@/components/GlobalLoadingWrapper";
 import { StructuredData } from "@/components/StructuredData";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import {
   DEFAULT_SITE_DESCRIPTION,
@@ -123,11 +124,13 @@ export default async function RootLayout({
               <Navbar />
 
               {/* Main Content - Responsive Container with Page Transition */}
-              <div id="main-container" className="flex-1 w-full max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 xl:px-8">
+              <div id="main-container" className="flex-1 w-full max-w-7xl mx-auto px-3 pb-0 sm:px-4 md:pb-0 lg:px-6 xl:px-8">
                 <main className="animate-page-enter min-w-0">
                   {children}
                 </main>
               </div>
+
+              <MobileBottomNav />
 
               {/* Footer */}
               <div id="main-footer">
