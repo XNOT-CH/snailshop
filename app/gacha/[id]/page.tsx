@@ -144,7 +144,7 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
     };
 
     return (
-        <div className="min-h-screen bg-background">
+        <div className="relative left-1/2 min-h-screen w-screen -translate-x-1/2 bg-card/90 backdrop-blur-sm sm:left-auto sm:w-auto sm:translate-x-0 sm:bg-background sm:backdrop-blur-none">
             <div className="relative overflow-hidden bg-gradient-to-br from-[#1a56db] via-[#1f4fc2] to-[#10284d] px-6 py-10 text-center">
                 <div
                     className="absolute inset-0 opacity-10"
@@ -164,7 +164,7 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
             </div>
 
             <div className="mx-auto max-w-4xl px-4 py-8">
-                <div className="overflow-x-hidden rounded-[1.75rem] border border-border/80 bg-card/95 px-4 py-6 shadow-[0_28px_70px_-40px_rgba(15,23,42,0.45)] backdrop-blur-sm sm:px-6 md:px-10">
+                <div className="overflow-x-hidden bg-card/90 px-4 py-6 backdrop-blur-sm sm:rounded-[1.75rem] sm:border sm:border-border/80 sm:bg-card/95 sm:shadow-[0_28px_70px_-40px_rgba(15,23,42,0.45)] sm:backdrop-blur-sm sm:px-6 md:px-10">
                     <div className="flex flex-col items-center gap-6">
                         {settings.dailySpinLimit > 0 && (
                             <div className="flex w-full justify-end">

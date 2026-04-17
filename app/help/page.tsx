@@ -72,7 +72,7 @@ export default async function HelpPage() {
         <div className="animate-page-enter mx-auto max-w-6xl">
             {articles.length > 0 && <StructuredData data={faqStructuredData} />}
 
-            <div className="border border-border/50 bg-card/90 px-4 py-6 shadow-xl shadow-primary/10 backdrop-blur-sm sm:px-6 sm:py-8">
+            <div className="relative left-1/2 w-screen -translate-x-1/2 border-y border-border/50 bg-card/90 px-4 py-6 shadow-xl shadow-primary/10 backdrop-blur-sm sm:left-auto sm:w-auto sm:translate-x-0 sm:border sm:bg-card/90 sm:px-6 sm:py-8 sm:backdrop-blur-sm">
                 <PageBreadcrumb items={[{ label: "ศูนย์ช่วยเหลือ" }]} className="mb-6" />
 
                 <div className="mb-8 text-center">

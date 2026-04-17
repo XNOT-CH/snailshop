@@ -95,7 +95,7 @@ export default async function ShopPage(props: ShopPageProps) {
     });
 
     return (
-        <div className="-mx-3 border-y border-border/50 bg-card/90 px-3 pb-0 pt-4 shadow-xl shadow-primary/10 backdrop-blur-sm sm:mx-0 sm:border sm:px-5 sm:py-7 lg:px-6">
+        <div className="relative left-1/2 w-screen -translate-x-1/2 border-y border-border/50 bg-card/90 px-3 pb-0 pt-4 shadow-xl shadow-primary/10 backdrop-blur-sm sm:left-auto sm:w-auto sm:translate-x-0 sm:border sm:bg-card/90 sm:px-5 sm:py-7 sm:backdrop-blur-sm lg:px-6">
             <PageBreadcrumb items={[{ label: "ร้านค้า" }]} className="mb-4" />
 
             <div className="mb-7 sm:mb-8">

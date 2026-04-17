@@ -99,7 +99,7 @@ export default async function GachaPlayPage() {
     }
 
     return (
-        <div className="mb-8 min-h-[calc(100vh-8rem)] rounded-2xl border border-border/50 bg-card/90 px-3 py-6 shadow-xl shadow-primary/10 backdrop-blur-sm sm:px-5 md:px-8">
+        <div className="relative left-1/2 mb-8 min-h-[calc(100vh-8rem)] w-screen -translate-x-1/2 bg-card/90 px-3 py-6 backdrop-blur-sm sm:left-auto sm:w-auto sm:translate-x-0 sm:rounded-2xl sm:border sm:border-border/50 sm:bg-card/90 sm:px-5 sm:shadow-xl sm:shadow-primary/10 sm:backdrop-blur-sm md:px-8">
             <div className="flex flex-col items-center gap-6">
                 <div className="mb-2 w-full max-w-[640px] px-2">
                     <div className="mb-4">

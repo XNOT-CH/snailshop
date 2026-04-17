@@ -63,7 +63,7 @@ export default async function SeasonPassPurchasePage() {
 
     return (
         <div className="animate-page-enter">
-            <div className="space-y-6 border border-border/50 bg-card/90 px-3 py-5 shadow-xl shadow-primary/10 backdrop-blur-sm sm:px-5 sm:py-6 lg:px-6">
+            <div className="relative left-1/2 w-screen -translate-x-1/2 space-y-6 border-y border-border/50 bg-card/90 px-3 py-5 shadow-xl shadow-primary/10 backdrop-blur-sm sm:left-auto sm:w-auto sm:translate-x-0 sm:border sm:bg-card/90 sm:px-5 sm:py-6 sm:backdrop-blur-sm lg:px-6">
                 <section className="relative overflow-hidden rounded-[30px] border border-border/70 bg-card px-5 py-8 shadow-[0_28px_70px_-44px_rgba(37,99,235,0.28)] sm:px-7 sm:py-10">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(26,86,219,0.14),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.99),rgba(248,250,252,0.96))]" />
                     <div className="relative grid gap-6 xl:grid-cols-[1.1fr_0.9fr] xl:items-center">

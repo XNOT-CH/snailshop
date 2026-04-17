@@ -88,7 +88,7 @@ export default async function GachaPage() {
     }
 
     return (
-        <div className="mb-8 min-h-[calc(100vh-4rem)] overflow-x-hidden bg-[linear-gradient(180deg,#fff7ed_0%,#ffffff_28%,#ffffff_100%)]">
+        <div className="relative left-1/2 mb-8 min-h-[calc(100vh-4rem)] w-screen -translate-x-1/2 overflow-x-hidden bg-card/90 backdrop-blur-sm sm:left-auto sm:w-auto sm:translate-x-0 sm:bg-[linear-gradient(180deg,#fff7ed_0%,#ffffff_28%,#ffffff_100%)] sm:backdrop-blur-none">
             <div className="relative overflow-hidden bg-gradient-to-br from-[#1a56db] via-[#1f4fc2] to-[#10284d] px-6 py-10 text-center">
                 <div
                     className="absolute inset-0 opacity-10"

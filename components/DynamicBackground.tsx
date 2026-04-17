@@ -7,9 +7,11 @@ export async function DynamicBackground() {
         columns: { backgroundImage: true, backgroundBlur: true },
     });
 
-    if (!settings?.backgroundImage) return null;
+    const isBlur = settings?.backgroundBlur ?? true;
 
-    const isBlur = settings.backgroundBlur ?? true;
+    if (!settings?.backgroundImage) {
+        return <div className="fixed inset-0 -z-10 bg-slate-200/80 backdrop-blur-[2px] sm:hidden" aria-hidden="true" />;
+    }
 
     return (
         <div className="fixed inset-0 -z-10 pointer-events-none">

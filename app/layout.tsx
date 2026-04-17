@@ -1,6 +1,7 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { Prompt } from "next/font/google";
+import { auth } from "@/auth";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { DynamicBackground } from "@/components/DynamicBackground";
@@ -77,6 +78,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
   const settings = await getSiteSettings();
   const siteName = resolveSiteName(settings?.heroTitle);
   const logoUrl = toAbsoluteAssetUrl(settings?.logoUrl);
@@ -144,7 +146,7 @@ export default async function RootLayout({
 
               {/* Announcement Popup - Client Side Only */}
               <div id="main-popup">
-                <AnnouncementPopupWrapper />
+                <AnnouncementPopupWrapper enabled={Boolean(session?.user)} />
               </div>
             </CartProvider>
           </SweetAlertProvider>

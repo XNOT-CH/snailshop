@@ -72,19 +72,14 @@ export function TurnstileWidget({
     if (!siteKey) return null;
 
     return (
-        <div className="space-y-2">
+        <>
             <Script
                 id="cloudflare-turnstile"
                 src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
                 strategy="afterInteractive"
                 onLoad={() => setScriptReady(true)}
             />
-            <div className="rounded-xl border border-border bg-muted/40 p-3">
-                <p className="mb-2 text-xs font-medium text-muted-foreground">
-                    ยืนยันว่าไม่ใช่บอท
-                </p>
-                <div id={containerId} className="min-h-16" />
-            </div>
-        </div>
+            <div id={containerId} className="min-h-16" />
+        </>
     );
 }
