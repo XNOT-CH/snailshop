@@ -153,7 +153,7 @@ export default async function ProductDetailPage({
     ];
 
     return (
-        <div className="animate-page-enter rounded-none bg-muted/60 py-6 dark:bg-background sm:py-10">
+        <div className="animate-page-enter relative left-1/2 w-screen -translate-x-1/2 rounded-none bg-card/90 py-6 backdrop-blur-sm dark:bg-background sm:left-auto sm:w-auto sm:translate-x-0 sm:bg-muted/60 sm:py-10 sm:backdrop-blur-none">
             <StructuredData data={structuredData} />
 
             <div className="relative mx-auto max-w-screen-2xl overflow-hidden rounded-none border border-border bg-card" style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.14)" }}>
