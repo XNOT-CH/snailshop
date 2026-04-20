@@ -9,5 +9,6 @@ export * from "./gacha";
 export * from "./promoCode";
 export * from "./settings";
 export * from "./profile";
+export * from "./pin";
 export * from "./content";
 export * from "./validate";

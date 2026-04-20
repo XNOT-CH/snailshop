@@ -24,6 +24,10 @@ function createAdminUserUpdateSchema(pointCurrencyName: string) {
     );
 }
 
+const adminPinActionSchema = z.object({
+    action: z.enum(["RESET_PIN", "UNLOCK_PIN"]),
+});
+
 export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -113,5 +117,115 @@ export async function PATCH(
     } catch (error) {
         console.error("Error updating user:", error);
         return NextResponse.json({ error: "เกิดข้อผิดพลาดในการอัปเดตผู้ใช้" }, { status: 500 });
+    }
+}
+
+export async function POST(
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const authCheck = await requirePermission(PERMISSIONS.USER_EDIT);
+    if (!authCheck.success) {
+        return NextResponse.json({ error: authCheck.error ?? "Unauthorized" }, { status: 401 });
+    }
+
+    try {
+        const { id } = await params;
+
+        let raw: unknown;
+        try {
+            raw = await request.json();
+        } catch {
+            return NextResponse.json({ error: "ข้อมูลไม่ถูกต้อง (invalid JSON)" }, { status: 400 });
+        }
+
+        const parsed = adminPinActionSchema.safeParse(raw);
+        if (!parsed.success) {
+            return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "ข้อมูลไม่ถูกต้อง" }, { status: 400 });
+        }
+
+        const existingUser = await db.query.users.findFirst({
+            where: eq(users.id, id),
+            columns: {
+                id: true,
+                username: true,
+                pinHash: true,
+                pinFailedAttempts: true,
+                pinLockedUntil: true,
+                pinUpdatedAt: true,
+            },
+        });
+
+        if (!existingUser) {
+            return NextResponse.json({ error: "ไม่พบผู้ใช้" }, { status: 404 });
+        }
+
+        if (parsed.data.action === "UNLOCK_PIN") {
+            if (!existingUser.pinHash) {
+                return NextResponse.json({ error: "ผู้ใช้นี้ยังไม่ได้ตั้ง PIN" }, { status: 400 });
+            }
+
+            await db.update(users).set({
+                pinFailedAttempts: 0,
+                pinLockedUntil: null,
+            }).where(eq(users.id, id));
+
+            await auditFromRequest(request, {
+                userId: authCheck.userId,
+                action: AUDIT_ACTIONS.PIN_RESET,
+                resource: "User",
+                resourceId: id,
+                resourceName: existingUser.username,
+                details: {
+                    adminAction: "UNLOCK_PIN",
+                    previousFailedAttempts: existingUser.pinFailedAttempts,
+                    previousLockedUntil: existingUser.pinLockedUntil,
+                },
+            });
+
+            return NextResponse.json({
+                success: true,
+                message: `ปลดล็อก PIN ของ ${existingUser.username} เรียบร้อยแล้ว`,
+                user: {
+                    hasPin: true,
+                    pinLockedUntil: null,
+                    pinUpdatedAt: existingUser.pinUpdatedAt,
+                },
+            });
+        }
+
+        await db.update(users).set({
+            pinHash: null,
+            pinEnabledAt: null,
+            pinUpdatedAt: null,
+            pinFailedAttempts: 0,
+            pinLockedUntil: null,
+        }).where(eq(users.id, id));
+
+        await auditFromRequest(request, {
+            userId: authCheck.userId,
+            action: AUDIT_ACTIONS.PIN_RESET,
+            resource: "User",
+            resourceId: id,
+            resourceName: existingUser.username,
+            details: {
+                adminAction: "RESET_PIN",
+                previousLockedUntil: existingUser.pinLockedUntil,
+                hadPin: Boolean(existingUser.pinHash),
+            },
+        });
+
+        return NextResponse.json({
+            success: true,
+            message: `รีเซ็ต PIN ของ ${existingUser.username} เรียบร้อยแล้ว`,
+            user: {
+                hasPin: false,
+                pinLockedUntil: null,
+                pinUpdatedAt: null,
+            },
+        });
+    } catch (error) {
+        console.error("Error managing user pin:", error);
+        return NextResponse.json({ error: "เกิดข้อผิดพลาดในการจัดการ PIN" }, { status: 500 });
     }
 }

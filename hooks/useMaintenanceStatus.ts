@@ -14,10 +14,16 @@ type MaintenanceMap = {
     topup?: MaintenanceEntry;
 };
 
-export function useMaintenanceStatus() {
-    const [data, setData] = useState<MaintenanceMap>({});
+export type { MaintenanceEntry, MaintenanceMap };
+
+export function useMaintenanceStatus(initialData?: MaintenanceMap) {
+    const [data, setData] = useState<MaintenanceMap>(initialData ?? {});
 
     useEffect(() => {
+        if (initialData) {
+            return;
+        }
+
         let cancelled = false;
 
         async function load() {
@@ -38,7 +44,7 @@ export function useMaintenanceStatus() {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [initialData]);
 
     return data;
 }

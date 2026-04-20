@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 describe("lib/imageResize", () => {
   beforeEach(() => {
-    vi.spyOn(window.URL, 'createObjectURL').mockReturnValue('blob:test-url');
-    vi.spyOn(window.URL, 'revokeObjectURL').mockImplementation(() => {});
+    vi.spyOn(globalThis.URL, "createObjectURL").mockReturnValue("blob:test-url");
+    vi.spyOn(globalThis.URL, "revokeObjectURL").mockImplementation(() => {});
   });
 
   it("exports resizeToSquare and resizeFileToSquare functions", async () => {
@@ -30,8 +30,8 @@ describe("lib/imageResize", () => {
     const file = new File(["fake-image-data"], "test.png", { type: "image/png" });
     
     // We need to trigger the Image onload manually since we're in jsdom
-    const origImage = global.Image;
-    global.Image = class {
+    const origImage = globalThis.Image;
+    globalThis.Image = class {
       onload?: () => void;
       onerror?: () => void;
       src = "";
@@ -49,6 +49,6 @@ describe("lib/imageResize", () => {
     
     // Restore mocks
     vi.restoreAllMocks();
-    global.Image = origImage;
+    globalThis.Image = origImage;
   });
 });

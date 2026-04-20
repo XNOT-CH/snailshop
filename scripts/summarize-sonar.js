@@ -1,6 +1,6 @@
-import fs from 'fs';
+import fs from "node:fs";
 
-const data = JSON.parse(fs.readFileSync('sonar-issues.json', 'utf-8'));
+const data = JSON.parse(fs.readFileSync("sonar-issues.json", "utf-8"));
 
 const summary = {
     total: data.total,
@@ -8,7 +8,7 @@ const summary = {
     types: {}
 };
 
-data.issues.forEach(issue => {
+data.issues.forEach((issue) => {
     summary.severities[issue.severity] = (summary.severities[issue.severity] || 0) + 1;
     summary.types[issue.type] = (summary.types[issue.type] || 0) + 1;
 });

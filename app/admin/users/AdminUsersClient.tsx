@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { getPointCurrencyName, getPointCurrencySymbol } from "@/lib/currencySettings";
-import { Coins, Crown, Gem, Pencil, Search, Users, X } from "lucide-react";
+import { Coins, Crown, Gem, KeyRound, LockKeyhole, Pencil, Search, ShieldOff, Users, X } from "lucide-react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -39,6 +39,9 @@ interface User {
   pointBalance: number;
   lifetimePoints: number;
   createdAt: string;
+  hasPin: boolean;
+  pinLockedUntil: string | null;
+  pinUpdatedAt: string | null;
 }
 
 interface Role {
@@ -169,8 +172,70 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [roles, setRoles] = useState<Role[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [renderTimestamp] = useState(() => Date.now());
   const canEditUsers = permissions.includes(PERMISSIONS.USER_EDIT);
   const canManageRoles = permissions.includes(PERMISSIONS.USER_MANAGE_ROLE);
+
+  const handlePinAdminAction = async (user: User, action: "RESET_PIN" | "UNLOCK_PIN") => {
+    if (!canEditUsers) {
+      showError("คุณไม่มีสิทธิ์จัดการ PIN ของผู้ใช้");
+      return;
+    }
+
+    const title = action === "RESET_PIN" ? "รีเซ็ต PIN" : "ปลดล็อก PIN";
+    const text = action === "RESET_PIN"
+      ? `ต้องการลบ PIN ของ ${user.username} เพื่อให้ผู้ใช้ตั้งค่าใหม่หรือไม่?`
+      : `ต้องการปลดล็อก PIN ของ ${user.username} ใช่หรือไม่?`;
+
+    const confirmed = await Swal.fire({
+      title,
+      text,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: action === "RESET_PIN" ? "รีเซ็ต PIN" : "ปลดล็อก PIN",
+      cancelButtonText: "ยกเลิก",
+      reverseButtons: true,
+      confirmButtonColor: action === "RESET_PIN" ? "#dc2626" : "#2563eb",
+      cancelButtonColor: "#6b7280",
+    });
+
+    if (!confirmed.isConfirmed) {
+      return;
+    }
+
+    showLoading("กำลังอัปเดตสถานะ PIN...");
+    try {
+      const response = await fetch(`/api/admin/users/${user.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const data = await response.json();
+      hideLoading();
+
+      if (!response.ok) {
+        showError(data.error || "เกิดข้อผิดพลาด");
+        return;
+      }
+
+      setUsers((previous) =>
+        previous.map((item) =>
+          item.id === user.id
+            ? {
+                ...item,
+                hasPin: Boolean(data.user?.hasPin),
+                pinLockedUntil: data.user?.pinLockedUntil ?? null,
+                pinUpdatedAt: data.user?.pinUpdatedAt ?? null,
+              }
+            : item
+        )
+      );
+      showSuccess(data.message || "อัปเดต PIN สำเร็จ");
+    } catch {
+      hideLoading();
+      showError("เกิดข้อผิดพลาดในการจัดการ PIN");
+    }
+  };
 
   useEffect(() => {
     if (!canManageRoles) {
@@ -588,6 +653,9 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                 const hasGoldBorder = user.lifetimePoints > GOLD_BORDER_POINTS_THRESHOLD;
                 const creditBalance = Number(user.creditBalance);
                 const totalTopup = Number(user.totalTopup);
+                const isPinLocked = Boolean(
+                  user.pinLockedUntil && new Date(user.pinLockedUntil).getTime() > renderTimestamp
+                );
 
                 return (
                   <div
@@ -643,6 +711,16 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                           {user.email && user.name ? (
                             <p className="text-xs text-muted-foreground">{user.email}</p>
                           ) : null}
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="outline" className="rounded-full">
+                              {user.hasPin ? "ตั้ง PIN แล้ว" : "ยังไม่มี PIN"}
+                            </Badge>
+                            {isPinLocked ? (
+                              <Badge variant="outline" className="rounded-full border-red-200 text-red-600">
+                                PIN ถูกล็อก
+                              </Badge>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -683,17 +761,41 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                           day: "numeric",
                         })}
                       </p>
-                      {canEditUsers || canManageRoles ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(user)}
-                          className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#1a56db]"
-                        >
-                          <Pencil className="mr-1.5 h-4 w-4" />
-                          แก้ไข
-                        </Button>
-                      ) : null}
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        {canEditUsers && isPinLocked ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => void handlePinAdminAction(user, "UNLOCK_PIN")}
+                            className="rounded-xl border border-blue-200 px-3 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                          >
+                            <ShieldOff className="mr-1.5 h-4 w-4" />
+                            ปลดล็อก PIN
+                          </Button>
+                        ) : null}
+                        {canEditUsers && user.hasPin ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => void handlePinAdminAction(user, "RESET_PIN")}
+                            className="rounded-xl border border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                          >
+                            <KeyRound className="mr-1.5 h-4 w-4" />
+                            รีเซ็ต PIN
+                          </Button>
+                        ) : null}
+                        {canEditUsers || canManageRoles ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => openEditDialog(user)}
+                            className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#1a56db]"
+                          >
+                            <Pencil className="mr-1.5 h-4 w-4" />
+                            แก้ไข
+                          </Button>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                 );
@@ -725,6 +827,9 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                   const hasGoldBorder = user.lifetimePoints > GOLD_BORDER_POINTS_THRESHOLD;
                   const creditBalance = Number(user.creditBalance);
                   const totalTopup = Number(user.totalTopup);
+                  const isPinLocked = Boolean(
+                    user.pinLockedUntil && new Date(user.pinLockedUntil).getTime() > renderTimestamp
+                  );
 
                   return (
                     <TableRow
@@ -765,6 +870,17 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                             <p className="truncate text-sm text-muted-foreground">
                               {user.email || user.name || "-"}
                             </p>
+                            <div className="mt-1 flex flex-wrap items-center gap-2">
+                              <Badge variant="outline" className="rounded-full">
+                                <LockKeyhole className="mr-1 h-3 w-3" />
+                                {user.hasPin ? "มี PIN" : "ไม่มี PIN"}
+                              </Badge>
+                              {isPinLocked ? (
+                                <Badge variant="outline" className="rounded-full border-red-200 text-red-600">
+                                  ถูกล็อก
+                                </Badge>
+                              ) : null}
+                            </div>
                           </div>
                         </div>
                       </TableCell>
@@ -840,17 +956,41 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                       </TableCell>
 
                       <TableCell className="text-center">
-                        {canEditUsers || canManageRoles ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => openEditDialog(user)}
-                            className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#1a56db]"
-                          >
-                            <Pencil className="mr-1.5 h-4 w-4" />
-                            แก้ไข
-                          </Button>
-                        ) : null}
+                        <div className="flex justify-end gap-2">
+                          {canEditUsers && isPinLocked ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => void handlePinAdminAction(user, "UNLOCK_PIN")}
+                              className="rounded-xl border border-blue-200 px-3 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                            >
+                              <ShieldOff className="mr-1.5 h-4 w-4" />
+                              ปลดล็อก PIN
+                            </Button>
+                          ) : null}
+                          {canEditUsers && user.hasPin ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => void handlePinAdminAction(user, "RESET_PIN")}
+                              className="rounded-xl border border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            >
+                              <KeyRound className="mr-1.5 h-4 w-4" />
+                              รีเซ็ต PIN
+                            </Button>
+                          ) : null}
+                          {canEditUsers || canManageRoles ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditDialog(user)}
+                              className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#1a56db]"
+                            >
+                              <Pencil className="mr-1.5 h-4 w-4" />
+                              แก้ไข
+                            </Button>
+                          ) : null}
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

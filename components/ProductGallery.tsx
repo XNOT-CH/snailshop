@@ -9,6 +9,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
+import { themeClasses } from "@/lib/theme";
 
 interface ProductGalleryProps {
     images: string[];
@@ -36,7 +37,7 @@ export function ProductGallery({ images }: Readonly<ProductGalleryProps>) {
                 <DialogTrigger asChild>
                     <button
                         type="button"
-                        className="group relative aspect-square w-full cursor-zoom-in overflow-hidden rounded-2xl bg-zinc-100 text-left"
+                        className={`${themeClasses.surface} group relative aspect-square w-full cursor-zoom-in overflow-hidden rounded-[1.75rem] text-left`}
                     >
                         <Image
                             src={galleryImages[selectedImage].url}
@@ -46,17 +47,17 @@ export function ProductGallery({ images }: Readonly<ProductGalleryProps>) {
                             className="object-cover"
                             priority
                         />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
-                            <div className="rounded-full bg-white/90 p-3 opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
-                                <ZoomIn className="h-6 w-6 text-zinc-700" />
+                        <div className={`${themeClasses.overlayScrim} absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100`}>
+                            <div className={`${themeClasses.badge} rounded-full p-3 shadow-lg`}>
+                                <ZoomIn className="h-6 w-6" />
                             </div>
                         </div>
                     </button>
                 </DialogTrigger>
                 <DialogContent className="max-w-5xl border-0 bg-transparent p-0 shadow-none">
                     <DialogTitle className="sr-only">Product Image View</DialogTitle>
-                    <div className="space-y-4 rounded-2xl bg-black/70 p-4 backdrop-blur-sm">
-                        <div className="relative aspect-square w-full overflow-hidden rounded-xl">
+                    <div className={`${themeClasses.surface} space-y-4 rounded-[1.75rem] p-4 backdrop-blur-md`}>
+                        <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-border/40 bg-background">
                             <Image
                                 src={galleryImages[selectedImage].url}
                                 alt="Product Full View"
@@ -70,7 +71,7 @@ export function ProductGallery({ images }: Readonly<ProductGalleryProps>) {
                                     <button
                                         type="button"
                                         onClick={showPrevImage}
-                                        className="absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-lg transition hover:bg-white"
+                                        className={`${themeClasses.badge} absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full transition hover:bg-primary hover:text-primary-foreground`}
                                         aria-label="ดูรูปก่อนหน้า"
                                     >
                                         <ChevronLeft className="h-5 w-5" />
@@ -78,7 +79,7 @@ export function ProductGallery({ images }: Readonly<ProductGalleryProps>) {
                                     <button
                                         type="button"
                                         onClick={showNextImage}
-                                        className="absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-slate-800 shadow-lg transition hover:bg-white"
+                                        className={`${themeClasses.badge} absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full transition hover:bg-primary hover:text-primary-foreground`}
                                         aria-label="ดูรูปถัดไป"
                                     >
                                         <ChevronRight className="h-5 w-5" />
@@ -95,8 +96,8 @@ export function ProductGallery({ images }: Readonly<ProductGalleryProps>) {
                                         type="button"
                                         onClick={() => setSelectedImage(index)}
                                         className={`relative aspect-square w-16 overflow-hidden rounded-xl border-2 transition ${selectedImage === index
-                                            ? "border-blue-400 shadow-[0_0_0_1px_rgba(96,165,250,0.45)]"
-                                            : "border-white/20 opacity-75 hover:opacity-100"
+                                            ? "border-primary shadow-[0_0_0_1px_rgba(88,166,255,0.45)]"
+                                            : "border-border/50 opacity-75 hover:border-primary/40 hover:opacity-100"
                                             }`}
                                     >
                                         <Image
@@ -121,8 +122,8 @@ export function ProductGallery({ images }: Readonly<ProductGalleryProps>) {
                         key={image.id}
                         onClick={() => setSelectedImage(index)}
                         className={`relative aspect-square w-16 overflow-hidden rounded-lg transition-all border-2 ${selectedImage === index
-                            ? "border-blue-500"
-                            : "border-transparent opacity-60 hover:opacity-100"
+                            ? "border-primary shadow-[0_0_0_1px_rgba(88,166,255,0.28)]"
+                            : "border-border/40 opacity-60 hover:border-primary/35 hover:opacity-100"
                             }`}
                     >
                         <Image

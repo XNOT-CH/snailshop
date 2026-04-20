@@ -2,25 +2,25 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 
 export function ProductCardSkeleton({ index = 0 }: Readonly<{ index?: number }>) {
     return (
-        <Card className={`overflow-hidden rounded-3xl bg-white dark:bg-card border border-black/5 dark:border-white/10 shadow-sm animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 8)}`}>
+        <Card className={`overflow-hidden rounded-3xl border border-border/70 shadow-sm animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 8)}`}>
             {/* Image Skeleton */}
             <div className="relative aspect-[4/3] bg-muted">
                 <div className="h-full w-full animate-shimmer" />
                 {/* Badge Skeleton */}
-                <div className="absolute left-4 top-4 h-6 w-16 animate-skeleton bg-black/10 dark:bg-white/10 rounded-full" />
+                <div className="absolute left-4 top-4 h-6 w-16 animate-skeleton rounded-full bg-foreground/10" />
             </div>
 
             {/* Content Skeleton */}
             <CardContent className="p-5 pb-4 flex flex-col items-center">
-                <div className="h-5 w-3/4 animate-skeleton bg-black/10 dark:bg-white/10 rounded-lg mb-2" />
-                <div className="h-7 w-1/3 animate-skeleton bg-black/10 dark:bg-white/10 rounded-lg" />
+                <div className="mb-2 h-5 w-3/4 animate-skeleton rounded-lg bg-foreground/10" />
+                <div className="h-7 w-1/3 animate-skeleton rounded-lg bg-foreground/10" />
             </CardContent>
 
             {/* Footer Skeleton */}
             <CardFooter className="flex justify-between gap-3 p-5 pt-0">
-                <div className="h-11 flex-1 animate-skeleton bg-black/10 dark:bg-white/10 rounded-xl" />
-                <div className="h-11 w-11 shrink-0 animate-skeleton bg-black/10 dark:bg-white/10 rounded-xl" />
-                <div className="h-11 w-11 shrink-0 animate-skeleton bg-black/10 dark:bg-white/10 rounded-xl" />
+                <div className="h-11 flex-1 animate-skeleton rounded-xl bg-foreground/10" />
+                <div className="h-11 w-11 shrink-0 animate-skeleton rounded-xl bg-foreground/10" />
+                <div className="h-11 w-11 shrink-0 animate-skeleton rounded-xl bg-foreground/10" />
             </CardFooter>
         </Card>
     );
@@ -46,17 +46,17 @@ export function HeroBannerSkeleton() {
 
 export function NavbarSkeleton() {
     return (
-        <div className="h-16 border-b border-slate-700/50 bg-[#0f172a]">
+        <div className="h-16 border-b border-border bg-card/80">
             <div className="max-w-7xl mx-auto flex h-full items-center justify-between px-4">
-                <div className="h-9 w-32 animate-skeleton bg-slate-700 rounded-xl" />
+                <div className="h-9 w-32 animate-skeleton rounded-xl bg-muted" />
                 <div className="hidden md:flex gap-4">
-                    <div className="h-8 w-20 animate-skeleton bg-slate-700 rounded-xl" />
-                    <div className="h-8 w-20 animate-skeleton bg-slate-700 rounded-xl" />
-                    <div className="h-8 w-20 animate-skeleton bg-slate-700 rounded-xl" />
+                    <div className="h-8 w-20 animate-skeleton rounded-xl bg-muted" />
+                    <div className="h-8 w-20 animate-skeleton rounded-xl bg-muted" />
+                    <div className="h-8 w-20 animate-skeleton rounded-xl bg-muted" />
                 </div>
                 <div className="flex gap-3">
-                    <div className="h-9 w-24 animate-skeleton bg-slate-700 rounded-xl" />
-                    <div className="h-9 w-9 animate-skeleton bg-slate-700 rounded-full" />
+                    <div className="h-9 w-24 animate-skeleton rounded-xl bg-muted" />
+                    <div className="h-9 w-9 animate-skeleton rounded-full bg-muted" />
                 </div>
             </div>
         </div>

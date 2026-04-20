@@ -9,8 +9,11 @@ export function ThemeProvider({ children, ...props }: Readonly<ThemeProviderProp
     return (
         <NextThemesProvider
             attribute="class"
-            defaultTheme="light"
+            themes={["light", "dark"]}
+            defaultTheme="dark"
             enableSystem={false}
+            enableColorScheme
+            storageKey="snailshop-theme"
             disableTransitionOnChange
             {...props}
         >

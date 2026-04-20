@@ -14,7 +14,13 @@ export async function proxy(request: NextRequest) {
     if (process.env.NODE_ENV === "production") {
         const proto = request.headers.get("x-forwarded-proto");
         const host = request.headers.get("host");
-        if (proto === "http" && host) {
+        const hostname = host?.split(":")[0]?.toLowerCase();
+        const isLocalHost =
+            hostname === "localhost" ||
+            hostname === "127.0.0.1" ||
+            hostname === "::1";
+
+        if (proto === "http" && host && !isLocalHost) {
             const httpsUrl = `https://${host}${pathname}${request.nextUrl.search}`;
             return Response.redirect(httpsUrl, 301);
         }

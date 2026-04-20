@@ -8,7 +8,9 @@ describe("lib/utils", () => {
     });
 
     it("handles conditional class names", () => {
-      expect(cn("p-4", true && "text-red-500", false && "text-blue-500")).toBe("p-4 text-red-500");
+      const shouldUseRed = true;
+      const shouldUseBlue = false;
+      expect(cn("p-4", shouldUseRed && "text-red-500", shouldUseBlue && "text-blue-500")).toBe("p-4 text-red-500");
     });
 
     it("merges tailwind classes intelligently", () => {

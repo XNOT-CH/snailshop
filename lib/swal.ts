@@ -258,6 +258,57 @@ export const hideLoading = () => {
     Swal.close();
 };
 
+export const showPinPrompt = async (actionLabel = "ยืนยันรายการ"): Promise<string | null> => {
+    const result = await Swal.fire({
+        ...modalDefaults,
+        title: actionLabel,
+        html: `
+            <div class="space-y-3 text-left">
+                <p class="text-sm text-slate-500">กรุณากรอก PIN 6 หลักเพื่อดำเนินการต่อ</p>
+                <input
+                    id="swal-pin-input"
+                    inputmode="numeric"
+                    maxlength="6"
+                    autocomplete="one-time-code"
+                    class="w-full rounded-xl border border-slate-200 px-4 py-3 text-center text-lg tracking-[0.35em] text-slate-900 outline-none focus:border-blue-500"
+                    placeholder="000000"
+                />
+            </div>
+        `,
+        width: "min(92vw, 28rem)",
+        showCancelButton: true,
+        confirmButtonColor: "#2563eb",
+        confirmButtonText: "ยืนยัน",
+        cancelButtonText: "ยกเลิก",
+        reverseButtons: true,
+        focusConfirm: false,
+        customClass: {
+            popup: "rounded-3xl !p-6 sm:!p-8",
+            actions: "flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-center",
+            confirmButton: "w-full sm:w-auto rounded-xl px-8 py-2",
+            cancelButton: "w-full sm:w-auto rounded-xl px-8 py-2",
+        },
+        didOpen: () => {
+            const input = document.getElementById("swal-pin-input") as HTMLInputElement | null;
+            input?.focus();
+            input?.addEventListener("input", () => {
+                input.value = input.value.replace(/\D/g, "").slice(0, 6);
+            });
+        },
+        preConfirm: () => {
+            const input = document.getElementById("swal-pin-input") as HTMLInputElement | null;
+            const value = input?.value?.trim() ?? "";
+            if (!/^\d{6}$/.test(value)) {
+                Swal.showValidationMessage("กรุณากรอก PIN 6 หลัก");
+                return null;
+            }
+            return value;
+        },
+    });
+
+    return result.isConfirmed ? result.value : null;
+};
+
 export default Swal;
 
 

@@ -39,7 +39,7 @@ export default async function Footer() {
     ];
 
     return (
-        <footer className="relative bg-white/60 dark:bg-card/60 backdrop-blur-sm border-t border-border/50">
+        <footer className="relative border-t border-border/60 bg-card/55 backdrop-blur-xl">
             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/20 via-primary to-primary/20" />
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="py-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
@@ -58,10 +58,10 @@ export default async function Footer() {
                             {siteSettings?.heroDescription || "แพลตฟอร์มซื้อขายสินค้าดิจิทัลที่น่าเชื่อถือ พร้อมระบบรักษาความปลอดภัยมาตรฐานสากล"}
                         </p>
                         <div className="flex flex-wrap items-center gap-2.5">
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300/70 bg-emerald-50/90 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-accent/80 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm">
                                 <Shield className="h-3.5 w-3.5" />ปลอดภัย 100%
                             </span>
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-300/70 bg-blue-50/90 px-3 py-1.5 text-xs font-semibold text-blue-700 shadow-sm">
+                            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary shadow-sm">
                                 <Gamepad2 className="h-3.5 w-3.5" />สินค้าคุณภาพ
                             </span>
                         </div>
@@ -128,7 +128,7 @@ export default async function Footer() {
                         </div>
                         <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1.5" title="Server Status">
-                                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                                 <span>ระบบพร้อมให้บริการ</span>
                             </span>
                         </div>

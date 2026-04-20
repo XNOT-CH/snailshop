@@ -18,7 +18,7 @@ export async function GET() {
             columns: {
                 id: true, name: true, username: true, email: true, phone: true,
                 image: true, role: true, creditBalance: true, phoneVerified: true,
-                emailVerified: true, firstName: true, lastName: true, firstNameEn: true,
+                emailVerified: true, pointBalance: true, pinHash: true, pinUpdatedAt: true, pinLockedUntil: true, firstName: true, lastName: true, firstNameEn: true,
                 lastNameEn: true, taxFullName: true, taxPhone: true, taxAddress: true,
                 taxProvince: true, taxDistrict: true, taxSubdistrict: true, taxPostalCode: true,
                 shipFullName: true, shipPhone: true, shipAddress: true, shipProvince: true,
@@ -32,7 +32,14 @@ export async function GET() {
 
         return NextResponse.json({
             success: true,
-            data: { ...decryptUserSensitiveFields(user), creditBalance: String(user.creditBalance) },
+            data: {
+                ...decryptUserSensitiveFields(user),
+                hasPin: Boolean(user.pinHash),
+                pinUpdatedAt: user.pinUpdatedAt,
+                pinLockedUntil: user.pinLockedUntil,
+                creditBalance: String(user.creditBalance),
+                pointBalance: Number(user.pointBalance ?? 0),
+            },
         });
     } catch (error) {
         console.error("Get profile error:", error);

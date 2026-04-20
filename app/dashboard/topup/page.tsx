@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { showError, showSuccess, showWarning } from "@/lib/swal";
 import { fetchWithCsrf } from "@/lib/csrf-client";
+import { requirePinForAction } from "@/lib/require-pin-for-action";
 import {
     AlertTriangle,
     Building2,
@@ -304,6 +305,11 @@ export default function TopupPage() {
             return;
         }
 
+        const pinCheck = await requirePinForAction("ยืนยัน PIN เพื่อส่งสลิปเติมเงิน");
+        if (!pinCheck.allowed) {
+            return;
+        }
+
         setIsSubmitting(true);
 
         try {
@@ -311,6 +317,9 @@ export default function TopupPage() {
             formData.append("amount", topupAmount);
             formData.append("verifyType", verifyTarget);
             formData.append("provider", verifyTarget);
+            if (pinCheck.pin) {
+                formData.append("pin", pinCheck.pin);
+            }
 
             if (remark.trim()) {
                 formData.append("remark", remark.trim());
@@ -379,13 +388,18 @@ export default function TopupPage() {
             return;
         }
 
+        const pinCheck = await requirePinForAction("ยืนยัน PIN เพื่อเติมโค้ด");
+        if (!pinCheck.allowed) {
+            return;
+        }
+
         setIsRedeemingVoucher(true);
 
         try {
             const response = await fetchWithCsrf("/api/promo-codes/redeem", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ code: voucherCode }),
+                body: JSON.stringify({ code: voucherCode, pin: pinCheck.pin || undefined }),
             });
             const data = await response.json();
 
@@ -407,7 +421,7 @@ export default function TopupPage() {
     };
 
     return (
-        <div className="rounded-[2rem] bg-[radial-gradient(circle_at_top,rgba(255,247,237,0.95),rgba(255,255,255,0.98)_42%,rgba(248,250,252,1)_100%)] px-4 py-6 shadow-[0_30px_80px_rgba(15,23,42,0.08)] sm:px-6 sm:py-8">
+        <div className="dashboard-topup-page rounded-[2rem] bg-[radial-gradient(circle_at_top,rgba(255,247,237,0.95),rgba(255,255,255,0.98)_42%,rgba(248,250,252,1)_100%)] px-4 py-6 shadow-[0_30px_80px_rgba(15,23,42,0.08)] sm:px-6 sm:py-8">
             <PageBreadcrumb
                 items={[
                     { label: "แดชบอร์ด", href: "/dashboard" },

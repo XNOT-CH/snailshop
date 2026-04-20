@@ -15,6 +15,7 @@ import { absoluteUrl, buildPageMetadata, resolveSiteName, toAbsoluteAssetUrl } f
 import { formatCurrencyAmount } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getSiteSettings } from "@/lib/getSiteSettings";
+import { themeClasses } from "@/lib/theme";
 import Image from "next/image";
 import Link from "next/link";
 import { getPrimaryProductImage, normalizeProductImageUrls } from "@/lib/productImages";
@@ -153,11 +154,13 @@ export default async function ProductDetailPage({
     ];
 
     return (
-        <div className="animate-page-enter relative left-1/2 w-screen -translate-x-1/2 rounded-none bg-card/90 py-6 backdrop-blur-sm dark:bg-background sm:left-auto sm:w-auto sm:translate-x-0 sm:bg-muted/60 sm:py-10 sm:backdrop-blur-none">
+        <div className="animate-page-enter relative left-1/2 w-screen -translate-x-1/2 bg-gradient-to-b from-background via-muted/25 to-background py-6 sm:left-auto sm:w-auto sm:translate-x-0 sm:py-10">
             <StructuredData data={structuredData} />
 
-            <div className="relative mx-auto max-w-screen-2xl overflow-hidden rounded-none border border-border bg-card" style={{ boxShadow: "0 24px 80px rgba(0,0,0,0.14)" }}>
-                <div className="p-6 sm:p-8">
+            <div
+                className={`${themeClasses.shell} relative mx-auto max-w-screen-2xl overflow-hidden rounded-[28px] backdrop-blur-xl`}
+            >
+                <div className="border-b border-border/60 bg-gradient-to-r from-card/92 via-card to-card/92 p-6 sm:p-8">
                     <PageBreadcrumb
                         items={[
                             { label: "ร้านค้า", href: "/shop" },
@@ -166,48 +169,50 @@ export default async function ProductDetailPage({
                         className="mb-6"
                     />
 
-                    <div className="mt-2 grid grid-cols-1 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)]">
-                        <div className="w-full border-b border-border/60 bg-muted/40 px-4 py-6 sm:px-6 lg:border-b-0 lg:border-r">
+                    <div className="mt-2 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)] xl:gap-8">
+                        <div className={`${themeClasses.panelSoft} w-full rounded-[24px] px-4 py-6 sm:px-6`}>
                             <ProductGallery images={productImages} />
-                            <div className="mt-4">
+                            <div className="mt-5 border-t border-border/60 pt-4">
                                 <ShareButtons title={product.name} />
                             </div>
                         </div>
 
-                        <div className="min-w-0 px-4 py-6 sm:px-6">
-                            <h1 className="text-2xl font-bold text-foreground leading-snug">
-                                {product.name}
-                            </h1>
+                        <div className={`${themeClasses.panel} min-w-0 rounded-[24px] px-4 py-6 sm:px-6`}>
+                            <div className="border-b border-border/60 pb-5">
+                                <h1 className="text-2xl font-bold leading-snug text-foreground">
+                                    {product.name}
+                                </h1>
 
-                            <div>
-                                <div className="flex items-baseline gap-2 flex-wrap">
-                                    <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                                        {formatCurrencyAmount(displayPrice, product.currency, currencySettings)} ต่อชิ้น
-                                    </span>
-                                    {discountPrice && (
-                                        <span className="text-base text-muted-foreground line-through">
-                                            {formatCurrencyAmount(price, product.currency, currencySettings)}
+                                <div className="mt-3">
+                                    <div className="flex flex-wrap items-baseline gap-2">
+                                        <span className="text-2xl font-bold text-primary">
+                                            {formatCurrencyAmount(displayPrice, product.currency, currencySettings)} ต่อชิ้น
                                         </span>
-                                    )}
+                                        {discountPrice && (
+                                            <span className="text-base text-muted-foreground line-through">
+                                                {formatCurrencyAmount(price, product.currency, currencySettings)}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                        มีสินค้าทั้งหมด {stockCount} ชิ้น
+                                    </p>
                                 </div>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                    มีสินค้าทั้งหมด {stockCount} ชิ้น
-                                </p>
                             </div>
 
                             {product.description && (
-                                <div className="space-y-1.5">
+                                <div className="mt-5 space-y-2">
                                     <p className="text-sm text-muted-foreground flex items-center gap-1.5">
                                         <Info className="h-3.5 w-3.5" />
                                         รายละเอียดสินค้า
                                     </p>
-                                    <div className="w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-sm text-foreground leading-relaxed whitespace-pre-line min-h-[60px]">
+                                    <div className={`${themeClasses.surface} min-h-[60px] w-full rounded-2xl px-4 py-4 text-sm leading-relaxed text-foreground whitespace-pre-line`}>
                                         {product.description}
                                     </div>
                                 </div>
                             )}
 
-                            <div className="mt-1">
+                            <div className="mt-5 border-t border-border/60 pt-5">
                                 <ProductActions
                                     product={{
                                         id: product.id,
@@ -229,7 +234,7 @@ export default async function ProductDetailPage({
             </div>
 
             {relatedProducts.length > 0 && (
-                <div className="mx-auto mt-10 mb-2 max-w-screen-2xl rounded-none border border-border bg-card p-4 sm:mt-16 sm:mb-8 sm:p-6" style={{ boxShadow: "0 12px 48px rgba(0,0,0,0.10)" }}>
+                <div className={`${themeClasses.shell} mx-auto mt-10 mb-2 max-w-screen-2xl rounded-[28px] p-4 sm:mt-16 sm:mb-8 sm:p-6`}>
                     <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
                         รายการสินค้าอื่น ๆ
                     </h2>
@@ -248,7 +253,7 @@ export default async function ProductDetailPage({
 
                             return (
                                 <Link href={`/product/${related.id}`} key={related.id} className="group cursor-pointer">
-                                    <div className="flex h-full flex-col rounded-xl border border-border bg-card p-4 shadow-sm transition-shadow duration-300 hover:shadow-[0_20px_40px_rgba(0,0,0,0.18)]">
+                                    <div className={`${themeClasses.surface} flex h-full flex-col rounded-xl p-4 transition-shadow duration-300 hover:shadow-[0_20px_40px_rgba(0,0,0,0.28)]`}>
                                         <div className="group relative mb-4 aspect-square w-full overflow-hidden rounded-lg bg-muted">
                                             <Image
                                                 src={related.imageUrl || "/placeholder.jpg"}
@@ -258,28 +263,21 @@ export default async function ProductDetailPage({
                                                 className="object-cover transition-all duration-500 group-hover:grayscale"
                                             />
                                             {relAvailable && (
-                                                <div className="absolute inset-0 bg-white/10 backdrop-blur-[1px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
-                                                    <span
-                                                        style={{
-                                                            border: "1.5px solid rgba(96, 165, 250, 0.85)",
-                                                            color: "rgba(186, 230, 253, 1)",
-                                                            backgroundColor: "rgba(29, 78, 216, 0.12)",
-                                                        }}
-                                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold"
-                                                    >
+                                                <div className={`${themeClasses.overlayScrim} absolute inset-0 flex items-center justify-center backdrop-blur-[1px] opacity-0 transition duration-300 group-hover:opacity-100`}>
+                                                    <span className={`${themeClasses.badge} flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold`}>
                                                         ดูรายละเอียด
                                                     </span>
                                                 </div>
                                             )}
                                             {relDiscount && (
-                                                <div className="absolute top-2 left-2 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm z-10">
+                                                <div className="absolute top-2 left-2 z-10 rounded bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground shadow-sm">
                                                     ลดราคา
                                                 </div>
                                             )}
                                         </div>
 
                                         <div className="flex flex-col flex-1 text-center">
-                                            <h3 className="font-semibold text-foreground line-clamp-2 mb-1 group-hover:text-blue-600 transition-colors text-sm text-center">
+                                            <h3 className="mb-1 line-clamp-2 text-center text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
                                                 {related.name}
                                             </h3>
 
@@ -290,7 +288,7 @@ export default async function ProductDetailPage({
                                                             {formatCurrencyAmount(relPrice, related.currency, currencySettings)}
                                                         </div>
                                                     )}
-                                                    <div className="font-semibold text-blue-500 text-sm">
+                                                    <div className="text-sm font-semibold text-primary">
                                                         {formatCurrencyAmount(relDisplayPrice, related.currency, currencySettings)}
                                                     </div>
                                                 </div>

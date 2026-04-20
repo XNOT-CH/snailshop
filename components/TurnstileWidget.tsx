@@ -37,13 +37,13 @@ export function TurnstileWidget({
     const widgetIdRef = useRef<string | null>(null);
     const lastResetSignalRef = useRef(resetSignal);
     const [scriptReady, setScriptReady] = useState(
-        () => typeof window !== "undefined" && Boolean(window.turnstile)
+        () => typeof globalThis.window !== "undefined" && Boolean(globalThis.window.turnstile)
     );
 
     useEffect(() => {
-        if (!siteKey || !scriptReady || !window.turnstile || widgetIdRef.current) return;
+        if (!siteKey || !scriptReady || !globalThis.window?.turnstile || widgetIdRef.current) return;
 
-        widgetIdRef.current = window.turnstile.render(`#${containerId}`, {
+        widgetIdRef.current = globalThis.window.turnstile.render(`#${containerId}`, {
             sitekey: siteKey,
             theme: "light",
             size: "flexible",
@@ -53,20 +53,20 @@ export function TurnstileWidget({
         });
 
         return () => {
-            if (widgetIdRef.current && window.turnstile) {
-                window.turnstile.remove(widgetIdRef.current);
+            if (widgetIdRef.current && globalThis.window?.turnstile) {
+                globalThis.window.turnstile.remove(widgetIdRef.current);
                 widgetIdRef.current = null;
             }
         };
     }, [containerId, onTokenChange, scriptReady, siteKey]);
 
     useEffect(() => {
-        if (!widgetIdRef.current || !window.turnstile) return;
+        if (!widgetIdRef.current || !globalThis.window?.turnstile) return;
         if (lastResetSignalRef.current === resetSignal) return;
 
         lastResetSignalRef.current = resetSignal;
         onTokenChange(null);
-        window.turnstile.reset(widgetIdRef.current);
+        globalThis.window.turnstile.reset(widgetIdRef.current);
     }, [onTokenChange, resetSignal]);
 
     if (!siteKey) return null;

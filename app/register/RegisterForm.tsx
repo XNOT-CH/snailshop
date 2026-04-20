@@ -88,6 +88,7 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     username: formData.username,
+                    pin: formData.pin,
                     password: formData.password,
                     confirmPassword: formData.confirmPassword,
                     turnstileToken,

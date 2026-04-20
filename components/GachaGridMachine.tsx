@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { CheckCircle2, Gamepad2, Gift, Loader2, RotateCcw, Sparkles, X } from "lucide-react";
+import { Gamepad2, Gift, Loader2, RotateCcw, Sparkles, X } from "lucide-react";
 import Image from "next/image";
 import { GachaResultModal } from "@/components/GachaResultModal";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
@@ -11,6 +11,7 @@ import { shouldBypassImageOptimization } from "@/lib/imageUrl";
 import { EMPTY_USER_BALANCES, getBalanceByCostType, type UserBalances } from "@/lib/userBalances";
 import { getGachaCostLabel, normalizeGachaCost } from "@/lib/gachaCost";
 import { useRouter } from "next/navigation";
+import { themeClasses } from "@/lib/theme";
 
 interface GridReward {
     id: string;
@@ -88,7 +89,7 @@ function RewardCard({
     return (
         <div
             className={[
-                "group relative overflow-hidden rounded-[1.35rem] border border-slate-200/80 bg-white p-3 shadow-[0_14px_28px_-22px_rgba(15,23,42,0.45)] transition-all duration-200",
+                `${themeClasses.surface} group relative overflow-hidden rounded-[1.35rem] p-3 transition-all duration-200`,
                 isHighlighted ? "border-[#1ca36b]/40 bg-[#f4fff9] -translate-y-0.5" : "",
                 isWinner ? "border-[#145de7]/30 bg-[#f8fbff]" : "",
                 isSpinning && !isHighlighted ? "opacity-35 scale-[0.97]" : "",
@@ -104,7 +105,7 @@ function RewardCard({
                     ].join(" ")}
                 >
                     {hasValidImg ? (
-                        <div className="absolute inset-0 bg-zinc-950">
+                        <div className="absolute inset-0 bg-background">
                             <Image
                                 src={reward.imageUrl!}
                                 alt={reward.rewardName}
@@ -148,7 +149,7 @@ function RewardCard({
 
 function EmptyRewardSlot() {
     return (
-        <div className="relative overflow-hidden rounded-[1.35rem] border border-dashed border-slate-200 bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-3">
+        <div className={`${themeClasses.surfaceSoft} relative overflow-hidden rounded-[1.35rem] border-dashed p-3`}>
             <div className="flex aspect-square flex-col items-center justify-center rounded-[1rem] bg-slate-50/70 text-center">
                 <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-slate-300 bg-white">
                     <Gift className="h-6 w-6 text-slate-300" />
@@ -380,27 +381,27 @@ export function GachaGridMachine({
     const actualRewards = rewards.filter((reward): reward is GridReward => Boolean(reward));
 
     return (
-        <div className="flex w-full max-w-[640px] flex-col gap-6">
-            <div className="overflow-hidden rounded-[2rem] border border-white/80 bg-white px-4 py-5 shadow-[0_28px_80px_-42px_rgba(15,23,42,0.35)] sm:px-6 sm:py-6">
+        <div className="flex w-full max-w-[640px] flex-col gap-0.5 sm:gap-1">
+            <div className={`${themeClasses.surface} overflow-hidden rounded-[2rem] px-4 py-5 sm:px-6 sm:py-6`}>
                 <div className="mb-4 flex items-start justify-between gap-3">
                     <div>
                         <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#145de7]/70">Lucky Board</p>
                         <h2 className="mt-1 text-[22px] font-black leading-none text-[#145de7]">{machineName}</h2>
                     </div>
-                    <div className="rounded-full border border-[#145de7]/15 bg-[#eef5ff] px-3 py-1.5 text-right text-[11px] font-semibold text-[#145de7]">
+                    <div className="rounded-full border border-primary/15 bg-primary/10 px-3 py-1.5 text-right text-[11px] font-semibold text-primary">
                         <p className="opacity-70">รางวัลพร้อมสุ่ม</p>
                         <p className="text-[14px] font-black">{actualRewards.length}/9</p>
                     </div>
                 </div>
 
                 {loading && (
-                    <div className="flex h-56 items-center justify-center rounded-[1.5rem] border border-slate-200/70 bg-slate-50/70">
+                    <div className={`${themeClasses.surfaceSoft} flex h-56 items-center justify-center rounded-[1.5rem]`}>
                         <Loader2 className="h-10 w-10 animate-spin text-[#145de7]/60" />
                     </div>
                 )}
 
                 {!loading && actualRewards.length === 0 && (
-                    <div className="flex h-56 flex-col items-center justify-center rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50/70 text-center">
+                    <div className={`${themeClasses.surfaceSoft} flex h-56 flex-col items-center justify-center rounded-[1.5rem] border-dashed text-center`}>
                         <Gift className="h-10 w-10 text-slate-300" />
                         <p className="mt-3 text-sm font-semibold text-slate-600">ยังไม่มีรางวัลในตู้</p>
                         <p className="mt-1 text-xs text-slate-400">เพิ่มรางวัลจากหน้าแอดมินก่อนเปิดให้สุ่ม</p>
@@ -408,7 +409,7 @@ export function GachaGridMachine({
                 )}
 
                 {!loading && actualRewards.length > 0 && (
-                    <div className="rounded-[1.5rem] border border-slate-100 bg-[radial-gradient(circle_at_top,_rgba(20,93,231,0.06),_transparent_45%),linear-gradient(180deg,#ffffff_0%,#fbfdff_100%)] p-3 sm:p-4">
+                    <div className={`${themeClasses.surfaceSoft} rounded-[1.5rem] p-3 sm:p-4`}>
                         <div className="grid grid-cols-3 gap-3 sm:gap-4">
                             {rewards.map((reward, idx) => (
                                 reward ? (
@@ -429,55 +430,42 @@ export function GachaGridMachine({
             </div>
 
             {maintenance?.enabled && (
-                <div className="rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-center shadow-sm">
+                <div className={`${themeClasses.alert} rounded-2xl px-4 py-3 text-center shadow-sm`}>
                     <p className="text-sm font-semibold text-amber-900">ระบบกาชากำลังปิดปรับปรุงชั่วคราว</p>
                     <p className="mt-1 text-xs text-amber-800/90">{maintenance.message}</p>
                 </div>
             )}
 
-            <div className="rounded-[1.75rem] border border-[#dbe7ff] bg-[linear-gradient(180deg,#ffffff_0%,#f7fbff_100%)] p-4 shadow-[0_18px_50px_-36px_rgba(20,93,231,0.35)]">
-                <div className="flex flex-col gap-4">
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                        <div>
-                            <p className="text-[24px] font-black tracking-tight text-[#145de7]">
-                                สุ่มรางวัลครั้งละ {normalizedCost.costAmount.toLocaleString()} {currencyWord}
-                            </p>
-                            {normalizedCost.costType !== "FREE" && (
-                                <p className="mt-2 text-[12px] font-medium text-slate-500">
-                                    เมื่อกดสุ่มแล้วไม่สามารถขอคืน{currencyWord}ได้ในทุกกรณี
-                                </p>
-                            )}
-                        </div>
-
+            <div className={`${themeClasses.surface} -mt-2 rounded-[1.75rem] px-4 pb-4 pt-0 sm:-mt-3 sm:px-5 sm:pb-5 sm:pt-0`}>
+                <div className="flex flex-col gap-5">
+                    <div className="space-y-1 text-center">
+                        <p className="text-[24px] font-black tracking-tight text-[#145de7]">
+                            สุ่มรางวัลครั้งละ {normalizedCost.costAmount.toLocaleString()} {currencyWord}
+                        </p>
                         {normalizedCost.costType !== "FREE" && (
-                            <div className="rounded-2xl border border-[#bcd6ff] bg-[#dce9ff] px-4 py-3 text-[#145de7]">
-                                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] opacity-70">ยอดคงเหลือ</p>
-                                <p className="mt-1 text-[20px] font-black leading-none">
-                                    {balance.toLocaleString()} <span className="text-[13px] font-bold">{currencyWord}</span>
-                                </p>
-                            </div>
+                            <p className="text-[12px] font-medium text-slate-700">กดสุ่มแล้วไม่สามารถขอคืน{currencyWord}ได้</p>
                         )}
                     </div>
 
-                    <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-[#158e4d]/15 bg-[#effaf4] px-4 py-3 transition hover:border-[#158e4d]/30">
+                    {normalizedCost.costType !== "FREE" && (
+                        <div className="w-full rounded-[1.1rem] border border-[#b7d0ff] bg-[#cfe1ff]/75 px-4 py-3 text-center text-[#145de7]">
+                            <p className="text-sm font-bold">
+                                ยอด{currencyWord}คงเหลือ: {balance.toLocaleString()} {currencyWord} <span className="font-normal text-[#145de7]/85">(ตรวจยอดล่าสุดก่อนกดสุ่มได้)</span>
+                            </p>
+                        </div>
+                    )}
+
+                    <label className="flex w-fit cursor-pointer items-center gap-3 rounded-full border border-[#bfe5ce] bg-[#f8fffb] px-4 py-2 text-sm font-medium text-[#2f8d57]">
                         <input
                             type="checkbox"
                             checked={skipAnimationEnabled}
                             onChange={(event) => handleSkipToggle(event.target.checked)}
-                            className="mt-0.5 h-4 w-4 rounded border-[#158e4d]/40 text-[#158e4d] focus:ring-[#158e4d]"
+                            className="h-4 w-4 rounded border-[#158e4d]/40 text-[#158e4d] focus:ring-[#158e4d]"
                         />
-                        <div className="flex-1">
-                            <p className="flex items-center gap-2 text-sm font-bold text-[#158e4d]">
-                                <CheckCircle2 className="h-4 w-4" />
-                                ข้ามอนิเมชั่นอัตโนมัติ
-                            </p>
-                            <p className="mt-1 text-[12px] text-[#158e4d]/80">
-                                เหมาะกับคนที่อยากเห็นผลลัพธ์ทันที ไม่ต้องรอจังหวะสุ่มทีละช่อง
-                            </p>
-                        </div>
+                        ข้ามอนิเมชั่นอัตโนมัติ
                     </label>
 
-                    <div className="w-full">
+                    <div className="pt-1">
                         {wonReward ? (
                             <div className="grid grid-cols-2 gap-3">
                                 <button
@@ -498,7 +486,7 @@ export function GachaGridMachine({
                         ) : spinning ? (
                             <button
                                 disabled
-                                className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl bg-[#158e4d]/65 px-4 py-4 text-[15px] font-black text-white/85"
+                                className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751]/60 px-4 py-4 text-[16px] font-black text-white/85"
                             >
                                 <Loader2 className="h-5 w-5 animate-spin" />
                                 กำลังสุ่ม...
@@ -507,7 +495,7 @@ export function GachaGridMachine({
                             <button
                                 onClick={() => void handleSpin()}
                                 disabled={loading || isBlocked || actualRewards.length === 0}
-                                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#158e4d] px-4 py-4 text-[16px] font-black text-white shadow-[0_16px_30px_-18px_rgba(21,142,77,0.85)] transition-all hover:bg-[#117640] active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex w-full items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751] px-4 py-4 text-[16px] font-black text-white shadow-[0_22px_40px_-24px_rgba(28,151,81,0.95)] transition-all hover:bg-[#167c42] active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <Gamepad2 className="h-5 w-5" />
                                 {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : "สุ่ม 1 ครั้ง"}
@@ -515,11 +503,17 @@ export function GachaGridMachine({
                         )}
                     </div>
 
-                    {normalizedCost.costType !== "FREE" && (
-                        <p className="text-center text-[11px] font-medium text-slate-400">
-                            ระบบจะดึงยอดล่าสุดจากบัญชีก่อนสรุปผลทุกครั้ง
-                        </p>
-                    )}
+                    <div className="min-h-[20px] text-center">
+                            {wonReward ? (
+                                <p className="text-sm font-semibold text-slate-700">
+                                    ได้รางวัล <span className="text-[#145de7]">{formatRewardLabel(wonReward)}</span>
+                                </p>
+                            ) : spinning ? (
+                                <p className="text-xs text-slate-500">กำลังสุ่มและเตรียมเปิดผลลัพธ์</p>
+                            ) : (
+                                <p className="text-xs text-slate-400" />
+                            )}
+                    </div>
                 </div>
             </div>
 

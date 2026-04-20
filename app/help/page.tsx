@@ -14,6 +14,7 @@ import {
 import { StructuredData } from "@/components/StructuredData";
 import { buildPageMetadata } from "@/lib/seo";
 import { getYouTubeEmbedUrl } from "@/lib/helpVideos";
+import { themeClasses } from "@/lib/theme";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,43 @@ const CATEGORIES: Record<string, string> = {
     account: "บัญชีผู้ใช้",
     order: "คำสั่งซื้อ",
     product: "สินค้า",
+    security: "ความปลอดภัย",
 };
+
+const PIN_FAQ_ARTICLES = [
+    {
+        id: "pin-faq-setup",
+        question: "PIN คืออะไร และใช้ทำอะไร?",
+        answer: "PIN คือรหัสตัวเลข 6 หลักสำหรับยืนยันรายการสำคัญ เช่น ซื้อสินค้า ชำระเงิน เติมเครดิต เติมโค้ด หรือสุ่มกาชา หากบัญชีของคุณตั้ง PIN ไว้ ระบบจะขอ PIN ก่อนทำรายการเหล่านี้เพื่อป้องกันการใช้งานโดยไม่ได้รับอนุญาต",
+        category: "security",
+        sortOrder: 900,
+        isActive: true,
+    },
+    {
+        id: "pin-faq-reset",
+        question: "ถ้าลืม PIN ต้องทำอย่างไร?",
+        answer: "เข้าไปที่หน้าโปรไฟล์ > ตั้งค่าบัญชี > การตั้งค่า PIN แล้วเลือกรีเซ็ตด้วยรหัสผ่าน ระบบจะให้ยืนยันรหัสผ่านปัจจุบันก่อนตั้ง PIN ใหม่ได้ทันที",
+        category: "security",
+        sortOrder: 901,
+        isActive: true,
+    },
+    {
+        id: "pin-faq-lock",
+        question: "ทำไม PIN ถึงถูกล็อกชั่วคราว?",
+        answer: "หากกรอก PIN ผิดหลายครั้ง ระบบจะล็อกชั่วคราวเพื่อความปลอดภัย คุณสามารถรอให้ครบเวลาที่ระบบแจ้ง หรือรีเซ็ต PIN ใหม่ด้วยรหัสผ่านบัญชีจากหน้าโปรไฟล์",
+        category: "security",
+        sortOrder: 902,
+        isActive: true,
+    },
+    {
+        id: "pin-faq-protected",
+        question: "ตอนนี้ระบบขอ PIN ตอนไหนบ้าง?",
+        answer: "ระบบจะขอ PIN กับรายการสำคัญ เช่น เปลี่ยนรหัสผ่าน ซื้อสินค้า ชำระเงินจากตะกร้า ส่งสลิปเติมเงิน เติมโค้ด และเริ่มสุ่มกาชา หากบัญชีคุณยังไม่ได้ตั้ง PIN ระบบจะไม่ถาม PIN ในขั้นตอนเหล่านี้",
+        category: "security",
+        sortOrder: 903,
+        isActive: true,
+    },
+] as const;
 
 export default async function HelpPage() {
     const articles = await db.query.helpArticles.findMany({
@@ -47,18 +84,25 @@ export default async function HelpPage() {
         console.error("[HELP_VIDEOS_FETCH]", error);
     }
 
-    const groupedArticles = articles.reduce((acc, article) => {
+    const mergedArticles = [
+        ...articles,
+        ...PIN_FAQ_ARTICLES.filter((fallbackArticle) =>
+            !articles.some((article) => article.question.trim() === fallbackArticle.question.trim())
+        ),
+    ];
+
+    const groupedArticles = mergedArticles.reduce((acc, article) => {
         if (!acc[article.category]) {
             acc[article.category] = [];
         }
         acc[article.category].push(article);
         return acc;
-    }, {} as Record<string, typeof articles>);
+    }, {} as Record<string, typeof mergedArticles>);
 
     const faqStructuredData = {
         "@context": "https://schema.org",
         "@type": "FAQPage",
-        mainEntity: articles.map((article) => ({
+        mainEntity: mergedArticles.map((article) => ({
             "@type": "Question",
             name: article.question,
             acceptedAnswer: {
@@ -70,7 +114,7 @@ export default async function HelpPage() {
 
     return (
         <div className="animate-page-enter mx-auto max-w-6xl">
-            {articles.length > 0 && <StructuredData data={faqStructuredData} />}
+            {mergedArticles.length > 0 && <StructuredData data={faqStructuredData} />}
 
             <div className="relative left-1/2 w-screen -translate-x-1/2 border-y border-border/50 bg-card/90 px-4 py-6 shadow-xl shadow-primary/10 backdrop-blur-sm sm:left-auto sm:w-auto sm:translate-x-0 sm:border sm:bg-card/90 sm:px-6 sm:py-8 sm:backdrop-blur-sm">
                 <PageBreadcrumb items={[{ label: "ศูนย์ช่วยเหลือ" }]} className="mb-6" />
@@ -87,9 +131,11 @@ export default async function HelpPage() {
 
                 <div className="space-y-6">
                     {videos.length > 0 && (
-                        <Card className="overflow-hidden border-primary/10 shadow-lg shadow-primary/5">
-                            <CardHeader className="border-b border-border/60 bg-gradient-to-r from-blue-50 via-white to-cyan-50 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-800">
-                                <CardTitle className="flex items-center gap-2">
+                        <Card className={`${themeClasses.surface} overflow-hidden gap-0 border-primary/10 shadow-lg shadow-primary/5`}>
+                            <CardHeader
+                                className={`${themeClasses.surfaceMedia} border-b border-border/70 text-foreground`}
+                            >
+                                <CardTitle className="flex items-center gap-2 text-foreground">
                                     <PlayCircle className="h-5 w-5 text-red-500" />
                                     วิดีโอช่วยเหลือ
                                 </CardTitle>
@@ -102,7 +148,7 @@ export default async function HelpPage() {
                                     {videos.map((video) => (
                                         <div
                                             key={video.id}
-                                            className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm"
+                                            className={`${themeClasses.surfaceSoft} overflow-hidden rounded-2xl border border-border/80 shadow-sm`}
                                         >
                                             <div className="relative aspect-video overflow-hidden bg-black">
                                                 <iframe
@@ -125,7 +171,7 @@ export default async function HelpPage() {
                         </Card>
                     )}
 
-                    {articles.length === 0 ? (
+                    {mergedArticles.length === 0 ? (
                         <Card>
                             <CardContent className="py-12 text-center text-muted-foreground">
                                 ยังไม่มีคำถามในขณะนี้

@@ -8,6 +8,7 @@ import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { formatCurrencyAmount } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { ensureTicketBalanceColumn } from "@/lib/wallet";
+import { themeClasses } from "@/lib/theme";
 
 export const dynamic = "force-dynamic";
 
@@ -54,7 +55,7 @@ export default async function DashboardWalletPage() {
     const ticketBalance = Number(user.ticketBalance ?? 0);
 
     return (
-        <div className="space-y-6">
+        <div className="dashboard-wallet-page space-y-6">
             <PageBreadcrumb
                 items={[
                     { label: "แดชบอร์ด", href: "/dashboard" },
@@ -62,10 +63,10 @@ export default async function DashboardWalletPage() {
                 ]}
             />
 
-            <section className="rounded-[28px] border border-border/70 bg-card px-5 py-6 shadow-sm sm:px-6">
+            <section className={`${themeClasses.surface} rounded-[28px] px-5 py-6 shadow-sm sm:px-6`}>
                 <div className="space-y-2">
-                    <h1 className="text-2xl font-semibold tracking-tight text-slate-900">กระเป๋าของฉัน</h1>
-                    <p className="text-sm leading-6 text-slate-500">
+                    <h1 className="text-2xl font-semibold tracking-tight text-foreground">กระเป๋าของฉัน</h1>
+                    <p className="text-sm leading-6 text-muted-foreground">
                         รวมยอดคงเหลือของเครดิต {currencySettings.name} และตั๋วสุ่มในบัญชีนี้
                     </p>
                 </div>
@@ -73,9 +74,9 @@ export default async function DashboardWalletPage() {
                 <div className="mt-6 grid gap-4 md:grid-cols-2">
                     {balances.map((item) => {
                         return (
-                            <Card key={item.title} className="rounded-[24px] border border-border/70 shadow-none">
+                            <Card key={item.title} className={`${themeClasses.surfaceSoft} rounded-[24px] border border-border/70 shadow-none`}>
                                 <CardContent className="p-5">
-                                    <div className="relative h-16 w-16 overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
+                                    <div className="relative h-16 w-16 overflow-hidden rounded-2xl border border-border/70 bg-background/70 shadow-sm">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
                                             src={item.image}
@@ -83,9 +84,9 @@ export default async function DashboardWalletPage() {
                                             className="h-full w-full object-contain p-2"
                                         />
                                     </div>
-                                    <p className="mt-4 text-sm font-medium text-slate-500">{item.title}</p>
-                                    <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{item.value}</p>
-                                    <p className="mt-2 text-sm leading-6 text-slate-500">{item.detail}</p>
+                                    <p className="mt-4 text-sm font-medium text-muted-foreground">{item.title}</p>
+                                    <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">{item.value}</p>
+                                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.detail}</p>
                                 </CardContent>
                             </Card>
                         );
@@ -95,17 +96,17 @@ export default async function DashboardWalletPage() {
                 {ticketBalance > 0 ? (
                     <div className="mt-8 space-y-4">
                         <div className="space-y-1">
-                            <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-slate-900">
+                            <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground">
                                 <Gift className="h-5 w-5 text-blue-600" />
                                 ตั๋วสุ่มของฉัน
                             </h2>
-                            <p className="text-sm leading-6 text-slate-500">
+                            <p className="text-sm leading-6 text-muted-foreground">
                                 แสดงตั๋วสุ่มที่ถืออยู่ในกระเป๋าแบบการ์ดไอเทมเพื่อดูง่ายขึ้น
                             </p>
                         </div>
 
                         <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
-                            <Card className="overflow-hidden rounded-[30px] border border-border/70 bg-white shadow-sm">
+                            <Card className={`${themeClasses.surfaceSoft} overflow-hidden rounded-[30px] border border-border/70 shadow-sm`}>
                                 <div className="relative h-[280px] overflow-hidden border-b border-border/60 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.14),transparent_35%),linear-gradient(180deg,#fffdfa_0%,#f8fafc_100%)]">
                                     <div className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm">
                                         <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -125,8 +126,8 @@ export default async function DashboardWalletPage() {
 
                                 <CardContent className="space-y-4 p-5">
                                     <div>
-                                        <h3 className="text-2xl font-semibold tracking-tight text-slate-900">ตั๋วสุ่ม Season Pass</h3>
-                                        <div className="mt-2 flex items-center gap-2 text-sm text-slate-500">
+                                        <h3 className="text-2xl font-semibold tracking-tight text-foreground">ตั๋วสุ่ม Season Pass</h3>
+                                        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
                                             <CalendarDays className="h-4 w-4" />
                                             อัปเดตจากการกดรับรางวัลล่าสุด
                                         </div>
@@ -136,7 +137,7 @@ export default async function DashboardWalletPage() {
                                         <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
                                             จำนวนคงเหลือ {ticketBalance.toLocaleString()}
                                         </span>
-                                        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-600">
+                                        <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
                                             รับได้จาก Season Pass
                                         </span>
                                     </div>
@@ -153,7 +154,7 @@ export default async function DashboardWalletPage() {
                     </div>
                 ) : null}
 
-                <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm leading-7 text-amber-900">
+                <div className={`${themeClasses.alert} mt-6 rounded-2xl p-4 text-sm leading-7`}>
                     ตั๋วสุ่มที่ได้รับจาก Season Pass จะถูกบันทึกเข้ากระเป๋าอัตโนมัติทันทีเมื่อกดรับของวันนั้น
                 </div>
             </section>

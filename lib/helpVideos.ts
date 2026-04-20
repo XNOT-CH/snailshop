@@ -13,7 +13,7 @@ export function extractYouTubeVideoId(value: string) {
         const hostname = normalizeHostname(url.hostname);
 
         if (hostname === "youtu.be") {
-            const id = url.pathname.split("/").filter(Boolean)[0];
+            const id = url.pathname.split("/").find(Boolean);
             return id && YOUTUBE_VIDEO_ID_REGEX.test(id) ? id : null;
         }
 

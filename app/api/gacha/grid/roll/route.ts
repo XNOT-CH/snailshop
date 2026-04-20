@@ -12,10 +12,9 @@ import {
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { pickWeightedCandidate } from "@/lib/gachaProbability";
-import { getGachaRewardTypeLabel } from "@/lib/gachaCost";
+import { getGachaRewardTypeLabel, normalizeGachaCost } from "@/lib/gachaCost";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkGachaRateLimit, getClientIp } from "@/lib/rateLimit";
-import { normalizeGachaCost } from "@/lib/gachaCost";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 

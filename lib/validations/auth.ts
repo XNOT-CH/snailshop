@@ -31,6 +31,11 @@ export const registerSchema = z.object({
         .string()
         .min(6, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร")
         .max(200),
+    pin: z
+        .string()
+        .regex(/^\d{6}$/, "PIN ต้องเป็นตัวเลข 6 หลัก")
+        .optional()
+        .or(z.literal("")),
     confirmPassword: z.string().min(1, "กรุณายืนยันรหัสผ่าน"),
     turnstileToken: z
         .string()

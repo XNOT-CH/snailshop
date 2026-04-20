@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AnnouncementPopup from "@/components/AnnouncementPopup";
 
 vi.mock("next/image", () => ({
-  default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => <img {...props} />,
+  default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => <img {...props} alt={props.alt ?? ""} />,
 }));
 
 vi.mock("framer-motion", () => ({
@@ -44,7 +44,7 @@ describe("AnnouncementPopup timing dismissal", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-04-11T12:00:00.000Z"));
     localStorage.clear();
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: vi.fn().mockResolvedValue(popupPayload),
     }) as unknown as typeof fetch;
@@ -60,7 +60,7 @@ describe("AnnouncementPopup timing dismissal", () => {
     const firstRender = render(<AnnouncementPopup />);
 
     await flushPopupCycle();
-    expect(global.fetch).toHaveBeenCalledWith("/api/popups");
+    expect(globalThis.fetch).toHaveBeenCalledWith("/api/popups");
 
     await flushPopupCycle(500);
 
@@ -73,7 +73,7 @@ describe("AnnouncementPopup timing dismissal", () => {
 
     firstRender.unmount();
     vi.clearAllMocks();
-    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+    (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
       json: vi.fn().mockResolvedValue(popupPayload),
     });
@@ -83,13 +83,13 @@ describe("AnnouncementPopup timing dismissal", () => {
     await flushPopupCycle(600);
 
     expect(screen.queryByRole("button", { name: "ปิด" })).not.toBeInTheDocument();
-    expect(global.fetch).not.toHaveBeenCalled();
+    expect(globalThis.fetch).not.toHaveBeenCalled();
 
     vi.setSystemTime(new Date("2026-04-11T13:00:01.000Z"));
 
     secondRender.unmount();
     vi.clearAllMocks();
-    (global.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+    (globalThis.fetch as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       ok: true,
       json: vi.fn().mockResolvedValue(popupPayload),
     });
@@ -97,7 +97,7 @@ describe("AnnouncementPopup timing dismissal", () => {
     render(<AnnouncementPopup />);
 
     await flushPopupCycle();
-    expect(global.fetch).toHaveBeenCalledWith("/api/popups");
+    expect(globalThis.fetch).toHaveBeenCalledWith("/api/popups");
 
     await flushPopupCycle(500);
 

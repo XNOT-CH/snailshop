@@ -47,7 +47,7 @@ export function toAbsoluteAssetUrl(assetUrl?: string | null): string | undefined
 
 export function resolveSiteName(siteName?: string | null): string {
     const normalized = siteName?.trim();
-    return normalized ? normalized : SITE_NAME;
+    return normalized || SITE_NAME;
 }
 
 type PageMetadataOptions = {

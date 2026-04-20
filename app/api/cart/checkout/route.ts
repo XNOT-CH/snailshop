@@ -17,6 +17,7 @@ import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkPurchaseRateLimit, getClientIp } from "@/lib/rateLimit";
 import { validatePromoCode } from "@/lib/promo";
 import { resolveSiteName } from "@/lib/seo";
+import { assertPinForProtectedAction } from "@/lib/security/pin";
 
 type ProductRow = {
     id: string;
@@ -417,7 +418,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const { productIds, promoCode } = await request.json();
+        const { productIds, promoCode, pin } = await request.json();
 
         if (!productIds || !Array.isArray(productIds) || productIds.length === 0) {
             return NextResponse.json({ success: false, message: MSG_SELECT_PRODUCTS }, { status: 400 });
@@ -436,6 +437,10 @@ export async function POST(request: NextRequest) {
             columns: { id: true, creditBalance: true, pointBalance: true },
         });
         if (!user) return NextResponse.json({ success: false, message: MSG_USER_NOT_FOUND }, { status: 404 });
+        const pinCheck = await assertPinForProtectedAction(user.id, pin);
+        if (!pinCheck.success) {
+            return NextResponse.json({ success: false, message: pinCheck.message }, { status: pinCheck.status });
+        }
         const [currencySettings, siteSettings] = await Promise.all([
             getCurrencySettings().catch(() => null),
             getSiteSettings(),

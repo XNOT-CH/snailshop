@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart, Loader2 } from "lucide-react";
 import { showPurchaseConfirm, showPurchaseSuccessModal, showWarning, showErrorAlert } from "@/lib/swal";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
-import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
+import { preparePurchase } from "@/lib/prepare-purchase";
 
 interface BuyButtonProps {
     productId: string;
@@ -28,16 +28,19 @@ export function BuyButton({ productId, price, disabled }: Readonly<BuyButtonProp
 
         if (disabled || isLoading) return;
 
-        const authCheck = await requireAuthBeforePurchase(router);
-        if (!authCheck.allowed) {
-            return;
-        }
-
         const confirmed = await showPurchaseConfirm({
             priceText: `฿${price.toLocaleString()}`,
         });
 
         if (!confirmed) return;
+
+        const purchaseCheck = await preparePurchase({
+            router,
+            amount: price,
+            currency: "THB",
+            pinActionLabel: "ยืนยัน PIN เพื่อซื้อสินค้า",
+        });
+        if (!purchaseCheck.allowed) return;
 
         setIsLoading(true);
 
@@ -47,7 +50,7 @@ export function BuyButton({ productId, price, disabled }: Readonly<BuyButtonProp
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ productId }),
+                body: JSON.stringify({ productId, pin: purchaseCheck.pin }),
             });
 
             const data = await response.json();

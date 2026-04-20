@@ -481,7 +481,7 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
 
   return (
     <div className="flex w-full max-w-[640px] flex-col items-center gap-8">
-      <div ref={cardRef} className="relative flex w-full justify-center overflow-hidden rounded-2xl border border-border/60 bg-card/40 p-4 shadow-sm backdrop-blur-sm sm:p-8 md:p-10">
+      <div ref={cardRef} className="relative flex w-full justify-center overflow-hidden rounded-2xl border border-border/60 bg-card p-4 shadow-[0_12px_30px_-26px_rgba(15,23,42,0.24)] sm:p-8 md:p-10">
         <button onClick={() => setShowDropRate(true)} className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full border border-border/60 bg-background/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground shadow-sm transition-all hover:bg-background hover:text-[#145de7]">
           ℹ อัตราดรอป
         </button>
@@ -555,32 +555,41 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
 
       <div className="flex w-full flex-col gap-4">
         {maintenance?.enabled && <div className="w-full rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-center shadow-sm"><p className="text-sm font-semibold text-amber-900">ระบบกาชากำลังปิดปรับปรุงชั่วคราว</p><p className="mt-1 text-xs text-amber-800/90">{maintenance.message}</p></div>}
-        <div className="min-h-[20px]">
-          <AnimatePresence mode="wait">
-            {phase === "waitSpin2" && selectedLLabel && <motion.p key="wait2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-xs text-slate-500">เลือกแล้ว <span className="font-semibold text-violet-500">{selectedLLabel}</span>{" - กดสุ่มครั้งที่ 2 เพื่อเลือกแถวขวา"}</motion.p>}
-            {phase === "revealing" && selectedLLabel && selectedRLabel && <motion.p key="reveal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-xs text-slate-500"><span className="font-semibold text-violet-500">{selectedLLabel}</span>{" × "}<span className="font-semibold text-emerald-500">{selectedRLabel}</span>{" -> "}<span className="font-semibold text-slate-900">จุดตัด</span></motion.p>}
-          </AnimatePresence>
-        </div>
 
-        <div className="mt-3 flex w-full flex-col items-center">
-          <div className="mb-4 space-y-1 text-center">
-            <h2 className="text-[18px] font-bold text-[#145de7] md:text-[22px]">สุ่มรางวัลครั้งละ {normalizedCost.costAmount.toLocaleString()} {currencyWord}</h2>
-            <p className="text-[13px] font-medium text-black md:text-[14px]">* เมื่อกดสุ่มแล้วไม่สามารถขอคืน{currencyWord}ได้ในทุกกรณี *</p>
-          </div>
-          <div className="mb-5 w-full rounded-xl border border-[#bcd6ff] bg-[#d0e3ff]/70 px-4 py-3 text-center text-sm font-bold text-[#145de7]">ยอด{currencyWord}คงเหลือ: {displayedBalance.toLocaleString()} {currencyWord} <span className="font-normal text-[#145de7]/90">(ตรวจยอดล่าสุดก่อนกดสุ่มได้)</span></div>
-          <label className="mb-4 flex cursor-pointer items-center gap-3 self-start rounded-full border border-[#158e4d]/20 bg-[#158e4d]/5 px-3 py-2 text-sm font-medium text-[#158e4d]">
-            <input
-              type="checkbox"
-              checked={skipAnimationEnabled}
-              onChange={(event) => handleSkipToggle(event.target.checked)}
-              className="h-4 w-4 rounded border-[#158e4d]/40 text-[#158e4d] focus:ring-[#158e4d]"
-            />
-            ข้ามอนิเมชั่นอัตโนมัติ
-          </label>
-          <div className="w-full">
-            {phase === "idle" && <button onClick={() => void handleFirstSpin()} disabled={isBlocked} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#158e4d] py-3.5 text-[15px] font-bold text-white shadow-[0_16px_32px_-18px_rgba(21,142,77,0.85)] transition-all active:scale-[0.98] hover:bg-[#117640] disabled:cursor-not-allowed disabled:opacity-50 md:py-4 md:text-base"><Gamepad2 className="h-5 w-5" /> {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : "สุ่ม"}</button>}
-            {(phase === "rolling1" || phase === "rolling2" || phase === "revealing") && <button disabled className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-xl bg-[#158e4d]/60 py-3.5 text-[15px] font-bold text-white/80 md:py-4 md:text-base"><Loader2 className="h-5 w-5 animate-spin" /> {phase === "rolling1" ? "กำลังสุ่ม..." : phase === "rolling2" ? "กำลังเลือก..." : "กำลังเปิด..."}</button>}
-            {phase === "waitSpin2" && <button onClick={() => void handleSecondSpin()} disabled={isBlocked} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#158e4d] py-3.5 text-[15px] font-bold text-white shadow-[0_16px_32px_-18px_rgba(21,142,77,0.85)] transition-all active:scale-[0.98] hover:bg-[#117640] disabled:cursor-not-allowed disabled:opacity-50 md:py-4 md:text-base"><Gamepad2 className="h-5 w-5" /> สุ่มครั้งที่ 2</button>}
+        <div className="rounded-[1.75rem] bg-white p-4 sm:p-5">
+          <div className="flex flex-col gap-5">
+            <div className="space-y-1 text-center">
+              <h2 className="text-[18px] font-bold text-[#145de7] md:text-[22px]">สุ่มรางวัลครั้งละ {normalizedCost.costAmount.toLocaleString()} {currencyWord}</h2>
+              <p className="text-[12px] font-medium text-slate-700">กดสุ่มแล้วไม่สามารถขอคืน{currencyWord}ได้</p>
+            </div>
+
+            <div className="w-full rounded-[1.1rem] border border-[#b7d0ff] bg-[#cfe1ff]/75 px-4 py-3 text-center text-[#145de7]">
+              <p className="text-sm font-bold">ยอด{currencyWord}คงเหลือ: {displayedBalance.toLocaleString()} {currencyWord} <span className="font-normal text-[#145de7]/85">(ตรวจยอดล่าสุดก่อนกดสุ่มได้)</span></p>
+            </div>
+
+            <label className="flex w-fit cursor-pointer items-center gap-3 rounded-full border border-[#bfe5ce] bg-[#f8fffb] px-4 py-2 text-sm font-medium text-[#2f8d57]">
+              <input
+                type="checkbox"
+                checked={skipAnimationEnabled}
+                onChange={(event) => handleSkipToggle(event.target.checked)}
+                className="h-4 w-4 rounded border-[#158e4d]/40 text-[#158e4d] focus:ring-[#158e4d]"
+              />
+              ข้ามอนิเมชั่นอัตโนมัติ
+            </label>
+
+            <div className="pt-1">
+              {phase === "idle" && <button onClick={() => void handleFirstSpin()} disabled={isBlocked} className="flex w-full items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751] py-4 text-[16px] font-bold text-white shadow-[0_22px_40px_-24px_rgba(28,151,81,0.95)] transition-all active:scale-[0.985] hover:bg-[#167c42] disabled:cursor-not-allowed disabled:opacity-50 md:text-base"><Gamepad2 className="h-5 w-5" /> {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : "สุ่ม"}</button>}
+              {(phase === "rolling1" || phase === "rolling2" || phase === "revealing") && <button disabled className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751]/60 py-4 text-[16px] font-bold text-white/85 md:text-base"><Loader2 className="h-5 w-5 animate-spin" /> {phase === "rolling1" ? "กำลังสุ่ม..." : phase === "rolling2" ? "กำลังเลือก..." : "กำลังเปิด..."}</button>}
+              {phase === "waitSpin2" && <button onClick={() => void handleSecondSpin()} disabled={isBlocked} className="flex w-full items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751] py-4 text-[16px] font-bold text-white shadow-[0_22px_40px_-24px_rgba(28,151,81,0.95)] transition-all active:scale-[0.985] hover:bg-[#167c42] disabled:cursor-not-allowed disabled:opacity-50 md:text-base"><Gamepad2 className="h-5 w-5" /> สุ่มครั้งที่ 2</button>}
+            </div>
+
+            <div className="min-h-[20px]">
+              <AnimatePresence mode="wait">
+                {phase === "waitSpin2" && selectedLLabel && <motion.p key="wait2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-xs text-slate-500">เลือกแล้ว <span className="font-semibold text-violet-500">{selectedLLabel}</span>{" - กดสุ่มครั้งที่ 2 เพื่อเลือกแถวขวา"}</motion.p>}
+                {phase === "revealing" && selectedLLabel && selectedRLabel && <motion.p key="reveal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-xs text-slate-500"><span className="font-semibold text-violet-500">{selectedLLabel}</span>{" × "}<span className="font-semibold text-emerald-500">{selectedRLabel}</span>{" -> "}<span className="font-semibold text-slate-900">จุดตัด</span></motion.p>}
+                {phase === "result" && resultProduct && <motion.p key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-sm font-semibold text-slate-700">ได้รางวัล <span className="text-[#145de7]">{resultProduct.name}</span></motion.p>}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </div>

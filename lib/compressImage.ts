@@ -12,14 +12,14 @@ async function compressWithCanvas(
     startHeight: number,
     maxSizeBytes: number,
 ): Promise<Blob | null> {
-    const outputType = "image/webp";
+    const preferredOutputType = "image/webp";
     let quality = 0.85;
     let width = startWidth;
     let height = startHeight;
     let blob: Blob | null = null;
 
     for (let i = 0; i < 10; i++) {
-        blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, outputType, quality));
+        blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, preferredOutputType, quality));
 
         if (!blob || blob.size <= maxSizeBytes) {
             break;
@@ -37,6 +37,19 @@ async function compressWithCanvas(
     }
 
     return blob;
+}
+
+function getExtensionFromMimeType(mimeType: string) {
+    switch (mimeType) {
+        case "image/webp":
+            return "webp";
+        case "image/png":
+            return "png";
+        case "image/jpeg":
+            return "jpg";
+        default:
+            return null;
+    }
 }
 
 const DEFAULT_MAX_SIZE_BYTES = 300 * 1024; // 300KB
@@ -99,9 +112,15 @@ export async function compressImage(
         return file;
     }
 
+    const outputMimeType = blob.type || file.type;
+    const extension = getExtensionFromMimeType(outputMimeType);
+    if (!extension) {
+        return file;
+    }
+
     const baseName = file.name.replace(/\.[^.]+$/, "");
-    return new File([blob], `${baseName}.webp`, {
+    return new File([blob], `${baseName}.${extension}`, {
         lastModified: Date.now(),
-        type: "image/webp",
+        type: outputMimeType,
     });
 }

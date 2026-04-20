@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Calendar, ArrowRight, Loader2, Newspaper } from "lucide-react";
 import { useState, useEffect } from "react";
+import { themeClasses } from "@/lib/theme";
 
 interface NewsArticle {
     id: string;
@@ -14,11 +15,19 @@ interface NewsArticle {
     createdAt: string;
 }
 
-export function NewsSection() {
-    const [news, setNews] = useState<NewsArticle[]>([]);
-    const [loading, setLoading] = useState(true);
+interface NewsSectionProps {
+    initialNews?: NewsArticle[];
+}
+
+export function NewsSection({ initialNews }: Readonly<NewsSectionProps>) {
+    const [news, setNews] = useState<NewsArticle[]>(() => initialNews ?? []);
+    const [loading, setLoading] = useState(!Array.isArray(initialNews));
 
     useEffect(() => {
+        if (Array.isArray(initialNews)) {
+            return;
+        }
+
         const fetchNews = async () => {
             try {
                 const res = await fetch("/api/news");
@@ -34,7 +43,7 @@ export function NewsSection() {
         };
 
         fetchNews();
-    }, []);
+    }, [initialNews]);
 
     // Format date to Thai format
     const formatDate = (dateString: string) => {
@@ -77,7 +86,7 @@ export function NewsSection() {
                     {news.map((article) => (
                         <article
                             key={article.id}
-                            className="bg-card border border-border rounded-xl overflow-hidden shadow-sm hover:shadow-lg hover:border-primary/30 transition-all duration-300 group flex flex-col"
+                            className={`${themeClasses.surface} group flex flex-col overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_20px_38px_-28px_rgba(39,71,121,0.18)] dark:hover:shadow-[0_24px_48px_-32px_rgba(0,0,0,0.9)]`}
                         >
                             {/* Image */}
                             <div className="relative w-full aspect-video overflow-hidden bg-muted">
@@ -94,7 +103,7 @@ export function NewsSection() {
                                         }}
                                     />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center bg-muted">
+                                            <div className="flex h-full w-full items-center justify-center bg-muted">
                                         <Newspaper className="h-10 w-10 text-muted-foreground/30" />
                                     </div>
                                 )}
@@ -113,7 +122,7 @@ export function NewsSection() {
                                 </p>
 
                                 {/* Footer */}
-                                <div className="flex items-center justify-between pt-3 border-t border-border">
+                                <div className="flex items-center justify-between border-t border-border/80 pt-3">
                                     {/* Date */}
                                     <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
                                         <Calendar className="w-3.5 h-3.5" />
@@ -126,7 +135,7 @@ export function NewsSection() {
                                             href={article.link}
                                             target="_blank"
                                             rel="noopener noreferrer"
-                                            className="flex items-center gap-1 text-primary hover:text-primary/80 text-xs font-medium transition-colors group/link"
+                                            className={`${themeClasses.link} group/link flex items-center gap-1 text-xs font-medium transition-colors`}
                                         >
                                             <span>อ่านเพิ่มเติม</span>
                                             <ArrowRight className="w-3.5 h-3.5 group-hover/link:translate-x-0.5 transition-transform" />

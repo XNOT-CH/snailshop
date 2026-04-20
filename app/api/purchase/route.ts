@@ -17,6 +17,7 @@ import { getSiteSettings } from "@/lib/getSiteSettings";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkPurchaseRateLimit, getClientIp } from "@/lib/rateLimit";
 import { resolveSiteName } from "@/lib/seo";
+import { assertPinForProtectedAction } from "@/lib/security/pin";
 import {
     calculatePromoDiscountAmount,
     getPromoValidationMessage,
@@ -200,6 +201,7 @@ async function executePurchaseTransaction(
     user: AuthUser,
     promoCode?: string,
     currencySettings?: PublicCurrencySettings | null,
+    pin?: string,
 ) {
     try {
         await conn.beginTransaction();
@@ -244,6 +246,13 @@ async function executePurchaseTransaction(
             throw new Error(
                 `${isPointCurrency ? getPointCurrencyName(currencySettings) : "เครดิต"}ไม่เพียงพอ (ต้องการ ${requiredAmount} แต่มี ${currentAmount})`
             );
+        }
+
+        const pinCheck = await assertPinForProtectedAction(user.id, pin);
+        if (!pinCheck.success) {
+            const pinError = new Error(pinCheck.message);
+            (pinError as Error & { status?: number }).status = pinCheck.status;
+            throw pinError;
         }
 
         const decryptedData = decrypt(prod.secretData || "");
@@ -343,7 +352,7 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-        const { productId, quantity, promoCode } = await request.json();
+        const { productId, quantity, promoCode, pin } = await request.json();
 
         if (!productId) {
             return NextResponse.json({ success: false, message: "Product ID is required" }, { status: 400 });
@@ -374,6 +383,7 @@ export async function POST(request: NextRequest) {
             user,
             typeof promoCode === "string" ? promoCode : undefined,
             currencySettings,
+            typeof pin === "string" ? pin : undefined,
         );
 
         await auditFromRequest(request, {
@@ -411,7 +421,7 @@ export async function POST(request: NextRequest) {
                 success: false,
                 message: error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการซื้อ",
             },
-            { status: 400 }
+            { status: error instanceof Error && "status" in error && typeof error.status === "number" ? error.status : 400 }
         );
     }
 }

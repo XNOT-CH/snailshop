@@ -59,6 +59,7 @@ const CATEGORIES = [
     { value: "account", label: "บัญชีผู้ใช้" },
     { value: "order", label: "คำสั่งซื้อ" },
     { value: "product", label: "สินค้า" },
+    { value: "security", label: "ความปลอดภัย / PIN" },
 ];
 
 const emptyArticleForm = {

@@ -98,35 +98,6 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
                     </Link>
                 </div>
             </aside>
-
-            <nav className="fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around border-t border-border bg-card px-1 py-2 md:hidden">
-                {sidebarLinks.map((link) => {
-                    const isActive =
-                        pathname === link.href ||
-                        (link.href !== "/dashboard" && pathname.startsWith(link.href));
-                    const Icon = link.icon;
-
-                    return (
-                        <Link
-                            key={link.href}
-                            href={link.href}
-                            className={`flex flex-col items-center gap-0.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                                isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                            }`}
-                        >
-                            <Icon className={`h-5 w-5 ${isActive ? "text-primary" : ""}`} />
-                            <span className="max-w-[4.75rem] truncate text-center leading-tight">{link.label}</span>
-                        </Link>
-                    );
-                })}
-                <Link
-                    href="/"
-                    className="flex flex-col items-center gap-0.5 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
-                >
-                    <ArrowLeft className="h-5 w-5" />
-                    <span className="max-w-[4rem] truncate">หน้าร้าน</span>
-                </Link>
-            </nav>
         </TooltipProvider>
     );
 }

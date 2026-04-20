@@ -6,7 +6,7 @@ export const NEWS_MAX_IMAGE_ASPECT_RATIO = 4;
 const ABSOLUTE_HTTP_URL_PATTERN = /^https?:\/\/.+/i;
 
 export function normalizeNewsTextInput(value: string): string {
-  return value.trim().replace(/\s+/g, " ");
+  return value.trim().replaceAll(/\s+/g, " ");
 }
 
 export function normalizeNewsUrlInput(value: string): string {

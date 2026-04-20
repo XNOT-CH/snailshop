@@ -18,6 +18,7 @@ export default async function AdminUsersPage() {
             id: true, username: true, name: true, email: true, phone: true, image: true,
             role: true, creditBalance: true, totalTopup: true,
             pointBalance: true, lifetimePoints: true, createdAt: true,
+            pinHash: true, pinLockedUntil: true, pinUpdatedAt: true,
         },
     });
 
@@ -25,6 +26,9 @@ export default async function AdminUsersPage() {
         ...user,
         creditBalance: String(user.creditBalance ?? "0"),
         totalTopup: String(user.totalTopup ?? "0"),
+        hasPin: Boolean(user.pinHash),
+        pinLockedUntil: user.pinLockedUntil,
+        pinUpdatedAt: user.pinUpdatedAt,
         // Drizzle returns datetime as string — ensure ISO format
         createdAt: typeof user.createdAt === "string" ? user.createdAt : new Date(user.createdAt as string | number | Date).toISOString(),
     }));

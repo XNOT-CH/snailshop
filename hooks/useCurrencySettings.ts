@@ -13,6 +13,10 @@ export function useCurrencySettings(initialSettings?: PublicCurrencySettings | n
   );
 
   useEffect(() => {
+    if (initialSettings) {
+      return;
+    }
+
     let isMounted = true;
 
     async function fetchCurrencySettings() {
@@ -39,7 +43,7 @@ export function useCurrencySettings(initialSettings?: PublicCurrencySettings | n
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [initialSettings]);
 
   return settings;
 }

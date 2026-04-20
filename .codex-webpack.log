@@ -1,0 +1,436 @@
+▲ Next.js 16.1.3 (webpack)
+- Local:         http://127.0.0.1:3001
+- Network:       http://127.0.0.1:3001
+- Environments: .env.development.local, .env.local, .env
+- Experiments (use with caution):
+  · optimizePackageImports
+
+✓ Starting...
+✓ Ready in 1275ms
+○ Compiling / ...
+ GET / 200 in 13.5s (compile: 12.9s, proxy.ts: 215ms, render: 384ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 1549ms (compile: 232ms, proxy.ts: 866ms, render: 451ms)
+ GET / 200 in 1110ms (compile: 218ms, proxy.ts: 263ms, render: 629ms)
+ GET /uploads/profiles/1776603871776-eeeb528e.webp 200 in 1132ms (compile: 1119ms, render: 13ms)
+ GET /uploads/products/1776267889503-5978303a.webp 200 in 1916ms (compile: 1902ms, render: 14ms)
+ GET /api/admin/settings 200 in 966ms (compile: 823ms, proxy.ts: 99ms, render: 44ms)
+✅ Cache HIT: announcement_popups
+ GET /api/popups 200 in 936ms (compile: 547ms, proxy.ts: 173ms, render: 216ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 778ms (compile: 535ms, proxy.ts: 16ms, render: 227ms)
+✅ Cache HIT: announcement_popups
+ GET /api/popups 200 in 211ms (compile: 9ms, proxy.ts: 160ms, render: 42ms)
+ GET /uploads/products/1775911216561-bc54a994.webp 200 in 11ms (compile: 7ms, render: 4ms)
+ GET /api/system/maintenance 200 in 1368ms (compile: 1335ms, proxy.ts: 10ms, render: 22ms)
+ GET /api/system/maintenance 200 in 1368ms (compile: 1335ms, proxy.ts: 10ms, render: 22ms)
+ GET /api/currency-settings 200 in 1372ms (compile: 1336ms, proxy.ts: 10ms, render: 27ms)
+ GET /api/currency-settings 200 in 1374ms (compile: 1336ms, proxy.ts: 10ms, render: 28ms)
+ GET /uploads/products/1776267889503-5978303a.webp 200 in 604ms (compile: 573ms, render: 31ms)
+ GET /uploads/products/1776005131998-e454bfc0.webp 200 in 613ms (compile: 580ms, render: 33ms)
+ GET /uploads/profiles/1776603871776-eeeb528e.webp 200 in 11ms (compile: 7ms, render: 5ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 329ms (compile: 66ms, proxy.ts: 20ms, render: 243ms)
+ GET /uploads/products/1776267889503-5978303a.webp 200 in 9ms (compile: 5ms, render: 3ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 326ms (compile: 2ms, proxy.ts: 3ms, render: 320ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 231ms (compile: 3ms, proxy.ts: 4ms, render: 224ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 271ms (compile: 1728µs, proxy.ts: 3ms, render: 266ms)
+ GET /product/75229780-ddc1-491e-b299-ba0b944a2e42 200 in 2.9s (compile: 2.6s, proxy.ts: 12ms, render: 209ms)
+ GET /api/system/maintenance 200 in 616ms (compile: 376ms, proxy.ts: 229ms, render: 12ms)
+ GET /api/system/maintenance 200 in 616ms (compile: 376ms, proxy.ts: 229ms, render: 12ms)
+ GET /shop 200 in 771ms (compile: 556ms, proxy.ts: 4ms, render: 211ms)
+ GET /uploads/products/1775882544292-8c90d916.webp 200 in 675ms (compile: 665ms, render: 9ms)
+ GET /api/system/maintenance 200 in 54ms (compile: 5ms, proxy.ts: 35ms, render: 13ms)
+ GET /api/system/maintenance 200 in 54ms (compile: 5ms, proxy.ts: 35ms, render: 13ms)
+ GET /api/system/maintenance 200 in 54ms (compile: 5ms, proxy.ts: 35ms, render: 13ms)
+ GET /api/system/maintenance 200 in 54ms (compile: 5ms, proxy.ts: 36ms, render: 13ms)
+ GET /api/system/maintenance 200 in 54ms (compile: 5ms, proxy.ts: 36ms, render: 13ms)
+ GET /api/system/maintenance 200 in 36ms (compile: 7ms, proxy.ts: 12ms, render: 17ms)
+ GET /api/system/maintenance 200 in 36ms (compile: 7ms, proxy.ts: 12ms, render: 17ms)
+ GET /api/system/maintenance 200 in 36ms (compile: 8ms, proxy.ts: 12ms, render: 17ms)
+ GET /api/system/maintenance 200 in 36ms (compile: 8ms, proxy.ts: 12ms, render: 17ms)
+ GET /api/system/maintenance 200 in 36ms (compile: 8ms, proxy.ts: 12ms, render: 17ms)
+ GET /api/system/maintenance 200 in 31ms (compile: 4ms, proxy.ts: 11ms, render: 15ms)
+ GET /api/system/maintenance 200 in 31ms (compile: 4ms, proxy.ts: 11ms, render: 15ms)
+ GET /api/system/maintenance 200 in 31ms (compile: 4ms, proxy.ts: 11ms, render: 15ms)
+ GET /api/system/maintenance 200 in 31ms (compile: 4ms, proxy.ts: 11ms, render: 15ms)
+ GET /api/system/maintenance 200 in 31ms (compile: 4ms, proxy.ts: 11ms, render: 15ms)
+ GET /api/system/maintenance 200 in 21ms (compile: 3ms, proxy.ts: 9ms, render: 8ms)
+ GET /api/system/maintenance 200 in 21ms (compile: 3ms, proxy.ts: 9ms, render: 8ms)
+ GET /api/system/maintenance 200 in 21ms (compile: 3ms, proxy.ts: 9ms, render: 8ms)
+ GET /api/system/maintenance 200 in 21ms (compile: 3ms, proxy.ts: 9ms, render: 8ms)
+ GET /api/system/maintenance 200 in 21ms (compile: 3ms, proxy.ts: 9ms, render: 8ms)
+ GET /api/system/maintenance 200 in 22ms (compile: 4ms, proxy.ts: 10ms, render: 8ms)
+ GET /api/system/maintenance 200 in 22ms (compile: 4ms, proxy.ts: 10ms, render: 8ms)
+ GET /api/system/maintenance 200 in 22ms (compile: 4ms, proxy.ts: 10ms, render: 8ms)
+ GET /api/system/maintenance 200 in 22ms (compile: 4ms, proxy.ts: 10ms, render: 8ms)
+ GET /api/system/maintenance 200 in 22ms (compile: 4ms, proxy.ts: 10ms, render: 8ms)
+ GET /api/system/maintenance 200 in 14ms (compile: 5ms, proxy.ts: 7ms, render: 2ms)
+ GET /api/system/maintenance 200 in 26ms (compile: 9ms, proxy.ts: 7ms, render: 9ms)
+ GET /api/system/maintenance 200 in 26ms (compile: 9ms, proxy.ts: 7ms, render: 9ms)
+ GET /api/system/maintenance 200 in 26ms (compile: 9ms, proxy.ts: 7ms, render: 9ms)
+ GET /api/system/maintenance 200 in 26ms (compile: 9ms, proxy.ts: 7ms, render: 9ms)
+ GET /api/system/maintenance 200 in 26ms (compile: 9ms, proxy.ts: 7ms, render: 9ms)
+ GET /api/system/maintenance 200 in 25ms (compile: 5ms, proxy.ts: 10ms, render: 10ms)
+ GET /api/system/maintenance 200 in 25ms (compile: 5ms, proxy.ts: 10ms, render: 10ms)
+ GET /api/system/maintenance 200 in 25ms (compile: 5ms, proxy.ts: 11ms, render: 10ms)
+ GET /product/fe544c38-6054-424f-8468-c023e8b1f306 200 in 254ms (compile: 47ms, proxy.ts: 8ms, render: 199ms)
+ GET /api/system/maintenance 200 in 13ms (compile: 2ms, proxy.ts: 5ms, render: 5ms)
+ GET /api/system/maintenance 200 in 13ms (compile: 2ms, proxy.ts: 5ms, render: 5ms)
+ GET /uploads/products/1775882544292-8c90d916.webp 200 in 10ms (compile: 6ms, render: 4ms)
+ GET /uploads/products/1776005131998-e454bfc0.webp 200 in 11ms (compile: 2ms, render: 9ms)
+ GET /api/system/maintenance 200 in 22ms (compile: 5ms, proxy.ts: 8ms, render: 9ms)
+ GET /api/system/maintenance 200 in 22ms (compile: 5ms, proxy.ts: 8ms, render: 9ms)
+ GET /api/system/maintenance 200 in 22ms (compile: 5ms, proxy.ts: 8ms, render: 9ms)
+ GET /api/system/maintenance 200 in 22ms (compile: 5ms, proxy.ts: 8ms, render: 9ms)
+ GET /api/system/maintenance 200 in 22ms (compile: 5ms, proxy.ts: 8ms, render: 9ms)
+ GET /api/system/maintenance 200 in 22ms (compile: 5ms, proxy.ts: 8ms, render: 9ms)
+ GET /api/system/maintenance 200 in 25ms (compile: 5ms, proxy.ts: 10ms, render: 10ms)
+ GET /api/system/maintenance 200 in 25ms (compile: 5ms, proxy.ts: 10ms, render: 10ms)
+ GET /api/system/maintenance 200 in 25ms (compile: 5ms, proxy.ts: 10ms, render: 10ms)
+ GET /api/system/maintenance 200 in 25ms (compile: 6ms, proxy.ts: 12ms, render: 7ms)
+ GET /api/system/maintenance 200 in 25ms (compile: 6ms, proxy.ts: 12ms, render: 7ms)
+ GET /api/system/maintenance 200 in 25ms (compile: 6ms, proxy.ts: 12ms, render: 7ms)
+ GET /api/system/maintenance 200 in 28ms (compile: 8ms, proxy.ts: 10ms, render: 10ms)
+ GET /api/system/maintenance 200 in 28ms (compile: 8ms, proxy.ts: 10ms, render: 10ms)
+ GET /api/system/maintenance 200 in 28ms (compile: 8ms, proxy.ts: 10ms, render: 10ms)
+ GET /api/system/maintenance 200 in 27ms (compile: 7ms, proxy.ts: 11ms, render: 9ms)
+ GET /api/system/maintenance 200 in 27ms (compile: 7ms, proxy.ts: 11ms, render: 9ms)
+ GET /api/system/maintenance 200 in 27ms (compile: 7ms, proxy.ts: 11ms, render: 9ms)
+ GET /api/system/maintenance 200 in 26ms (compile: 7ms, proxy.ts: 9ms, render: 10ms)
+ GET /api/system/maintenance 200 in 26ms (compile: 7ms, proxy.ts: 9ms, render: 10ms)
+ GET /api/system/maintenance 200 in 26ms (compile: 7ms, proxy.ts: 9ms, render: 10ms)
+ GET /api/system/maintenance 200 in 22ms (compile: 5ms, proxy.ts: 8ms, render: 10ms)
+ GET /api/system/maintenance 200 in 23ms (compile: 5ms, proxy.ts: 8ms, render: 10ms)
+ GET /api/system/maintenance 200 in 23ms (compile: 5ms, proxy.ts: 8ms, render: 10ms)
+ GET /api/system/maintenance 200 in 27ms (compile: 5ms, proxy.ts: 13ms, render: 10ms)
+ GET /api/system/maintenance 200 in 27ms (compile: 5ms, proxy.ts: 13ms, render: 10ms)
+ GET /api/system/maintenance 200 in 27ms (compile: 5ms, proxy.ts: 13ms, render: 10ms)
+ GET /api/system/maintenance 200 in 24ms (compile: 5ms, proxy.ts: 9ms, render: 10ms)
+ GET /api/system/maintenance 200 in 24ms (compile: 5ms, proxy.ts: 9ms, render: 10ms)
+ GET /api/system/maintenance 200 in 24ms (compile: 6ms, proxy.ts: 9ms, render: 10ms)
+ GET /api/system/maintenance 200 in 42ms (compile: 12ms, proxy.ts: 19ms, render: 10ms)
+ GET /api/system/maintenance 200 in 42ms (compile: 12ms, proxy.ts: 19ms, render: 11ms)
+ GET /api/system/maintenance 200 in 42ms (compile: 12ms, proxy.ts: 19ms, render: 10ms)
+ GET /api/system/maintenance 200 in 44ms (compile: 23ms, proxy.ts: 17ms, render: 4ms)
+ GET /shop?category=Rov&sort=latest 200 in 72ms (compile: 14ms, proxy.ts: 5ms, render: 53ms)
+ GET /shop?category=Valorant&sort=latest 200 in 36ms (compile: 3ms, proxy.ts: 6ms, render: 28ms)
+ GET /api/system/maintenance 200 in 42ms (compile: 10ms, proxy.ts: 14ms, render: 17ms)
+ GET /api/system/maintenance 200 in 42ms (compile: 10ms, proxy.ts: 14ms, render: 17ms)
+ GET /api/system/maintenance 200 in 42ms (compile: 10ms, proxy.ts: 14ms, render: 17ms)
+ GET /api/system/maintenance 200 in 42ms (compile: 10ms, proxy.ts: 14ms, render: 17ms)
+ GET /api/system/maintenance 200 in 42ms (compile: 10ms, proxy.ts: 14ms, render: 17ms)
+ GET /api/system/maintenance 200 in 42ms (compile: 10ms, proxy.ts: 14ms, render: 17ms)
+ GET /api/system/maintenance 200 in 32ms (compile: 11ms, proxy.ts: 9ms, render: 12ms)
+ GET /api/system/maintenance 200 in 32ms (compile: 11ms, proxy.ts: 9ms, render: 12ms)
+ GET /api/system/maintenance 200 in 32ms (compile: 11ms, proxy.ts: 9ms, render: 12ms)
+ GET /api/system/maintenance 200 in 32ms (compile: 11ms, proxy.ts: 9ms, render: 12ms)
+ GET /shop?category=Free+Fire&sort=latest 200 in 40ms (compile: 3ms, proxy.ts: 5ms, render: 32ms)
+ GET /api/system/maintenance 200 in 37ms (compile: 8ms, proxy.ts: 12ms, render: 17ms)
+ GET /api/system/maintenance 200 in 37ms (compile: 8ms, proxy.ts: 12ms, render: 17ms)
+ GET /api/system/maintenance 200 in 37ms (compile: 8ms, proxy.ts: 12ms, render: 17ms)
+ GET /api/system/maintenance 200 in 37ms (compile: 8ms, proxy.ts: 12ms, render: 17ms)
+ GET /api/system/maintenance 200 in 37ms (compile: 8ms, proxy.ts: 12ms, render: 17ms)
+ GET /api/system/maintenance 200 in 37ms (compile: 8ms, proxy.ts: 12ms, render: 17ms)
+ GET /api/system/maintenance 200 in 27ms (compile: 7ms, proxy.ts: 9ms, render: 12ms)
+ GET /api/system/maintenance 200 in 27ms (compile: 7ms, proxy.ts: 9ms, render: 12ms)
+ GET /api/system/maintenance 200 in 27ms (compile: 7ms, proxy.ts: 9ms, render: 12ms)
+ GET /api/system/maintenance 200 in 27ms (compile: 7ms, proxy.ts: 9ms, render: 12ms)
+ GET /product/75229780-ddc1-491e-b299-ba0b944a2e42 200 in 71ms (compile: 14ms, proxy.ts: 7ms, render: 51ms)
+ GET /api/system/maintenance 200 in 19ms (compile: 4ms, proxy.ts: 8ms, render: 7ms)
+ GET /api/system/maintenance 200 in 19ms (compile: 4ms, proxy.ts: 8ms, render: 7ms)
+ GET /product/75229780-ddc1-491e-b299-ba0b944a2e42 200 in 358ms (compile: 95ms, proxy.ts: 3ms, render: 259ms)
+ GET /product/75229780-ddc1-491e-b299-ba0b944a2e42 200 in 237ms (compile: 59ms, proxy.ts: 3ms, render: 175ms)
+ GET /product/75229780-ddc1-491e-b299-ba0b944a2e42 200 in 239ms (compile: 54ms, proxy.ts: 5ms, render: 180ms)
+ GET /product/75229780-ddc1-491e-b299-ba0b944a2e42 200 in 213ms (compile: 46ms, proxy.ts: 3ms, render: 164ms)
+ GET /product/75229780-ddc1-491e-b299-ba0b944a2e42 200 in 217ms (compile: 46ms, proxy.ts: 3ms, render: 167ms)
+ GET /shop?category=Free+Fire&sort=latest 200 in 105ms (compile: 22ms, proxy.ts: 10ms, render: 73ms)
+ GET /api/system/maintenance 200 in 1623ms (compile: 1590ms, proxy.ts: 9ms, render: 24ms)
+ GET /api/system/maintenance 200 in 1623ms (compile: 1590ms, proxy.ts: 9ms, render: 24ms)
+ GET /api/system/maintenance 200 in 1623ms (compile: 1590ms, proxy.ts: 9ms, render: 24ms)
+ GET /api/system/maintenance 200 in 1623ms (compile: 1590ms, proxy.ts: 9ms, render: 24ms)
+ GET /api/system/maintenance 200 in 161ms (compile: 9ms, proxy.ts: 146ms, render: 6ms)
+ GET /api/system/maintenance 200 in 161ms (compile: 9ms, proxy.ts: 146ms, render: 6ms)
+ GET /api/system/maintenance 200 in 40ms (compile: 14ms, proxy.ts: 13ms, render: 13ms)
+ GET /api/system/maintenance 200 in 40ms (compile: 15ms, proxy.ts: 13ms, render: 12ms)
+ GET /api/system/maintenance 200 in 40ms (compile: 15ms, proxy.ts: 13ms, render: 12ms)
+ GET /api/system/maintenance 200 in 40ms (compile: 15ms, proxy.ts: 13ms, render: 12ms)
+ GET /gachapons 200 in 1197ms (compile: 832ms, proxy.ts: 5ms, render: 361ms)
+ GET /api/currency-settings 200 in 1318ms (compile: 1284ms, proxy.ts: 7ms, render: 27ms)
+ GET /api/currency-settings 200 in 1319ms (compile: 1277ms, proxy.ts: 7ms, render: 35ms)
+ GET /uploads/gacha-machines/1775966373872-c09cea45.webp 200 in 1292ms (compile: 1261ms, render: 31ms)
+ GET /gacha/140db8a0-9090-4483-93ea-04f2c6acc6e6 200 in 4.1s (compile: 3.2s, proxy.ts: 382ms, render: 553ms)
+ GET /gacha/140db8a0-9090-4483-93ea-04f2c6acc6e6 200 in 209ms (compile: 24ms, proxy.ts: 23ms, render: 162ms)
+ GET /api/currency-settings 200 in 51ms (compile: 17ms, proxy.ts: 14ms, render: 20ms)
+○ Compiling /api/gacha/recent ...
+ GET /uploads/gacha/1775966395882-40e426c6.webp 200 in 3.8s (compile: 3.8s, render: 32ms)
+ GET /api/currency-settings 200 in 375ms (compile: 10ms, proxy.ts: 316ms, render: 49ms)
+ POST /api/gacha/roll 400 in 4.2s (compile: 4.1s, proxy.ts: 16ms, render: 110ms)
+ GET /api/gacha/recent 200 in 4.3s (compile: 4.1s, proxy.ts: 14ms, render: 226ms)
+ GET /api/gacha/recent 200 in 19ms (compile: 5ms, proxy.ts: 6ms, render: 8ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 385ms (compile: 85ms, proxy.ts: 13ms, render: 288ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 455ms (compile: 3ms, proxy.ts: 5ms, render: 447ms)
+ GET /api/system/maintenance 200 in 282ms (compile: 16ms, proxy.ts: 257ms, render: 10ms)
+ GET /api/system/maintenance 200 in 282ms (compile: 16ms, proxy.ts: 257ms, render: 10ms)
+ GET /api/admin/settings 200 in 2.9s (compile: 2.7s, proxy.ts: 24ms, render: 98ms)
+ GET /api/currency-settings 200 in 313ms (compile: 37ms, proxy.ts: 257ms, render: 18ms)
+ GET /api/currency-settings 200 in 314ms (compile: 37ms, proxy.ts: 257ms, render: 20ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 436ms (compile: 51ms, proxy.ts: 157ms, render: 228ms)
+✅ Cache HIT: announcement_popups
+ GET /api/popups 200 in 2.3s (compile: 1728ms, proxy.ts: 257ms, render: 327ms)
+✅ Cache HIT: announcement_popups
+ GET /api/popups 200 in 57ms (compile: 3ms, proxy.ts: 8ms, render: 47ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 195ms (compile: 35ms, proxy.ts: 3ms, render: 158ms)
+ GET /product/86737f10-8243-4952-9a98-9686f75e0296 200 in 105ms (compile: 32ms, proxy.ts: 12ms, render: 61ms)
+ GET /api/system/maintenance 200 in 21ms (compile: 8ms, proxy.ts: 7ms, render: 6ms)
+ GET /api/system/maintenance 200 in 16ms (compile: 3ms, proxy.ts: 8ms, render: 5ms)
+ GET /product/75229780-ddc1-491e-b299-ba0b944a2e42 200 in 67ms (compile: 16ms, proxy.ts: 6ms, render: 44ms)
+ GET /api/system/maintenance 200 in 21ms (compile: 4ms, proxy.ts: 10ms, render: 7ms)
+ GET /api/system/maintenance 200 in 21ms (compile: 4ms, proxy.ts: 10ms, render: 7ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 491ms (compile: 138ms, proxy.ts: 8ms, render: 346ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 253ms (compile: 46ms, proxy.ts: 11ms, render: 196ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 329ms (compile: 2ms, proxy.ts: 4ms, render: 323ms)
+ GET /api/admin/settings 200 in 50ms (compile: 10ms, proxy.ts: 18ms, render: 22ms)
+ GET /api/system/maintenance 200 in 25ms (compile: 8ms, proxy.ts: 9ms, render: 8ms)
+ GET /api/system/maintenance 200 in 25ms (compile: 8ms, proxy.ts: 9ms, render: 8ms)
+✅ Cache HIT: announcement_popups
+ GET /api/popups 200 in 70ms (compile: 10ms, proxy.ts: 6ms, render: 53ms)
+ GET /api/currency-settings 200 in 46ms (compile: 23ms, proxy.ts: 9ms, render: 14ms)
+ GET /api/currency-settings 200 in 48ms (compile: 23ms, proxy.ts: 9ms, render: 15ms)
+✅ Cache HIT: announcement_popups
+ GET /api/popups 200 in 53ms (compile: 2ms, proxy.ts: 5ms, render: 46ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 331ms (compile: 41ms, proxy.ts: 159ms, render: 132ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 343ms (compile: 88ms, proxy.ts: 6ms, render: 249ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 315ms (compile: 63ms, proxy.ts: 7ms, render: 245ms)
+❌ Cache MISS: featured_products_v2
+❌ Cache MISS: sale_products
+❌ Cache MISS: news_articles
+💾 Cache SET: featured_products_v2 (TTL: 900s)
+💾 Cache SET: news_articles (TTL: 900s)
+💾 Cache SET: sale_products (TTL: 900s)
+ GET / 200 in 540ms (compile: 10ms, proxy.ts: 10ms, render: 520ms)
+ GET /uploads/products/1775882544292-8c90d916.webp 200 in 1214ms (compile: 1187ms, render: 27ms)
+ GET /api/admin/settings 200 in 2.1s (compile: 2.0s, proxy.ts: 44ms, render: 61ms)
+ GET /api/system/maintenance 200 in 1712ms (compile: 1493ms, proxy.ts: 190ms, render: 28ms)
+ GET /api/system/maintenance 200 in 1712ms (compile: 1494ms, proxy.ts: 190ms, render: 27ms)
+ GET /api/currency-settings 200 in 1714ms (compile: 1494ms, proxy.ts: 190ms, render: 30ms)
+ GET /api/currency-settings 200 in 1716ms (compile: 1494ms, proxy.ts: 190ms, render: 32ms)
+ GET /product/18d94ee1-c477-40f8-a969-a0e0ca191b68 200 in 548ms (compile: 65ms, proxy.ts: 345ms, render: 138ms)
+✅ Cache HIT: announcement_popups
+ GET /api/popups 200 in 2.2s (compile: 1494ms, proxy.ts: 190ms, render: 494ms)
+✅ Cache HIT: announcement_popups
+ GET /api/popups 200 in 55ms (compile: 3ms, proxy.ts: 8ms, render: 44ms)
+ GET /api/system/maintenance 200 in 33ms (compile: 5ms, proxy.ts: 20ms, render: 9ms)
+ GET /api/system/maintenance 200 in 33ms (compile: 5ms, proxy.ts: 20ms, render: 9ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 349ms (compile: 25ms, proxy.ts: 13ms, render: 311ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 799ms (compile: 102ms, proxy.ts: 327ms, render: 371ms)
+ GET /product/7fdfe8df-5b1d-4e77-8715-804b2d44bc31 200 in 89ms (compile: 33ms, proxy.ts: 6ms, render: 49ms)
+ GET /api/system/maintenance 200 in 897ms (compile: 848ms, proxy.ts: 28ms, render: 21ms)
+ GET /api/system/maintenance 200 in 897ms (compile: 848ms, proxy.ts: 28ms, render: 21ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 381ms (compile: 75ms, proxy.ts: 15ms, render: 290ms)
+ GET /shop?category=eFootball 200 in 86ms (compile: 21ms, proxy.ts: 8ms, render: 57ms)
+ GET /api/system/maintenance 200 in 410ms (compile: 126ms, proxy.ts: 139ms, render: 146ms)
+ GET /api/system/maintenance 200 in 410ms (compile: 128ms, proxy.ts: 139ms, render: 144ms)
+ GET /api/system/maintenance 200 in 410ms (compile: 128ms, proxy.ts: 139ms, render: 143ms)
+ GET /api/system/maintenance 200 in 410ms (compile: 128ms, proxy.ts: 139ms, render: 143ms)
+ GET /api/system/maintenance 200 in 410ms (compile: 128ms, proxy.ts: 139ms, render: 143ms)
+ GET /api/system/maintenance 200 in 410ms (compile: 123ms, proxy.ts: 144ms, render: 143ms)
+ GET /api/system/maintenance 200 in 2.9s (compile: 2.8s, proxy.ts: 47ms, render: 34ms)
+ GET /api/system/maintenance 200 in 2.9s (compile: 2.8s, proxy.ts: 47ms, render: 34ms)
+ GET /api/system/maintenance 200 in 2.9s (compile: 2.8s, proxy.ts: 47ms, render: 34ms)
+ GET /api/system/maintenance 200 in 2.9s (compile: 2.8s, proxy.ts: 47ms, render: 26ms)
+ GET /uploads/products/1775882544292-8c90d916.webp 200 in 2.9s (compile: 2.9s, render: 42ms)
+ GET /shop?category=eFootball 200 in 361ms (compile: 55ms, proxy.ts: 11ms, render: 295ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 475ms (compile: 24ms, proxy.ts: 171ms, render: 280ms)
+ GET /uploads/products/1776005131998-e454bfc0.webp 200 in 39ms (compile: 31ms, render: 8ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 324ms (compile: 61ms, proxy.ts: 16ms, render: 247ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 320ms (compile: 55ms, proxy.ts: 10ms, render: 256ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 158ms (compile: 27ms, proxy.ts: 3ms, render: 128ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 291ms (compile: 52ms, proxy.ts: 6ms, render: 233ms)
+ GET /product/5f12ae26-fc34-441f-a5ce-306eea209820 200 in 90ms (compile: 29ms, proxy.ts: 5ms, render: 55ms)
+ GET /api/system/maintenance 200 in 32ms (compile: 12ms, proxy.ts: 8ms, render: 12ms)
+ GET /api/system/maintenance 200 in 33ms (compile: 12ms, proxy.ts: 8ms, render: 12ms)
+ GET /help 200 in 6.9s (compile: 2.5s, proxy.ts: 7ms, render: 4.4s)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 283ms (compile: 23ms, proxy.ts: 7ms, render: 253ms)
+ GET /product/5f12ae26-fc34-441f-a5ce-306eea209820 200 in 84ms (compile: 32ms, proxy.ts: 5ms, render: 47ms)
+ GET /api/system/maintenance 200 in 213ms (compile: 63ms, proxy.ts: 72ms, render: 78ms)
+ GET /api/system/maintenance 200 in 213ms (compile: 63ms, proxy.ts: 72ms, render: 78ms)
+ GET /shop 200 in 108ms (compile: 32ms, proxy.ts: 6ms, render: 71ms)
+ GET /api/system/maintenance 200 in 42ms (compile: 9ms, proxy.ts: 13ms, render: 20ms)
+ GET /api/system/maintenance 200 in 43ms (compile: 9ms, proxy.ts: 13ms, render: 20ms)
+ GET /api/system/maintenance 200 in 43ms (compile: 9ms, proxy.ts: 13ms, render: 20ms)
+ GET /api/system/maintenance 200 in 43ms (compile: 9ms, proxy.ts: 13ms, render: 20ms)
+ GET /api/system/maintenance 200 in 43ms (compile: 9ms, proxy.ts: 13ms, render: 20ms)
+ GET /api/system/maintenance 200 in 43ms (compile: 9ms, proxy.ts: 13ms, render: 20ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 7ms, proxy.ts: 12ms, render: 21ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 8ms, proxy.ts: 12ms, render: 22ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 8ms, proxy.ts: 12ms, render: 21ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 8ms, proxy.ts: 12ms, render: 21ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 8ms, proxy.ts: 12ms, render: 21ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 8ms, proxy.ts: 12ms, render: 21ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 7ms, proxy.ts: 17ms, render: 16ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 7ms, proxy.ts: 17ms, render: 16ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 7ms, proxy.ts: 17ms, render: 16ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 7ms, proxy.ts: 17ms, render: 16ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 7ms, proxy.ts: 17ms, render: 16ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 7ms, proxy.ts: 17ms, render: 16ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 12ms, proxy.ts: 11ms, render: 18ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 12ms, proxy.ts: 11ms, render: 18ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 12ms, proxy.ts: 11ms, render: 18ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 12ms, proxy.ts: 11ms, render: 18ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 12ms, proxy.ts: 11ms, render: 18ms)
+ GET /api/system/maintenance 200 in 41ms (compile: 12ms, proxy.ts: 11ms, render: 18ms)
+ GET /api/system/maintenance 200 in 42ms (compile: 8ms, proxy.ts: 13ms, render: 21ms)
+ GET /api/system/maintenance 200 in 42ms (compile: 8ms, proxy.ts: 13ms, render: 21ms)
+ GET /api/system/maintenance 200 in 42ms (compile: 8ms, proxy.ts: 13ms, render: 21ms)
+ GET /api/system/maintenance 200 in 42ms (compile: 8ms, proxy.ts: 13ms, render: 21ms)
+ GET /api/system/maintenance 200 in 42ms (compile: 8ms, proxy.ts: 13ms, render: 21ms)
+ GET /api/system/maintenance 200 in 42ms (compile: 8ms, proxy.ts: 13ms, render: 21ms)
+ GET /api/system/maintenance 200 in 40ms (compile: 11ms, proxy.ts: 16ms, render: 14ms)
+ GET /api/system/maintenance 200 in 40ms (compile: 11ms, proxy.ts: 16ms, render: 14ms)
+ GET /api/system/maintenance 200 in 40ms (compile: 11ms, proxy.ts: 16ms, render: 14ms)
+ GET /api/system/maintenance 200 in 40ms (compile: 11ms, proxy.ts: 16ms, render: 13ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 186ms (compile: 4ms, proxy.ts: 8ms, render: 173ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 416ms (compile: 3ms, proxy.ts: 6ms, render: 407ms)
+○ Compiling /api/admin/settings ...
+ GET /api/system/maintenance 200 in 300ms (compile: 19ms, proxy.ts: 271ms, render: 10ms)
+ GET /api/system/maintenance 200 in 301ms (compile: 19ms, proxy.ts: 271ms, render: 10ms)
+ GET /api/admin/settings 200 in 5.0s (compile: 4.9s, proxy.ts: 35ms, render: 98ms)
+ GET /api/currency-settings 200 in 1999ms (compile: 1699ms, proxy.ts: 271ms, render: 28ms)
+ GET /api/currency-settings 200 in 2.0s (compile: 1700ms, proxy.ts: 271ms, render: 29ms)
+✅ Cache HIT: announcement_popups
+ GET /api/popups 200 in 2.1s (compile: 1700ms, proxy.ts: 271ms, render: 146ms)
+✅ Cache HIT: announcement_popups
+ GET /api/popups 200 in 320ms (compile: 19ms, proxy.ts: 254ms, render: 46ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 819ms (compile: 95ms, proxy.ts: 356ms, render: 368ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 397ms (compile: 78ms, proxy.ts: 6ms, render: 313ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 151ms (compile: 26ms, proxy.ts: 3ms, render: 122ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 292ms (compile: 53ms, proxy.ts: 9ms, render: 230ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 1174ms (compile: 51ms, proxy.ts: 11ms, render: 1112ms)
+ GET /uploads/products/1775882544292-8c90d916.webp 200 in 2.5s (compile: 2.4s, render: 19ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 353ms (compile: 83ms, proxy.ts: 7ms, render: 263ms)
+○ Compiling /product/[id] ...
+ GET /product/212ba657-bf40-4ed5-94ac-713f1f14d07f 200 in 4.9s (compile: 4.7s, proxy.ts: 6ms, render: 224ms)
+ GET /product/212ba657-bf40-4ed5-94ac-713f1f14d07f 200 in 157ms (compile: 13ms, proxy.ts: 16ms, render: 129ms)
+ GET /api/system/maintenance 200 in 1055ms (compile: 1029ms, proxy.ts: 8ms, render: 18ms)
+ GET /api/system/maintenance 200 in 1055ms (compile: 1029ms, proxy.ts: 8ms, render: 18ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 457ms (compile: 35ms, proxy.ts: 6ms, render: 416ms)
+✅ Cache HIT: featured_products_v2
+✅ Cache HIT: sale_products
+✅ Cache HIT: news_articles
+ GET / 200 in 703ms (compile: 5ms, proxy.ts: 9ms, render: 689ms)
+○ Compiling /api/admin/settings ...
+ GET /api/admin/settings 200 in 5.2s (compile: 5.1s, proxy.ts: 31ms, render: 48ms)
+ GET /api/system/maintenance 200 in 2.3s (compile: 2.1s, proxy.ts: 204ms, render: 36ms)
+ GET /api/system/maintenance 200 in 2.3s (compile: 2.1s, proxy.ts: 204ms, render: 35ms)
+ GET /api/currency-settings 200 in 2.3s (compile: 2.1s, proxy.ts: 204ms, render: 40ms)
+ GET /api/currency-settings 200 in 2.3s (compile: 2.1s, proxy.ts: 204ms, render: 41ms)
+✅ Cache HIT: announcement_popups
+ GET /api/popups 200 in 2.5s (compile: 2.1s, proxy.ts: 204ms, render: 181ms)
+✅ Cache HIT: announcement_popups
+ GET /api/popups 200 in 314ms (compile: 13ms, proxy.ts: 249ms, render: 51ms)

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 
 /**
  * When mounted, adds `admin-layout` class to <body>.
@@ -10,12 +11,16 @@ import { useEffect } from "react";
  * The class is removed on unmount (route change away from admin/dashboard).
  */
 export function HideMainLayout() {
+    const pathname = usePathname();
+
     useEffect(() => {
-        document.body.classList.add("admin-layout");
+        const layoutClass = pathname.startsWith("/admin") ? "admin-layout" : "dashboard-layout";
+
+        document.body.classList.add(layoutClass);
         return () => {
-            document.body.classList.remove("admin-layout");
+            document.body.classList.remove(layoutClass);
         };
-    }, []);
+    }, [pathname]);
 
     return null;
 }

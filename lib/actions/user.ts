@@ -7,6 +7,7 @@ import { createAuditLog, AUDIT_ACTIONS, getChanges } from "@/lib/auditLog";
 import { db, users } from "@/lib/db";
 import { decryptUserSensitiveFields, encryptUserSensitiveFields } from "@/lib/sensitiveData";
 import { updateProfileSchema, UpdateProfileInput } from "@/lib/validations/profile";
+import { verifyUserPin } from "@/lib/security/pin";
 
 interface ActionResult {
     success: boolean;
@@ -81,6 +82,7 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
             where: eq(users.id, userId),
             columns: {
                 id: true, name: true, email: true, phone: true, image: true, password: true,
+                pinHash: true,
                 firstName: true, lastName: true, firstNameEn: true, lastNameEn: true,
                 taxFullName: true, taxPhone: true, taxAddress: true, taxProvince: true,
                 taxDistrict: true, taxSubdistrict: true, taxPostalCode: true,
@@ -129,6 +131,24 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
                     message: "รหัสผ่านปัจจุบันไม่ถูกต้อง",
                     errors: { currentPassword: ["รหัสผ่านปัจจุบันไม่ถูกต้อง"] },
                 };
+            }
+            if (currentUser.pinHash) {
+                if (!validatedData.pin) {
+                    return {
+                        success: false,
+                        message: "กรุณากรอก PIN เพื่อยืนยันการเปลี่ยนรหัสผ่าน",
+                        errors: { pin: ["กรุณากรอก PIN เพื่อยืนยันการเปลี่ยนรหัสผ่าน"] },
+                    };
+                }
+
+                const pinVerification = await verifyUserPin(userId, validatedData.pin);
+                if (!pinVerification.success) {
+                    return {
+                        success: false,
+                        message: pinVerification.message,
+                        errors: { pin: [pinVerification.message] },
+                    };
+                }
             }
             encryptedUpdateData.password = await bcrypt.hash(validatedData.password, 12);
         }
@@ -203,7 +223,7 @@ export async function getCurrentUserProfile() {
             where: eq(users.id, userId),
             columns: {
                 id: true, name: true, username: true, email: true, phone: true, image: true,
-                role: true, creditBalance: true, phoneVerified: true, emailVerified: true,
+                role: true, creditBalance: true, phoneVerified: true, emailVerified: true, pinHash: true, pinUpdatedAt: true, pinLockedUntil: true,
                 firstName: true, lastName: true, firstNameEn: true, lastNameEn: true,
                 taxFullName: true, taxPhone: true, taxAddress: true, taxProvince: true,
                 taxDistrict: true, taxSubdistrict: true, taxPostalCode: true,
@@ -218,6 +238,9 @@ export async function getCurrentUserProfile() {
 
         return {
             ...decryptUserSensitiveFields(user),
+            hasPin: Boolean(user.pinHash),
+            pinUpdatedAt: user.pinUpdatedAt,
+            pinLockedUntil: user.pinLockedUntil,
             creditBalance: user.creditBalance.toString(),
         };
     } catch (error) {

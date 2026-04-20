@@ -22,11 +22,10 @@ import {
 import { hasExactProbabilityTotal, pickWeightedCandidate } from "@/lib/gachaProbability";
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
-import { getGachaRewardTypeLabel } from "@/lib/gachaCost";
+import { getGachaRewardTypeLabel, normalizeGachaCost } from "@/lib/gachaCost";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkGachaRateLimit, getClientIp } from "@/lib/rateLimit";
 import { isRedisAvailable, redis } from "@/lib/redis";
-import { normalizeGachaCost } from "@/lib/gachaCost";
 
 const COOKIE_NAME = "gacha_l_pending";
 const COOKIE_TTL = 300;
@@ -599,7 +598,6 @@ export async function POST(req: Request) {
 
     let spin = 1;
     let machineId: string | null = null;
-
     try {
         const body = await req.json();
         spin = Number(body.spin ?? 1);

@@ -88,17 +88,25 @@ export default async function GachaPage() {
     }
 
     return (
-        <div className="relative left-1/2 mb-8 min-h-[calc(100vh-4rem)] w-screen -translate-x-1/2 overflow-x-hidden bg-card/90 backdrop-blur-sm sm:left-auto sm:w-auto sm:translate-x-0 sm:bg-[linear-gradient(180deg,#fff7ed_0%,#ffffff_28%,#ffffff_100%)] sm:backdrop-blur-none">
+        <div className="relative left-1/2 mb-8 min-h-[calc(100vh-4rem)] w-screen -translate-x-1/2 overflow-x-hidden bg-background sm:left-auto sm:w-auto sm:translate-x-0">
             <div className="relative overflow-hidden bg-gradient-to-br from-[#1a56db] via-[#1f4fc2] to-[#10284d] px-6 py-10 text-center">
                 <div
-                    className="absolute inset-0 opacity-10"
+                    className="absolute inset-0 opacity-[0.06]"
                     style={{
                         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='52' viewBox='0 0 60 52'%3E%3Cpolygon points='30,0 60,17 60,35 30,52 0,35 0,17' fill='none' stroke='white' stroke-width='1'/%3E%3C/svg%3E")`,
                         backgroundSize: "60px 52px",
                     }}
                 />
                 <h1 className="relative z-10 mb-2 text-3xl font-bold tracking-wide text-white">สุ่มตัว X</h1>
-                <p className="relative z-10 flex items-center justify-center gap-1.5 text-sm font-medium text-blue-200">
+                <div className="relative z-10 md:hidden">
+                    <Link
+                        href="/gachapons"
+                        className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-blue-100 transition-colors hover:bg-white/15 hover:text-white"
+                    >
+                        หมวดหมู่กาชา
+                    </Link>
+                </div>
+                <p className="relative z-10 hidden items-center justify-center gap-1.5 text-sm font-medium text-blue-200 md:flex">
                     <Link href="/" className="transition-colors hover:text-white">หน้าหลัก</Link>
                     <span className="opacity-60">&gt;</span>
                     <Link href="/gachapons" className="transition-colors hover:text-white">หมวดหมู่กาชา</Link>
@@ -114,7 +122,7 @@ export default async function GachaPage() {
                 )}
             </div>
 
-            <div className="flex flex-col items-center gap-6 px-4 pb-8 pt-6 sm:px-6 md:px-10">
+            <div className="flex flex-col items-center gap-6 px-4 pb-8 pt-2 sm:px-6 sm:pt-6 md:px-10">
                 {settings.isEnabled ? (
                     <div className="flex w-full justify-center">
                         <GachaRhombus products={products} settings={settings} initialBalances={initialBalances} maintenance={maintenance} />

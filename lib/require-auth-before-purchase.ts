@@ -2,11 +2,11 @@ import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.
 import { normalizeCallbackUrl } from "@/lib/authRedirect";
 
 function buildCurrentUrl() {
-    if (typeof window === "undefined") {
+    if (typeof globalThis.window === "undefined") {
         return "/";
     }
 
-    const currentPath = `${window.location.pathname}${window.location.search}`;
+    const currentPath = `${globalThis.window.location.pathname}${globalThis.window.location.search}`;
     return normalizeCallbackUrl(currentPath || "/");
 }
 

@@ -10,7 +10,8 @@ import { useCart } from "@/components/providers/CartContext";
 import { showPurchaseConfirm, showPurchaseSuccessModal, showWarning, showErrorAlert } from "@/lib/swal";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 import { formatCurrencyAmount, normalizeCurrencyCode, type PublicCurrencySettings } from "@/lib/currencySettings";
-import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
+import { preparePurchase } from "@/lib/prepare-purchase";
+import { themeClasses } from "@/lib/theme";
 
 interface ProductActionsProps {
     product: {
@@ -110,11 +111,6 @@ export function ProductActions({
 
         if (disabled || isBuying) return;
 
-        const authCheck = await requireAuthBeforePurchase(router);
-        if (!authCheck.allowed) {
-            return;
-        }
-
         const discountLine = appliedPromo
             ? `<small>โค้ดส่วนลด: <strong>${appliedPromo.code}</strong> (ราคาเดิม ฿${basePrice.toLocaleString()})</small>`
             : `<small>จำนวน: <strong>${quantity}</strong> ชิ้น</small>`;
@@ -127,13 +123,27 @@ export function ProductActions({
 
         if (!confirmed) return;
 
+        const purchaseCheck = await preparePurchase({
+            router,
+            amount: finalPrice,
+            currency: normalizedCurrency,
+            currencySettings,
+            pinActionLabel: "ยืนยัน PIN เพื่อซื้อสินค้า",
+        });
+        if (!purchaseCheck.allowed) return;
+
         setIsBuying(true);
 
         try {
             const response = await fetch("/api/purchase", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ productId: product.id, quantity, promoCode: appliedPromo?.code || undefined }),
+                body: JSON.stringify({
+                    productId: product.id,
+                    quantity,
+                    promoCode: appliedPromo?.code || undefined,
+                    pin: purchaseCheck.pin,
+                }),
             });
 
             const data = await response.json();
@@ -191,7 +201,7 @@ export function ProductActions({
     return (
         <div className="space-y-4">
             {maintenance?.enabled && (
-                <div className="rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <div className={`${themeClasses.alert} rounded-2xl px-4 py-3 text-sm`}>
                     <p className="font-semibold">ระบบสั่งซื้อกำลังปิดปรับปรุงชั่วคราว</p>
                     <p className="mt-1 text-xs text-amber-800/90">{maintenance.message}</p>
                 </div>
@@ -224,12 +234,12 @@ export function ProductActions({
                                 setAppliedPromo(null);
                             }}
                             onKeyDown={(e) => e.key === "Enter" && handleCheckPromo()}
-                            className={`flex-1 rounded-full bg-white border-gray-300 focus-visible:ring-blue-500 ${appliedPromo ? "border-green-400" : ""}`}
+                            className={`flex-1 rounded-full border-border/80 bg-background/90 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/35 ${appliedPromo ? "border-primary" : ""}`}
                             disabled={isProcessing}
                         />
                         <Button
                             variant="outline"
-                            className="rounded-full gap-1.5 px-4 shrink-0 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
+                            className={`${themeClasses.actionMuted} shrink-0 rounded-full gap-1.5 px-4 hover:text-primary`}
                             onClick={handleCheckPromo}
                             disabled={isCheckingPromo || !promoCode.trim()}
                         >
@@ -243,7 +253,7 @@ export function ProductActions({
                         </Button>
                     </div>
                     {appliedPromo && (
-                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm font-medium text-green-600">
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm font-medium text-primary">
                             <Tag className="h-3.5 w-3.5" />
                             ใช้โค้ด {appliedPromo.code} — ราคาลดเหลือ {formatCurrencyAmount(finalPrice, normalizedCurrency, currencySettings)}
                         </div>
@@ -256,8 +266,8 @@ export function ProductActions({
             <Button
                 size="lg"
                 className={`w-full gap-2 text-base rounded-full font-semibold ${disabled
-                    ? "bg-rose-100 text-rose-400 hover:bg-rose-100 cursor-not-allowed border border-rose-200"
-                    : "bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                    ? "cursor-not-allowed border border-border/70 bg-accent/40 text-muted-foreground hover:bg-accent/40"
+                    : "bg-primary text-primary-foreground shadow-[0_18px_36px_-24px_rgba(88,166,255,0.7)] hover:bg-primary/90"
                     }`}
                 disabled={disabled || isBuying || maintenance?.enabled}
                 onClick={handlePurchase}
@@ -284,7 +294,7 @@ export function ProductActions({
             <Button
                 variant="outline"
                 size="lg"
-                className="w-full gap-2 text-base rounded-full border-blue-400 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                className="w-full gap-2 rounded-full border-primary/45 bg-transparent text-base text-primary hover:bg-primary/10 hover:text-primary"
                 disabled={disabled || isAdding || cartLoading}
                 onClick={handleAddToCart}
             >

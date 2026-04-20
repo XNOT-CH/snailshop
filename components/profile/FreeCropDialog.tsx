@@ -31,6 +31,20 @@ interface FreeCropDialogProps {
 
 const MIN_CROP_SIZE = 80;
 const PREVIEW_SIZE = 112;
+const CROPPED_IMAGE_TYPE = "image/png";
+
+function getExtensionFromMimeType(mimeType: string) {
+  switch (mimeType) {
+    case "image/png":
+      return "png";
+    case "image/jpeg":
+      return "jpg";
+    case "image/webp":
+      return "webp";
+    default:
+      return "png";
+  }
+}
 
 export function FreeCropDialog({
   open,
@@ -230,7 +244,7 @@ export function FreeCropDialog({
         }
         return URL.createObjectURL(blob);
       });
-    }, "image/png", 1);
+    }, CROPPED_IMAGE_TYPE, 1);
   }, [cropRect, naturalSize, open]);
 
   const exportCroppedFile = async () => {
@@ -271,15 +285,16 @@ export function FreeCropDialog({
       );
 
       const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/png", 1),
+        canvas.toBlob(resolve, CROPPED_IMAGE_TYPE, 1),
       );
 
       if (!blob) {
         throw new Error("ไม่สามารถสร้างไฟล์รูปที่ครอปแล้วได้");
       }
 
-      const croppedFile = new File([blob], `${fileBaseName}-cropped.png`, {
-        type: "image/png",
+      const outputMimeType = blob.type || CROPPED_IMAGE_TYPE;
+      const croppedFile = new File([blob], `${fileBaseName}-cropped.${getExtensionFromMimeType(outputMimeType)}`, {
+        type: outputMimeType,
         lastModified: Date.now(),
       });
 

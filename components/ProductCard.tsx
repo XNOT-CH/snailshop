@@ -10,7 +10,8 @@ import { ShoppingCart, Eye, Loader2 } from "lucide-react";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
-import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
+import { preparePurchase } from "@/lib/prepare-purchase";
+import { themeClasses } from "@/lib/theme";
 
 interface ProductCardProps {
     id: string;
@@ -55,11 +56,6 @@ export function ProductCard({
 
         if (isSold || isLoading) return;
 
-        const authCheck = await requireAuthBeforePurchase(router);
-        if (!authCheck.allowed) {
-            return;
-        }
-
         const confirmed = await showPurchaseConfirm({
             productName: title,
             priceText: formatCurrencyAmount(price, currency, currencySettings),
@@ -67,13 +63,22 @@ export function ProductCard({
 
         if (!confirmed) return;
 
+        const purchaseCheck = await preparePurchase({
+            router,
+            amount: price,
+            currency,
+            currencySettings,
+            pinActionLabel: "ยืนยัน PIN เพื่อซื้อสินค้า",
+        });
+        if (!purchaseCheck.allowed) return;
+
         setIsLoading(true);
 
         try {
             const response = await fetch("/api/purchase", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ productId: id }),
+                body: JSON.stringify({ productId: id, pin: purchaseCheck.pin }),
             });
 
             const data = await response.json();
@@ -104,36 +109,29 @@ export function ProductCard({
     return (
         <div
             className={`
-                group relative rounded-2xl border border-slate-300/80 bg-white overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300
+                ${themeClasses.surface} storefront-product-card group relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_22px_42px_-28px_rgba(39,71,121,0.24)] dark:hover:shadow-[0_26px_50px_-34px_rgba(0,0,0,0.92)]
                 ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}
             `}
             style={{
                 transitionDelay: `${index * 50}ms`,
             }}
         >
-            <div className="relative aspect-square overflow-hidden border-b border-slate-300/80 bg-muted">
+            <div className={`${themeClasses.surfaceMedia} relative aspect-square overflow-hidden border-b border-border/80`}>
                 <div className="absolute top-3 left-3 z-10">
-                    <span className="px-2 py-1 text-xs font-medium bg-primary/90 text-primary-foreground rounded-full">
+                    <span className={`${themeClasses.badge} storefront-product-category rounded-full px-2 py-1 text-xs font-medium shadow-sm`}>
                         {category}
                     </span>
                 </div>
                 {isSold && (
                     <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
-                        <span className="px-4 py-2 bg-red-500 text-white font-bold rounded-full transform -rotate-12">
+                        <span className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-full transform -rotate-12">
                             ขายแล้ว
                         </span>
                     </div>
                 )}
                 {!isSold && (
-                    <Link href={`/product/${id}`} className="absolute inset-0 z-10 flex items-center justify-center bg-white/10 opacity-0 backdrop-blur-[1px] transition duration-300 group-hover:opacity-100">
-                        <span
-                            style={{
-                                border: "1.5px solid rgba(96, 165, 250, 0.85)",
-                                color: "rgba(186, 230, 253, 1)",
-                                backgroundColor: "rgba(29, 78, 216, 0.12)",
-                            }}
-                            className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold"
-                        >
+                    <Link href={`/product/${id}`} className={`${themeClasses.overlayScrim} absolute inset-0 z-10 flex items-center justify-center opacity-0 backdrop-blur-[1px] transition duration-300 group-hover:opacity-100`}>
+                        <span className={`${themeClasses.badge} storefront-product-category flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold`}>
                             ดูรายละเอียด
                         </span>
                     </Link>
@@ -151,13 +149,13 @@ export function ProductCard({
                 />
             </div>
             <div className="p-4 text-center">
-                <h3 className="font-semibold text-foreground truncate mb-1 text-center">{title}</h3>
-                <p className="text-lg font-bold text-primary text-center">
+                <h3 className="mb-1 truncate text-center font-semibold text-foreground">{title}</h3>
+                <p className="text-center text-lg font-bold text-primary">
                     {formatCurrencyAmount(price, currency, currencySettings)}
                 </p>
                 <div className="grid grid-cols-2 gap-2 mt-3">
                     {isSold ? (
-                        <Button variant="outline" className="col-span-2 w-full" disabled>
+                        <Button variant="outline" className="col-span-2 w-full border-border/80 bg-accent/40 text-foreground" disabled>
                             <ShoppingCart className="h-4 w-4 mr-2" />
                             ขายแล้ว
                         </Button>
@@ -190,14 +188,14 @@ export function ProductCard({
                                     category,
                                     quantity: 1,
                                 }}
-                                className="w-full"
+                                className={`${themeClasses.actionMuted} storefront-product-action w-full`}
                                 showText={false}
                                 size="icon"
                             />
                         </>
                     )}
                     <Link href={`/product/${id}`} className="block">
-                        <Button variant="outline" size="icon" className="w-full" aria-label={`ดูรายละเอียด ${title}`}>
+                        <Button variant="outline" size="icon" className={`${themeClasses.actionMuted} storefront-product-action w-full`} aria-label={`ดูรายละเอียด ${title}`}>
                             <Eye className="h-4 w-4" />
                         </Button>
                     </Link>

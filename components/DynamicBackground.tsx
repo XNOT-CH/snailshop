@@ -10,7 +10,7 @@ export async function DynamicBackground() {
     const isBlur = settings?.backgroundBlur ?? true;
 
     if (!settings?.backgroundImage) {
-        return <div className="fixed inset-0 -z-10 bg-slate-200/80 backdrop-blur-[2px] sm:hidden" aria-hidden="true" />;
+        return <div className="fixed inset-0 -z-10 bg-[#eaf2fb] backdrop-blur-[2px] dark:bg-[#08111c] sm:hidden" aria-hidden="true" />;
     }
 
     return (
@@ -26,10 +26,13 @@ export async function DynamicBackground() {
                 aria-hidden="true"
             />
             {/* Overlay: heavier when blurred, lighter when clear */}
-            <div className={`absolute inset-0 ${isBlur
-                ? "bg-gradient-to-b from-white/75 to-white/60"
-                : "bg-gradient-to-b from-white/30 to-white/20"
-                }`} />
+            <div
+                className={`absolute inset-0 ${
+                    isBlur
+                        ? "bg-gradient-to-b from-[#f5f9ff]/74 via-[#edf4fb]/68 to-[#e8f0fa]/62 dark:from-[#101a2c]/86 dark:via-[#0c1727]/80 dark:to-[#09111c]/76"
+                        : "bg-gradient-to-b from-[#f5f9ff]/42 via-[#edf4fb]/36 to-[#e8f0fa]/30 dark:from-[#101a2c]/62 dark:via-[#0c1727]/54 dark:to-[#09111c]/48"
+                }`}
+            />
         </div>
     );
 }

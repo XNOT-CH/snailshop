@@ -59,6 +59,11 @@ export const updateProfileSchema = z.object({
     confirmPassword: z
         .string()
         .optional(),
+    pin: z
+        .string()
+        .regex(/^\d{6}$/, "PIN ต้องเป็นตัวเลข 6 หลัก")
+        .optional()
+        .or(z.literal("")),
 }).refine((data) => {
     if (data.password && data.password.length > 0) {
         return data.password === data.confirmPassword;

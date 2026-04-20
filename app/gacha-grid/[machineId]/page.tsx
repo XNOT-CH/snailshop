@@ -76,17 +76,25 @@ export default async function GachaGridPage({
     }
 
     return (
-        <div className="relative left-1/2 min-h-screen w-screen -translate-x-1/2 bg-card/90 backdrop-blur-sm sm:left-auto sm:w-auto sm:translate-x-0 sm:bg-[linear-gradient(180deg,#fff7ed_0%,#ffffff_28%,#ffffff_100%)] sm:backdrop-blur-none">
-            <div className="relative overflow-hidden bg-gradient-to-br from-[#1a56db] via-[#1f4fc2] to-[#10284d] px-6 py-10 text-center">
+        <div className="relative left-1/2 min-h-screen w-screen -translate-x-1/2 bg-background sm:left-auto sm:w-auto sm:translate-x-0">
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#1a56db] via-[#1f4fc2] to-[#10284d] px-5 py-6 text-center sm:px-6 sm:py-8">
                 <div
-                    className="absolute inset-0 opacity-10"
+                    className="absolute inset-0 opacity-[0.06]"
                     style={{
                         backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='52' viewBox='0 0 60 52'%3E%3Cpolygon points='30,0 60,17 60,35 30,52 0,35 0,17' fill='none' stroke='white' stroke-width='1'/%3E%3C/svg%3E")`,
                         backgroundSize: "60px 52px",
                     }}
                 />
-                <h1 className="relative z-10 mb-2 text-3xl font-bold text-white">{machine.name}</h1>
-                <p className="relative z-10 flex items-center justify-center gap-1.5 text-sm text-blue-200">
+                <h1 className="relative z-10 mb-1.5 text-2xl font-bold text-white sm:text-[2rem]">{machine.name}</h1>
+                <div className="relative z-10 md:hidden">
+                    <Link
+                        href="/gachapons"
+                        className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-blue-100 transition-colors hover:bg-white/15 hover:text-white"
+                    >
+                        หมวดหมู่กาชา
+                    </Link>
+                </div>
+                <p className="relative z-10 hidden flex-wrap items-center justify-center gap-1 text-xs text-blue-200 md:flex md:text-sm">
                     <Link href="/" className="transition-colors hover:text-white">หน้าหลัก</Link>
                     <ChevronRight className="h-3 w-3 opacity-60" />
                     <Link href="/gachapons" className="transition-colors hover:text-white">หมวดหมู่กาชา</Link>
@@ -95,8 +103,8 @@ export default async function GachaGridPage({
                 </p>
             </div>
 
-            <div className="mx-auto w-full max-w-none px-2 py-6 sm:max-w-lg sm:px-4 sm:py-8">
-                <div className="bg-card/90 p-2 backdrop-blur-sm sm:rounded-[1.75rem] sm:border sm:border-border/80 sm:bg-card/95 sm:shadow-[0_24px_60px_-38px_rgba(15,23,42,0.45)] sm:backdrop-blur-sm sm:p-4">
+            <div className="mx-auto w-full max-w-none px-2 pb-6 pt-2 sm:max-w-lg sm:px-4 sm:py-8">
+                <div className="bg-card p-2 sm:rounded-[1.75rem] sm:border sm:border-border/70 sm:shadow-[0_18px_42px_-34px_rgba(15,23,42,0.22)] sm:p-4">
                     <GachaGridMachine
                         machineId={machineId}
                         machineName={machine.name}

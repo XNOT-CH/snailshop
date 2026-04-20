@@ -70,7 +70,7 @@ export function QuantitySelector({
                 {/* Decrement Button */}
                 <button
                     type="button"
-                    className={`${btnSize} inline-flex items-center justify-center rounded-lg bg-foreground text-background transition-all hover:opacity-80 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed`}
+                    className={`${btnSize} inline-flex items-center justify-center rounded-xl border border-border/70 bg-accent/70 text-foreground transition-all hover:bg-accent hover:text-primary active:scale-95 disabled:cursor-not-allowed disabled:opacity-30`}
                     onClick={handleDecrement}
                     disabled={disabled || value <= min}
                     aria-label="ลดจำนวน"
@@ -85,14 +85,14 @@ export function QuantitySelector({
                     value={value}
                     onChange={handleInputChange}
                     disabled={disabled}
-                    className={`${inputSize} text-center font-bold rounded-lg border-2 border-border bg-background shadow-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:border-primary px-1`}
+                    className={`${inputSize} rounded-xl border border-primary/20 bg-background px-1 text-center font-bold text-foreground shadow-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/35`}
                     aria-label="จำนวน"
                 />
 
                 {/* Increment Button */}
                 <button
                     type="button"
-                    className={`${btnSize} inline-flex items-center justify-center rounded-lg bg-foreground text-background transition-all hover:opacity-80 active:scale-95 disabled:opacity-30 disabled:cursor-not-allowed`}
+                    className={`${btnSize} inline-flex items-center justify-center rounded-xl border border-border/70 bg-card text-foreground transition-all hover:bg-accent hover:text-primary active:scale-95 disabled:cursor-not-allowed disabled:opacity-30`}
                     onClick={handleIncrement}
                     disabled={disabled || value >= max}
                     aria-label="เพิ่มจำนวน"

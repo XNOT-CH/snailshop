@@ -14,6 +14,7 @@ import { useLogout } from "@/components/useLogout";
 import { withImageVersion } from "@/lib/imageUrl";
 import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
 import { SITE_NAME } from "@/lib/seo";
+import { themeClasses } from "@/lib/theme";
 
 interface SerializableNavLink { href: string; label: string; }
 
@@ -27,13 +28,6 @@ interface NavigationDrawerProps {
     categories?: string[];
     currencySettings?: PublicCurrencySettings;
 }
-
-// ─── User's color scheme ─────────────────────────────────
-const PANEL_BG   = "#141c2f";   // dark charcoal navy
-const HEADER_BG  = "#0e1628";   // darker header
-const SECTION_BG = "#1a2338";   // slightly lighter nav section
-const ACTIVE_BG  = "#1e4fcc";   // bright blue active
-const BORDER     = "rgba(255,255,255,0.07)";
 
 const DEFAULT_NAV: SerializableNavLink[] = [
     { href: "/",          label: "หน้าแรก" },
@@ -69,6 +63,15 @@ export function NavigationDrawer({
     const pathname = usePathname();
     const logout = useLogout();
     const links = navLinks && navLinks.length > 0 ? navLinks : DEFAULT_NAV;
+    const drawerStyles = {
+        panel: { background: "var(--surface-shell-2)", borderRight: "1px solid var(--surface-stroke)" },
+        header: { background: "var(--surface-header)", borderBottom: "1px solid var(--surface-stroke)" },
+        section: { background: "var(--surface-2)" },
+        divider: { background: "var(--surface-stroke-soft)" },
+        active: { background: "var(--primary)", color: "var(--primary-foreground)" },
+        inactive: { color: "var(--muted-foreground)" },
+        secondaryButton: { border: "1px solid var(--surface-stroke)" },
+    } as const;
 
     const handleLogout = async () => {
         if (logoutPending) return;
@@ -106,30 +109,29 @@ export function NavigationDrawer({
             <aside
                 className="fixed top-0 left-0 z-[9999] flex h-svh flex-col transition-transform duration-300 ease-in-out"
                 style={{
-                    background: PANEL_BG,
                     width: "min(290px, 85vw)",
                     transform: isOpen ? "translateX(0)" : "translateX(-100%)",
-                    borderRight: `1px solid ${BORDER}`,
+                    ...drawerStyles.panel,
                 }}
             >
                 {/* ── Header ── */}
                 <div
                     className="flex items-center justify-between px-5 py-4 flex-shrink-0"
-                    style={{ background: HEADER_BG, borderBottom: `1px solid ${BORDER}` }}
+                    style={drawerStyles.header}
                 >
                     <Link href="/" onClick={() => setIsOpen(false)} className="flex items-center gap-2.5">
                         {logoUrl ? (
                             <Image src={logoUrl} alt={siteName} width={32} height={32} className="object-contain" />
                         ) : (
-                            <div className="h-8 w-8 rounded-lg bg-white/15 flex items-center justify-center">
-                                <Gamepad2 className="h-4 w-4 text-white" />
+                            <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center">
+                                <Gamepad2 className="h-4 w-4 text-foreground" />
                             </div>
                         )}
-                        <span className="text-white font-bold text-sm tracking-widest uppercase">{siteName}</span>
+                        <span className="font-bold text-sm tracking-widest uppercase text-foreground">{siteName}</span>
                     </Link>
                     <button
                         onClick={() => setIsOpen(false)}
-                        className="text-white/50 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/10"
+                        className="p-1 rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                         aria-label="ปิด"
                     >
                         <X className="h-5 w-5" />
@@ -137,12 +139,12 @@ export function NavigationDrawer({
                 </div>
 
                 {/* ── User Card ── */}
-                <div className="px-4 py-5 flex-shrink-0" style={{ borderBottom: `1px solid ${BORDER}`, background: HEADER_BG }}>
+                <div className="px-4 py-5 flex-shrink-0" style={drawerStyles.header}>
                     {user ? (
                         <div className="flex flex-col gap-3">
                             {/* Avatar + Info */}
                             <div className="flex items-center gap-3">
-                                <div className="h-12 w-12 rounded-full bg-white/15 border-2 border-white/20 overflow-hidden flex items-center justify-center flex-shrink-0">
+                                <div className="h-12 w-12 rounded-full bg-accent border-2 border-border overflow-hidden flex items-center justify-center flex-shrink-0">
                                     {user.image ? (
                                         <Image
                                             src={withImageVersion(user.image, imageVersion) ?? user.image}
@@ -152,20 +154,20 @@ export function NavigationDrawer({
                                             className="h-full w-full object-cover"
                                         />
                                     ) : (
-                                        <span className="text-base font-bold text-white/85">
+                                        <span className="text-base font-bold text-foreground">
                                             {user.username.charAt(0).toUpperCase()}
                                         </span>
                                     )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-white font-bold text-sm tracking-wide uppercase truncate">{user.username}</p>
+                                    <p className="font-bold text-sm tracking-wide uppercase truncate text-foreground">{user.username}</p>
                                     <div className="flex items-center gap-1.5 mt-0.5">
-                                        <CircleDollarSign className="h-3.5 w-3.5 text-blue-300" />
-                                        <span className="text-blue-300 text-xs font-medium">
+                                        <CircleDollarSign className="h-3.5 w-3.5 text-primary" />
+                                        <span className="text-primary text-xs font-medium">
                                             เครดิต: {Number(user.creditBalance).toLocaleString()}
                                         </span>
                                     </div>
-                                    <div className="mt-1 text-[11px] text-emerald-300/90">
+                                    <div className="mt-1 text-[11px] text-emerald-500">
                                         {formatCurrencyAmount(user.pointBalance, "POINT", currencySettings)}
                                     </div>
                                 </div>
@@ -174,8 +176,7 @@ export function NavigationDrawer({
                             <Link
                                 href="/dashboard/topup"
                                 onClick={() => setIsOpen(false)}
-                                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
-                                style={{ background: ACTIVE_BG }}
+                                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 active:scale-[0.98] bg-primary"
                             >
                                 {walletIconUrl ? (
                                     <Image src={walletIconUrl} alt="wallet" width={16} height={16} className="h-4 w-4 object-contain" />
@@ -188,13 +189,12 @@ export function NavigationDrawer({
                     ) : (
                         <div className="flex flex-col gap-2">
                             <Link href="/login" onClick={() => setIsOpen(false)}
-                                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all hover:opacity-90"
-                                style={{ background: ACTIVE_BG }}>
+                                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 bg-primary">
                                 <Lock className="h-4 w-4" /> เข้าสู่ระบบ
                             </Link>
                             <Link href="/register" onClick={() => setIsOpen(false)}
-                                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-medium text-white/70 hover:text-white transition-all"
-                                style={{ border: `1px solid ${BORDER}` }}>
+                                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-all"
+                                style={drawerStyles.secondaryButton}>
                                 <UserPlus className="h-4 w-4" /> สมัครสมาชิก
                             </Link>
                         </div>
@@ -202,12 +202,12 @@ export function NavigationDrawer({
                 </div>
 
                 {/* ── Nav Links ── */}
-                <nav className="flex-1 overflow-y-auto pt-1 pb-2" style={{ background: SECTION_BG }}>
+                <nav className="flex-1 overflow-y-auto pt-1 pb-2" style={drawerStyles.section}>
                     {links.map((link) => {
                         const active = isActive(link.href);
                         const isShop = link.href === "/shop" && categories.length > 0;
-                        const inactiveStyle = { color: "rgba(255,255,255,0.80)" };
-                        const activeStyle   = { background: ACTIVE_BG, color: "#fff" };
+                        const inactiveStyle = drawerStyles.inactive;
+                        const activeStyle = drawerStyles.active;
 
                         if (isShop) {
                             return (
@@ -222,12 +222,12 @@ export function NavigationDrawer({
                                         <ChevronRight className={`h-4 w-4 opacity-50 transition-transform duration-200 ${shopExpanded ? "rotate-90" : ""}`} />
                                     </button>
                                     {shopExpanded && (
-                                        <div style={{ background: "rgba(0,0,0,0.15)" }}>
+                                        <div className="bg-accent/45">
                                             {categories.map((cat) => (
                                                 <Link key={cat}
                                                     href={`/shop?category=${encodeURIComponent(cat)}`}
-                                                    className="flex items-center pl-12 pr-5 py-2.5 text-xs hover:bg-white/5 transition-colors"
-                                            style={{ color: "rgba(255,255,255,0.55)" }}
+                                                    className="flex items-center pl-12 pr-5 py-2.5 text-xs transition-colors hover:bg-accent"
+                                                    style={drawerStyles.inactive}
                                                     onClick={() => setIsOpen(false)}>
                                                     {cat}
                                                 </Link>
@@ -253,10 +253,10 @@ export function NavigationDrawer({
                     {/* Extra account links */}
                     {user && (
                         <>
-                            <div className="my-1 mx-4" style={{ height: "1px", background: "rgba(0,0,0,0.08)" }} />
+                            <div className="my-1 mx-4" style={{ height: "1px", ...drawerStyles.divider }} />
                             <Link href="/profile/settings" onClick={() => setIsOpen(false)}
                                 className="flex items-center gap-3.5 px-5 py-3.5 text-sm font-medium transition-colors"
-                                style={pathname.startsWith("/profile") ? { background: ACTIVE_BG, color: "#fff" } : { color: "rgba(255,255,255,0.80)" }}>
+                                style={pathname.startsWith("/profile") ? drawerStyles.active : drawerStyles.inactive}>
                                 <User className="h-[19px] w-[19px] flex-shrink-0" />
                                 <span className="flex-1">โปรไฟล์</span>
                             </Link>
@@ -266,13 +266,13 @@ export function NavigationDrawer({
 
                 {/* ── Footer ── */}
                 {user && (
-                    <div className="px-4 py-4 flex-shrink-0" style={{ borderTop: `1px solid ${BORDER}`, background: HEADER_BG }}>
+                    <div className="px-4 py-4 flex-shrink-0" style={{ background: "var(--surface-header)", borderTop: "1px solid var(--surface-stroke)" }}>
                         <button
                             type="button"
                             onClick={handleLogout}
                             disabled={logoutPending}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium text-white/60 hover:text-white hover:bg-white/10 transition-all"
-                            style={{ border: `1px solid ${BORDER}` }}
+                            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent transition-all"
+                            style={drawerStyles.secondaryButton}
                         >
                             <LogOut className="h-4 w-4" /> ออกจากระบบ
                         </button>
@@ -286,7 +286,7 @@ export function NavigationDrawer({
         <>
             <button
                 onClick={() => setIsOpen(true)}
-                className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-accent hover:text-primary xl:hidden"
+                className={`${themeClasses.actionMuted} flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-primary xl:hidden`}
                 aria-label="เปิดเมนู"
             >
                 <Menu className="h-5 w-5" />

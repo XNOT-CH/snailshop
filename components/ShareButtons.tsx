@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Link2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { themeClasses } from "@/lib/theme";
 
 interface ShareButtonsProps {
     title: string;
@@ -58,7 +59,7 @@ export function ShareButtons({ title, className }: Readonly<ShareButtonsProps>) 
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 rounded-full bg-[#06C755] hover:bg-[#05b34d] text-white hover:text-white transition-all duration-200 hover:scale-110 shadow-sm"
+                    className={`${themeClasses.actionMuted} h-9 w-9 rounded-full transition-all duration-200 hover:scale-110 hover:bg-primary hover:text-primary-foreground shadow-sm`}
                     onClick={shareToLine}
                     aria-label="แชร์ไปยัง LINE"
                 >
@@ -71,7 +72,7 @@ export function ShareButtons({ title, className }: Readonly<ShareButtonsProps>) 
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 rounded-full bg-[#1877F2] hover:bg-[#1565d8] text-white hover:text-white transition-all duration-200 hover:scale-110 shadow-sm"
+                    className={`${themeClasses.actionMuted} h-9 w-9 rounded-full transition-all duration-200 hover:scale-110 hover:bg-primary hover:text-primary-foreground shadow-sm`}
                     onClick={shareToFacebook}
                     aria-label="แชร์ไปยัง Facebook"
                 >
@@ -84,7 +85,7 @@ export function ShareButtons({ title, className }: Readonly<ShareButtonsProps>) 
                 <Button
                     variant="ghost"
                     size="icon"
-                    className="h-9 w-9 rounded-full bg-[#1DA1F2] hover:bg-[#1a91da] text-white hover:text-white transition-all duration-200 hover:scale-110 shadow-sm"
+                    className={`${themeClasses.actionMuted} h-9 w-9 rounded-full transition-all duration-200 hover:scale-110 hover:bg-primary hover:text-primary-foreground shadow-sm`}
                     onClick={shareToTwitter}
                     aria-label="แชร์ไปยัง Twitter"
                 >
@@ -98,8 +99,8 @@ export function ShareButtons({ title, className }: Readonly<ShareButtonsProps>) 
                     variant="ghost"
                     size="icon"
                     className={`h-9 w-9 rounded-full transition-all duration-200 hover:scale-110 shadow-sm ${copied
-                            ? "bg-green-500 hover:bg-green-600 text-white hover:text-white"
-                            : "bg-gray-500 hover:bg-gray-600 text-white hover:text-white"
+                            ? "bg-primary text-primary-foreground hover:bg-primary/90 hover:text-primary-foreground"
+                            : `${themeClasses.actionMuted} hover:bg-primary hover:text-primary-foreground`
                         }`}
                     onClick={copyLink}
                     aria-label="คัดลอกลิงก์"

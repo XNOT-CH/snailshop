@@ -22,7 +22,7 @@ interface PopupDismissState {
 }
 
 function readDismissState(): PopupDismissState | null {
-    if (globalThis.window === undefined) return null;
+    if (typeof globalThis.window === "undefined") return null;
 
     const rawValue = localStorage.getItem(DISMISS_STORAGE_KEY);
     if (!rawValue) return null;
@@ -57,7 +57,7 @@ function readDismissState(): PopupDismissState | null {
 }
 
 function shouldShowPopup(popups: PopupData[]) {
-    if (popups.length === 0 || globalThis.window === undefined) return false;
+    if (popups.length === 0 || typeof globalThis.window === "undefined") return false;
 
     const dismissOption = popups[0]?.dismissOption || "show_always";
     if (dismissOption !== "hide_1_hour") {
@@ -73,8 +73,8 @@ function shouldShowPopup(popups: PopupData[]) {
         return true;
     }
 
-    const activePopupIds = popups.map((popup) => popup.id).sort();
-    const dismissedPopupIds = [...dismissState.popupIds].sort();
+    const activePopupIds = popups.map((popup) => popup.id).sort((a, b) => a.localeCompare(b));
+    const dismissedPopupIds = [...dismissState.popupIds].sort((a, b) => a.localeCompare(b));
 
     if (
         dismissedPopupIds.length === activePopupIds.length &&
@@ -146,7 +146,7 @@ export default function AnnouncementPopup() {
     const handleImageClick = () => {
         const currentPopup = popups[currentIndex];
         if (currentPopup?.linkUrl) {
-            window.open(currentPopup.linkUrl, "_blank", "noopener,noreferrer");
+            globalThis.open(currentPopup.linkUrl, "_blank", "noopener,noreferrer");
         }
     };
 
@@ -275,8 +275,8 @@ export default function AnnouncementPopup() {
                                                         setCurrentIndex(index);
                                                     }}
                                                     className={`w-2.5 h-2.5 rounded-full transition-all ${index === currentIndex
-                                                        ? "bg-white shadow-[0_0_0_4px_rgba(255,255,255,0.15)]"
-                                                        : "bg-white/45 hover:bg-white/70"
+                                                        ? "bg-primary shadow-[0_0_0_4px_rgba(88,166,255,0.18)]"
+                                                        : "bg-white/35 hover:bg-primary/75"
                                                         }`}
                                                     aria-label={`ไปที่รูปที่ ${index + 1}`}
                                                     animate={{ scale: index === currentIndex ? 1.2 : 1 }}

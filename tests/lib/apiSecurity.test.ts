@@ -1,14 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   apiSuccess,
   apiError,
   API_ERRORS,
   handleApiError,
-  isValidString,
-  isValidNumber,
-  isValidEmail,
-  isValidUuid,
-  validateRequired,
   parseRequestBody,
   validateRequestBody,
 } from "@/lib/apiSecurity";
@@ -170,5 +165,3 @@ describe("apiSecurity - validateRequestBody", () => {
   });
 });
 
-// Need vi import for spying
-import { vi } from "vitest";

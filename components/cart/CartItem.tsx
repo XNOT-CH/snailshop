@@ -5,6 +5,7 @@ import { CartItem as CartItemType } from "@/components/providers/CartContext";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { Package, X } from "lucide-react";
 import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
+import { themeClasses } from "@/lib/theme";
 
 interface CartItemProps {
     item: CartItemType;
@@ -20,9 +21,9 @@ export function CartItem({ item, onRemove, onUpdateQuantity, currencySettings }:
     const maxQty = item.stock != null && item.stock > 0 ? item.stock : 99;
 
     return (
-        <div className="flex items-center gap-3 rounded-xl bg-white/10 hover:bg-white/15 transition-colors px-3 py-3">
+        <div className={`${themeClasses.surfaceSoft} flex items-center gap-3 rounded-xl px-3 py-3 transition-colors`}>
             {/* Thumbnail */}
-            <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-white/10">
+            <div className="relative h-14 w-14 flex-shrink-0 overflow-hidden rounded-lg bg-background/80">
                 <Image
                     src={item.imageUrl || "/placeholder.jpg"}
                     alt={item.name}
@@ -39,16 +40,16 @@ export function CartItem({ item, onRemove, onUpdateQuantity, currencySettings }:
             {/* Details */}
             <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                    <p className="text-sm font-semibold text-white truncate">{item.name}</p>
+                    <p className="truncate text-sm font-semibold text-foreground">{item.name}</p>
                     <button
                         onClick={() => onRemove(item.id)}
-                        className="text-white/30 hover:text-red-400 transition-colors flex-shrink-0 p-1.5 -m-1.5"
+                        className="-m-1.5 flex-shrink-0 p-1.5 text-muted-foreground transition-colors hover:text-destructive"
                         aria-label="ลบ"
                     >
                         <X className="h-4 w-4" />
                     </button>
                 </div>
-                <p className="text-xs text-white/40 mt-0.5">{item.category}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{item.category}</p>
 
                 <div className="flex items-center justify-between mt-2 gap-2">
                     <div className="text-foreground">
@@ -61,11 +62,11 @@ export function CartItem({ item, onRemove, onUpdateQuantity, currencySettings }:
                         />
                     </div>
                     <div className="text-right">
-                        <p className="text-sm font-bold text-blue-400">
+                        <p className="text-sm font-bold text-primary">
                             {formatCurrencyAmount(subtotal, item.currency, currencySettings)}
                         </p>
                         {item.stock != null && (
-                            <p className="text-[10px] text-white/30 flex items-center justify-end gap-0.5">
+                            <p className="flex items-center justify-end gap-0.5 text-[10px] text-muted-foreground">
                                 <Package className="h-2.5 w-2.5" />
                                 เหลือ {item.stock}
                             </p>

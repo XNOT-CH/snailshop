@@ -42,6 +42,8 @@ import { ThaiAddressSelector } from "@/components/ThaiAddressSelector";
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import { compressImage } from "@/lib/compressImage";
 import { FreeCropDialog } from "@/components/profile/FreeCropDialog";
+import { PinSettingsCard } from "@/components/profile/PinSettingsCard";
+import { requirePinForAction } from "@/lib/require-pin-for-action";
 
 interface AddressData {
     fullName: string;
@@ -64,6 +66,9 @@ interface UserProfile {
     creditBalance: string;
     phoneVerified: boolean;
     emailVerified: boolean;
+    hasPin: boolean;
+    pinUpdatedAt: string | null;
+    pinLockedUntil: string | null;
     firstName: string | null;
     lastName: string | null;
     firstNameEn: string | null;
@@ -119,6 +124,7 @@ export default function ProfileSettingsPage() {
         password: "",
         confirmPassword: "",
         currentPassword: "",
+        pin: "",
     });
     const [taxAddress, setTaxAddress] = useState<AddressData>({ ...emptyAddress });
     const [shipAddress, setShipAddress] = useState<AddressData>({ ...emptyAddress });
@@ -134,6 +140,44 @@ export default function ProfileSettingsPage() {
         "border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/80 shadow-[0_18px_45px_-32px_rgba(15,23,42,0.22)]";
     const saveButtonClass =
         "h-11 w-full gap-2 rounded-2xl bg-blue-600 px-6 text-white shadow-[0_16px_30px_-18px_rgba(37,99,235,0.75)] transition hover:bg-blue-700 hover:shadow-[0_18px_36px_-18px_rgba(29,78,216,0.75)] sm:w-auto sm:min-w-[148px]";
+
+    const refreshProfile = useCallback(async () => {
+        const res = await fetch("/api/profile");
+        const data = await res.json();
+        if (!data.success || !data.data) return;
+
+        const user = data.data as UserProfile;
+        setProfile(user);
+        setFormData((prev) => ({
+            ...prev,
+            name: user.name || "",
+            email: user.email || "",
+            phone: user.phone || "",
+            image: user.image || "",
+            firstName: user.firstName || "",
+            lastName: user.lastName || "",
+            firstNameEn: user.firstNameEn || "",
+            lastNameEn: user.lastNameEn || "",
+        }));
+        setTaxAddress({
+            fullName: user.taxFullName || "",
+            phone: user.taxPhone || "",
+            address: user.taxAddress || "",
+            province: user.taxProvince || "",
+            district: user.taxDistrict || "",
+            subdistrict: user.taxSubdistrict || "",
+            postalCode: user.taxPostalCode || "",
+        });
+        setShipAddress({
+            fullName: user.shipFullName || "",
+            phone: user.shipPhone || "",
+            address: user.shipAddress || "",
+            province: user.shipProvince || "",
+            district: user.shipDistrict || "",
+            subdistrict: user.shipSubdistrict || "",
+            postalCode: user.shipPostalCode || "",
+        });
+    }, []);
 
     const buildSubmitData = (section: "contact" | "personal" | "password" | "tax" | "ship") => {
         switch (section) {
@@ -156,6 +200,7 @@ export default function ProfileSettingsPage() {
                     currentPassword: formData.currentPassword,
                     password: formData.password,
                     confirmPassword: formData.confirmPassword,
+                    pin: formData.pin,
                 };
             case "tax":
                 return {
@@ -173,50 +218,14 @@ export default function ProfileSettingsPage() {
         async function fetchProfile() {
             setIsFetching(true);
             try {
-                const res = await fetch("/api/profile");
-                const data = await res.json();
-                if (data.success && data.data) {
-                    const user = data.data as UserProfile;
-                    setProfile(user);
-                    setFormData({
-                        name: user.name || "",
-                        email: user.email || "",
-                        phone: user.phone || "",
-                        image: user.image || "",
-                        firstName: user.firstName || "",
-                        lastName: user.lastName || "",
-                        firstNameEn: user.firstNameEn || "",
-                        lastNameEn: user.lastNameEn || "",
-                        password: "",
-                        confirmPassword: "",
-                        currentPassword: "",
-                    });
-                    setTaxAddress({
-                        fullName: user.taxFullName || "",
-                        phone: user.taxPhone || "",
-                        address: user.taxAddress || "",
-                        province: user.taxProvince || "",
-                        district: user.taxDistrict || "",
-                        subdistrict: user.taxSubdistrict || "",
-                        postalCode: user.taxPostalCode || "",
-                    });
-                    setShipAddress({
-                        fullName: user.shipFullName || "",
-                        phone: user.shipPhone || "",
-                        address: user.shipAddress || "",
-                        province: user.shipProvince || "",
-                        district: user.shipDistrict || "",
-                        subdistrict: user.shipSubdistrict || "",
-                        postalCode: user.shipPostalCode || "",
-                    });
-                }
+                await refreshProfile();
             } catch (error) {
                 console.error("Failed to fetch profile:", error);
             }
             setIsFetching(false);
         }
         fetchProfile();
-    }, []);
+    }, [refreshProfile]);
 
     useEffect(() => {
         return () => {
@@ -241,11 +250,26 @@ export default function ProfileSettingsPage() {
             return;
         }
 
+        let pinForProtectedAction = "";
+        if (section === "password" && formData.password && profile?.hasPin) {
+            const pinCheck = await requirePinForAction("ยืนยัน PIN เพื่อเปลี่ยนรหัสผ่าน");
+            if (!pinCheck.allowed) {
+                return;
+            }
+            pinForProtectedAction = pinCheck.pin ?? "";
+            setFormData((prev) => ({ ...prev, pin: pinForProtectedAction }));
+        }
+
         setIsLoading(true);
         showLoading("กำลังบันทึก...");
 
         try {
-            const submitData = buildSubmitData(section);
+            const submitData = section === "password" && pinForProtectedAction
+                ? {
+                    ...buildSubmitData(section),
+                    pin: pinForProtectedAction,
+                }
+                : buildSubmitData(section);
             const result = await updateProfile(submitData);
 
             hideLoading();
@@ -259,6 +283,7 @@ export default function ProfileSettingsPage() {
                         password: "",
                         confirmPassword: "",
                         currentPassword: "",
+                        pin: "",
                     }));
                     // Sign out after password change
                     if (result.passwordChanged) {
@@ -270,11 +295,7 @@ export default function ProfileSettingsPage() {
                 setEditingShip(false);
                 // Refresh profile data
                 try {
-                    const res = await fetch("/api/profile");
-                    const refreshData = await res.json();
-                    if (refreshData.success && refreshData.data) {
-                        setProfile(refreshData.data as UserProfile);
-                    }
+                    await refreshProfile();
                 } catch { }
                 router.refresh();
             } else {
@@ -519,18 +540,19 @@ export default function ProfileSettingsPage() {
     }
 
     return (
-        <div className="min-h-screen bg-background px-3 py-6 sm:px-4 sm:py-8">
-            <div className="mx-auto w-full max-w-[84rem] space-y-5">
+        <div className="profile-settings-page min-h-screen bg-background px-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-4 sm:py-8">
+            <div className="mx-auto w-full max-w-[84rem] space-y-4 sm:space-y-5">
                 {/* Breadcrumb */}
                 <PageBreadcrumb
                     items={[
                         { label: "แดชบอร์ด", href: "/dashboard" },
                         { label: "ข้อมูลผู้ใช้" },
                     ]}
+                    className="px-3 sm:px-0"
                 />
 
                 {/* Page Header */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 px-3 sm:px-0">
                     <div className="rounded-2xl border border-primary/15 bg-primary/10 p-3 shadow-sm">
                         <User className="h-8 w-8 text-primary" />
                     </div>
@@ -998,7 +1020,8 @@ export default function ProfileSettingsPage() {
                     </Card>
                 </div>
 
-                {/* Row 3: Password (full width) */}
+                {/* Row 3: Password + PIN */}
+                <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
                 <Card className={elevatedCardClass}>
                     <CardHeader className="pb-4">
                         <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
@@ -1138,6 +1161,13 @@ export default function ProfileSettingsPage() {
                         </div>
                     </CardContent>
                 </Card>
+                <PinSettingsCard
+                    hasPin={Boolean(profile?.hasPin)}
+                    pinLockedUntil={profile?.pinLockedUntil ?? null}
+                    pinUpdatedAt={profile?.pinUpdatedAt ?? null}
+                    onUpdated={refreshProfile}
+                />
+                </div>
             </div>
 
                 <FreeCropDialog

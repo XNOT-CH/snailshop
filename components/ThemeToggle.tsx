@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 
 export function ThemeToggle() {
     const [mounted, setMounted] = React.useState(false);
-    const { theme, setTheme } = useTheme();
+    const { resolvedTheme, setTheme } = useTheme();
 
     // useEffect only runs on the client, so now we can safely show the UI
     React.useEffect(() => {
@@ -29,10 +29,11 @@ export function ThemeToggle() {
             variant="ghost"
             size="icon"
             className="rounded-xl text-muted-foreground hover:text-primary hover:bg-accent"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-            aria-label="Toggle theme"
+            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+            aria-label={resolvedTheme === "dark" ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด"}
+            title={resolvedTheme === "dark" ? "โหมดมืด" : "โหมดสว่าง"}
         >
-            {theme === "dark" ? (
+            {resolvedTheme === "dark" ? (
                 <Moon className="h-5 w-5 transition-transform" />
             ) : (
                 <Sun className="h-5 w-5 transition-transform" />

@@ -11,6 +11,7 @@ import {
     validateImageFile,
 } from "@/lib/serverImageUpload";
 import { encryptTopupSensitiveFields } from "@/lib/sensitiveData";
+import { assertPinForProtectedAction } from "@/lib/security/pin";
 import { PRIVATE_SLIP_PATH_PREFIX, PRIVATE_SLIP_UPLOAD_DIR } from "@/lib/slipStorage";
 import { mysqlNow } from "@/lib/utils/date";
 
@@ -545,6 +546,7 @@ export async function POST(request: NextRequest) {
             ?? parseStringField(formData.get("slipType"))
             ?? parseStringField(formData.get("provider")),
         );
+        const pin = parseStringField(formData.get("pin"));
 
         if (!requestedAmount) {
             return NextResponse.json(
@@ -651,6 +653,14 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 { success: false, message: "ไม่พบผู้ใช้งาน" },
                 { status: 404 },
+            );
+        }
+
+        const pinCheck = await assertPinForProtectedAction(user.id, pin);
+        if (!pinCheck.success) {
+            return NextResponse.json(
+                { success: false, message: pinCheck.message },
+                { status: pinCheck.status },
             );
         }
 

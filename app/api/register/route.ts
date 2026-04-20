@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
         // Validate inputs with Zod
         const parsed = await parseBody(request, registerSchema);
         if ("error" in parsed) return parsed.error;
-        const { username, password, turnstileToken } = parsed.data;
+        const { username, password, pin, turnstileToken } = parsed.data;
 
         const clientIp = getClientIp(request);
         const turnstileResult = await verifyTurnstileToken(turnstileToken, clientIp);
@@ -58,6 +58,9 @@ export async function POST(request: NextRequest) {
             id: newId,
             username,
             password: hashedPassword,
+            pinHash: pin ? await bcrypt.hash(pin, 12) : null,
+            pinEnabledAt: pin ? mysqlNow() : null,
+            pinUpdatedAt: pin ? mysqlNow() : null,
             role: "USER",
             creditBalance: "0",
             createdAt: mysqlNow(),

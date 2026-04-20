@@ -11,7 +11,10 @@ import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { formatCurrencyAmount } from "@/lib/currencySettings";
-import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
+import { preparePurchase } from "@/lib/prepare-purchase";
+import { themeClasses } from "@/lib/theme";
+import type { PublicCurrencySettings } from "@/lib/currencySettings";
+import type { MaintenanceMap } from "@/hooks/useMaintenanceStatus";
 
 interface SaleProduct {
     id: string;
@@ -24,12 +27,22 @@ interface SaleProduct {
     isSold: boolean;
 }
 
-export function SaleProducts() {
+interface SaleProductsProps {
+    initialProducts?: SaleProduct[];
+    initialCurrencySettings?: PublicCurrencySettings | null;
+    initialMaintenance?: MaintenanceMap;
+}
+
+export function SaleProducts({
+    initialProducts,
+    initialCurrencySettings,
+    initialMaintenance,
+}: Readonly<SaleProductsProps>) {
     const router = useRouter();
-    const maintenance = useMaintenanceStatus().purchase;
-    const currencySettings = useCurrencySettings();
-    const [products, setProducts] = useState<SaleProduct[]>([]);
-    const [loading, setLoading] = useState(true);
+    const maintenance = useMaintenanceStatus(initialMaintenance).purchase;
+    const currencySettings = useCurrencySettings(initialCurrencySettings);
+    const [products, setProducts] = useState<SaleProduct[]>(() => initialProducts ?? []);
+    const [loading, setLoading] = useState(!Array.isArray(initialProducts));
     const [buyingId, setBuyingId] = useState<string | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -39,18 +52,22 @@ export function SaleProducts() {
             return;
         }
 
-        const authCheck = await requireAuthBeforePurchase(router);
-        if (!authCheck.allowed) {
-            return;
-        }
-
         const confirmed = await showPurchaseConfirm({
             productName: product.name,
             priceText: formatCurrencyAmount(product.discountPrice, product.currency, currencySettings),
             extraHtml: `<span class="text-sm text-gray-500 line-through">ราคาปกติ: ${formatCurrencyAmount(product.price, product.currency, currencySettings)}</span>`,
-            confirmButtonColor: "#ef4444",
+            confirmButtonColor: "#58a6ff",
         });
         if (!confirmed) return;
+
+        const purchaseCheck = await preparePurchase({
+            router,
+            amount: product.discountPrice,
+            currency: product.currency,
+            currencySettings,
+            pinActionLabel: "ยืนยัน PIN เพื่อซื้อสินค้า",
+        });
+        if (!purchaseCheck.allowed) return;
 
         setBuyingId(product.id);
 
@@ -58,7 +75,7 @@ export function SaleProducts() {
             const response = await fetch("/api/purchase", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ productId: product.id }),
+                body: JSON.stringify({ productId: product.id, pin: purchaseCheck.pin }),
             });
 
             const data = await response.json();
@@ -92,6 +109,10 @@ export function SaleProducts() {
     };
 
     useEffect(() => {
+        if (Array.isArray(initialProducts)) {
+            return;
+        }
+
         async function fetchSaleProducts() {
             try {
                 const res = await fetch("/api/sale-products");
@@ -106,7 +127,7 @@ export function SaleProducts() {
             }
         }
         fetchSaleProducts();
-    }, []);
+    }, [initialProducts]);
 
     const scroll = (direction: "left" | "right") => {
         if (scrollContainerRef.current) {
@@ -145,7 +166,7 @@ export function SaleProducts() {
         return (
             <div>
                 <div className="flex items-center gap-2 mb-4">
-                    <Tag className="h-6 w-6 text-red-500" />
+                    <Tag className="h-6 w-6 text-primary" />
                     <h2 className="text-2xl font-bold">สินค้าลดราคา</h2>
                 </div>
                 <div className="flex gap-4 overflow-hidden">
@@ -168,7 +189,7 @@ export function SaleProducts() {
     return (
         <div>
             {maintenance?.enabled && (
-                <div className="mb-4 rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                <div className={`${themeClasses.alert} mb-4 rounded-2xl px-4 py-3 text-sm`}>
                     <p className="font-semibold">ระบบสั่งซื้อกำลังปิดปรับปรุงชั่วคราว</p>
                     <p className="mt-1 text-xs text-amber-800/90">{maintenance.message}</p>
                 </div>
@@ -176,9 +197,9 @@ export function SaleProducts() {
 
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex min-w-0 items-center gap-2">
-                    <Tag className="h-6 w-6 text-red-500" />
+                    <Tag className="h-6 w-6 text-primary" />
                     <h2 className="text-2xl font-bold">สินค้าลดราคา</h2>
-                    <span className="px-2 py-1 text-xs font-bold bg-red-500 text-white rounded-full animate-pulse">SALE</span>
+                    <span className={`${themeClasses.sale} rounded-full px-2 py-1 text-xs font-bold text-primary-foreground animate-pulse`}>SALE</span>
                 </div>
                 <div className="flex shrink-0 gap-2">
                     <Button variant="outline" size="icon" className="rounded-full" onClick={() => scroll("left")} aria-label="เลื่อนเซกชันสินค้าโปรโมชันไปทางซ้าย">
@@ -197,36 +218,29 @@ export function SaleProducts() {
             >
                 {products.map((product) => (
                     <div key={product.id} className="flex-shrink-0 w-40 sm:w-52 snap-start">
-                        <div className="group relative overflow-hidden rounded-2xl border border-slate-300/80 bg-white shadow-sm transition-all duration-300 hover:shadow-lg">
-                            <div className="relative aspect-square overflow-hidden border-b border-slate-300/80 bg-muted">
+                        <div className={`${themeClasses.surface} storefront-product-card group relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_22px_42px_-28px_rgba(39,71,121,0.24)] dark:hover:shadow-[0_26px_50px_-34px_rgba(0,0,0,0.92)]`}>
+                            <div className={`${themeClasses.surfaceMedia} relative aspect-square overflow-hidden border-b border-border/80`}>
                                 <div className="absolute top-3 left-3 z-10">
-                                    <span className="px-2 py-1 text-xs font-bold bg-red-500 text-white rounded-full flex items-center gap-1">
+                                    <span className={`${themeClasses.sale} storefront-product-sale flex items-center gap-1 rounded-full px-2 py-1 text-xs font-bold text-white`}>
                                         <Percent className="h-3 w-3" />
                                         -{getDiscountPercent(Number(product.price), Number(product.discountPrice))}%
                                     </span>
                                 </div>
                                 <div className="absolute top-3 right-3 z-10">
-                                    <span className="px-2 py-1 text-xs font-medium bg-primary/90 text-primary-foreground rounded-full">
+                                    <span className={`${themeClasses.badge} storefront-product-category rounded-full px-2 py-1 text-xs font-medium`}>
                                         {product.category}
                                     </span>
                                 </div>
                                 {product.isSold && (
                                     <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
-                                        <span className="px-4 py-2 bg-red-500 text-white font-bold rounded-full transform -rotate-12">
+                                        <span className="transform rounded-full bg-primary px-4 py-2 font-bold text-primary-foreground -rotate-12">
                                             ขายแล้ว
                                         </span>
                                     </div>
                                 )}
                                 {!product.isSold && (
-                                    <Link href={`/product/${product.id}`} className="absolute inset-0 z-10 bg-white/10 backdrop-blur-[1px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition duration-300">
-                                        <span
-                                            style={{
-                                                border: "1.5px solid rgba(96, 165, 250, 0.85)",
-                                                color: "rgba(186, 230, 253, 1)",
-                                                backgroundColor: "rgba(29, 78, 216, 0.12)",
-                                            }}
-                                            className="flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold"
-                                        >
+                                    <Link href={`/product/${product.id}`} className={`${themeClasses.overlayScrim} absolute inset-0 z-10 flex items-center justify-center opacity-0 backdrop-blur-[1px] transition duration-300 group-hover:opacity-100`}>
+                                        <span className={`${themeClasses.badge} storefront-product-category flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold`}>
                                             ดูรายละเอียด
                                         </span>
                                     </Link>
@@ -240,21 +254,21 @@ export function SaleProducts() {
                                 />
                             </div>
                             <div className="p-4 text-center">
-                                <h3 className="font-semibold text-foreground truncate mb-1 text-center">{product.name}</h3>
+                                <h3 className="mb-1 truncate text-center font-semibold text-foreground">{product.name}</h3>
                                 <div className="flex items-center justify-center gap-2">
-                                    <p className="text-lg font-bold text-red-500">{formatCurrencyAmount(Number(product.discountPrice), product.currency, currencySettings)}</p>
+                                    <p className={`${themeClasses.saleText} storefront-product-sale-text text-lg font-bold`}>{formatCurrencyAmount(Number(product.discountPrice), product.currency, currencySettings)}</p>
                                     <p className="text-sm text-muted-foreground line-through">{formatCurrencyAmount(Number(product.price), product.currency, currencySettings)}</p>
                                 </div>
                                 <div className="grid grid-cols-2 gap-2 mt-3">
                                     {product.isSold ? (
-                                        <Button variant="outline" className="col-span-2 w-full" disabled>
+                                        <Button variant="outline" className="col-span-2 w-full border-border/80 bg-accent/40 text-foreground" disabled>
                                             <ShoppingCart className="h-4 w-4 mr-2" />
                                             ขายแล้ว
                                         </Button>
                                     ) : (
                                         <>
                                             <Button
-                                                className="col-span-2 w-full bg-red-500 hover:bg-red-600"
+                                                className={`${themeClasses.sale} storefront-product-sale col-span-2 w-full text-white`}
                                                 onClick={() => void handleBuyClick(product)}
                                                 disabled={buyingId === product.id || maintenance?.enabled}
                                             >
@@ -281,14 +295,14 @@ export function SaleProducts() {
                                                     category: product.category,
                                                     quantity: 1,
                                                 }}
-                                                className="w-full"
+                                                className={`${themeClasses.actionMuted} storefront-product-action w-full`}
                                                 showText={false}
                                                 size="icon"
                                             />
                                         </>
                                     )}
                                     <Link href={`/product/${product.id}`} className="block">
-                                        <Button variant="outline" size="icon" className="w-full" aria-label={`ดูรายละเอียด ${product.name}`}>
+                                        <Button variant="outline" size="icon" className={`${themeClasses.actionMuted} storefront-product-action w-full`} aria-label={`ดูรายละเอียด ${product.name}`}>
                                             <Eye className="h-4 w-4" />
                                         </Button>
                                     </Link>

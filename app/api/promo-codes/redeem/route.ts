@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { and, eq, ne, sql } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db, promoCodes, promoUsages, users } from "@/lib/db";
+import { assertPinForProtectedAction } from "@/lib/security/pin";
 
 function getCreditCodeValidationMessage(promo: {
     codeType?: string | null;
@@ -45,11 +46,16 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อนเติมโค้ด" }, { status: 401 });
         }
 
-        const body = await request.json() as { code?: string };
+        const body = await request.json() as { code?: string; pin?: string };
         const code = body.code?.trim().toUpperCase();
 
         if (!code) {
             return NextResponse.json({ success: false, message: "กรุณากรอกโค้ดก่อนเติมโค้ด" }, { status: 400 });
+        }
+
+        const pinCheck = await assertPinForProtectedAction(userId, body.pin);
+        if (!pinCheck.success) {
+            return NextResponse.json({ success: false, message: pinCheck.message }, { status: pinCheck.status });
         }
 
         const result = await db.transaction(async (tx) => {

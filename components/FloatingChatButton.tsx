@@ -72,8 +72,8 @@ function ChatBubble({
             <div
                 className={`max-w-[90%] rounded-[24px] px-3.5 py-3 text-sm shadow-sm sm:max-w-[85%] sm:rounded-[28px] sm:px-4 ${
                     isCustomer
-                        ? "bg-[#1185f7] text-white"
-                        : "border border-slate-200 bg-white text-slate-900"
+                        ? "bg-primary text-primary-foreground"
+                        : "border border-border bg-card text-foreground"
                 }`}
             >
                 <ChatMessageContent
@@ -108,10 +108,10 @@ export function FloatingChatButton() {
 
     useEffect(() => {
         const handleOpenChat = () => setIsOpen(true);
-        window.addEventListener(OPEN_CHAT_EVENT, handleOpenChat);
+        globalThis.addEventListener(OPEN_CHAT_EVENT, handleOpenChat);
 
         return () => {
-            window.removeEventListener(OPEN_CHAT_EVENT, handleOpenChat);
+            globalThis.removeEventListener(OPEN_CHAT_EVENT, handleOpenChat);
         };
     }, []);
 
@@ -122,11 +122,11 @@ export function FloatingChatButton() {
 
         void loadConversation();
 
-        const interval = window.setInterval(() => {
+        const interval = globalThis.setInterval(() => {
             void loadConversation(false);
         }, 5000);
 
-        return () => window.clearInterval(interval);
+        return () => globalThis.clearInterval(interval);
     }, [isOpen]);
 
     useEffect(() => {
@@ -271,14 +271,14 @@ export function FloatingChatButton() {
 
             <SheetContent
                 side="right"
-                className="h-[100dvh] w-full gap-0 overflow-hidden border-l-0 bg-[#f5f7fb] p-0 sm:inset-y-4 sm:right-4 sm:h-auto sm:w-[min(420px,calc(100vw-2rem))] sm:max-w-none sm:rounded-[32px] sm:border sm:border-slate-200"
+                className="h-[100dvh] w-full gap-0 overflow-hidden border-l-0 bg-background p-0 sm:inset-y-4 sm:right-4 sm:h-auto sm:w-[min(420px,calc(100vw-2rem))] sm:max-w-none sm:rounded-[32px] sm:border sm:border-border"
             >
-                <SheetHeader className="shrink-0 border-b border-slate-200 bg-white px-4 py-4 pr-12 text-left sm:px-5 sm:pr-14">
+                <SheetHeader className="shrink-0 border-b border-border bg-card px-4 py-4 pr-12 text-left sm:px-5 sm:pr-14">
                     <div className="flex items-center gap-3.5">
                         <ChatBrandLogo className="h-14 w-14 rounded-[1.35rem] sm:h-[3.75rem] sm:w-[3.75rem]" />
                         <div className="min-w-0 flex-1 py-0.5">
-                            <SheetTitle className="truncate pb-0.5 text-lg font-black leading-[1.15] text-slate-900">คุยกับทีมร้าน</SheetTitle>
-                            <SheetDescription className="mt-1 text-xs text-slate-500">
+                            <SheetTitle className="truncate pb-0.5 text-lg font-black leading-[1.15] text-foreground">คุยกับทีมร้าน</SheetTitle>
+                            <SheetDescription className="mt-1 text-xs text-muted-foreground">
                                 ถามเรื่องสินค้า ออเดอร์ หรือปัญหาการใช้งานได้เลย
                             </SheetDescription>
                         </div>
@@ -287,14 +287,14 @@ export function FloatingChatButton() {
 
                 {!isAuthenticated ? (
                     <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-5 text-center sm:px-6">
-                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-500">
+                        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent text-muted-foreground">
                             <LockKeyhole className="h-7 w-7" />
                         </div>
-                        <h3 className="text-lg font-semibold text-slate-900">ล็อกอินก่อนเริ่มแชท</h3>
-                        <p className="mt-2 text-sm text-slate-500">
+                        <h3 className="text-lg font-semibold text-foreground">ล็อกอินก่อนเริ่มแชท</h3>
+                        <p className="mt-2 text-sm text-muted-foreground">
                             ระบบจะผูกประวัติแชทกับบัญชีของคุณ เพื่อให้ทีมงานช่วยติดตามได้ต่อเนื่อง
                         </p>
-                        <Button asChild className="mt-5 rounded-full bg-[#1185f7] px-5 hover:bg-[#0f5ed7]">
+                        <Button asChild className="mt-5 rounded-full px-5">
                             <Link href={`/login?callbackUrl=${encodeURIComponent(pathname)}`}>
                                 เข้าสู่ระบบเพื่อเริ่มคุย
                             </Link>
@@ -302,7 +302,7 @@ export function FloatingChatButton() {
                     </div>
                 ) : (
                     <div className="flex min-h-0 flex-1 flex-col">
-                        <div className="shrink-0 border-b border-slate-200 bg-white/80 px-4 py-3 text-xs text-slate-500 sm:px-5">
+                        <div className="shrink-0 border-b border-border bg-card/80 px-4 py-3 text-xs text-muted-foreground sm:px-5">
                             {conversation?.status === "CLOSED" ? (
                                 <p className="text-amber-600">
                                     เคสนี้ถูกปิดไว้แล้ว แต่คุณยังส่งข้อความใหม่เพื่อเปิดเคสต่อได้
@@ -323,7 +323,7 @@ export function FloatingChatButton() {
 
                             <div className="relative z-10 space-y-4">
                                 {isLoading ? (
-                                    <div className="flex min-h-[280px] items-center justify-center text-sm text-slate-500">
+                                    <div className="flex min-h-[280px] items-center justify-center text-sm text-muted-foreground">
                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                         กำลังโหลดข้อความ
                                     </div>
@@ -346,7 +346,7 @@ export function FloatingChatButton() {
                                         );
                                     })
                                 ) : (
-                                    <div className="flex min-h-[280px] items-center justify-center rounded-[28px] border border-dashed border-slate-200 bg-white px-4 text-center text-sm text-slate-500">
+                                    <div className="flex min-h-[280px] items-center justify-center rounded-[28px] border border-dashed border-border bg-card px-4 text-center text-sm text-muted-foreground">
                                         เริ่มพิมพ์ข้อความแรกเพื่อคุยกับทีมร้านได้เลย
                                     </div>
                                 )}
@@ -354,8 +354,8 @@ export function FloatingChatButton() {
                             </div>
                         </ScrollArea>
 
-                        <div className="shrink-0 border-t border-slate-200 bg-white p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]">
-                            <div className="rounded-[24px] border border-slate-200 bg-slate-50 p-2.5 sm:rounded-[28px] sm:p-3">
+                        <div className="shrink-0 border-t border-border bg-card p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]">
+                            <div className="rounded-[24px] border border-border bg-accent/55 p-2.5 sm:rounded-[28px] sm:p-3">
                                 <input
                                     ref={fileInputRef}
                                     type="file"
@@ -373,10 +373,10 @@ export function FloatingChatButton() {
                                 />
                                 <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                     <div className="space-y-2">
-                                        <p className="text-xs text-slate-400">
+                                        <p className="text-xs text-muted-foreground">
                                             ทีมงานจะตอบกลับทันทีเมื่อมีแอดมินออนไลน์
                                         </p>
-                                        <p className="text-[11px] text-slate-400">
+                                        <p className="text-[11px] text-muted-foreground">
                                             รูปจะหายอัตโนมัติหลังส่งครบ 5 นาที
                                         </p>
                                     </div>
@@ -399,7 +399,7 @@ export function FloatingChatButton() {
                                         <Button
                                             onClick={handleSendMessage}
                                             disabled={isSending || isUploading || !draft.trim()}
-                                            className="w-full rounded-full bg-[#1185f7] px-5 hover:bg-[#0f5ed7] sm:w-auto"
+                                            className="w-full rounded-full px-5 sm:w-auto"
                                         >
                                             {isSending ? (
                                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

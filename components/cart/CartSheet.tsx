@@ -22,6 +22,8 @@ import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { buildCurrencyBreakdownLabel, formatCurrencyAmount } from "@/lib/currencySettings";
 import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
+import { requirePinForAction } from "@/lib/require-pin-for-action";
+import { themeClasses } from "@/lib/theme";
 
 function CartSheetContent() {
     const router = useRouter();
@@ -128,6 +130,12 @@ function CartSheetContent() {
             return;
         }
 
+        const pinCheck = await requirePinForAction("ยืนยัน PIN เพื่อชำระเงิน");
+        if (!pinCheck.allowed) {
+            setIsOpen(true);
+            return;
+        }
+
         setIsCheckingOut(true);
         try {
             const response = await fetch("/api/cart/checkout", {
@@ -136,6 +144,7 @@ function CartSheetContent() {
                 body: JSON.stringify({
                     productIds: items.map((item) => item.id),
                     promoCode: appliedPromo?.code || undefined,
+                    pin: pinCheck.pin || undefined,
                 }),
             });
 
@@ -188,7 +197,7 @@ function CartSheetContent() {
                 </SheetTrigger>
 
                 <SheetContent
-                    className="w-full sm:max-w-sm flex flex-col p-0 gap-0 bg-[#0f1923] border-l border-white/10 text-white"
+                    className="w-full sm:max-w-sm flex flex-col p-0 gap-0 border-l border-border bg-card text-card-foreground"
                 >
                 {/* Hidden title for Radix UI accessibility */}
                 <SheetHeader className="sr-only">
@@ -196,11 +205,11 @@ function CartSheetContent() {
                     <SheetDescription>รายการสินค้าที่คุณเลือกไว้</SheetDescription>
                 </SheetHeader>
                 {/* ── Header ───────────────────────────── */}
-                <div className="flex items-center gap-2 px-5 py-4 border-b border-white/10">
-                    <ShoppingCart className="h-5 w-5 text-blue-400" />
+                <div className="flex items-center gap-2 border-b border-border px-5 py-4">
+                    <ShoppingCart className="h-5 w-5 text-primary" />
                     <span className="font-bold text-base">ตะกร้าสินค้า</span>
                     {itemCount > 0 && (
-                        <span className="text-xs text-white/50 font-normal">
+                        <span className="text-xs font-normal text-muted-foreground">
                             ({itemCount} รายการ)
                         </span>
                     )}
@@ -209,11 +218,11 @@ function CartSheetContent() {
                 {/* ── Body ─────────────────────────────── */}
                 {items.length === 0 ? (
                     <div className="flex-1 flex flex-col items-center justify-center text-center px-6 py-12">
-                        <ShoppingBag className="h-14 w-14 text-white/20 mb-4" />
-                        <h3 className="font-semibold text-base text-white/80">ตะกร้าว่างเปล่า</h3>
-                        <p className="text-sm text-white/40 mt-1">เพิ่มสินค้าที่คุณสนใจได้เลย</p>
+                        <ShoppingBag className="mb-4 h-14 w-14 text-muted-foreground/30" />
+                        <h3 className="text-base font-semibold text-foreground">ตะกร้าว่างเปล่า</h3>
+                        <p className="mt-1 text-sm text-muted-foreground">เพิ่มสินค้าที่คุณสนใจได้เลย</p>
                         <Button
-                            className="mt-6 bg-blue-600 hover:bg-blue-500 text-white rounded-xl px-6"
+                            className="mt-6 rounded-xl px-6"
                             onClick={() => setIsOpen(false)}
                         >
                             เลือกซื้อสินค้า
@@ -222,7 +231,7 @@ function CartSheetContent() {
                 ) : (
                     <>
                         {/* Item list */}
-                        <ScrollArea className="flex-1 bg-[#0a1520]">
+                        <ScrollArea className="flex-1 bg-background/45">
                             <div className="px-4 py-3 flex flex-col gap-2">
                                 {items.map((item) => (
                                     <CartItem
@@ -237,21 +246,21 @@ function CartSheetContent() {
                         </ScrollArea>
 
                         {/* ── Summary + Actions ─────────── */}
-                        <div className="border-t border-white/10 px-5 pt-4 pb-5 space-y-4">
+                        <div className="space-y-4 border-t border-border px-5 pt-4 pb-5">
                             {maintenance?.enabled && (
-                                <div className="rounded-xl border border-amber-400/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+                                <div className={`${themeClasses.alert} rounded-xl px-3 py-2 text-sm`}>
                                     <p className="font-semibold">ระบบสั่งซื้อกำลังปิดปรับปรุงชั่วคราว</p>
-                                    <p className="mt-1 text-xs text-amber-100/80">{maintenance.message}</p>
+                                    <p className="mt-1 text-xs text-amber-800/80 dark:text-amber-100/80">{maintenance.message}</p>
                                 </div>
                             )}
                             {/* Subtotals */}
                             <div className="space-y-1.5 text-sm">
-                                <div className="flex justify-between text-white/50">
+                                <div className="flex justify-between text-muted-foreground">
                                     <span>รวมสินค้า ({itemCount} รายการ)</span>
                                     <span>{buildCurrencyBreakdownLabel(totalsByCurrency, currencySettings)}</span>
                                 </div>
                                 {thbTotal > 0 ? (
-                                    <div className="space-y-2 rounded-xl border border-white/10 bg-white/5 p-3">
+                                    <div className={`${themeClasses.surfaceSoft} space-y-2 rounded-xl p-3`}>
                                         <div className="flex flex-col gap-2 sm:flex-row">
                                             <Input
                                                 placeholder="กรอกโค้ดส่วนลด"
@@ -261,13 +270,13 @@ function CartSheetContent() {
                                                     setAppliedPromo(null);
                                                 }}
                                                 onKeyDown={(event) => event.key === "Enter" && handleCheckPromo()}
-                                                className="h-10 border-white/10 bg-white text-sm text-slate-900 placeholder:text-slate-400"
+                                                className="h-10 border-border bg-background text-sm text-foreground placeholder:text-muted-foreground"
                                                 disabled={isCheckingPromo || isCheckingOut}
                                             />
                                             <Button
                                                 type="button"
                                                 variant="outline"
-                                                className="h-10 shrink-0 border-white/10 bg-white/10 text-white hover:bg-white/20"
+                                                className={`${themeClasses.actionMuted} h-10 shrink-0`}
                                                 onClick={handleCheckPromo}
                                                 disabled={isCheckingPromo || !promoCode.trim() || isCheckingOut}
                                             >
@@ -282,7 +291,7 @@ function CartSheetContent() {
                                             </Button>
                                         </div>
                                         {appliedPromo ? (
-                                            <div className="flex items-center gap-1.5 text-sm font-medium text-emerald-300">
+                                            <div className="flex items-center gap-1.5 text-sm font-medium text-emerald-500 dark:text-emerald-300">
                                                 <Tag className="h-3.5 w-3.5" />
                                                 ใช้โค้ด {appliedPromo.code} ลด {formatCurrencyAmount(appliedPromo.discountAmount, "THB", currencySettings)}
                                             </div>
@@ -290,14 +299,14 @@ function CartSheetContent() {
                                     </div>
                                 ) : null}
                                 {appliedPromo ? (
-                                    <div className="flex justify-between text-emerald-300">
+                                    <div className="flex justify-between text-emerald-500 dark:text-emerald-300">
                                         <span>ส่วนลด</span>
                                         <span>-{formatCurrencyAmount(appliedPromo.discountAmount, "THB", currencySettings)}</span>
                                     </div>
                                 ) : null}
                                 <div className="flex justify-between items-baseline">
-                                    <span className="font-bold text-base text-white">ยอดรวมทั้งหมด</span>
-                                    <span className="font-bold text-xl text-blue-400">
+                                    <span className="text-base font-bold text-foreground">ยอดรวมทั้งหมด</span>
+                                    <span className="text-xl font-bold text-primary">
                                         {buildCurrencyBreakdownLabel(finalTotals, currencySettings)}
                                     </span>
                                 </div>
@@ -305,7 +314,7 @@ function CartSheetContent() {
 
                             {/* Checkout button */}
                             <Button
-                                className="w-full h-12 text-base font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-xl gap-2"
+                                className="w-full h-12 gap-2 rounded-xl text-base font-semibold"
                                 onClick={handleCheckout}
                                 disabled={isCheckingOut || isLoading || maintenance?.enabled}
                             >
@@ -326,7 +335,7 @@ function CartSheetContent() {
 
                             {/* Clear cart */}
                             <button
-                                className="w-full flex items-center justify-center gap-2 text-sm text-white/40 hover:text-red-400 transition-colors"
+                                className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground transition-colors hover:text-destructive"
                                 onClick={clearCart}
                                 disabled={isCheckingOut}
                             >

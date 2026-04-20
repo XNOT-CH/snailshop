@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { resolveSiteName } from "@/lib/seo";
+import { MobileAutoHideHeader } from "@/components/MobileAutoHideHeader";
+import { themeClasses } from "@/lib/theme";
 
 export default async function Navbar() {
     const session = await auth();
@@ -100,7 +102,8 @@ export default async function Navbar() {
           })();
 
     return (
-        <header id="main-navbar" className="sticky top-0 z-50 w-full border-b border-slate-300/80 bg-background/78 backdrop-blur-xl">
+        <MobileAutoHideHeader>
+        <header id="main-navbar" className={`${themeClasses.header} w-full backdrop-blur-xl`}>
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 lg:px-6 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:gap-4 xl:px-8">
                 <Link href="/" className="flex min-w-0 items-center gap-3.5 text-lg font-semibold text-primary xl:min-w-0">
                     {siteSettings?.logoUrl ? (
@@ -122,7 +125,7 @@ export default async function Navbar() {
                     </span>
                 </Link>
 
-                <nav className="hidden items-center justify-center gap-1 rounded-full bg-white/[0.03] px-1.5 py-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)] xl:flex">
+                <nav className={`${themeClasses.navPill} hidden items-center justify-center gap-1 rounded-full px-1.5 py-1 xl:flex`}>
                     {navLinks.map((link) => {
                         const Icon = link.icon;
 
@@ -134,7 +137,7 @@ export default async function Navbar() {
                             <Link
                                 key={link.href}
                                 href={link.href}
-                                className="flex whitespace-nowrap items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-white/[0.06] hover:text-foreground"
+                                className="flex whitespace-nowrap items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent/80 hover:text-foreground"
                             >
                                 <Icon className="h-4 w-4 flex-shrink-0" />
                                 {link.label}
@@ -199,5 +202,6 @@ export default async function Navbar() {
                 </div>
             </div>
         </header>
+        </MobileAutoHideHeader>
     );
 }
