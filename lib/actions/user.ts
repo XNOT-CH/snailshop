@@ -78,6 +78,14 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
 
         const validatedData = validationResult.data;
 
+        if ("phone" in formData && (!validatedData.phone || validatedData.phone.trim() === "")) {
+            return {
+                success: false,
+                message: "กรุณากรอกเบอร์มือถือ",
+                errors: { phone: ["กรุณากรอกเบอร์มือถือ"] },
+            };
+        }
+
         const currentUser = await db.query.users.findFirst({
             where: eq(users.id, userId),
             columns: {
@@ -113,7 +121,16 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
         mapTaxAddress(validatedData.taxAddress, updateData);
         mapShippingAddress(validatedData.shippingAddress, updateData);
 
-        const encryptedUpdateData = encryptUserSensitiveFields(updateData);
+        // Only run encryption when there are actually tax/ship fields to encrypt.
+        // Encrypting an empty object creates null values for all 14 address fields,
+        // which would wipe the user's saved addresses on password-only changes.
+        const hasSensitiveFields = Object.keys(updateData).some(
+            (k) => k.startsWith("tax") || k.startsWith("ship")
+        );
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const encryptedUpdateData: Record<string, any> = hasSensitiveFields
+            ? encryptUserSensitiveFields(updateData)
+            : { ...updateData };
 
         if (validatedData.password && validatedData.password.length >= 6) {
             // Verify current password before allowing change

@@ -161,6 +161,26 @@ function EmptyRewardSlot() {
     );
 }
 
+function getSpinButtonLabel(isMaintenanceEnabled: boolean | undefined) {
+    return isMaintenanceEnabled ? "ปิดปรับปรุงชั่วคราว" : "สุ่ม 1 ครั้ง";
+}
+
+function getStatusMessage(spinning: boolean, wonReward: GridReward | null) {
+    if (wonReward) {
+        return (
+            <p className="text-sm font-semibold text-slate-700">
+                ได้รางวัล <span className="text-[#145de7]">{formatRewardLabel(wonReward)}</span>
+            </p>
+        );
+    }
+
+    if (spinning) {
+        return <p className="text-xs text-slate-500">กำลังสุ่มและเตรียมเปิดผลลัพธ์</p>;
+    }
+
+    return <p className="text-xs text-slate-400" />;
+}
+
 export function GachaGridMachine({
     machineId,
     machineName = "ตู้สุ่ม",
@@ -224,7 +244,7 @@ export function GachaGridMachine({
         setWonIndex(wonIdx);
         setWonReward(reward);
         setSpinning(false);
-        void refreshBalances();
+        refreshBalances().catch(() => undefined);
     }, [clearQueuedTimeouts, refreshBalances]);
 
     const fetchRewards = useCallback(async () => {
@@ -247,17 +267,17 @@ export function GachaGridMachine({
         }
     }, [machineId]);
 
-    useEffect(() => { void fetchRewards(); }, [fetchRewards]);
+    useEffect(() => { fetchRewards().catch(() => undefined); }, [fetchRewards]);
     useEffect(() => { setBalances(initialBalances); }, [initialBalances]);
     useEffect(() => () => { clearQueuedTimeouts(); }, [clearQueuedTimeouts]);
     useEffect(() => {
-        if (typeof window === "undefined") return;
-        const saved = window.localStorage.getItem("gacha-skip-animation");
+        if (globalThis.window === undefined) return;
+        const saved = globalThis.window.localStorage.getItem("gacha-skip-animation");
         setSkipAnimationEnabled(saved === "true");
     }, []);
     useEffect(() => {
-        if (typeof window === "undefined") return;
-        window.localStorage.setItem("gacha-skip-animation", String(skipAnimationEnabled));
+        if (globalThis.window === undefined) return;
+        globalThis.window.localStorage.setItem("gacha-skip-animation", String(skipAnimationEnabled));
     }, [skipAnimationEnabled]);
 
     const handleSpin = useCallback(async () => {
@@ -414,7 +434,7 @@ export function GachaGridMachine({
                             {rewards.map((reward, idx) => (
                                 reward ? (
                                     <RewardCard
-                                        key={`${reward.id}-${idx}`}
+                                        key={reward.id}
                                         reward={reward}
                                         isHighlighted={highlightIdx === idx}
                                         isWinner={wonIndex === idx}
@@ -493,26 +513,18 @@ export function GachaGridMachine({
                             </button>
                         ) : (
                             <button
-                                onClick={() => void handleSpin()}
+                                onClick={() => { handleSpin().catch(() => undefined); }}
                                 disabled={loading || isBlocked || actualRewards.length === 0}
                                 className="flex w-full items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751] px-4 py-4 text-[16px] font-black text-white shadow-[0_22px_40px_-24px_rgba(28,151,81,0.95)] transition-all hover:bg-[#167c42] active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-50"
                             >
                                 <Gamepad2 className="h-5 w-5" />
-                                {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : "สุ่ม 1 ครั้ง"}
+                                {getSpinButtonLabel(maintenance?.enabled)}
                             </button>
                         )}
                     </div>
 
                     <div className="min-h-[20px] text-center">
-                            {wonReward ? (
-                                <p className="text-sm font-semibold text-slate-700">
-                                    ได้รางวัล <span className="text-[#145de7]">{formatRewardLabel(wonReward)}</span>
-                                </p>
-                            ) : spinning ? (
-                                <p className="text-xs text-slate-500">กำลังสุ่มและเตรียมเปิดผลลัพธ์</p>
-                            ) : (
-                                <p className="text-xs text-slate-400" />
-                            )}
+                            {getStatusMessage(spinning, wonReward)}
                     </div>
                 </div>
             </div>
@@ -529,7 +541,7 @@ export function GachaGridMachine({
                     onClose={handlePlayAgain}
                     onSpinAgain={() => {
                         handlePlayAgain();
-                        setTimeout(() => void handleSpin(), 100);
+                        setTimeout(() => { handleSpin().catch(() => undefined); }, 100);
                     }}
                 />
             )}

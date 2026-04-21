@@ -120,11 +120,11 @@ function getRecentDateRange(days: number): DateRange {
 function readDateRangeFromUrl(): DateRange {
     const defaults = getDefaultDateRange();
 
-    if (typeof window === "undefined") {
+    if (globalThis.window === undefined) {
         return defaults;
     }
 
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(globalThis.window.location.search);
     const from = params.get("from");
     const to = params.get("to");
 
@@ -135,7 +135,7 @@ function readDateRangeFromUrl(): DateRange {
 }
 
 function buildUrl(key: TableKey, from: string, to: string) {
-    const url = new URL("/api/admin/export", window.location.origin);
+    const url = new URL("/api/admin/export", globalThis.window.location.origin);
     url.searchParams.set("table", key);
 
     if (from) {
@@ -162,14 +162,30 @@ async function downloadCsv(key: TableKey, from: string, to: string): Promise<voi
     const match = /filename="([^"]+)"/.exec(disposition);
     const filename = match?.[1] ?? `${key}_export.csv`;
     const blobUrl = URL.createObjectURL(blob);
-    const anchor = document.createElement("a");
+    const anchor = globalThis.document.createElement("a");
 
     anchor.href = blobUrl;
     anchor.download = filename;
-    document.body.appendChild(anchor);
+    globalThis.document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
-    URL.revokeObjectURL(blobUrl);
+    globalThis.URL.revokeObjectURL(blobUrl);
+}
+
+function getExportStatusMessage(state: DownloadState, label: string, errMsg: string) {
+    if (state === "loading") {
+        return `กำลังดาวน์โหลด ${label}…`;
+    }
+
+    if (state === "done") {
+        return `ดาวน์โหลด ${label} สำเร็จ`;
+    }
+
+    if (state === "error") {
+        return errMsg || `ดาวน์โหลด ${label} ไม่สำเร็จ`;
+    }
+
+    return "";
 }
 
 function ExportCard({
@@ -187,14 +203,7 @@ function ExportCard({
     const [errMsg, setErrMsg] = useState("");
     const Icon = config.icon;
     const isDisabled = state === "loading" || (config.supportsDateRange && Boolean(dateRangeError));
-    const statusMessage =
-        state === "loading"
-            ? `กำลังดาวน์โหลด ${config.label}…`
-            : state === "done"
-              ? `ดาวน์โหลด ${config.label} สำเร็จ`
-              : state === "error"
-                ? errMsg || `ดาวน์โหลด ${config.label} ไม่สำเร็จ`
-                : "";
+    const statusMessage = getExportStatusMessage(state, config.label, errMsg);
 
     async function handleDownload() {
         if (config.supportsDateRange && dateRangeError) {
@@ -223,24 +232,24 @@ function ExportCard({
     else if (state === "error") btnClass = "bg-red-600 hover:bg-red-700";
 
     return (
-        <div className="relative flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow duration-300 hover:shadow-md">
+        <div className="relative flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-shadow duration-300 hover:shadow-md dark:border-[#2d4362] dark:bg-[#0f1927]">
             <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${config.gradient}`} />
 
             <div className="flex-1 p-5 pt-6">
                 <div className="flex items-start gap-4">
-                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${config.lightBg}`}>
+                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${config.lightBg} dark:bg-[#132133]`}>
                         <Icon className={`h-5 w-5 ${config.color}`} />
                     </div>
                     <div className="min-w-0 flex-1">
                         <p className="text-base font-semibold text-foreground">{config.label}</p>
                         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{config.description}</p>
 
-                        {!config.supportsDateRange ? (
+                        {config.supportsDateRange ? null : (
                             <p className="mt-2 inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] text-amber-600 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                                 <Calendar className="h-3 w-3" />
                                 ส่งออกทั้งหมด (ไม่รองรับช่วงวันที่)
                             </p>
-                        ) : null}
+                        )}
                     </div>
                 </div>
             </div>
@@ -299,8 +308,8 @@ export default function AdminExportPage() {
         };
 
         syncFromUrl();
-        window.addEventListener("popstate", syncFromUrl);
-        return () => window.removeEventListener("popstate", syncFromUrl);
+        globalThis.window.addEventListener("popstate", syncFromUrl);
+        return () => globalThis.window.removeEventListener("popstate", syncFromUrl);
     }, []);
 
     useEffect(() => {
@@ -309,11 +318,15 @@ export default function AdminExportPage() {
             return;
         }
 
-        const url = new URL(window.location.href);
+        const url = new URL(globalThis.window.location.href);
         url.searchParams.set("from", from);
         url.searchParams.set("to", to);
 
-        window.history.replaceState(window.history.state, "", `${url.pathname}?${url.searchParams.toString()}`);
+        globalThis.window.history.replaceState(
+            globalThis.window.history.state,
+            "",
+            `${url.pathname}?${url.searchParams.toString()}`,
+        );
     }, [from, to]);
 
     function applyRange(range: DateRange) {
@@ -335,15 +348,15 @@ export default function AdminExportPage() {
                 </div>
             </div>
 
-            <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600" />
+            <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-[#355071] dark:bg-[#132133] dark:text-[#bcd8ff]">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-[#7ab8ff]" />
                 <div>
                     <span className="font-semibold">UTF-8 BOM ถูกเพิ่มอัตโนมัติ</span>{" "}
                     ไฟล์ CSV ที่ดาวน์โหลดจะแสดงภาษาไทยถูกต้องเมื่อเปิดด้วย Excel (Windows)
                 </div>
             </div>
 
-            <div className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <div className="rounded-xl border border-border bg-card p-5 shadow-sm dark:border-[#2d4362] dark:bg-[#0f1927]">
                 <div className="mb-4 flex flex-wrap items-center gap-2">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <span className="text-sm font-semibold text-foreground">กรองตามช่วงวันที่</span>

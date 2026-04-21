@@ -63,6 +63,48 @@ interface RewardRow {
     product: ProductOption | null;
 }
 
+function buildNewRewardRequestBody(
+    newRewardType: RewardType,
+    newRewardProductId: string,
+    newRewardTier: Tier,
+    newRewardName: string,
+    newRewardAmount: number,
+    newRewardImageUrl: string,
+) {
+    if (newRewardType === "PRODUCT") {
+        return { rewardType: "PRODUCT", productId: newRewardProductId, tier: newRewardTier, isActive: true };
+    }
+
+    return {
+        rewardType: newRewardType,
+        rewardName: newRewardName,
+        rewardAmount: newRewardAmount,
+        rewardImageUrl: newRewardImageUrl || null,
+        tier: newRewardTier,
+        isActive: true,
+    };
+}
+
+function getRewardSubtext(
+    reward: RewardRow,
+    pointCurrencyName: string,
+) {
+    if (reward.rewardType === "PRODUCT" && reward.product) {
+        return `฿${reward.product.price.toLocaleString()} • ${reward.product.category}`;
+    }
+
+    if (reward.rewardAmount == null) {
+        return "";
+    }
+
+    let prefix = "";
+    let suffix = "";
+    if (reward.rewardType === "CREDIT") prefix = "฿";
+    if (reward.rewardType === "POINT") suffix = ` ${pointCurrencyName}`;
+    if (reward.rewardType === "TICKET") suffix = " ตั๋วสุ่ม";
+    return `${prefix}${reward.rewardAmount.toLocaleString()}${suffix}`;
+}
+
 export default function AdminGachaSettingsPage() {
     const permissions = useAdminPermissions();
     const currencySettings = useCurrencySettings();
@@ -197,17 +239,14 @@ export default function AdminGachaSettingsPage() {
 
         setIsAddingReward(true);
         try {
-            const body =
-                newRewardType === "PRODUCT"
-                    ? { rewardType: "PRODUCT", productId: newRewardProductId, tier: newRewardTier, isActive: true }
-                    : {
-                        rewardType: newRewardType,
-                        rewardName: newRewardName,
-                        rewardAmount: newRewardAmount,
-                        rewardImageUrl: newRewardImageUrl || null,
-                        tier: newRewardTier,
-                        isActive: true,
-                    };
+            const body = buildNewRewardRequestBody(
+                newRewardType,
+                newRewardProductId,
+                newRewardTier,
+                newRewardName,
+                newRewardAmount,
+                newRewardImageUrl,
+            );
 
             const res = await fetch("/api/admin/gacha-rewards", {
                 method: "POST",
@@ -721,18 +760,7 @@ export default function AdminGachaSettingsPage() {
                                         ? r.product?.imageUrl
                                         : r.rewardImageUrl;
                                 const canEditImage = r.rewardType !== "PRODUCT";
-
-                                let rewardSubtext = "";
-                                if (r.rewardType === "PRODUCT" && r.product) {
-                                    rewardSubtext = `฿${r.product.price.toLocaleString()} • ${r.product.category}`;
-                                } else if (r.rewardAmount != null) {
-                                    let prefix = "";
-                                    let suffix = "";
-                                    if (r.rewardType === "CREDIT") prefix = "฿";
-                                    if (r.rewardType === "POINT") suffix = ` ${pointCurrencyName}`;
-                                    if (r.rewardType === "TICKET") suffix = " ตั๋วสุ่ม";
-                                    rewardSubtext = `${prefix}${r.rewardAmount.toLocaleString()}${suffix}`;
-                                }
+                                const rewardSubtext = getRewardSubtext(r, pointCurrencyName);
 
                                 return (
                                     <div key={r.id} className="rounded-xl border border-border p-4">
@@ -849,18 +877,7 @@ export default function AdminGachaSettingsPage() {
                                             ? r.product?.imageUrl
                                             : r.rewardImageUrl;
                                     const canEditImage = r.rewardType !== "PRODUCT";
-
-                                    let rewardSubtext = "";
-                                    if (r.rewardType === "PRODUCT" && r.product) {
-                                        rewardSubtext = `฿${r.product.price.toLocaleString()} • ${r.product.category}`;
-                                    } else if (r.rewardAmount != null) {
-                                        let prefix = "";
-                                        let suffix = "";
-                                        if (r.rewardType === "CREDIT") prefix = "฿";
-                                        if (r.rewardType === "POINT") suffix = ` ${pointCurrencyName}`;
-                                        if (r.rewardType === "TICKET") suffix = " ตั๋วสุ่ม";
-                                        rewardSubtext = `${prefix}${r.rewardAmount.toLocaleString()}${suffix}`;
-                                    }
+                                    const rewardSubtext = getRewardSubtext(r, pointCurrencyName);
 
                                     return (
                                         <TableRow key={r.id}>

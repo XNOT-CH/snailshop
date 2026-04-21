@@ -101,6 +101,26 @@ function formatCurrency(value: string) {
     });
 }
 
+function getVerifyMethodLabel(verifyMethod: VerifyMethod) {
+    if (verifyMethod === "image") {
+        return "รูปภาพ";
+    }
+
+    if (verifyMethod === "payload") {
+        return "คิวอาร์เพย์โหลด";
+    }
+
+    if (verifyMethod === "base64") {
+        return "Base64";
+    }
+
+    return "ลิงก์รูปภาพ";
+}
+
+function getVerifyTargetLabel(verifyTarget: VerifyTarget) {
+    return verifyTarget === "truewallet" ? "ทรูมันนี่ วอลเล็ท" : "ธนาคาร";
+}
+
 export default function TopupPage() {
     const router = useRouter();
     const maintenance = useMaintenanceStatus().topup;
@@ -126,6 +146,7 @@ export default function TopupPage() {
     const isGiftChannel = selectedChannel === "truewallet-app";
     const isBankSlipChannel = selectedChannel === "bank-slip";
     const isVoucherChannel = selectedChannel === "voucher";
+    const selectedChannelConfig = PAYMENT_CHANNELS.find((channel) => channel.value === selectedChannel) ?? null;
 
     const hasValidAmount = useMemo(() => {
         const amount = Number(topupAmount);
@@ -533,8 +554,9 @@ export default function TopupPage() {
                                 </div>
 
                                 <div className="mt-3 space-y-2 sm:mt-4">
-                                    <label className="text-sm font-semibold text-slate-700">ลิงก์ซองอั่งเปา</label>
+                                    <label className="text-sm font-semibold text-slate-700" htmlFor="gift-link-input">ลิงก์ซองอั่งเปา</label>
                                     <Input
+                                        id="gift-link-input"
                                         value={giftLink}
                                         onChange={(e) => setGiftLink(e.target.value)}
                                         placeholder="https://gift.truemoney.com/campaign/?v=xxxxxxxxxx"
@@ -594,8 +616,9 @@ export default function TopupPage() {
                                 </p>
 
                                 <div className="mt-3 space-y-2 sm:mt-5 sm:space-y-2">
-                                    <label className="text-sm font-semibold text-slate-700">โค้ด</label>
+                                    <label className="text-sm font-semibold text-slate-700" htmlFor="voucher-code-input">โค้ด</label>
                                     <Input
+                                        id="voucher-code-input"
                                         value={voucherCode}
                                         onChange={(e) => setVoucherCode(e.target.value)}
                                         placeholder="กรอกโค้ดที่นี่"
@@ -716,9 +739,8 @@ export default function TopupPage() {
                                             </div>
                                         </div>
                                     ) : (
-                                        <div
-                                            role="button"
-                                            tabIndex={0}
+                                        <button
+                                            type="button"
                                             onDragOver={handleDragOver}
                                             onDragLeave={handleDragLeave}
                                             onDrop={handleDrop}
@@ -737,19 +759,10 @@ export default function TopupPage() {
                                             <Upload className="mx-auto mb-1 h-6 w-6 text-slate-500 sm:mb-2.5 sm:h-9 sm:w-9" />
                                             <p className="text-[0.82rem] font-black leading-tight text-slate-600 sm:text-[1.8rem] sm:leading-none">ลาก & วาง เพื่ออัปโหลด</p>
                                             <p className="mt-1 text-[10px] text-slate-500 sm:mt-2 sm:text-base">หรือ</p>
-                                            <Button
-                                                type="button"
-                                                variant="secondary"
-                                                size="sm"
-                                                className="mt-2 rounded-lg bg-slate-600 px-4 py-1.5 text-xs font-bold text-white hover:bg-slate-700 sm:mt-3 sm:rounded-xl sm:px-5 sm:py-3 sm:text-sm"
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    fileInputRef.current?.click();
-                                                }}
-                                            >
+                                            <span className="mt-2 inline-flex rounded-lg bg-slate-600 px-4 py-1.5 text-xs font-bold text-white sm:mt-3 sm:rounded-xl sm:px-5 sm:py-3 sm:text-sm">
                                                 อัปโหลดไฟล์
-                                            </Button>
-                                        </div>
+                                            </span>
+                                        </button>
                                     )}
                                 </div>
 
@@ -762,7 +775,7 @@ export default function TopupPage() {
                                         inputMode="decimal"
                                         placeholder="เช่น 300 หรือ 1000"
                                         value={topupAmount}
-                                        onChange={(e) => setTopupAmount(e.target.value.replace(/[^\d.]/g, ""))}
+                                        onChange={(e) => setTopupAmount(e.target.value.replaceAll(/[^\d.]/g, ""))}
                                         className="h-11 rounded-2xl"
                                     />
                                     {hasValidAmount && (
@@ -951,9 +964,8 @@ export default function TopupPage() {
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div
-                                                role="button"
-                                                tabIndex={0}
+                                            <button
+                                                type="button"
                                                 onDragOver={handleDragOver}
                                                 onDragLeave={handleDragLeave}
                                                 onDrop={handleDrop}
@@ -974,31 +986,23 @@ export default function TopupPage() {
                                                 <ImagePlus className="mx-auto mb-3 h-10 w-10 text-slate-400" />
                                                 <p className="font-semibold text-slate-700">ลากและวางสลิปเพื่ออัปโหลด</p>
                                                 <p className="mt-1 text-xs text-slate-500 sm:text-sm">หรือ</p>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    size="sm"
-                                                    className="mt-3 rounded-full"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        fileInputRef.current?.click();
-                                                    }}
-                                                >
+                                                <span className="mt-3 inline-flex rounded-full border border-input bg-background px-3 py-2 text-sm shadow-sm">
                                                     <Upload className="mr-2 h-4 w-4" />
                                                     อัปโหลดไฟล์
-                                                </Button>
+                                                </span>
                                                 <p className="mt-3 text-xs text-slate-400">
                                                     รองรับ JPG, PNG, WebP, GIF สูงสุด 4MB
                                                 </p>
-                                            </div>
+                                            </button>
                                         )}
                                     </div>
                                 )}
 
                                 {verifyMethod === "payload" && (
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-900">คิวอาร์เพย์โหลด</label>
+                                        <label className="text-sm font-medium text-slate-900" htmlFor="qr-payload-input">คิวอาร์เพย์โหลด</label>
                                         <Input
+                                            id="qr-payload-input"
                                             value={qrPayload}
                                             onChange={(e) => setQrPayload(e.target.value)}
                                             placeholder="วางคิวอาร์เพย์โหลดของสลิปที่นี่"
@@ -1011,8 +1015,9 @@ export default function TopupPage() {
 
                                 {verifyMethod === "base64" && (
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-900">Base64</label>
+                                        <label className="text-sm font-medium text-slate-900" htmlFor="base64-input">Base64</label>
                                         <textarea
+                                            id="base64-input"
                                             value={base64Value}
                                             onChange={(e) => setBase64Value(e.target.value)}
                                             placeholder="วาง Base64 ของรูปสลิปที่นี่"
@@ -1025,8 +1030,9 @@ export default function TopupPage() {
                                 )}
                                 {verifyMethod === "url" && (
                                     <div className="space-y-2">
-                                        <label className="text-sm font-medium text-slate-900">ลิงก์รูปภาพ</label>
+                                        <label className="text-sm font-medium text-slate-900" htmlFor="image-url-input">ลิงก์รูปภาพ</label>
                                         <Input
+                                            id="image-url-input"
                                             value={imageUrl}
                                             onChange={(e) => setImageUrl(e.target.value)}
                                             placeholder="https://example.com/slips/slip-123.jpg"
@@ -1075,17 +1081,17 @@ export default function TopupPage() {
                                         ช่องทางที่เลือก
                                     </p>
                                     <p className="mt-3 text-2xl font-black text-slate-900">
-                                        {PAYMENT_CHANNELS.find((channel) => channel.value === selectedChannel)?.title}
+                                        {selectedChannelConfig?.title}
                                     </p>
                                     <p className="mt-1 text-sm text-slate-500">
-                                        {PAYMENT_CHANNELS.find((channel) => channel.value === selectedChannel)?.description}
+                                        {selectedChannelConfig?.description}
                                     </p>
                                     <div className="mt-4 flex flex-wrap gap-2">
                                         <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-                                            ประเภท: {verifyTarget === "truewallet" ? "ทรูมันนี่ วอลเล็ท" : "ธนาคาร"}
+                                            ประเภท: {getVerifyTargetLabel(verifyTarget)}
                                         </span>
                                         <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
-                                            วิธีตรวจ: {verifyMethod === "image" ? "รูปภาพ" : verifyMethod === "payload" ? "คิวอาร์เพย์โหลด" : verifyMethod === "base64" ? "Base64" : "ลิงก์รูปภาพ"}
+                                            วิธีตรวจ: {getVerifyMethodLabel(verifyMethod)}
                                         </span>
                                     </div>
                                 </div>

@@ -39,6 +39,103 @@ function formatDiscountValue(value: number, currency: string) {
     return currency === "POINT" ? value.toLocaleString() : value.toFixed(2);
 }
 
+function getCalculatedDiscountPrice(
+    hasDiscountPrice: boolean,
+    isDiscountValueValid: boolean,
+    priceNumber: number,
+    discountInputNumber: number,
+    discountMode: DiscountMode,
+    currency: string,
+) {
+    if (
+        !hasDiscountPrice
+        || !isDiscountValueValid
+        || !Number.isFinite(priceNumber)
+        || priceNumber <= 0
+        || !Number.isFinite(discountInputNumber)
+    ) {
+        return null;
+    }
+
+    if (discountMode === "percent") {
+        return normalizeMoney(priceNumber - (priceNumber * discountInputNumber) / 100, currency);
+    }
+
+    return normalizeMoney(priceNumber - discountInputNumber, currency);
+}
+
+function getDiscountPlaceholder(discountMode: DiscountMode, currency: string) {
+    if (discountMode === "percent") {
+        return "เช่น 15";
+    }
+
+    return "เช่น 100";
+}
+
+function getNormalizedDiscountPrice(calculatedDiscountPrice: number | null) {
+    if (calculatedDiscountPrice !== null && calculatedDiscountPrice > 0) {
+        return calculatedDiscountPrice;
+    }
+
+    return null;
+}
+
+function getDiscountValueValidationMessage(discountMode: DiscountMode) {
+    return discountMode === "percent"
+        ? "กรุณากรอกเปอร์เซ็นส่วนลดให้ถูกต้อง"
+        : "กรุณากรอกจำนวนส่วนลดให้ถูกต้อง";
+}
+
+function getPriceInputPlaceholder(currency: string) {
+    return currency === "POINT" ? "เช่น 100" : "เช่น 1500";
+}
+
+function getPriceInputStep(currency: string) {
+    return currency === "POINT" ? "1" : "0.01";
+}
+
+function getDiscountAmountButtonLabel(currency: string, pointCurrencyName: string) {
+    return `ลดเป็น${currency === "POINT" ? pointCurrencyName : "บาท"}`;
+}
+
+function getDiscountInputStep(discountMode: DiscountMode, currency: string) {
+    if (discountMode === "percent") {
+        return "0.01";
+    }
+
+    return currency === "POINT" ? "1" : "0.01";
+}
+
+function getDiscountHint(discountMode: DiscountMode, currency: string, pointCurrencyName: string) {
+    if (discountMode === "percent") {
+        return "กรอกเปอร์เซ็นที่ต้องการลด";
+    }
+
+    return `กรอกจำนวน${currency === "POINT" ? pointCurrencyName : "บาท"}ที่ต้องการลด`;
+}
+
+function getDiscountErrorText(discountMode: DiscountMode) {
+    return discountMode === "percent"
+        ? "เปอร์เซ็นต์ต้องน้อยกว่า 100%"
+        : "จำนวนส่วนลดต้องน้อยกว่าราคาเต็ม";
+}
+
+function getDiscountSummary(
+    discountMode: DiscountMode,
+    currency: string,
+    pointCurrencyName: string,
+    discountInputNumber: number,
+    normalizedDiscountPrice: number,
+) {
+    const discountUnit = discountMode === "percent"
+        ? "%"
+        : currency === "POINT"
+            ? ` ${pointCurrencyName}`
+            : " บาท";
+
+    return `ลด ${formatDiscountValue(discountInputNumber, currency)}${discountUnit} เหลือ ${formatDiscountValue(normalizedDiscountPrice, currency)}`;
+}
+
 export default function AddProductPage() {
     const router = useRouter();
     const currencySettings = useCurrencySettings();
@@ -74,18 +171,15 @@ export default function AddProductPage() {
         (Number.isFinite(discountInputNumber) &&
             discountInputNumber > 0 &&
             (discountMode === "percent" ? discountInputNumber < 100 : discountInputNumber < priceNumber));
-    const calculatedDiscountPrice =
-        hasDiscountPrice &&
-        isDiscountValueValid &&
-        Number.isFinite(priceNumber) &&
-        priceNumber > 0 &&
-        Number.isFinite(discountInputNumber)
-            ? discountMode === "percent"
-                ? normalizeMoney(priceNumber - (priceNumber * discountInputNumber) / 100, formData.currency)
-                : normalizeMoney(priceNumber - discountInputNumber, formData.currency)
-            : null;
-    const normalizedDiscountPrice =
-        calculatedDiscountPrice !== null && calculatedDiscountPrice > 0 ? calculatedDiscountPrice : null;
+    const calculatedDiscountPrice = getCalculatedDiscountPrice(
+        hasDiscountPrice,
+        isDiscountValueValid,
+        priceNumber,
+        discountInputNumber,
+        discountMode,
+        formData.currency,
+    );
+    const normalizedDiscountPrice = getNormalizedDiscountPrice(calculatedDiscountPrice);
 
     const handleAddSingleStock = () => {
         if (!canCreateProduct) {
@@ -157,7 +251,7 @@ export default function AddProductPage() {
         }
         if (hasDiscountPrice) {
             if (!Number.isFinite(discountInputNumber) || discountInputNumber <= 0) {
-                showError(discountMode === "percent" ? "กรุณากรอกเปอร์เซ็นส่วนลดให้ถูกต้อง" : "กรุณากรอกจำนวนส่วนลดให้ถูกต้อง");
+                showError(getDiscountValueValidationMessage(discountMode));
                 return;
             }
             if (discountMode === "percent" && discountInputNumber >= 100) {
@@ -198,7 +292,7 @@ export default function AddProductPage() {
     };
 
     return (
-        <div className="space-y-6">
+        <div className="admin-product-new-page space-y-6">
             <Link
                 href="/admin/products"
                 className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
@@ -209,8 +303,8 @@ export default function AddProductPage() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
-                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                        <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3.5">
+                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#2d4362] dark:bg-[#0f1927]">
+                        <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3.5 dark:border-[#2d4362]">
                             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1a56db] text-white">
                                 <Shield className="h-4 w-4" />
                             </div>
@@ -241,14 +335,14 @@ export default function AddProductPage() {
                                     className="grid gap-3 sm:grid-cols-2"
                                     disabled={!canCreateProduct}
                                 >
-                                    <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 transition hover:border-slate-300">
+                                    <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 transition hover:border-slate-300 dark:border-[#355071] dark:bg-[#132133] dark:hover:border-[#4b7098]">
                                         <RadioGroupItem value="THB" id="currency-thb" />
                                         <span className="flex items-center gap-2 text-sm font-medium">
                                             <Banknote className="h-4 w-4 text-green-600" />
                                             บาท (THB)
                                         </span>
                                     </label>
-                                    <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 transition hover:border-slate-300">
+                                    <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 transition hover:border-slate-300 dark:border-[#355071] dark:bg-[#132133] dark:hover:border-[#4b7098]">
                                         <RadioGroupItem value="POINT" id="currency-point" />
                                         <span className="flex items-center gap-2 text-sm font-medium">
                                             <Gem className="h-4 w-4 text-purple-600" />
@@ -279,9 +373,9 @@ export default function AddProductPage() {
                                         id="price"
                                         name="price"
                                         type="number"
-                                        placeholder={formData.currency === "POINT" ? "เช่น 100" : "เช่น 1500"}
+                                        placeholder={getPriceInputPlaceholder(formData.currency)}
                                         min="0"
-                                        step={formData.currency === "POINT" ? "1" : "0.01"}
+                                        step={getPriceInputStep(formData.currency)}
                                         value={formData.price}
                                         onChange={handleChange}
                                         required
@@ -299,7 +393,7 @@ export default function AddProductPage() {
                                         <span className="text-red-500">🎁</span>
                                         ส่วนลด
                                     </Label>
-                                    <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50/75 p-3">
+                                    <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50/75 p-3 dark:border-[#355071] dark:bg-[#162334]">
                                             <div className="grid grid-cols-2 gap-2">
                                             <Button
                                                 type="button"
@@ -308,7 +402,7 @@ export default function AddProductPage() {
                                                 onClick={() => setDiscountMode("amount")}
                                                 disabled={!canCreateProduct}
                                             >
-                                                ลดเป็น{formData.currency === "POINT" ? pointCurrencyName : "บาท"}
+                                                {getDiscountAmountButtonLabel(formData.currency, pointCurrencyName)}
                                             </Button>
                                             <Button
                                                 type="button"
@@ -324,43 +418,36 @@ export default function AddProductPage() {
                                             id="discountPrice"
                                             name="discountPrice"
                                             type="number"
-                                            placeholder={
-                                                discountMode === "percent"
-                                                    ? "เช่น 15"
-                                                    : formData.currency === "POINT"
-                                                        ? "เช่น 100"
-                                                        : "เช่น 100"
-                                            }
+                                            placeholder={getDiscountPlaceholder(discountMode, formData.currency)}
                                             min="0"
                                             max={discountMode === "percent" ? "99.99" : undefined}
-                                            step={discountMode === "percent" ? "0.01" : formData.currency === "POINT" ? "1" : "0.01"}
+                                            step={getDiscountInputStep(discountMode, formData.currency)}
                                             value={formData.discountPrice}
                                             onChange={handleChange}
                                             disabled={!canCreateProduct}
                                             className={
                                                 hasDiscountPrice
                                                     ? "border-amber-300 bg-amber-50/40 focus:border-amber-500"
-                                                    : "bg-white"
+                                                    : "bg-white dark:bg-[#132133]"
                                             }
                                         />
                                         <div className="flex items-center justify-between text-xs">
                                             <span className="text-muted-foreground">
-                                                {discountMode === "percent"
-                                                    ? "กรอกเปอร์เซ็นที่ต้องการลด"
-                                                    : `กรอกจำนวน${formData.currency === "POINT" ? pointCurrencyName : "บาท"}ที่ต้องการลด`}
+                                                {getDiscountHint(discountMode, formData.currency, pointCurrencyName)}
                                             </span>
                                             {hasDiscountPrice && !isDiscountValueValid ? (
                                                 <span className="font-medium text-rose-600">
-                                                    {discountMode === "percent"
-                                                        ? "เปอร์เซ็นต์ต้องน้อยกว่า 100%"
-                                                        : "จำนวนส่วนลดต้องน้อยกว่าราคาเต็ม"}
+                                                    {getDiscountErrorText(discountMode)}
                                                 </span>
                                             ) : normalizedDiscountPrice !== null && (
                                                 <span className="font-medium text-amber-700">
-                                                    ลด {formatDiscountValue(discountInputNumber, formData.currency)}
-                                                    {discountMode === "percent" ? "%" : formData.currency === "POINT" ? ` ${pointCurrencyName}` : " บาท"}
-                                                    {" เหลือ "}
-                                                    {formatDiscountValue(normalizedDiscountPrice, formData.currency)}
+                                                    {getDiscountSummary(
+                                                        discountMode,
+                                                        formData.currency,
+                                                        pointCurrencyName,
+                                                        discountInputNumber,
+                                                        normalizedDiscountPrice,
+                                                    )}
                                                 </span>
                                             )}
                                         </div>
@@ -386,7 +473,7 @@ export default function AddProductPage() {
 
                             <div className="space-y-3">
                                 <Label>รูปภาพสินค้า</Label>
-                                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+                                <div className="admin-product-image-panel rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-[#355071] dark:bg-[#162334]">
                                     <ProductImageGalleryField
                                         images={formData.images}
                                         disabled={!canCreateProduct}
@@ -411,10 +498,10 @@ export default function AddProductPage() {
                     </div>
 
                     <div className="space-y-6">
-                        <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_100%)] p-4 shadow-sm">
+                        <div className="admin-product-stock-summary rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_100%)] p-4 shadow-sm dark:border-[#2d4362] dark:bg-[linear-gradient(135deg,rgba(15,25,39,0.98)_0%,rgba(20,32,49,0.94)_100%)]">
                             <div className="flex items-start justify-between gap-4">
                                 <div>
-                                    <p className="text-sm font-semibold text-slate-900">สรุปสต๊อกก่อนสร้างสินค้า</p>
+                                    <p className="text-sm font-semibold text-slate-900 dark:text-[#eef4ff]">สรุปสต๊อกก่อนสร้างสินค้า</p>
                                 </div>
                                 <Badge className="rounded-full bg-blue-600 px-3 py-1 text-white hover:bg-blue-600">
                                     {stockItems.length} รายการ
@@ -422,8 +509,8 @@ export default function AddProductPage() {
                             </div>
                         </div>
 
-                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                            <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3.5">
+                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#2d4362] dark:bg-[#0f1927]">
+                            <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3.5 dark:border-[#2d4362]">
                                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500 text-white">
                                     <Package className="h-4 w-4" />
                                 </div>
@@ -477,8 +564,8 @@ export default function AddProductPage() {
                         </div>
 
                         {stockItems.length > 0 && (
-                            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-                                <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3.5">
+                            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#2d4362] dark:bg-[#0f1927]">
+                                <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3.5 dark:border-[#2d4362]">
                                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1a56db] text-white">
                                         <Eye className="h-4 w-4" />
                                     </div>
@@ -493,7 +580,7 @@ export default function AddProductPage() {
                                         {stockItems.map((item, index) => (
                                             <div
                                                 key={`${item}-${index}`}
-                                                className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-sm"
+                                                className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-sm dark:border-[#355071] dark:bg-[#162334]"
                                             >
                                                 <div className="flex min-w-0 items-center gap-2">
                                                     <Badge variant="outline" className="text-xs">
@@ -523,10 +610,10 @@ export default function AddProductPage() {
                 </div>
 
                 <div className="sticky bottom-4 z-10 flex justify-end">
-                    <div className="flex w-full max-w-md items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur">
+                    <div className="flex w-full max-w-md items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur dark:border-[#355071] dark:bg-[#0f1927]/95">
                         <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-900">พร้อมสร้างสินค้าใหม่</p>
-                            <p className="text-xs text-slate-500">สต๊อกเริ่มต้น {stockItems.length} รายการ</p>
+                            <p className="text-sm font-semibold text-slate-900 dark:text-[#eef4ff]">พร้อมสร้างสินค้าใหม่</p>
+                            <p className="text-xs text-slate-500 dark:text-[#96adca]">สต๊อกเริ่มต้น {stockItems.length} รายการ</p>
                         </div>
                         <Button
                             type="submit"

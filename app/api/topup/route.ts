@@ -171,7 +171,7 @@ function parseStringField(value: FormDataEntryValue | null) {
     }
 
     const trimmed = value.trim();
-    return trimmed ? trimmed : null;
+    return trimmed || null;
 }
 
 function parseVerifyTarget(value: string | null): EasySlipVerifyTarget {
@@ -185,11 +185,68 @@ function parseVerifyTarget(value: string | null): EasySlipVerifyTarget {
         : "bank";
 }
 
+function getSlipVerifyMethod(
+    qrPayload: string | null,
+    base64: string | null,
+    imageUrl: string | null,
+) {
+    if (qrPayload) {
+        return "payload";
+    }
+
+    if (base64) {
+        return "base64";
+    }
+
+    if (imageUrl) {
+        return "url";
+    }
+
+    return "image";
+}
+
+function getImageExtension(mimeType: string) {
+    if (mimeType === "image/png") {
+        return "png";
+    }
+
+    if (mimeType === "image/webp") {
+        return "webp";
+    }
+
+    if (mimeType === "image/gif") {
+        return "gif";
+    }
+
+    return "jpg";
+}
+
+function createSlipProxy(phone?: string) {
+    if (!phone) {
+        return undefined;
+    }
+
+    return {
+        type: "MSISDN",
+        account: phone,
+    };
+}
+
+function withOptionalRemark<T extends EasySlipV2VerifyInput>(
+    input: T,
+    remark: string | null,
+): T {
+    return {
+        ...input,
+        remark: remark ?? undefined,
+    } as T;
+}
+
 function decodeBase64ImageSize(base64Value: string) {
     const normalized = base64Value.includes(",")
         ? base64Value.slice(base64Value.indexOf(",") + 1)
         : base64Value;
-    const sanitized = normalized.replace(/\s/g, "");
+    const sanitized = normalized.replaceAll(/\s/g, "");
 
     if (!sanitized || !/^[A-Za-z0-9+/=]+$/.test(sanitized)) {
         throw new Error("INVALID_BASE64");
@@ -320,13 +377,7 @@ async function verifySlipWithEasySlip(file: File): Promise<SlipVerificationResul
         throw new Error("EASYSLIP_NOT_CONFIGURED");
     }
 
-    const extension = file.type === "image/png"
-        ? "png"
-        : file.type === "image/webp"
-            ? "webp"
-            : file.type === "image/gif"
-                ? "gif"
-                : "jpg";
+    const extension = getImageExtension(file.type);
 
     const formData = new FormData();
     formData.append("file", file, `slip.${extension}`);
@@ -457,12 +508,7 @@ async function verifySlipWithEasySlipV2(
                         name: {
                             th: slip.receiver?.name,
                         },
-                        proxy: slip.receiver?.phone
-                            ? {
-                                type: "MSISDN",
-                                account: slip.receiver.phone,
-                            }
-                            : undefined,
+                        proxy: createSlipProxy(slip.receiver?.phone),
                     },
                 },
             },
@@ -670,28 +716,32 @@ export async function POST(request: NextRequest) {
         try {
             if (qrPayload) {
                 verificationResult = await verifySlipWithEasySlipV2({
-                    payload: qrPayload,
-                    expectedAmount: requestedAmount,
-                    remark: remark || undefined,
+                    ...withOptionalRemark({
+                        payload: qrPayload,
+                        expectedAmount: requestedAmount,
+                    }, remark),
                 }, verifyTarget);
             } else if (base64) {
                 verificationResult = await verifySlipWithEasySlipV2({
-                    base64,
-                    expectedAmount: requestedAmount,
-                    remark: remark || undefined,
+                    ...withOptionalRemark({
+                        base64,
+                        expectedAmount: requestedAmount,
+                    }, remark),
                 }, verifyTarget);
             } else if (imageUrl) {
                 verificationResult = await verifySlipWithEasySlipV2({
-                    url: imageUrl,
-                    expectedAmount: requestedAmount,
-                    remark: remark || undefined,
+                    ...withOptionalRemark({
+                        url: imageUrl,
+                        expectedAmount: requestedAmount,
+                    }, remark),
                 }, verifyTarget);
             } else if (file) {
                 try {
                     verificationResult = await verifySlipWithEasySlipV2({
-                        image: file,
-                        expectedAmount: requestedAmount,
-                        remark: remark || undefined,
+                        ...withOptionalRemark({
+                            image: file,
+                            expectedAmount: requestedAmount,
+                        }, remark),
                     }, verifyTarget);
                 } catch (error) {
                     if (!(error instanceof Error) || error.message !== "EASYSLIP_V2_NOT_CONFIGURED") {
@@ -719,6 +769,8 @@ export async function POST(request: NextRequest) {
                 { status: 400 },
             );
         }
+
+        const verifyMethod = getSlipVerifyMethod(qrPayload, base64, imageUrl);
 
         if (!shouldFallbackToPending && verificationResult?.data?.transRef) {
             const existingTopup = await db.query.topups.findFirst({
@@ -767,7 +819,7 @@ export async function POST(request: NextRequest) {
                     proofImageStored: Boolean(savedSlip?.url ?? imageUrl),
                     status: "PENDING",
                     verification: "manual-review",
-                    verifyMethod: qrPayload ? "payload" : base64 ? "base64" : imageUrl ? "url" : "image",
+                    verifyMethod,
                     verifyTarget,
                 },
             });
@@ -827,7 +879,7 @@ export async function POST(request: NextRequest) {
                 proofImageStored: Boolean(savedSlip?.url ?? imageUrl),
                 status: "APPROVED",
                 verification: "automatic",
-                verifyMethod: qrPayload ? "payload" : base64 ? "base64" : imageUrl ? "url" : "image",
+                verifyMethod,
                 verifyTarget,
             },
         });

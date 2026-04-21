@@ -19,13 +19,13 @@ const HTML_TAG_PATTERN = /<\/?[a-z][^>]*>/gi;
 export function sanitizeChatText(input: string) {
     return input
         .normalize("NFKC")
-        .replace(/\r\n?/g, "\n")
-        .replace(CONTROL_CHAR_PATTERN, "")
-        .replace(HTML_COMMENT_PATTERN, "")
-        .replace(HTML_TAG_PATTERN, "")
-        .replace(/[^\S\n]+\n/g, "\n")
-        .replace(/\n[^\S\n]+/g, "\n")
-        .replace(/\n{4,}/g, "\n\n\n")
+        .replaceAll(/\r\n?/g, "\n")
+        .replaceAll(CONTROL_CHAR_PATTERN, "")
+        .replaceAll(HTML_COMMENT_PATTERN, "")
+        .replaceAll(HTML_TAG_PATTERN, "")
+        .replaceAll(/[^\S\n]+\n/g, "\n")
+        .replaceAll(/\n[^\S\n]+/g, "\n")
+        .replaceAll(/\n{4,}/g, "\n\n\n")
         .trim();
 }
 

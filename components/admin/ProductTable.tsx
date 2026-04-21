@@ -65,6 +65,14 @@ interface ProductTableProps {
 
 const ITEMS_PER_PAGE_OPTIONS = [10, 20, 50] as const;
 
+interface ProductCardData {
+  activePrice: number;
+  autoDeleteLabel: string | null;
+  displayStockCount: number;
+  hasDiscount: boolean;
+  isPointProduct: boolean;
+}
+
 function formatAutoDelete(minutes?: number | null) {
   if (!minutes || minutes <= 0) {
     return null;
@@ -85,12 +93,427 @@ function formatAutoDelete(minutes?: number | null) {
   return `${minutes} นาที`;
 }
 
+function getProductCardData(product: Product): ProductCardData {
+  const hasDiscount =
+    product.discountPrice !== null &&
+    product.discountPrice !== undefined &&
+    product.discountPrice < product.price;
+
+  return {
+    activePrice: hasDiscount ? (product.discountPrice ?? product.price) : product.price,
+    autoDeleteLabel: formatAutoDelete(product.autoDeleteAfterSale),
+    displayStockCount: product.stockCount ?? (product.isSold ? 0 : 1),
+    hasDiscount,
+    isPointProduct: product.currency === "POINT",
+  };
+}
+
+function getPriceText(activePrice: number, isPointProduct: boolean) {
+  return isPointProduct
+    ? Number(activePrice).toLocaleString()
+    : `฿${Number(activePrice).toLocaleString()}`;
+}
+
+function getOriginalPriceText(
+  product: Product,
+  isPointProduct: boolean,
+  currencySettings: ReturnType<typeof useCurrencySettings>,
+) {
+  return isPointProduct
+    ? formatCurrencyAmount(Number(product.price), "POINT", currencySettings)
+    : `฿${Number(product.price).toLocaleString()}`;
+}
+
+function getAvailabilityBadgeClass(isSold: boolean) {
+  return isSold
+    ? "bg-rose-100 text-rose-700 hover:bg-rose-100"
+    : "bg-emerald-100 text-emerald-700 hover:bg-emerald-100";
+}
+
+function getAvailabilityLabel(isSold: boolean) {
+  return isSold ? "ขายแล้ว" : "พร้อมขาย";
+}
+
+function getFeaturedButtonClass(isFeatured: boolean, isMobile: boolean) {
+  const sizeClass = isMobile ? "h-9 w-9" : "mx-auto";
+
+  return cn(
+    `${sizeClass} rounded-full border transition`,
+    isFeatured
+      ? "border-amber-200 bg-amber-50 text-amber-500 hover:bg-amber-100"
+      : "border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-100 hover:text-slate-600",
+  );
+}
+
+function getFeaturedIconClass(isFeatured: boolean, isDesktop: boolean) {
+  return cn(
+    isDesktop ? "mx-auto h-4 w-4" : "h-4 w-4",
+    isFeatured ? "fill-current text-amber-500" : "text-slate-300",
+  );
+}
+
+function EmptyProductState() {
+  return (
+    <div className="mx-auto flex max-w-sm flex-col items-center gap-3">
+      <div className="rounded-full bg-slate-100 p-3 text-slate-400">
+        <Package className="h-6 w-6" />
+      </div>
+      <div>
+        <p className="text-base font-semibold text-slate-700">ไม่พบสินค้าที่ตรงเงื่อนไข</p>
+        <p className="mt-1 text-sm text-slate-500">ลองค้นหาด้วยชื่ออื่นหรือเปลี่ยนหมวดหมู่ที่เลือก</p>
+      </div>
+    </div>
+  );
+}
+
+interface ProductActionsMenuProps {
+  canCreate: boolean;
+  canDelete: boolean;
+  canEdit: boolean;
+  loadingId: Product["id"] | null;
+  onDelete: (productId: Product["id"], productName: string) => void;
+  onDuplicate: (productId: Product["id"]) => void;
+  product: Product;
+}
+
+function ProductActionsMenu({
+  canCreate,
+  canDelete,
+  canEdit,
+  loadingId,
+  onDelete,
+  onDuplicate,
+  product,
+}: Readonly<ProductActionsMenuProps>) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="rounded-full border border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-700"
+        >
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuItem asChild>
+          <Link href={`/product/${product.id}`} className="flex items-center gap-2">
+            <Eye className="h-4 w-4" />
+            ดูสินค้า
+          </Link>
+        </DropdownMenuItem>
+        {canEdit ? (
+          <DropdownMenuItem asChild>
+            <Link href={`/admin/products/${product.id}/edit`} className="flex items-center gap-2">
+              <Pencil className="h-4 w-4" />
+              แก้ไขสินค้า
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+        {canCreate ? (
+          <DropdownMenuItem
+            onClick={() => onDuplicate(product.id)}
+            disabled={loadingId === product.id}
+            className="flex items-center gap-2"
+          >
+            <Copy className="h-4 w-4" />
+            คัดลอกสินค้า
+          </DropdownMenuItem>
+        ) : null}
+        {canDelete ? <DropdownMenuSeparator /> : null}
+        {canDelete ? (
+          <DropdownMenuItem
+            onClick={() => onDelete(product.id, product.name)}
+            disabled={loadingId === product.id}
+            className="flex items-center gap-2 text-rose-600 focus:text-rose-600"
+          >
+            <Trash2 className="h-4 w-4" />
+            ลบสินค้า
+          </DropdownMenuItem>
+        ) : null}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
+interface FeaturedToggleProps {
+  canEdit: boolean;
+  isLoading: boolean;
+  isMobile?: boolean;
+  isFeatured: boolean;
+  onToggle: () => void;
+}
+
+function FeaturedToggle({
+  canEdit,
+  isLoading,
+  isMobile = false,
+  isFeatured,
+  onToggle,
+}: Readonly<FeaturedToggleProps>) {
+  if (canEdit) {
+    return (
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        disabled={isLoading}
+        onClick={onToggle}
+        className={getFeaturedButtonClass(isFeatured, isMobile)}
+      >
+        <Star className={cn("h-4 w-4", isFeatured ? "fill-current" : "")} />
+      </Button>
+    );
+  }
+
+  return <Star className={getFeaturedIconClass(isFeatured, !isMobile)} />;
+}
+
+interface MobileProductCardProps extends ProductActionsMenuProps {
+  currencySettings: ReturnType<typeof useCurrencySettings>;
+  onToggleFeatured: (productId: Product["id"], currentFeatured: boolean) => void;
+}
+
+function MobileProductCard({
+  canCreate,
+  canDelete,
+  canEdit,
+  currencySettings,
+  loadingId,
+  onDelete,
+  onDuplicate,
+  onToggleFeatured,
+  product,
+}: Readonly<MobileProductCardProps>) {
+  const { activePrice, autoDeleteLabel, displayStockCount, hasDiscount, isPointProduct } =
+    getProductCardData(product);
+
+  return (
+    <div key={product.id} className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        <Avatar className="h-14 w-14 rounded-2xl border border-slate-200 shadow-sm">
+          <AvatarImage src={product.imageUrl || undefined} alt={product.name} className="object-cover" />
+          <AvatarFallback className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 text-xs font-semibold text-blue-700">
+            {product.name.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="truncate font-semibold text-slate-900">{product.name}</p>
+              <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+                {product.description || "ไม่มีรายละเอียดเพิ่มเติม"}
+              </p>
+            </div>
+
+            <ProductActionsMenu
+              canCreate={canCreate}
+              canDelete={canDelete}
+              canEdit={canEdit}
+              loadingId={loadingId}
+              onDelete={onDelete}
+              onDuplicate={onDuplicate}
+              product={product}
+            />
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Badge variant="secondary" className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
+              {product.category || "ทั่วไป"}
+            </Badge>
+            <Badge
+              className={cn(
+                "rounded-full px-2.5 py-1 text-xs font-semibold",
+                getAvailabilityBadgeClass(product.isSold),
+              )}
+            >
+              {getAvailabilityLabel(product.isSold)}
+            </Badge>
+            {autoDeleteLabel ? (
+              <Badge
+                variant="outline"
+                className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700"
+              >
+                <Timer className="mr-1 h-3 w-3" />
+                {autoDeleteLabel}
+              </Badge>
+            ) : null}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="rounded-xl bg-slate-50 p-3">
+          <p className="text-xs text-slate-500">ราคา</p>
+          <div className="mt-1 flex items-center gap-1.5 text-base font-semibold text-slate-900">
+            {isPointProduct ? <Gem className="h-4 w-4 text-violet-500" /> : null}
+            <span>{getPriceText(activePrice, isPointProduct)}</span>
+          </div>
+          {hasDiscount ? (
+            <p className="mt-1 text-xs text-slate-400 line-through">
+              {getOriginalPriceText(product, isPointProduct, currencySettings)}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="rounded-xl bg-slate-50 p-3">
+          <p className="text-xs text-slate-500">สต็อก</p>
+          <div className="mt-1 flex items-center gap-1 text-base font-semibold text-slate-900">
+            <Package className="h-4 w-4 text-slate-400" />
+            {displayStockCount}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
+        <div className="text-sm font-medium text-slate-600">แนะนำ</div>
+        <FeaturedToggle
+          canEdit={canEdit}
+          isLoading={loadingId === product.id}
+          isMobile
+          isFeatured={product.isFeatured}
+          onToggle={() => onToggleFeatured(product.id, product.isFeatured)}
+        />
+      </div>
+    </div>
+  );
+}
+
+interface DesktopProductRowProps extends MobileProductCardProps {
+  index: number;
+}
+
+function DesktopProductRow({
+  canCreate,
+  canDelete,
+  canEdit,
+  currencySettings,
+  index,
+  loadingId,
+  onDelete,
+  onDuplicate,
+  onToggleFeatured,
+  product,
+}: Readonly<DesktopProductRowProps>) {
+  const { activePrice, autoDeleteLabel, displayStockCount, hasDiscount, isPointProduct } =
+    getProductCardData(product);
+
+  return (
+    <TableRow
+      key={product.id}
+      className={cn(
+        "border-slate-200 transition hover:bg-blue-50/40",
+        index % 2 === 0 ? "bg-white" : "bg-slate-50/35",
+      )}
+    >
+      <TableCell>
+        <Avatar className="h-11 w-11 rounded-xl border border-slate-200 shadow-sm">
+          <AvatarImage src={product.imageUrl || undefined} alt={product.name} className="object-cover" />
+          <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 text-xs font-semibold text-blue-700">
+            {product.name.slice(0, 2).toUpperCase()}
+          </AvatarFallback>
+        </Avatar>
+      </TableCell>
+
+      <TableCell>
+        <div className="space-y-1">
+          <p className="font-semibold text-slate-900">{product.name}</p>
+          <p className="line-clamp-1 max-w-[280px] text-sm text-slate-500">
+            {product.description || "ไม่มีรายละเอียดเพิ่มเติม"}
+          </p>
+        </div>
+      </TableCell>
+
+      <TableCell>
+        <Badge variant="secondary" className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
+          {product.category || "ทั่วไป"}
+        </Badge>
+      </TableCell>
+
+      <TableCell className="text-center">
+        <div className="flex flex-col items-center gap-1">
+          <div className="flex items-center gap-1.5 text-base font-semibold text-slate-900">
+            {isPointProduct ? <Gem className="h-4 w-4 text-violet-500" /> : null}
+            <span>{getPriceText(activePrice, isPointProduct)}</span>
+          </div>
+          {hasDiscount ? (
+            <>
+              <p className="text-xs text-slate-400 line-through">
+                {getOriginalPriceText(product, isPointProduct, currencySettings)}
+              </p>
+              <Badge className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-50">
+                ลดราคา
+              </Badge>
+            </>
+          ) : null}
+        </div>
+      </TableCell>
+
+      <TableCell className="text-center">
+        <Badge
+          variant="outline"
+          className="inline-flex items-center gap-1 rounded-full border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-700"
+        >
+          <Package className="h-3.5 w-3.5 text-slate-400" />
+          {displayStockCount}
+        </Badge>
+      </TableCell>
+
+      <TableCell className="text-center">
+        <div className="flex flex-col items-center gap-2">
+          <Badge
+            className={cn(
+              "rounded-full px-2.5 py-1 text-xs font-semibold",
+              getAvailabilityBadgeClass(product.isSold),
+            )}
+          >
+            {getAvailabilityLabel(product.isSold)}
+          </Badge>
+          {autoDeleteLabel ? (
+            <Badge
+              variant="outline"
+              className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700"
+            >
+              <Timer className="mr-1 h-3 w-3" />
+              {autoDeleteLabel}
+            </Badge>
+          ) : null}
+        </div>
+      </TableCell>
+
+      <TableCell className="text-center">
+        <FeaturedToggle
+          canEdit={canEdit}
+          isLoading={loadingId === product.id}
+          isFeatured={product.isFeatured}
+          onToggle={() => onToggleFeatured(product.id, product.isFeatured)}
+        />
+      </TableCell>
+
+      <TableCell className="text-right">
+        <ProductActionsMenu
+          canCreate={canCreate}
+          canDelete={canDelete}
+          canEdit={canEdit}
+          loadingId={loadingId}
+          onDelete={onDelete}
+          onDuplicate={onDuplicate}
+          product={product}
+        />
+      </TableCell>
+    </TableRow>
+  );
+}
+
 export default function ProductTable({
   products,
   canCreate = true,
   canEdit = true,
   canDelete = true,
-}: ProductTableProps) {
+}: Readonly<ProductTableProps>) {
   const currencySettings = useCurrencySettings();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
@@ -175,7 +598,7 @@ export default function ProductTable({
   const handleDelete = async (productId: string | number, productName: string) => {
     const confirmed = await showConfirm(
       "ลบสินค้า",
-      `คุณแน่ใจหรือไม่ว่าต้องการลบสินค้า \"${productName}\"? การดำเนินการนี้ไม่สามารถย้อนกลับได้`
+      `คุณแน่ใจหรือไม่ว่าต้องการลบสินค้า "${productName}"? การดำเนินการนี้ไม่สามารถย้อนกลับได้`
     );
 
     if (!confirmed) {
@@ -286,181 +709,23 @@ export default function ProductTable({
       <div className="space-y-3 md:hidden">
         {paginatedProducts.length === 0 ? (
           <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-16 text-center text-slate-500 shadow-sm">
-            <div className="mx-auto flex max-w-sm flex-col items-center gap-3">
-              <div className="rounded-full bg-slate-100 p-3 text-slate-400">
-                <Package className="h-6 w-6" />
-              </div>
-              <div>
-                      <p className="text-base font-semibold text-slate-700">ไม่พบสินค้าที่ตรงเงื่อนไข</p>
-                      <p className="mt-1 text-sm text-slate-500">ลองค้นหาด้วยชื่ออื่นหรือเปลี่ยนหมวดหมู่ที่เลือก</p>
-              </div>
-            </div>
+            <EmptyProductState />
           </div>
         ) : (
           paginatedProducts.map((product) => {
-            const hasDiscount =
-              product.discountPrice !== null &&
-              product.discountPrice !== undefined &&
-              product.discountPrice < product.price;
-            const displayStockCount = product.stockCount ?? (product.isSold ? 0 : 1);
-            const autoDeleteLabel = formatAutoDelete(product.autoDeleteAfterSale);
-            const isPointProduct = product.currency === "POINT";
-            const activePrice = hasDiscount ? product.discountPrice : product.price;
-
             return (
-              <div key={product.id} className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <Avatar className="h-14 w-14 rounded-2xl border border-slate-200 shadow-sm">
-                    <AvatarImage src={product.imageUrl || undefined} alt={product.name} className="object-cover" />
-                    <AvatarFallback className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 text-xs font-semibold text-blue-700">
-                      {product.name.slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate font-semibold text-slate-900">{product.name}</p>
-                        <p className="mt-1 line-clamp-2 text-sm text-slate-500">
-                          {product.description || "ไม่มีรายละเอียดเพิ่มเติม"}
-                        </p>
-                      </div>
-
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 rounded-full border border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-700"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/product/${product.id}`} className="flex items-center gap-2">
-                              <Eye className="h-4 w-4" />
-                              ดูสินค้า
-                            </Link>
-                          </DropdownMenuItem>
-                          {canEdit ? (
-                            <DropdownMenuItem asChild>
-                              <Link href={`/admin/products/${product.id}/edit`} className="flex items-center gap-2">
-                                <Pencil className="h-4 w-4" />
-                                แก้ไขสินค้า
-                              </Link>
-                            </DropdownMenuItem>
-                          ) : null}
-                          {canCreate ? (
-                            <DropdownMenuItem
-                              onClick={() => handleDuplicate(product.id)}
-                              disabled={loadingId === product.id}
-                              className="flex items-center gap-2"
-                            >
-                              <Copy className="h-4 w-4" />
-                              คัดลอกสินค้า
-                            </DropdownMenuItem>
-                          ) : null}
-                          {canDelete ? <DropdownMenuSeparator /> : null}
-                          {canDelete ? (
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(product.id, product.name)}
-                              disabled={loadingId === product.id}
-                              className="flex items-center gap-2 text-rose-600 focus:text-rose-600"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              ลบสินค้า
-                            </DropdownMenuItem>
-                          ) : null}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <Badge variant="secondary" className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
-                        {product.category || "ทั่วไป"}
-                      </Badge>
-                      <Badge
-                        className={cn(
-                          "rounded-full px-2.5 py-1 text-xs font-semibold",
-                          product.isSold
-                            ? "bg-rose-100 text-rose-700 hover:bg-rose-100"
-                            : "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
-                        )}
-                      >
-                        {product.isSold ? "ขายแล้ว" : "พร้อมขาย"}
-                      </Badge>
-                      {autoDeleteLabel ? (
-                        <Badge
-                          variant="outline"
-                          className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700"
-                        >
-                          <Timer className="mr-1 h-3 w-3" />
-                          {autoDeleteLabel}
-                        </Badge>
-                      ) : null}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 grid grid-cols-2 gap-3">
-                  <div className="rounded-xl bg-slate-50 p-3">
-                    <p className="text-xs text-slate-500">ราคา</p>
-                    <div className="mt-1 flex items-center gap-1.5 text-base font-semibold text-slate-900">
-                      {isPointProduct ? <Gem className="h-4 w-4 text-violet-500" /> : null}
-                      <span>
-                        {isPointProduct
-                          ? Number(activePrice).toLocaleString()
-                          : `฿${Number(activePrice).toLocaleString()}`}
-                      </span>
-                    </div>
-                    {hasDiscount ? (
-                      <p className="mt-1 text-xs text-slate-400 line-through">
-                        {isPointProduct
-                          ? formatCurrencyAmount(Number(product.price), "POINT", currencySettings)
-                          : `฿${Number(product.price).toLocaleString()}`}
-                      </p>
-                    ) : null}
-                  </div>
-
-                  <div className="rounded-xl bg-slate-50 p-3">
-                    <p className="text-xs text-slate-500">สต็อก</p>
-                    <div className="mt-1 flex items-center gap-1 text-base font-semibold text-slate-900">
-                      <Package className="h-4 w-4 text-slate-400" />
-                      {displayStockCount}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-                  <div className="text-sm font-medium text-slate-600">แนะนำ</div>
-                  {canEdit ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      disabled={loadingId === product.id}
-                      onClick={() => handleToggleFeatured(product.id, product.isFeatured)}
-                      className={cn(
-                        "h-9 w-9 rounded-full border transition",
-                        product.isFeatured
-                          ? "border-amber-200 bg-amber-50 text-amber-500 hover:bg-amber-100"
-                          : "border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-100 hover:text-slate-600"
-                      )}
-                    >
-                      <Star className={cn("h-4 w-4", product.isFeatured ? "fill-current" : "")} />
-                    </Button>
-                  ) : (
-                    <Star
-                      className={cn(
-                        "h-4 w-4",
-                        product.isFeatured ? "fill-current text-amber-500" : "text-slate-300"
-                      )}
-                    />
-                  )}
-                </div>
-              </div>
+              <MobileProductCard
+                key={product.id}
+                canCreate={canCreate}
+                canDelete={canDelete}
+                canEdit={canEdit}
+                currencySettings={currencySettings}
+                loadingId={loadingId}
+                onDelete={handleDelete}
+                onDuplicate={handleDuplicate}
+                onToggleFeatured={handleToggleFeatured}
+                product={product}
+              />
             );
           })
         )}
@@ -501,198 +766,25 @@ export default function ProductTable({
             {paginatedProducts.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="py-16 text-center text-slate-500">
-                  <div className="mx-auto flex max-w-sm flex-col items-center gap-3">
-                    <div className="rounded-full bg-slate-100 p-3 text-slate-400">
-                      <Package className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <p className="text-base font-semibold text-slate-700">ไม่พบสินค้าที่ตรงเงื่อนไข</p>
-                      <p className="mt-1 text-sm text-slate-500">ลองค้นหาด้วยชื่ออื่นหรือเปลี่ยนหมวดหมู่ที่เลือก</p>
-                    </div>
-                  </div>
+                  <EmptyProductState />
                 </TableCell>
               </TableRow>
             ) : (
               paginatedProducts.map((product, index) => {
-                const hasDiscount =
-                  product.discountPrice !== null &&
-                  product.discountPrice !== undefined &&
-                  product.discountPrice < product.price;
-                const displayStockCount = product.stockCount ?? (product.isSold ? 0 : 1);
-                const autoDeleteLabel = formatAutoDelete(product.autoDeleteAfterSale);
-                const isPointProduct = product.currency === "POINT";
-                const activePrice = hasDiscount ? product.discountPrice : product.price;
-
                 return (
-                  <TableRow
+                  <DesktopProductRow
                     key={product.id}
-                    className={cn(
-                      "border-slate-200 transition hover:bg-blue-50/40",
-                      index % 2 === 0 ? "bg-white" : "bg-slate-50/35"
-                    )}
-                  >
-                    <TableCell>
-                      <Avatar className="h-11 w-11 rounded-xl border border-slate-200 shadow-sm">
-                        <AvatarImage src={product.imageUrl || undefined} alt={product.name} className="object-cover" />
-                        <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 text-xs font-semibold text-blue-700">
-                          {product.name.slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                    </TableCell>
-
-                    <TableCell>
-                      <div className="space-y-1">
-                        <p className="font-semibold text-slate-900">{product.name}</p>
-                        <p className="line-clamp-1 max-w-[280px] text-sm text-slate-500">
-                          {product.description || "ไม่มีรายละเอียดเพิ่มเติม"}
-                        </p>
-                      </div>
-                    </TableCell>
-
-                    <TableCell>
-                      <Badge variant="secondary" className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
-                        {product.category || "ทั่วไป"}
-                      </Badge>
-                    </TableCell>
-
-                    <TableCell className="text-center">
-                      <div className="flex flex-col items-center gap-1">
-                        <div className="flex items-center gap-1.5 text-base font-semibold text-slate-900">
-                          {isPointProduct ? <Gem className="h-4 w-4 text-violet-500" /> : null}
-                          <span>
-                            {isPointProduct
-                              ? Number(activePrice).toLocaleString()
-                              : `฿${Number(activePrice).toLocaleString()}`}
-                          </span>
-                        </div>
-                        {hasDiscount ? (
-                          <>
-                            <p className="text-xs text-slate-400 line-through">
-                              {isPointProduct
-                                ? formatCurrencyAmount(Number(product.price), "POINT", currencySettings)
-                                : `฿${Number(product.price).toLocaleString()}`}
-                            </p>
-                            <Badge className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-50">
-                              ลดราคา
-                            </Badge>
-                          </>
-                        ) : null}
-                      </div>
-                    </TableCell>
-
-                    <TableCell className="text-center">
-                      <Badge
-                        variant="outline"
-                        className="inline-flex items-center gap-1 rounded-full border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-700"
-                      >
-                        <Package className="h-3.5 w-3.5 text-slate-400" />
-                        {displayStockCount}
-                      </Badge>
-                    </TableCell>
-
-                    <TableCell className="text-center">
-                      <div className="flex flex-col items-center gap-2">
-                        <Badge
-                          className={cn(
-                            "rounded-full px-2.5 py-1 text-xs font-semibold",
-                            product.isSold
-                              ? "bg-rose-100 text-rose-700 hover:bg-rose-100"
-                              : "bg-emerald-100 text-emerald-700 hover:bg-emerald-100"
-                          )}
-                        >
-                          {product.isSold ? "ขายแล้ว" : "พร้อมขาย"}
-                        </Badge>
-                        {autoDeleteLabel ? (
-                          <Badge
-                            variant="outline"
-                            className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700"
-                          >
-                            <Timer className="mr-1 h-3 w-3" />
-                            {autoDeleteLabel}
-                          </Badge>
-                        ) : null}
-                      </div>
-                    </TableCell>
-
-                    <TableCell className="text-center">
-                      {canEdit ? (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          disabled={loadingId === product.id}
-                          onClick={() => handleToggleFeatured(product.id, product.isFeatured)}
-                          className={cn(
-                            "mx-auto rounded-full border transition",
-                            product.isFeatured
-                              ? "border-amber-200 bg-amber-50 text-amber-500 hover:bg-amber-100"
-                              : "border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-600"
-                          )}
-                        >
-                          <Star className={cn("h-4 w-4", product.isFeatured ? "fill-current" : "")} />
-                        </Button>
-                      ) : (
-                        <Star
-                          className={cn(
-                            "mx-auto h-4 w-4",
-                            product.isFeatured ? "fill-current text-amber-500" : "text-slate-300"
-                          )}
-                        />
-                      )}
-                    </TableCell>
-
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="rounded-full border border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-700"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem asChild>
-                            <Link href={`/product/${product.id}`} className="flex items-center gap-2">
-                              <Eye className="h-4 w-4" />
-                              ดูสินค้า
-                            </Link>
-                          </DropdownMenuItem>
-                          {canEdit ? (
-                            <DropdownMenuItem asChild>
-                              <Link href={`/admin/products/${product.id}/edit`} className="flex items-center gap-2">
-                                <Pencil className="h-4 w-4" />
-                                แก้ไขสินค้า
-                              </Link>
-                            </DropdownMenuItem>
-                          ) : null}
-                          {canCreate ? (
-                            <DropdownMenuItem
-                              onClick={() => handleDuplicate(product.id)}
-                              disabled={loadingId === product.id}
-                              className="flex items-center gap-2"
-                            >
-                              <Copy className="h-4 w-4" />
-                              คัดลอกสินค้า
-                            </DropdownMenuItem>
-                          ) : null}
-                          {canDelete ? <DropdownMenuSeparator /> : null}
-                          {canDelete ? (
-                            <DropdownMenuItem
-                              onClick={() => handleDelete(product.id, product.name)}
-                              disabled={loadingId === product.id}
-                              className="flex items-center gap-2 text-rose-600 focus:text-rose-600"
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              ลบสินค้า
-                            </DropdownMenuItem>
-                          ) : null}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
+                    canCreate={canCreate}
+                    canDelete={canDelete}
+                    canEdit={canEdit}
+                    currencySettings={currencySettings}
+                    index={index}
+                    loadingId={loadingId}
+                    onDelete={handleDelete}
+                    onDuplicate={handleDuplicate}
+                    onToggleFeatured={handleToggleFeatured}
+                    product={product}
+                  />
                 );
               })
             )}

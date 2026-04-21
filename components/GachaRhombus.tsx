@@ -83,7 +83,7 @@ function getParticles(tier: string) {
   return particles;
 }
 
-function WinBurst({ tier }: { tier: string }) {
+function WinBurst({ tier }: Readonly<{ tier: string }>) {
   return (
     <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center">
       {getParticles(tier).map((p) => (
@@ -105,7 +105,7 @@ function WinBurst({ tier }: { tier: string }) {
   );
 }
 
-function TileImage({ imageUrl, name, fallback }: { imageUrl: string; name: string; fallback: React.ReactNode }) {
+function TileImage({ imageUrl, name, fallback }: Readonly<{ imageUrl: string; name: string; fallback: React.ReactNode }>) {
   const [err, setErr] = useState(false);
   if (err) return <>{fallback}</>;
   return (
@@ -123,6 +123,62 @@ function TileImage({ imageUrl, name, fallback }: { imageUrl: string; name: strin
   );
 }
 
+function getRouletteDelay(step: number) {
+  if (step < 4) {
+    return 280;
+  }
+
+  if (step < 8) {
+    return 160;
+  }
+
+  return 200 + (step - 8) * 30;
+}
+
+function getRollingButtonLabel(phase: Phase) {
+  if (phase === "rolling1") {
+    return "กำลังสุ่ม...";
+  }
+
+  if (phase === "rolling2") {
+    return "กำลังเลือก...";
+  }
+
+  return "กำลังเปิด...";
+}
+
+function getSelectorIndex(tiles: ReturnType<typeof buildGrid>, label: string) {
+  return tiles.findIndex((tile) => tile.type === "selector" && tile.label === label);
+}
+
+function getPathIndices(tiles: ReturnType<typeof buildGrid>, label: string) {
+  return (SELECTOR_PATHS[label] || [])
+    .map(([row, col]) => findTileIndex(tiles, row, col))
+    .filter((index) => index >= 0);
+}
+
+function getIntersectionIndex(tiles: ReturnType<typeof buildGrid>, lLabel: string, rLabel: string) {
+  const intersectionPosition = INTERSECTION_MAP[lLabel]?.[rLabel];
+  return intersectionPosition ? findTileIndex(tiles, intersectionPosition[0], intersectionPosition[1]) : -1;
+}
+
+function getPhaseTileFade(
+  phase: Phase,
+  isItem: boolean,
+  tileSide: "left" | "right" | undefined,
+  onAura: boolean,
+  onSelectedLPath: boolean,
+  onL: boolean,
+  onR: boolean,
+) {
+  return (
+    (phase === "rolling1" && (isItem || tileSide === "right") && !onAura) ||
+    (phase === "waitSpin2" && isItem && !onSelectedLPath) ||
+    (phase === "rolling2" && (isItem || tileSide === "left") && !onSelectedLPath && !onAura) ||
+    (phase === "revealing" && isItem && !onL && !onR)
+  );
+}
+
 interface GachaRhombusProps {
   products: GachaProductLite[];
   settings: { isEnabled: boolean; costType: string; costAmount: number; dailySpinLimit: number };
@@ -131,7 +187,13 @@ interface GachaRhombusProps {
   maintenance?: { enabled: boolean; message: string };
 }
 
-export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_BALANCES, machineId, maintenance }: GachaRhombusProps) {
+export function GachaRhombus({
+  products,
+  settings,
+  initialBalances = EMPTY_USER_BALANCES,
+  machineId,
+  maintenance,
+}: Readonly<GachaRhombusProps>) {
   const router = useRouter();
   const currencySettings = useCurrencySettings();
   const normalizedCost = useMemo(
@@ -181,13 +243,13 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
   useEffect(() => () => clearQueuedTimeouts(), [clearQueuedTimeouts]);
   useEffect(() => setBalances(initialBalances), [initialBalances]);
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const saved = window.localStorage.getItem("gacha-skip-animation");
+    if (globalThis.window === undefined) return;
+    const saved = globalThis.window.localStorage.getItem("gacha-skip-animation");
     setSkipAnimationEnabled(saved === "true");
   }, []);
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    window.localStorage.setItem("gacha-skip-animation", String(skipAnimationEnabled));
+    if (globalThis.window === undefined) return;
+    globalThis.window.localStorage.setItem("gacha-skip-animation", String(skipAnimationEnabled));
   }, [skipAnimationEnabled]);
 
   const refreshBalances = useCallback(async () => {
@@ -219,9 +281,9 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
     clearQueuedTimeouts();
     setSelectedLLabel(lLabel);
     setAuraTiles([]);
-    const selectorIdx = tiles.findIndex((t) => t.type === "selector" && t.label === lLabel);
+    const selectorIdx = getSelectorIndex(tiles, lLabel);
     setHighlightedTile(selectorIdx >= 0 ? selectorIdx : null);
-    const pathIndices = (SELECTOR_PATHS[lLabel] || []).map(([r, c]) => findTileIndex(tiles, r, c)).filter((i) => i >= 0);
+    const pathIndices = getPathIndices(tiles, lLabel);
     setSelectedLAuraTiles(selectorIdx >= 0 ? [selectorIdx, ...pathIndices] : pathIndices);
     setPhase("waitSpin2");
   }, [clearQueuedTimeouts, tiles]);
@@ -232,12 +294,11 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
     clearQueuedTimeouts();
     setSelectedRLabel(rLabel);
     setAuraTiles([]);
-    const lPath = (SELECTOR_PATHS[lLabel] || []).map(([r, c]) => findTileIndex(tiles, r, c)).filter((i) => i >= 0);
-    const rPath = (SELECTOR_PATHS[rLabel] || []).map(([r, c]) => findTileIndex(tiles, r, c)).filter((i) => i >= 0);
+    const lPath = getPathIndices(tiles, lLabel);
+    const rPath = getPathIndices(tiles, rLabel);
     setLPathTiles(lPath);
     setRPathTiles(rPath);
-    const intersPos = INTERSECTION_MAP[lLabel]?.[rLabel];
-    const intersIdx = intersPos ? findTileIndex(tiles, intersPos[0], intersPos[1]) : -1;
+    const intersIdx = getIntersectionIndex(tiles, lLabel, rLabel);
     if (intersIdx >= 0) {
       setHighlightedTile(intersIdx);
       setFlipKey((prev) => ({ ...prev, [intersIdx]: (prev[intersIdx] ?? 0) + 1 }));
@@ -260,11 +321,11 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
     let step = 0;
     const flash = () => {
       const isLast = step >= total - 1;
-      const tileIdx = isLast ? tiles.findIndex((t) => t.type === "selector" && t.label === chosenLabel) : indices[step % indices.length];
+      const tileIdx = isLast ? getSelectorIndex(tiles, chosenLabel) : indices[step % indices.length];
       setHighlightedTile(tileIdx >= 0 ? tileIdx : indices[0]);
       const currentTile = tiles[tileIdx >= 0 ? tileIdx : indices[0]];
       if (currentTile?.label) {
-        const pathIndices = (SELECTOR_PATHS[currentTile.label] || []).map(([r, c]) => findTileIndex(tiles, r, c)).filter((i) => i >= 0);
+        const pathIndices = getPathIndices(tiles, currentTile.label);
         setAuraTiles([tileIdx >= 0 ? tileIdx : indices[0], ...pathIndices]);
       }
       step++;
@@ -273,19 +334,18 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
         queueTimeout(onDone, 400);
         return;
       }
-      const delay = step < 4 ? 280 : step < 8 ? 160 : 200 + (step - 8) * 30;
+      const delay = getRouletteDelay(step);
       queueTimeout(flash, delay);
     };
     queueTimeout(flash, 200);
   }, [lSelectorIndices, queueTimeout, rSelectorIndices, tiles]);
 
   const revealIntersection = useCallback((lLabel: string, rLabel: string, product: GachaProductLite) => {
-    const lPath = (SELECTOR_PATHS[lLabel] || []).map(([r, c]) => findTileIndex(tiles, r, c)).filter((i) => i >= 0);
-    const rPath = (SELECTOR_PATHS[rLabel] || []).map(([r, c]) => findTileIndex(tiles, r, c)).filter((i) => i >= 0);
+    const lPath = getPathIndices(tiles, lLabel);
+    const rPath = getPathIndices(tiles, rLabel);
     setLPathTiles(lPath);
     setRPathTiles(rPath);
-    const intersPos = INTERSECTION_MAP[lLabel]?.[rLabel];
-    const intersIdx = intersPos ? findTileIndex(tiles, intersPos[0], intersPos[1]) : -1;
+    const intersIdx = getIntersectionIndex(tiles, lLabel, rLabel);
     queueTimeout(() => {
       if (intersIdx >= 0) {
         setHighlightedTile(intersIdx);
@@ -329,7 +389,7 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
     if (restoringPendingRef.current) return;
     restoringPendingRef.current = true;
 
-    void (async () => {
+    async function restorePendingSpin() {
       try {
         const data = await callRollApi(3);
         if (!data.success) return;
@@ -339,11 +399,13 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
         const { lLabel, rLabel, product } = data.data ?? {};
         if (!lLabel || !rLabel || !product) return;
         finalizeResult(lLabel, rLabel, product, false);
-        void refreshBalances();
+        await refreshBalances();
       } catch {
         // Ignore resume failures and let the user start a new spin manually.
       }
-    })();
+    }
+
+    restorePendingSpin().catch(() => undefined);
   }, [callRollApi, finalizeResult, refreshBalances]);
 
   const handleFirstSpin = useCallback(async () => {
@@ -416,7 +478,7 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
         return;
       }
       pendingSecondSpinRef.current = { rLabel, product };
-      void refreshBalances();
+      refreshBalances().catch(() => undefined);
       if ((skipAnimationEnabled || skipRequestedPhaseRef.current === "rolling2") && selectedLLabel) {
         finalizeResult(selectedLLabel, rLabel, product, false);
         return;
@@ -513,14 +575,10 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
               const onBoth = onL && onR;
               const onAura = auraTiles.includes(index);
               const onSelectedLPath = selectedLAuraTiles.includes(index);
-              const fade =
-                (phase === "rolling1" && (isItem || tile.side === "right") && !onAura) ||
-                (phase === "waitSpin2" && isItem && !onSelectedLPath) ||
-                (phase === "rolling2" && (isItem || tile.side === "left") && !onSelectedLPath && !onAura) ||
-                (phase === "revealing" && isItem && !onL && !onR);
+              const fade = getPhaseTileFade(phase, isItem, tile.side, onAura, onSelectedLPath, onL, onR);
 
               return (
-                <motion.div key={index} className="absolute" style={{ left: pos.x, top: pos.y, width: tileSize, height: tileSize }} initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.015, type: "spring", stiffness: 280 }}>
+                <motion.div key={`${tile.row}-${tile.col}-${tile.label ?? tile.type}`} className="absolute" style={{ left: pos.x, top: pos.y, width: tileSize, height: tileSize }} initial={{ opacity: 0, scale: 0.6 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: index * 0.015, type: "spring", stiffness: 280 }}>
                   <div
                     key={`f-${flipKey[index] ?? 0}`}
                     className={[
@@ -535,8 +593,8 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
                       fade ? "opacity-55 grayscale" : "",
                     ].join(" ")}
                     style={(() => {
-                      if (auraTiles.includes(index) && !isHL) return { boxShadow: "0 0 10px 3px rgba(0,180,216,0.18), 0 0 18px 6px rgba(0,180,216,0.08)", filter: "brightness(1.12)" };
-                      if (selectedLAuraTiles.includes(index) && (phase === "waitSpin2" || phase === "rolling2")) return { boxShadow: "0 0 12px 4px rgba(0,180,216,0.22), 0 0 20px 7px rgba(0,180,216,0.1)", filter: "brightness(1.1)" };
+                      if (onAura && !isHL) return { boxShadow: "0 0 10px 3px rgba(0,180,216,0.18), 0 0 18px 6px rgba(0,180,216,0.08)", filter: "brightness(1.12)" };
+                      if (onSelectedLPath && (phase === "waitSpin2" || phase === "rolling2")) return { boxShadow: "0 0 12px 4px rgba(0,180,216,0.22), 0 0 20px 7px rgba(0,180,216,0.1)", filter: "brightness(1.1)" };
                       return {};
                     })()}
                   >
@@ -578,9 +636,9 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
             </label>
 
             <div className="pt-1">
-              {phase === "idle" && <button onClick={() => void handleFirstSpin()} disabled={isBlocked} className="flex w-full items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751] py-4 text-[16px] font-bold text-white shadow-[0_22px_40px_-24px_rgba(28,151,81,0.95)] transition-all active:scale-[0.985] hover:bg-[#167c42] disabled:cursor-not-allowed disabled:opacity-50 md:text-base"><Gamepad2 className="h-5 w-5" /> {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : "สุ่ม"}</button>}
-              {(phase === "rolling1" || phase === "rolling2" || phase === "revealing") && <button disabled className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751]/60 py-4 text-[16px] font-bold text-white/85 md:text-base"><Loader2 className="h-5 w-5 animate-spin" /> {phase === "rolling1" ? "กำลังสุ่ม..." : phase === "rolling2" ? "กำลังเลือก..." : "กำลังเปิด..."}</button>}
-              {phase === "waitSpin2" && <button onClick={() => void handleSecondSpin()} disabled={isBlocked} className="flex w-full items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751] py-4 text-[16px] font-bold text-white shadow-[0_22px_40px_-24px_rgba(28,151,81,0.95)] transition-all active:scale-[0.985] hover:bg-[#167c42] disabled:cursor-not-allowed disabled:opacity-50 md:text-base"><Gamepad2 className="h-5 w-5" /> สุ่มครั้งที่ 2</button>}
+              {phase === "idle" && <button onClick={() => { handleFirstSpin().catch(() => undefined); }} disabled={isBlocked} className="flex w-full items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751] py-4 text-[16px] font-bold text-white shadow-[0_22px_40px_-24px_rgba(28,151,81,0.95)] transition-all active:scale-[0.985] hover:bg-[#167c42] disabled:cursor-not-allowed disabled:opacity-50 md:text-base"><Gamepad2 className="h-5 w-5" /> {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : "สุ่ม"}</button>}
+              {(phase === "rolling1" || phase === "rolling2" || phase === "revealing") && <button disabled className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751]/60 py-4 text-[16px] font-bold text-white/85 md:text-base"><Loader2 className="h-5 w-5 animate-spin" /> {getRollingButtonLabel(phase)}</button>}
+              {phase === "waitSpin2" && <button onClick={() => { handleSecondSpin().catch(() => undefined); }} disabled={isBlocked} className="flex w-full items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751] py-4 text-[16px] font-bold text-white shadow-[0_22px_40px_-24px_rgba(28,151,81,0.95)] transition-all active:scale-[0.985] hover:bg-[#167c42] disabled:cursor-not-allowed disabled:opacity-50 md:text-base"><Gamepad2 className="h-5 w-5" /> สุ่มครั้งที่ 2</button>}
             </div>
 
             <div className="min-h-[20px]">
@@ -596,7 +654,7 @@ export function GachaRhombus({ products, settings, initialBalances = EMPTY_USER_
 
       <div className="mt-4 w-full"><GachaRecentFeed refreshKey={historyRefreshKey} /></div>
       <DropRateModal open={showDropRate} onClose={() => setShowDropRate(false)} />
-      {phase === "result" && resultProduct && <GachaResultModal product={resultProduct} onClose={reset} onSpinAgain={() => { reset(); queueTimeout(() => void handleFirstSpin(), 200); }} />}
+      {phase === "result" && resultProduct && <GachaResultModal product={resultProduct} onClose={reset} onSpinAgain={() => { reset(); queueTimeout(() => { handleFirstSpin().catch(() => undefined); }, 200); }} />}
     </div>
   );
 }

@@ -69,6 +69,11 @@ function renderCostText(
     return `${Number(normalizedCost.costAmount).toLocaleString()} ${getGachaCostLabel(normalizedCost.costType, currencySettings)}`;
 }
 
+function getFormFieldString(formData: FormData | null, key: string, fallback: string) {
+    const value = formData?.get(key);
+    return typeof value === "string" ? value : fallback;
+}
+
 const inputCls =
     "w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-[#145de7]/30 focus:border-[#145de7] transition";
 
@@ -186,12 +191,12 @@ export default function GachaMachinesAdminPage() {
         const currentForm = machineFormRef.current;
         const formData = currentForm ? new FormData(currentForm) : null;
 
-        const rawName = String(formData?.get("name") ?? machineForm.name ?? "").trim();
-        const rawDescription = String(formData?.get("description") ?? machineForm.description ?? "").trim();
-        const rawImageUrl = String(formData?.get("imageUrl") ?? machineForm.imageUrl ?? "").trim();
-        const rawGameType = String(formData?.get("gameType") ?? machineForm.gameType ?? "SPIN_X");
-        const rawCategoryId = String(formData?.get("categoryId") ?? machineForm.categoryId ?? "").trim();
-        const rawCostType = String(formData?.get("costType") ?? machineForm.costType ?? "FREE");
+        const rawName = getFormFieldString(formData, "name", machineForm.name ?? "").trim();
+        const rawDescription = getFormFieldString(formData, "description", machineForm.description ?? "").trim();
+        const rawImageUrl = getFormFieldString(formData, "imageUrl", machineForm.imageUrl ?? "").trim();
+        const rawGameType = getFormFieldString(formData, "gameType", machineForm.gameType ?? "SPIN_X");
+        const rawCategoryId = getFormFieldString(formData, "categoryId", machineForm.categoryId ?? "").trim();
+        const rawCostType = getFormFieldString(formData, "costType", machineForm.costType ?? "FREE");
         const rawCostAmount = Number(formData?.get("costAmount") ?? machineForm.costAmount ?? 0);
 
         if (!rawName) return showError("กรุณากรอกชื่อตู้กาชา");

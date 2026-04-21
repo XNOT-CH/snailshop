@@ -47,16 +47,16 @@ export default async function AdminSeasonPassPage() {
     const canEditSeasonPass = access.success && access.permissions?.includes(PERMISSIONS.SEASON_PASS_EDIT);
 
     return (
-        <div className="space-y-6">
-            <section className="flex flex-col gap-4 rounded-[28px] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(239,246,255,0.88))] px-5 py-6 shadow-[0_24px_60px_-42px_rgba(37,99,235,0.32)] sm:px-7 sm:py-8 lg:flex-row lg:items-end lg:justify-between">
+        <div className="admin-season-pass-page space-y-6">
+            <section className="admin-season-pass-hero flex flex-col gap-4 rounded-[28px] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(239,246,255,0.88))] px-5 py-6 shadow-[0_24px_60px_-42px_rgba(37,99,235,0.32)] dark:border-[#2d4362] dark:bg-[linear-gradient(180deg,rgba(15,25,39,0.98),rgba(20,32,49,0.94))] dark:shadow-[0_24px_60px_-42px_rgba(0,0,0,0.7)] sm:px-7 sm:py-8 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-2xl space-y-3">
-                    <Badge className="w-fit rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-medium text-blue-700">
+                    <Badge className="w-fit rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-medium text-blue-700 dark:border-[#4d6f98] dark:bg-[#132133] dark:text-[#8cc4ff]">
                         Admin • Season Pass รายเดือน
                     </Badge>
-                    <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+                    <h1 className="text-3xl font-semibold tracking-tight text-slate-900 dark:text-[#f2f7ff] sm:text-4xl">
                         คุมแพ็กเกจ 50 บาท, กล่องรายวัน และวันที่ผู้ใช้พลาดสิทธิ์จากหน้าเดียว
                     </h1>
-                    <p className="text-sm leading-6 text-slate-600 sm:text-base">
+                    <p className="text-sm leading-6 text-slate-600 dark:text-[#b8cbe3] sm:text-base">
                         หน้านี้ถูกจัดให้เป็นจุดรวมสำหรับแพ็กเกจ, reward pool, การติดตามสมาชิกที่ยังไม่รับกล่อง
                         และกติกาเรื่องไม่ล็อกอินแล้วเสียสิทธิ์ประจำวัน
                     </p>
@@ -128,7 +128,7 @@ export default async function AdminSeasonPassPage() {
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2">
                                             <Badge variant="secondary" className="rounded-full px-3 py-1">{reward.stock}</Badge>
-                                            <Badge className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-blue-700">
+                                            <Badge className="rounded-full border border-blue-100 bg-blue-50 px-3 py-1 text-blue-700 dark:border-[#4d6f98] dark:bg-[#173154] dark:text-[#9bd0ff]">
                                                 {reward.state}
                                             </Badge>
                                         </div>
@@ -157,7 +157,7 @@ export default async function AdminSeasonPassPage() {
                                         </div>
                                         <div className="flex flex-wrap items-center gap-2">
                                             <Badge variant="secondary" className="rounded-full px-3 py-1">{subscriber.status}</Badge>
-                                            <Badge className="rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-700">
+                                            <Badge className="rounded-full border border-slate-200 bg-white px-3 py-1 text-slate-700 dark:border-[#435d82] dark:bg-[#16253b] dark:text-[#d7e4f4]">
                                                 {subscriber.note}
                                             </Badge>
                                         </div>

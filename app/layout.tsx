@@ -126,7 +126,7 @@ export default async function RootLayout({
               <Navbar />
 
               {/* Main Content - Responsive Container with Page Transition */}
-              <div id="main-container" className="flex-1 w-full max-w-7xl mx-auto px-3 pb-0 sm:px-4 md:pb-0 lg:px-6 xl:px-8">
+              <div id="main-container" className="flex-1 w-full max-w-7xl mx-auto px-3 pb-[calc(var(--mobile-bottom-nav-height)+0.75rem)] sm:px-4 md:pb-0 lg:px-6 xl:px-8">
                 <main className="animate-page-enter min-w-0">
                   {children}
                 </main>

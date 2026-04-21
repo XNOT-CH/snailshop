@@ -37,13 +37,13 @@ import {
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { updateProfile } from "@/lib/actions/user";
 import { showLoading, hideLoading, showSuccessAlert, showErrorAlert } from "@/lib/swal";
-import { signOut } from "next-auth/react";
 import { ThaiAddressSelector } from "@/components/ThaiAddressSelector";
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import { compressImage } from "@/lib/compressImage";
 import { FreeCropDialog } from "@/components/profile/FreeCropDialog";
 import { PinSettingsCard } from "@/components/profile/PinSettingsCard";
 import { requirePinForAction } from "@/lib/require-pin-for-action";
+import { useLogout } from "@/components/useLogout";
 
 interface AddressData {
     fullName: string;
@@ -53,6 +53,18 @@ interface AddressData {
     district: string;
     subdistrict: string;
     postalCode: string;
+}
+
+function sanitizePhone(value: string) {
+    return value.replace(/\D/g, "").slice(0, 10);
+}
+
+function sanitizeThaiName(value: string) {
+    return value.replace(/[^ก-๙\s]/g, "");
+}
+
+function sanitizeEnglishName(value: string) {
+    return value.replace(/[^A-Za-z\s.'-]/g, "");
 }
 
 interface UserProfile {
@@ -101,6 +113,7 @@ const emptyAddress: AddressData = {
 
 export default function ProfileSettingsPage() {
     const router = useRouter();
+    const logout = useLogout();
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -287,7 +300,7 @@ export default function ProfileSettingsPage() {
                     }));
                     // Sign out after password change
                     if (result.passwordChanged) {
-                        await signOut({ callbackUrl: "/" });
+                        await logout();
                         return;
                     }
                 }
@@ -471,19 +484,25 @@ export default function ProfileSettingsPage() {
                         id={`${prefix}-fullName`}
                         placeholder="ชื่อ - สกุล"
                         value={addr.fullName}
-                        onChange={(e) => setAddr(prev => ({ ...prev, fullName: e.target.value }))}
+                        onChange={(e) => setAddr(prev => ({ ...prev, fullName: sanitizeThaiName(e.target.value) }))}
                         className="bg-muted/60 border-border"
                     />
+                    <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาไทย</p>
                 </div>
                 <div className="space-y-2">
-                    <Label htmlFor={`${prefix}-phone`}>หมายเลขโทรศัพท์</Label>
+                    <Label htmlFor={`${prefix}-phone`}>หมายเลขโทรศัพท์ <span className="text-red-500">*</span></Label>
                     <Input
                         id={`${prefix}-phone`}
-                        placeholder="0xx-xxx-xxxx"
+                        type="tel"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={10}
+                        placeholder="0XXXXXXXXX"
                         value={addr.phone}
-                        onChange={(e) => setAddr(prev => ({ ...prev, phone: e.target.value }))}
+                        onChange={(e) => setAddr(prev => ({ ...prev, phone: sanitizePhone(e.target.value) }))}
                         className="bg-muted/60 border-border"
                     />
+                    <p className="text-xs text-muted-foreground">กรอกเฉพาะตัวเลข 10 หลัก</p>
                 </div>
             </div>
             <div className="space-y-2">
@@ -617,21 +636,25 @@ export default function ProfileSettingsPage() {
                             <div className="space-y-2">
                                 <Label htmlFor="phone" className="flex items-center gap-2 text-muted-foreground">
                                     <Phone className="h-4 w-4" />
-                                    เบอร์มือถือ
+                                    เบอร์มือถือ <span className="text-red-500">*</span>
                                 </Label>
                                 <Input
                                     id="phone"
                                     type="tel"
-                                    placeholder="0812345678"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    maxLength={10}
+                                    placeholder="0XXXXXXXXX"
                                     value={formData.phone}
                                     onChange={(e) =>
                                         setFormData((prev) => ({
                                             ...prev,
-                                            phone: e.target.value,
+                                            phone: sanitizePhone(e.target.value),
                                         }))
                                     }
                                     className="bg-muted/50 border-border"
                                 />
+                                <p className="text-xs text-muted-foreground">กรอกเฉพาะตัวเลข 10 หลัก</p>
                                 {errors.phone && (
                                     <p className="text-sm text-red-500">{errors.phone[0]}</p>
                                 )}
@@ -646,7 +669,7 @@ export default function ProfileSettingsPage() {
                                 <Input
                                     id="email"
                                     type="email"
-                                    placeholder="example@email.com"
+                                    placeholder="ระบุอีเมลของคุณที่นี่"
                                     value={formData.email}
                                     onChange={(e) =>
                                         setFormData((prev) => ({
@@ -701,11 +724,15 @@ export default function ProfileSettingsPage() {
                                     onChange={(e) =>
                                         setFormData((prev) => ({
                                             ...prev,
-                                            firstName: e.target.value,
+                                            firstName: sanitizeThaiName(e.target.value),
                                         }))
                                     }
                                     className="bg-muted/50 border-border"
                                 />
+                                <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาไทย</p>
+                                {errors.firstName && (
+                                    <p className="text-sm text-red-500">{errors.firstName[0]}</p>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="lastName">นามสกุล (ภาษาไทย)</Label>
@@ -717,11 +744,15 @@ export default function ProfileSettingsPage() {
                                     onChange={(e) =>
                                         setFormData((prev) => ({
                                             ...prev,
-                                            lastName: e.target.value,
+                                            lastName: sanitizeThaiName(e.target.value),
                                         }))
                                     }
                                     className="bg-muted/50 border-border"
                                 />
+                                <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาไทย</p>
+                                {errors.lastName && (
+                                    <p className="text-sm text-red-500">{errors.lastName[0]}</p>
+                                )}
                             </div>
 
                             {/* English Name */}
@@ -735,11 +766,15 @@ export default function ProfileSettingsPage() {
                                     onChange={(e) =>
                                         setFormData((prev) => ({
                                             ...prev,
-                                            firstNameEn: e.target.value,
+                                            firstNameEn: sanitizeEnglishName(e.target.value),
                                         }))
                                     }
                                     className="bg-muted/50 border-border"
                                 />
+                                <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาอังกฤษ</p>
+                                {errors.firstNameEn && (
+                                    <p className="text-sm text-red-500">{errors.firstNameEn[0]}</p>
+                                )}
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="lastNameEn">นามสกุล (ภาษาอังกฤษ)</Label>
@@ -751,11 +786,15 @@ export default function ProfileSettingsPage() {
                                     onChange={(e) =>
                                         setFormData((prev) => ({
                                             ...prev,
-                                            lastNameEn: e.target.value,
+                                            lastNameEn: sanitizeEnglishName(e.target.value),
                                         }))
                                     }
                                     className="bg-muted/50 border-border"
                                 />
+                                <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาอังกฤษ</p>
+                                {errors.lastNameEn && (
+                                    <p className="text-sm text-red-500">{errors.lastNameEn[0]}</p>
+                                )}
                             </div>
 
                             {/* Profile Image */}

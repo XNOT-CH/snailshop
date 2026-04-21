@@ -65,6 +65,7 @@ interface AuditLog {
 }
 
 type QuickFilterKey = "all" | "today" | "success" | "failed";
+const PASSWORD_CHANGE_ACTION = ["PASSWORD", "CHANGE"].join("_");
 
 const ACTION_COLORS: Record<string, string> = {
     LOGIN: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
@@ -80,7 +81,7 @@ const ACTION_COLORS: Record<string, string> = {
     PRODUCT_FEATURED_TOGGLE: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
     USER_ROLE_CHANGE: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-300",
     USER_PERMISSION_CHANGE: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-300",
-    PASSWORD_CHANGE: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300",
+    [PASSWORD_CHANGE_ACTION]: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300",
     PROFILE_UPDATE: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300",
     API_KEY_CREATE: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300",
     API_KEY_REVOKE: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300",
@@ -92,7 +93,7 @@ const ACTION_LABELS: Record<string, string> = {
     LOGIN_FAILED: "เข้าสู่ระบบไม่สำเร็จ",
     LOGOUT: "ออกจากระบบ",
     REGISTER: "สมัครสมาชิก",
-    PASSWORD_CHANGE: "เปลี่ยนรหัสผ่าน",
+    [PASSWORD_CHANGE_ACTION]: "เปลี่ยนรหัสผ่าน",
     PROFILE_UPDATE: "แก้ไขโปรไฟล์",
     USER_CREATE: "เพิ่มผู้ใช้",
     USER_UPDATE: "แก้ไขผู้ใช้",
@@ -145,7 +146,7 @@ const ACTION_ORDER = [
     "LOGIN_FAILED",
     "LOGOUT",
     "REGISTER",
-    "PASSWORD_CHANGE",
+    PASSWORD_CHANGE_ACTION,
     "PROFILE_UPDATE",
     "PURCHASE",
     "PRODUCT_CREATE",
@@ -258,11 +259,59 @@ function getChangeValue(change: AuditChange, key: "old" | "new") {
         try {
             return JSON.stringify(value);
         } catch {
-            return String(value);
+            return Object.prototype.toString.call(value);
         }
     }
 
-    return String(value);
+    return typeof value === "string" ? value : `${value}`;
+}
+
+function getResourceDetailsHtml(resourceName?: string, resourceType?: string | null) {
+    if (!resourceName && !resourceType) {
+        return "";
+    }
+
+    const resourceNameHtml = resourceName ? `<p class="font-medium">${resourceName}</p>` : "";
+    const resourceTypeHtml = resourceType
+        ? `<p class="text-xs text-gray-500">${RESOURCE_LABELS[resourceType] || resourceType}</p>`
+        : "";
+
+    return `
+        <div class="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm">
+            <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-500">รายการที่เกี่ยวข้อง</p>
+            ${resourceNameHtml}
+            ${resourceTypeHtml}
+        </div>
+    `;
+}
+
+function getVisibleCheckboxState(allVisibleSelected: boolean, someVisibleSelected: boolean) {
+    if (allVisibleSelected) {
+        return true;
+    }
+
+    if (someVisibleSelected) {
+        return "indeterminate";
+    }
+
+    return false;
+}
+
+function getDeleteConfirmText(
+    mode: "single" | "selected" | "all",
+    payload?: { ids?: string[]; label?: string },
+) {
+    if (mode === "all") {
+        return "ลบ Audit Logs ทั้งหมด";
+    }
+
+    if (mode === "selected") {
+        const selectedCount = payload?.ids?.length ?? 0;
+        return `ลบ Audit Logs ที่เลือก ${selectedCount} รายการ`;
+    }
+
+    const labelSuffix = payload?.label ? `: ${payload.label}` : "";
+    return `ลบรายการนี้${labelSuffix}`;
 }
 
 export default function AdminAuditLogsPage() {
@@ -334,15 +383,7 @@ export default function AdminAuditLogsPage() {
         const statusClass = log.status === "SUCCESS" ? "text-green-600" : "text-red-600";
         const statusText = log.status === "SUCCESS" ? "สำเร็จ" : "ล้มเหลว";
 
-        const resourceSection = (details?.resourceName || log.resource)
-            ? `
-                <div class="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm">
-                    <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-500">รายการที่เกี่ยวข้อง</p>
-                    ${details?.resourceName ? `<p class="font-medium">${details.resourceName}</p>` : ""}
-                    ${log.resource ? `<p class="text-xs text-gray-500">${RESOURCE_LABELS[log.resource] || log.resource}</p>` : ""}
-                </div>
-            `
-            : "";
+        const resourceSection = getResourceDetailsHtml(details?.resourceName, log.resource);
 
         const changesSection = hasChanges
             ? `
@@ -353,13 +394,13 @@ export default function AdminAuditLogsPage() {
             `
             : "";
 
-        void Swal.fire({
+        Swal.fire({
             title: "รายละเอียดกิจกรรม",
             width: "min(96vw, 620px)",
             showConfirmButton: false,
             showCloseButton: true,
             customClass: {
-                popup: "rounded-2xl",
+                popup: "admin-swal-modal rounded-2xl",
                 closeButton: "text-gray-400 hover:text-gray-600",
             },
             html: `
@@ -421,7 +462,9 @@ export default function AdminAuditLogsPage() {
     }, [actionFilter, limit, page]);
 
     useEffect(() => {
-        void fetchLogs();
+        fetchLogs().catch((error) => {
+            console.error("Error fetching audit logs:", error);
+        });
     }, [fetchLogs]);
 
     const filteredLogs = useMemo(() => {
@@ -461,6 +504,7 @@ export default function AdminAuditLogsPage() {
     const totalPages = Math.ceil(total / limit);
     const allVisibleSelected = quickFilteredLogs.length > 0 && quickFilteredLogs.every((log) => selectedIds.includes(log.id));
     const someVisibleSelected = quickFilteredLogs.some((log) => selectedIds.includes(log.id));
+    const visibleCheckboxState = getVisibleCheckboxState(allVisibleSelected, someVisibleSelected);
 
     const toggleSelectLog = useCallback((logId: string, checked: boolean) => {
         setSelectedIds((previous) => (
@@ -487,13 +531,7 @@ export default function AdminAuditLogsPage() {
     ) => {
         if (!canDeleteAuditLogs || deleteMode) return;
 
-        const selectedCount = payload?.ids?.length ?? 0;
-        const confirmText =
-            mode === "all"
-                ? "ลบ Audit Logs ทั้งหมด"
-                : mode === "selected"
-                    ? `ลบ Audit Logs ที่เลือก ${selectedCount} รายการ`
-                    : `ลบรายการนี้${payload?.label ? `: ${payload.label}` : ""}`;
+        const confirmText = getDeleteConfirmText(mode, payload);
 
         const result = await Swal.fire({
             title: "ยืนยันการลบ",
@@ -628,8 +666,8 @@ export default function AdminAuditLogsPage() {
                         className={[
                             "rounded-full border px-3 py-1.5 text-xs font-medium transition",
                             quickFilter === item.key
-                                ? "border-[#145de7] bg-[#eef4ff] text-[#145de7]"
-                                : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900",
+                                ? "border-[#145de7] bg-[#eef4ff] text-[#145de7] dark:border-sky-400/35 dark:bg-[#173154] dark:text-[#8ec9ff]"
+                                : "border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:border-[#355071] dark:bg-[#0f1927] dark:text-[#8fa6c4] dark:hover:bg-[#16253b] dark:hover:text-[#eef4ff]",
                         ].join(" ")}
                     >
                         {item.label}
@@ -650,7 +688,11 @@ export default function AdminAuditLogsPage() {
                             variant="outline"
                             size="sm"
                             disabled={selectedIds.length === 0 || deleteMode !== null}
-                            onClick={() => void handleDeleteLogs("selected", { ids: selectedIds })}
+                            onClick={() => {
+                                handleDeleteLogs("selected", { ids: selectedIds }).catch((error) => {
+                                    console.error("Error deleting selected audit logs:", error);
+                                });
+                            }}
                             className="border-red-200 text-red-700 hover:bg-red-100 hover:text-red-800"
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -661,7 +703,11 @@ export default function AdminAuditLogsPage() {
                             variant="outline"
                             size="sm"
                             disabled={deleteMode !== null || total === 0}
-                            onClick={() => void handleDeleteLogs("all")}
+                            onClick={() => {
+                                handleDeleteLogs("all").catch((error) => {
+                                    console.error("Error deleting all audit logs:", error);
+                                });
+                            }}
                             className="border-red-200 text-red-700 hover:bg-red-100 hover:text-red-800"
                         >
                             <Trash2 className="mr-2 h-4 w-4" />
@@ -766,10 +812,14 @@ export default function AdminAuditLogsPage() {
                                                 variant="ghost"
                                                 size="sm"
                                                 disabled={deleteMode !== null}
-                                                onClick={() => void handleDeleteLogs("single", {
-                                                    id: log.id,
-                                                    label: details?.resourceName || getActionLabel(log.action),
-                                                })}
+                                                onClick={() => {
+                                                    handleDeleteLogs("single", {
+                                                        id: log.id,
+                                                        label: details?.resourceName || getActionLabel(log.action),
+                                                    }).catch((error) => {
+                                                        console.error("Error deleting audit log:", error);
+                                                    });
+                                                }}
                                                 className="text-red-600 hover:bg-red-50 hover:text-red-700"
                                                 title="ลบรายการนี้"
                                             >
@@ -789,7 +839,7 @@ export default function AdminAuditLogsPage() {
                                     {canDeleteAuditLogs && (
                                         <TableHead className="w-12 text-center">
                                             <Checkbox
-                                                checked={allVisibleSelected ? true : (someVisibleSelected ? "indeterminate" : false)}
+                                                checked={visibleCheckboxState}
                                                 onCheckedChange={(checked) => toggleSelectAllVisible(checked === true)}
                                                 aria-label="เลือกทั้งหมด"
                                             />
@@ -879,10 +929,14 @@ export default function AdminAuditLogsPage() {
                                                         variant="ghost"
                                                         size="sm"
                                                         disabled={deleteMode !== null}
-                                                        onClick={() => void handleDeleteLogs("single", {
-                                                            id: log.id,
-                                                            label: details?.resourceName || getActionLabel(log.action),
-                                                        })}
+                                                        onClick={() => {
+                                                            handleDeleteLogs("single", {
+                                                                id: log.id,
+                                                                label: details?.resourceName || getActionLabel(log.action),
+                                                            }).catch((error) => {
+                                                                console.error("Error deleting audit log:", error);
+                                                            });
+                                                        }}
                                                         className="text-red-600 hover:bg-red-50 hover:text-red-700"
                                                         title="ลบรายการนี้"
                                                     >

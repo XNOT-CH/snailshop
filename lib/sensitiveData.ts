@@ -16,23 +16,37 @@ function decryptNullable(value: string | null | undefined) {
     return decrypt(value);
 }
 
+function transformOptionalField<T extends Record<string, unknown>>(
+    record: T,
+    key: keyof T,
+    transform: (value: string | null | undefined) => string | null,
+) {
+    if (!(key in record)) {
+        return {};
+    }
+
+    return {
+        [key]: transform(record[key] as string | null | undefined),
+    };
+}
+
 export function encryptUserSensitiveFields<T extends Record<string, unknown>>(record: T): T {
     return {
         ...record,
-        taxFullName: encryptNullable(record.taxFullName as string | null | undefined),
-        taxPhone: encryptNullable(record.taxPhone as string | null | undefined),
-        taxAddress: encryptNullable(record.taxAddress as string | null | undefined),
-        taxProvince: encryptNullable(record.taxProvince as string | null | undefined),
-        taxDistrict: encryptNullable(record.taxDistrict as string | null | undefined),
-        taxSubdistrict: encryptNullable(record.taxSubdistrict as string | null | undefined),
-        taxPostalCode: encryptNullable(record.taxPostalCode as string | null | undefined),
-        shipFullName: encryptNullable(record.shipFullName as string | null | undefined),
-        shipPhone: encryptNullable(record.shipPhone as string | null | undefined),
-        shipAddress: encryptNullable(record.shipAddress as string | null | undefined),
-        shipProvince: encryptNullable(record.shipProvince as string | null | undefined),
-        shipDistrict: encryptNullable(record.shipDistrict as string | null | undefined),
-        shipSubdistrict: encryptNullable(record.shipSubdistrict as string | null | undefined),
-        shipPostalCode: encryptNullable(record.shipPostalCode as string | null | undefined),
+        ...transformOptionalField(record, "taxFullName", encryptNullable),
+        ...transformOptionalField(record, "taxPhone", encryptNullable),
+        ...transformOptionalField(record, "taxAddress", encryptNullable),
+        ...transformOptionalField(record, "taxProvince", encryptNullable),
+        ...transformOptionalField(record, "taxDistrict", encryptNullable),
+        ...transformOptionalField(record, "taxSubdistrict", encryptNullable),
+        ...transformOptionalField(record, "taxPostalCode", encryptNullable),
+        ...transformOptionalField(record, "shipFullName", encryptNullable),
+        ...transformOptionalField(record, "shipPhone", encryptNullable),
+        ...transformOptionalField(record, "shipAddress", encryptNullable),
+        ...transformOptionalField(record, "shipProvince", encryptNullable),
+        ...transformOptionalField(record, "shipDistrict", encryptNullable),
+        ...transformOptionalField(record, "shipSubdistrict", encryptNullable),
+        ...transformOptionalField(record, "shipPostalCode", encryptNullable),
     };
 }
 

@@ -105,8 +105,8 @@ export function ProductImageGalleryField({
     };
 
     return (
-        <div className="space-y-4">
-            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
+        <div className="admin-product-image-gallery space-y-4">
+            <div className="admin-product-image-preview overflow-hidden rounded-3xl border border-slate-200 bg-slate-100 dark:border-[#355071] dark:bg-[#132133]">
                 <div className="relative aspect-[4/3] w-full">
                     {images[0] ? (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -120,9 +120,9 @@ export function ProductImageGalleryField({
                             }}
                         />
                     ) : (
-                        <div className="flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_55%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-6 text-center">
+                        <div className="admin-product-image-empty flex h-full items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_55%),linear-gradient(180deg,#f8fafc_0%,#eef2ff_100%)] px-6 text-center">
                             <div className="space-y-2">
-                                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/90 shadow-sm ring-1 ring-slate-200">
+                                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-white/90 shadow-sm ring-1 ring-slate-200 dark:bg-[#162334] dark:ring-[#355071]">
                                     <ImagePlus className="h-6 w-6 text-sky-600" />
                                 </div>
                                 <p className="text-sm font-medium text-slate-700">ยังไม่มีรูปสินค้า</p>
@@ -146,7 +146,7 @@ export function ProductImageGalleryField({
                 <Button
                     type="button"
                     variant="outline"
-                    className="h-11 justify-center gap-2 rounded-xl border-slate-300 bg-white"
+                    className="admin-product-image-upload h-11 justify-center gap-2 rounded-xl border-slate-300 bg-white dark:border-[#355071] dark:bg-[#132133]"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={disabled || isUploading}
                 >
@@ -160,7 +160,7 @@ export function ProductImageGalleryField({
                         variant="ghost"
                         onClick={() => onChange([])}
                         disabled={disabled}
-                        className="h-11 gap-2 rounded-xl text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                        className="admin-product-image-clear h-11 gap-2 rounded-xl text-rose-600 hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
                     >
                         <Trash2 className="h-4 w-4" />
                         ล้างรูปทั้งหมด
@@ -177,7 +177,7 @@ export function ProductImageGalleryField({
                         value={urlInput}
                         onChange={(event) => setUrlInput(event.target.value)}
                         disabled={disabled}
-                        className="bg-white"
+                        className="admin-product-image-url bg-white dark:border-[#355071] dark:bg-[#132133]"
                     />
                     <Button
                         type="button"
@@ -192,7 +192,7 @@ export function ProductImageGalleryField({
             </div>
 
             {images.length > 0 && (
-                <div className="space-y-3 rounded-2xl border border-slate-200 bg-white/80 p-3">
+                <div className="admin-product-image-list space-y-3 rounded-2xl border border-slate-200 bg-white/80 p-3 dark:border-[#355071] dark:bg-[#132133]">
                     <div className="flex items-center justify-between">
                         <p className="text-sm font-medium text-slate-800">รายการรูปสินค้า</p>
                         <p className="text-xs text-slate-500">รูปแรกจะใช้เป็นภาพหลักในหน้ารวมสินค้า</p>
@@ -202,7 +202,7 @@ export function ProductImageGalleryField({
                         {images.map((image, index) => (
                             <div
                                 key={`${image}-${index}`}
-                                className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
+                                className="admin-product-image-item rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-[#355071] dark:bg-[#162334]"
                             >
                                 <div className="relative aspect-square overflow-hidden rounded-xl bg-slate-100">
                                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -222,7 +222,7 @@ export function ProductImageGalleryField({
                                         <GripVertical className="h-3.5 w-3.5" />
                                         รูปที่ {index + 1}
                                         {index === 0 && (
-                                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-700">
+                                        <span className="admin-product-image-primary inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-700 dark:bg-amber-500/15 dark:text-amber-200">
                                                 <Star className="h-3 w-3" />
                                                 หลัก
                                             </span>
@@ -233,7 +233,7 @@ export function ProductImageGalleryField({
                                         type="button"
                                         variant="ghost"
                                         size="sm"
-                                        className="h-8 px-2 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                                        className="admin-product-image-delete h-8 px-2 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                                         onClick={() => handleRemove(index)}
                                         disabled={disabled}
                                     >
@@ -269,7 +269,7 @@ export function ProductImageGalleryField({
                 </div>
             )}
 
-            <div className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-xs leading-relaxed text-slate-500">
+            <div className="admin-product-image-note rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-xs leading-relaxed text-slate-500 dark:border-[#355071] dark:bg-[#132133] dark:text-[#97aecb]">
                 รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนบันทึก • {IMAGE_UPLOAD_RECOMMENDATIONS.productSquare}
             </div>
         </div>

@@ -153,21 +153,21 @@ function NavLink({
                 "group relative flex items-center gap-3 overflow-hidden rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-150",
                 sub ? "py-2 text-[13px]" : "",
                 active
-                    ? "border-transparent bg-[#eef4ff] text-[#145de7]"
-                    : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900",
+                    ? "border-transparent bg-[#eef4ff] text-[#145de7] dark:bg-[#173154] dark:text-[#77b6ff]"
+                    : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-[#16253b] dark:hover:text-slate-100",
             ].join(" ")}
         >
             <span
                 className={[
                     "absolute bottom-2 left-0 top-2 w-0.5 rounded-r-full transition-opacity duration-150",
-                    active ? "bg-[#145de7] opacity-100" : "opacity-0",
+                    active ? "bg-[#145de7] opacity-100 dark:bg-[#58a6ff]" : "opacity-0",
                 ].join(" ")}
             />
             <Icon
                 className={[
                     "relative z-10 flex-shrink-0",
                     sub ? "h-4 w-4" : "h-[18px] w-[18px]",
-                    active ? "text-[#145de7]" : "text-slate-400 group-hover:text-slate-600",
+                    active ? "text-[#145de7] dark:text-[#77b6ff]" : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500 dark:group-hover:text-slate-200",
                 ].join(" ")}
             />
             <span className="relative z-10 flex-1 truncate">{label}</span>
@@ -175,7 +175,7 @@ function NavLink({
                 <span
                     className={[
                         "relative z-10 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.08em]",
-                        active ? "bg-white/90 text-[#145de7]" : "bg-slate-100 text-slate-500",
+                        active ? "bg-white/90 text-[#145de7] dark:bg-[#0f2035] dark:text-[#8ec9ff]" : "bg-slate-100 text-slate-500 dark:bg-[#1a2b42] dark:text-slate-400",
                     ].join(" ")}
                 >
                     {badge}
@@ -206,22 +206,22 @@ function NavGroup({
                 className={[
                     "flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-150",
                     anyActive
-                        ? "border-transparent bg-slate-50 text-slate-900"
-                        : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900",
+                        ? "border-transparent bg-slate-50 text-slate-900 dark:bg-[#16253b] dark:text-slate-100"
+                        : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-[#16253b] dark:hover:text-slate-100",
                 ].join(" ")}
             >
-                <Icon className="h-[18px] w-[18px] flex-shrink-0 text-slate-400" />
+                <Icon className="h-[18px] w-[18px] flex-shrink-0 text-slate-400 dark:text-slate-500" />
                 <span className="flex-1 text-left">{group.label}</span>
                 <ChevronDown
                     className={[
-                        "h-4 w-4 text-slate-400 transition-transform duration-200",
+                        "h-4 w-4 text-slate-400 transition-transform duration-200 dark:text-slate-500",
                         open ? "rotate-180" : "",
                     ].join(" ")}
                 />
             </button>
 
             {open ? (
-                <div className="ml-4 space-y-1 border-l border-slate-200/80 pl-3">
+                <div className="ml-4 space-y-1 border-l border-slate-200/80 pl-3 dark:border-slate-700/70">
                     {group.items.map((item) => {
                         const active = pathname === item.href || pathname.startsWith(item.href);
 
@@ -260,8 +260,8 @@ function SidebarSection({
     return (
         <section className="space-y-2">
             <div className="px-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">{title}</p>
-                <p className="mt-1 max-w-[15rem] text-[11px] leading-5 text-slate-400">{hint}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">{title}</p>
+                <p className="mt-1 max-w-[15rem] text-[11px] leading-5 text-slate-400 dark:text-slate-500">{hint}</p>
             </div>
 
             <div className="space-y-1">
@@ -326,13 +326,13 @@ function SidebarNav({
                 ))}
             </nav>
 
-            <div className="border-t border-slate-200 p-4">
+            <div className="border-t border-slate-200 p-4 dark:border-slate-800">
                 <Link
                     href="/"
                     onClick={onLinkClick}
-                    className="flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900"
+                    className="flex items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-[#16253b] dark:hover:text-slate-100"
                 >
-                    <LogOut className="h-[18px] w-[18px] text-slate-400" />
+                    <LogOut className="h-[18px] w-[18px] text-slate-400 dark:text-slate-500" />
                     กลับหน้าร้าน
                 </Link>
             </div>
@@ -345,26 +345,26 @@ export function AdminSidebar({ permissions }: Readonly<{ permissions: string[] }
 
     return (
         <>
-            <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 flex-col border-r border-slate-200 bg-white shadow-sm md:flex">
-                <div className="flex h-16 items-center gap-3 border-b border-slate-200 px-5">
+            <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 flex-col border-r border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#121e30] dark:shadow-[0_20px_50px_-30px_rgba(0,0,0,0.75)] md:flex">
+                <div className="flex h-16 items-center gap-3 border-b border-slate-200 px-5 dark:border-slate-800">
                     <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#145de7] shadow-sm">
                         <Gamepad2 className="h-4 w-4 text-white" />
                     </div>
                     <div className="min-w-0">
-                        <p className="truncate text-[15px] font-bold tracking-tight text-slate-900">แผงควบคุม</p>
-                        <p className="truncate text-[11px] text-slate-400">จัดการร้านและระบบหลังบ้าน</p>
+                        <p className="truncate text-[15px] font-bold tracking-tight text-slate-900 dark:text-slate-50">แผงควบคุม</p>
+                        <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">จัดการร้านและระบบหลังบ้าน</p>
                     </div>
                 </div>
 
                 <SidebarNav permissions={permissions} />
             </aside>
 
-            <div className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm md:hidden">
+            <div className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center justify-between border-b border-slate-200 bg-white px-4 shadow-sm dark:border-slate-800 dark:bg-[#121e30] dark:shadow-[0_18px_40px_-28px_rgba(0,0,0,0.72)] md:hidden">
                 <Link href="/admin" className="flex items-center gap-2.5">
                     <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#145de7]">
                         <Gamepad2 className="h-3.5 w-3.5 text-white" />
                     </div>
-                    <span className="text-base font-bold text-slate-900">ผู้ดูแล</span>
+                    <span className="text-base font-bold text-slate-900 dark:text-slate-50">ผู้ดูแล</span>
                 </Link>
 
                 <Sheet open={open} onOpenChange={setOpen}>
@@ -372,23 +372,23 @@ export function AdminSidebar({ permissions }: Readonly<{ permissions: string[] }
                         <Button
                             variant="ghost"
                             size="icon"
-                            className="text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                            className="text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-[#16253b] dark:hover:text-slate-50"
                             aria-label="เปิดเมนูผู้ดูแลระบบ"
                         >
                             <Menu className="h-5 w-5" />
                         </Button>
                     </SheetTrigger>
 
-                    <SheetContent side="left" className="w-[min(19rem,88vw)] border-slate-200 bg-white p-0 sm:w-80">
-                        <SheetHeader className="flex h-16 shrink-0 flex-row items-center gap-3 space-y-0 border-b border-slate-200 px-5">
+                    <SheetContent side="left" className="w-[min(19rem,88vw)] border-slate-200 bg-white p-0 dark:border-slate-800 dark:bg-[#121e30] sm:w-80">
+                        <SheetHeader className="flex h-16 shrink-0 flex-row items-center gap-3 space-y-0 border-b border-slate-200 px-5 dark:border-slate-800">
                             <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#145de7]">
                                 <Gamepad2 className="h-4 w-4 text-white" />
                             </div>
                             <div className="min-w-0 text-left">
-                                <SheetTitle className="truncate text-[15px] font-bold text-slate-900">
+                                <SheetTitle className="truncate text-[15px] font-bold text-slate-900 dark:text-slate-50">
                                     แผงควบคุม
                                 </SheetTitle>
-                                <p className="truncate text-[11px] text-slate-400">จัดการร้านและระบบหลังบ้าน</p>
+                                <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">จัดการร้านและระบบหลังบ้าน</p>
                             </div>
                         </SheetHeader>
 

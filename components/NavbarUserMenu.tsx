@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 interface NavbarUserMenuProps {
+    displayName?: string | null;
     username: string;
     image?: string | null;
     imageVersion?: string | number;
@@ -29,6 +30,7 @@ interface NavbarUserMenuProps {
 const UserAvatarButton = React.forwardRef<
     React.ElementRef<typeof Button>,
     Readonly<{
+        displayName?: string | null;
         username: string;
         image?: string | null;
         imageVersion?: string | number;
@@ -38,6 +40,7 @@ const UserAvatarButton = React.forwardRef<
 >(function UserAvatarButton(
     {
         username,
+        displayName,
         image,
         imageVersion,
         disabled = false,
@@ -57,9 +60,9 @@ const UserAvatarButton = React.forwardRef<
             {...props}
         >
             <Avatar className="h-9 w-9 border-2 border-primary">
-                <AvatarImage src={withImageVersion(image, imageVersion)} alt={username} className="object-cover" />
+                <AvatarImage src={withImageVersion(image, imageVersion)} alt={displayName || username} className="object-cover" />
                 <AvatarFallback className="bg-primary text-primary-foreground text-sm font-medium">
-                    {username.charAt(0).toUpperCase()}
+                    {(displayName || username).charAt(0).toUpperCase()}
                 </AvatarFallback>
             </Avatar>
         </Button>
@@ -67,6 +70,7 @@ const UserAvatarButton = React.forwardRef<
 });
 
 export function NavbarUserMenu({
+    displayName,
     username,
     image,
     imageVersion,
@@ -75,24 +79,26 @@ export function NavbarUserMenu({
     currencySettings,
 }: Readonly<NavbarUserMenuProps>) {
     const [mounted, setMounted] = React.useState(false);
+    const shownName = displayName?.trim() || username;
 
     React.useEffect(() => {
         setMounted(true);
     }, []);
 
     if (!mounted) {
-        return <UserAvatarButton username={username} image={image} imageVersion={imageVersion} disabled />;
+        return <UserAvatarButton displayName={shownName} username={username} image={image} imageVersion={imageVersion} disabled />;
     }
 
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <UserAvatarButton username={username} image={image} imageVersion={imageVersion} />
+                <UserAvatarButton displayName={shownName} username={username} image={image} imageVersion={imageVersion} />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56 rounded-xl bg-card">
                 <DropdownMenuLabel>
                     <div className="flex flex-col space-y-1">
-                        <p className="text-sm font-medium text-foreground">{username}</p>
+                        <p className="text-sm font-medium text-foreground">{shownName}</p>
+                        <p className="text-xs text-muted-foreground">@{username}</p>
                         <p className="text-xs text-muted-foreground">
                             {"\u0E3F"}{creditBalance.toLocaleString()}
                         </p>

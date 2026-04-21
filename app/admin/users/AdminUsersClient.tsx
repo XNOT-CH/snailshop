@@ -103,7 +103,7 @@ function getSystemRoleLabel(role: string) {
 }
 
 function sanitizeDecimalInput(value: string) {
-  const sanitized = value.replace(/[^\d.]/g, "");
+  const sanitized = value.replaceAll(/[^\d.]/g, "");
   const [integerPart = "", ...fractionParts] = sanitized.split(".");
   const mergedFraction = fractionParts.join("");
   const limitedInteger = integerPart.slice(0, 8);
@@ -117,7 +117,7 @@ function sanitizeDecimalInput(value: string) {
 }
 
 function sanitizeIntegerInput(value: string) {
-  return value.replace(/\D/g, "").slice(0, 10);
+  return value.replaceAll(/\D/g, "").slice(0, 10);
 }
 
 function isValidDecimalInput(value: string) {
@@ -164,6 +164,58 @@ function buildRoleOptions(roles: Role[]): RoleOption[] {
   return Array.from(optionMap.values());
 }
 
+function getRoleBadgeClassName(role: string) {
+  if (role === "ADMIN") {
+    return "bg-blue-100 text-blue-700";
+  }
+
+  if (role === "MODERATOR") {
+    return "bg-violet-100 text-violet-700";
+  }
+
+  if (role === "SELLER") {
+    return "bg-emerald-100 text-emerald-700";
+  }
+
+  return "bg-slate-100 text-slate-700";
+}
+
+function getPinActionText(action: "RESET_PIN" | "UNLOCK_PIN") {
+  return action === "RESET_PIN" ? "รีเซ็ต PIN" : "ปลดล็อก PIN";
+}
+
+function getPinActionConfirmMessage(action: "RESET_PIN" | "UNLOCK_PIN", username: string) {
+  if (action === "RESET_PIN") {
+    return `ต้องการลบ PIN ของ ${username} เพื่อให้ผู้ใช้ตั้งค่าใหม่หรือไม่?`;
+  }
+
+  return `ต้องการปลดล็อก PIN ของ ${username} ใช่หรือไม่?`;
+}
+
+function getStrongEmphasisCardClassName(emphasis: "soft" | "strong") {
+  return emphasis === "strong" ? "border-slate-200 bg-white" : "border-slate-200/90 bg-white/90";
+}
+
+function getStatValueClassName(emphasis: "soft" | "strong") {
+  return emphasis === "strong" ? "text-[2rem] leading-none" : "text-3xl leading-none";
+}
+
+function getSearchResultsLabel(searchActive: boolean, filteredUsersLength: number, usersLength: number) {
+  if (searchActive) {
+    return `ผลลัพธ์ ${filteredUsersLength} จาก ${usersLength} รายการ`;
+  }
+
+  return `ทั้งหมด ${usersLength} รายการ`;
+}
+
+function getUsersSectionCountSuffix(searchActive: boolean, usersLength: number) {
+  return searchActive ? ` จาก ${usersLength}` : "";
+}
+
+function getEmptyUsersText(searchActive: boolean) {
+  return searchActive ? "ไม่พบสมาชิกที่ตรงกับคำค้นหา" : "ยังไม่มีสมาชิก";
+}
+
 export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersClientProps>) {
   const currencySettings = useCurrencySettings();
   const pointCurrencyName = getPointCurrencyName(currencySettings);
@@ -182,17 +234,15 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
       return;
     }
 
-    const title = action === "RESET_PIN" ? "รีเซ็ต PIN" : "ปลดล็อก PIN";
-    const text = action === "RESET_PIN"
-      ? `ต้องการลบ PIN ของ ${user.username} เพื่อให้ผู้ใช้ตั้งค่าใหม่หรือไม่?`
-      : `ต้องการปลดล็อก PIN ของ ${user.username} ใช่หรือไม่?`;
+    const title = getPinActionText(action);
+    const text = getPinActionConfirmMessage(action, user.username);
 
     const confirmed = await Swal.fire({
       title,
       text,
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: action === "RESET_PIN" ? "รีเซ็ต PIN" : "ปลดล็อก PIN",
+      confirmButtonText: getPinActionText(action),
       cancelButtonText: "ยกเลิก",
       reverseButtons: true,
       confirmButtonColor: action === "RESET_PIN" ? "#dc2626" : "#2563eb",
@@ -363,7 +413,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
       .map(
         (role) =>
           `<option value="${escapeHtml(role.code)}" ${
-            user.role === role.code ? "selected" : ""
+            role.code === currentRoleCode ? "selected" : ""
           }>${escapeHtml(role.label)}</option>`
       )
       .join("");
@@ -463,9 +513,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
             <select id="swal-role" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" ${canManageRoles ? "" : "disabled"}>
               ${selectOptions}
             </select>
-            <p class="mt-1 text-xs text-gray-400">${
-              canManageRoles ? "เลือกบทบาทปัจจุบันของสมาชิก" : "บัญชีนี้ไม่มีสิทธิ์เปลี่ยนบทบาท"
-            }</p>
+            <p class="mt-1 text-xs text-gray-400">${canManageRoles ? "เลือกบทบาทปัจจุบันของสมาชิก" : "บัญชีนี้ไม่มีสิทธิ์เปลี่ยนบทบาท"}</p>
           </div>
         </div>
       `,
@@ -557,11 +605,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
         {statCards.map(({ label, value, icon: Icon, iconBg, iconColor, emphasis }) => (
           <div
             key={label}
-            className={`rounded-2xl border p-4 shadow-sm ${
-              emphasis === "strong"
-                ? "border-slate-200 bg-white"
-                : "border-slate-200/90 bg-white/90"
-            }`}
+            className={`rounded-2xl border p-4 shadow-sm ${getStrongEmphasisCardClassName(emphasis)}`}
           >
             <div className="flex items-center gap-3">
               <div className={`shrink-0 rounded-2xl p-3 ${iconBg}`}>
@@ -570,9 +614,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
               <div className="min-w-0">
                 <p className="truncate text-xs text-muted-foreground">{label}</p>
                 <p
-                  className={`truncate font-bold ${
-                    emphasis === "strong" ? "text-[2rem] leading-none" : "text-3xl leading-none"
-                  }`}
+                  className={`truncate font-bold ${getStatValueClassName(emphasis)}`}
                 >
                   {value}
                 </p>
@@ -609,9 +651,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
               variant="outline"
               className="rounded-full border-slate-200 bg-slate-50 px-3 py-1 text-slate-600"
             >
-              {searchActive
-                ? `ผลลัพธ์ ${filteredUsers.length} จาก ${users.length} รายการ`
-                : `ทั้งหมด ${users.length} รายการ`}
+              {getSearchResultsLabel(searchActive, filteredUsers.length, users.length)}
             </Badge>
             {searchActive ? (
               <Badge className="rounded-full bg-blue-600 px-3 py-1 text-white hover:bg-blue-600">
@@ -629,7 +669,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
           </div>
           <span className="font-bold text-foreground">
             รายชื่อสมาชิก ({filteredUsers.length}
-            {searchActive ? ` จาก ${users.length}` : ""})
+            {getUsersSectionCountSuffix(searchActive, users.length)})
           </span>
         </div>
 
@@ -637,7 +677,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
           <div className="py-14 text-center">
             <Users className="mx-auto mb-3 h-12 w-12 text-muted-foreground/30" />
             <p className="text-muted-foreground">
-              {searchActive ? "ไม่พบสมาชิกที่ตรงกับคำค้นหา" : "ยังไม่มีสมาชิก"}
+              {getEmptyUsersText(searchActive)}
             </p>
           </div>
         ) : (
@@ -686,15 +726,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                             <p className="truncate font-semibold text-slate-900">{user.username}</p>
                             <Badge
                               variant="secondary"
-                              className={`rounded-full px-2.5 py-1 ${
-                                user.role === "ADMIN"
-                                  ? "bg-blue-100 text-blue-700"
-                                  : user.role === "MODERATOR"
-                                    ? "bg-violet-100 text-violet-700"
-                                    : user.role === "SELLER"
-                                      ? "bg-emerald-100 text-emerald-700"
-                                      : "bg-slate-100 text-slate-700"
-                              }`}
+                              className={`rounded-full px-2.5 py-1 ${getRoleBadgeClassName(user.role)}`}
                             >
                               {getRoleDisplayName(user.role)}
                             </Badge>
@@ -933,15 +965,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                       <TableCell>
                         <Badge
                           variant="secondary"
-                          className={`rounded-full px-2.5 py-1 ${
-                            user.role === "ADMIN"
-                              ? "bg-blue-100 text-blue-700"
-                              : user.role === "MODERATOR"
-                                ? "bg-violet-100 text-violet-700"
-                                : user.role === "SELLER"
-                                  ? "bg-emerald-100 text-emerald-700"
-                                  : "bg-slate-100 text-slate-700"
-                          }`}
+                          className={`rounded-full px-2.5 py-1 ${getRoleBadgeClassName(user.role)}`}
                         >
                           {getRoleDisplayName(user.role)}
                         </Badge>

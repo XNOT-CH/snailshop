@@ -46,13 +46,29 @@ function getExtensionFromMimeType(mimeType: string) {
   }
 }
 
+function getHandlePosition(handle: ResizeHandle) {
+  if (handle === "nw") {
+    return "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize";
+  }
+
+  if (handle === "ne") {
+    return "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize";
+  }
+
+  if (handle === "sw") {
+    return "bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize";
+  }
+
+  return "bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize";
+}
+
 export function FreeCropDialog({
   open,
   imageSrc,
   fileName,
   onClose,
   onConfirm,
-}: FreeCropDialogProps) {
+}: Readonly<FreeCropDialogProps>) {
   const imageRef = useRef<HTMLImageElement | null>(null);
   const [cropRect, setCropRect] = useState<CropRect>({ x: 40, y: 40, size: 220 });
   const [dragMode, setDragMode] = useState<"move" | ResizeHandle | null>(null);
@@ -74,7 +90,7 @@ export function FreeCropDialog({
   useEffect(() => {
     return () => {
       if (previewSrc) {
-        URL.revokeObjectURL(previewSrc);
+        globalThis.URL.revokeObjectURL(previewSrc);
       }
     };
   }, [previewSrc]);
@@ -171,12 +187,12 @@ export function FreeCropDialog({
       setLastPoint(null);
     };
 
-    window.addEventListener("pointermove", handlePointerMove);
-    window.addEventListener("pointerup", handlePointerUp);
+    globalThis.window.addEventListener("pointermove", handlePointerMove);
+    globalThis.window.addEventListener("pointerup", handlePointerUp);
 
     return () => {
-      window.removeEventListener("pointermove", handlePointerMove);
-      window.removeEventListener("pointerup", handlePointerUp);
+      globalThis.window.removeEventListener("pointermove", handlePointerMove);
+      globalThis.window.removeEventListener("pointerup", handlePointerUp);
     };
   }, [dragMode, updateCropRect]);
 
@@ -212,7 +228,7 @@ export function FreeCropDialog({
     const sourceSizeX = cropRect.size * scaleX;
     const sourceSizeY = cropRect.size * scaleY;
 
-    const canvas = document.createElement("canvas");
+    const canvas = globalThis.document.createElement("canvas");
     canvas.width = PREVIEW_SIZE;
     canvas.height = PREVIEW_SIZE;
 
@@ -240,9 +256,9 @@ export function FreeCropDialog({
 
       setPreviewSrc((current) => {
         if (current) {
-          URL.revokeObjectURL(current);
+          globalThis.URL.revokeObjectURL(current);
         }
-        return URL.createObjectURL(blob);
+        return globalThis.URL.createObjectURL(blob);
       });
     }, CROPPED_IMAGE_TYPE, 1);
   }, [cropRect, naturalSize, open]);
@@ -263,7 +279,7 @@ export function FreeCropDialog({
       const sourceSizeX = cropRect.size * scaleX;
       const sourceSizeY = cropRect.size * scaleY;
 
-      const canvas = document.createElement("canvas");
+      const canvas = globalThis.document.createElement("canvas");
       canvas.width = 768;
       canvas.height = 768;
 
@@ -306,18 +322,18 @@ export function FreeCropDialog({
 
   return (
     <Dialog open={open} onOpenChange={(nextOpen) => (!nextOpen ? onClose() : null)}>
-      <DialogContent className="w-[min(100%-0.75rem,72rem)] max-w-5xl overflow-hidden rounded-[28px] border-slate-200 bg-white p-0 shadow-[0_28px_80px_-36px_rgba(15,23,42,0.4)] max-h-[calc(100vh-0.75rem)] sm:max-h-[calc(100vh-2rem)] sm:max-w-5xl">
+      <DialogContent className="profile-free-crop-dialog w-[min(100%-0.75rem,72rem)] max-w-5xl overflow-hidden rounded-[28px] border-slate-200 bg-white p-0 shadow-[0_28px_80px_-36px_rgba(15,23,42,0.4)] dark:border-[#2d4362] dark:bg-[#0f1927] dark:shadow-[0_28px_80px_-36px_rgba(0,0,0,0.78)] max-h-[calc(100vh-0.75rem)] sm:max-h-[calc(100vh-2rem)] sm:max-w-5xl">
         <div className="flex max-h-[calc(100vh-0.75rem)] flex-col overflow-hidden rounded-[28px] sm:max-h-[calc(100vh-2rem)]">
-          <DialogHeader className="shrink-0 border-b border-slate-200 bg-gradient-to-r from-blue-50 via-white to-sky-50 px-4 py-4 text-left sm:px-6 sm:py-5">
+          <DialogHeader className="profile-free-crop-header shrink-0 border-b border-slate-200 bg-gradient-to-r from-blue-50 via-white to-sky-50 px-4 py-4 text-left dark:border-[#2d4362] dark:from-[#132133] dark:via-[#0f1927] dark:to-[#16263b] sm:px-6 sm:py-5">
             <div className="flex items-start gap-3">
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_16px_30px_-18px_rgba(37,99,235,0.8)] sm:h-12 sm:w-12">
                 <Crop className="h-5 w-5" />
               </div>
               <div className="space-y-1">
-                <DialogTitle className="text-lg font-semibold text-slate-900 sm:text-xl">
+                <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-[#eef4ff] sm:text-xl">
                   ครอปรูปโปรไฟล์
                 </DialogTitle>
-                <DialogDescription className="text-sm text-slate-600">
+                <DialogDescription className="text-sm text-slate-600 dark:text-[#a8bfdc]">
                   ลากกรอบวงกลมเพื่อจัดตำแหน่งรูปให้พอดีกับโปรไฟล์ก่อนอัปโหลด
                 </DialogDescription>
               </div>
@@ -326,8 +342,8 @@ export function FreeCropDialog({
 
           <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6 sm:py-6">
             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_240px] lg:gap-5">
-            <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-2.5 sm:p-3">
-              <div className="relative flex min-h-[260px] items-center justify-center overflow-hidden rounded-[20px] bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_55%),linear-gradient(180deg,_rgba(15,23,42,0.04),_rgba(15,23,42,0.08))] p-2.5 sm:min-h-[320px] sm:p-3">
+            <div className="profile-free-crop-canvas rounded-[24px] border border-slate-200 bg-slate-50/80 p-2.5 dark:border-[#355071] dark:bg-[#162334] sm:p-3">
+              <div className="profile-free-crop-stage relative flex min-h-[260px] items-center justify-center overflow-hidden rounded-[20px] bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_55%),linear-gradient(180deg,_rgba(15,23,42,0.04),_rgba(15,23,42,0.08))] dark:bg-[radial-gradient(circle_at_top,_rgba(88,166,255,0.14),_transparent_55%),linear-gradient(180deg,_rgba(12,21,34,0.88),_rgba(8,15,25,0.96))] p-2.5 sm:min-h-[320px] sm:p-3">
                 {imageSrc ? (
                   <div className="relative inline-block touch-none select-none">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -362,20 +378,11 @@ export function FreeCropDialog({
                         <div className="pointer-events-none absolute inset-[18%] rounded-full border border-white/20" />
 
                         {(["nw", "ne", "sw", "se"] as ResizeHandle[]).map((handle) => {
-                          const handlePosition =
-                            handle === "nw"
-                              ? "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize"
-                              : handle === "ne"
-                                ? "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize"
-                                : handle === "sw"
-                                  ? "bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize"
-                                  : "bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize";
-
                           return (
                             <button
                               key={handle}
                               type="button"
-                              className={`absolute h-5 w-5 touch-none rounded-full border-2 border-white bg-blue-600 shadow ${handlePosition}`}
+                              className={`absolute h-5 w-5 touch-none rounded-full border-2 border-white bg-blue-600 shadow ${getHandlePosition(handle)}`}
                               onPointerDown={(event) => beginDrag(handle, event)}
                               aria-label={`Resize crop ${handle}`}
                             />
@@ -389,11 +396,11 @@ export function FreeCropDialog({
             </div>
 
             <div className="flex flex-col gap-4">
-              <div className="rounded-[24px] border border-slate-200 bg-slate-50/90 p-4">
-                <p className="text-sm font-semibold text-slate-900">ตัวอย่างรูปโปรไฟล์</p>
-                <p className="mt-1 text-xs text-slate-500">ภาพที่ครอปแล้วจะถูกแสดงแบบวงกลมเหมือนในเมนูผู้ใช้</p>
+              <div className="profile-free-crop-preview rounded-[24px] border border-slate-200 bg-slate-50/90 p-4 dark:border-[#355071] dark:bg-[#162334]">
+                <p className="text-sm font-semibold text-slate-900 dark:text-[#eef4ff]">ตัวอย่างรูปโปรไฟล์</p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-[#9ab0cb]">ภาพที่ครอปแล้วจะถูกแสดงแบบวงกลมเหมือนในเมนูผู้ใช้</p>
                 <div className="mt-4 flex justify-center">
-                  <div className="relative h-28 w-28 overflow-hidden rounded-full border-4 border-amber-400 bg-white shadow-[0_12px_32px_-18px_rgba(251,191,36,0.9)]">
+                  <div className="relative h-28 w-28 overflow-hidden rounded-full border-4 border-amber-400 bg-white shadow-[0_12px_32px_-18px_rgba(251,191,36,0.9)] dark:bg-[#132133]">
                     {previewSrc ? (
                       <>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -409,13 +416,13 @@ export function FreeCropDialog({
                 </div>
               </div>
 
-              <div className="rounded-[24px] border border-slate-200 bg-slate-50/90 p-4 text-sm text-slate-600">
-                <p className="font-medium text-slate-900">วิธีใช้งาน</p>
+              <div className="profile-free-crop-help rounded-[24px] border border-slate-200 bg-slate-50/90 p-4 text-sm text-slate-600 dark:border-[#355071] dark:bg-[#162334] dark:text-[#b6c9e1]">
+                <p className="font-medium text-slate-900 dark:text-[#eef4ff]">วิธีใช้งาน</p>
                 <p className="mt-2">ลากวงกลมเพื่อย้ายจุดโฟกัส และลากมุมทั้ง 4 เพื่อขยายหรือย่อพื้นที่ให้พอดีกับหน้ารูปโปรไฟล์</p>
                 <Button
                   type="button"
                   variant="outline"
-                  className="mt-4 h-11 w-full rounded-2xl border-slate-200 bg-white px-4"
+                  className="profile-free-crop-reset mt-4 h-11 w-full rounded-2xl border-slate-200 bg-white px-4 dark:border-[#355071] dark:bg-[#132133] dark:text-[#d7e4f4] dark:hover:bg-[#16253b]"
                   onClick={resetCropRect}
                 >
                   <RefreshCcw className="mr-2 h-4 w-4" />
@@ -426,13 +433,13 @@ export function FreeCropDialog({
           </div>
           </div>
 
-          <DialogFooter className="shrink-0 border-t border-slate-200 bg-white px-4 py-4 sm:justify-between sm:px-6 sm:py-5">
-            <p className="text-sm text-slate-500">หลังครอปแล้ว ระบบจะย่อและบีบอัดรูปให้อัตโนมัติ</p>
+          <DialogFooter className="profile-free-crop-footer shrink-0 border-t border-slate-200 bg-white px-4 py-4 dark:border-[#2d4362] dark:bg-[#0f1927] sm:justify-between sm:px-6 sm:py-5">
+            <p className="text-sm text-slate-500 dark:text-[#9ab0cb]">หลังครอปแล้ว ระบบจะย่อและบีบอัดรูปให้อัตโนมัติ</p>
             <div className="flex flex-col-reverse gap-2 sm:flex-row">
               <Button
                 type="button"
                 variant="outline"
-                className="h-11 w-full rounded-2xl border-slate-200 bg-white px-5 sm:w-auto"
+                className="profile-free-crop-cancel h-11 w-full rounded-2xl border-slate-200 bg-white px-5 dark:border-[#355071] dark:bg-[#132133] dark:text-[#d7e4f4] dark:hover:bg-[#16253b] sm:w-auto"
                 onClick={onClose}
                 disabled={isSaving}
               >

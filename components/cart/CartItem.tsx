@@ -18,6 +18,8 @@ export function CartItem({ item, onRemove, onUpdateQuantity, currencySettings }:
     const displayPrice = item.discountPrice ?? item.price;
     const quantity = item.quantity || 1;
     const subtotal = displayPrice * quantity;
+    const originalSubtotal = item.price * quantity;
+    const hasProductDiscount = item.discountPrice != null && item.discountPrice < item.price;
     const maxQty = item.stock != null && item.stock > 0 ? item.stock : 99;
 
     return (
@@ -62,8 +64,15 @@ export function CartItem({ item, onRemove, onUpdateQuantity, currencySettings }:
                         />
                     </div>
                     <div className="text-right">
-                        <p className="text-sm font-bold text-primary">
-                            {formatCurrencyAmount(subtotal, item.currency, currencySettings)}
+                        {hasProductDiscount ? (
+                            <p className="text-xs text-muted-foreground line-through">
+                                {formatCurrencyAmount(originalSubtotal, item.currency, currencySettings)}
+                            </p>
+                        ) : null}
+                        <p className="text-sm font-bold text-red-500 dark:text-red-400">
+                            {hasProductDiscount
+                                ? `เหลือ ${formatCurrencyAmount(subtotal, item.currency, currencySettings)}`
+                                : formatCurrencyAmount(subtotal, item.currency, currencySettings)}
                         </p>
                         {item.stock != null && (
                             <p className="flex items-center justify-end gap-0.5 text-[10px] text-muted-foreground">

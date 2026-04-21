@@ -154,7 +154,7 @@ export default async function ProductDetailPage({
     ];
 
     return (
-        <div className="animate-page-enter relative left-1/2 w-screen -translate-x-1/2 bg-gradient-to-b from-background via-muted/25 to-background py-6 sm:left-auto sm:w-auto sm:translate-x-0 sm:py-10">
+        <div className="animate-page-enter relative left-1/2 w-screen -translate-x-1/2 bg-gradient-to-b from-background via-muted/25 to-background pt-6 pb-0 sm:left-auto sm:w-auto sm:translate-x-0 sm:py-10">
             <StructuredData data={structuredData} />
 
             <div

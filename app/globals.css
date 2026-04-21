@@ -91,6 +91,7 @@
 :root {
 
   --radius: 0.75rem;
+  --mobile-bottom-nav-height: calc(72px + env(safe-area-inset-bottom) + 0.35rem);
 
 
 
@@ -683,6 +684,10 @@ html.dark #main-mobile-nav {
     0 18px 40px -32px rgba(0, 0, 0, 0.9),
     inset 0 1px 0 rgba(255, 255, 255, 0.045);
 
+}
+
+#main-mobile-nav[data-scrolling="true"] {
+  transform: translateY(env(safe-area-inset-bottom));
 }
 
 html.dark [data-slot="button"][data-variant="outline"],
@@ -2609,6 +2614,421 @@ html.dark .dashboard-wallet-page [class*="bg-[radial-gradient(circle_at_top,rgba
 }
 
 /* ========================================
+   ADMIN DARK MODE FIXES
+   ======================================== */
+
+html.dark .admin-console {
+  background:
+    radial-gradient(circle at top left, rgba(88, 166, 255, 0.08), transparent 28%),
+    linear-gradient(180deg, #0d1726 0%, #09111c 100%);
+}
+
+html.dark .admin-console-shell {
+  background: linear-gradient(180deg, rgba(15, 25, 39, 0.96) 0%, rgba(11, 20, 32, 0.98) 100%) !important;
+  border: 1px solid rgba(34, 51, 76, 0.9);
+  box-shadow:
+    0 28px 60px -42px rgba(0, 0, 0, 0.75),
+    inset 0 1px 0 rgba(122, 163, 224, 0.04);
+}
+
+html.dark .admin-console .bg-white,
+html.dark .admin-console .bg-white\/90,
+html.dark .admin-console .bg-white\/80,
+html.dark .admin-console .bg-white\/95,
+html.dark .admin-console .bg-white\/70,
+html.dark .admin-console .bg-card,
+html.dark .admin-console .dark\:bg-zinc-900 {
+  background-color: rgba(15, 25, 39, 0.94) !important;
+}
+
+html.dark .admin-console .bg-slate-50,
+html.dark .admin-console .bg-slate-50\/80,
+html.dark .admin-console .bg-slate-50\/70,
+html.dark .admin-console .bg-slate-50\/60,
+html.dark .admin-console .bg-slate-50\/35,
+html.dark .admin-console .bg-slate-100,
+html.dark .admin-console .bg-gray-100,
+html.dark .admin-console .bg-gray-50,
+html.dark .admin-console .bg-blue-50,
+html.dark .admin-console .bg-blue-50\/80,
+html.dark .admin-console .bg-blue-50\/70,
+html.dark .admin-console .bg-blue-50\/60,
+html.dark .admin-console .bg-blue-50\/50,
+html.dark .admin-console .bg-blue-50\/40,
+html.dark .admin-console .bg-sky-50,
+html.dark .admin-console .bg-sky-50\/80,
+html.dark .admin-console .bg-sky-50\/70,
+html.dark .admin-console .bg-sky-50\/60,
+html.dark .admin-console .bg-sky-50\/50,
+html.dark .admin-console .bg-sky-50\/40,
+html.dark .admin-console .bg-violet-50,
+html.dark .admin-console .bg-violet-50\/80,
+html.dark .admin-console .bg-violet-50\/70,
+html.dark .admin-console .bg-violet-50\/60,
+html.dark .admin-console .bg-violet-50\/50,
+html.dark .admin-console .bg-violet-50\/40,
+html.dark .admin-console .bg-emerald-50,
+html.dark .admin-console .bg-emerald-50\/80,
+html.dark .admin-console .bg-emerald-50\/70,
+html.dark .admin-console .bg-emerald-50\/60,
+html.dark .admin-console .bg-emerald-50\/50,
+html.dark .admin-console .bg-emerald-50\/40,
+html.dark .admin-console .bg-amber-50,
+html.dark .admin-console .bg-amber-50\/80,
+html.dark .admin-console .bg-amber-50\/70,
+html.dark .admin-console .bg-amber-50\/60,
+html.dark .admin-console .bg-amber-50\/50,
+html.dark .admin-console .bg-amber-50\/40,
+html.dark .admin-console .bg-rose-50,
+html.dark .admin-console .bg-rose-50\/80,
+html.dark .admin-console .bg-rose-50\/70,
+html.dark .admin-console .bg-rose-50\/60,
+html.dark .admin-console .bg-rose-50\/50,
+html.dark .admin-console .bg-rose-50\/40,
+html.dark .admin-console .bg-red-50,
+html.dark .admin-console .bg-red-50\/80,
+html.dark .admin-console .bg-red-50\/70,
+html.dark .admin-console .bg-red-50\/60,
+html.dark .admin-console .bg-red-50\/50,
+html.dark .admin-console .bg-red-50\/40,
+html.dark .admin-console .bg-\[\#eef4ff\],
+html.dark .admin-console .bg-\[\#dfeaff\],
+html.dark .admin-console .bg-muted,
+html.dark .admin-console .bg-muted\/10,
+html.dark .admin-console .bg-muted\/20,
+html.dark .admin-console .bg-muted\/30,
+html.dark .admin-console .bg-muted\/40,
+html.dark .admin-console .bg-muted\/50 {
+  background-color: rgba(20, 32, 49, 0.88) !important;
+}
+
+html.dark .admin-console .border-slate-200,
+html.dark .admin-console .border-slate-200\/80,
+html.dark .admin-console .border-slate-300,
+html.dark .admin-console .border-blue-100,
+html.dark .admin-console .border-blue-200,
+html.dark .admin-console .border-sky-200,
+html.dark .admin-console .border-sky-300,
+html.dark .admin-console .border-violet-200,
+html.dark .admin-console .border-violet-300,
+html.dark .admin-console .border-emerald-200,
+html.dark .admin-console .border-emerald-300,
+html.dark .admin-console .border-amber-200,
+html.dark .admin-console .border-amber-300,
+html.dark .admin-console .border-rose-200,
+html.dark .admin-console .border-rose-300,
+html.dark .admin-console .border-red-200,
+html.dark .admin-console .border-red-300,
+html.dark .admin-console .border-gray-300,
+html.dark .admin-console .border-white,
+html.dark .admin-console .border-border {
+  border-color: rgba(45, 67, 98, 0.82) !important;
+}
+
+html.dark .admin-console .text-slate-900,
+html.dark .admin-console .text-slate-800,
+html.dark .admin-console .text-gray-800 {
+  color: #edf4ff !important;
+}
+
+html.dark .admin-console .text-slate-700,
+html.dark .admin-console .text-slate-600,
+html.dark .admin-console .text-gray-700 {
+  color: #c9d8eb !important;
+}
+
+html.dark .admin-console .text-slate-500,
+html.dark .admin-console .text-slate-400,
+html.dark .admin-console .text-gray-500 {
+  color: #8fa6c4 !important;
+}
+
+html.dark .admin-console [class*="hover:bg-slate-50"]:hover,
+html.dark .admin-console [class*="hover:bg-slate-100"]:hover,
+html.dark .admin-console [class*="hover:bg-blue-50"]:hover,
+html.dark .admin-console [class*="hover:bg-violet-50"]:hover,
+html.dark .admin-console [class*="hover:bg-emerald-50"]:hover,
+html.dark .admin-console [class*="hover:bg-amber-50"]:hover,
+html.dark .admin-console [class*="hover:bg-rose-50"]:hover,
+html.dark .admin-console [class*="hover:bg-red-50"]:hover,
+html.dark .admin-console [class*="hover:bg-gray-100"]:hover,
+html.dark .admin-console [class*="hover:bg-white"]:hover {
+  background-color: rgba(22, 37, 59, 0.96) !important;
+}
+
+html.dark .admin-console [class*="hover:border-slate-300"]:hover,
+html.dark .admin-console [class*="hover:border-slate-200"]:hover,
+html.dark .admin-console [class*="hover:border-blue-200"]:hover,
+html.dark .admin-console [class*="hover:border-amber-300"]:hover,
+html.dark .admin-console [class*="hover:border-rose-300"]:hover {
+  border-color: rgba(82, 116, 159, 0.92) !important;
+}
+
+html.dark .admin-console [class*="from-blue-50"],
+html.dark .admin-console [class*="to-white"],
+html.dark .admin-console [class*="from-white"],
+html.dark .admin-console [class*="to-slate-50"] {
+  --tw-gradient-from: rgba(20, 32, 49, 0.96) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgba(12, 21, 34, 0.96) var(--tw-gradient-to-position) !important;
+}
+
+html.dark .admin-console [class*="via-white"] {
+  --tw-gradient-stops: var(--tw-gradient-from), rgba(16, 27, 42, 0.96) var(--tw-gradient-via-position), var(--tw-gradient-to) !important;
+}
+
+html.dark .admin-console [class*="#eef4ff"] {
+  background-color: rgba(20, 32, 49, 0.9) !important;
+  color: #d9e9ff !important;
+}
+
+html.dark .admin-console [class*="ring-blue-100"],
+html.dark .admin-console [class*="ring-blue-200"] {
+  --tw-ring-color: rgba(77, 124, 254, 0.2) !important;
+}
+
+html.dark .admin-console [class*="ring-offset-2"] {
+  --tw-ring-offset-color: rgba(9, 17, 28, 1) !important;
+}
+
+html.dark .admin-console .admin-chat-page .admin-chat-conversation-active {
+  background: rgba(30, 41, 59, 0.96) !important;
+  border-color: rgba(96, 165, 250, 0.4) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(125, 170, 255, 0.08),
+    0 12px 28px -22px rgba(0, 0, 0, 0.7) !important;
+}
+
+html.dark .admin-console .admin-chat-page .admin-chat-conversation-active:hover,
+html.dark .admin-console .admin-chat-page .admin-chat-conversation-active:focus-visible,
+html.dark .admin-console .admin-chat-page .admin-chat-conversation-active:active {
+  background: rgba(30, 41, 59, 0.98) !important;
+  border-color: rgba(125, 170, 255, 0.52) !important;
+}
+
+html.dark .swal2-popup.admin-swal-modal {
+  background: linear-gradient(180deg, rgba(15, 25, 39, 0.98) 0%, rgba(11, 20, 32, 0.99) 100%) !important;
+  color: #edf4ff !important;
+  border: 1px solid rgba(45, 67, 98, 0.82) !important;
+  box-shadow: 0 28px 70px -35px rgba(0, 0, 0, 0.82) !important;
+}
+
+html.dark .swal2-popup.admin-swal-modal .swal2-title {
+  color: #edf4ff !important;
+}
+
+html.dark .swal2-popup.admin-swal-modal .swal2-html-container {
+  color: #c9d8eb !important;
+}
+
+html.dark .swal2-popup.admin-swal-modal .border-blue-100,
+html.dark .swal2-popup.admin-swal-modal .border-blue-200,
+html.dark .swal2-popup.admin-swal-modal .border-gray-200,
+html.dark .swal2-popup.admin-swal-modal .border-gray-300,
+html.dark .swal2-popup.admin-swal-modal .border-slate-200,
+html.dark .swal2-popup.admin-swal-modal .border-gray-100 {
+  border-color: rgba(53, 80, 113, 0.9) !important;
+}
+
+html.dark .swal2-popup.admin-swal-modal .bg-white,
+html.dark .swal2-popup.admin-swal-modal .bg-white\/70,
+html.dark .swal2-popup.admin-swal-modal .bg-gray-50,
+html.dark .swal2-popup.admin-swal-modal .bg-gray-50\/60,
+html.dark .swal2-popup.admin-swal-modal .bg-gray-50\/70,
+html.dark .swal2-popup.admin-swal-modal .from-blue-50,
+html.dark .swal2-popup.admin-swal-modal .to-white {
+  background: rgba(19, 33, 51, 0.96) !important;
+}
+
+html.dark .swal2-popup.admin-swal-modal .text-gray-700,
+html.dark .swal2-popup.admin-swal-modal .text-slate-700 {
+  color: #d8e5f5 !important;
+}
+
+html.dark .swal2-popup.admin-swal-modal .text-gray-500,
+html.dark .swal2-popup.admin-swal-modal .text-gray-400,
+html.dark .swal2-popup.admin-swal-modal .text-slate-500 {
+  color: #93a9c6 !important;
+}
+
+html.dark .swal2-popup.admin-swal-modal .text-blue-700 {
+  color: #8dc9ff !important;
+}
+
+html.dark .swal2-popup.admin-swal-modal .hover\:bg-gray-100:hover,
+html.dark .swal2-popup.admin-swal-modal .hover\:bg-blue-50:hover {
+  background: rgba(22, 37, 59, 0.98) !important;
+}
+
+html.dark .swal2-popup.admin-swal-modal .swal2-actions {
+  border-color: rgba(45, 67, 98, 0.82) !important;
+}
+
+html.dark .admin-slips-page .admin-slips-summary-card {
+  background: linear-gradient(135deg, rgba(15, 25, 39, 0.98) 0%, rgba(20, 32, 49, 0.94) 100%) !important;
+  border-color: rgba(45, 67, 98, 0.9) !important;
+}
+
+html.dark .admin-slips-page .admin-slips-summary-card .text-slate-900 {
+  color: #eef4ff !important;
+}
+
+html.dark .admin-slips-page .admin-slips-summary-card .text-slate-500,
+html.dark .admin-slips-page .admin-slips-summary-card .text-slate-400 {
+  color: #97aecb !important;
+}
+
+html.dark .admin-season-pass-page .admin-season-pass-hero {
+  background: linear-gradient(180deg, rgba(15, 25, 39, 0.98) 0%, rgba(20, 32, 49, 0.94) 100%) !important;
+  border-color: rgba(45, 67, 98, 0.9) !important;
+  box-shadow: 0 24px 60px -42px rgba(0, 0, 0, 0.72) !important;
+}
+
+html.dark .admin-season-pass-page .admin-season-pass-hero .text-slate-900 {
+  color: #f2f7ff !important;
+}
+
+html.dark .admin-season-pass-page .admin-season-pass-hero .text-slate-600 {
+  color: #b8cbe3 !important;
+}
+
+html.dark .admin-product-new-page .admin-product-stock-summary {
+  background: linear-gradient(135deg, rgba(15, 25, 39, 0.98) 0%, rgba(20, 32, 49, 0.94) 100%) !important;
+  border-color: rgba(45, 67, 98, 0.9) !important;
+}
+
+html.dark .admin-product-new-page .admin-product-image-panel,
+html.dark .admin-product-new-page .admin-product-image-gallery .admin-product-image-preview,
+html.dark .admin-product-new-page .admin-product-image-gallery .admin-product-image-list,
+html.dark .admin-product-new-page .admin-product-image-gallery .admin-product-image-item,
+html.dark .admin-product-new-page .admin-product-image-gallery .admin-product-image-note,
+html.dark .admin-product-new-page .admin-product-image-gallery .admin-product-image-url,
+html.dark .admin-product-new-page .admin-product-image-gallery .admin-product-image-upload {
+  background-color: rgba(19, 33, 51, 0.96) !important;
+  border-color: rgba(53, 80, 113, 0.9) !important;
+}
+
+html.dark .admin-product-new-page .admin-product-image-gallery .admin-product-image-empty {
+  background: radial-gradient(circle at top, rgba(88, 166, 255, 0.12), transparent 55%), linear-gradient(180deg, rgba(19, 33, 51, 0.98) 0%, rgba(15, 25, 39, 0.98) 100%) !important;
+}
+
+html.dark .admin-product-new-page .admin-product-image-gallery .admin-product-image-primary {
+  background-color: rgba(196, 145, 57, 0.18) !important;
+  color: #fde7b2 !important;
+}
+
+html.dark .admin-product-new-page .admin-product-image-gallery .text-slate-700,
+html.dark .admin-product-new-page .admin-product-image-gallery .text-slate-800 {
+  color: #d7e4f4 !important;
+}
+
+html.dark .admin-product-new-page .admin-product-image-gallery .text-slate-500 {
+  color: #97aecb !important;
+}
+
+html.dark .admin-product-edit-page .admin-product-image-panel,
+html.dark .admin-product-edit-page .admin-product-image-gallery .admin-product-image-preview,
+html.dark .admin-product-edit-page .admin-product-image-gallery .admin-product-image-list,
+html.dark .admin-product-edit-page .admin-product-image-gallery .admin-product-image-item,
+html.dark .admin-product-edit-page .admin-product-image-gallery .admin-product-image-note,
+html.dark .admin-product-edit-page .admin-product-image-gallery .admin-product-image-url,
+html.dark .admin-product-edit-page .admin-product-image-gallery .admin-product-image-upload {
+  background-color: rgba(19, 33, 51, 0.96) !important;
+  border-color: rgba(53, 80, 113, 0.9) !important;
+}
+
+html.dark .admin-product-edit-page .admin-product-image-gallery .admin-product-image-empty {
+  background: radial-gradient(circle at top, rgba(88, 166, 255, 0.12), transparent 55%), linear-gradient(180deg, rgba(19, 33, 51, 0.98) 0%, rgba(15, 25, 39, 0.98) 100%) !important;
+}
+
+html.dark .admin-product-edit-page .admin-product-image-gallery .admin-product-image-primary {
+  background-color: rgba(196, 145, 57, 0.18) !important;
+  color: #fde7b2 !important;
+}
+
+html.dark .admin-product-edit-page .admin-product-image-gallery .text-slate-700,
+html.dark .admin-product-edit-page .admin-product-image-gallery .text-slate-800 {
+  color: #d7e4f4 !important;
+}
+
+html.dark .admin-product-edit-page .admin-product-image-gallery .text-slate-500 {
+  color: #97aecb !important;
+}
+
+html.dark .admin-product-edit-page .admin-product-edit-main-card,
+html.dark .admin-product-edit-page .admin-product-edit-details-card {
+  background: linear-gradient(180deg, rgba(15, 25, 39, 0.98) 0%, rgba(20, 32, 49, 0.94) 100%) !important;
+  border-color: rgba(45, 67, 98, 0.9) !important;
+}
+
+html.dark .admin-product-edit-page .admin-product-edit-main-header,
+html.dark .admin-product-edit-page .admin-product-edit-image-card {
+  background: linear-gradient(180deg, rgba(15, 25, 39, 0.98) 0%, rgba(20, 32, 49, 0.94) 100%) !important;
+  border-color: rgba(45, 67, 98, 0.9) !important;
+}
+
+html.dark .admin-product-edit-page .admin-product-edit-autodelete-card,
+html.dark .admin-product-edit-page .admin-product-edit-autodelete-header,
+html.dark .admin-product-edit-page .admin-product-edit-autodelete-toggle,
+html.dark .admin-product-edit-page .admin-product-edit-autodelete-presets,
+html.dark .admin-product-edit-page .admin-product-edit-autodelete-custom {
+  background: linear-gradient(180deg, rgba(19, 31, 49, 0.98) 0%, rgba(12, 21, 34, 0.98) 100%) !important;
+  border-color: rgba(53, 80, 113, 0.9) !important;
+}
+
+html.dark .admin-product-edit-page .admin-product-edit-price-card {
+  background: rgba(22, 35, 52, 0.96) !important;
+  border-color: rgba(53, 80, 113, 0.9) !important;
+}
+
+html.dark .admin-product-edit-page .admin-product-edit-discount-card {
+  background: rgba(41, 23, 39, 0.5) !important;
+  border-color: rgba(147, 51, 84, 0.38) !important;
+}
+
+html.dark .admin-product-edit-page .admin-product-edit-discount-inner {
+  background: rgba(19, 33, 51, 0.96) !important;
+  border-color: rgba(147, 51, 84, 0.32) !important;
+}
+
+html.dark .profile-free-crop-dialog {
+  background: #0f1927 !important;
+  border-color: rgba(45, 67, 98, 0.9) !important;
+}
+
+html.dark .profile-free-crop-dialog .profile-free-crop-header,
+html.dark .profile-free-crop-dialog .profile-free-crop-footer {
+  background: linear-gradient(180deg, rgba(15, 25, 39, 0.98) 0%, rgba(19, 33, 51, 0.96) 100%) !important;
+  border-color: rgba(45, 67, 98, 0.9) !important;
+}
+
+html.dark .profile-free-crop-dialog .profile-free-crop-canvas,
+html.dark .profile-free-crop-dialog .profile-free-crop-preview,
+html.dark .profile-free-crop-dialog .profile-free-crop-help {
+  background: #162334 !important;
+  border-color: rgba(53, 80, 113, 0.9) !important;
+}
+
+html.dark .profile-free-crop-dialog .profile-free-crop-stage {
+  background: radial-gradient(circle at top, rgba(88, 166, 255, 0.14), transparent 55%), linear-gradient(180deg, rgba(12, 21, 34, 0.88), rgba(8, 15, 25, 0.96)) !important;
+}
+
+html.dark .profile-free-crop-dialog .profile-free-crop-reset,
+html.dark .profile-free-crop-dialog .profile-free-crop-cancel {
+  background: #132133 !important;
+  border-color: rgba(53, 80, 113, 0.9) !important;
+  color: #d7e4f4 !important;
+}
+
+html.dark .profile-free-crop-dialog .text-slate-900 {
+  color: #eef4ff !important;
+}
+
+html.dark .profile-free-crop-dialog .text-slate-600,
+html.dark .profile-free-crop-dialog .text-slate-500 {
+  color: #9ab0cb !important;
+}
+
+/* ========================================
    GACHA - Animations & Effects
    ======================================== */
 
@@ -2783,4 +3203,10 @@ video,
 canvas,
 svg {
   max-width: 100%;
+}
+
+@media (max-width: 639px) {
+  #main-footer {
+    margin-top: calc(-1 * var(--mobile-bottom-nav-height) - 0.75rem);
+  }
 }

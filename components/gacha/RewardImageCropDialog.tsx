@@ -30,6 +30,24 @@ interface RewardImageCropDialogProps {
 }
 
 const MIN_CROP_SIZE = 80;
+const PREVIEW_SIZE = 112;
+const CROPPED_IMAGE_TYPE = "image/png";
+
+function getHandlePosition(handle: ResizeHandle) {
+    if (handle === "nw") {
+        return "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize";
+    }
+
+    if (handle === "ne") {
+        return "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize";
+    }
+
+    if (handle === "sw") {
+        return "bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize";
+    }
+
+    return "bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize";
+}
 
 export function RewardImageCropDialog({
     open,
@@ -37,8 +55,7 @@ export function RewardImageCropDialog({
     fileName,
     onClose,
     onConfirm,
-}: RewardImageCropDialogProps) {
-    const previewSize = 112;
+}: Readonly<RewardImageCropDialogProps>) {
     const imageRef = useRef<HTMLImageElement | null>(null);
     const [cropRect, setCropRect] = useState<CropRect>({ x: 40, y: 40, size: 220 });
     const [dragMode, setDragMode] = useState<"move" | ResizeHandle | null>(null);
@@ -107,32 +124,30 @@ export function RewardImageCropDialog({
             if (dragMode === "move") {
                 nextRect.x += deltaX;
                 nextRect.y += deltaY;
-            } else {
-                if (dragMode === "nw") {
-                    const anchorX = current.x + current.size;
-                    const anchorY = current.y + current.size;
-                    const resizeDelta = Math.max(deltaX, deltaY);
-                    nextRect.size = current.size - resizeDelta;
-                    nextRect.x = anchorX - nextRect.size;
-                    nextRect.y = anchorY - nextRect.size;
-                } else if (dragMode === "ne") {
-                    const anchorX = current.x;
-                    const anchorY = current.y + current.size;
-                    const resizeDelta = Math.max(deltaX, -deltaY);
-                    nextRect.size = current.size + resizeDelta;
-                    nextRect.x = anchorX;
-                    nextRect.y = anchorY - nextRect.size;
-                } else if (dragMode === "sw") {
-                    const anchorX = current.x + current.size;
-                    const anchorY = current.y;
-                    const resizeDelta = Math.max(-deltaX, deltaY);
-                    nextRect.size = current.size + resizeDelta;
-                    nextRect.x = anchorX - nextRect.size;
-                    nextRect.y = anchorY;
-                } else if (dragMode === "se") {
-                    const resizeDelta = Math.max(deltaX, deltaY);
-                    nextRect.size = current.size + resizeDelta;
-                }
+            } else if (dragMode === "nw") {
+                const anchorX = current.x + current.size;
+                const anchorY = current.y + current.size;
+                const resizeDelta = Math.max(deltaX, deltaY);
+                nextRect.size = current.size - resizeDelta;
+                nextRect.x = anchorX - nextRect.size;
+                nextRect.y = anchorY - nextRect.size;
+            } else if (dragMode === "ne") {
+                const anchorX = current.x;
+                const anchorY = current.y + current.size;
+                const resizeDelta = Math.max(deltaX, -deltaY);
+                nextRect.size = current.size + resizeDelta;
+                nextRect.x = anchorX;
+                nextRect.y = anchorY - nextRect.size;
+            } else if (dragMode === "sw") {
+                const anchorX = current.x + current.size;
+                const anchorY = current.y;
+                const resizeDelta = Math.max(-deltaX, deltaY);
+                nextRect.size = current.size + resizeDelta;
+                nextRect.x = anchorX - nextRect.size;
+                nextRect.y = anchorY;
+            } else if (dragMode === "se") {
+                const resizeDelta = Math.max(deltaX, deltaY);
+                nextRect.size = current.size + resizeDelta;
             }
 
             return clampCropRect(nextRect);
@@ -155,12 +170,12 @@ export function RewardImageCropDialog({
             setLastPoint(null);
         };
 
-        window.addEventListener("pointermove", handlePointerMove);
-        window.addEventListener("pointerup", handlePointerUp);
+        globalThis.window.addEventListener("pointermove", handlePointerMove);
+        globalThis.window.addEventListener("pointerup", handlePointerUp);
 
         return () => {
-            window.removeEventListener("pointermove", handlePointerMove);
-            window.removeEventListener("pointerup", handlePointerUp);
+            globalThis.window.removeEventListener("pointermove", handlePointerMove);
+            globalThis.window.removeEventListener("pointerup", handlePointerUp);
         };
     }, [dragMode, updateCropRect]);
 
@@ -196,9 +211,9 @@ export function RewardImageCropDialog({
         const sourceSizeX = cropRect.size * scaleX;
         const sourceSizeY = cropRect.size * scaleY;
 
-        const canvas = document.createElement("canvas");
-        canvas.width = previewSize;
-        canvas.height = previewSize;
+        const canvas = globalThis.document.createElement("canvas");
+        canvas.width = PREVIEW_SIZE;
+        canvas.height = PREVIEW_SIZE;
 
         const context = canvas.getContext("2d");
         if (!context) {
@@ -213,8 +228,8 @@ export function RewardImageCropDialog({
             sourceSizeY,
             0,
             0,
-            previewSize,
-            previewSize,
+            PREVIEW_SIZE,
+            PREVIEW_SIZE,
         );
 
         canvas.toBlob((blob) => {
@@ -224,12 +239,12 @@ export function RewardImageCropDialog({
 
             setPreviewSrc((current) => {
                 if (current) {
-                    URL.revokeObjectURL(current);
+                    globalThis.URL.revokeObjectURL(current);
                 }
-                return URL.createObjectURL(blob);
+                return globalThis.URL.createObjectURL(blob);
             });
-        }, "image/png", 1);
-    }, [cropRect, naturalSize, open, previewSize]);
+        }, CROPPED_IMAGE_TYPE, 1);
+    }, [cropRect, naturalSize, open]);
 
     const exportCroppedFile = async () => {
         const image = imageRef.current;
@@ -247,7 +262,7 @@ export function RewardImageCropDialog({
             const sourceSizeX = cropRect.size * scaleX;
             const sourceSizeY = cropRect.size * scaleY;
 
-            const canvas = document.createElement("canvas");
+            const canvas = globalThis.document.createElement("canvas");
             canvas.width = 768;
             canvas.height = 768;
 
@@ -269,7 +284,7 @@ export function RewardImageCropDialog({
             );
 
             const blob = await new Promise<Blob | null>((resolve) =>
-                canvas.toBlob(resolve, "image/png", 1),
+                canvas.toBlob(resolve, CROPPED_IMAGE_TYPE, 1),
             );
 
             if (!blob) {
@@ -277,7 +292,7 @@ export function RewardImageCropDialog({
             }
 
             const croppedFile = new File([blob], `${fileBaseName}-cropped.png`, {
-                type: "image/png",
+                type: CROPPED_IMAGE_TYPE,
                 lastModified: Date.now(),
             });
 
@@ -343,20 +358,11 @@ export function RewardImageCropDialog({
                                                 <div className="pointer-events-none absolute inset-[18%] rounded-full border border-white/20" />
 
                                                 {(["nw", "ne", "sw", "se"] as ResizeHandle[]).map((handle) => {
-                                                    const handlePosition =
-                                                        handle === "nw"
-                                                            ? "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize"
-                                                            : handle === "ne"
-                                                                ? "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize"
-                                                                : handle === "sw"
-                                                                    ? "bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize"
-                                                                    : "bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize";
-
                                                     return (
                                                         <button
                                                             key={handle}
                                                             type="button"
-                                                            className={`absolute h-4 w-4 rounded-full border-2 border-white bg-blue-600 shadow ${handlePosition}`}
+                                                            className={`absolute h-4 w-4 rounded-full border-2 border-white bg-blue-600 shadow ${getHandlePosition(handle)}`}
                                                             onPointerDown={(event) => beginDrag(handle, event)}
                                                             aria-label={`Resize crop ${handle}`}
                                                         />

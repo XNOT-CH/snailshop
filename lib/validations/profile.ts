@@ -1,8 +1,37 @@
 import { z } from "zod";
 
+const optionalThaiPhoneSchema = z
+    .string()
+    .refine((value) => value === "" || /^\d{10}$/.test(value), {
+        message: "เบอร์มือถือต้องเป็นตัวเลข 10 หลักเท่านั้น",
+    });
+
+const optionalThaiNameSchema = z
+    .string()
+    .refine((value) => value === "" || /^[ก-๙\s]+$/.test(value.trim()), {
+        message: "กรอกได้เฉพาะภาษาไทยเท่านั้น",
+    });
+
+const optionalEnglishNameSchema = z
+    .string()
+    .refine((value) => value === "" || /^[A-Za-z\s.'-]+$/.test(value.trim()), {
+        message: "กรอกได้เฉพาะภาษาอังกฤษเท่านั้น",
+    });
+
 const addressSchema = z.object({
-    fullName: z.string().max(200).optional().or(z.literal("")),
-    phone: z.string().max(20).optional().or(z.literal("")),
+    fullName: z
+        .string()
+        .max(200)
+        .transform((value) => value.trim())
+        .pipe(optionalThaiNameSchema)
+        .optional()
+        .or(z.literal("")),
+    phone: z
+        .string()
+        .transform((value) => value.trim())
+        .pipe(optionalThaiPhoneSchema)
+        .optional()
+        .or(z.literal("")),
     address: z.string().max(500).optional().or(z.literal("")),
     province: z.string().max(100).optional().or(z.literal("")),
     district: z.string().max(100).optional().or(z.literal("")),
@@ -38,14 +67,15 @@ export const updateProfileSchema = z.object({
         .optional(),
     phone: z
         .string()
-        .max(20, "เบอร์มือถือต้องไม่เกิน 20 ตัวอักษร")
+        .transform((value) => value.trim())
+        .pipe(optionalThaiPhoneSchema)
         .optional()
         .or(z.literal("")),
     image: profileImageValue,
-    firstName: z.string().max(100).optional().or(z.literal("")),
-    lastName: z.string().max(100).optional().or(z.literal("")),
-    firstNameEn: z.string().max(100).optional().or(z.literal("")),
-    lastNameEn: z.string().max(100).optional().or(z.literal("")),
+    firstName: z.string().max(100).transform((value) => value.trim()).pipe(optionalThaiNameSchema).optional().or(z.literal("")),
+    lastName: z.string().max(100).transform((value) => value.trim()).pipe(optionalThaiNameSchema).optional().or(z.literal("")),
+    firstNameEn: z.string().max(100).transform((value) => value.trim()).pipe(optionalEnglishNameSchema).optional().or(z.literal("")),
+    lastNameEn: z.string().max(100).transform((value) => value.trim()).pipe(optionalEnglishNameSchema).optional().or(z.literal("")),
     taxAddress: addressSchema.optional(),
     shippingAddress: addressSchema.optional(),
     currentPassword: z

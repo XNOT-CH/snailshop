@@ -20,7 +20,7 @@ interface SerializableNavLink { href: string; label: string; }
 
 interface NavigationDrawerProps {
     navLinks?: SerializableNavLink[];
-    user?: { username: string; image?: string | null; creditBalance: number; pointBalance: number; } | null;
+    user?: { name?: string | null; username: string; image?: string | null; creditBalance: number; pointBalance: number; } | null;
     imageVersion?: string | number;
     siteName?: string;
     logoUrl?: string;
@@ -63,6 +63,7 @@ export function NavigationDrawer({
     const pathname = usePathname();
     const logout = useLogout();
     const links = navLinks && navLinks.length > 0 ? navLinks : DEFAULT_NAV;
+    const shownUserName = user?.name?.trim() || user?.username || "";
     const drawerStyles = {
         panel: { background: "var(--surface-shell-2)", borderRight: "1px solid var(--surface-stroke)" },
         header: { background: "var(--surface-header)", borderBottom: "1px solid var(--surface-stroke)" },
@@ -148,19 +149,20 @@ export function NavigationDrawer({
                                     {user.image ? (
                                         <Image
                                             src={withImageVersion(user.image, imageVersion) ?? user.image}
-                                            alt={user.username}
+                                            alt={shownUserName}
                                             width={48}
                                             height={48}
                                             className="h-full w-full object-cover"
                                         />
                                     ) : (
                                         <span className="text-base font-bold text-foreground">
-                                            {user.username.charAt(0).toUpperCase()}
+                                            {shownUserName.charAt(0).toUpperCase()}
                                         </span>
                                     )}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="font-bold text-sm tracking-wide uppercase truncate text-foreground">{user.username}</p>
+                                    <p className="font-bold text-sm truncate text-foreground">{shownUserName}</p>
+                                    <p className="mt-0.5 text-[11px] text-muted-foreground">@{user.username}</p>
                                     <div className="flex items-center gap-1.5 mt-0.5">
                                         <CircleDollarSign className="h-3.5 w-3.5 text-primary" />
                                         <span className="text-primary text-xs font-medium">

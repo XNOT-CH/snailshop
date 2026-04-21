@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +53,7 @@ export function ProductActions({
     const inCart = isInCart(product.id);
     const normalizedCurrency = normalizeCurrencyCode(product.currency);
     const isPointCurrency = normalizedCurrency === "POINT";
+    const hasAppliedPromo = Boolean(appliedPromo);
 
     const basePrice = (product.discountPrice ?? product.price) * quantity;
 
@@ -67,7 +68,9 @@ export function ProductActions({
 
     const finalPrice = calcFinalPrice(basePrice);
 
-    const handleCheckPromo = async () => {
+    const validatePromo = useCallback(async (options?: { silent?: boolean }) => {
+        const silent = options?.silent ?? false;
+
         if (!promoCode.trim() || isCheckingPromo) return;
         setIsCheckingPromo(true);
         try {
@@ -90,17 +93,35 @@ export function ProductActions({
                     discountAmount: Number(data.discountAmount ?? 0),
                     finalPrice: typeof data.finalPrice === "number" ? data.finalPrice : Number(data.finalPrice ?? basePrice),
                 });
-                showWarning(data.message);
+                if (!silent) {
+                    showWarning(data.message);
+                }
             } else {
                 setAppliedPromo(null);
-                showWarning(data.message || "โค้ดส่วนลดไม่ถูกต้อง");
+                if (!silent) {
+                    showWarning(data.message || "โค้ดส่วนลดไม่ถูกต้อง");
+                }
             }
         } catch {
-            showWarning("ไม่สามารถตรวจสอบโค้ดได้ กรุณาลองใหม่");
+            if (!silent) {
+                showWarning("ไม่สามารถตรวจสอบโค้ดได้ กรุณาลองใหม่");
+            }
         } finally {
             setIsCheckingPromo(false);
         }
+    }, [basePrice, isCheckingPromo, product.category, promoCode]);
+
+    const handleCheckPromo = async () => {
+        await validatePromo();
     };
+
+    useEffect(() => {
+        if (!hasAppliedPromo || !promoCode.trim() || isPointCurrency) {
+            return;
+        }
+
+        void validatePromo({ silent: true });
+    }, [basePrice, hasAppliedPromo, isPointCurrency, promoCode, validatePromo]);
 
     // Buy Now handler
     const handlePurchase = async () => {
@@ -253,9 +274,12 @@ export function ProductActions({
                         </Button>
                     </div>
                     {appliedPromo && (
-                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm font-medium text-primary">
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm font-medium text-foreground">
                             <Tag className="h-3.5 w-3.5" />
-                            ใช้โค้ด {appliedPromo.code} — ราคาลดเหลือ {formatCurrencyAmount(finalPrice, normalizedCurrency, currencySettings)}
+                            <span>ใช้โค้ด {appliedPromo.code} — ราคาลดเหลือ </span>
+                            <span className="text-red-500 dark:text-red-400">
+                                {formatCurrencyAmount(finalPrice, normalizedCurrency, currencySettings)}
+                            </span>
                         </div>
                     )}
                 </div>

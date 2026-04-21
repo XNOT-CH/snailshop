@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import type { PublicCurrencySettings } from "@/lib/currencySettings";
 
 type NavbarInteractiveProps = {
-    user: { username: string; image?: string | null; creditBalance: number; pointBalance: number } | null;
+    user: { name?: string | null; username: string; image?: string | null; creditBalance: number; pointBalance: number } | null;
     imageVersion?: string | number;
     currencySettings?: PublicCurrencySettings;
 };
@@ -25,6 +25,7 @@ export function NavbarInteractive({ user, imageVersion, currencySettings }: Read
             <NavbarCartButton />
             {user ? (
                 <NavbarUserMenu
+                    displayName={user.name}
                     username={user.username}
                     image={user.image}
                     imageVersion={imageVersion}

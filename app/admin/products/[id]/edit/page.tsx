@@ -50,6 +50,174 @@ function formatDiscountValue(value: number, currency: string) {
     return currency === "POINT" ? value.toLocaleString() : value.toFixed(2);
 }
 
+function getCalculatedDiscountPrice(
+    hasDiscountPrice: boolean,
+    priceNumber: number,
+    discountInputNumber: number,
+    discountMode: DiscountMode,
+    currency: string,
+) {
+    if (
+        !hasDiscountPrice ||
+        !Number.isFinite(priceNumber) ||
+        priceNumber <= 0 ||
+        !Number.isFinite(discountInputNumber)
+    ) {
+        return null;
+    }
+
+    if (discountMode === "percent") {
+        return normalizeMoney(priceNumber - (priceNumber * discountInputNumber) / 100, currency);
+    }
+
+    return normalizeMoney(priceNumber - discountInputNumber, currency);
+}
+
+function getNormalizedDiscountPrice(calculatedDiscountPrice: number | null) {
+    if (calculatedDiscountPrice !== null && calculatedDiscountPrice > 0) {
+        return calculatedDiscountPrice;
+    }
+
+    return null;
+}
+
+function getDiscountInputErrorMessage(discountMode: DiscountMode) {
+    return discountMode === "percent"
+        ? "กรุณากรอกเปอร์เซ็นส่วนลดให้ถูกต้อง"
+        : "กรุณากรอกจำนวนส่วนลดให้ถูกต้อง";
+}
+
+function formatAutoDeleteSummary(autoDeleteAfterSale: string) {
+    if (!autoDeleteAfterSale) {
+        return null;
+    }
+
+    const autoDeleteMinutes = Number(autoDeleteAfterSale);
+    if (autoDeleteMinutes >= 1440) {
+        return `${(autoDeleteMinutes / 1440).toFixed(1)} วัน`;
+    }
+
+    if (autoDeleteMinutes >= 60) {
+        return `${(autoDeleteMinutes / 60).toFixed(1)} ชั่วโมง`;
+    }
+
+    return `${autoDeleteAfterSale} นาที`;
+}
+
+function getFetchedDiscountAmount(
+    priceNumber: number,
+    discountPriceNumber: number | null,
+    currency: string,
+) {
+    if (
+        discountPriceNumber === null
+        || !Number.isFinite(priceNumber)
+        || !Number.isFinite(discountPriceNumber)
+        || discountPriceNumber >= priceNumber
+    ) {
+        return null;
+    }
+
+    return normalizeMoney(priceNumber - discountPriceNumber, currency);
+}
+
+function getAutoDeleteAfterSaleValue(autoDeleteEnabled: boolean, autoDeleteAfterSale: string) {
+    if (!autoDeleteEnabled || !autoDeleteAfterSale) {
+        return null;
+    }
+
+    return Number(autoDeleteAfterSale);
+}
+
+function getDiscountHelperText(discountMode: DiscountMode, isPointCurrency: boolean, pointCurrencyName: string) {
+    if (discountMode === "percent") {
+        return "กรอกเปอร์เซ็นที่ต้องการลด";
+    }
+
+    return `กรอกจำนวน${isPointCurrency ? pointCurrencyName : "บาท"}ที่ต้องการลด`;
+}
+
+function getDiscountValidationText(discountMode: DiscountMode) {
+    return discountMode === "percent"
+        ? "เปอร์เซ็นต์ต้องน้อยกว่า 100%"
+        : "จำนวนส่วนลดต้องน้อยกว่าราคาเต็ม";
+}
+
+function getDiscountSummaryUnit(
+    discountMode: DiscountMode,
+    isPointCurrency: boolean,
+    pointCurrencyName: string,
+) {
+    if (discountMode === "percent") {
+        return "%";
+    }
+
+    return isPointCurrency ? ` ${pointCurrencyName}` : " บาท";
+}
+
+function getDiscountSummaryText(
+    discountMode: DiscountMode,
+    isPointCurrency: boolean,
+    pointCurrencyName: string,
+    discountInputNumber: number,
+    currency: string,
+    normalizedDiscountPrice: number,
+) {
+    const unit = getDiscountSummaryUnit(discountMode, isPointCurrency, pointCurrencyName);
+    return `ลด ${formatDiscountValue(discountInputNumber, currency)}${unit} เหลือ ${formatDiscountValue(normalizedDiscountPrice, currency)}`;
+}
+
+function getDiscountMessage(
+    options: {
+        hasDiscountPrice: boolean;
+        isDiscountValueValid: boolean;
+        normalizedDiscountPrice: number | null;
+        discountMode: DiscountMode;
+        isPointCurrency: boolean;
+        pointCurrencyName: string;
+        discountInputNumber: number;
+        currency: string;
+    },
+) {
+    const {
+        currency,
+        discountInputNumber,
+        discountMode,
+        hasDiscountPrice,
+        isDiscountValueValid,
+        isPointCurrency,
+        normalizedDiscountPrice,
+        pointCurrencyName,
+    } = options;
+
+    if (!hasDiscountPrice) {
+        return null;
+    }
+
+    if (!isDiscountValueValid) {
+        return {
+            className: "font-medium text-rose-600",
+            text: getDiscountValidationText(discountMode),
+        };
+    }
+
+    if (normalizedDiscountPrice === null) {
+        return null;
+    }
+
+    return {
+        className: "font-medium text-rose-700",
+        text: getDiscountSummaryText(
+            discountMode,
+            isPointCurrency,
+            pointCurrencyName,
+            discountInputNumber,
+            currency,
+            normalizedDiscountPrice,
+        ),
+    };
+}
+
 export default function EditProductPage() {
     const router = useRouter();
     const currencySettings = useCurrencySettings();
@@ -87,13 +255,11 @@ export default function EditProductPage() {
                     const product = data.data;
                     const priceNumber = Number(product.price ?? 0);
                     const discountPriceNumber = product.discountPrice ? Number(product.discountPrice) : null;
-                    const discountAmount =
-                        discountPriceNumber !== null &&
-                        Number.isFinite(priceNumber) &&
-                        Number.isFinite(discountPriceNumber) &&
-                        discountPriceNumber < priceNumber
-                            ? normalizeMoney(priceNumber - discountPriceNumber, product.currency || "THB")
-                            : null;
+                    const discountAmount = getFetchedDiscountAmount(
+                        priceNumber,
+                        discountPriceNumber,
+                        product.currency || "THB",
+                    );
                     setFormData({
                         title: product.name || "",
                         price: product.price?.toString() || "",
@@ -145,18 +311,18 @@ export default function EditProductPage() {
         const hasDiscountPrice = formData.discountPrice.trim().length > 0;
         const priceNumber = Number(formData.price);
         const discountInputNumber = Number(formData.discountPrice);
-        const calculatedDiscountPrice =
-            hasDiscountPrice && Number.isFinite(priceNumber) && priceNumber > 0 && Number.isFinite(discountInputNumber)
-                ? discountMode === "percent"
-                    ? normalizeMoney(priceNumber - (priceNumber * discountInputNumber) / 100, formData.currency)
-                    : normalizeMoney(priceNumber - discountInputNumber, formData.currency)
-                : null;
-        const normalizedDiscountPrice =
-            calculatedDiscountPrice !== null && calculatedDiscountPrice > 0 ? calculatedDiscountPrice : null;
+        const calculatedDiscountPrice = getCalculatedDiscountPrice(
+            hasDiscountPrice,
+            priceNumber,
+            discountInputNumber,
+            discountMode,
+            formData.currency,
+        );
+        const normalizedDiscountPrice = getNormalizedDiscountPrice(calculatedDiscountPrice);
 
         if (hasDiscountPrice) {
             if (!Number.isFinite(discountInputNumber) || discountInputNumber <= 0) {
-                showError(discountMode === "percent" ? "กรุณากรอกเปอร์เซ็นส่วนลดให้ถูกต้อง" : "กรุณากรอกจำนวนส่วนลดให้ถูกต้อง");
+                showError(getDiscountInputErrorMessage(discountMode));
                 return;
             }
             if (discountMode === "percent" && discountInputNumber >= 100) {
@@ -178,10 +344,7 @@ export default function EditProductPage() {
                     ...formData,
                     image: formData.images[0] || "",
                     discountPrice: normalizedDiscountPrice === null ? "" : String(normalizedDiscountPrice),
-                    autoDeleteAfterSale:
-                        autoDeleteEnabled && formData.autoDeleteAfterSale
-                            ? Number(formData.autoDeleteAfterSale)
-                            : null,
+                    autoDeleteAfterSale: getAutoDeleteAfterSaleValue(autoDeleteEnabled, formData.autoDeleteAfterSale),
                 }),
             });
 
@@ -218,29 +381,30 @@ export default function EditProductPage() {
         (Number.isFinite(discountInputNumber) &&
             discountInputNumber > 0 &&
             (discountMode === "percent" ? discountInputNumber < 100 : discountInputNumber < priceNumber));
-    const calculatedDiscountPrice =
-        hasDiscountPrice &&
-        isDiscountValueValid &&
-        Number.isFinite(priceNumber) &&
-        priceNumber > 0 &&
-        Number.isFinite(discountInputNumber)
-            ? discountMode === "percent"
-                ? normalizeMoney(priceNumber - (priceNumber * discountInputNumber) / 100, formData.currency)
-                : normalizeMoney(priceNumber - discountInputNumber, formData.currency)
-            : null;
-    const normalizedDiscountPrice =
-        calculatedDiscountPrice !== null && calculatedDiscountPrice > 0 ? calculatedDiscountPrice : null;
-    const autoDeleteMinutes = Number(formData.autoDeleteAfterSale);
-    const autoDeleteSummary = formData.autoDeleteAfterSale
-        ? autoDeleteMinutes >= 1440
-            ? `${(autoDeleteMinutes / 1440).toFixed(1)} วัน`
-            : autoDeleteMinutes >= 60
-                ? `${(autoDeleteMinutes / 60).toFixed(1)} ชั่วโมง`
-                : `${formData.autoDeleteAfterSale} นาที`
+    const calculatedDiscountPrice = isDiscountValueValid
+        ? getCalculatedDiscountPrice(
+            hasDiscountPrice,
+            priceNumber,
+            discountInputNumber,
+            discountMode,
+            formData.currency,
+        )
         : null;
+    const normalizedDiscountPrice = getNormalizedDiscountPrice(calculatedDiscountPrice);
+    const autoDeleteSummary = formatAutoDeleteSummary(formData.autoDeleteAfterSale);
+    const discountMessage = getDiscountMessage({
+        hasDiscountPrice,
+        isDiscountValueValid,
+        normalizedDiscountPrice,
+        discountMode,
+        isPointCurrency,
+        pointCurrencyName,
+        discountInputNumber,
+        currency: formData.currency,
+    });
 
     return (
-        <div className="space-y-6">
+        <div className="admin-product-edit-page space-y-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <Link
                     href="/admin/products"
@@ -258,27 +422,27 @@ export default function EditProductPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-                <Card className="overflow-hidden border-slate-200/80 shadow-[0_18px_60px_-40px_rgba(15,23,42,0.35)]">
-                    <CardHeader className="border-b border-slate-200/80 bg-[linear-gradient(135deg,rgba(248,250,252,0.95),rgba(239,246,255,0.88))] px-6 py-5">
+                <Card className="admin-product-edit-main-card overflow-hidden border-slate-200/80 shadow-[0_18px_60px_-40px_rgba(15,23,42,0.35)] dark:border-[#2d4362] dark:bg-[#0f1927]">
+                    <CardHeader className="admin-product-edit-main-header border-b border-slate-200/80 bg-[linear-gradient(135deg,rgba(248,250,252,0.95),rgba(239,246,255,0.88))] px-6 py-5 dark:border-[#2d4362] dark:bg-[linear-gradient(135deg,rgba(15,25,39,0.98),rgba(20,32,49,0.94))]">
                         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                             <div className="space-y-1">
-                                <CardTitle className="flex items-center gap-3 text-2xl text-slate-900">
-                                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">
+                                <CardTitle className="flex items-center gap-3 text-2xl text-slate-900 dark:text-[#eef4ff]">
+                                    <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100 dark:bg-indigo-500/12 dark:text-indigo-300 dark:ring-indigo-500/20">
                                         <Pencil className="h-5 w-5" />
                                     </span>
                                     ข้อมูลสินค้า
                                 </CardTitle>
-                                <p className="text-sm text-slate-500">
+                                <p className="text-sm text-slate-500 dark:text-[#9ab0cb]">
                                     จัดข้อมูลหลัก รูปสินค้า และราคาขายให้อ่านง่ายก่อนบันทึก
                                 </p>
                             </div>
-                            <div className="flex flex-wrap gap-2">
-                                <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs font-medium text-slate-600">
-                                    หมวดหมู่ {formData.category || "ยังไม่ระบุ"}
+                        <div className="flex flex-wrap gap-2">
+                            <Badge variant="secondary" className="rounded-full px-3 py-1 text-xs font-medium text-slate-600 dark:bg-[#16253b] dark:text-[#d6e4f5]">
+                                    {`หมวดหมู่ ${formData.category || "ยังไม่ระบุ"}`}
                                 </Badge>
                                 <Badge
                                     variant="outline"
-                                    className={`rounded-full px-3 py-1 text-xs font-medium ${isPointCurrency ? "border-violet-200 bg-violet-50 text-violet-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}
+                                    className={`rounded-full px-3 py-1 text-xs font-medium ${isPointCurrency ? "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/12 dark:text-violet-200" : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/12 dark:text-emerald-200"}`}
                                 >
                                     {isPointCurrency ? "POINT" : "THB"}
                                 </Badge>
@@ -288,7 +452,7 @@ export default function EditProductPage() {
                     <CardContent className="p-6">
                         <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)]">
                             <div className="space-y-6">
-                                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                                <div className="admin-product-edit-details-card rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-[#2d4362] dark:bg-[#0f1927]">
                                     <div className="mb-4 flex items-center gap-2">
                                         <span className="h-2.5 w-2.5 rounded-full bg-indigo-500" />
                                         <p className="text-sm font-semibold text-slate-900">รายละเอียดหลัก</p>
@@ -305,7 +469,7 @@ export default function EditProductPage() {
                                                 onChange={handleChange}
                                                 required
                                                 disabled={!canEditProduct}
-                                                className="bg-white"
+                                                className="bg-white dark:bg-[#132133]"
                                             />
                                         </div>
 
@@ -325,7 +489,7 @@ export default function EditProductPage() {
                                             >
                                                 <Label
                                                     htmlFor="currency-thb"
-                                                    className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${!isPointCurrency ? "border-emerald-300 bg-emerald-50/80 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"}`}
+                                                    className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${!isPointCurrency ? "border-emerald-300 bg-emerald-50/80 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-500/10" : "border-slate-200 bg-white hover:border-slate-300 dark:border-[#355071] dark:bg-[#132133] dark:hover:border-[#4b7098]"}`}
                                                 >
                                                     <RadioGroupItem value="THB" id="currency-thb" />
                                                     <Banknote className="h-4 w-4 text-emerald-600" />
@@ -337,7 +501,7 @@ export default function EditProductPage() {
 
                                                 <Label
                                                     htmlFor="currency-point"
-                                                    className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${isPointCurrency ? "border-violet-300 bg-violet-50/80 shadow-sm" : "border-slate-200 bg-white hover:border-slate-300"}`}
+                                                    className={`flex cursor-pointer items-center gap-3 rounded-2xl border px-4 py-3 transition-all ${isPointCurrency ? "border-violet-300 bg-violet-50/80 shadow-sm dark:border-violet-500/30 dark:bg-violet-500/10" : "border-slate-200 bg-white hover:border-slate-300 dark:border-[#355071] dark:bg-[#132133] dark:hover:border-[#4b7098]"}`}
                                                 >
                                                     <RadioGroupItem value="POINT" id="currency-point" />
                                                     <Gem className="h-4 w-4 text-violet-600" />
@@ -349,14 +513,14 @@ export default function EditProductPage() {
                                             </RadioGroup>
 
                                             {isPointCurrency && (
-                                                <p className="rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-xs font-medium text-violet-700">
+                                                <p className="rounded-xl border border-violet-100 bg-violet-50 px-3 py-2 text-xs font-medium text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-200">
                                                     สินค้านี้จะซื้อได้ด้วย {pointCurrencyName} เท่านั้น
                                                 </p>
                                             )}
                                         </div>
 
                                         <div className="grid gap-4 sm:grid-cols-2">
-                                            <div className="rounded-2xl border border-slate-200 bg-slate-50/65 p-4">
+                                            <div className="admin-product-edit-price-card rounded-2xl border border-slate-200 bg-slate-50/65 p-4 dark:border-[#355071] dark:bg-[#162334]">
                                                 <div className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700">
                                                     {isPointCurrency ? <Gem className="h-4 w-4 text-violet-600" /> : <Banknote className="h-4 w-4 text-emerald-600" />}
                                                     ราคาเต็ม *
@@ -371,16 +535,16 @@ export default function EditProductPage() {
                                                     value={formData.price}
                                                     onChange={handleChange}
                                                     required
-                                                    className={`bg-white ${isPointCurrency ? "border-violet-200 focus-visible:ring-violet-200" : "border-emerald-200 focus-visible:ring-emerald-200"}`}
+                                                    className={`bg-white dark:bg-[#132133] ${isPointCurrency ? "border-violet-200 focus-visible:ring-violet-200 dark:border-violet-500/30 dark:focus-visible:ring-violet-500/20" : "border-emerald-200 focus-visible:ring-emerald-200 dark:border-emerald-500/30 dark:focus-visible:ring-emerald-500/20"}`}
                                                 />
                                             </div>
 
-                                            <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-4">
+                                            <div className="admin-product-edit-discount-card rounded-2xl border border-rose-200 bg-rose-50/70 p-4 dark:border-rose-500/30 dark:bg-rose-500/10">
                                                 <div className="mb-2 flex items-center gap-2 text-sm font-medium text-rose-700">
                                                     <span className="text-base">🎁</span>
-                                                    ส่วนลด
+                                                    <span>ส่วนลด</span>
                                                 </div>
-                                                <div className="space-y-2 rounded-2xl border border-rose-200/70 bg-white/70 p-3">
+                                                <div className="admin-product-edit-discount-inner space-y-2 rounded-2xl border border-rose-200/70 bg-white/70 p-3 dark:border-rose-500/25 dark:bg-[#132133]/90">
                                                     <div className="grid grid-cols-2 gap-2">
                                                         <Button
                                                             type="button"
@@ -412,28 +576,15 @@ export default function EditProductPage() {
                                                         value={formData.discountPrice}
                                                         onChange={handleChange}
                                                         disabled={!canEditProduct}
-                                                        className="border-rose-200 bg-white focus-visible:ring-rose-200"
+                                                        className="border-rose-200 bg-white focus-visible:ring-rose-200 dark:border-rose-500/30 dark:bg-[#132133] dark:focus-visible:ring-rose-500/20"
                                                     />
                                                     <div className="flex items-center justify-between text-xs">
                                                         <span className="text-slate-500">
-                                                            {discountMode === "percent"
-                                                                ? "กรอกเปอร์เซ็นที่ต้องการลด"
-                                                                : `กรอกจำนวน${isPointCurrency ? pointCurrencyName : "บาท"}ที่ต้องการลด`}
+                                                            {getDiscountHelperText(discountMode, isPointCurrency, pointCurrencyName)}
                                                         </span>
-                                                        {hasDiscountPrice && !isDiscountValueValid ? (
-                                                            <span className="font-medium text-rose-600">
-                                                                {discountMode === "percent"
-                                                                    ? "เปอร์เซ็นต์ต้องน้อยกว่า 100%"
-                                                                    : "จำนวนส่วนลดต้องน้อยกว่าราคาเต็ม"}
-                                                            </span>
-                                                        ) : normalizedDiscountPrice !== null && (
-                                                            <span className="font-medium text-rose-700">
-                                                                ลด {formatDiscountValue(discountInputNumber, formData.currency)}
-                                                                {discountMode === "percent" ? "%" : isPointCurrency ? ` ${pointCurrencyName}` : " บาท"}
-                                                                {" เหลือ "}
-                                                                {formatDiscountValue(normalizedDiscountPrice, formData.currency)}
-                                                            </span>
-                                                        )}
+                                                        {discountMessage ? (
+                                                            <span className={discountMessage.className}>{discountMessage.text}</span>
+                                                        ) : null}
                                                     </div>
                                                 </div>
                                                 <p className="mt-2 text-xs text-rose-600/80">
@@ -452,7 +603,7 @@ export default function EditProductPage() {
                                                 onChange={handleChange}
                                                 required
                                                 disabled={!canEditProduct}
-                                                className="bg-white"
+                                                className="bg-white dark:bg-[#132133]"
                                             />
                                         </div>
 
@@ -466,7 +617,7 @@ export default function EditProductPage() {
                                                 value={formData.description}
                                                 onChange={handleChange}
                                                 disabled={!canEditProduct}
-                                                className="bg-white"
+                                                className="bg-white dark:bg-[#132133]"
                                             />
                                         </div>
                                     </div>
@@ -474,10 +625,10 @@ export default function EditProductPage() {
                             </div>
 
                             <div className="space-y-6">
-                                <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.92),rgba(255,255,255,1))] p-5 shadow-sm">
+                                <div className="admin-product-edit-image-card rounded-2xl border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,0.92),rgba(255,255,255,1))] p-5 shadow-sm dark:border-[#2d4362] dark:bg-[linear-gradient(180deg,rgba(15,25,39,0.98),rgba(20,32,49,0.94))]">
                                     <div className="mb-4 flex items-center gap-2">
                                         <span className="h-2.5 w-2.5 rounded-full bg-sky-500" />
-                                        <p className="text-sm font-semibold text-slate-900">ภาพสินค้า</p>
+                                        <p className="text-sm font-semibold text-slate-900 dark:text-[#eef4ff]">ภาพสินค้า</p>
                                     </div>
 
                                     <div className="space-y-4">
@@ -493,8 +644,8 @@ export default function EditProductPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="overflow-hidden border-amber-200/80 shadow-[0_18px_50px_-42px_rgba(245,158,11,0.6)]">
-                    <CardHeader className="border-b border-amber-100 bg-[linear-gradient(135deg,rgba(255,251,235,1),rgba(255,247,237,0.95))] px-6 py-5">
+                <Card className="admin-product-edit-autodelete-card overflow-hidden border-amber-200/80 shadow-[0_18px_50px_-42px_rgba(245,158,11,0.6)]">
+                    <CardHeader className="admin-product-edit-autodelete-header border-b border-amber-100 bg-[linear-gradient(135deg,rgba(255,251,235,1),rgba(255,247,237,0.95))] px-6 py-5">
                         <CardTitle className="flex items-center gap-3 text-xl text-amber-950">
                             <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/80 text-amber-500 ring-1 ring-amber-200">
                                 <Timer className="h-5 w-5" />
@@ -509,7 +660,7 @@ export default function EditProductPage() {
                     </CardHeader>
 
                     <CardContent className="space-y-5 p-6">
-                        <div className="flex items-start justify-between gap-4 rounded-2xl border border-amber-100 bg-white p-4">
+                        <div className="admin-product-edit-autodelete-toggle flex items-start justify-between gap-4 rounded-2xl border border-amber-100 bg-white p-4">
                             <div className="space-y-1">
                                 <p className="text-sm font-medium text-slate-900">เปิดใช้งาน</p>
                                 <p className="text-xs text-slate-500">
@@ -522,7 +673,7 @@ export default function EditProductPage() {
 
                         {autoDeleteEnabled && (
                             <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-                                <div className="rounded-2xl border border-amber-100 bg-white p-4">
+                                <div className="admin-product-edit-autodelete-presets rounded-2xl border border-amber-100 bg-white p-4">
                                     <Label className="text-sm font-medium text-slate-800">เลือกเวลาด่วน</Label>
                                     <div className="mt-3 flex flex-wrap gap-2">
                                         {AUTO_DELETE_PRESETS.map((preset) => (
@@ -543,7 +694,7 @@ export default function EditProductPage() {
                                     </div>
                                 </div>
 
-                                <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
+                                <div className="admin-product-edit-autodelete-custom rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
                                     <Label htmlFor="autoDeleteAfterSale" className="flex items-center gap-2 text-sm font-medium text-slate-800">
                                         <Clock className="h-3.5 w-3.5" />
                                         กำหนดเวลาเอง

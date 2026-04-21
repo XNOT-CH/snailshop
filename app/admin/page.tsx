@@ -19,6 +19,24 @@ import { AdminDashboardHeader } from "@/components/admin/AdminDashboardHeader";
 
 export const dynamic = "force-dynamic";
 
+function getFallbackAdminRoute(permissions: string[]) {
+    const permissionRoutes: Array<[string, string]> = [
+        [PERMISSIONS.PRODUCT_VIEW, "/admin/products"],
+        [PERMISSIONS.CHAT_VIEW, "/admin/chat"],
+        [PERMISSIONS.SLIP_VIEW, "/admin/slips"],
+        [PERMISSIONS.USER_VIEW, "/admin/users"],
+        [PERMISSIONS.CONTENT_VIEW, "/admin/news"],
+        [PERMISSIONS.PROMO_VIEW, "/admin/promo-codes"],
+        [PERMISSIONS.GACHA_VIEW, "/admin/gacha-machines"],
+        [PERMISSIONS.SEASON_PASS_VIEW, "/admin/season-pass"],
+        [PERMISSIONS.SETTINGS_VIEW, "/admin/settings"],
+        [PERMISSIONS.AUDIT_LOG_VIEW, "/admin/audit-logs"],
+        [PERMISSIONS.EXPORT_DATA, "/admin/export"],
+    ];
+
+    return permissionRoutes.find(([permission]) => permissions.includes(permission))?.[1] ?? null;
+}
+
 export default async function AdminDashboardPage() {
     const access = await requirePermission(PERMISSIONS.ADMIN_PANEL);
     if (!access.success || !access.permissions) {
@@ -26,19 +44,7 @@ export default async function AdminDashboardPage() {
     }
 
     if (!access.permissions.includes(PERMISSIONS.DASHBOARD_VIEW)) {
-        const fallbackAdminRoute =
-            access.permissions.includes(PERMISSIONS.PRODUCT_VIEW) ? "/admin/products" :
-            access.permissions.includes(PERMISSIONS.CHAT_VIEW) ? "/admin/chat" :
-            access.permissions.includes(PERMISSIONS.SLIP_VIEW) ? "/admin/slips" :
-            access.permissions.includes(PERMISSIONS.USER_VIEW) ? "/admin/users" :
-            access.permissions.includes(PERMISSIONS.CONTENT_VIEW) ? "/admin/news" :
-            access.permissions.includes(PERMISSIONS.PROMO_VIEW) ? "/admin/promo-codes" :
-            access.permissions.includes(PERMISSIONS.GACHA_VIEW) ? "/admin/gacha-machines" :
-            access.permissions.includes(PERMISSIONS.SEASON_PASS_VIEW) ? "/admin/season-pass" :
-            access.permissions.includes(PERMISSIONS.SETTINGS_VIEW) ? "/admin/settings" :
-            access.permissions.includes(PERMISSIONS.AUDIT_LOG_VIEW) ? "/admin/audit-logs" :
-            access.permissions.includes(PERMISSIONS.EXPORT_DATA) ? "/admin/export" :
-            null;
+        const fallbackAdminRoute = getFallbackAdminRoute(access.permissions);
 
         if (fallbackAdminRoute) {
             redirect(fallbackAdminRoute);

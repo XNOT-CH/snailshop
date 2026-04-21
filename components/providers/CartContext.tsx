@@ -34,7 +34,7 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const CART_STORAGE_KEY = "gamestore_cart";
+export const CART_STORAGE_KEY = "gamestore_cart";
 
 interface CartProviderProps {
     children: ReactNode;

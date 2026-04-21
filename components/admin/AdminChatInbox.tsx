@@ -83,58 +83,122 @@ interface ChatConversationDetail
 
 const CHAT_TAG_STYLES: Record<string, { badge: string; active: string; inactive: string }> = {
     "สอบถามราคา": {
-        badge: "border border-sky-200 bg-sky-50 text-sky-700",
-        active: "border-sky-500 bg-sky-500 text-white shadow-sm shadow-sky-200",
-        inactive: "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+        badge: "border border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/35 dark:bg-sky-500/10 dark:text-sky-200",
+        active: "border-sky-500 bg-sky-500 text-white shadow-sm shadow-sky-200 dark:border-sky-400/60 dark:bg-sky-500/85 dark:shadow-sky-950/40",
+        inactive: "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-[#2d4362] dark:bg-[#142031] dark:text-[#c9d8eb] dark:hover:border-[#4e6f99] dark:hover:bg-[#1a2a40]",
     },
     "ปัญหา": {
-        badge: "border border-rose-200 bg-rose-50 text-rose-700",
-        active: "border-rose-500 bg-rose-500 text-white shadow-sm shadow-rose-200",
-        inactive: "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+        badge: "border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/35 dark:bg-rose-500/10 dark:text-rose-200",
+        active: "border-rose-500 bg-rose-500 text-white shadow-sm shadow-rose-200 dark:border-rose-400/60 dark:bg-rose-500/85 dark:shadow-rose-950/40",
+        inactive: "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-[#2d4362] dark:bg-[#142031] dark:text-[#c9d8eb] dark:hover:border-[#4e6f99] dark:hover:bg-[#1a2a40]",
     },
     "ด่วน": {
-        badge: "border border-amber-200 bg-amber-50 text-amber-800",
-        active: "border-amber-500 bg-amber-500 text-white shadow-sm shadow-amber-200",
-        inactive: "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+        badge: "border border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200",
+        active: "border-amber-500 bg-amber-500 text-white shadow-sm shadow-amber-200 dark:border-amber-400/60 dark:bg-amber-500/85 dark:shadow-amber-950/40",
+        inactive: "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-[#2d4362] dark:bg-[#142031] dark:text-[#c9d8eb] dark:hover:border-[#4e6f99] dark:hover:bg-[#1a2a40]",
     },
     "รอตอบ": {
-        badge: "border border-violet-200 bg-violet-50 text-violet-700",
-        active: "border-violet-500 bg-violet-500 text-white shadow-sm shadow-violet-200",
-        inactive: "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+        badge: "border border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/35 dark:bg-violet-500/10 dark:text-violet-200",
+        active: "border-violet-500 bg-violet-500 text-white shadow-sm shadow-violet-200 dark:border-violet-400/60 dark:bg-violet-500/85 dark:shadow-violet-950/40",
+        inactive: "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-[#2d4362] dark:bg-[#142031] dark:text-[#c9d8eb] dark:hover:border-[#4e6f99] dark:hover:bg-[#1a2a40]",
     },
     "ติดตามผล": {
-        badge: "border border-emerald-200 bg-emerald-50 text-emerald-700",
-        active: "border-emerald-500 bg-emerald-500 text-white shadow-sm shadow-emerald-200",
-        inactive: "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+        badge: "border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/35 dark:bg-emerald-500/10 dark:text-emerald-200",
+        active: "border-emerald-500 bg-emerald-500 text-white shadow-sm shadow-emerald-200 dark:border-emerald-400/60 dark:bg-emerald-500/85 dark:shadow-emerald-950/40",
+        inactive: "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-[#2d4362] dark:bg-[#142031] dark:text-[#c9d8eb] dark:hover:border-[#4e6f99] dark:hover:bg-[#1a2a40]",
     },
 };
 
 function getChatTagClasses(tag: string) {
     return CHAT_TAG_STYLES[tag] ?? {
-        badge: "border border-slate-200 bg-slate-50 text-slate-700",
-        active: "border-slate-300 bg-slate-100 text-slate-800",
-        inactive: "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50",
+        badge: "border border-slate-200 bg-slate-50 text-slate-700 dark:border-[#3a5274] dark:bg-[#19283d] dark:text-[#d4e1f1]",
+        active: "border-slate-300 bg-slate-100 text-slate-800 dark:border-[#5d7ea8] dark:bg-[#29415f] dark:text-[#f2f7ff]",
+        inactive: "border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-[#2d4362] dark:bg-[#142031] dark:text-[#c9d8eb] dark:hover:border-[#4e6f99] dark:hover:bg-[#1a2a40]",
     };
+}
+
+function getConversationBadgeVariant(status: ChatConversationSummary["status"]) {
+    return status === "OPEN" ? "default" : "secondary";
+}
+
+function getConversationBadgeClassName(status: ChatConversationSummary["status"]) {
+    return status === "OPEN" ? "bg-emerald-500 hover:bg-emerald-500" : "";
+}
+
+function getConversationStatusLabel(status: ChatConversationSummary["status"]) {
+    return status === "OPEN" ? "เปิดเคส" : "ปิดแล้ว";
+}
+
+function getConversationPaneClassName(isConversationSelected: boolean) {
+    const visibilityClass = isConversationSelected ? "hidden lg:block" : "block";
+    return `${visibilityClass} overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-[#2d4362] dark:bg-[#0f1927] dark:shadow-[0_24px_60px_-40px_rgba(0,0,0,0.8)] lg:flex lg:h-full lg:min-h-0 lg:flex-col`;
+}
+
+function getConversationDetailClassName(isConversationSelected: boolean) {
+    const visibilityClass = isConversationSelected ? "flex" : "hidden lg:flex";
+    return `${visibilityClass} min-h-[70dvh] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm dark:border-[#2d4362] dark:bg-[#0f1927] dark:shadow-[0_24px_60px_-40px_rgba(0,0,0,0.8)] lg:h-full lg:min-h-0`;
+}
+
+function getMessageRowClassName(isAdmin: boolean) {
+    return `flex ${isAdmin ? "justify-end" : "justify-start"}`;
+}
+
+function getMessageBubbleClassName(isAdmin: boolean) {
+    const toneClass = isAdmin
+        ? "bg-[#145de7] text-white dark:bg-[#2563eb]"
+        : "bg-slate-100 text-slate-900 dark:bg-[#182638] dark:text-[#e7f0fb]";
+    return `max-w-[90%] rounded-[26px] px-3.5 py-3 text-sm shadow-sm sm:max-w-[85%] sm:px-4 ${toneClass}`;
+}
+
+function getMessageTone(isAdmin: boolean) {
+    return isAdmin ? "primary" : "neutral";
+}
+
+function getStatusToggleSuccessMessage(nextStatus: ChatConversationSummary["status"]) {
+    return nextStatus === "CLOSED" ? "ปิดเคสแชทแล้ว" : "เปิดเคสแชทแล้ว";
+}
+
+function getConversationCountLabel(count: number) {
+    return count > 0 ? `(${count})` : "";
 }
 
 function MessageBubble({ message }: Readonly<{ message: ChatMessage }>) {
     const isAdmin = message.senderType === "ADMIN";
 
     return (
-        <div className={`flex ${isAdmin ? "justify-end" : "justify-start"}`}>
-            <div
-                className={`max-w-[90%] rounded-[26px] px-3.5 py-3 text-sm shadow-sm sm:max-w-[85%] sm:px-4 ${
-                    isAdmin ? "bg-[#145de7] text-white" : "bg-slate-100 text-slate-900"
-                }`}
-            >
+        <div className={getMessageRowClassName(isAdmin)}>
+            <div className={getMessageBubbleClassName(isAdmin)}>
                 <ChatMessageContent
                     message={message}
-                    tone={isAdmin ? "primary" : "neutral"}
+                    tone={getMessageTone(isAdmin)}
                     timestampMode="datetime"
                 />
             </div>
         </div>
     );
+}
+
+function getConversationListState(
+    isLoadingList: boolean,
+    filteredConversationCount: number,
+) {
+    if (isLoadingList) {
+        return "loading";
+    }
+
+    return filteredConversationCount === 0 ? "empty" : "ready";
+}
+
+function getConversationDetailState(
+    selectedConversationId: string | null,
+    isLoadingConversation: boolean,
+    selectedConversation: ChatConversationDetail | null,
+) {
+    if (!selectedConversationId) {
+        return "empty";
+    }
+
+    return isLoadingConversation || !selectedConversation ? "loading" : "ready";
 }
 
 export default function AdminChatInbox() {
@@ -182,11 +246,15 @@ export default function AdminChatInbox() {
     }, [searchQuery, visibleConversations]);
 
     useEffect(() => {
-        void refreshList();
+        refreshList().catch(() => undefined);
     }, []);
 
     useEffect(() => {
-        if (!selectedConversationId && filteredConversations[0]?.id && window.matchMedia("(min-width: 1024px)").matches) {
+        if (
+            !selectedConversationId
+            && filteredConversations[0]?.id
+            && globalThis.window.matchMedia("(min-width: 1024px)").matches
+        ) {
             setSelectedConversationId(filteredConversations[0].id);
         }
     }, [filteredConversations, selectedConversationId]);
@@ -207,14 +275,14 @@ export default function AdminChatInbox() {
             return;
         }
 
-        void refreshConversation(selectedConversationId);
+        refreshConversation(selectedConversationId).catch(() => undefined);
 
-        const interval = window.setInterval(() => {
-            void refreshList(false);
-            void refreshConversation(selectedConversationId, false);
+        const interval = globalThis.window.setInterval(() => {
+            refreshList(false).catch(() => undefined);
+            refreshConversation(selectedConversationId, false).catch(() => undefined);
         }, 5000);
 
-        return () => window.clearInterval(interval);
+        return () => globalThis.window.clearInterval(interval);
     }, [selectedConversationId]);
 
     useEffect(() => {
@@ -258,7 +326,7 @@ export default function AdminChatInbox() {
             )
         );
         setSelectedConversation((current) =>
-            current && current.id === conversationId ? { ...current, ...meta } : current
+            current?.id === conversationId ? { ...current, ...meta } : current
         );
     }
 
@@ -472,7 +540,7 @@ export default function AdminChatInbox() {
 
             setSelectedConversation(data.conversation);
             await refreshList(false);
-            showSuccess(nextStatus === "CLOSED" ? "ปิดเคสแชทแล้ว" : "เปิดเคสแชทแล้ว");
+            showSuccess(getStatusToggleSuccessMessage(nextStatus));
         } catch (error) {
             showError(error instanceof Error ? error.message : "เปลี่ยนสถานะไม่สำเร็จ");
         }
@@ -531,9 +599,16 @@ export default function AdminChatInbox() {
     }
 
     const isConversationSelected = Boolean(selectedConversationId);
+    const conversationListState = getConversationListState(isLoadingList, filteredConversations.length);
+    const conversationDetailState = getConversationDetailState(
+        selectedConversationId,
+        isLoadingConversation,
+        selectedConversation,
+    );
+    const activeConversation = conversationDetailState === "ready" ? selectedConversation : null;
 
     return (
-        <div className="flex flex-col gap-6">
+        <div className="admin-chat-page flex flex-col gap-6">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                     <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
@@ -557,26 +632,22 @@ export default function AdminChatInbox() {
             </div>
 
             <div className="grid gap-4 lg:h-[calc(100dvh-15rem)] lg:grid-cols-[360px_minmax(0,1fr)]">
-                <div
-                    className={`${
-                        isConversationSelected ? "hidden lg:block" : "block"
-                    } overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:flex lg:h-full lg:min-h-0 lg:flex-col`}
-                >
-                    <div className="border-b border-slate-200 px-4 py-4 sm:px-5">
-                        <p className="text-sm font-semibold text-slate-900">
-                            รายการสนทนา {filteredConversations.length > 0 ? `(${filteredConversations.length})` : ""}
+                <div className={getConversationPaneClassName(isConversationSelected)}>
+                    <div className="border-b border-slate-200 px-4 py-4 dark:border-[#2d4362] sm:px-5">
+                        <p className="text-sm font-semibold text-slate-900 dark:text-[#edf4ff]">
+                            รายการสนทนา {getConversationCountLabel(filteredConversations.length)}
                         </p>
                     </div>
 
                     <ScrollArea className="h-[min(68dvh,40rem)] lg:h-full">
                         <div className="space-y-2 p-3">
-                            {isLoadingList ? (
+                            {conversationListState === "loading" ? (
                                 <div className="flex h-24 items-center justify-center text-sm text-muted-foreground">
                                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                     กำลังโหลดบทสนทนา
                                 </div>
-                            ) : filteredConversations.length === 0 ? (
-                                <div className="flex h-24 items-center justify-center rounded-2xl border border-dashed border-slate-200 text-sm text-muted-foreground">
+                            ) : conversationListState === "empty" ? (
+                                <div className="flex h-24 items-center justify-center rounded-2xl border border-dashed border-slate-200 text-sm text-muted-foreground dark:border-[#365171] dark:bg-[#132133] dark:text-[#9bb2cf]">
                                     ยังไม่มีบทสนทนาจากลูกค้า
                                 </div>
                             ) : (
@@ -589,14 +660,14 @@ export default function AdminChatInbox() {
                                             key={conversation.id}
                                             type="button"
                                             onClick={() => handleSelectConversation(conversation.id)}
-                                            className={`w-full rounded-2xl border px-4 py-3 text-left transition ${
+                                            className={`admin-chat-conversation w-full rounded-2xl border px-4 py-3 text-left transition ${
                                                 active
-                                                    ? "border-[#145de7]/50 bg-[#eef4ff]"
-                                                    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50"
+                                                    ? "admin-chat-conversation-active border-[#145de7]/50 bg-[#eef4ff] dark:border-sky-400/35 dark:bg-slate-800/95 dark:shadow-[inset_0_1px_0_rgba(125,170,255,0.08)]"
+                                                    : "border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 dark:border-[#2d4362] dark:bg-[#0f1927] dark:hover:border-[#48698f] dark:hover:bg-[#142031]"
                                             }`}
                                         >
                                             <div className="flex items-start gap-3">
-                                                <Avatar className="h-11 w-11 border border-slate-200">
+                                                <Avatar className="h-11 w-11 border border-slate-200 dark:border-[#355071]">
                                                     <AvatarImage
                                                         src={conversation.user.image ?? undefined}
                                                         alt={conversation.user.username}
@@ -607,45 +678,35 @@ export default function AdminChatInbox() {
                                                 <div className="min-w-0 flex-1">
                                                     <div className="flex items-start justify-between gap-3">
                                                         <div className="min-w-0">
-                                                            <p className="truncate font-semibold text-slate-900">
+                                                            <p className="truncate font-semibold text-slate-900 dark:text-slate-50">
                                                                 {conversation.user.name || conversation.user.username}
                                                             </p>
-                                                            <p className="truncate text-xs text-slate-500">
+                                                            <p className="truncate text-xs text-slate-500 dark:text-sky-200/80">
                                                                 @{conversation.user.username}
                                                             </p>
                                                         </div>
 
                                                         <div className="flex shrink-0 flex-col items-end gap-2">
                                                             {conversation.isPinned ? (
-                                                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700">
+                                                                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold text-amber-700 dark:bg-amber-500/12 dark:text-amber-200">
                                                                     <Pin className="h-3 w-3" />
                                                                     ปักหมุด
                                                                 </span>
                                                             ) : null}
                                                             <Badge
-                                                                variant={
-                                                                    conversation.status === "OPEN"
-                                                                        ? "default"
-                                                                        : "secondary"
-                                                                }
-                                                                className={
-                                                                    conversation.status === "OPEN"
-                                                                        ? "bg-emerald-500 hover:bg-emerald-500"
-                                                                        : ""
-                                                                }
+                                                                variant={getConversationBadgeVariant(conversation.status)}
+                                                                className={getConversationBadgeClassName(conversation.status)}
                                                             >
-                                                                {conversation.status === "OPEN"
-                                                                    ? "เปิดเคส"
-                                                                    : "ปิดแล้ว"}
+                                                                {getConversationStatusLabel(conversation.status)}
                                                             </Badge>
                                                             <ChatTimestamp
                                                                 value={conversation.lastMessageAt}
-                                                                className="text-[11px] text-slate-400"
+                                                                className="text-[11px] text-slate-400 dark:text-slate-300/80"
                                                             />
                                                         </div>
                                                     </div>
 
-                                                    <p className="mt-2 line-clamp-2 text-sm text-slate-600">
+                                                    <p className="mt-2 line-clamp-2 text-sm text-slate-600 dark:text-slate-200">
                                                         {conversation.lastMessagePreview}
                                                     </p>
 
@@ -666,7 +727,7 @@ export default function AdminChatInbox() {
                                                     ) : null}
 
                                                     <div className="mt-3 flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                                        <span className="max-w-full truncate text-xs text-slate-400">
+                                                        <span className="max-w-full truncate text-xs text-slate-400 dark:text-sky-100/70">
                                                             @{conversation.user.username}
                                                         </span>
                                                         {conversation.unreadByAdmin > 0 ? (
@@ -685,23 +746,19 @@ export default function AdminChatInbox() {
                     </ScrollArea>
                 </div>
 
-                <div
-                    className={`${
-                        !isConversationSelected ? "hidden lg:flex" : "flex"
-                    } min-h-[70dvh] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:h-full lg:min-h-0`}
-                >
-                    {!selectedConversationId ? (
+                <div className={getConversationDetailClassName(isConversationSelected)}>
+                    {conversationDetailState === "empty" ? (
                         <div className="flex flex-1 items-center justify-center p-6 text-center text-muted-foreground sm:p-8">
                             เลือกบทสนทนาด้านซ้ายเพื่อดูรายละเอียดและตอบกลับลูกค้า
                         </div>
-                    ) : isLoadingConversation || !selectedConversation ? (
+                    ) : conversationDetailState === "loading" ? (
                         <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             กำลังโหลดข้อความ
                         </div>
-                    ) : (
+                    ) : activeConversation ? (
                         <>
-                            <div className="border-b border-slate-200 px-4 py-4 sm:px-5">
+                            <div className="border-b border-slate-200 px-4 py-4 dark:border-[#2d4362] sm:px-5">
                                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                                     <div className="flex items-center gap-3">
                                         <Button
@@ -715,28 +772,28 @@ export default function AdminChatInbox() {
                                             <ArrowLeft className="h-4 w-4" />
                                         </Button>
 
-                                        <Avatar className="h-12 w-12 border border-slate-200">
+                                        <Avatar className="h-12 w-12 border border-slate-200 dark:border-[#355071]">
                                             <AvatarImage
-                                                src={selectedConversation.user.image ?? undefined}
-                                                alt={selectedConversation.user.username}
+                                                src={activeConversation.user.image ?? undefined}
+                                                alt={activeConversation.user.username}
                                             />
                                             <AvatarFallback>
-                                                {selectedConversation.user.username.slice(0, 2).toUpperCase()}
+                                                {activeConversation.user.username.slice(0, 2).toUpperCase()}
                                             </AvatarFallback>
                                         </Avatar>
 
                                         <div className="min-w-0">
-                                            <p className="font-semibold text-slate-900">
-                                                {selectedConversation.user.name || selectedConversation.user.username}
+                                            <p className="font-semibold text-slate-900 dark:text-[#f1f6ff]">
+                                                {activeConversation.user.name || activeConversation.user.username}
                                             </p>
-                                            <p className="truncate text-sm text-slate-500">
-                                                @{selectedConversation.user.username}
+                                            <p className="truncate text-sm text-slate-500 dark:text-[#8fa6c4]">
+                                                @{activeConversation.user.username}
                                             </p>
-                                            {selectedConversation.tags.length > 0 ? (
+                                            {activeConversation.tags.length > 0 ? (
                                                 <div className="mt-2 flex flex-wrap gap-1.5">
-                                                    {selectedConversation.tags.map((tag) => (
+                                                    {activeConversation.tags.map((tag) => (
                                                         <span
-                                                            key={`${selectedConversation.id}-${tag}`}
+                                                            key={`${activeConversation.id}-${tag}`}
                                                             className={cn(
                                                                 "rounded-full px-2 py-0.5 text-[11px] font-medium",
                                                                 getChatTagClasses(tag).badge
@@ -757,28 +814,28 @@ export default function AdminChatInbox() {
                                             onClick={handleTogglePin}
                                             disabled={isUpdatingMeta || !canManageChat}
                                         >
-                                            {selectedConversation.isPinned ? (
+                                            {activeConversation.isPinned ? (
                                                 <PinOff className="mr-2 h-4 w-4" />
                                             ) : (
                                                 <Pin className="mr-2 h-4 w-4" />
                                             )}
-                                            {selectedConversation.isPinned ? "เลิกปักหมุด" : "ปักหมุด"}
+                                            {activeConversation.isPinned ? "เลิกปักหมุด" : "ปักหมุด"}
                                         </Button>
                                         <Badge
-                                            variant={selectedConversation.status === "OPEN" ? "default" : "secondary"}
+                                            variant={activeConversation.status === "OPEN" ? "default" : "secondary"}
                                             className={
-                                                selectedConversation.status === "OPEN"
+                                                activeConversation.status === "OPEN"
                                                     ? "bg-emerald-500 hover:bg-emerald-500"
                                                     : ""
                                             }
                                         >
-                                            {selectedConversation.status === "OPEN"
+                                            {activeConversation.status === "OPEN"
                                                 ? "กำลังคุยอยู่"
                                                 : "ปิดเคสแล้ว"}
                                         </Badge>
                                         <Button variant="outline" size="sm" onClick={handleToggleStatus} disabled={!canManageChat}>
                                             <UserRoundCheck className="mr-2 h-4 w-4" />
-                                            {selectedConversation.status === "OPEN"
+                                            {activeConversation.status === "OPEN"
                                                 ? "ปิดเคส"
                                                 : "เปิดเคสอีกครั้ง"}
                                         </Button>
@@ -796,13 +853,13 @@ export default function AdminChatInbox() {
                                 </div>
 
                                 <div className="mt-4 space-y-3">
-                                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-[#7f97b8]">
                                         <Tag className="h-3.5 w-3.5" />
                                         แท็กแชท
                                     </div>
                                     <div className="flex flex-wrap gap-2">
                                         {CHAT_TAG_OPTIONS.map((tag) => {
-                                            const active = selectedConversation.tags.includes(tag);
+                                            const active = activeConversation.tags.includes(tag);
 
                                             return (
                                                 <button
@@ -826,10 +883,10 @@ export default function AdminChatInbox() {
                                 </div>
                             </div>
 
-                            <ScrollArea className="min-h-[18rem] flex-1 bg-slate-50/80 p-4 sm:p-5 lg:min-h-0 [&_[data-slot=scroll-area-viewport]]:h-full">
+                            <ScrollArea className="min-h-[18rem] flex-1 bg-slate-50/80 p-4 dark:bg-[#0d1623] sm:p-5 lg:min-h-0 [&_[data-slot=scroll-area-viewport]]:h-full">
                                 <div className="space-y-4">
-                                    {selectedConversation.messages.length > 0 ? (
-                                        selectedConversation.messages.map((message) => (
+                                    {activeConversation.messages.length > 0 ? (
+                                        activeConversation.messages.map((message) => (
                                             <MessageBubble key={message.id} message={message} />
                                         ))
                                     ) : null}
@@ -837,8 +894,8 @@ export default function AdminChatInbox() {
                                 </div>
                             </ScrollArea>
 
-                            <div className="border-t border-slate-200 bg-white p-3 sm:p-4">
-                                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-3">
+                            <div className="border-t border-slate-200 bg-white p-3 dark:border-[#2d4362] dark:bg-[#0f1927] sm:p-4">
+                                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-3 dark:border-[#355071] dark:bg-[#162334]">
                                     <input
                                         ref={fileInputRef}
                                         type="file"
@@ -858,10 +915,10 @@ export default function AdminChatInbox() {
                                     />
                                     <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                                         <div className="space-y-2 sm:max-w-[70%]">
-                                            <p className="text-xs text-slate-400">
+                                            <p className="text-xs text-slate-400 dark:text-[#8aa1c1]">
                                                 กด Enter เพื่อส่ง และกด Shift + Enter เพื่อขึ้นบรรทัดใหม่
                                             </p>
-                                            <p className="text-[11px] text-slate-400">
+                                            <p className="text-[11px] text-slate-400 dark:text-[#7f97b8]">
                                                 รูปในแชทจะหายอัตโนมัติหลังส่งครบ 5 นาที
                                             </p>
                                         </div>
@@ -898,7 +955,7 @@ export default function AdminChatInbox() {
                                 </div>
                             </div>
                         </>
-                    )}
+                    ) : null}
                 </div>
             </div>
         </div>

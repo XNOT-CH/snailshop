@@ -16,6 +16,7 @@ import {
 
 interface DashboardSidebarProps {
     user: {
+        name?: string | null;
         username: string;
         email: string | null;
         image?: string | null;
@@ -33,6 +34,7 @@ const sidebarLinks = [
 
 export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
     const pathname = usePathname();
+    const shownName = user?.name?.trim() || user?.username || "Guest";
 
     return (
         <TooltipProvider>
@@ -40,13 +42,16 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
                 <div className="p-4">
                     <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3">
                         <Avatar>
-                            <AvatarImage src={user?.image || undefined} alt={user?.username || "User"} />
+                            <AvatarImage src={user?.image || undefined} alt={shownName} />
                             <AvatarFallback className="bg-primary text-primary-foreground">
-                                {user?.username?.charAt(0).toUpperCase() || "?"}
+                                {shownName.charAt(0).toUpperCase()}
                             </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0 flex-1">
-                            <p className="truncate font-medium">{user?.username || "Guest"}</p>
+                            <p className="truncate font-medium">{shownName}</p>
+                            {user?.username ? (
+                                <p className="mt-0.5 text-xs text-muted-foreground">@{user.username}</p>
+                            ) : null}
                             <Badge variant="secondary" className="mt-1 text-xs">
                                 ฿{user?.creditBalance ? Number(user.creditBalance).toLocaleString() : "0"}
                             </Badge>

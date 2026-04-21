@@ -33,7 +33,7 @@ export default async function Navbar() {
         userId
             ? db.query.users.findFirst({
                   where: eq(users.id, userId),
-                  columns: { username: true, image: true, creditBalance: true, pointBalance: true },
+                  columns: { name: true, username: true, image: true, creditBalance: true, pointBalance: true },
               })
             : Promise.resolve(null),
         getSiteSettings(),
@@ -150,6 +150,7 @@ export default async function Navbar() {
                     <ThemeToggle />
                     <NavbarInteractive
                         user={user ? {
+                            name: user.name,
                             username: user.username,
                             image: user.image,
                             creditBalance: Number(user.creditBalance),
@@ -188,6 +189,7 @@ export default async function Navbar() {
                     <NavigationDrawer
                         navLinks={navLinks.map(({ href, label }) => ({ href, label }))}
                         user={user ? {
+                            name: user.name,
                             username: user.username,
                             image: user.image,
                             creditBalance: Number(user.creditBalance),

@@ -28,11 +28,12 @@ export default async function DashboardLayout({
 
         const dbUser = await db.query.users.findFirst({
             where: eq(users.id, userId),
-            columns: { username: true, email: true, image: true, creditBalance: true, ticketBalance: true },
+            columns: { name: true, username: true, email: true, image: true, creditBalance: true, ticketBalance: true },
         });
 
         if (dbUser) {
             user = {
+                name: dbUser.name,
                 username: dbUser.username,
                 email: dbUser.email,
                 image: dbUser.image,

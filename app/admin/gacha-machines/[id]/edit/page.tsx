@@ -372,6 +372,39 @@ function EditRewardForm({ form, setForm, products, productSearch, setProductSear
     );
 }
 
+function getTotalUsedColor(totalUsed: number, isProbabilityComplete: boolean) {
+    if (isProbabilityComplete) {
+        return {
+            text: "text-emerald-500",
+            bg: "bg-emerald-500",
+        };
+    }
+
+    if (totalUsed >= 80 && totalUsed <= 100) {
+        return {
+            text: "text-amber-500",
+            bg: "bg-amber-400",
+        };
+    }
+
+    return {
+        text: "text-red-500",
+        bg: "bg-red-500",
+    };
+}
+
+function getProbabilityStatusMessage(totalUsed: number, isProbabilityComplete: boolean, remaining: number) {
+    if (totalUsed > 100) {
+        return "โอกาสรวมเกิน 100% ต้องแก้ไขก่อนใช้งานตู้";
+    }
+
+    if (isProbabilityComplete) {
+        return "โอกาสรวมครบ 100% พร้อมสำหรับการเปิดใช้งานตู้";
+    }
+
+    return `โอกาสรวมยังไม่ครบ 100% ตอนนี้เหลืออีก ${remaining}% และตู้จะถูกล็อกไม่ให้เปิดใช้งาน`;
+}
+
 export default function EditGachaMachinePage() {
     const params = useParams();
     const router = useRouter();
@@ -720,18 +753,7 @@ export default function EditGachaMachinePage() {
     const remaining = Math.max(0, Math.round((100 - totalUsed) * 100) / 100);
     const isProbabilityComplete = hasExactProbabilityTotal(rewards);
 
-    let totalUsedColorText = "text-red-500";
-    let totalUsedColorBg = "bg-red-500";
-    if (isProbabilityComplete) {
-        totalUsedColorText = "text-emerald-500";
-        totalUsedColorBg = "bg-emerald-500";
-    } else if (totalUsed > 100) {
-        totalUsedColorText = "text-red-500";
-        totalUsedColorBg = "bg-red-500";
-    } else if (totalUsed >= 80) {
-        totalUsedColorText = "text-amber-500";
-        totalUsedColorBg = "bg-amber-400";
-    }
+    const totalUsedColor = getTotalUsedColor(totalUsed, isProbabilityComplete);
 
     if (loading) {
         return <div className="flex justify-center py-20"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>;
@@ -767,22 +789,18 @@ export default function EditGachaMachinePage() {
                 <div className="px-6 py-3 border-b border-border bg-muted/10">
                     <div className="flex items-center justify-between mb-1.5">
                         <span className="text-xs font-medium text-muted-foreground">โอกาสรวมที่ใช้ไป</span>
-                        <span className={`text-xs font-bold ${totalUsedColorText}`}>
+                        <span className={`text-xs font-bold ${totalUsedColor.text}`}>
                             {totalUsed}% / 100%
                         </span>
                     </div>
                     <div className="w-full h-2 rounded-full bg-muted overflow-hidden">
                         <div
-                            className={`h-full rounded-full transition-all duration-300 ${totalUsedColorBg}`}
+                            className={`h-full rounded-full transition-all duration-300 ${totalUsedColor.bg}`}
                             style={{ width: `${Math.min(100, totalUsed)}%` }}
                         />
                     </div>
                     <p className="mt-1 text-[11px] text-muted-foreground">
-                        {totalUsed > 100
-                            ? "โอกาสรวมเกิน 100% ต้องแก้ไขก่อนใช้งานตู้"
-                            : isProbabilityComplete
-                                ? "โอกาสรวมครบ 100% พร้อมสำหรับการเปิดใช้งานตู้"
-                                : `โอกาสรวมยังไม่ครบ 100% ตอนนี้เหลืออีก ${remaining}% และตู้จะถูกล็อกไม่ให้เปิดใช้งาน`}
+                        {getProbabilityStatusMessage(totalUsed, isProbabilityComplete, remaining)}
                     </p>
                     <div className="mt-4 rounded-xl border border-[#d9e5ff] bg-white p-4 shadow-sm">
                         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -793,7 +811,7 @@ export default function EditGachaMachinePage() {
                                 </p>
                             </div>
                             <button
-                                onClick={() => void handleSimulate()}
+                                onClick={() => { handleSimulate().catch(() => undefined); }}
                                 disabled={simulating || rewards.length === 0}
                                 className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#145de7]/20 bg-[#eef4ff] px-4 py-2.5 text-xs font-bold text-[#145de7] transition hover:bg-[#dfeaff] disabled:cursor-not-allowed disabled:opacity-50"
                             >

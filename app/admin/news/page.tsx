@@ -266,7 +266,7 @@ export default function AdminNewsPage() {
             reverseButtons: true,
             focusConfirm: false,
             customClass: {
-                popup: "overflow-hidden rounded-[28px] text-left",
+                popup: "admin-swal-modal overflow-hidden rounded-[28px] text-left",
                 confirmButton: "rounded-xl px-6 py-2.5",
                 cancelButton: "rounded-xl px-6 py-2.5",
                 actions: "mt-6 border-t border-gray-100 px-0 pt-4",
