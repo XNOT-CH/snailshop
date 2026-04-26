@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Plus, Check, Loader2 } from "lucide-react";
+import { Plus, ShoppingCart, Loader2 } from "lucide-react";
 import { useCart } from "@/components/providers/CartContext";
 import { useState } from "react";
 import { QuantitySelector } from "@/components/QuantitySelector";
@@ -20,13 +20,18 @@ interface ProductDetailAddToCartProps {
 }
 
 export function ProductDetailAddToCart({ product, disabled = false, maxQuantity = 99 }: Readonly<ProductDetailAddToCartProps>) {
-    const { addToCart, isInCart, isLoading: cartLoading } = useCart();
+    const { addToCart, isInCart, isLoading: cartLoading, openCart } = useCart();
     const [isAdding, setIsAdding] = useState(false);
     const [quantity, setQuantity] = useState(1);
     const inCart = isInCart(product.id);
 
     const handleAddToCart = async () => {
-        if (disabled || inCart || isAdding) return;
+        if (disabled || isAdding) return;
+
+        if (inCart) {
+            openCart();
+            return;
+        }
 
         setIsAdding(true);
         try {
@@ -75,8 +80,8 @@ export function ProductDetailAddToCart({ product, disabled = false, maxQuantity 
                 )}
                 {!isAdding && inCart && (
                     <>
-                        <Check className="h-5 w-5" />
-                        อยู่ในตะกร้าแล้ว
+                        <ShoppingCart className="h-5 w-5" />
+                        ดูในตะกร้า
                     </>
                 )}
                 {!isAdding && !inCart && (

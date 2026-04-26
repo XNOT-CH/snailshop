@@ -1,6 +1,10 @@
 import type { NextRequest } from "next/server";
 import { auth } from "@/auth";
-import { getRequiredPermissionForAdminApi, getRequiredPermissionForAdminPage } from "@/lib/adminAccess";
+import {
+    getAdminApiAccessResponse,
+    getAdminPageAccessResponse,
+    isProtectedPath,
+} from "@/lib/adminAccess";
 
 export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
@@ -27,11 +31,7 @@ export async function proxy(request: NextRequest) {
     }
 
     // ─── Auth Guard ────────────────────────────────────────────────────
-    const isProtected =
-        pathname.startsWith("/dashboard") ||
-        pathname.startsWith("/admin") ||
-        pathname.startsWith("/api/admin") ||
-        pathname.startsWith("/profile");
+    const isProtected = isProtectedPath(pathname);
 
     if (isProtected) {
         const session = await auth();
@@ -52,23 +52,12 @@ export async function proxy(request: NextRequest) {
 
         if (pathname.startsWith("/admin")) {
             const permissions = (session.user as { permissions?: string[] }).permissions ?? [];
-            const requiredPermission = getRequiredPermissionForAdminPage(pathname);
-
-            if (requiredPermission && !permissions.includes(requiredPermission)) {
-                return Response.redirect(new URL("/", request.nextUrl.origin));
-            }
+            return getAdminPageAccessResponse(pathname, permissions, request.nextUrl) ?? undefined;
         }
 
         if (pathname.startsWith("/api/admin")) {
             const permissions = (session.user as { permissions?: string[] }).permissions ?? [];
-            const requiredPermission = getRequiredPermissionForAdminApi(pathname);
-
-            if (requiredPermission && !permissions.includes(requiredPermission)) {
-                return new Response(
-                    JSON.stringify({ success: false, message: "ไม่มีสิทธิ์เข้าถึง" }),
-                    { status: 403, headers: { "Content-Type": "application/json" } }
-                );
-            }
+            return getAdminApiAccessResponse(pathname, permissions) ?? undefined;
         }
     }
 }

@@ -12,9 +12,41 @@ export const loginSchema = z.object({
         .max(200),
     turnstileToken: z
         .string()
-        .min(1, "กรุณายืนยันว่าไม่ใช่บอท"),
+        .min(1, "กรุณายืนยันว่าไม่ใช่บอท")
+        .optional()
+        .nullable(),
 });
 export type LoginInput = z.infer<typeof loginSchema>;
+
+export const forgotPasswordSchema = z.object({
+    identifier: z
+        .string()
+        .min(1, "กรุณากรอกชื่อผู้ใช้หรืออีเมล")
+        .max(200),
+    turnstileToken: z
+        .string()
+        .min(1, "กรุณายืนยันว่าไม่ใช่บอท")
+        .optional()
+        .nullable(),
+});
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
+
+export const resetPasswordSchema = z.object({
+    token: z
+        .string()
+        .min(1, "ลิงก์รีเซ็ตรหัสผ่านไม่ถูกต้อง"),
+    password: z
+        .string()
+        .min(6, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร")
+        .max(200),
+    confirmPassword: z
+        .string()
+        .min(1, "กรุณายืนยันรหัสผ่าน"),
+}).refine((d) => d.password === d.confirmPassword, {
+    message: "รหัสผ่านไม่ตรงกัน",
+    path: ["confirmPassword"],
+});
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
 
 // ── Register ─────────────────────────────────────────────
 export const registerSchema = z.object({

@@ -1,5 +1,9 @@
 import type { NextAuthConfig } from "next-auth";
-import { getRequiredPermissionForAdminApi, getRequiredPermissionForAdminPage } from "@/lib/adminAccess";
+import {
+    getAdminApiAccessResponse,
+    getAdminPageAccessResponse,
+    isProtectedPath,
+} from "@/lib/adminAccess";
 
 /**
  * Edge-compatible auth config (no DB / bcrypt imports).
@@ -15,35 +19,20 @@ export const authConfig: NextAuthConfig = {
             const pathname = nextUrl.pathname;
 
             // Paths that require authentication
-            const isProtected =
-                pathname.startsWith("/dashboard") ||
-                pathname.startsWith("/admin") ||
-                pathname.startsWith("/api/admin") ||
-                pathname.startsWith("/profile");
+            const isProtected = isProtectedPath(pathname);
 
             if (!isLoggedIn && isProtected) {
                 return false; // Will redirect to /login
             }
 
             if (isLoggedIn && pathname.startsWith("/admin")) {
-                const requiredPermission = getRequiredPermissionForAdminPage(pathname);
                 const permissions = (auth?.user as { permissions?: string[] })?.permissions ?? [];
-
-                if (requiredPermission && !permissions.includes(requiredPermission)) {
-                    return Response.redirect(new URL("/", nextUrl));
-                }
+                return getAdminPageAccessResponse(pathname, permissions, nextUrl) ?? true;
             }
 
             if (isLoggedIn && pathname.startsWith("/api/admin")) {
-                const requiredPermission = getRequiredPermissionForAdminApi(pathname);
                 const permissions = (auth?.user as { permissions?: string[] })?.permissions ?? [];
-
-                if (requiredPermission && !permissions.includes(requiredPermission)) {
-                    return new Response(
-                        JSON.stringify({ success: false, message: "ไม่มีสิทธิ์เข้าถึง" }),
-                        { status: 403, headers: { "Content-Type": "application/json" } }
-                    );
-                }
+                return getAdminApiAccessResponse(pathname, permissions) ?? true;
             }
 
             return true;

@@ -54,8 +54,18 @@ function CartSheetContent() {
     const router = useRouter();
     const maintenance = useMaintenanceStatus().purchase;
     const currencySettings = useCurrencySettings();
-    const { items, removeFromCart, updateQuantity, clearCart, total, itemCount, totalsByCurrency } = useCart();
-    const [isOpen, setIsOpen] = useState(false);
+    const {
+        items,
+        removeFromCart,
+        updateQuantity,
+        clearCart,
+        total,
+        itemCount,
+        totalsByCurrency,
+        isCartOpen,
+        openCart,
+        closeCart,
+    } = useCart();
     const [isCheckingOut, setIsCheckingOut] = useState(false);
     const [isOrderSummaryOpen, setIsOrderSummaryOpen] = useState(false);
     const [promoCode, setPromoCode] = useState("");
@@ -231,7 +241,7 @@ function CartSheetContent() {
 
         const authCheck = await requireAuthBeforePurchase(router);
         if (!authCheck.allowed) {
-            setIsOpen(false);
+            closeCart();
             return;
         }
 
@@ -311,10 +321,10 @@ function CartSheetContent() {
     };
 
     return (
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+            <Sheet open={isCartOpen} onOpenChange={(open) => (open ? openCart() : closeCart())}>
                 <SheetTrigger asChild>
                     <div>
-                        <CartIcon onClick={() => setIsOpen(true)} />
+                        <CartIcon onClick={openCart} />
                     </div>
                 </SheetTrigger>
 
@@ -345,7 +355,7 @@ function CartSheetContent() {
                         <p className="mt-1 text-sm text-muted-foreground">เพิ่มสินค้าที่คุณสนใจได้เลย</p>
                         <Button
                             className="mt-6 rounded-xl px-6"
-                            onClick={() => setIsOpen(false)}
+                            onClick={closeCart}
                         >
                             เลือกซื้อสินค้า
                         </Button>

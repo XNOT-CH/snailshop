@@ -22,7 +22,7 @@ const NavbarCartButton = dynamic(
 export function NavbarInteractive({ user, imageVersion, currencySettings }: Readonly<NavbarInteractiveProps>) {
     return (
         <>
-            <NavbarCartButton />
+            {user ? <NavbarCartButton /> : null}
             {user ? (
                 <NavbarUserMenu
                     displayName={user.name}

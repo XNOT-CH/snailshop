@@ -4,6 +4,7 @@ export const SITE_NAME = "SNAILSHOP";
 export const SITE_TITLE = `${SITE_NAME} - Game ID Marketplace`;
 export const DEFAULT_SITE_DESCRIPTION = "Trusted marketplace for game accounts and in-game items.";
 export const SITE_LOCALE = "th_TH";
+export const DEFAULT_OG_IMAGE_PATH = "/opengraph-image";
 
 const isProduction = process.env.NODE_ENV === "production";
 
@@ -69,7 +70,7 @@ export function buildPageMetadata({
     type = "website",
     siteName,
 }: PageMetadataOptions): Metadata {
-    const imageUrl = toAbsoluteAssetUrl(image);
+    const imageUrl = toAbsoluteAssetUrl(image) ?? absoluteUrl(DEFAULT_OG_IMAGE_PATH);
     const canonicalUrl = absoluteUrl(path);
     const resolvedSiteName = resolveSiteName(siteName);
     const fullTitle = title ? `${title} | ${resolvedSiteName}` : `${resolvedSiteName} - Game ID Marketplace`;
@@ -87,13 +88,13 @@ export function buildPageMetadata({
             siteName: resolvedSiteName,
             locale: SITE_LOCALE,
             type,
-            ...(imageUrl ? { images: [{ url: imageUrl }] } : {}),
+            images: [{ url: imageUrl }],
         },
         twitter: {
-            card: imageUrl ? "summary_large_image" : "summary",
+            card: "summary_large_image",
             title: fullTitle,
             description,
-            ...(imageUrl ? { images: [imageUrl] } : {}),
+            images: [imageUrl],
         },
         ...(noIndex
             ? {

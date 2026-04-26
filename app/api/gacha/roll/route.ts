@@ -22,6 +22,7 @@ import {
 import { hasExactProbabilityTotal, pickWeightedCandidate } from "@/lib/gachaProbability";
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
+import { isRewardEligibleForRoll } from "@/lib/gachaRewardEligibility";
 import { getGachaRewardTypeLabel, normalizeGachaCost } from "@/lib/gachaCost";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkGachaRateLimit, getClientIp } from "@/lib/rateLimit";
@@ -147,11 +148,7 @@ async function fetchTieredProducts(machineId: string | null) {
     type RewardRow = (typeof allRewards)[number];
 
     const tieredProducts: GachaProductLite[] = allRewards
-        .filter((reward: RewardRow) =>
-            reward.rewardType === "PRODUCT"
-                ? reward.product && !reward.product.isSold && !reward.product.orderId
-                : reward.rewardName && reward.rewardAmount && Number(reward.rewardAmount) > 0
-        )
+        .filter((reward: RewardRow) => isRewardEligibleForRoll(reward))
         .map((reward: RewardRow) =>
             reward.rewardType === "PRODUCT" && reward.product
                 ? {
@@ -207,11 +204,7 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
         return { error: "ไม่มีแถวซ้ายที่สามารถสุ่มได้", status: 400 };
     }
 
-    const eligibleRewards = allRewards.filter((reward) =>
-        reward.rewardType === "PRODUCT"
-            ? reward.product && !reward.product.isSold && !reward.product.orderId
-            : reward.rewardName && reward.rewardAmount && Number(reward.rewardAmount) > 0
-    );
+    const eligibleRewards = allRewards.filter((reward) => isRewardEligibleForRoll(reward));
     if (!hasExactProbabilityTotal(eligibleRewards)) {
         return { error: "ตู้กาชานี้ยังตั้งค่าอัตราสุ่มไม่ครบ 100% จึงยังไม่สามารถสุ่มได้", status: 400 };
     }
@@ -536,7 +529,7 @@ async function finalizeCurrencyRewardRoll(
     });
 }
 
-async function handleSpin2(userId: string, machineId: string | null, costType: string, costAmount: number, dailySpinLimit: number) {
+async function handleSpin2(userId: string, machineId: string | null) {
     const pendingRes = await validatePendingSpin(userId, machineId);
     if ("error" in pendingRes) {
         return { error: pendingRes.error, status: pendingRes.status };
@@ -546,10 +539,6 @@ async function handleSpin2(userId: string, machineId: string | null, costType: s
     const userRes = await fetchUserOrError(userId);
     if ("error" in userRes) {
         return { error: userRes.error, status: userRes.status };
-    }
-
-    if (dailySpinLimit > 0) {
-        await checkDailySpinLimit(userId, machineId, dailySpinLimit);
     }
 
     return {
@@ -642,7 +631,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ success: true, data: res.data });
         }
 
-        const res = await handleSpin2(authCheck.userId, machineId, costType, costAmount, dailySpinLimit);
+        const res = await handleSpin2(authCheck.userId, machineId);
         if ("error" in res) {
             return NextResponse.json({ success: false, message: res.error }, { status: res.status || 400 });
         }

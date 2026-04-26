@@ -24,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
     title: "ร้านขายไอดีเกม",
     description: settings?.heroDescription?.trim() || DEFAULT_SITE_DESCRIPTION,
     path: "/",
-    image: settings?.bannerImage1 || settings?.logoUrl,
+    image: settings?.ogImageUrl || settings?.bannerImage1 || settings?.logoUrl,
     siteName: settings?.heroTitle,
   });
 }

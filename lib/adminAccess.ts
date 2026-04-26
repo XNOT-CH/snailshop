@@ -66,6 +66,36 @@ function matchRule(pathname: string, rules: AdminAccessRule[]) {
     return null;
 }
 
+export function isProtectedPath(pathname: string): boolean {
+    return (
+        pathname.startsWith("/dashboard") ||
+        pathname.startsWith("/admin") ||
+        pathname.startsWith("/api/admin") ||
+        pathname.startsWith("/profile")
+    );
+}
+
+export function getAdminPageAccessResponse(pathname: string, permissions: string[], baseUrl: URL) {
+    const requiredPermission = getRequiredPermissionForAdminPage(pathname);
+    if (requiredPermission && !permissions.includes(requiredPermission)) {
+        return Response.redirect(new URL("/", baseUrl));
+    }
+
+    return null;
+}
+
+export function getAdminApiAccessResponse(pathname: string, permissions: string[]) {
+    const requiredPermission = getRequiredPermissionForAdminApi(pathname);
+    if (requiredPermission && !permissions.includes(requiredPermission)) {
+        return new Response(
+            JSON.stringify({ success: false, message: "ไม่มีสิทธิ์เข้าถึง" }),
+            { status: 403, headers: { "Content-Type": "application/json" } }
+        );
+    }
+
+    return null;
+}
+
 export function getRequiredPermissionForAdminPage(pathname: string): Permission | null {
     return matchRule(pathname, ADMIN_PAGE_RULES);
 }

@@ -6,7 +6,7 @@ import { eq } from "drizzle-orm";
 import { validateBody } from "@/lib/validations/validate";
 import { gachaMachineSchema } from "@/lib/validations/gacha";
 import { PERMISSIONS } from "@/lib/permissions";
-import { getActiveMachineProbabilitySummary } from "@/lib/gachaMachineProbability";
+import { getMachineProbabilitySummary } from "@/lib/gachaMachineProbability";
 import { normalizeGachaCost } from "@/lib/gachaCost";
 
 export async function GET() {
@@ -16,17 +16,24 @@ export async function GET() {
         orderBy: (t, { asc }) => asc(t.sortOrder),
         with: {
             category: { columns: { name: true } },
-            rewards: { columns: { id: true, probability: true, isActive: true } },
+            rewards: { columns: { id: true } },
         },
     });
-    const data = machines.map((machine) => {
-        const probability = getActiveMachineProbabilitySummary(machine.rewards);
+    const machineProbabilities = await Promise.all(machines.map(async (machine) => ({
+        machineId: machine.id,
+        probability: await getMachineProbabilitySummary(machine.id),
+    })));
+    const probabilityByMachineId = new Map(
+        machineProbabilities.map(({ machineId, probability }) => [machineId, probability]),
+    );
 
+    const data = machines.map((machine) => {
+        const probability = probabilityByMachineId.get(machine.id);
         return {
             ...machine,
             _count: { rewards: machine.rewards.length },
-            probabilityTotal: probability.totalProbability,
-            isProbabilityComplete: probability.isComplete,
+            probabilityTotal: probability?.totalProbability ?? 0,
+            isProbabilityComplete: probability?.isComplete ?? false,
             rewards: undefined,
         };
     });

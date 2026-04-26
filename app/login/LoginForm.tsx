@@ -7,7 +7,6 @@ import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { showError } from "@/lib/swal";
 import { normalizeCallbackUrl } from "@/lib/authRedirect";
 import { TurnstileWidget } from "@/components/TurnstileWidget";
@@ -22,7 +21,6 @@ export function LoginForm({ logoUrl }: Readonly<LoginFormProps>) {
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [rememberMe, setRememberMe] = useState(false);
     const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
     const [turnstileError, setTurnstileError] = useState<string | null>(null);
     const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
@@ -52,11 +50,14 @@ export function LoginForm({ logoUrl }: Readonly<LoginFormProps>) {
                 username: formData.username,
                 password: formData.password,
                 turnstileToken,
+                callbackUrl,
                 redirect: false,
             });
 
             if (result?.error) {
                 showError(result.error);
+            } else if (result?.url) {
+                globalThis.location.href = result.url;
             } else {
                 globalThis.location.href = callbackUrl;
             }
@@ -136,20 +137,8 @@ export function LoginForm({ logoUrl }: Readonly<LoginFormProps>) {
                             </div>
                         </div>
 
-                        {/* Remember Me & Forgot Password */}
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <Checkbox
-                                    id="remember"
-                                    checked={rememberMe}
-                                    onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                                    className="border-border"
-                                />
-                                <label htmlFor="remember" className="text-sm text-muted-foreground cursor-pointer">
-                                    จดจำการเข้าสู่ระบบ
-                                </label>
-                            </div>
-                            <Link href="#" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                        <div className="flex justify-end">
+                            <Link href="/forgot-password" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                                 ลืมรหัสผ่าน
                             </Link>
                         </div>

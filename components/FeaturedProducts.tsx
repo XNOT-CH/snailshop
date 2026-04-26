@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
+import { useCart } from "@/components/providers/CartContext";
 import {
   showError,
   showPurchaseConfirm,
@@ -81,6 +82,7 @@ export function FeaturedProducts({
   initialMaintenance,
 }: Readonly<FeaturedProductsProps>) {
   const router = useRouter();
+  const { isInCart, openCart } = useCart();
   const maintenance = useMaintenanceStatus(initialMaintenance).purchase;
   const currencySettings = useCurrencySettings(initialCurrencySettings);
   const [products, setProducts] = useState<FeaturedProduct[]>(() =>
@@ -91,6 +93,11 @@ export function FeaturedProducts({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const handleBuyClick = async (product: FeaturedProduct) => {
+    if (isInCart(product.id)) {
+      openCart();
+      return;
+    }
+
     if (maintenance?.enabled) {
       showWarning(maintenance.message);
       return;
@@ -265,6 +272,7 @@ export function FeaturedProducts({
         style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
       >
         {products.map((product) => {
+          const inCart = isInCart(product.id);
           const discounted = hasDiscount(product);
           const activePrice = getActivePrice(product);
 
@@ -343,7 +351,11 @@ export function FeaturedProducts({
                           ) : (
                             <>
                               <ShoppingCart className="mr-2 h-4 w-4" />
-                              {maintenance?.enabled ? "ปิดปรับปรุง" : "สั่งซื้อ"}
+                              {maintenance?.enabled
+                                ? "ปิดปรับปรุง"
+                                : inCart
+                                  ? "ดูในตะกร้า"
+                                  : "สั่งซื้อ"}
                             </>
                           )}
                         </Button>

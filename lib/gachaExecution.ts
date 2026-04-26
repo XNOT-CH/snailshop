@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db, orders, products, users } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/encryption";
 import { getPointCurrencyName } from "@/lib/currencySettings";
@@ -39,7 +39,11 @@ export async function acquireGachaExecutionLock(userId: string, machineId: strin
         return {
             acquired: true,
             release: async () => {
-                await redisClient.del(key);
+                await redisClient.eval(
+                    "if redis.call('get', KEYS[1]) == ARGV[1] then return redis.call('del', KEYS[1]) else return 0 end",
+                    [key],
+                    [token],
+                );
             },
         };
     }
@@ -199,7 +203,7 @@ type ClaimProductRewardInput = {
 };
 
 export async function claimProductRewardOrThrow(tx: DbTransaction, input: ClaimProductRewardInput) {
-    if (input.isSold || input.orderId) {
+    if (input.isSold) {
         throw new Error("รางวัลนี้ถูกใช้งานไปแล้ว กรุณาสุ่มใหม่");
     }
 
@@ -216,13 +220,12 @@ export async function claimProductRewardOrThrow(tx: DbTransaction, input: ClaimP
         .update(products)
         .set({
             isSold: isLastStock,
-            orderId: nextOrderId,
+            orderId: isLastStock ? nextOrderId : null,
             secretData: nextSecretData,
         })
         .where(and(
             eq(products.id, input.productId),
             eq(products.isSold, false),
-            isNull(products.orderId),
             eq(products.secretData, input.secretData),
         ));
 

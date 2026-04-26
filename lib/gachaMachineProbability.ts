@@ -1,6 +1,8 @@
 import { and, eq } from "drizzle-orm";
-import { db, gachaMachines, gachaRewards } from "@/lib/db";
+import { db, gachaMachines } from "@/lib/db";
 import { hasExactProbabilityTotal, sumProbability } from "@/lib/gachaProbability";
+import { isRewardEligibleForRoll } from "@/lib/gachaRewardEligibility";
+import { fetchActiveGridRewards, fetchActiveSpinRewards } from "@/lib/gachaRewardQueries";
 
 type MachineRewardProbability = {
     probability: string | number | null;
@@ -19,13 +21,30 @@ export function getActiveMachineProbabilitySummary(rewards: MachineRewardProbabi
 }
 
 export async function getMachineProbabilitySummary(machineId: string) {
-    const rewards = await db.query.gachaRewards.findMany({
-        where: eq(gachaRewards.gachaMachineId, machineId),
+    const machine = await db.query.gachaMachines.findFirst({
+        where: eq(gachaMachines.id, machineId),
         columns: {
-            probability: true,
-            isActive: true,
+            gameType: true,
         },
     });
+
+    if (machine?.gameType === "GRID_3X3") {
+        const rewards = (await fetchActiveGridRewards(machineId))
+            .filter(isRewardEligibleForRoll)
+            .map((reward) => ({
+                probability: reward.probability,
+                isActive: true,
+            }));
+
+        return getActiveMachineProbabilitySummary(rewards);
+    }
+
+    const rewards = (await fetchActiveSpinRewards(machineId))
+        .filter(isRewardEligibleForRoll)
+        .map((reward) => ({
+            probability: reward.probability,
+            isActive: reward.isActive,
+        }));
 
     return getActiveMachineProbabilitySummary(rewards);
 }

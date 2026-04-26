@@ -1,21 +1,10 @@
 import { mysqlNow } from "@/lib/utils/date";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
 import { authConfig } from "@/auth.config";
-import { db, users, auditLogs, roles } from "@/lib/db";
-import { loginSchema } from "@/lib/validations";
-import { getUserPermissions } from "@/lib/permissions";
-import {
-    checkLoginRateLimit,
-    recordFailedLogin,
-    clearLoginAttempts,
-    getProgressiveDelay,
-    sleep,
-} from "@/lib/rateLimit";
+import { db, auditLogs } from "@/lib/db";
 import { AUDIT_ACTIONS } from "@/lib/auditLog";
-import { verifyTurnstileToken } from "@/lib/security/turnstile";
+import { authenticateLoginAttempt } from "@/lib/login";
 
 
 async function logAudit(params: {
@@ -50,99 +39,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             credentials: {
                 username: { label: "Username", type: "text" },
                 password: { label: "Password", type: "password" },
-                ipAddress: { label: "IP Address", type: "text" },
                 turnstileToken: { label: "Turnstile Token", type: "text" },
             },
-            async authorize(credentials) {
-                // Validate with Zod
-                const parsed = loginSchema.safeParse({
-                    username: credentials?.username,
-                    password: credentials?.password,
-                    turnstileToken: credentials?.turnstileToken,
-                });
-                if (!parsed.success) return null;
-
-                const { username, password, turnstileToken } = parsed.data;
-                const ipAddress = (credentials?.ipAddress as string) ?? "unknown";
-                const identifier = `${ipAddress}:${username}`;
-
-                const turnstileResult = await verifyTurnstileToken(turnstileToken, ipAddress);
-                if (!turnstileResult.success) {
-                    throw new Error(turnstileResult.message ?? "การยืนยันความปลอดภัยไม่สำเร็จ");
-                }
-
-                // Check rate limit
-                const rateLimit = checkLoginRateLimit(identifier);
-                if (rateLimit.blocked) {
-                    throw new Error(rateLimit.message ?? "ถูก rate limit");
-                }
-
-                // Progressive delay
-                const delay = getProgressiveDelay(identifier);
-                if (delay > 0) await sleep(delay);
-
-                // Find user
-                const user = await db.query.users.findFirst({
-                    where: eq(users.username, username),
+            async authorize(credentials, request) {
+                const result = await authenticateLoginAttempt({
+                    payload: {
+                        username: credentials?.username,
+                        password: credentials?.password,
+                        turnstileToken: credentials?.turnstileToken,
+                    },
+                    request,
+                    onAudit: async (entry) => {
+                        await logAudit({
+                            action:
+                                entry.action === "LOGIN"
+                                    ? AUDIT_ACTIONS.LOGIN
+                                    : AUDIT_ACTIONS.LOGIN_FAILED,
+                            userId: entry.userId,
+                            resourceName: entry.resourceName,
+                            status: entry.status,
+                            reason: entry.reason,
+                            ipAddress: entry.ipAddress,
+                        });
+                    },
                 });
 
-                if (!user) {
-                    recordFailedLogin(identifier);
-                    await logAudit({
-                        action: AUDIT_ACTIONS.LOGIN_FAILED,
-                        resourceName: username,
-                        status: "FAILURE",
-                        reason: "ไม่พบผู้ใช้",
-                        ipAddress,
-                    });
-                    throw new Error("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
+                if (!result.success) {
+                    throw new Error(result.message);
                 }
 
-                // Verify password
-                const isValidPassword = await bcrypt.compare(password, user.password);
-                if (!isValidPassword) {
-                    recordFailedLogin(identifier);
-                    const remaining = checkLoginRateLimit(identifier);
-                    await logAudit({
-                        action: AUDIT_ACTIONS.LOGIN_FAILED,
-                        userId: user.id,
-                        resourceName: username,
-                        status: "FAILURE",
-                        reason: "รหัสผ่านไม่ถูกต้อง",
-                        ipAddress,
-                    });
-                    const msg =
-                        remaining.remainingAttempts > 0
-                            ? `รหัสผ่านไม่ถูกต้อง (เหลืออีก ${remaining.remainingAttempts} ครั้ง)`
-                            : "รหัสผ่านไม่ถูกต้อง";
-                    throw new Error(msg);
-                }
-
-                // Success
-                clearLoginAttempts(identifier);
-                await logAudit({
-                    action: AUDIT_ACTIONS.LOGIN,
-                    userId: user.id,
-                    resourceName: username,
-                    status: "SUCCESS",
-                    ipAddress,
-                });
-
-                const roleRecord = await db.query.roles.findFirst({
-                    where: eq(roles.code, user.role),
-                    columns: { permissions: true },
-                });
-
-                return {
-                    id: user.id,
-                    name: user.name ?? user.username,
-                    email: user.email ?? "",
-                    image: user.image ?? null,
-                    // Custom fields
-                    role: user.role,
-                    username: user.username,
-                    permissions: getUserPermissions(user.role, roleRecord?.permissions ?? null),
-                };
+                return result.user;
             },
         }),
     ],

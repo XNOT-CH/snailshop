@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Loader2, Plus, Check, Search, Tag } from "lucide-react";
+import { ShoppingCart, Loader2, Plus, Search, Tag } from "lucide-react";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { useCart } from "@/components/providers/CartContext";
 import { showPurchaseConfirm, showPurchaseSuccessModal, showWarning, showErrorAlert } from "@/lib/swal";
@@ -36,7 +36,7 @@ export function ProductActions({
 }: Readonly<ProductActionsProps>) {
     const router = useRouter();
     const maintenance = useMaintenanceStatus().purchase;
-    const { addToCart, isInCart, isLoading: cartLoading } = useCart();
+    const { addToCart, isInCart, isLoading: cartLoading, openCart } = useCart();
     const [quantity, setQuantity] = useState(1);
     const [isBuying, setIsBuying] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
@@ -198,7 +198,12 @@ export function ProductActions({
 
     // Add to Cart handler
     const handleAddToCart = async () => {
-        if (disabled || inCart || isAdding) return;
+        if (disabled || isAdding) return;
+
+        if (inCart) {
+            openCart();
+            return;
+        }
 
         setIsAdding(true);
         try {
@@ -330,8 +335,8 @@ export function ProductActions({
                 )}
                 {!isAdding && inCart && (
                     <>
-                        <Check className="h-4 w-4" />
-                        อยู่ในตะกร้าแล้ว
+                        <ShoppingCart className="h-4 w-4" />
+                        ดูในตะกร้า
                     </>
                 )}
                 {!isAdding && !inCart && (

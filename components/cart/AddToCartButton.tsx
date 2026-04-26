@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Plus, Check, Loader2 } from "lucide-react";
+import { Plus, ShoppingCart, Loader2 } from "lucide-react";
 import { useCart, CartItem } from "@/components/providers/CartContext";
 import { useState } from "react";
 
@@ -20,7 +20,7 @@ export function AddToCartButton({
     className = "",
     showText = true,
 }: Readonly<AddToCartButtonProps>) {
-    const { addToCart, isInCart, isLoading: cartLoading } = useCart();
+    const { addToCart, isInCart, isLoading: cartLoading, openCart } = useCart();
     const [isAdding, setIsAdding] = useState(false);
     const inCart = isInCart(product.id);
 
@@ -28,7 +28,12 @@ export function AddToCartButton({
         e.preventDefault();
         e.stopPropagation();
 
-        if (disabled || inCart || isAdding) return;
+        if (disabled || isAdding) return;
+
+        if (inCart) {
+            openCart();
+            return;
+        }
 
         setIsAdding(true);
         try {
@@ -49,14 +54,14 @@ export function AddToCartButton({
                 showText
                     ? undefined
                     : inCart
-                        ? `อยู่ในตะกร้าแล้ว: ${product.name}`
+                        ? `ดู ${product.name} ในตะกร้า`
                         : `เพิ่ม ${product.name} ลงตะกร้า`
             }
         >
             {isAdding && <Loader2 className="h-4 w-4 animate-spin" />}
-            {!isAdding && inCart && <Check className="h-4 w-4" />}
+            {!isAdding && inCart && <ShoppingCart className="h-4 w-4" />}
             {!isAdding && !inCart && <Plus className="h-4 w-4" />}
-            {showText && (inCart ? "อยู่ในตะกร้า" : "ตะกร้า")}
+            {showText && (inCart ? "ดูในตะกร้า" : "ตะกร้า")}
         </Button>
     );
 }

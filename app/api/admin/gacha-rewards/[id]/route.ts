@@ -24,6 +24,10 @@ export async function PUT(request: Request, { params }: RouteParams) {
         const result = await validateBody(request, gachaRewardPatchSchema);
         if ("error" in result) return result.error;
         const body = result.data;
+        const impactedMachineIds = new Set(
+            [existingReward?.gachaMachineId ?? null, body.gachaMachineId ?? null]
+                .filter((machineId): machineId is string => Boolean(machineId)),
+        );
 
         const updateData: Record<string, unknown> = {};
         if (body.rewardType !== undefined) updateData.rewardType = body.rewardType;
@@ -45,8 +49,8 @@ export async function PUT(request: Request, { params }: RouteParams) {
         }
 
         await db.update(gachaRewards).set(updateData).where(eq(gachaRewards.id, id));
-        if (existingReward?.gachaMachineId) {
-            await disableMachineIfProbabilityInvalid(existingReward.gachaMachineId);
+        for (const machineId of impactedMachineIds) {
+            await disableMachineIfProbabilityInvalid(machineId);
         }
         const updated = await db.query.gachaRewards.findFirst({ where: eq(gachaRewards.id, id) });
         return NextResponse.json({ success: true, data: updated });

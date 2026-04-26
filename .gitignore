@@ -44,10 +44,17 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# local agent/tooling logs
+.codex-*.log
+.agent/
+.cline/
+.gemini/
+
 /lib/generated/prisma
 
 # Database backups (may contain sensitive data)
 /backups
+/docker-data
 
 # Drizzle migrations snapshot (local only)
 drizzle/meta
@@ -61,3 +68,9 @@ lint-report.json
 # Database backup files (may contain sensitive data)
 *.sql
 !drizzle/*.sql
+
+# Runtime storage uploads and private files
+/storage/private/
+/storage/uploads/
+/storage/*.log
+/storage/tmp*

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { db, gachaRewards } from "@/lib/db";
 import { eq, and, isNull } from "drizzle-orm";
+import { isRewardEligibleForRoll } from "@/lib/gachaRewardEligibility";
+import { fetchActiveGridRewards, getMachineGameType } from "@/lib/gachaRewardQueries";
 
 /** GET /api/gacha/drop-rates?machineId=xxx
  *  Returns per-tier drop rates calculated from the probability weights
@@ -11,13 +13,30 @@ export async function GET(req: Request) {
     const machineId = searchParams.get("machineId");
 
     try {
-        const rewards = await db.query.gachaRewards.findMany({
-            where: and(
-                eq(gachaRewards.isActive, true),
-                machineId ? eq(gachaRewards.gachaMachineId, machineId) : isNull(gachaRewards.gachaMachineId),
-            ),
-            columns: { tier: true, probability: true },
-        });
+        const gameType = await getMachineGameType(machineId);
+        const rewards = gameType === "GRID_3X3"
+            ? (await fetchActiveGridRewards(machineId)).filter(isRewardEligibleForRoll)
+            : (await db.query.gachaRewards.findMany({
+                where: and(
+                    eq(gachaRewards.isActive, true),
+                    machineId ? eq(gachaRewards.gachaMachineId, machineId) : isNull(gachaRewards.gachaMachineId),
+                ),
+                columns: {
+                    tier: true,
+                    probability: true,
+                    rewardType: true,
+                    rewardName: true,
+                    rewardAmount: true,
+                },
+                with: {
+                    product: {
+                        columns: {
+                            isSold: true,
+                            orderId: true,
+                        },
+                    },
+                },
+            })).filter(isRewardEligibleForRoll);
 
         if (rewards.length === 0) {
             return NextResponse.json({ success: true, data: [] });

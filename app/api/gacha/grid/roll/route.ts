@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { and, count, eq, gte, isNull, lte } from "drizzle-orm";
 import { isAuthenticated } from "@/lib/auth";
-import { db, gachaMachines, gachaRewards, gachaRollLogs, users } from "@/lib/db";
+import { db, gachaMachines, gachaRollLogs, users } from "@/lib/db";
 import {
     acquireGachaExecutionLock,
     claimProductRewardOrThrow,
@@ -11,7 +11,9 @@ import {
 } from "@/lib/gachaExecution";
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
-import { pickWeightedCandidate } from "@/lib/gachaProbability";
+import { isRewardEligibleForRoll } from "@/lib/gachaRewardEligibility";
+import { fetchActiveGridRewards, isRewardEligibleForRoll } from "@/lib/gachaRewardQueries";
+import { hasExactProbabilityTotal, pickWeightedCandidate } from "@/lib/gachaProbability";
 import { getGachaRewardTypeLabel, normalizeGachaCost } from "@/lib/gachaCost";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkGachaRateLimit, getClientIp } from "@/lib/rateLimit";
@@ -141,45 +143,22 @@ async function handleGridRoll(userId: string, machineId: string | null, costType
     }
     const user = userRes.user;
 
-    const rewardList = await db.query.gachaRewards.findMany({
-        where: and(
-            eq(gachaRewards.isActive, true),
-            machineId ? eq(gachaRewards.gachaMachineId, machineId) : isNull(gachaRewards.gachaMachineId),
-        ),
-        limit: 9,
-        with: {
-            product: {
-                columns: {
-                    id: true,
-                    name: true,
-                    price: true,
-                    imageUrl: true,
-                    isSold: true,
-                    orderId: true,
-                    secretData: true,
-                    stockSeparator: true,
-                },
-            },
-        },
-    });
-
-    const eligible = rewardList.filter((reward) => {
-        if (reward.rewardType === "PRODUCT") {
-            return Boolean(reward.product && !reward.product.isSold && !reward.product.orderId);
-        }
-
-        return Boolean(reward.rewardName && reward.rewardAmount && Number(reward.rewardAmount) > 0);
-    });
+    const rewardList = await fetchActiveGridRewards(machineId);
+    const eligible = rewardList.filter(isRewardEligibleForRoll);
 
     if (eligible.length === 0) {
         return { error: "ไม่มีรางวัลในขณะนี้", status: 400 };
+    }
+
+    if (!hasExactProbabilityTotal(eligible)) {
+        return { error: "ตู้กาชานี้ยังตั้งค่าอัตราสุ่มไม่ครบ 100% จึงยังไม่สามารถสุ่มได้", status: 400 };
     }
 
     const chosen = pickWeightedCandidate(eligible);
     if (!chosen) {
         return { error: "ไม่พบรางวัลที่สามารถสุ่มได้", status: 400 };
     }
-    const wonIndex = rewardList.findIndex((reward) => reward.id === chosen.id);
+    const wonIndex = eligible.findIndex((reward) => reward.id === chosen.id);
     const currencySettings = await getCurrencySettings().catch(() => null);
     const { rewardName, imageUrl, rewardAmount } = getRewardDetails(chosen, currencySettings);
 

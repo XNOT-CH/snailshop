@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 
-import { db, gachaRewards } from "@/lib/db";
-import { eq, and, isNull } from "drizzle-orm";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getGachaRewardTypeLabel } from "@/lib/gachaCost";
+import { isRewardEligibleForRoll } from "@/lib/gachaRewardEligibility";
+import { fetchActiveGridRewards } from "@/lib/gachaRewardQueries";
 
 /** GET /api/gacha/grid/rewards?machineId=xxx  — fetch up to 9 active rewards for a grid machine */
 export async function GET(req: Request) {
@@ -11,18 +11,8 @@ export async function GET(req: Request) {
     const machineId = searchParams.get("machineId");
     const currencySettings = await getCurrencySettings().catch(() => null);
 
-    const rewards = await db.query.gachaRewards.findMany({
-        where: and(
-            eq(gachaRewards.isActive, true),
-            machineId ? eq(gachaRewards.gachaMachineId, machineId) : isNull(gachaRewards.gachaMachineId),
-        ),
-        limit: 9,
-        orderBy: (t, { asc }) => asc(t.createdAt),
-        with: { product: { columns: { id: true, name: true, price: true, imageUrl: true } } },
-    });
-
-
-    const mapped = rewards.map((r) => {
+    const rewards = await fetchActiveGridRewards(machineId);
+    const mapped = rewards.filter(isRewardEligibleForRoll).map((r) => {
         let rewardName = "รางวัล";
         if (r.rewardType === "PRODUCT") {
             rewardName = r.product?.name ?? "รางวัล";

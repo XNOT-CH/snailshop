@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { LEGACY_LOGIN_DEPRECATED_MESSAGE } from "@/lib/login";
 
 // ── Mock dependencies BEFORE importing route ──
 vi.mock("@/lib/db", () => ({
@@ -15,6 +16,7 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("@/lib/auth", () => ({
   isAdmin: vi.fn(),
+  requirePermission: vi.fn(),
 }));
 
 vi.mock("@/lib/auditLog", () => ({
@@ -59,15 +61,22 @@ vi.mock("@/lib/encryption", () => ({
   decrypt: vi.fn((v: string) => v.replace("encrypted:", "")),
 }));
 
+vi.mock("@/lib/cache", () => ({
+  invalidateProductCaches: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/lib/features/products/mutations", () => ({
+  createProduct: vi.fn().mockResolvedValue({ id: "p1" }),
+}));
+
 // Now import the route handlers
 import { POST as loginPOST } from "@/app/api/login/route";
 import { POST as registerPOST } from "@/app/api/register/route";
 import { POST as productPOST } from "@/app/api/products/route";
 import { db } from "@/lib/db";
-import { isAdmin } from "@/lib/auth";
+import { isAdmin, requirePermission } from "@/lib/auth";
 import { parseBody } from "@/lib/api";
 import { auditFromRequest } from "@/lib/auditLog";
-import bcrypt from "bcryptjs";
 import { NextRequest } from "next/server";
 
 function makeRequest(body: Record<string, unknown>, method = "POST"): NextRequest {
@@ -83,49 +92,12 @@ describe("API: /api/login", () => {
     vi.clearAllMocks();
   });
 
-  it("returns 401 when user not found", async () => {
-    vi.mocked(parseBody).mockResolvedValue({ data: { username: "nouser", password: "pass123" } });
-    vi.mocked(db.query.users.findFirst).mockResolvedValue(undefined);
-
+  it("returns 410 because the legacy login route is deprecated", async () => {
     const res = await loginPOST(makeRequest({ username: "nouser", password: "pass123" }));
     const body = await res.json();
-    expect(res.status).toBe(401);
+    expect(res.status).toBe(410);
     expect(body.success).toBe(false);
-  });
-
-  it("returns 401 when password is wrong", async () => {
-    vi.mocked(parseBody).mockResolvedValue({ data: { username: "testuser", password: "wrongpass" } });
-    vi.mocked(db.query.users.findFirst).mockResolvedValue({
-      id: "u1", username: "testuser", password: "$2a$10$hash", role: "USER",
-    } as any);
-    vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
-
-    const res = await loginPOST(makeRequest({ username: "testuser", password: "wrongpass" }));
-    const body = await res.json();
-    expect(res.status).toBe(401);
-    expect(body.success).toBe(false);
-  });
-
-  it("returns 200 on successful login", async () => {
-    vi.mocked(parseBody).mockResolvedValue({ data: { username: "testuser", password: "correctpass" } });
-    vi.mocked(db.query.users.findFirst).mockResolvedValue({
-      id: "u1", username: "testuser", password: "$2a$10$hash", role: "USER",
-    } as any);
-    vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
-
-    const res = await loginPOST(makeRequest({ username: "testuser", password: "correctpass" }));
-    const body = await res.json();
-    expect(res.status).toBe(200);
-    expect(body.success).toBe(true);
-    expect(body.user.username).toBe("testuser");
-  });
-
-  it("returns error when parseBody fails", async () => {
-    const errResponse = new Response(JSON.stringify({ success: false }), { status: 400 });
-    vi.mocked(parseBody).mockResolvedValue({ error: errResponse as any });
-
-    const res = await loginPOST(makeRequest({}));
-    expect(res.status).toBe(400);
+    expect(body.message).toBe(LEGACY_LOGIN_DEPRECATED_MESSAGE);
   });
 });
 
@@ -172,10 +144,11 @@ describe("API: /api/products (POST)", () => {
     // Re-setup mocks that clearAllMocks resets
     vi.mocked(db.insert).mockReturnValue({ values: vi.fn().mockResolvedValue(undefined) } as any);
     vi.mocked(auditFromRequest).mockResolvedValue(undefined as any);
+    vi.mocked(requirePermission).mockResolvedValue({ success: true, userId: "admin1" } as any);
   });
 
   it("returns 401 when not admin", async () => {
-    vi.mocked(isAdmin).mockResolvedValue({ success: false, error: "Unauthorized" });
+    vi.mocked(requirePermission).mockResolvedValue({ success: false, error: "Unauthorized" } as any);
 
     const res = await productPOST(makeRequest({ title: "Game", price: 100, category: "Games" }));
     const body = await res.json();
@@ -184,7 +157,7 @@ describe("API: /api/products (POST)", () => {
   });
 
   it.skip("creates product when admin (needs full request mock)", async () => {
-    vi.mocked(isAdmin).mockResolvedValue({ success: true, userId: "admin1" });
+    vi.mocked(requirePermission).mockResolvedValue({ success: true, userId: "admin1" } as any);
 
     const res = await productPOST(makeRequest({ title: "Game Key", price: "100", category: "Games" }));
     const body = await res.json();
@@ -193,7 +166,7 @@ describe("API: /api/products (POST)", () => {
   });
 
   it("returns 400 for missing fields", async () => {
-    vi.mocked(isAdmin).mockResolvedValue({ success: true, userId: "admin1" });
+    vi.mocked(requirePermission).mockResolvedValue({ success: true, userId: "admin1" } as any);
 
     const res = await productPOST(makeRequest({ title: "", price: "", category: "" }));
     const body = await res.json();
@@ -202,7 +175,7 @@ describe("API: /api/products (POST)", () => {
   });
 
   it("returns 400 for invalid price", async () => {
-    vi.mocked(isAdmin).mockResolvedValue({ success: true, userId: "admin1" });
+    vi.mocked(requirePermission).mockResolvedValue({ success: true, userId: "admin1" } as any);
 
     const res = await productPOST(makeRequest({ title: "Game", price: "-5", category: "Games" }));
     const body = await res.json();
@@ -210,7 +183,7 @@ describe("API: /api/products (POST)", () => {
   });
 
   it("validates discount price < original price", async () => {
-    vi.mocked(isAdmin).mockResolvedValue({ success: true, userId: "admin1" });
+    vi.mocked(requirePermission).mockResolvedValue({ success: true, userId: "admin1" } as any);
 
     const res = await productPOST(makeRequest({ title: "Game", price: "100", discountPrice: "200", category: "Games" }));
     const body = await res.json();

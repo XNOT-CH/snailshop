@@ -11,6 +11,7 @@ import { GachaGridMachine } from "@/components/GachaGridMachine";
 import { type GachaProductLite, type GachaTier } from "@/lib/gachaGrid";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getGachaRewardTypeLabel, normalizeGachaCost } from "@/lib/gachaCost";
+import { isRewardEligibleForRoll } from "@/lib/gachaRewardEligibility";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { buildPageMetadata } from "@/lib/seo";
 import { EMPTY_USER_BALANCES } from "@/lib/userBalances";
@@ -106,11 +107,11 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
         try {
             const rewards = await db.query.gachaRewards.findMany({
                 where: and(eq(gachaRewards.gachaMachineId, id), eq(gachaRewards.isActive, true)),
-                with: { product: { columns: { id: true, name: true, price: true, imageUrl: true, isSold: true } } },
+                with: { product: { columns: { id: true, name: true, price: true, imageUrl: true, isSold: true, orderId: true } } },
             });
 
             products = rewards
-                .filter((reward) => (reward.rewardType === "PRODUCT" ? reward.product && !reward.product.isSold : reward.rewardName && reward.rewardAmount))
+                .filter((reward) => isRewardEligibleForRoll(reward))
                 .map((reward) => {
                     if (reward.rewardType === "PRODUCT" && reward.product) {
                         return {

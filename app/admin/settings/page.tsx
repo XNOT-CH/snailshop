@@ -37,6 +37,7 @@ interface SiteSettings {
     bannerSubtitle3: string;
     bannersJson: string;
     logoUrl: string;
+    ogImageUrl: string;
     backgroundImage: string;
     backgroundBlur: boolean;
     showAllProducts: boolean;
@@ -47,8 +48,10 @@ export default function AdminSettingsPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+    const [isUploadingOg, setIsUploadingOg] = useState(false);
     const [isUploadingBg, setIsUploadingBg] = useState(false);
     const logoInputRef = useRef<HTMLInputElement>(null);
+    const ogInputRef = useRef<HTMLInputElement>(null);
     const bgInputRef = useRef<HTMLInputElement>(null);
     const [extraBanners, setExtraBanners] = useState<ExtraBanner[]>([]);
     const [settings, setSettings] = useState<SiteSettings>({
@@ -66,6 +69,7 @@ export default function AdminSettingsPage() {
         bannerSubtitle3: "",
         bannersJson: "",
         logoUrl: "",
+        ogImageUrl: "",
         backgroundImage: "",
         backgroundBlur: true,
         showAllProducts: true,
@@ -96,6 +100,7 @@ export default function AdminSettingsPage() {
                     bannerSubtitle3: data.data.bannerSubtitle3 || "",
                     bannersJson: data.data.bannersJson || "",
                     logoUrl: data.data.logoUrl || "",
+                    ogImageUrl: data.data.ogImageUrl || "",
                     backgroundImage: data.data.backgroundImage || "",
                     backgroundBlur: data.data.backgroundBlur ?? true,
                     showAllProducts: data.data.showAllProducts ?? true,
@@ -262,6 +267,41 @@ export default function AdminSettingsPage() {
             showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
         } finally {
             setIsUploadingBg(false);
+        }
+    };
+
+    const handleOgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขตั้งค่า");
+            return;
+        }
+
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setIsUploadingOg(true);
+        try {
+            const compressed = await compressImage(file);
+            const formData = new FormData();
+            formData.append("file", compressed);
+
+            const res = await fetch("/api/upload", {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                updateSetting("ogImageUrl", data.url);
+                showSuccess("อัพโหลดรูปแชร์ลิงก์สำเร็จ!");
+            } else {
+                showError(data.message || "อัพโหลดไม่สำเร็จ");
+            }
+        } catch (error) {
+            console.error("[SETTINGS_UPLOAD_OG]", error);
+            showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
+        } finally {
+            setIsUploadingOg(false);
         }
     };
 
@@ -438,6 +478,101 @@ export default function AdminSettingsPage() {
                                             <div className="rounded-lg border bg-muted h-full flex items-center justify-center p-4">
                                                 <p className="text-sm text-muted-foreground">อัพโหลดหรือใส่ URL เพื่อดูตัวอย่าง</p>
                                             </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className={assetPanelClass}>
+                                <div className="space-y-1">
+                                    <Label className="flex items-center gap-2">
+                                        <ImageIcon className="h-4 w-4" />
+                                        รูปแชร์ลิงก์เว็บไซต์
+                                    </Label>
+                                    <p className="text-xs text-muted-foreground">
+                                        ใช้เป็นรูปตัวอย่างเวลาแชร์ลิงก์เว็บลง Facebook, LINE หรือ Discord • {IMAGE_UPLOAD_RECOMMENDATIONS.socialShare}
+                                    </p>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="relative w-full overflow-hidden rounded-xl border bg-muted aspect-[1200/630]">
+                                        {settings.ogImageUrl ? (
+                                            <>
+                                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                <img
+                                                    src={settings.ogImageUrl}
+                                                    alt="Social Share Preview"
+                                                    className="h-full w-full object-cover"
+                                                    onError={(e) => {
+                                                        (e.target as HTMLImageElement).src = "https://placehold.co/1200x630/f1f5f9/64748b?text=Invalid+URL";
+                                                    }}
+                                                />
+                                                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/65 via-black/15 to-transparent p-4 text-white">
+                                                    <p className="text-sm font-semibold">{settings.heroTitle || "ชื่อเว็บไซต์"}</p>
+                                                    <p className="text-xs opacity-90">{settings.heroDescription || "คำอธิบายเว็บไซต์"}</p>
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="flex h-full items-center justify-center p-6 text-center">
+                                                <p className="text-sm text-muted-foreground">อัพโหลดหรือวาง URL เพื่อกำหนดรูปตัวอย่างเวลามีคนแชร์ลิงก์เว็บไซต์</p>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                        <input
+                                            ref={ogInputRef}
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/webp,image/gif"
+                                            className="hidden"
+                                            onChange={handleOgUpload}
+                                        />
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            className="gap-2"
+                                            onClick={() => ogInputRef.current?.click()}
+                                            disabled={isUploadingOg}
+                                        >
+                                            {isUploadingOg ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Upload className="h-4 w-4" />
+                                            )}
+                                            {isUploadingOg ? "กำลังอัพโหลด..." : "อัพโหลด"}
+                                        </Button>
+                                        <span className="text-sm text-muted-foreground self-center">หรือ</span>
+                                        {settings.ogImageUrl && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-red-500 hover:text-red-600"
+                                                onClick={() => updateSetting("ogImageUrl", "")}
+                                            >
+                                                ล้างรูป
+                                            </Button>
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-col gap-2 sm:flex-row">
+                                        <Input
+                                            value={settings.ogImageUrl}
+                                            onChange={(e) => updateSetting("ogImageUrl", e.target.value)}
+                                            placeholder="วาง URL รูปแชร์ลิงก์..."
+                                            className="flex-1"
+                                        />
+                                        {settings.ogImageUrl && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                onClick={() => updateSetting("ogImageUrl", "")}
+                                                className="text-red-500 hover:text-red-600 sm:shrink-0"
+                                                aria-label="ล้าง URL รูปแชร์ลิงก์"
+                                            >
+                                                <X className="h-4 w-4" />
+                                            </Button>
                                         )}
                                     </div>
                                 </div>

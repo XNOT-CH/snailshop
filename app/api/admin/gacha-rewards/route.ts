@@ -17,7 +17,7 @@ export async function GET(request: Request) {
         const rewards = await db.query.gachaRewards.findMany({
             where: machineId ? eq(gachaRewards.gachaMachineId, machineId) : undefined,
             orderBy: (t, { desc }) => desc(t.createdAt),
-            with: { product: { columns: { id: true, name: true, price: true, imageUrl: true, category: true, isSold: true } } },
+            with: { product: { columns: { id: true, name: true, price: true, imageUrl: true, category: true, isSold: true, orderId: true } } },
         });
         type RewardRow = (typeof rewards)[number];
         return NextResponse.json({

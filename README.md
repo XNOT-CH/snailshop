@@ -1,48 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# My Game Store
+
+ร้านขายไอดีเกมและสินค้าดิจิทัลสำหรับตลาดไทย พัฒนาด้วย Next.js 16, TypeScript, Drizzle ORM และ MySQL
 
 ## Getting Started
 
-First, start the isolated development database:
+เริ่มฐานข้อมูล dev แบบแยก:
 
 ```bash
 docker compose up -d app_db_dev
 ```
 
-Then push the schema into the dev database:
+หรือบน Windows ใช้:
+
+```bash
+scripts\windows\start-dev-db.bat
+```
+
+sync schema เข้า dev database:
 
 ```bash
 set APP_ENV=development && npm run db:push
 ```
 
-Then run the development server:
+หรือบน Windows ใช้:
+
+```bash
+scripts\windows\db-push-dev.bat
+```
+
+รัน dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001) with your browser to see the result.
+หรือบน Windows ใช้:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+scripts\windows\dev-web.bat
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+หน้าเว็บ local อยู่ที่ [http://localhost:3001](http://localhost:3001)
 
-## Learn More
+## Common Commands
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run dev
+npm run build
+npm run test
+npm run db:push
+npm run db:studio
+docker compose up -d --build web
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Windows helper scripts ถูกย้ายไปไว้ใน `scripts/windows/`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Repository Layout
 
-## Deploy on Vercel
+```text
+app/              Next.js app router และ API routes
+components/       UI และ feature components
+lib/              db, auth, business logic, utilities
+hooks/            React hooks
+tests/            unit/integration tests
+public/           static assets
+scripts/          automation, db, ops, Windows helper scripts
+docs/             runbooks, database notes, project docs
+drizzle/          SQL migrations
+storage/          runtime files, uploads, private assets
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Important Paths
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `scripts/windows/` คำสั่งช่วยงานสำหรับ Windows
+- `docs/runbooks/` เอกสาร incident และ operations
+- `docs/database/` แผน DB และ SQL ที่เกี่ยวข้อง
+- `storage/uploads/` ไฟล์ที่อัปโหลดตอน runtime
+- `storage/private/` ไฟล์ private เช่นสลิป
+
+## Notes
+
+- ไฟล์ runtime ใน `storage/uploads/` และ `storage/private/` ไม่ควร commit เข้า git
+- ไฟล์ generated เช่น `.next/`, `coverage/`, `.scannerwork/` และ `.codex-*.log` เป็นไฟล์ local-only

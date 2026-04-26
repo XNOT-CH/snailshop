@@ -17,6 +17,7 @@ import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import {
   DEFAULT_SITE_DESCRIPTION,
+  DEFAULT_OG_IMAGE_PATH,
   SITE_LOCALE,
   absoluteUrl,
   getBaseUrl,
@@ -42,6 +43,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const siteName = resolveSiteName(settings?.heroTitle);
   const siteDescription = settings?.heroDescription?.trim() || DEFAULT_SITE_DESCRIPTION;
   const siteTitle = `${siteName} - Game ID Marketplace`;
+  const socialImage =
+    toAbsoluteAssetUrl(settings?.ogImageUrl || settings?.bannerImage1 || settings?.logoUrl) ||
+    absoluteUrl(DEFAULT_OG_IMAGE_PATH);
 
   return {
     metadataBase: new URL(getBaseUrl()),
@@ -60,11 +64,17 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName,
       locale: SITE_LOCALE,
       type: "website",
+      images: [
+        {
+          url: socialImage,
+        },
+      ],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title: siteTitle,
       description: siteDescription,
+      images: [socialImage],
     },
     robots: {
       index: true,

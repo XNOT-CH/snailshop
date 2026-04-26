@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { loginSchema, registerSchema } from "@/lib/validations/auth";
+import { forgotPasswordSchema, loginSchema, registerSchema, resetPasswordSchema } from "@/lib/validations/auth";
 import { createProductSchema, updateProductSchema } from "@/lib/validations/product";
 import { navItemSchema, newsItemSchema, popupSchema, footerLinkSchema, helpItemSchema, roleSchema } from "@/lib/validations/content";
 import { gachaMachineSchema, gachaRewardSchema, gachaSettingsSchema } from "@/lib/validations/gacha";
@@ -29,21 +29,46 @@ describe("auth validations", () => {
         email: "test@example.com",
         password: "password123",
         confirmPassword: "password123",
+        turnstileToken: "token-1",
       });
       expect(result.success).toBe(true);
     });
     it("rejects short username", () => {
-      expect(registerSchema.safeParse({ username: "ab", email: "", password: "password123", confirmPassword: "password123" }).success).toBe(false);
+      expect(registerSchema.safeParse({ username: "ab", email: "", password: "password123", confirmPassword: "password123", turnstileToken: "token-1" }).success).toBe(false);
     });
     it("rejects mismatched passwords", () => {
-      expect(registerSchema.safeParse({ username: "testuser", email: "", password: "pass123", confirmPassword: "pass456" }).success).toBe(false);
+      expect(registerSchema.safeParse({ username: "testuser", email: "", password: "pass123", confirmPassword: "pass456", turnstileToken: "token-1" }).success).toBe(false);
     });
     it("rejects short password", () => {
-      expect(registerSchema.safeParse({ username: "testuser", email: "", password: "short", confirmPassword: "short" }).success).toBe(false);
+      expect(registerSchema.safeParse({ username: "testuser", email: "", password: "short", confirmPassword: "short", turnstileToken: "token-1" }).success).toBe(false);
     });
     it("allows empty email", () => {
-      const result = registerSchema.safeParse({ username: "testuser", email: "", password: "password123", confirmPassword: "password123" });
+      const result = registerSchema.safeParse({ username: "testuser", email: "", password: "password123", confirmPassword: "password123", turnstileToken: "token-1" });
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe("forgotPasswordSchema", () => {
+    it("accepts identifier without turnstile token", () => {
+      expect(forgotPasswordSchema.safeParse({ identifier: "user@example.com" }).success).toBe(true);
+    });
+  });
+
+  describe("resetPasswordSchema", () => {
+    it("accepts valid reset password data", () => {
+      expect(resetPasswordSchema.safeParse({
+        token: "token-1",
+        password: "password123",
+        confirmPassword: "password123",
+      }).success).toBe(true);
+    });
+
+    it("rejects mismatched passwords", () => {
+      expect(resetPasswordSchema.safeParse({
+        token: "token-1",
+        password: "password123",
+        confirmPassword: "password456",
+      }).success).toBe(false);
     });
   });
 });
@@ -230,20 +255,25 @@ describe("topup validations", () => {
 describe("promoCode validations", () => {
   describe("promoCodeSchema", () => {
     it("accepts valid promo code", () => {
-      const result = promoCodeSchema.safeParse({ code: "SAVE10", discountType: "PERCENTAGE", discountValue: 10 });
+      const result = promoCodeSchema.safeParse({
+        code: "SAVE10",
+        codeType: "DISCOUNT",
+        discountType: "PERCENTAGE",
+        discountValue: 10,
+      });
       expect(result.success).toBe(true);
     });
     it("rejects short code", () => {
-      expect(promoCodeSchema.safeParse({ code: "AB", discountType: "FIXED", discountValue: 50 }).success).toBe(false);
+      expect(promoCodeSchema.safeParse({ code: "AB", codeType: "DISCOUNT", discountType: "FIXED", discountValue: 50 }).success).toBe(false);
     });
     it("rejects lowercase code", () => {
-      expect(promoCodeSchema.safeParse({ code: "save10", discountType: "FIXED", discountValue: 50 }).success).toBe(false);
+      expect(promoCodeSchema.safeParse({ code: "save10", codeType: "DISCOUNT", discountType: "FIXED", discountValue: 50 }).success).toBe(false);
     });
     it("rejects percentage over 100", () => {
-      expect(promoCodeSchema.safeParse({ code: "CRAZY", discountType: "PERCENTAGE", discountValue: 150 }).success).toBe(false);
+      expect(promoCodeSchema.safeParse({ code: "CRAZY", codeType: "DISCOUNT", discountType: "PERCENTAGE", discountValue: 150 }).success).toBe(false);
     });
     it("allows 100% percentage", () => {
-      expect(promoCodeSchema.safeParse({ code: "FREE100", discountType: "PERCENTAGE", discountValue: 100 }).success).toBe(true);
+      expect(promoCodeSchema.safeParse({ code: "FREE100", codeType: "DISCOUNT", discountType: "PERCENTAGE", discountValue: 100 }).success).toBe(true);
     });
   });
 });

@@ -21,7 +21,6 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
     const [turnstileError, setTurnstileError] = useState<string | null>(null);
     const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
@@ -203,26 +202,16 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
                         {/* Confirm Password */}
                         <div className="space-y-2">
                             <label htmlFor="reg-confirm-password" className="text-sm text-muted-foreground">ยืนยันรหัสผ่าน</label>
-                            <div className="relative">
-                                <Input
-                                    id="reg-confirm-password"
-                                    type={showConfirmPassword ? "text" : "password"}
-                                    placeholder="ยืนยันรหัสผ่านอีกครั้ง"
-                                    autoComplete="new-password"
-                                    className="h-12 bg-muted/50 border-border rounded-xl pr-12"
-                                    value={formData.confirmPassword}
-                                    onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                                    required
-                                />
-                                <button
-                                    type="button"
-                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    aria-label={showConfirmPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary transition-colors"
-                                >
-                                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                                </button>
-                            </div>
+                            <Input
+                                id="reg-confirm-password"
+                                type="password"
+                                placeholder="ยืนยันรหัสผ่านอีกครั้ง"
+                                autoComplete="new-password"
+                                className="h-12 bg-muted/50 border-border rounded-xl"
+                                value={formData.confirmPassword}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                                required
+                            />
                         </div>
 
                         {/* Password Strength Indicator */}

@@ -14,6 +14,7 @@ import { getPointCurrencyName } from "@/lib/currencySettings";
 import { PERMISSIONS } from "@/lib/permissions";
 import Image from "next/image";
 import { hasExactProbabilityTotal } from "@/lib/gachaProbability";
+import { isRewardEligibleForRoll } from "@/lib/gachaRewardEligibility";
 
 interface GachaReward {
     id: string;
@@ -32,7 +33,9 @@ interface GachaReward {
         imageUrl: string | null;
         category: string;
         isSold: boolean;
+        orderId: string | null;
     } | null;
+    createdAt?: string;
 }
 
 const inputCls = "w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-[#145de7]/30 focus:border-[#145de7] transition disabled:opacity-40";
@@ -134,11 +137,7 @@ function getSimulationRewardName(reward: GachaReward) {
 }
 
 function isRewardEligibleForSimulation(reward: GachaReward) {
-    if (reward.rewardType === "PRODUCT") {
-        return Boolean(reward.product && !reward.product.isSold);
-    }
-
-    return Boolean(reward.rewardAmount && Number(reward.rewardAmount) > 0);
+    return isRewardEligibleForRoll(reward);
 }
 
 function validateReward(form: any, rewards: GachaReward[], ignoreId?: string): string | null {
@@ -420,6 +419,7 @@ export default function EditGachaMachinePage() {
     } | null>(null);
 
     const [machineName, setMachineName] = useState("");
+    const [machineGameType, setMachineGameType] = useState("SPIN_X");
     const [loading, setLoading] = useState(true);
 
     // rewards
@@ -463,9 +463,10 @@ export default function EditGachaMachinePage() {
     const loadMachine = useCallback(async () => {
         try {
             const res = await fetch(`/api/admin/gacha-machines/${id}`);
-            const json = await res.json() as { success: boolean; data: { name: string } };
+            const json = await res.json() as { success: boolean; data: { name: string; gameType?: string } };
             if (json.success) {
                 setMachineName(json.data.name);
+                setMachineGameType(json.data.gameType ?? "SPIN_X");
             } else {
                 showError("ไม่พบตู้กาชา");
                 router.push("/admin/gacha-machines");
@@ -749,9 +750,17 @@ export default function EditGachaMachinePage() {
     const paginatedRewards = sortedRewards.slice((rewardPage - 1) * rewardPerPage, rewardPage * rewardPerPage);
 
     // Total probability used
-    const totalUsed = Math.round(rewards.reduce((sum, r) => sum + Number(r.probability ?? 0), 0) * 100) / 100;
+    const runtimeRewards = (
+        machineGameType === "GRID_3X3"
+            ? [...rewards]
+                .filter((reward) => reward.isActive)
+                .sort((a, b) => String(a.createdAt ?? "").localeCompare(String(b.createdAt ?? "")))
+                .slice(0, 9)
+            : rewards.filter((reward) => reward.isActive)
+    ).filter(isRewardEligibleForSimulation);
+    const totalUsed = Math.round(runtimeRewards.reduce((sum, r) => sum + Number(r.probability ?? 0), 0) * 100) / 100;
     const remaining = Math.max(0, Math.round((100 - totalUsed) * 100) / 100);
-    const isProbabilityComplete = hasExactProbabilityTotal(rewards);
+    const isProbabilityComplete = hasExactProbabilityTotal(runtimeRewards);
 
     const totalUsedColor = getTotalUsedColor(totalUsed, isProbabilityComplete);
 

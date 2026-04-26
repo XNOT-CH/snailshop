@@ -1,8 +1,10 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { showSuccess, showError, showInfo } from "@/lib/swal";
 import { normalizeCurrencyCode, type ProductCurrencyCode } from "@/lib/currencySettings";
+import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
 
 // Cart item interface
 export interface CartItem {
@@ -25,6 +27,9 @@ interface CartContextType {
     updateQuantity: (productId: string, quantity: number) => void;
     clearCart: () => void;
     isInCart: (productId: string) => boolean;
+    isCartOpen: boolean;
+    openCart: () => void;
+    closeCart: () => void;
     itemCount: number;
     subtotal: number;
     total: number;
@@ -41,36 +46,104 @@ interface CartProviderProps {
 }
 
 export function CartProvider({ children }: Readonly<CartProviderProps>) {
+    const router = useRouter();
     const [items, setItems] = useState<CartItem[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isCartOpen, setIsCartOpen] = useState(false);
 
-    // Load cart from localStorage on mount
-    useEffect(() => {
+    const syncCartWithSession = useCallback(async (options?: { initial?: boolean }) => {
+        const initial = options?.initial ?? false;
+
         try {
+            const response = await fetch("/api/session", {
+                method: "GET",
+                credentials: "same-origin",
+                cache: "no-store",
+            });
+
+            if (!response.ok) {
+                throw new Error("Session request failed");
+            }
+
+            const data = (await response.json()) as { authenticated?: boolean };
+            const authenticated = Boolean(data.authenticated);
+
+            setIsAuthenticated(authenticated);
+
+            if (!authenticated) {
+                setItems([]);
+                localStorage.removeItem(CART_STORAGE_KEY);
+                return;
+            }
+
             const savedCart = localStorage.getItem(CART_STORAGE_KEY);
             if (savedCart) {
                 const parsedCart = JSON.parse(savedCart);
                 if (Array.isArray(parsedCart)) {
                     setItems(parsedCart);
+                    return;
                 }
             }
+
+            setItems([]);
         } catch (error) {
-            console.error("Failed to load cart from localStorage:", error);
+            console.error("Failed to sync cart with session:", error);
+            if (initial) {
+                setItems([]);
+                setIsAuthenticated(false);
+            }
+        } finally {
+            if (initial) {
+                setIsInitialized(true);
+            }
         }
-        setIsInitialized(true);
     }, []);
+
+    // Resolve session first so guests never see stale cart state from localStorage.
+    useEffect(() => {
+        async function initializeCart() {
+            await syncCartWithSession({ initial: true });
+        }
+
+        initializeCart().catch(() => undefined);
+    }, [syncCartWithSession]);
+
+    useEffect(() => {
+        if (!isInitialized) {
+            return;
+        }
+
+        const handleWindowFocus = () => {
+            syncCartWithSession().catch(() => undefined);
+        };
+
+        const handleVisibilityChange = () => {
+            if (document.visibilityState === "visible") {
+                syncCartWithSession().catch(() => undefined);
+            }
+        };
+
+        window.addEventListener("focus", handleWindowFocus);
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+
+        return () => {
+            window.removeEventListener("focus", handleWindowFocus);
+            document.removeEventListener("visibilitychange", handleVisibilityChange);
+        };
+    }, [isInitialized, syncCartWithSession]);
 
     // Save cart to localStorage whenever items change
     useEffect(() => {
-        if (isInitialized) {
+        if (isInitialized && isAuthenticated) {
             try {
                 localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
             } catch (error) {
                 console.error("Failed to save cart to localStorage:", error);
             }
         }
-    }, [items, isInitialized]);
+    }, [items, isAuthenticated, isInitialized]);
 
     // Update item quantity
     const updateQuantity = useCallback((productId: string, quantity: number) => {
@@ -88,6 +161,11 @@ export function CartProvider({ children }: Readonly<CartProviderProps>) {
 
     // Add item to cart with stock validation
     const addToCart = useCallback(async (product: CartItem): Promise<boolean> => {
+        const authCheck = await requireAuthBeforePurchase(router);
+        if (!authCheck.allowed) {
+            return false;
+        }
+
         // Check if already in cart
         if (items.some((item) => item.id === product.id)) {
             showInfo(`สินค้านี้อยู่ในตะกร้าแล้ว: ${product.name}`);
@@ -124,7 +202,7 @@ export function CartProvider({ children }: Readonly<CartProviderProps>) {
         } finally {
             setIsLoading(false);
         }
-    }, [items]);
+    }, [items, router]);
 
     // Remove item from cart
     const removeFromCart = useCallback((productId: string) => {
@@ -147,6 +225,14 @@ export function CartProvider({ children }: Readonly<CartProviderProps>) {
     const isInCart = useCallback((productId: string): boolean => {
         return items.some((item) => item.id === productId);
     }, [items]);
+
+    const openCart = useCallback(() => {
+        setIsCartOpen(true);
+    }, []);
+
+    const closeCart = useCallback(() => {
+        setIsCartOpen(false);
+    }, []);
 
     // Calculate item count (total quantities)
     const itemCount = items.reduce((count, item) => count + (item.quantity || 1), 0);
@@ -175,12 +261,15 @@ export function CartProvider({ children }: Readonly<CartProviderProps>) {
         removeFromCart,
         clearCart,
         isInCart,
+        isCartOpen,
+        openCart,
+        closeCart,
         itemCount,
         subtotal,
         total,
         totalsByCurrency,
         isLoading,
-    }), [items, addToCart, updateQuantity, removeFromCart, clearCart, isInCart, itemCount, subtotal, total, totalsByCurrency, isLoading]);
+    }), [items, addToCart, updateQuantity, removeFromCart, clearCart, isInCart, isCartOpen, openCart, closeCart, itemCount, subtotal, total, totalsByCurrency, isLoading]);
 
     return (
         <CartContext.Provider value={value}>

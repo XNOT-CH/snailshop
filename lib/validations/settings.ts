@@ -28,6 +28,7 @@ export const siteSettingsSchema = z.object({
     // Images
     logoUrl: imageUrl,
     faviconUrl: imageUrl,
+    ogImageUrl: imageUrl,
     backgroundImage: imageUrl,
     backgroundBlur: z.boolean().default(true),
     // Banner

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { showPurchaseConfirm, showPurchaseSuccessModal, showError, showWarning } from "@/lib/swal";
 import { ShoppingCart, Eye, Loader2 } from "lucide-react";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
+import { useCart } from "@/components/providers/CartContext";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
 import { preparePurchase } from "@/lib/prepare-purchase";
@@ -38,8 +39,10 @@ export function ProductCard({
 }: Readonly<ProductCardProps>) {
     const router = useRouter();
     const maintenance = useMaintenanceStatus().purchase;
+    const { isInCart, openCart } = useCart();
     const [isLoading, setIsLoading] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
+    const inCart = isInCart(id);
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -49,6 +52,11 @@ export function ProductCard({
     }, [index]);
 
     const handleBuy = async () => {
+        if (inCart) {
+            openCart();
+            return;
+        }
+
         if (maintenance?.enabled) {
             showWarning(maintenance.message);
             return;
@@ -174,7 +182,11 @@ export function ProductCard({
                                 ) : (
                                     <>
                                         <ShoppingCart className="h-4 w-4 mr-2" />
-                                        {maintenance?.enabled ? "ปิดปรับปรุง" : "สั่งซื้อ"}
+                                        {maintenance?.enabled
+                                            ? "ปิดปรับปรุง"
+                                            : inCart
+                                                ? "ดูในตะกร้า"
+                                                : "สั่งซื้อ"}
                                     </>
                                 )}
                             </Button>

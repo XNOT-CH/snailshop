@@ -31,7 +31,7 @@ export function ThemeToggle() {
             className="rounded-xl text-muted-foreground hover:text-primary hover:bg-accent"
             onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
             aria-label={resolvedTheme === "dark" ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด"}
-            title={resolvedTheme === "dark" ? "โหมดมืด" : "โหมดสว่าง"}
+            title={resolvedTheme === "dark" ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด"}
         >
             {resolvedTheme === "dark" ? (
                 <Moon className="h-5 w-5 transition-transform" />

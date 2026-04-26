@@ -239,22 +239,10 @@ describe("API: /api/register (rate limit + existing user paths)", () => {
 describe("API: /api/login (progressive delay + 500)", () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it("calls sleep when progressive delay > 0", async () => {
-    (parseBody as any).mockResolvedValue({ data: { username: "user", password: "pass" } });
-    (getProgressiveDelay as any).mockReturnValueOnce(100);
-    (db.query.users.findFirst as any).mockResolvedValue({ id: "u1", username: "user", password: "hashed", role: "USER" });
+  it("returns 410 while keeping the legacy endpoint disabled", async () => {
     const { POST } = await import("@/app/api/login/route");
     const res = await POST(new NextRequest("http://localhost", { method: "POST" }));
-    expect(sleep).toHaveBeenCalledWith(100);
-    expect(res.status).toBe(200);
-  });
-
-  it("returns 500 on DB error", async () => {
-    (parseBody as any).mockResolvedValue({ data: { username: "user", password: "pass" } });
-    (db.query.users.findFirst as any).mockRejectedValueOnce(new Error("DB fail"));
-    const { POST } = await import("@/app/api/login/route");
-    const res = await POST(new NextRequest("http://localhost", { method: "POST" }));
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(410);
   });
 });
 

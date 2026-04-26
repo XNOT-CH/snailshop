@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, Tag, ShoppingCart, Eye, Percent, Loader2 } f
 import { Button } from "@/components/ui/button";
 import { showPurchaseConfirm, showPurchaseSuccessModal, showError, showWarning } from "@/lib/swal";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
+import { useCart } from "@/components/providers/CartContext";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { formatCurrencyAmount } from "@/lib/currencySettings";
@@ -39,6 +40,7 @@ export function SaleProducts({
     initialMaintenance,
 }: Readonly<SaleProductsProps>) {
     const router = useRouter();
+    const { isInCart, openCart } = useCart();
     const maintenance = useMaintenanceStatus(initialMaintenance).purchase;
     const currencySettings = useCurrencySettings(initialCurrencySettings);
     const [products, setProducts] = useState<SaleProduct[]>(() => initialProducts ?? []);
@@ -47,6 +49,11 @@ export function SaleProducts({
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
     const handleBuyClick = async (product: SaleProduct) => {
+        if (isInCart(product.id)) {
+            openCart();
+            return;
+        }
+
         if (maintenance?.enabled) {
             showWarning(maintenance.message);
             return;
@@ -216,7 +223,10 @@ export function SaleProducts({
                 className="flex gap-4 overflow-x-auto scrollbar-hide pb-4 px-1 snap-x snap-mandatory"
                 style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
             >
-                {products.map((product) => (
+                {products.map((product) => {
+                    const inCart = isInCart(product.id);
+
+                    return (
                     <div key={product.id} className="flex-shrink-0 w-40 sm:w-52 snap-start">
                         <div className={`${themeClasses.surface} storefront-product-card group relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_22px_42px_-28px_rgba(39,71,121,0.24)] dark:hover:shadow-[0_26px_50px_-34px_rgba(0,0,0,0.92)]`}>
                             <div className={`${themeClasses.surfaceMedia} relative aspect-square overflow-hidden border-b border-border/80`}>
@@ -280,7 +290,11 @@ export function SaleProducts({
                                                 ) : (
                                                     <>
                                                         <ShoppingCart className="h-4 w-4 mr-2" />
-                                                        {maintenance?.enabled ? "ปิดปรับปรุง" : "สั่งซื้อ"}
+                                                        {maintenance?.enabled
+                                                            ? "ปิดปรับปรุง"
+                                                            : inCart
+                                                                ? "ดูในตะกร้า"
+                                                                : "สั่งซื้อ"}
                                                     </>
                                                 )}
                                             </Button>
@@ -310,7 +324,8 @@ export function SaleProducts({
                             </div>
                         </div>
                     </div>
-                ))}
+                    );
+                })}
             </div>
         </div>
     );
