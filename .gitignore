@@ -70,7 +70,17 @@ lint-report.json
 !drizzle/*.sql
 
 # Runtime storage uploads and private files
-/storage/private/
-/storage/uploads/
+/storage/chat-media/**
+!/storage/chat-media/AGENTS.md
+/storage/private/**
+!/storage/private/AGENTS.md
+!/storage/private/**/
+!/storage/private/**/AGENTS.md
+/storage/uploads/**
+!/storage/uploads/AGENTS.md
+!/storage/uploads/**/
+!/storage/uploads/**/AGENTS.md
+/storage/*.html
 /storage/*.log
+/storage/*.tsx
 /storage/tmp*

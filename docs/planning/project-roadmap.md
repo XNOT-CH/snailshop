@@ -1,6 +1,6 @@
 # Project Roadmap
 
-เอกสารนี้แตกงานจาก [docs/project-requirements.md](C:/Users/USER/my-game-store/docs/project-requirements.md) ออกเป็น phase และ step เล็ก ๆ เพื่อใช้วางลำดับการพัฒนาแบบต่อเนื่อง
+เอกสารนี้แตกงานจาก [project-requirements.md](C:/Users/USER/my-game-store/docs/planning/project-requirements.md) ออกเป็น phase และ step เล็ก ๆ เพื่อใช้วางลำดับการพัฒนาแบบต่อเนื่อง
 
 ## แนวทางการใช้เอกสารนี้
 
