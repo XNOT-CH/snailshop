@@ -1,5 +1,5 @@
 // Script to seed FAQ/Help articles
-// Run: npx tsx scripts/seed-faq.ts
+// Run: npx tsx scripts/seeds/seed-faq.ts
 
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";

@@ -1,6 +1,6 @@
-// scripts/seed-roles.ts
+// scripts/seeds/seed-roles.ts
 // Insert default system roles into the Role table if they don't exist
-// Run: npx tsx scripts/seed-roles.ts
+// Run: npx tsx scripts/seeds/seed-roles.ts
 
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";

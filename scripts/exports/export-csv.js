@@ -6,9 +6,9 @@
  * files to  <project-root>/exports/  so they open correctly in Excel on Windows.
  *
  * Usage:
- *   node scripts/export-csv.js                  → export all tables
- *   node scripts/export-csv.js orders users     → export specific tables
- *   node scripts/export-csv.js --from 2024-01-01 --to 2024-12-31 orders
+ *   node scripts/exports/export-csv.js                  → export all tables
+ *   node scripts/exports/export-csv.js orders users     → export specific tables
+ *   node scripts/exports/export-csv.js --from 2024-01-01 --to 2024-12-31 orders
  *
  * Double-click: just run  export-all.bat  in the project root.
  * ─────────────────────────────────────────────────────────────────────────────

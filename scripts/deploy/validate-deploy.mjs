@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { config as loadEnv } from "dotenv";
-import { validateDatabaseHealth } from "./db-health-utils.mjs";
+import { validateDatabaseHealth } from "../db/db-health-utils.mjs";
 
 const cwd = process.cwd();
 const envFiles = [".env.local", ".env"];

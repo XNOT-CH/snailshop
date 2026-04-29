@@ -1,6 +1,6 @@
 // Script to fix admin password
-// Run: npx tsx scripts/fix-admin-password.ts <username> <new-password>
-// Example: npx tsx scripts/fix-admin-password.ts REDACTED_USERNAME MyNewPass123
+// Run: npx tsx scripts/admin/fix-admin-password.ts <username> <new-password>
+// Example: npx tsx scripts/admin/fix-admin-password.ts REDACTED_USERNAME MyNewPass123
 
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
@@ -15,7 +15,7 @@ const username = process.argv[2];
 const newPassword = process.argv[3];
 
 if (!username || !newPassword) {
-    console.error("❌ Usage: npx tsx scripts/fix-admin-password.ts <username> <new-password>");
+    console.error("❌ Usage: npx tsx scripts/admin/fix-admin-password.ts <username> <new-password>");
     process.exit(1);
 }
 

@@ -4,7 +4,7 @@ import net from "node:net";
 import { fileURLToPath } from "node:url";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
-const projectRoot = path.resolve(scriptDir, "..");
+const projectRoot = path.resolve(scriptDir, "../..");
 const nextBin = path.join(projectRoot, "node_modules", "next", "dist", "bin", "next");
 
 process.chdir(projectRoot);

@@ -1,5 +1,5 @@
 // Script to seed gacha grid rewards
-// Run: npx tsx scripts/seed-gacha-grid.ts
+// Run: npx tsx scripts/seeds/seed-gacha-grid.ts
 
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";

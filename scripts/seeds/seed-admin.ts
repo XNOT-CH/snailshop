@@ -1,7 +1,7 @@
-// scripts/seed-admin.ts
+// scripts/seeds/seed-admin.ts
 // Create or reset admin user in TiDB Cloud
-// Run: npx tsx scripts/seed-admin.ts <username> <password>
-// Example: npx tsx scripts/seed-admin.ts admin MyPassword123
+// Run: npx tsx scripts/seeds/seed-admin.ts <username> <password>
+// Example: npx tsx scripts/seeds/seed-admin.ts admin MyPassword123
 
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
@@ -19,8 +19,8 @@ const username = process.argv[2] ?? "admin";
 const password = process.argv[3];
 
 if (!password) {
-    console.error("Usage: npx tsx scripts/seed-admin.ts <username> <password>");
-    console.error("Example: npx tsx scripts/seed-admin.ts admin MyPassword123");
+    console.error("Usage: npx tsx scripts/seeds/seed-admin.ts <username> <password>");
+    console.error("Example: npx tsx scripts/seeds/seed-admin.ts admin MyPassword123");
     process.exit(1);
 }
 

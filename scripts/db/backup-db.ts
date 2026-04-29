@@ -1,5 +1,5 @@
 // Database Backup Script
-// Usage: npx tsx scripts/backup-db.ts
+// Usage: npx tsx scripts/db/backup-db.ts
 // Auto backup: add to Windows Task Scheduler or cron
 
 import { exec } from "child_process";

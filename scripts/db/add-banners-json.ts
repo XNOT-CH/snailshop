@@ -1,6 +1,6 @@
 /**
  * Migration script: Add bannersJson column to SiteSettings table
- * Run: npx tsx scripts/add-banners-json.ts
+ * Run: npx tsx scripts/db/add-banners-json.ts
  */
 import { config } from "dotenv";
 config({ path: ".env.local" });

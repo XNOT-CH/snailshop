@@ -112,9 +112,16 @@ docs/
 
 ```text
 scripts/
+  admin/
+  dev/
   db/
   deploy/
+  exports/
   ops/
+  products/
+  quality/
+  seeds/
+  storage/
   windows/
   sonar/
 ```
@@ -122,8 +129,15 @@ scripts/
 แนวทาง:
 
 - Script ตรวจ database หรือ migration ให้อยู่ใน `scripts/db/`
+- Script สำหรับ admin maintenance ให้อยู่ใน `scripts/admin/`
 - Script ตรวจ deploy readiness ให้อยู่ใน `scripts/deploy/`
+- Script สำหรับ export helper ให้อยู่ใน `scripts/exports/`
 - Script สำหรับ operational verification เช่น purchase locking ให้อยู่ใน `scripts/ops/`
+- Script สำหรับ product export/import ให้อยู่ใน `scripts/products/`
+- Script สำหรับ storage migration/cleanup ให้อยู่ใน `scripts/storage/`
+- Script สำหรับ quality checks ให้อยู่ใน `scripts/quality/`
+- Script สำหรับ dev helper ให้อยู่ใน `scripts/dev/`
+- Script สำหรับ seed data ให้อยู่ใน `scripts/seeds/`
 - หลังย้าย script ต้องปรับ path ใน `package.json` เสมอ
 
 ### `lib/`

@@ -1,6 +1,6 @@
-// scripts/check-db.ts
+// scripts/db/check-db.ts
 // Diagnose TiDB Cloud connection and check if tables/admin user exist
-// Run: npx tsx scripts/check-db.ts
+// Run: npx tsx scripts/db/check-db.ts
 
 import mysql from "mysql2/promise";
 import * as dotenv from "dotenv";
@@ -51,7 +51,7 @@ async function main() {
         console.log(`\n👤 Users in '${userTableName}' table (${userList.length} found):`);
         if (userList.length === 0) {
             console.log("   ⚠️  No users found! Need to create admin user.");
-            console.log("   Run: npx tsx scripts/seed-admin.ts");
+            console.log("   Run: npx tsx scripts/seeds/seed-admin.ts");
         } else {
             userList.forEach(u => console.log(`   - ${u.username} [${u.role}] (id: ${u.id})`));
         }

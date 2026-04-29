@@ -64,7 +64,7 @@ lib/              db, auth, business logic, utilities
 hooks/            React hooks
 tests/            unit/integration tests
 public/           static assets
-scripts/          automation, db, ops, Windows helper scripts
+scripts/          admin, dev, deploy, db, exports, ops, product sync, quality, seeds, storage, Windows helpers
 docs/             runbooks, database notes, project docs
 drizzle/          SQL migrations
 storage/          runtime files, uploads, private assets
@@ -73,6 +73,16 @@ storage/          runtime files, uploads, private assets
 ## Important Paths
 
 - `scripts/windows/` คำสั่งช่วยงานสำหรับ Windows
+- `scripts/admin/` admin maintenance helpers
+- `scripts/dev/` dev server helpers
+- `scripts/deploy/` deployment validation scripts
+- `scripts/db/` database health and database utility scripts
+- `scripts/exports/` export helper scripts
+- `scripts/ops/` operational verification and reconciliation scripts
+- `scripts/products/` product export/import sync scripts
+- `scripts/seeds/` local or controlled-environment seed scripts
+- `scripts/storage/` storage migration and cleanup scripts
+- `scripts/quality/` repository quality checks
 - `docs/runbooks/` เอกสาร incident และ operations
 - `docs/database/` แผน DB และ SQL ที่เกี่ยวข้อง
 - `storage/uploads/` ไฟล์ที่อัปโหลดตอน runtime
