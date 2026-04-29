@@ -169,9 +169,9 @@ describe("API: /api/admin/products/[id]/duplicate (catch block)", () => {
 describe("API: /api/admin/gacha-products (catch paths)", () => {
   it("GET returns 500 on DB error", async () => {
     (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (db.query.gachaProducts.findMany as any).mockRejectedValueOnce(new Error("DB fail"));
+    (db.query.products.findMany as any).mockRejectedValueOnce(new Error("DB fail"));
     const { GET } = await import("@/app/api/admin/gacha-products/route");
-    const res = await GET(new NextRequest("http://localhost"));
+    const res = await GET();
     expect(res.status).toBe(500);
   });
 });
@@ -225,7 +225,7 @@ describe("API: /api/news (catch path)", () => {
   it("GET returns 500 on DB error", async () => {
     (db.query.newsArticles.findMany as any).mockRejectedValueOnce(new Error("DB fail"));
     const { GET } = await import("@/app/api/news/route");
-    const res = await GET(new NextRequest("http://localhost"));
+    const res = await GET();
     expect(res.status).toBe(500);
   });
 });

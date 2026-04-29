@@ -146,11 +146,7 @@ describe("API: /api/session", () => {
   describe("POST", () => {
     it("returns 410 because the legacy endpoint is disabled", async () => {
       const { POST } = await import("@/app/api/session/route");
-      const req = new NextRequest("http://localhost/api/session", {
-        method: "POST",
-        body: JSON.stringify({}),
-      });
-      const res = await POST(req);
+      const res = await POST();
       expect(res.status).toBe(410);
       const body = await res.json();
       expect(body.message).toContain("disabled");

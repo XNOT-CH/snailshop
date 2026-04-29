@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Dices, Gift, HelpCircle, Home, Package, Settings, ShoppingBag, User, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { themeClasses } from "@/lib/theme";
@@ -30,35 +29,8 @@ const HIDDEN_PREFIXES = ["/admin", "/login", "/register"];
 
 export function MobileBottomNav() {
     const pathname = usePathname();
-    const [isScrolling, setIsScrolling] = useState(false);
-    const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const isAccountRoute = pathname.startsWith("/dashboard") || pathname.startsWith("/profile");
-
     const shouldHide = HIDDEN_PREFIXES.some((prefix) => pathname.startsWith(prefix));
-
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolling(true);
-
-            if (scrollTimeoutRef.current) {
-                clearTimeout(scrollTimeoutRef.current);
-            }
-
-            scrollTimeoutRef.current = setTimeout(() => {
-                setIsScrolling(false);
-                scrollTimeoutRef.current = null;
-            }, 180);
-        };
-
-        globalThis.addEventListener("scroll", handleScroll, { passive: true });
-
-        return () => {
-            globalThis.removeEventListener("scroll", handleScroll);
-            if (scrollTimeoutRef.current) {
-                clearTimeout(scrollTimeoutRef.current);
-            }
-        };
-    }, []);
 
     if (shouldHide) {
         return null;
@@ -70,17 +42,9 @@ export function MobileBottomNav() {
         <nav
             id="main-mobile-nav"
             aria-label="เมนูหลักบนมือถือ"
-            data-scrolling={isScrolling ? "true" : "false"}
-            className={`${themeClasses.mobileNav} fixed inset-x-0 bottom-0 z-40 backdrop-blur-xl transition-[padding,transform] duration-200 md:hidden`}
+            className={`${themeClasses.mobileNav} fixed inset-x-0 bottom-0 z-40 backdrop-blur-xl md:hidden`}
         >
-            <div
-                className={cn(
-                    "mx-auto flex max-w-7xl items-start justify-around px-1 pt-1.5 transition-[min-height,padding-bottom] duration-200",
-                    isScrolling
-                        ? "min-h-[72px] pb-1"
-                        : "min-h-[var(--mobile-bottom-nav-height)] pb-[calc(env(safe-area-inset-bottom)+0.35rem)]"
-                )}
-            >
+            <div className="mx-auto flex min-h-[var(--mobile-bottom-nav-height)] max-w-7xl items-start justify-around px-1 pt-1.5 pb-[calc(env(safe-area-inset-bottom)+0.35rem)]">
                 {navItems.map((item) => {
                     const isActive = item.match(pathname);
                     const Icon = item.icon;

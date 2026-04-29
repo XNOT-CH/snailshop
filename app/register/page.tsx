@@ -11,6 +11,9 @@ export const metadata: Metadata = buildPageMetadata({
 
 export default async function RegisterPage() {
     const settings = await getSiteSettings();
+    const hasTurnstile = Boolean(
+        process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && process.env.TURNSTILE_SECRET_KEY
+    );
 
-    return <RegisterForm logoUrl={settings?.logoUrl ?? null} />;
+    return <RegisterForm logoUrl={settings?.logoUrl ?? null} hasTurnstile={hasTurnstile} />;
 }

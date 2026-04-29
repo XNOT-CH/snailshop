@@ -139,11 +139,7 @@ describe("API: /api/footer-widget (error path)", () => {
 describe("API: /api/session (error paths)", () => {
   it("POST returns 410 when the legacy route is disabled", async () => {
     const { POST } = await import("@/app/api/session/route");
-    const req = new NextRequest("http://localhost", {
-      method: "POST",
-      body: JSON.stringify({ userId: "u1", rememberMe: false }),
-    });
-    const res = await POST(req);
+    const res = await POST();
     expect(res.status).toBe(410);
   });
 
@@ -400,7 +396,7 @@ describe("API: /api/user/settings (error paths)", () => {
 
   it("PATCH returns 410 when the legacy route is disabled", async () => {
     const { PATCH } = await import("@/app/api/user/settings/route");
-    const res = await PATCH(new NextRequest("http://localhost", { method: "PATCH", body: JSON.stringify({ password: "newpass123" }) }));
+    const res = await PATCH();
     expect(res.status).toBe(410);
   });
 });

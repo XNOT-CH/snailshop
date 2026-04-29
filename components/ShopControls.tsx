@@ -21,8 +21,7 @@ export function ShopControls({ currentSort }: Readonly<ShopControlsProps>) {
 
     const sortOptions = [
         { value: "latest", label: "ล่าสุด" },
-        { value: "popular", label: "ยอดนิยม" },
-        { value: "best_selling", label: "ขายดี" },
+        { value: "featured", label: "แนะนำ" },
         { value: "price_asc", label: "ราคา ↑" },
         { value: "price_desc", label: "ราคา ↓" },
     ];

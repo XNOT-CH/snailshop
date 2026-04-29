@@ -7,6 +7,7 @@ import {
     Gamepad2, Home, ShoppingBag, HelpCircle, Mail, Shield, FileText, ChevronRight,
 } from "lucide-react";
 import { resolveSiteName } from "@/lib/seo";
+import { sanitizePublicFooterLinks } from "@/lib/footerLinks";
 
 async function getFooterWidget() {
     try {
@@ -27,6 +28,7 @@ export default async function Footer() {
     const footerWidget = await getFooterWidget();
     const currentYear = new Date().getFullYear();
     const siteName = resolveSiteName(siteSettings?.heroTitle);
+    const footerWidgetLinks = sanitizePublicFooterLinks(footerWidget.links);
     const menuLinks = [
         { href: "/", label: "หน้าหลัก", icon: Home },
         { href: "/shop", label: "สินค้าทั้งหมด", icon: ShoppingBag },
@@ -87,8 +89,8 @@ export default async function Footer() {
                             {footerWidget.settings?.title || "ข้อมูลสำคัญ"}
                         </h4>
                         <ul className="space-y-2.5">
-                            {footerWidget.settings && footerWidget.links.length > 0 ? (
-                                footerWidget.links.map((link) => (
+                            {footerWidget.settings && footerWidgetLinks.length > 0 ? (
+                                footerWidgetLinks.map((link) => (
                                     <li key={link.id}>
                                         {link.openInNewTab ? (
                                             <a href={link.href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group">

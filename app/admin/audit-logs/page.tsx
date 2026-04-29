@@ -72,6 +72,8 @@ const ACTION_COLORS: Record<string, string> = {
     REGISTER: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
     LOGOUT: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
     PURCHASE: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+    PASSWORD_RESET_REQUEST: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300",
+    PASSWORD_RESET_COMPLETE: "bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300",
     LOGIN_FAILED: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
     RATE_LIMIT_EXCEEDED: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
     UNAUTHORIZED_ACCESS: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
@@ -94,6 +96,8 @@ const ACTION_LABELS: Record<string, string> = {
     LOGOUT: "ออกจากระบบ",
     REGISTER: "สมัครสมาชิก",
     [PASSWORD_CHANGE_ACTION]: "เปลี่ยนรหัสผ่าน",
+    PASSWORD_RESET_REQUEST: "ขอรีเซ็ตรหัสผ่าน",
+    PASSWORD_RESET_COMPLETE: "รีเซ็ตรหัสผ่าน",
     PROFILE_UPDATE: "แก้ไขโปรไฟล์",
     USER_CREATE: "เพิ่มผู้ใช้",
     USER_UPDATE: "แก้ไขผู้ใช้",
@@ -147,6 +151,8 @@ const ACTION_ORDER = [
     "LOGOUT",
     "REGISTER",
     PASSWORD_CHANGE_ACTION,
+    "PASSWORD_RESET_REQUEST",
+    "PASSWORD_RESET_COMPLETE",
     "PROFILE_UPDATE",
     "PURCHASE",
     "PRODUCT_CREATE",
@@ -352,8 +358,8 @@ export default function AdminAuditLogsPage() {
         }).format(date);
     };
 
-    const getFieldLabel = (field: string) => FIELD_LABELS[field] || field;
-    const getActionLabel = (action: string) => ACTION_LABELS[action] || action;
+    const getFieldLabel = useCallback((field: string) => FIELD_LABELS[field] || field, []);
+    const getActionLabel = useCallback((action: string) => ACTION_LABELS[action] || action, []);
     const canDeleteAuditLogs = permissions.includes(PERMISSIONS.AUDIT_LOG_DELETE);
 
     const openDetail = (log: AuditLog) => {

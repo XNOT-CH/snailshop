@@ -1,7 +1,7 @@
 import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, users } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { checkRegisterRateLimit, getClientIp } from "@/lib/rateLimit";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
@@ -26,10 +26,10 @@ export async function POST(request: NextRequest) {
         // Validate inputs with Zod
         const parsed = await parseBody(request, registerSchema);
         if ("error" in parsed) return parsed.error;
-        const { username, password, pin, turnstileToken } = parsed.data;
+        const { username, email, password, pin, turnstileToken } = parsed.data;
 
         const clientIp = getClientIp(request);
-        const turnstileResult = await verifyTurnstileToken(turnstileToken, clientIp);
+        const turnstileResult = await verifyTurnstileToken(turnstileToken ?? undefined, clientIp);
         if (!turnstileResult.success) {
             return NextResponse.json(
                 { success: false, message: turnstileResult.message },
@@ -39,12 +39,19 @@ export async function POST(request: NextRequest) {
 
         // Check if username already exists
         const existingUser = await db.query.users.findFirst({
-            where: eq(users.username, username),
+            where: or(
+                eq(users.username, username),
+                eq(users.email, email)
+            ),
         });
 
         if (existingUser) {
+            const duplicateMessage = existingUser.username === username
+                ? "ชื่อผู้ใช้นี้ถูกใช้งานแล้ว"
+                : "อีเมลนี้ถูกใช้งานแล้ว";
+
             return NextResponse.json(
-                { success: false, message: "ชื่อผู้ใช้นี้ถูกใช้งานแล้ว" },
+                { success: false, message: duplicateMessage },
                 { status: 400 }
             );
         }
@@ -57,6 +64,7 @@ export async function POST(request: NextRequest) {
         await db.insert(users).values({
             id: newId,
             username,
+            email,
             password: hashedPassword,
             pinHash: pin ? await bcrypt.hash(pin, 12) : null,
             pinEnabledAt: pin ? mysqlNow() : null,

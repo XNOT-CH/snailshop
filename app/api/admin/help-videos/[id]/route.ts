@@ -6,6 +6,7 @@ import { validateBody } from "@/lib/validations/validate";
 import { helpVideoSchema, type HelpVideoInput } from "@/lib/validations/content";
 import { normalizeYouTubeVideo } from "@/lib/helpVideos";
 import { PERMISSIONS } from "@/lib/permissions";
+import { mysqlNow } from "@/lib/utils/date";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -37,6 +38,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
             updateData.videoId = normalizedVideo.videoId;
         }
 
+        updateData.updatedAt = mysqlNow();
         await db.update(helpVideos).set(updateData).where(eq(helpVideos.id, id));
         const updated = await db.query.helpVideos.findFirst({ where: eq(helpVideos.id, id) });
         return NextResponse.json(updated);

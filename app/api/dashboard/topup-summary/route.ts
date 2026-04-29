@@ -374,7 +374,8 @@ export async function GET(request: NextRequest) {
                 userId: topups.userId,
             })
                 .from(topups)
-                .where(rangeFilter),
+                .innerJoin(users, eq(topups.userId, users.id))
+                .where(recordsWhere),
             db.select({ count: count() })
                 .from(topups)
                 .innerJoin(users, eq(topups.userId, users.id))

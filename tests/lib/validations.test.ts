@@ -34,16 +34,20 @@ describe("auth validations", () => {
       expect(result.success).toBe(true);
     });
     it("rejects short username", () => {
-      expect(registerSchema.safeParse({ username: "ab", email: "", password: "password123", confirmPassword: "password123", turnstileToken: "token-1" }).success).toBe(false);
+      expect(registerSchema.safeParse({ username: "ab", email: "test@example.com", password: "password123", confirmPassword: "password123", turnstileToken: "token-1" }).success).toBe(false);
     });
     it("rejects mismatched passwords", () => {
-      expect(registerSchema.safeParse({ username: "testuser", email: "", password: "pass123", confirmPassword: "pass456", turnstileToken: "token-1" }).success).toBe(false);
+      expect(registerSchema.safeParse({ username: "testuser", email: "test@example.com", password: "pass123", confirmPassword: "pass456", turnstileToken: "token-1" }).success).toBe(false);
     });
     it("rejects short password", () => {
-      expect(registerSchema.safeParse({ username: "testuser", email: "", password: "short", confirmPassword: "short", turnstileToken: "token-1" }).success).toBe(false);
+      expect(registerSchema.safeParse({ username: "testuser", email: "test@example.com", password: "short", confirmPassword: "short", turnstileToken: "token-1" }).success).toBe(false);
     });
-    it("allows empty email", () => {
+    it("requires email", () => {
       const result = registerSchema.safeParse({ username: "testuser", email: "", password: "password123", confirmPassword: "password123", turnstileToken: "token-1" });
+      expect(result.success).toBe(false);
+    });
+    it("allows missing turnstile token so the server can decide based on config", () => {
+      const result = registerSchema.safeParse({ username: "testuser", email: "test@example.com", password: "password123", confirmPassword: "password123" });
       expect(result.success).toBe(true);
     });
   });

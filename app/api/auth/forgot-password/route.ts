@@ -10,7 +10,7 @@ import { PasswordResetEmail } from "@/components/emails/PasswordResetEmail";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { resolveSiteName } from "@/lib/seo";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
-import { getClientIp } from "@/lib/rateLimit";
+import { checkPasswordResetRequestRateLimitShared, getClientIp } from "@/lib/rateLimit";
 
 const GENERIC_RESET_MESSAGE =
     "หากบัญชีนี้มีอีเมลที่ใช้งานได้ เราจะส่งลิงก์รีเซ็ตรหัสผ่านให้ภายในไม่กี่นาที";
@@ -22,6 +22,25 @@ export async function POST(request: NextRequest) {
 
         const identifier = parsed.data.identifier.trim();
         const clientIp = getClientIp(request);
+        const rateLimit = await checkPasswordResetRequestRateLimitShared(`${clientIp}:${identifier.toLowerCase()}`);
+        if (rateLimit.blocked) {
+            await auditFromRequest(request, {
+                action: AUDIT_ACTIONS.RATE_LIMIT_EXCEEDED,
+                resource: "PasswordReset",
+                resourceName: identifier,
+                status: "FAILURE",
+                details: {
+                    flow: "forgot-password",
+                    identifier,
+                },
+            });
+
+            return NextResponse.json(
+                { success: false, message: rateLimit.message ?? "ขอรีเซ็ตรหัสผ่านบ่อยเกินไป กรุณาลองใหม่ภายหลัง" },
+                { status: 429 }
+            );
+        }
+
         const turnstileResult = await verifyTurnstileToken(parsed.data.turnstileToken ?? undefined, clientIp);
         if (!turnstileResult.success) {
             return NextResponse.json(
@@ -82,7 +101,7 @@ export async function POST(request: NextRequest) {
             console.warn("[forgot-password] Email delivery skipped or failed", {
                 userId: user.id,
                 email: user.email,
-                resetUrl,
+                reason: emailResult.error ?? "unknown",
             });
         }
 

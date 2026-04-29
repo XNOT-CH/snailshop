@@ -16,6 +16,7 @@ import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { PERMISSIONS } from "@/lib/permissions";
 import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
+import { SEASON_PASS_REWARD_DAYS } from "@/lib/seasonPassConfig";
 
 type SeasonPassPlanSettings = {
     id: string;
@@ -44,7 +45,7 @@ const defaultPlan: SeasonPassPlanSettings = {
     name: "Season Pass 30 วัน",
     description: "ปลดล็อกตารางรับของรายวัน 30 วัน",
     price: "50.00",
-    durationDays: 30,
+    durationDays: SEASON_PASS_REWARD_DAYS,
     isActive: true,
 };
 
@@ -100,7 +101,7 @@ function normalizeRewardType(value: string): RewardType {
 }
 
 function fallbackRewards(): SeasonPassRewardRow[] {
-    return Array.from({ length: 30 }, (_, index) => ({
+    return Array.from({ length: SEASON_PASS_REWARD_DAYS }, (_, index) => ({
         dayNumber: index + 1,
         rewardType: "tickets",
         label: "ตั๋วสุ่ม",
@@ -242,11 +243,11 @@ export default function AdminSeasonPassEditPage() {
             const response = await fetch("/api/admin/season-pass/plan", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
+            body: JSON.stringify({
                     name: plan.name,
                     description: plan.description,
                     price: plan.price,
-                    durationDays: Number(plan.durationDays),
+                    durationDays: SEASON_PASS_REWARD_DAYS,
                     isActive: plan.isActive,
                 }),
             });
@@ -516,11 +517,12 @@ export default function AdminSeasonPassEditPage() {
                                 min="1"
                                 step="1"
                                 value={plan.durationDays}
-                                onChange={(event) =>
-                                    setPlan((current) => ({ ...current, durationDays: Number(event.target.value) || 0 }))
-                                }
-                                disabled={!canEditSeasonPass}
+                                readOnly
+                                disabled
                             />
+                            <p className="text-xs text-muted-foreground">
+                                Reward board ของ Season Pass รองรับแบบคงที่ {SEASON_PASS_REWARD_DAYS} วัน เพื่อให้สถานะการเคลมและการต่ออายุทำงานตรงกันทุกจุด
+                            </p>
                         </div>
                     </div>
 

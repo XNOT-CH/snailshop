@@ -39,7 +39,7 @@ import { isAdmin } from "@/lib/auth";
 import { NextRequest } from "next/server";
 
 function makeRequest(body?: Record<string, unknown>, method = "GET"): NextRequest {
-  const opts: RequestInit = { method };
+  const opts: ConstructorParameters<typeof NextRequest>[1] = { method };
   if (body) {
     opts.headers = { "Content-Type": "application/json" };
     opts.body = JSON.stringify(body);

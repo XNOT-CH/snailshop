@@ -11,6 +11,17 @@ export const metadata: Metadata = buildPageMetadata({
 
 export default async function LoginPage() {
     const settings = await getSiteSettings();
+    const hasTurnstileSiteKey = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+    const hasTurnstileSecretKey = Boolean(process.env.TURNSTILE_SECRET_KEY);
+    const turnstileConfigError =
+        hasTurnstileSecretKey && !hasTurnstileSiteKey
+            ? "ระบบยืนยันความปลอดภัยยังตั้งค่าไม่ครบ กรุณาติดต่อผู้ดูแลระบบ"
+            : null;
 
-    return <LoginForm logoUrl={settings?.logoUrl ?? null} />;
+    return (
+        <LoginForm
+            logoUrl={settings?.logoUrl ?? null}
+            turnstileConfigError={turnstileConfigError}
+        />
+    );
 }

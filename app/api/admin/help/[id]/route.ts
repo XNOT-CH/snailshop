@@ -6,6 +6,7 @@ import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
 import { helpItemSchema, type HelpItemInput } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
+import { mysqlNow } from "@/lib/utils/date";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -27,6 +28,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         if (category) updateData.category = category;
         if (typeof sortOrder === "number") updateData.sortOrder = sortOrder;
         if (typeof isActive === "boolean") updateData.isActive = isActive;
+        updateData.updatedAt = mysqlNow();
         await db.update(helpArticles).set(updateData).where(eq(helpArticles.id, id));
 
         const changes = generateChanges(existing, title, content, category, sortOrder, isActive);

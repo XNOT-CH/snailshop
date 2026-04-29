@@ -19,8 +19,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { buildPageMetadata } from "@/lib/seo";
-import { getPointCurrencyName } from "@/lib/currencySettings";
-import { getCurrencySettings } from "@/lib/getCurrencySettings";
+import { getSeasonPassRewardCatalog } from "@/lib/seasonPass";
 import { SeasonPassPurchaseButton } from "@/components/season-pass/SeasonPassPurchaseButton";
 
 export const metadata = buildPageMetadata({
@@ -39,9 +38,8 @@ export default async function SeasonPassPurchasePage() {
     const session = await auth();
     const userId = session?.user?.id;
     const plan = await getOrCreateSeasonPassPlan();
-    const currencySettings = await getCurrencySettings().catch(() => null);
-    const pointCurrencyName = getPointCurrencyName(currencySettings);
     const activeSubscription = userId ? await getCurrentSeasonPassSubscription(userId) : null;
+    const rewardsPreview = (await getSeasonPassRewardCatalog(plan.id)).slice(0, 6);
     const user = userId
         ? await db.query.users.findFirst({
             where: eq(users.id, userId),
@@ -52,14 +50,6 @@ export default async function SeasonPassPurchasePage() {
     const creditBalance = Number(user?.creditBalance ?? 0);
     const price = Number(plan.price);
     const activeWindow = activeSubscription ? calculateSeasonPassWindow({ endAt: activeSubscription.endAt }) : null;
-    const rewardsPreview = [
-        { day: "01", title: "เครดิต", amount: "80", icon: Wallet, tone: "bg-blue-50 text-blue-700" },
-        { day: "02", title: pointCurrencyName, amount: "30", icon: Coins, tone: "bg-emerald-50 text-emerald-700" },
-        { day: "03", title: "ตั๋วสุ่ม", amount: "2", icon: Ticket, tone: "bg-sky-50 text-sky-700" },
-        { day: "04", title: "เครดิต", amount: "120", icon: Wallet, tone: "bg-blue-50 text-blue-700" },
-        { day: "05", title: pointCurrencyName, amount: "40", icon: Coins, tone: "bg-emerald-50 text-emerald-700" },
-        { day: "06", title: "ตั๋วสุ่ม", amount: "2", icon: Ticket, tone: "bg-sky-50 text-sky-700" },
-    ] as const;
 
     return (
         <div className="animate-page-enter">
@@ -84,12 +74,18 @@ export default async function SeasonPassPurchasePage() {
 
                             <div className="flex flex-wrap gap-3">
                                 {userId ? (
-                                    <SeasonPassPurchaseButton
-                                        planName={plan.name}
-                                        price={price}
-                                        creditBalance={creditBalance}
-                                        buttonText={activeSubscription ? "ต่ออายุอีก 30 วัน" : "ซื้อ Season Pass"}
-                                    />
+                                    plan.isActive ? (
+                                        <SeasonPassPurchaseButton
+                                            planName={plan.name}
+                                            price={price}
+                                            creditBalance={creditBalance}
+                                            buttonText={activeSubscription ? `ต่ออายุอีก ${plan.durationDays} วัน` : "ซื้อ Season Pass"}
+                                        />
+                                    ) : (
+                                        <Button type="button" disabled className="rounded-full px-5">
+                                            ปิดขายชั่วคราว
+                                        </Button>
+                                    )
                                 ) : (
                                     <Button asChild className="rounded-full px-5">
                                         <Link href="/register?callbackUrl=%2Fseason-pass">
@@ -108,6 +104,12 @@ export default async function SeasonPassPurchasePage() {
                                     </div>
                                 ))}
                             </div>
+
+                            {!plan.isActive ? (
+                                <div className="rounded-2xl border border-amber-200 bg-amber-50/80 p-4 text-sm leading-6 text-amber-900">
+                                    ขณะนี้ Season Pass ถูกปิดการขายชั่วคราว แต่ผู้ที่มีแพ็กเกจอยู่แล้วยังเข้าไปรับรางวัลได้ตามปกติ
+                                </div>
+                            ) : null}
                         </div>
 
                         <div className="rounded-[28px] border border-slate-200 bg-white/92 p-5 shadow-sm backdrop-blur">
@@ -179,17 +181,28 @@ export default async function SeasonPassPurchasePage() {
                         <div className="mt-5 rounded-[28px] border border-[#eadfce] bg-[linear-gradient(180deg,#fffdfa_0%,#f9f6ef_100%)] p-4">
                             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                                 {rewardsPreview.map((reward) => {
-                                    const Icon = reward.icon;
+                                    const tone =
+                                        reward.type === "credits"
+                                            ? "bg-blue-50 text-blue-700"
+                                            : reward.type === "points"
+                                              ? "bg-emerald-50 text-emerald-700"
+                                              : "bg-sky-50 text-sky-700";
+                                    const Icon =
+                                        reward.type === "credits"
+                                            ? Wallet
+                                            : reward.type === "points"
+                                              ? Coins
+                                              : Ticket;
 
                                     return (
                                         <div key={reward.day} className="rounded-[22px] border border-border/70 bg-white/85 p-3 shadow-sm">
                                             <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-500">
-                                                Day {reward.day}
+                                                Day {String(reward.day).padStart(2, "0")}
                                             </span>
-                                            <div className={`mt-3 flex h-11 w-11 items-center justify-center rounded-2xl ${reward.tone}`}>
+                                            <div className={`mt-3 flex h-11 w-11 items-center justify-center rounded-2xl ${tone}`}>
                                                 <Icon className="h-5 w-5" />
                                             </div>
-                                            <p className="mt-3 text-sm font-semibold text-slate-900">{reward.title}</p>
+                                            <p className="mt-3 text-sm font-semibold text-slate-900">{reward.label}</p>
                                             <p className="mt-1 text-xs text-slate-500">จำนวน {reward.amount}</p>
                                         </div>
                                     );

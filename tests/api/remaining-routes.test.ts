@@ -129,11 +129,7 @@ describe("API: /api/user/settings (PATCH)", () => {
 
   it("returns 410 because the legacy endpoint is disabled", async () => {
     const { PATCH } = await import("@/app/api/user/settings/route");
-    const req = new NextRequest("http://localhost/api/user/settings", {
-      method: "PATCH",
-      body: JSON.stringify({ password: "newpassword123" }),
-    });
-    const res = await PATCH(req);
+    const res = await PATCH();
     expect(res.status).toBe(410);
     const body = await res.json();
     expect(body.message).toContain("disabled");

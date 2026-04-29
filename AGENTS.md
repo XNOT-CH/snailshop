@@ -18,6 +18,19 @@
 
 - Prevent corrupted Thai characters and encoding drift during agent edits, inspection, and automation.
 
+## Collaboration Workflow
+
+- For new development tasks, do not start coding immediately.
+- Start by analyzing the requirement first.
+- Create a small implementation plan before making changes.
+- List the files that will be created or edited before editing code.
+- Break work into small, clear steps so progress is easy to follow.
+- After making changes, summarize what was changed.
+- Do not remove existing code unless it is necessary for the task.
+- Prefer readable, beginner-friendly code.
+- Always consider security, maintainability, and best practices.
+- When the user gives a placeholder requirement such as `[ใส่รายละเอียดโปรเจกต์ตรงนี้]`, treat it as incomplete and ask for the missing business requirement before implementing code.
+
 ## AI Navigation Map
 
 Use this file as the repo-level starting point, then read the nearest nested `AGENTS.md`.

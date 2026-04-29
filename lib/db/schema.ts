@@ -168,6 +168,7 @@ export const orders = mysqlTable("Order", {
     purchasedAt: datetime("purchasedAt", { mode: "string" }).default(sql`now()`).notNull(),
 }, (t) => [
     index("idx_order_userId_purchasedAt").on(t.userId, t.purchasedAt),
+    index("idx_order_user_status").on(t.userId, t.status),
     index("idx_order_status").on(t.status),
     index("idx_order_purchasedAt").on(t.purchasedAt),
 ]);
@@ -228,6 +229,7 @@ export const seasonPassSubscriptions = mysqlTable("SeasonPassSubscription", {
     updatedAt: updatedAt(),
 }, (t) => [
     index("idx_season_pass_subscription_user_status").on(t.userId, t.status),
+    index("idx_season_pass_subscription_user_status_endAt").on(t.userId, t.status, t.endAt),
     index("idx_season_pass_subscription_endAt").on(t.endAt),
 ]);
 

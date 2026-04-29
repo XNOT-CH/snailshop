@@ -39,6 +39,7 @@ export async function countPromoUsageByUser(promoCodeId: string, userId: string)
 export async function userHasCompletedOrder(userId: string) {
     const existingOrder = await db.query.orders.findFirst({
         where: and(eq(orders.userId, userId), eq(orders.status, "COMPLETED")),
+        columns: { id: true },
     });
 
     return Boolean(existingOrder);

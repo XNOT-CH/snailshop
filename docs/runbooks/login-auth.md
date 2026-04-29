@@ -27,9 +27,11 @@
 1. User opens `/forgot-password` and submits email or username
 2. Server verifies Turnstile when enabled
 3. If the account has a usable email, the server sends a reset link through Resend
-4. The reset token is signed server-side, expires in 30 minutes, and is tied to the current password hash fingerprint
-5. `/reset-password` validates the token before allowing a password change
-6. After password reset, the old reset link becomes invalid automatically
+4. Forgot-password requests are rate limited per IP and identifier to reduce reset-mail abuse, using Redis when configured and in-memory fallback otherwise
+5. The reset token is signed server-side, expires in 30 minutes, and is tied to the current password hash fingerprint
+6. `/reset-password` validates the token before allowing a password change, and reset attempts are also rate limited with the same Redis-or-memory fallback
+7. The password update is guarded against concurrent reuse, so the same reset link cannot win twice in a race
+8. After password reset, the old reset link becomes invalid automatically
 
 ## Expected behavior
 
@@ -47,6 +49,7 @@
 4. Check forwarded IP headers if rate limiting looks inconsistent
 5. Confirm the user role exists in the `roles` table and exposes expected permissions
 6. For reset-password issues, verify `NEXTAUTH_SECRET` and `RESEND_API_KEY`
+7. Inspect audit logs for `PASSWORD_RESET_REQUEST`, `PASSWORD_RESET_COMPLETE`, and `RATE_LIMIT_EXCEEDED`
 
 ## Safe changes
 

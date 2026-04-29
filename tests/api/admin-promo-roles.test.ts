@@ -35,7 +35,9 @@ import { isAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { validateBody } from "@/lib/validations/validate";
 
-const mkReq = (url: string, opts?: RequestInit) => new NextRequest(url, opts);
+type NextRequestInit = ConstructorParameters<typeof NextRequest>[1];
+
+const mkReq = (url: string, opts?: NextRequestInit) => new NextRequest(url, opts);
 const mkParams = (id: string) => ({ params: Promise.resolve({ id }) });
 const ADMIN_OK = { success: true };
 const UNAUTH = { success: false, error: "Unauthorized" };

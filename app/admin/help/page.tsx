@@ -51,6 +51,7 @@ interface HelpVideo {
     videoId: string;
     sortOrder: number;
     isActive: boolean;
+    createdAt?: string | null;
 }
 
 const CATEGORIES = [
@@ -356,7 +357,15 @@ export default function AdminHelpPage() {
         return left.sortOrder - right.sortOrder;
     });
 
-    const sortedVideos = [...videos].sort((left, right) => left.sortOrder - right.sortOrder);
+    const sortedVideos = [...videos].sort((left, right) => {
+        if (left.sortOrder !== right.sortOrder) {
+            return left.sortOrder - right.sortOrder;
+        }
+
+        const leftCreatedAt = left.createdAt ? new Date(left.createdAt).getTime() : 0;
+        const rightCreatedAt = right.createdAt ? new Date(right.createdAt).getTime() : 0;
+        return rightCreatedAt - leftCreatedAt;
+    });
 
     return (
         <div className="space-y-6">

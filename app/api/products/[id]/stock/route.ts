@@ -55,7 +55,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         // ── Cross-product duplicate check ──────────────────────────────
         // Extract the usernames from the new secretData being saved
-        const newUsers = extractStockUsers(secretData, "newline");
+        const newUsers = extractStockUsers(secretData, existingProduct.stockSeparator);
 
         if (newUsers.length > 0) {
             // Fetch all OTHER products that still have stock

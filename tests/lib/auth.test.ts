@@ -12,11 +12,15 @@ vi.mock("@/lib/csrf", () => ({
 vi.mock("@/lib/db", () => ({
   db: {
     query: {
+      users: {
+        findFirst: vi.fn(),
+      },
       roles: {
-        findFirst: vi.fn().mockResolvedValue({ code: "ADMIN" }),
+        findFirst: vi.fn(),
       },
     },
   },
+  users: { id: "id" },
   roles: { code: "code" },
 }));
 
@@ -26,10 +30,13 @@ vi.mock("drizzle-orm", () => ({
 
 import { auth } from "@/auth";
 import { getCsrfTokenFromRequest, validateCsrfToken } from "@/lib/csrf";
+import { db } from "@/lib/db";
 
 describe("lib/auth", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(db.query.users.findFirst).mockResolvedValue({ id: "u1", role: "ADMIN" } as never);
+    vi.mocked(db.query.roles.findFirst).mockResolvedValue({ permissions: null } as never);
   });
 
   describe("isAdmin", () => {
@@ -42,6 +49,7 @@ describe("lib/auth", () => {
 
     it("returns error if not admin role", async () => {
       (auth as any).mockResolvedValue({ user: { id: "u1", role: "USER" } });
+      vi.mocked(db.query.users.findFirst).mockResolvedValue({ id: "u1", role: "USER" } as never);
       const { isAdmin } = await import("@/lib/auth");
       const result = await isAdmin();
       expect(result.success).toBe(false);

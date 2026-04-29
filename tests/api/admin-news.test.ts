@@ -35,7 +35,9 @@ import { db } from "@/lib/db";
 import { validateBody } from "@/lib/validations/validate";
 import { requirePermission } from "@/lib/auth";
 
-const mkReq = (url = "http://localhost/api/admin/news", opts?: RequestInit) =>
+type NextRequestInit = ConstructorParameters<typeof NextRequest>[1];
+
+const mkReq = (url = "http://localhost/api/admin/news", opts?: NextRequestInit) =>
   new NextRequest(url, opts);
 
 const ADMIN_OK = { success: true };

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/accordion";
 import { StructuredData } from "@/components/StructuredData";
 import { buildPageMetadata } from "@/lib/seo";
+import { mergeHelpArticlesWithPinFallback } from "@/lib/helpArticles";
 import { getYouTubeEmbedUrl } from "@/lib/helpVideos";
 import { themeClasses } from "@/lib/theme";
 
@@ -84,12 +85,7 @@ export default async function HelpPage() {
         console.error("[HELP_VIDEOS_FETCH]", error);
     }
 
-    const mergedArticles = [
-        ...articles,
-        ...PIN_FAQ_ARTICLES.filter((fallbackArticle) =>
-            !articles.some((article) => article.question.trim() === fallbackArticle.question.trim())
-        ),
-    ];
+    const mergedArticles = mergeHelpArticlesWithPinFallback(articles, PIN_FAQ_ARTICLES);
 
     const groupedArticles = mergedArticles.reduce((acc, article) => {
         if (!acc[article.category]) {

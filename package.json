@@ -7,6 +7,8 @@
     "build": "next build",
     "start": "next start",
     "check:deploy": "node scripts/validate-deploy.mjs",
+    "check:db-health": "node scripts/validate-db-health.mjs",
+    "check:purchase-locking": "node scripts/verify-purchase-locking.mjs",
     "check:encoding": "node scripts/check-encoding.mjs",
     "lint": "eslint",
     "test": "vitest run",

@@ -245,7 +245,7 @@ function CartSheetContent() {
             return;
         }
 
-        setIsOpen(false);
+        closeCart();
         await new Promise((r) => setTimeout(r, 300));
 
         const confirmed = await showPurchaseConfirm({
@@ -258,13 +258,13 @@ function CartSheetContent() {
             cancelText: "ยกเลิก",
         });
         if (!confirmed) {
-            setIsOpen(true);
+            openCart();
             return;
         }
 
         const pinCheck = await requirePinForAction("ยืนยัน PIN เพื่อชำระเงิน");
         if (!pinCheck.allowed) {
-            setIsOpen(true);
+            openCart();
             return;
         }
 
@@ -274,7 +274,10 @@ function CartSheetContent() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    productIds: items.map((item) => item.id),
+                    items: items.map((item) => ({
+                        productId: item.id,
+                        quantity: item.quantity || 1,
+                    })),
                     promoCode: appliedPromo?.code || undefined,
                     pin: pinCheck.pin || undefined,
                 }),

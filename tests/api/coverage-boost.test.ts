@@ -42,7 +42,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("drizzle-orm", () => ({
-  eq: vi.fn(), and: vi.fn(), gte: vi.fn(), lte: vi.fn(),
+  eq: vi.fn(), or: vi.fn(), and: vi.fn(), gte: vi.fn(), lte: vi.fn(),
   isNotNull: vi.fn(), asc: vi.fn(), desc: vi.fn(), sql: vi.fn(),
 }));
 
@@ -64,6 +64,9 @@ vi.mock("@/lib/api", () => ({ parseBody: vi.fn() }));
 vi.mock("@/lib/validations", () => ({ registerSchema: {} }));
 vi.mock("@/lib/encryption", () => ({ encrypt: vi.fn((s: string) => `enc:${s}`) }));
 vi.mock("bcryptjs", () => ({ default: { hash: vi.fn().mockResolvedValue("hashed_pw") } }));
+vi.mock("@/lib/security/turnstile", () => ({
+  verifyTurnstileToken: vi.fn().mockResolvedValue({ success: true }),
+}));
 
 vi.mock("node:fs/promises", () => ({
   default: {},
@@ -416,11 +419,7 @@ describe("API: /api/session (POST & DELETE)", () => {
 
   it("POST returns 410 because the legacy endpoint is disabled", async () => {
     const { POST } = await import("@/app/api/session/route");
-    const req = new NextRequest("http://localhost/api/session", {
-      method: "POST",
-      body: JSON.stringify({ rememberMe: false }),
-    });
-    const res = await POST(req);
+    const res = await POST();
     expect(res.status).toBe(410);
     expect((await res.json()).message).toContain("disabled");
   });
@@ -453,12 +452,12 @@ describe("API: /api/register (POST) — extended coverage", () => {
   });
 
   it("returns 400 when username already exists", async () => {
-    (parseBody as any).mockResolvedValue({ data: { username: "existingUser", password: "password123" } });
+    (parseBody as any).mockResolvedValue({ data: { username: "existingUser", email: "existing@example.com", password: "password123" } });
     (db.query.users.findFirst as any).mockResolvedValue({ id: "u1", username: "existingUser" });
     const { POST } = await import("@/app/api/register/route");
     const req = new NextRequest("http://localhost/api/register", {
       method: "POST",
-      body: JSON.stringify({ username: "existingUser", password: "password123" }),
+      body: JSON.stringify({ username: "existingUser", email: "existing@example.com", password: "password123" }),
     });
     const res = await POST(req);
     expect(res.status).toBe(400);
@@ -467,18 +466,32 @@ describe("API: /api/register (POST) — extended coverage", () => {
   });
 
   it("returns 200 when registration succeeds", async () => {
-    (parseBody as any).mockResolvedValue({ data: { username: "newUser", password: "password123" } });
+    (parseBody as any).mockResolvedValue({ data: { username: "newUser", email: "new@example.com", password: "password123" } });
     (db.query.users.findFirst as any).mockResolvedValue(null);
     const { POST } = await import("@/app/api/register/route");
     const req = new NextRequest("http://localhost/api/register", {
       method: "POST",
-      body: JSON.stringify({ username: "newUser", password: "password123" }),
+      body: JSON.stringify({ username: "newUser", email: "new@example.com", password: "password123" }),
     });
     const res = await POST(req);
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
     expect(body.userId).toBeDefined();
+  });
+
+  it("returns 400 when email already exists", async () => {
+    (parseBody as any).mockResolvedValue({ data: { username: "newUser", email: "dup@example.com", password: "password123" } });
+    (db.query.users.findFirst as any).mockResolvedValue({ id: "u2", username: "someoneElse", email: "dup@example.com" });
+    const { POST } = await import("@/app/api/register/route");
+    const req = new NextRequest("http://localhost/api/register", {
+      method: "POST",
+      body: JSON.stringify({ username: "newUser", email: "dup@example.com", password: "password123" }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.message).toContain("อีเมล");
   });
 });
 

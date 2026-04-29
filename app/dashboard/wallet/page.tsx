@@ -7,7 +7,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { formatCurrencyAmount } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
-import { ensureTicketBalanceColumn } from "@/lib/wallet";
 import { themeClasses } from "@/lib/theme";
 
 export const dynamic = "force-dynamic";
@@ -19,8 +18,6 @@ export default async function DashboardWalletPage() {
     if (!userId) {
         redirect("/login");
     }
-
-    await ensureTicketBalanceColumn();
 
     const [user, currencySettings] = await Promise.all([
         db.query.users.findFirst({

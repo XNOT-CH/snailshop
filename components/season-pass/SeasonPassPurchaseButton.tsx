@@ -100,11 +100,12 @@ export function SeasonPassPurchaseButton({
             }
 
             await showPurchaseSuccessModal({
-                title: "ซื้อ Season Pass สำเร็จ",
+                title: data.queued ? "ต่ออายุ Season Pass สำเร็จ" : "ซื้อ Season Pass สำเร็จ",
                 html: `
                     <div class="space-y-3 text-left">
-                        <p><strong>${planName}</strong> ถูกเปิดใช้งานแล้ว</p>
-                        <p>ใช้งานได้ถึง <strong>${data.endAtText}</strong></p>
+                        <p><strong>${planName}</strong> ${data.queued ? "ถูกเพิ่มเข้าคิวรอบถัดไปแล้ว" : "ถูกเปิดใช้งานแล้ว"}</p>
+                        ${data.startsAtText ? `<p>รอบถัดไปจะเริ่ม <strong>${data.startsAtText}</strong></p>` : ""}
+                        <p>สิทธิ์ทั้งหมดจะสิ้นสุด <strong>${data.endAtText}</strong></p>
                     </div>
                 `,
                 confirmText: "ไปหน้ารับของ",

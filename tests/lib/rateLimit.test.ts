@@ -5,6 +5,8 @@ import {
   clearLoginAttempts,
   checkApiRateLimit,
   checkRegisterRateLimit,
+  checkPasswordResetRequestRateLimit,
+  checkPasswordResetAttemptRateLimit,
   checkChatMessageRateLimit,
   getClientIp,
   getProgressiveDelay,
@@ -101,6 +103,44 @@ describe("rateLimit utilities", () => {
       checkRegisterRateLimit(testId);
       const result = checkRegisterRateLimit(testId);
       expect(result.blocked).toBe(true);
+      expect(result.message).toBeDefined();
+    });
+  });
+
+  describe("checkPasswordResetRequestRateLimit", () => {
+    it("allows the first reset request", () => {
+      const result = checkPasswordResetRequestRateLimit(testId);
+      expect(result.blocked).toBe(false);
+      expect(result.remainingAttempts).toBe(2);
+    });
+
+    it("blocks after exceeding the reset request limit", () => {
+      for (let i = 0; i < 3; i++) {
+        checkPasswordResetRequestRateLimit(testId);
+      }
+
+      const result = checkPasswordResetRequestRateLimit(testId);
+      expect(result.blocked).toBe(true);
+      expect(result.remainingAttempts).toBe(0);
+      expect(result.message).toBeDefined();
+    });
+  });
+
+  describe("checkPasswordResetAttemptRateLimit", () => {
+    it("allows the first reset submission", () => {
+      const result = checkPasswordResetAttemptRateLimit(testId);
+      expect(result.blocked).toBe(false);
+      expect(result.remainingAttempts).toBe(4);
+    });
+
+    it("blocks after exceeding the reset submission limit", () => {
+      for (let i = 0; i < 5; i++) {
+        checkPasswordResetAttemptRateLimit(testId);
+      }
+
+      const result = checkPasswordResetAttemptRateLimit(testId);
+      expect(result.blocked).toBe(true);
+      expect(result.remainingAttempts).toBe(0);
       expect(result.message).toBeDefined();
     });
   });

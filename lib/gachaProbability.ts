@@ -11,7 +11,7 @@ export function getNormalizedProbability(value: string | number | null | undefin
     return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
 }
 
-export function sumProbability(candidates: Array<Pick<WeightedCandidate, "probability">>) {
+export function sumProbability<T extends Pick<WeightedCandidate, "probability">>(candidates: T[]) {
     const scaledTotal = candidates.reduce((sum, candidate) => {
         return sum + Math.round(getNormalizedProbability(candidate.probability) * PROBABILITY_SCALE);
     }, 0);
@@ -20,7 +20,7 @@ export function sumProbability(candidates: Array<Pick<WeightedCandidate, "probab
 }
 
 export function hasExactProbabilityTotal(
-    candidates: Array<Pick<WeightedCandidate, "probability">>,
+    candidates: Array<Pick<WeightedCandidate, "probability"> & Partial<Pick<WeightedCandidate, "id">>>,
     requiredTotal = REQUIRED_PROBABILITY_TOTAL,
 ) {
     return sumProbability(candidates) === requiredTotal;

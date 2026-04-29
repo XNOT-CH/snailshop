@@ -320,6 +320,62 @@ describe("API: /api/purchase (POST)", () => {
     expect(res.status).toBe(400);
   });
 
+  it("rejects new-user-only promo when the user already has a completed order", async () => {
+    (auth as any).mockResolvedValue({ user: { id: "u1" } });
+    (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
+    const conn = {
+      beginTransaction: vi.fn().mockResolvedValue(undefined),
+      execute: vi.fn()
+        .mockResolvedValueOnce([[MOCK_PRODUCT]])
+        .mockResolvedValueOnce([[{
+          id: "promo-new", code: "NEWONLY", isActive: true,
+          startsAt: new Date(Date.now() - 1000),
+          expiresAt: null, usageLimit: null, usedCount: 0,
+          usagePerUser: null, applicableCategories: null, excludedCategories: null,
+          isNewUserOnly: true, codeType: "DISCOUNT",
+          discountType: "FIXED", discountValue: "10", maxDiscount: null, minPurchase: null,
+        }]])
+        .mockResolvedValueOnce([[{ id: "o1" }]]),
+      commit: vi.fn(),
+      rollback: vi.fn().mockResolvedValue(undefined),
+      release: vi.fn().mockResolvedValue(undefined),
+    };
+    (db.$client.getConnection as any).mockResolvedValue(conn);
+
+    const { POST } = await import("@/app/api/purchase/route");
+    const res = await POST(req({ productId: "p1", promoCode: "NEWONLY" }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).message).toContain("ลูกค้าใหม่");
+  });
+
+  it("rejects promo when usagePerUser has been exhausted", async () => {
+    (auth as any).mockResolvedValue({ user: { id: "u1" } });
+    (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
+    const conn = {
+      beginTransaction: vi.fn().mockResolvedValue(undefined),
+      execute: vi.fn()
+        .mockResolvedValueOnce([[MOCK_PRODUCT]])
+        .mockResolvedValueOnce([[{
+          id: "promo-limit", code: "LIMIT1", isActive: true,
+          startsAt: new Date(Date.now() - 1000),
+          expiresAt: null, usageLimit: null, usedCount: 0,
+          usagePerUser: 1, applicableCategories: null, excludedCategories: null,
+          isNewUserOnly: false, codeType: "DISCOUNT",
+          discountType: "FIXED", discountValue: "10", maxDiscount: null, minPurchase: null,
+        }]])
+        .mockResolvedValueOnce([[{ count: 1 }]]),
+      commit: vi.fn(),
+      rollback: vi.fn().mockResolvedValue(undefined),
+      release: vi.fn().mockResolvedValue(undefined),
+    };
+    (db.$client.getConnection as any).mockResolvedValue(conn);
+
+    const { POST } = await import("@/app/api/purchase/route");
+    const res = await POST(req({ productId: "p1", promoCode: "LIMIT1" }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).message).toContain("ครบสิทธิ์");
+  });
+
   // ── transaction error paths ─────────────────────────────────────────────────
   it("returns 400 when product not found in DB", async () => {
     (auth as any).mockResolvedValue({ user: { id: "u1" } });
@@ -447,6 +503,10 @@ describe("API: /api/purchase (POST)", () => {
     const res = await POST(req({ productId: "p1", quantity: 1 }));
     expect(res.status).toBe(200);
     expect(conn.commit).toHaveBeenCalled();
+    expect(conn.execute).toHaveBeenCalledWith(
+      "UPDATE Product SET secretData = ?, isSold = ?, orderId = ?, scheduledDeleteAt = ? WHERE id = ?",
+      ["enc_", 1, expect.any(String), null, "p1"]
+    );
   });
 
   it("succeeds with discountPrice (uses discountPrice instead of price)", async () => {

@@ -19,9 +19,11 @@ interface ProductCardProps {
     image: string;
     title: string;
     price: number;
+    discountPrice?: number | null;
     currency?: string | null;
     category: string;
     isSold: boolean;
+    stockCount?: number;
     index?: number;
     currencySettings?: PublicCurrencySettings;
 }
@@ -31,9 +33,11 @@ export function ProductCard({
     image,
     title,
     price,
+    discountPrice = null,
     currency = "THB",
     category,
     isSold,
+    stockCount,
     index = 0,
     currencySettings,
 }: Readonly<ProductCardProps>) {
@@ -43,6 +47,9 @@ export function ProductCard({
     const [isLoading, setIsLoading] = useState(false);
     const [isVisible, setIsVisible] = useState(false);
     const inCart = isInCart(id);
+    const hasDiscount = discountPrice !== null && discountPrice < price;
+    const activePrice = hasDiscount && discountPrice !== null ? discountPrice : price;
+    const isUnavailable = isSold || stockCount === 0;
 
     useEffect(() => {
         const timer = setTimeout(() => {
@@ -62,18 +69,21 @@ export function ProductCard({
             return;
         }
 
-        if (isSold || isLoading) return;
+        if (isUnavailable || isLoading) return;
 
         const confirmed = await showPurchaseConfirm({
             productName: title,
-            priceText: formatCurrencyAmount(price, currency, currencySettings),
+            priceText: formatCurrencyAmount(activePrice, currency, currencySettings),
+            extraHtml: hasDiscount
+                ? `<span class="text-sm text-gray-500 line-through">ราคาปกติ: ${formatCurrencyAmount(price, currency, currencySettings)}</span>`
+                : undefined,
         });
 
         if (!confirmed) return;
 
         const purchaseCheck = await preparePurchase({
             router,
-            amount: price,
+            amount: activePrice,
             currency,
             currencySettings,
             pinActionLabel: "ยืนยัน PIN เพื่อซื้อสินค้า",
@@ -130,14 +140,14 @@ export function ProductCard({
                         {category}
                     </span>
                 </div>
-                {isSold && (
+                {isUnavailable && (
                     <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
                         <span className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-full transform -rotate-12">
-                            ขายแล้ว
+                            {isSold ? "ขายแล้ว" : "สินค้าหมด"}
                         </span>
                     </div>
                 )}
-                {!isSold && (
+                {!isUnavailable && (
                     <Link href={`/product/${id}`} className={`${themeClasses.overlayScrim} absolute inset-0 z-10 flex items-center justify-center opacity-0 backdrop-blur-[1px] transition duration-300 group-hover:opacity-100`}>
                         <span className={`${themeClasses.badge} storefront-product-category flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold`}>
                             ดูรายละเอียด
@@ -158,14 +168,21 @@ export function ProductCard({
             </div>
             <div className="p-4 text-center">
                 <h3 className="mb-1 truncate text-center font-semibold text-foreground">{title}</h3>
-                <p className="text-center text-lg font-bold text-primary">
-                    {formatCurrencyAmount(price, currency, currencySettings)}
-                </p>
+                <div className="text-center">
+                    {hasDiscount && (
+                        <p className="text-sm text-muted-foreground line-through">
+                            {formatCurrencyAmount(price, currency, currencySettings)}
+                        </p>
+                    )}
+                    <p className={`text-lg font-bold ${hasDiscount ? "text-red-500 dark:text-red-400" : "text-primary"}`}>
+                        {formatCurrencyAmount(activePrice, currency, currencySettings)}
+                    </p>
+                </div>
                 <div className="grid grid-cols-2 gap-2 mt-3">
-                    {isSold ? (
+                    {isUnavailable ? (
                         <Button variant="outline" className="col-span-2 w-full border-border/80 bg-accent/40 text-foreground" disabled>
                             <ShoppingCart className="h-4 w-4 mr-2" />
-                            ขายแล้ว
+                            {isSold ? "ขายแล้ว" : "สินค้าหมด"}
                         </Button>
                     ) : (
                         <>
@@ -195,6 +212,7 @@ export function ProductCard({
                                     id,
                                     name: title,
                                     price,
+                                    discountPrice: hasDiscount ? activePrice : undefined,
                                     currency,
                                     imageUrl: image,
                                     category,

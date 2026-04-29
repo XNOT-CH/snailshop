@@ -15,8 +15,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         const newId = crypto.randomUUID();
         await db.insert(products).values({
             id: newId, name: `${original.name} (สำเนา)`, description: original.description,
-            price: original.price, discountPrice: null, imageUrl: original.imageUrl,
-            category: original.category, secretData: "", isSold: false, isFeatured: false, sortOrder: 0,
+            price: original.price, discountPrice: original.discountPrice, imageUrl: original.imageUrl,
+            imageUrls: original.imageUrls, category: original.category, currency: original.currency,
+            secretData: "", stockSeparator: original.stockSeparator, isSold: false, isFeatured: false, sortOrder: 0,
+            autoDeleteAfterSale: original.autoDeleteAfterSale,
             createdAt: mysqlNow(),
             updatedAt: mysqlNow(),
         });

@@ -12,7 +12,7 @@ import {
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { isRewardEligibleForRoll } from "@/lib/gachaRewardEligibility";
-import { fetchActiveGridRewards, isRewardEligibleForRoll } from "@/lib/gachaRewardQueries";
+import { fetchActiveGridRewards } from "@/lib/gachaRewardQueries";
 import { hasExactProbabilityTotal, pickWeightedCandidate } from "@/lib/gachaProbability";
 import { getGachaRewardTypeLabel, normalizeGachaCost } from "@/lib/gachaCost";
 import { getMaintenanceState } from "@/lib/maintenanceMode";

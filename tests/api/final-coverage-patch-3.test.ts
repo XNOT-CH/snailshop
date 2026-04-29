@@ -50,6 +50,9 @@ vi.mock("@/lib/rateLimit", () => ({
   checkRegisterRateLimit: vi.fn().mockReturnValue({ blocked: false }),
 }));
 vi.mock("@/lib/api", () => ({ parseBody: vi.fn() }));
+vi.mock("@/lib/security/turnstile", () => ({
+  verifyTurnstileToken: vi.fn().mockResolvedValue({ success: true }),
+}));
 vi.mock("bcryptjs",   () => ({ default: { hash: vi.fn().mockResolvedValue("hashed"), compare: vi.fn().mockResolvedValue(true) } }));
 vi.mock("next/headers", () => ({ cookies: vi.fn().mockResolvedValue({ get: vi.fn().mockReturnValue(undefined), set: vi.fn(), delete: vi.fn() }) }));
 vi.mock("@/lib/csrf", () => ({
@@ -94,7 +97,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("drizzle-orm", () => ({
-  eq: vi.fn(), and: vi.fn(), gte: vi.fn(), lte: vi.fn(), lt: vi.fn(),
+  eq: vi.fn(), or: vi.fn(), and: vi.fn(), gte: vi.fn(), lte: vi.fn(), lt: vi.fn(),
   count: vi.fn(), max: vi.fn(), sql: vi.fn(), isNull: vi.fn(),
   asc: vi.fn(), desc: vi.fn(), inArray: vi.fn(),
 }));
@@ -217,7 +220,7 @@ describe("API: /api/register (rate limit + existing user paths)", () => {
   afterEach(() => { vi.unstubAllEnvs(); });
 
   it("returns 400 when username already exists", async () => {
-    (parseBody as any).mockResolvedValue({ data: { username: "taken", password: "Pass@123" } });
+    (parseBody as any).mockResolvedValue({ data: { username: "taken", email: "taken@example.com", password: "Pass@123" } });
     (db.query.users.findFirst as any).mockResolvedValue({ id: "u1", username: "taken" });
     const { POST } = await import("@/app/api/register/route");
     const res = await POST(new NextRequest("http://localhost", { method: "POST" }));
@@ -241,7 +244,7 @@ describe("API: /api/login (progressive delay + 500)", () => {
 
   it("returns 410 while keeping the legacy endpoint disabled", async () => {
     const { POST } = await import("@/app/api/login/route");
-    const res = await POST(new NextRequest("http://localhost", { method: "POST" }));
+    const res = await POST();
     expect(res.status).toBe(410);
   });
 });

@@ -1,8 +1,9 @@
-import { and, asc, desc, eq, gte, lt } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, lt, sql } from "drizzle-orm";
 import { getPointCurrencyName, type PublicCurrencySettings } from "@/lib/currencySettings";
 import { db, seasonPassClaims, seasonPassPlans, seasonPassRewards, seasonPassSubscriptions, users } from "@/lib/db";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
-import { formatDateInTimeZone, mysqlDateTimeToIso, mysqlNow, TH_TIME_ZONE } from "@/lib/utils/date";
+import { SEASON_PASS_REWARD_DAYS } from "@/lib/seasonPassConfig";
+import { formatDateInTimeZone, getFirstDayOfMonthInTimeZone, mysqlDateTimeToIso, mysqlNow, TH_TIME_ZONE } from "@/lib/utils/date";
 
 export type SeasonPassRewardType = "credits" | "points" | "tickets";
 export type SeasonPassRewardStatus = "claimed" | "missed" | "today" | "locked";
@@ -44,7 +45,7 @@ const DEFAULT_PLAN = {
     name: "Season Pass 30 วัน",
     description: "ปลดล็อกตารางรับของรายวัน 30 วัน",
     price: "50.00",
-    durationDays: 30,
+    durationDays: SEASON_PASS_REWARD_DAYS,
 } as const;
 
 const DEFAULT_REWARD_IMAGE_BY_TYPE: Partial<Record<SeasonPassRewardType, string>> = {
@@ -85,8 +86,6 @@ const DEFAULT_REWARD_CATALOG: SeasonPassRewardDefinition[] = [
     { day: 29, type: "points", amount: "150", label: "พอยต์", pointReward: 150 },
     { day: 30, type: "tickets", amount: "10", label: "ตั๋วสุ่ม", highlight: true },
 ] as const;
-
-let ensureSeasonPassSchemaPromise: Promise<void> | null = null;
 
 function addDays(date: Date, days: number) {
     const next = new Date(date);
@@ -145,108 +144,6 @@ function localizeRewardDefinition(
         ...reward,
         label: getPointCurrencyName(settings),
     };
-}
-
-async function ensureSeasonPassSchema() {
-    if (!ensureSeasonPassSchemaPromise) {
-        ensureSeasonPassSchemaPromise = (async () => {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const client = (db as any).$client;
-
-            await client.execute(`
-                CREATE TABLE IF NOT EXISTS \`SeasonPassPlan\` (
-                    \`id\` varchar(36) NOT NULL,
-                    \`slug\` varchar(100) NOT NULL,
-                    \`name\` varchar(255) NOT NULL,
-                    \`description\` text NULL,
-                    \`price\` decimal(10,2) NOT NULL,
-                    \`durationDays\` int NOT NULL DEFAULT 30,
-                    \`isActive\` boolean NOT NULL DEFAULT true,
-                    \`createdAt\` datetime NOT NULL DEFAULT (now()),
-                    \`updatedAt\` datetime NOT NULL DEFAULT (now()),
-                    CONSTRAINT \`SeasonPassPlan_id_pk\` PRIMARY KEY(\`id\`),
-                    CONSTRAINT \`SeasonPassPlan_slug_unique\` UNIQUE(\`slug\`)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-            `);
-
-            await client.execute(`
-                CREATE TABLE IF NOT EXISTS \`SeasonPassSubscription\` (
-                    \`id\` varchar(36) NOT NULL,
-                    \`userId\` varchar(36) NOT NULL,
-                    \`planId\` varchar(36) NOT NULL,
-                    \`status\` varchar(20) NOT NULL DEFAULT 'ACTIVE',
-                    \`startAt\` datetime NOT NULL DEFAULT (now()),
-                    \`endAt\` datetime NOT NULL,
-                    \`createdAt\` datetime NOT NULL DEFAULT (now()),
-                    \`updatedAt\` datetime NOT NULL DEFAULT (now()),
-                    CONSTRAINT \`SeasonPassSubscription_id_pk\` PRIMARY KEY(\`id\`),
-                    CONSTRAINT \`SeasonPassSubscription_userId_User_id_fk\`
-                        FOREIGN KEY (\`userId\`) REFERENCES \`User\`(\`id\`) ON DELETE cascade,
-                    CONSTRAINT \`SeasonPassSubscription_planId_SeasonPassPlan_id_fk\`
-                        FOREIGN KEY (\`planId\`) REFERENCES \`SeasonPassPlan\`(\`id\`) ON DELETE restrict
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-            `);
-
-            await client.execute(`
-                CREATE TABLE IF NOT EXISTS \`SeasonPassClaim\` (
-                    \`id\` varchar(36) NOT NULL,
-                    \`subscriptionId\` varchar(36) NOT NULL,
-                    \`userId\` varchar(36) NOT NULL,
-                    \`dayNumber\` int NOT NULL,
-                    \`claimDateKey\` varchar(10) NOT NULL,
-                    \`rewardType\` varchar(30) NOT NULL,
-                    \`rewardLabel\` varchar(120) NOT NULL,
-                    \`rewardAmount\` varchar(50) NOT NULL,
-                    \`rewardPayload\` json NULL,
-                    \`createdAt\` datetime NOT NULL DEFAULT (now()),
-                    CONSTRAINT \`SeasonPassClaim_id_pk\` PRIMARY KEY(\`id\`),
-                    CONSTRAINT \`SeasonPassClaim_subscriptionId_SeasonPassSubscription_id_fk\`
-                        FOREIGN KEY (\`subscriptionId\`) REFERENCES \`SeasonPassSubscription\`(\`id\`) ON DELETE cascade,
-                    CONSTRAINT \`SeasonPassClaim_userId_User_id_fk\`
-                        FOREIGN KEY (\`userId\`) REFERENCES \`User\`(\`id\`) ON DELETE cascade,
-                    CONSTRAINT \`uq_season_pass_claim_subscription_day\` UNIQUE(\`subscriptionId\`, \`dayNumber\`)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-            `);
-
-            await client.execute(`
-                CREATE TABLE IF NOT EXISTS \`SeasonPassReward\` (
-                    \`id\` varchar(36) NOT NULL,
-                    \`planId\` varchar(36) NOT NULL,
-                    \`dayNumber\` int NOT NULL,
-                    \`rewardType\` varchar(30) NOT NULL,
-                    \`label\` varchar(120) NOT NULL,
-                    \`amount\` varchar(50) NOT NULL,
-                    \`imageUrl\` varchar(500) NULL,
-                    \`highlight\` boolean NOT NULL DEFAULT false,
-                    \`creditReward\` int NULL,
-                    \`pointReward\` int NULL,
-                    \`createdAt\` datetime NOT NULL DEFAULT (now()),
-                    \`updatedAt\` datetime NOT NULL DEFAULT (now()),
-                    CONSTRAINT \`SeasonPassReward_id_pk\` PRIMARY KEY(\`id\`),
-                    CONSTRAINT \`SeasonPassReward_planId_SeasonPassPlan_id_fk\`
-                        FOREIGN KEY (\`planId\`) REFERENCES \`SeasonPassPlan\`(\`id\`) ON DELETE cascade,
-                    CONSTRAINT \`uq_season_pass_reward_plan_day\` UNIQUE(\`planId\`, \`dayNumber\`)
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-            `);
-
-            try {
-                await client.execute("ALTER TABLE `SeasonPassReward` ADD COLUMN `imageUrl` varchar(500) NULL AFTER `amount`;");
-            } catch {
-                // Column may already exist.
-            }
-
-            try {
-                await client.execute("ALTER TABLE `User` ADD COLUMN `ticketBalance` int NOT NULL DEFAULT 0 AFTER `pointBalance`;");
-            } catch {
-                // Column may already exist.
-            }
-        })().catch((error: unknown) => {
-            ensureSeasonPassSchemaPromise = null;
-            throw error;
-        });
-    }
-
-    await ensureSeasonPassSchemaPromise;
 }
 
 async function seedSeasonPassRewards(planId: string) {
@@ -334,8 +231,6 @@ export async function getSeasonPassRewardByDay(dayNumber: number, planId?: strin
 }
 
 export async function getOrCreateSeasonPassPlan() {
-    await ensureSeasonPassSchema();
-
     let plan = await db.query.seasonPassPlans.findFirst({
         where: eq(seasonPassPlans.slug, DEFAULT_PLAN.slug),
     });
@@ -363,6 +258,21 @@ export async function getOrCreateSeasonPassPlan() {
         throw new Error("Season Pass plan is unavailable");
     }
 
+    if (plan.durationDays !== DEFAULT_PLAN.durationDays) {
+        await db
+            .update(seasonPassPlans)
+            .set({ durationDays: DEFAULT_PLAN.durationDays })
+            .where(eq(seasonPassPlans.id, plan.id));
+
+        const repairedPlan = await db.query.seasonPassPlans.findFirst({
+            where: eq(seasonPassPlans.id, plan.id),
+        });
+
+        if (repairedPlan) {
+            plan = repairedPlan;
+        }
+    }
+
     await seedSeasonPassRewards(plan.id);
 
     return plan;
@@ -381,8 +291,26 @@ export async function expireSeasonPassSubscriptions(userId?: string) {
         .where(and(...conditions));
 }
 
+export async function activateQueuedSeasonPassSubscriptions(userId?: string) {
+    const conditions = [
+        eq(seasonPassSubscriptions.status, "QUEUED"),
+        lte(seasonPassSubscriptions.startAt, mysqlNow()),
+        gte(seasonPassSubscriptions.endAt, mysqlNow()),
+    ];
+
+    if (userId) {
+        conditions.push(eq(seasonPassSubscriptions.userId, userId));
+    }
+
+    await db
+        .update(seasonPassSubscriptions)
+        .set({ status: "ACTIVE" })
+        .where(and(...conditions));
+}
+
 export async function getCurrentSeasonPassSubscription(userId: string) {
     await expireSeasonPassSubscriptions(userId);
+    await activateQueuedSeasonPassSubscriptions(userId);
 
     const rows = await db
         .select()
@@ -391,6 +319,7 @@ export async function getCurrentSeasonPassSubscription(userId: string) {
             and(
                 eq(seasonPassSubscriptions.userId, userId),
                 eq(seasonPassSubscriptions.status, "ACTIVE"),
+                lte(seasonPassSubscriptions.startAt, mysqlNow()),
                 gte(seasonPassSubscriptions.endAt, mysqlNow()),
             ),
         )
@@ -524,8 +453,6 @@ export async function getAdminSeasonPassRewards(planId?: string) {
 }
 
 export async function getAdminSeasonPassClaimLogs(limit = 100) {
-    await ensureSeasonPassSchema();
-
     return db
         .select({
             id: seasonPassClaims.id,
@@ -545,6 +472,183 @@ export async function getAdminSeasonPassClaimLogs(limit = 100) {
         .innerJoin(seasonPassSubscriptions, eq(seasonPassSubscriptions.id, seasonPassClaims.subscriptionId))
         .orderBy(desc(seasonPassClaims.createdAt))
         .limit(limit);
+}
+
+type AdminSeasonPassOverviewSubscriber = {
+    userId: string;
+    username: string;
+    displayName: string | null;
+    statusLabel: string;
+    progressText: string;
+    expiresAtText: string;
+    note: string;
+};
+
+export async function getAdminSeasonPassOverview(now: Date = new Date()) {
+    const plan = await getOrCreateSeasonPassPlan();
+    const rewardCatalog = await getSeasonPassRewardCatalog(plan.id);
+    const todayKey = formatDateInTimeZone(now, TH_TIME_ZONE);
+    const monthStart = `${getFirstDayOfMonthInTimeZone(now, TH_TIME_ZONE)} 00:00:00`;
+    const expiringSoonThreshold = formatMySqlDateTime(addDays(now, 3));
+
+    await expireSeasonPassSubscriptions();
+    await activateQueuedSeasonPassSubscriptions();
+
+    const [activeCountRow] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(seasonPassSubscriptions)
+        .where(
+            and(
+                eq(seasonPassSubscriptions.status, "ACTIVE"),
+                lte(seasonPassSubscriptions.startAt, mysqlNow()),
+                gte(seasonPassSubscriptions.endAt, mysqlNow()),
+            ),
+        );
+
+    const [salesCountRow] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(seasonPassSubscriptions)
+        .where(
+            and(
+                eq(seasonPassSubscriptions.planId, plan.id),
+                gte(seasonPassSubscriptions.createdAt, monthStart),
+            ),
+        );
+
+    const [pendingTodayRow] = await db
+        .select({ count: sql<number>`count(distinct ${seasonPassSubscriptions.id})` })
+        .from(seasonPassSubscriptions)
+        .leftJoin(
+            seasonPassClaims,
+            and(
+                eq(seasonPassClaims.subscriptionId, seasonPassSubscriptions.id),
+                eq(seasonPassClaims.claimDateKey, todayKey),
+            ),
+        )
+        .where(
+            and(
+                eq(seasonPassSubscriptions.status, "ACTIVE"),
+                lte(seasonPassSubscriptions.startAt, mysqlNow()),
+                gte(seasonPassSubscriptions.endAt, mysqlNow()),
+                sql`${seasonPassClaims.id} is null`,
+            ),
+        );
+
+    const [expiringSoonRow] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(seasonPassSubscriptions)
+        .where(
+            and(
+                eq(seasonPassSubscriptions.status, "ACTIVE"),
+                lte(seasonPassSubscriptions.startAt, mysqlNow()),
+                gte(seasonPassSubscriptions.endAt, mysqlNow()),
+                lte(seasonPassSubscriptions.endAt, expiringSoonThreshold),
+            ),
+        );
+
+    const activeSubscribers = await db
+        .select({
+            subscriptionId: seasonPassSubscriptions.id,
+            userId: seasonPassSubscriptions.userId,
+            startAt: seasonPassSubscriptions.startAt,
+            endAt: seasonPassSubscriptions.endAt,
+            username: users.username,
+            displayName: users.name,
+        })
+        .from(seasonPassSubscriptions)
+        .innerJoin(users, eq(users.id, seasonPassSubscriptions.userId))
+        .where(
+            and(
+                eq(seasonPassSubscriptions.status, "ACTIVE"),
+                lte(seasonPassSubscriptions.startAt, mysqlNow()),
+                gte(seasonPassSubscriptions.endAt, mysqlNow()),
+            ),
+        )
+        .orderBy(asc(seasonPassSubscriptions.endAt))
+        .limit(6);
+
+    const subscribers = await Promise.all(
+        activeSubscribers.map(async (subscription) => {
+            const claims = await getSeasonPassClaims(subscription.subscriptionId);
+            const boardState = buildSeasonPassBoard({
+                startAt: subscription.startAt,
+                durationDays: plan.durationDays,
+                claims,
+                rewardCatalog,
+                now,
+            });
+            const claimedToday = claims.some((claim) => claim.claimDateKey === todayKey);
+
+            let statusLabel = "ยังไม่ได้รับ";
+            let note = "ควรแจ้งเตือนวันนี้";
+
+            if (claimedToday) {
+                statusLabel = "รับแล้ว";
+                note = "รับของวันนี้แล้ว";
+            } else if (boardState.missedCount > 0) {
+                statusLabel = "พลาดสิทธิ์";
+                note = `พลาดสะสม ${boardState.missedCount} วัน`;
+            }
+
+            const progressDays = Math.min(boardState.currentDay, plan.durationDays);
+
+            return {
+                userId: subscription.userId,
+                username: subscription.username,
+                displayName: subscription.displayName,
+                statusLabel,
+                progressText: `${progressDays}/${plan.durationDays} วัน • รับแล้ว ${boardState.claimedCount}`,
+                expiresAtText: formatThaiDate(subscription.endAt),
+                note,
+            } satisfies AdminSeasonPassOverviewSubscriber;
+        }),
+    );
+
+    const rewardSummary = [
+        {
+            item: "เครดิต",
+            amount: rewardCatalog
+                .filter((reward) => reward.type === "credits")
+                .reduce((total, reward) => total + Number(reward.amount || 0), 0),
+            days: rewardCatalog.filter((reward) => reward.type === "credits").length,
+            state: "ใช้งานจริง",
+        },
+        {
+            item: "พอยต์",
+            amount: rewardCatalog
+                .filter((reward) => reward.type === "points")
+                .reduce((total, reward) => total + Number(reward.amount || 0), 0),
+            days: rewardCatalog.filter((reward) => reward.type === "points").length,
+            state: "ใช้งานจริง",
+        },
+        {
+            item: "ตั๋วสุ่ม",
+            amount: rewardCatalog
+                .filter((reward) => reward.type === "tickets")
+                .reduce((total, reward) => total + Number(reward.amount || 0), 0),
+            days: rewardCatalog.filter((reward) => reward.type === "tickets").length,
+            state: "ใช้งานจริง",
+        },
+        {
+            item: "Milestone Days",
+            amount: rewardCatalog.filter((reward) => reward.highlight).length,
+            days: rewardCatalog.length,
+            state: plan.isActive ? "เปิดขาย" : "ปิดขาย",
+        },
+    ];
+
+    return {
+        plan,
+        stats: {
+            activeCount: Number(activeCountRow?.count ?? 0),
+            salesCountThisMonth: Number(salesCountRow?.count ?? 0),
+            salesAmountThisMonth: Number(salesCountRow?.count ?? 0) * Number(plan.price),
+            pendingTodayCount: Number(pendingTodayRow?.count ?? 0),
+            expiringSoonCount: Number(expiringSoonRow?.count ?? 0),
+        },
+        rewardSummary,
+        subscribers,
+    };
 }
 
 export async function updateAdminSeasonPassRewards(

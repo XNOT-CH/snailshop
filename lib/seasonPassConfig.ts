@@ -1,0 +1,1 @@
+export const SEASON_PASS_REWARD_DAYS = 30;

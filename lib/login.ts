@@ -3,11 +3,11 @@ import { eq } from "drizzle-orm";
 import { db, users, roles } from "@/lib/db";
 import { getUserPermissions } from "@/lib/permissions";
 import {
-    checkLoginRateLimit,
-    clearLoginAttempts,
+    checkLoginRateLimitShared,
+    clearLoginAttemptsShared,
     getClientIp,
-    getProgressiveDelay,
-    recordFailedLogin,
+    getProgressiveDelayShared,
+    recordFailedLoginShared,
     sleep,
 } from "@/lib/rateLimit";
 import { verifyTurnstileToken } from "@/lib/security/turnstile";
@@ -115,7 +115,8 @@ export async function authenticateLoginAttempt({
     }
 
     const { username, password, turnstileToken } = parsed.data;
-    const identifier = `${clientIp}:${username}`;
+    const rateLimitUsername = username.toLowerCase();
+    const identifier = `${clientIp}:${rateLimitUsername}`;
 
     const turnstileResult = await verifyTurnstileToken(turnstileToken ?? undefined, clientIp);
     if (!turnstileResult.success) {
@@ -128,7 +129,7 @@ export async function authenticateLoginAttempt({
         };
     }
 
-    const rateLimit = checkLoginRateLimit(identifier);
+    const rateLimit = await checkLoginRateLimitShared(identifier);
     if (rateLimit.blocked) {
         return {
             success: false,
@@ -139,7 +140,7 @@ export async function authenticateLoginAttempt({
         };
     }
 
-    const delay = getProgressiveDelay(identifier);
+    const delay = await getProgressiveDelayShared(identifier);
     if (delay > 0) {
         await sleep(delay);
     }
@@ -149,7 +150,7 @@ export async function authenticateLoginAttempt({
     });
 
     if (!user) {
-        recordFailedLogin(identifier);
+        await recordFailedLoginShared(identifier);
         await writeAudit(onAudit, {
             action: "LOGIN_FAILED",
             resourceName: username,
@@ -168,7 +169,7 @@ export async function authenticateLoginAttempt({
 
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-        recordFailedLogin(identifier);
+        await recordFailedLoginShared(identifier);
         await writeAudit(onAudit, {
             action: "LOGIN_FAILED",
             userId: user.id,
@@ -186,7 +187,7 @@ export async function authenticateLoginAttempt({
         };
     }
 
-    clearLoginAttempts(identifier);
+    await clearLoginAttemptsShared(identifier);
     await writeAudit(onAudit, {
         action: "LOGIN",
         userId: user.id,

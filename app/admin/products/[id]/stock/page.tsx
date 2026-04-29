@@ -21,7 +21,7 @@ import {
     Save,
 } from "lucide-react";
 import { showSuccess, showError } from "@/lib/swal";
-import { splitStock } from "@/lib/stock";
+import { getDelimiter, splitStock, type StockSeparatorType } from "@/lib/stock";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -37,6 +37,7 @@ export default function StockManagementPage() {
     const [productName, setProductName] = useState("");
     const [secretData, setSecretData] = useState("");
     const [originalData, setOriginalData] = useState("");
+    const [stockSeparator, setStockSeparator] = useState<StockSeparatorType>("newline");
 
     const [takenUsers, setTakenUsers] = useState<Record<string, string>>({});
     const [singleUser, setSingleUser] = useState("");
@@ -46,8 +47,8 @@ export default function StockManagementPage() {
     const [editPass, setEditPass] = useState("");
 
     const stockItems = useMemo(() => {
-        return splitStock(secretData, "newline");
-    }, [secretData]);
+        return splitStock(secretData, stockSeparator);
+    }, [secretData, stockSeparator]);
 
     const hasChanges = secretData !== originalData;
 
@@ -65,6 +66,7 @@ export default function StockManagementPage() {
                     const displayData = data.data.isSold ? "" : (data.data.secretData || "");
                     setSecretData(displayData);
                     setOriginalData(displayData);
+                    setStockSeparator((data.data.stockSeparator || "newline") as StockSeparatorType);
                 } else {
                     showError("ไม่พบสินค้า");
                     router.push("/admin/products");
@@ -84,7 +86,7 @@ export default function StockManagementPage() {
     }, [productId, router]);
 
     const rebuildSecretData = (items: string[]) => {
-        setSecretData(items.join("\n"));
+        setSecretData(items.join(getDelimiter(stockSeparator)));
     };
 
     const handleAddSingleStock = () => {

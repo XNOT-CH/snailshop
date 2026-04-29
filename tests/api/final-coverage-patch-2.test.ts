@@ -43,6 +43,9 @@ vi.mock("@/lib/auditLog", () => ({
 vi.mock("@/lib/encryption", () => ({ decrypt: vi.fn().mockReturnValue("dec"), encrypt: vi.fn().mockReturnValue("enc") }));
 vi.mock("@/lib/rateLimit",  () => ({ getClientIp: vi.fn().mockReturnValue("127.0.0.1"), checkRegisterRateLimit: vi.fn().mockReturnValue({ blocked: false }), checkRateLimit: vi.fn().mockReturnValue({ blocked: false }) }));
 vi.mock("@/lib/api",        () => ({ parseBody: vi.fn() }));
+vi.mock("@/lib/security/turnstile", () => ({
+  verifyTurnstileToken: vi.fn().mockResolvedValue({ success: true }),
+}));
 vi.mock("bcryptjs",         () => ({ default: { hash: vi.fn().mockResolvedValue("hashed"), compare: vi.fn().mockResolvedValue(true) } }));
 vi.mock("next/headers",     () => ({ cookies: vi.fn().mockResolvedValue({ get: vi.fn().mockReturnValue(undefined), set: vi.fn(), delete: vi.fn() }) }));
 vi.mock("@/lib/stock",      () => ({ deductStock: vi.fn().mockResolvedValue(true), getStockCount: vi.fn().mockResolvedValue(10) }));
@@ -238,7 +241,7 @@ describe("API: /api/register (error paths)", () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
   it("returns 500 on DB error during insert", async () => {
-    (parseBody as any).mockResolvedValue({ data: { username: "newuser", password: "Pass@1234" } });
+    (parseBody as any).mockResolvedValue({ data: { username: "newuser", email: "new@example.com", password: "Pass@1234" } });
     (db.query.users.findFirst as any).mockResolvedValue(null);
     (db.insert as any).mockReturnValueOnce({ values: vi.fn().mockRejectedValueOnce(new Error("DB fail")) });
     const { POST } = await import("@/app/api/register/route");

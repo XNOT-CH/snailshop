@@ -14,9 +14,10 @@ import { Loader2, Eye, EyeOff, Gamepad2 } from "lucide-react";
 
 interface RegisterFormProps {
     logoUrl: string | null;
+    hasTurnstile: boolean;
 }
 
-export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
+export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormProps>) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
@@ -26,6 +27,7 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
     const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
     const [formData, setFormData] = useState({
         username: "",
+        email: "",
         pin: "",
         password: "",
         confirmPassword: "",
@@ -52,8 +54,6 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
     const passwordStrength = getPasswordStrength(formData.password);
     const passwordsMatch = formData.password && formData.password === formData.confirmPassword;
     const callbackUrl = normalizeCallbackUrl(searchParams.get("callbackUrl"));
-    const hasTurnstile = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
-
     const handleTurnstileChange = useCallback((token: string | null) => {
         setTurnstileToken(token);
         if (token) {
@@ -87,6 +87,7 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     username: formData.username,
+                    email: formData.email,
                     pin: formData.pin,
                     password: formData.password,
                     confirmPassword: formData.confirmPassword,
@@ -210,6 +211,20 @@ export function RegisterForm({ logoUrl }: Readonly<RegisterFormProps>) {
                                 className="h-12 bg-muted/50 border-border rounded-xl"
                                 value={formData.confirmPassword}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                                required
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <label htmlFor="reg-email" className="text-sm text-muted-foreground">อีเมล</label>
+                            <Input
+                                id="reg-email"
+                                type="email"
+                                placeholder="you@example.com"
+                                autoComplete="email"
+                                className="h-12 bg-muted/50 border-border rounded-xl transition-colors"
+                                value={formData.email}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
                                 required
                             />
                         </div>

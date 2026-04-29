@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { and, asc, count, desc, eq } from "drizzle-orm";
+import { and, asc, count, desc, eq, sql } from "drizzle-orm";
 import Link from "next/link";
 import { ShoppingBag, Package, TrendingUp } from "lucide-react";
 import { ProductCard } from "@/components/ProductCard";
@@ -10,12 +10,21 @@ import { Separator } from "@/components/ui/separator";
 import { db, products } from "@/lib/db";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { buildPageMetadata } from "@/lib/seo";
+import { decrypt } from "@/lib/encryption";
+import { getStockCount } from "@/lib/stock";
 
 export const dynamic = "force-dynamic";
 
 type ShopPageProps = Readonly<{
     searchParams: Promise<{ category?: string; sort?: string }>;
 }>;
+
+const SHOP_SORTS = ["latest", "featured", "price_asc", "price_desc"] as const;
+type ShopSort = typeof SHOP_SORTS[number];
+
+function normalizeShopSort(value?: string): ShopSort {
+    return SHOP_SORTS.includes(value as ShopSort) ? value as ShopSort : "latest";
+}
 
 export async function generateMetadata({ searchParams }: ShopPageProps): Promise<Metadata> {
     const params = await searchParams;
@@ -43,7 +52,8 @@ export default async function ShopPage(props: ShopPageProps) {
     const currencySettings = await getCurrencySettings();
     const searchParams = await props.searchParams;
     const currentCategory = searchParams.category || "all";
-    const currentSort = searchParams.sort || "latest";
+    const currentSort = normalizeShopSort(searchParams.sort);
+    const activePrice = sql`COALESCE(${products.discountPrice}, ${products.price})`;
 
     const availableFilter = eq(products.isSold, false);
     const categoryFilter = currentCategory === "all"
@@ -52,12 +62,12 @@ export default async function ShopPage(props: ShopPageProps) {
 
     const productOrder = (() => {
         switch (currentSort) {
+            case "featured":
+                return [desc(products.isFeatured), asc(products.sortOrder), desc(products.createdAt)];
             case "price_asc":
-                return [asc(products.price), desc(products.createdAt)];
+                return [asc(activePrice), desc(products.createdAt)];
             case "price_desc":
-                return [desc(products.price), desc(products.createdAt)];
-            case "best_selling":
-                return [desc(products.createdAt)];
+                return [desc(activePrice), desc(products.createdAt)];
             default:
                 return [desc(products.createdAt)];
         }
@@ -65,34 +75,68 @@ export default async function ShopPage(props: ShopPageProps) {
 
     const [
         [{ count: totalProductCount }],
-        [{ count: availableProductCount }],
-        categoryCounts,
+        allAvailableProductsForCounts,
+        filteredProducts,
     ] = await Promise.all([
         db.select({ count: count() }).from(products),
-        db.select({ count: count() }).from(products).where(availableFilter),
-        db.select({
-            category: products.category,
-            count: count(),
-        })
-            .from(products)
-            .where(availableFilter)
-            .groupBy(products.category)
-            .orderBy(asc(products.category)),
+        db.query.products.findMany({
+            where: availableFilter,
+            columns: {
+                category: true,
+                secretData: true,
+                stockSeparator: true,
+            },
+        }),
+        db.query.products.findMany({
+            where: categoryFilter,
+            orderBy: productOrder,
+            columns: {
+                id: true,
+                name: true,
+                price: true,
+                discountPrice: true,
+                imageUrl: true,
+                category: true,
+                isSold: true,
+                currency: true,
+                secretData: true,
+                stockSeparator: true,
+            },
+        }),
     ]);
 
-    const filteredProducts = await db.query.products.findMany({
-        where: categoryFilter,
-        orderBy: productOrder,
-        columns: {
-            id: true,
-            name: true,
-            price: true,
-            imageUrl: true,
-            category: true,
-            isSold: true,
-            currency: true,
-        },
-    });
+    const categoryCountMap = new Map<string, number>();
+    let availableProductCount = 0;
+    for (const product of allAvailableProductsForCounts) {
+        const stockCount = getStockCount(
+            decrypt(product.secretData || ""),
+            product.stockSeparator || "newline",
+        );
+
+        if (stockCount > 0) {
+            availableProductCount += 1;
+            categoryCountMap.set(product.category, (categoryCountMap.get(product.category) ?? 0) + 1);
+        }
+    }
+
+    const categoryCounts = Array.from(categoryCountMap, ([category, categoryCount]) => ({
+        category,
+        count: categoryCount,
+    })).sort((a, b) => a.category.localeCompare(b.category));
+
+    const sellableProducts = filteredProducts
+        .map((product) => {
+            const stockCount = getStockCount(
+                decrypt(product.secretData || ""),
+                product.stockSeparator || "newline",
+            );
+
+            return {
+                ...product,
+                stockCount,
+            };
+        })
+        .filter((product) => product.stockCount > 0);
 
     return (
         <div className="relative left-1/2 w-screen -translate-x-1/2 border-y border-border/50 bg-card/90 px-3 pb-0 pt-4 shadow-xl shadow-primary/10 backdrop-blur-sm sm:left-auto sm:w-auto sm:translate-x-0 sm:border sm:bg-card/90 sm:px-5 sm:py-7 sm:backdrop-blur-sm lg:px-6">
@@ -153,20 +197,26 @@ export default async function ShopPage(props: ShopPageProps) {
                 <ShopControls currentSort={currentSort} />
             </div>
 
-            {filteredProducts.length === 0 ? (
+            {sellableProducts.length === 0 ? (
                 <EmptyState />
             ) : (
                 <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-                    {filteredProducts.map((product, index) => (
+                    {sellableProducts.map((product, index) => (
                         <ProductCard
                             key={product.id}
                             id={product.id}
                             image={product.imageUrl || "/placeholder.jpg"}
                             title={product.name}
                             price={Number(product.price)}
+                            discountPrice={
+                                product.discountPrice === null || product.discountPrice === undefined
+                                    ? null
+                                    : Number(product.discountPrice)
+                            }
                             currency={product.currency}
                             category={product.category}
                             isSold={Boolean(product.isSold)}
+                            stockCount={product.stockCount}
                             index={index}
                             currencySettings={currencySettings}
                         />

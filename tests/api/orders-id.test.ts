@@ -48,7 +48,7 @@ describe("API: /api/orders/[id]", () => {
     });
 
     it("GET returns 401 when not authenticated", async () => {
-        vi.mocked(auth).mockResolvedValue(null);
+        (auth as any).mockResolvedValue(null);
         const { GET } = await import("@/app/api/orders/[id]/route");
         const res = await GET(mkReq(), mkParams("o1"));
 

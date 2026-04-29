@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { config as loadEnv } from "dotenv";
+import { validateDatabaseHealth } from "./db-health-utils.mjs";
 
 const cwd = process.cwd();
 const envFiles = [".env.local", ".env"];
@@ -34,6 +35,14 @@ const missingRequired = requiredVars.filter((name) => !process.env[name]?.trim()
 const missingRecommended = recommendedVars.filter((name) => !process.env[name]?.trim());
 
 const errors = [];
+const warnings = [];
+const criticalMigrationTags = [
+  "0010_season_pass_reward_images",
+  "0011_user_ticket_balance",
+  "0015_season_pass_runtime_backfill",
+  "0016_query_path_index_tuning",
+  "0017_order_status_index_alignment",
+];
 
 function parseEncryptionKey(rawKey) {
   if (/^[0-9a-f]{64}$/i.test(rawKey)) {
@@ -101,10 +110,74 @@ if (allowedOrigin && !/^https?:\/\//.test(allowedOrigin)) {
   errors.push("ALLOWED_ORIGIN must start with http:// or https://");
 }
 
+const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+const turnstileSecretKey = process.env.TURNSTILE_SECRET_KEY;
+if (turnstileSiteKey && !turnstileSecretKey) {
+  errors.push("TURNSTILE_SECRET_KEY is required when NEXT_PUBLIC_TURNSTILE_SITE_KEY is configured.");
+}
+if (turnstileSecretKey && !turnstileSiteKey) {
+  errors.push("NEXT_PUBLIC_TURNSTILE_SITE_KEY is required when TURNSTILE_SECRET_KEY is configured.");
+}
+
+const hasSharedLoginRateLimit =
+  Boolean(process.env.UPSTASH_REDIS_REST_URL?.trim()) &&
+  Boolean(process.env.UPSTASH_REDIS_REST_TOKEN?.trim());
+if (process.env.REQUIRE_SHARED_LOGIN_RATE_LIMIT === "1" && !hasSharedLoginRateLimit) {
+  errors.push("Shared login rate limiting requires UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN.");
+}
+if (!hasSharedLoginRateLimit) {
+  warnings.push("Login rate limiting will fall back to in-memory counters. Configure Upstash Redis for multi-instance production.");
+}
+
+try {
+  const drizzleDir = path.join(cwd, "drizzle");
+  const journalPath = path.join(drizzleDir, "meta", "_journal.json");
+  const journal = JSON.parse(fs.readFileSync(journalPath, "utf8"));
+  const journalTags = new Set((journal.entries ?? []).map((entry) => entry.tag));
+
+  for (const tag of criticalMigrationTags) {
+    const migrationPath = path.join(drizzleDir, `${tag}.sql`);
+    if (!fs.existsSync(migrationPath)) {
+      errors.push(`Missing critical migration file: drizzle/${tag}.sql`);
+      continue;
+    }
+
+    if (!journalTags.has(tag)) {
+      errors.push(`Migration ${tag} is not registered in drizzle/meta/_journal.json`);
+    }
+  }
+} catch (error) {
+  errors.push(
+    error instanceof Error
+      ? `Unable to validate migration metadata: ${error.message}`
+      : "Unable to validate migration metadata.",
+  );
+}
+
+if (missingRequired.length === 0) {
+  try {
+    const dbHealth = await validateDatabaseHealth({ cwd, log: () => {} });
+    const requireDbHealthCheck = process.env.REQUIRE_DB_HEALTH_CHECK === "1" || process.env.CI === "true";
+
+    if (dbHealth.unavailable && !requireDbHealthCheck) {
+      warnings.push(...dbHealth.errors);
+    } else {
+      errors.push(...dbHealth.errors);
+    }
+  } catch (error) {
+    errors.push(
+      error instanceof Error
+        ? `Unable to validate database health: ${error.message}`
+        : "Unable to validate database health.",
+    );
+  }
+}
+
 console.log("Deploy validation summary");
 console.log(`Required missing: ${missingRequired.length}`);
 console.log(`Recommended missing: ${missingRecommended.length}`);
 console.log(`Rule errors: ${errors.length}`);
+console.log(`Warnings: ${warnings.length}`);
 
 if (missingRequired.length > 0) {
   console.log("\nMissing required variables:");
@@ -124,6 +197,13 @@ if (errors.length > 0) {
   console.log("\nConfiguration errors:");
   for (const error of errors) {
     console.log(`- ${error}`);
+  }
+}
+
+if (warnings.length > 0) {
+  console.log("\nWarnings:");
+  for (const warning of warnings) {
+    console.log(`- ${warning}`);
   }
 }
 

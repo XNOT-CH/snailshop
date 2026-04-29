@@ -15,9 +15,10 @@ import { Loader2, Eye, EyeOff, Gamepad2 } from "lucide-react";
 
 interface LoginFormProps {
     readonly logoUrl: string | null;
+    readonly turnstileConfigError?: string | null;
 }
 
-export function LoginForm({ logoUrl }: Readonly<LoginFormProps>) {
+export function LoginForm({ logoUrl, turnstileConfigError = null }: Readonly<LoginFormProps>) {
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -157,11 +158,17 @@ export function LoginForm({ logoUrl }: Readonly<LoginFormProps>) {
                             </div>
                         ) : null}
 
+                        {turnstileConfigError ? (
+                            <Alert variant="destructive" className="rounded-xl">
+                                <AlertDescription>{turnstileConfigError}</AlertDescription>
+                            </Alert>
+                        ) : null}
+
                         {/* Submit Button */}
                         <Button
                             type="submit"
                             className="w-full h-12 rounded-xl bg-gradient-to-r from-purple-300 to-blue-300 hover:from-purple-400 hover:to-blue-400 text-primary font-medium shadow-lg shadow-purple-200/50 transition-all"
-                            disabled={isLoading || (hasTurnstile && !turnstileToken)}
+                            disabled={isLoading || Boolean(turnstileConfigError) || (hasTurnstile && !turnstileToken)}
                         >
                             {isLoading ? (
                                 <>

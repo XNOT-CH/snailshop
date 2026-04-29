@@ -5,8 +5,8 @@ vi.mock("@/auth", () => ({ auth: vi.fn() }));
 
 vi.mock("@/lib/db", () => ({
   db: {
+    $client: { getConnection: vi.fn() },
     query: { users: { findFirst: vi.fn() } },
-    transaction: vi.fn(),
     insert: vi.fn().mockReturnValue({ values: vi.fn() }),
     update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
     select: vi.fn().mockReturnValue({ from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }) }),
@@ -21,15 +21,27 @@ vi.mock("@/lib/db", () => ({
 vi.mock("drizzle-orm", () => ({ eq: vi.fn(), inArray: vi.fn(), sql: Object.assign(vi.fn(), { join: vi.fn(() => ({})) }) }));
 vi.mock("@/lib/mail", () => ({ sendEmail: vi.fn().mockResolvedValue({}) }));
 vi.mock("@/components/emails/PurchaseReceiptEmail", () => ({ PurchaseReceiptEmail: vi.fn(() => null) }));
-vi.mock("@/lib/promo", () => ({ validatePromoCode: vi.fn() }));
+vi.mock("@/lib/encryption", () => ({
+  decrypt: vi.fn((value: string) => value),
+  encrypt: vi.fn((value: string) => value),
+}));
+vi.mock("@/lib/stock", () => ({
+  splitStock: vi.fn((value: string) => (value ? value.split("\n").filter(Boolean) : [])),
+  getDelimiter: vi.fn(() => "\n"),
+}));
 vi.mock("@/lib/rateLimit", () => ({
   checkPurchaseRateLimit: vi.fn(() => ({ blocked: false, remainingAttempts: 12 })),
   getClientIp: vi.fn(() => "127.0.0.1"),
 }));
+vi.mock("@/lib/security/pin", () => ({
+  assertPinForProtectedAction: vi.fn().mockResolvedValue({ success: true }),
+}));
+vi.mock("@/lib/getCurrencySettings", () => ({ getCurrencySettings: vi.fn().mockResolvedValue(null) }));
+vi.mock("@/lib/getSiteSettings", () => ({ getSiteSettings: vi.fn().mockResolvedValue(null) }));
+vi.mock("@/lib/seo", () => ({ resolveSiteName: vi.fn(() => "Game Store") }));
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
-import { validatePromoCode } from "@/lib/promo";
 
 const mkReq = (body: object) =>
   new NextRequest("http://localhost/api/cart/checkout", { method: "POST", body: JSON.stringify(body) });
@@ -38,23 +50,34 @@ const MOCK_USER = { id: "u1", creditBalance: "2000", pointBalance: "500" };
 
 const mkProducts = (overrides: Partial<{
   id: string; name: string; price: string; discountPrice: string | null;
-  currency: string | null; isSold: boolean;
+  currency: string | null; isSold: boolean; secretData: string | null; stockSeparator: string | null;
 }>[] = [{}]) =>
   overrides.map((o, i) => ({
     id: `p${i + 1}`, name: `Product ${i + 1}`, price: "100",
-    discountPrice: null, currency: "THB", isSold: false, ...o,
+    discountPrice: null, currency: "THB", isSold: false, secretData: "code1\ncode2\ncode3", stockSeparator: "newline", ...o,
   }));
 
-const mockTransaction = (products: any[], extraError?: Error) => {
-  (db.transaction as any).mockImplementation(async (callback: any) => {
-    const tx = {
-      select: vi.fn().mockReturnValue({ from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue(products) }) }),
-      insert: vi.fn().mockReturnValue({ values: vi.fn().mockResolvedValue({}) }),
-      update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue({}) }) }),
-    };
-    if (extraError) throw extraError;
-    return callback(tx);
-  });
+const mockCheckoutConnection = (products: any[], promoRow?: any) => {
+  const connection = {
+    beginTransaction: vi.fn().mockResolvedValue(undefined),
+    commit: vi.fn().mockResolvedValue(undefined),
+    rollback: vi.fn().mockResolvedValue(undefined),
+    release: vi.fn(),
+    execute: vi.fn(async (query: string) => {
+      if (query.includes("FROM Product WHERE id IN")) {
+        return [products];
+      }
+
+      if (query.includes("FROM PromoCode WHERE code = ? FOR UPDATE")) {
+        return [promoRow ? [promoRow] : []];
+      }
+
+      return [{}];
+    }),
+  };
+
+  (db.$client.getConnection as any).mockResolvedValue(connection);
+  return connection;
 };
 
 describe("API: /api/cart/checkout (POST)", () => {
@@ -78,6 +101,13 @@ describe("API: /api/cart/checkout (POST)", () => {
     const { POST } = await import("@/app/api/cart/checkout/route");
     const res = await POST(mkReq({ productIds: "p1" }));
     expect(res.status).toBe(400);
+  });
+
+  it("returns 400 when an item quantity is invalid", async () => {
+    const { POST } = await import("@/app/api/cart/checkout/route");
+    const res = await POST(mkReq({ items: [{ productId: "p1", quantity: 0 }] }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).message).toContain("จำนวน");
   });
 
   it("returns 400 when more than 50 products", async () => {
@@ -107,7 +137,7 @@ describe("API: /api/cart/checkout (POST)", () => {
   it("returns 400 when some products not found", async () => {
     (auth as any).mockResolvedValue({ user: { id: "u1", email: null } });
     (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
-    mockTransaction(mkProducts([{}])); // only 1 product for 2 ids
+    mockCheckoutConnection(mkProducts([{}])); // only 1 product for 2 ids
     const { POST } = await import("@/app/api/cart/checkout/route");
     const res = await POST(mkReq({ productIds: ["p1", "p2"] }));
     expect(res.status).toBe(400);
@@ -117,7 +147,7 @@ describe("API: /api/cart/checkout (POST)", () => {
   it("returns 400 when product is already sold", async () => {
     (auth as any).mockResolvedValue({ user: { id: "u1", email: null } });
     (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
-    mockTransaction(mkProducts([{ isSold: true }]));
+    mockCheckoutConnection(mkProducts([{ isSold: true }]));
     const { POST } = await import("@/app/api/cart/checkout/route");
     const res = await POST(mkReq({ productIds: ["p1"] }));
     expect(res.status).toBe(400);
@@ -129,7 +159,7 @@ describe("API: /api/cart/checkout (POST)", () => {
   it("returns 400 when insufficient credit balance", async () => {
     (auth as any).mockResolvedValue({ user: { id: "u1", email: null } });
     (db.query.users.findFirst as any).mockResolvedValue({ ...MOCK_USER, creditBalance: "10" });
-    mockTransaction(mkProducts([{ price: "500" }]));
+    mockCheckoutConnection(mkProducts([{ price: "500" }]));
     const { POST } = await import("@/app/api/cart/checkout/route");
     const res = await POST(mkReq({ productIds: ["p1"] }));
     expect(res.status).toBe(400);
@@ -139,18 +169,18 @@ describe("API: /api/cart/checkout (POST)", () => {
   it("returns 400 when insufficient point balance", async () => {
     (auth as any).mockResolvedValue({ user: { id: "u1", email: null } });
     (db.query.users.findFirst as any).mockResolvedValue({ ...MOCK_USER, pointBalance: "0" });
-    mockTransaction(mkProducts([{ currency: "POINT", price: "200" }]));
+    mockCheckoutConnection(mkProducts([{ currency: "POINT", price: "200" }]));
     const { POST } = await import("@/app/api/cart/checkout/route");
     const res = await POST(mkReq({ productIds: ["p1"] }));
     expect(res.status).toBe(400);
-    expect((await res.json()).message).toContain("Point ไม่เพียงพอ");
+    expect((await res.json()).message).toContain("ไม่เพียงพอ");
   });
 
   // ── success paths ───────────────────────────────────────────────────────
   it("succeeds with THB products (no email)", async () => {
     (auth as any).mockResolvedValue({ user: { id: "u1", email: null, name: "Test" } });
     (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
-    mockTransaction(mkProducts([{ price: "100" }]));
+    mockCheckoutConnection(mkProducts([{ price: "100" }]));
     const { POST } = await import("@/app/api/cart/checkout/route");
     const res = await POST(mkReq({ productIds: ["p1"] }));
     expect(res.status).toBe(200);
@@ -164,7 +194,7 @@ describe("API: /api/cart/checkout (POST)", () => {
     const { sendEmail } = await import("@/lib/mail");
     (auth as any).mockResolvedValue({ user: { id: "u1", email: "user@test.com", name: "Test User" } });
     (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
-    mockTransaction(mkProducts([{ price: "100" }]));
+    mockCheckoutConnection(mkProducts([{ price: "100" }]));
     const { POST } = await import("@/app/api/cart/checkout/route");
     const res = await POST(mkReq({ productIds: ["p1"] }));
     expect(res.status).toBe(200);
@@ -174,7 +204,7 @@ describe("API: /api/cart/checkout (POST)", () => {
   it("succeeds with POINT currency products", async () => {
     (auth as any).mockResolvedValue({ user: { id: "u1", email: null, name: "Test" } });
     (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
-    mockTransaction(mkProducts([{ currency: "POINT", price: "100" }]));
+    mockCheckoutConnection(mkProducts([{ currency: "POINT", price: "100" }]));
     const { POST } = await import("@/app/api/cart/checkout/route");
     const res = await POST(mkReq({ productIds: ["p1"] }));
     expect(res.status).toBe(200);
@@ -186,7 +216,7 @@ describe("API: /api/cart/checkout (POST)", () => {
   it("succeeds with discountPrice applied", async () => {
     (auth as any).mockResolvedValue({ user: { id: "u1", email: null, name: "Test" } });
     (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
-    mockTransaction(mkProducts([{ price: "200", discountPrice: "80" }]));
+    mockCheckoutConnection(mkProducts([{ price: "200", discountPrice: "80" }]));
     const { POST } = await import("@/app/api/cart/checkout/route");
     const res = await POST(mkReq({ productIds: ["p1"] }));
     expect(res.status).toBe(200);
@@ -197,12 +227,24 @@ describe("API: /api/cart/checkout (POST)", () => {
   it("applies promo code to cart checkout total", async () => {
     (auth as any).mockResolvedValue({ user: { id: "u1", email: null, name: "Test" } });
     (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
-    (validatePromoCode as any).mockResolvedValue({
-      valid: true,
-      promo: { id: "promo1", code: "SAVE10" },
-      discountAmount: 10,
+    mockCheckoutConnection(mkProducts([{ price: "100" }]), {
+      id: "promo1",
+      code: "SAVE10",
+      codeType: "DISCOUNT",
+      discountType: "FIXED",
+      discountValue: "10",
+      minPurchase: null,
+      maxDiscount: null,
+      usageLimit: null,
+      usagePerUser: null,
+      usedCount: 0,
+      startsAt: new Date(Date.now() - 1000),
+      expiresAt: null,
+      applicableCategories: null,
+      excludedCategories: null,
+      isNewUserOnly: false,
+      isActive: true,
     });
-    mockTransaction(mkProducts([{ price: "100" }]));
     const { POST } = await import("@/app/api/cart/checkout/route");
     const res = await POST(mkReq({ productIds: ["p1"], promoCode: "SAVE10" }));
     expect(res.status).toBe(200);
@@ -211,15 +253,167 @@ describe("API: /api/cart/checkout (POST)", () => {
     expect(body.promoCode).toBe("SAVE10");
   });
 
+  it("allows cart checkout when balance covers the promo-discounted total", async () => {
+    (auth as any).mockResolvedValue({ user: { id: "u1", email: null, name: "Test" } });
+    (db.query.users.findFirst as any).mockResolvedValue({ ...MOCK_USER, creditBalance: "90" });
+    mockCheckoutConnection(mkProducts([{ price: "100" }]), {
+      id: "promo1",
+      code: "SAVE10",
+      codeType: "DISCOUNT",
+      discountType: "FIXED",
+      discountValue: "10",
+      minPurchase: null,
+      maxDiscount: null,
+      usageLimit: null,
+      usagePerUser: null,
+      usedCount: 0,
+      startsAt: new Date(Date.now() - 1000),
+      expiresAt: null,
+      applicableCategories: null,
+      excludedCategories: null,
+      isNewUserOnly: false,
+      isActive: true,
+    });
+
+    const { POST } = await import("@/app/api/cart/checkout/route");
+    const res = await POST(mkReq({ productIds: ["p1"], promoCode: "SAVE10" }));
+
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.totalTHB).toBe(90);
+  });
+
+  it("rejects new-user-only promo when the user already has a completed order", async () => {
+    (auth as any).mockResolvedValue({ user: { id: "u1", email: null, name: "Test" } });
+    (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
+    const conn = {
+      beginTransaction: vi.fn().mockResolvedValue(undefined),
+      commit: vi.fn().mockResolvedValue(undefined),
+      rollback: vi.fn().mockResolvedValue(undefined),
+      release: vi.fn(),
+      execute: vi.fn(async (query: string) => {
+        if (query.includes("FROM Product WHERE id IN")) {
+          return [mkProducts([{ price: "100" }])];
+        }
+        if (query.includes("FROM PromoCode WHERE code = ? FOR UPDATE")) {
+          return [[{
+            id: "promo-new",
+            code: "NEWONLY",
+            codeType: "DISCOUNT",
+            discountType: "FIXED",
+            discountValue: "10",
+            minPurchase: null,
+            maxDiscount: null,
+            usageLimit: null,
+            usagePerUser: null,
+            usedCount: 0,
+            startsAt: new Date(Date.now() - 1000),
+            expiresAt: null,
+            applicableCategories: null,
+            excludedCategories: null,
+            isNewUserOnly: true,
+            isActive: true,
+          }]];
+        }
+        if (query.includes("FROM `Order` FORCE INDEX (idx_order_user_status) WHERE userId = ? AND status = 'COMPLETED'")) {
+          return [[{ id: "o1" }]];
+        }
+        return [{}];
+      }),
+    };
+    (db.$client.getConnection as any).mockResolvedValue(conn);
+
+    const { POST } = await import("@/app/api/cart/checkout/route");
+    const res = await POST(mkReq({ productIds: ["p1"], promoCode: "NEWONLY" }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).message).toContain("ลูกค้าใหม่");
+  });
+
+  it("rejects promo when usagePerUser has been exhausted", async () => {
+    (auth as any).mockResolvedValue({ user: { id: "u1", email: null, name: "Test" } });
+    (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
+    const conn = {
+      beginTransaction: vi.fn().mockResolvedValue(undefined),
+      commit: vi.fn().mockResolvedValue(undefined),
+      rollback: vi.fn().mockResolvedValue(undefined),
+      release: vi.fn(),
+      execute: vi.fn(async (query: string) => {
+        if (query.includes("FROM Product WHERE id IN")) {
+          return [mkProducts([{ price: "100" }])];
+        }
+        if (query.includes("FROM PromoCode WHERE code = ? FOR UPDATE")) {
+          return [[{
+            id: "promo-limit",
+            code: "LIMIT1",
+            codeType: "DISCOUNT",
+            discountType: "FIXED",
+            discountValue: "10",
+            minPurchase: null,
+            maxDiscount: null,
+            usageLimit: null,
+            usagePerUser: 1,
+            usedCount: 0,
+            startsAt: new Date(Date.now() - 1000),
+            expiresAt: null,
+            applicableCategories: null,
+            excludedCategories: null,
+            isNewUserOnly: false,
+            isActive: true,
+          }]];
+        }
+        if (query.includes("SELECT COUNT(*) AS count FROM PromoUsage")) {
+          return [[{ count: 1 }]];
+        }
+        return [{}];
+      }),
+    };
+    (db.$client.getConnection as any).mockResolvedValue(conn);
+
+    const { POST } = await import("@/app/api/cart/checkout/route");
+    const res = await POST(mkReq({ productIds: ["p1"], promoCode: "LIMIT1" }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).message).toContain("ครบสิทธิ์");
+  });
+
   it("succeeds with multiple products in cart", async () => {
     (auth as any).mockResolvedValue({ user: { id: "u1", email: null } });
     (db.query.users.findFirst as any).mockResolvedValue({ ...MOCK_USER, creditBalance: "5000" });
-    mockTransaction(mkProducts([{ price: "100" }, { price: "150" }, { price: "200" }]));
+    mockCheckoutConnection(mkProducts([{ price: "100" }, { price: "150" }, { price: "200" }]));
     const { POST } = await import("@/app/api/cart/checkout/route");
     const res = await POST(mkReq({ productIds: ["p1", "p2", "p3"] }));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.purchasedCount).toBe(3);
     expect(body.totalTHB).toBe(450);
+  });
+
+  it("honors quantity for the same product in cart checkout", async () => {
+    (auth as any).mockResolvedValue({ user: { id: "u1", email: null } });
+    (db.query.users.findFirst as any).mockResolvedValue({ ...MOCK_USER, creditBalance: "5000" });
+    mockCheckoutConnection(mkProducts([{ price: "100", secretData: "code1\ncode2\ncode3\ncode4" }]));
+    const { POST } = await import("@/app/api/cart/checkout/route");
+    const res = await POST(mkReq({ items: [{ productId: "p1", quantity: 3 }] }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.purchasedCount).toBe(3);
+    expect(body.totalTHB).toBe(300);
+    expect(body.orders).toHaveLength(1);
+    expect(body.orders[0].quantity).toBe(3);
+  });
+
+  it("clears product secretData after cart checkout takes the last stock item", async () => {
+    (auth as any).mockResolvedValue({ user: { id: "u1", email: null } });
+    (db.query.users.findFirst as any).mockResolvedValue({ ...MOCK_USER, creditBalance: "5000" });
+    const conn = mockCheckoutConnection(mkProducts([{ price: "100", secretData: "only-code" }]));
+
+    const { POST } = await import("@/app/api/cart/checkout/route");
+    const res = await POST(mkReq({ productIds: ["p1"] }));
+
+    expect(res.status).toBe(200);
+    expect(conn.execute).toHaveBeenCalledWith(
+      "UPDATE Product SET secretData = ?, isSold = ?, orderId = ?, scheduledDeleteAt = ? WHERE id = ?",
+      ["", 1, expect.any(String), null, "p1"],
+    );
   });
 });

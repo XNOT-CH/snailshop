@@ -20,11 +20,11 @@ vi.mock("bcryptjs", () => ({
 }));
 
 vi.mock("@/lib/rateLimit", () => ({
-  checkLoginRateLimit: vi.fn(),
-  clearLoginAttempts: vi.fn(),
+  checkLoginRateLimitShared: vi.fn(),
+  clearLoginAttemptsShared: vi.fn(),
   getClientIp: vi.fn(() => "203.0.113.10"),
-  getProgressiveDelay: vi.fn(() => 0),
-  recordFailedLogin: vi.fn(),
+  getProgressiveDelayShared: vi.fn(() => 0),
+  recordFailedLoginShared: vi.fn(),
   sleep: vi.fn(),
 }));
 
@@ -33,13 +33,14 @@ vi.mock("@/lib/security/turnstile", () => ({
 }));
 
 import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
-  checkLoginRateLimit,
-  clearLoginAttempts,
+  checkLoginRateLimitShared,
+  clearLoginAttemptsShared,
   getClientIp,
-  getProgressiveDelay,
-  recordFailedLogin,
+  getProgressiveDelayShared,
+  recordFailedLoginShared,
   sleep,
 } from "@/lib/rateLimit";
 import { verifyTurnstileToken } from "@/lib/security/turnstile";
@@ -51,7 +52,7 @@ describe("authenticateLoginAttempt", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(verifyTurnstileToken).mockResolvedValue({ success: true });
-    vi.mocked(checkLoginRateLimit).mockReturnValue({ blocked: false, remainingAttempts: 5 });
+    vi.mocked(checkLoginRateLimitShared).mockResolvedValue({ blocked: false, remainingAttempts: 5 });
     vi.mocked(getClientIp).mockImplementation((request: Request) => request.headers.get("x-forwarded-for")?.split(",")[0].trim() ?? "203.0.113.10");
     vi.mocked(db.query.users.findFirst).mockResolvedValue(null as never);
     vi.mocked(db.query.roles.findFirst).mockResolvedValue(null as never);
@@ -69,7 +70,17 @@ describe("authenticateLoginAttempt", () => {
     });
 
     expect(getClientIp).toHaveBeenCalledWith(request);
-    expect(checkLoginRateLimit).toHaveBeenCalledWith("198.51.100.24:demo");
+    expect(checkLoginRateLimitShared).toHaveBeenCalledWith("198.51.100.24:demo");
+  });
+
+  it("trims usernames and normalizes the rate-limit key", async () => {
+    await authenticateLoginAttempt({
+      payload: { username: " DemoUser ", password: "secret" },
+      onAudit: audit,
+    });
+
+    expect(checkLoginRateLimitShared).toHaveBeenCalledWith("unknown:demouser");
+    expect(eq).toHaveBeenCalledWith("username", "DemoUser");
   });
 
   it("skips turnstile failure when verifier passes without a token", async () => {
@@ -93,7 +104,7 @@ describe("authenticateLoginAttempt", () => {
     }
     expect(result.status).toBe(401);
     expect(result.message).toBe("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
-    expect(recordFailedLogin).toHaveBeenCalledWith("unknown:demo");
+    expect(recordFailedLoginShared).toHaveBeenCalledWith("unknown:demo");
   });
 
   it("returns the authenticated user and clears rate limits on success", async () => {
@@ -119,13 +130,13 @@ describe("authenticateLoginAttempt", () => {
       throw new Error("Expected login success");
     }
     expect(result.user.username).toBe("demo");
-    expect(clearLoginAttempts).toHaveBeenCalledWith("unknown:demo");
+    expect(clearLoginAttemptsShared).toHaveBeenCalledWith("unknown:demo");
     expect(audit).toHaveBeenCalled();
   });
 
   it("applies progressive delay when configured", async () => {
-    vi.mocked(checkLoginRateLimit).mockReturnValue({ blocked: false, remainingAttempts: 4 });
-    vi.mocked(getProgressiveDelay).mockReturnValue(250);
+    vi.mocked(checkLoginRateLimitShared).mockResolvedValue({ blocked: false, remainingAttempts: 4 });
+    vi.mocked(getProgressiveDelayShared).mockResolvedValue(250);
 
     await authenticateLoginAttempt({
       payload: { username: "demo", password: "secret" },

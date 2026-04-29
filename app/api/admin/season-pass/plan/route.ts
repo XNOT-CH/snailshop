@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { requirePermission } from "@/lib/auth";
 import { db, seasonPassPlans } from "@/lib/db";
+import { SEASON_PASS_REWARD_DAYS } from "@/lib/seasonPassConfig";
 import { getOrCreateSeasonPassPlan } from "@/lib/seasonPass";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -16,7 +17,7 @@ function normalizePrice(value: unknown) {
 
 function normalizeDuration(value: unknown) {
     const duration = Number(value);
-    if (!Number.isInteger(duration) || duration <= 0 || duration > 365) {
+    if (!Number.isInteger(duration) || duration !== SEASON_PASS_REWARD_DAYS) {
         return null;
     }
 
@@ -56,7 +57,7 @@ export async function PUT(request: NextRequest) {
         const name = body.name?.trim();
         const description = body.description?.trim() ?? null;
         const price = normalizePrice(body.price);
-        const durationDays = normalizeDuration(body.durationDays);
+        const durationDays = normalizeDuration(body.durationDays ?? SEASON_PASS_REWARD_DAYS);
 
         if (!name) {
             return NextResponse.json({ error: "Plan name is required" }, { status: 400 });
@@ -67,7 +68,10 @@ export async function PUT(request: NextRequest) {
         }
 
         if (durationDays === null) {
-            return NextResponse.json({ error: "Invalid duration" }, { status: 400 });
+            return NextResponse.json(
+                { error: `Season Pass currently supports a fixed ${SEASON_PASS_REWARD_DAYS}-day reward board` },
+                { status: 400 },
+            );
         }
 
         await db

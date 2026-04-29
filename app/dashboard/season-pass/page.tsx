@@ -20,7 +20,7 @@ export const metadata = buildPageMetadata({
     noIndex: true,
 });
 
-function LockedSeasonPassPage(props: Readonly<{ latestEndAtText: string | null }>) {
+function LockedSeasonPassPage(props: Readonly<{ latestEndAtText: string | null; canPurchase: boolean }>) {
     return (
         <div className="season-pass-dashboard space-y-6">
             <PageBreadcrumb
@@ -49,7 +49,13 @@ function LockedSeasonPassPage(props: Readonly<{ latestEndAtText: string | null }
                         </div>
 
                         <div>
-                            <SeasonPassLinkButton href="/season-pass">ซื้อ Season Pass</SeasonPassLinkButton>
+                            {props.canPurchase ? (
+                                <SeasonPassLinkButton href="/season-pass">ซื้อ Season Pass</SeasonPassLinkButton>
+                            ) : (
+                                <Badge variant="secondary" className="rounded-full px-4 py-2 text-sm">
+                                    ปิดขายชั่วคราว
+                                </Badge>
+                            )}
                         </div>
 
                         {props.latestEndAtText ? (
@@ -108,7 +114,7 @@ export default async function SeasonPassPage(props: Readonly<{ searchParams?: Pr
     const state = await getSeasonPassDashboardState(userId, now);
 
     if (!state.unlocked) {
-        return <LockedSeasonPassPage latestEndAtText={state.latestEndAtText} />;
+        return <LockedSeasonPassPage latestEndAtText={state.latestEndAtText} canPurchase={state.plan.isActive} />;
     }
 
     const { plan, subscription, boardState, history, endAtText } = state;

@@ -65,6 +65,10 @@ vi.mock("@/lib/cache", () => ({
   invalidateProductCaches: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/lib/security/turnstile", () => ({
+  verifyTurnstileToken: vi.fn().mockResolvedValue({ success: true }),
+}));
+
 vi.mock("@/lib/features/products/mutations", () => ({
   createProduct: vi.fn().mockResolvedValue({ id: "p1" }),
 }));
@@ -93,7 +97,7 @@ describe("API: /api/login", () => {
   });
 
   it("returns 410 because the legacy login route is deprecated", async () => {
-    const res = await loginPOST(makeRequest({ username: "nouser", password: "pass123" }));
+    const res = await loginPOST();
     const body = await res.json();
     expect(res.status).toBe(410);
     expect(body.success).toBe(false);
@@ -110,20 +114,20 @@ describe("API: /api/register", () => {
   });
 
   it("returns success on valid registration", async () => {
-    vi.mocked(parseBody).mockResolvedValue({ data: { username: "newuser", password: "pass123", confirmPassword: "pass123" } });
+    vi.mocked(parseBody).mockResolvedValue({ data: { username: "newuser", email: "new@example.com", password: "pass123", confirmPassword: "pass123" } });
     vi.mocked(db.query.users.findFirst).mockResolvedValue(undefined);
 
-    const res = await registerPOST(makeRequest({ username: "newuser", password: "pass123", confirmPassword: "pass123" }));
+    const res = await registerPOST(makeRequest({ username: "newuser", email: "new@example.com", password: "pass123", confirmPassword: "pass123" }));
     const body = await res.json();
     expect(res.status).toBe(200);
     expect(body.success).toBe(true);
   });
 
   it("returns 400 when username exists", async () => {
-    vi.mocked(parseBody).mockResolvedValue({ data: { username: "existing", password: "pass123", confirmPassword: "pass123" } });
+    vi.mocked(parseBody).mockResolvedValue({ data: { username: "existing", email: "existing@example.com", password: "pass123", confirmPassword: "pass123" } });
     vi.mocked(db.query.users.findFirst).mockResolvedValue({ id: "u1", username: "existing" } as any);
 
-    const res = await registerPOST(makeRequest({ username: "existing", password: "pass123", confirmPassword: "pass123" }));
+    const res = await registerPOST(makeRequest({ username: "existing", email: "existing@example.com", password: "pass123", confirmPassword: "pass123" }));
     const body = await res.json();
     expect(res.status).toBe(400);
     expect(body.success).toBe(false);
