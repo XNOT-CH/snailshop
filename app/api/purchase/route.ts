@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/auth";
+import { isAuthenticatedWithCsrf } from "@/lib/auth";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
@@ -21,13 +21,7 @@ import {
     type PurchaseTransactionUser,
 } from "@/lib/features/orders/purchase";
 
-async function getAuthUser() {
-    const session = await auth();
-    const userId = session?.user?.id;
-    if (!userId) {
-        return { error: "กรุณาเข้าสู่ระบบก่อน", status: 401 } as const;
-    }
-
+async function getAuthUser(userId: string) {
     const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
     if (!user) {
         return { error: "ไม่พบผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่", status: 404 } as const;
@@ -109,6 +103,14 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+        const csrfAuth = await isAuthenticatedWithCsrf(request);
+        if (!csrfAuth.success || !csrfAuth.userId) {
+            return NextResponse.json(
+                { success: false, message: csrfAuth.error ?? "กรุณาเข้าสู่ระบบก่อน" },
+                { status: 401 }
+            );
+        }
+
         const { productId, quantity, promoCode, pin } = await request.json();
 
         if (!productId) {
@@ -120,7 +122,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: "Quantity must be a positive integer" }, { status: 400 });
         }
 
-        const authRes = await getAuthUser();
+        const authRes = await getAuthUser(csrfAuth.userId);
         if ("error" in authRes) {
             return NextResponse.json({ success: false, message: authRes.error }, { status: authRes.status });
         }

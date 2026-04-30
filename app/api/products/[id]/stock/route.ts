@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdmin } from "@/lib/auth";
+import { isAdmin, isAdminWithCsrf } from "@/lib/auth";
 import { updateProductStock } from "@/lib/features/products/mutations";
 import { findProductById, listOtherProductsForStockCheck, listOtherProductsForTakenUsers } from "@/lib/features/products/queries";
 import { extractStockUsers, extractUsersFromEncryptedStock } from "@/lib/features/products/shared";
@@ -38,7 +38,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 }
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
-    const authCheck = await isAdmin();
+    const authCheck = await isAdminWithCsrf(request);
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
 
     try {

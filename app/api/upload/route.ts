@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdmin } from "@/lib/auth";
+import { isAdminWithCsrf } from "@/lib/auth";
 import { saveOptimizedImageUpload } from "@/lib/serverImageUpload";
 import { getRuntimeUploadDir } from "@/lib/runtimeUploads";
 
 export async function POST(request: NextRequest) {
     // Check if user is admin
-    const authCheck = await isAdmin();
+    const authCheck = await isAdminWithCsrf(request);
     if (!authCheck.success) {
         return NextResponse.json(
             { success: false, message: authCheck.error },

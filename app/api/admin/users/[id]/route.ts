@@ -3,7 +3,7 @@ import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
-import { requireAnyPermission, requirePermission } from "@/lib/auth";
+import { requireAnyPermissionWithCsrf, requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -32,7 +32,7 @@ export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const authCheck = await requireAnyPermission([PERMISSIONS.USER_EDIT, PERMISSIONS.USER_MANAGE_ROLE]);
+    const authCheck = await requireAnyPermissionWithCsrf(request, [PERMISSIONS.USER_EDIT, PERMISSIONS.USER_MANAGE_ROLE]);
     if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { id } = await params;
@@ -124,7 +124,7 @@ export async function POST(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const authCheck = await requirePermission(PERMISSIONS.USER_EDIT);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.USER_EDIT);
     if (!authCheck.success) {
         return NextResponse.json({ error: authCheck.error ?? "Unauthorized" }, { status: 401 });
     }

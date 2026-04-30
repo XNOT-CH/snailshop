@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq, sql } from "drizzle-orm";
 import { db, topups, users } from "@/lib/db";
-import { requireAnyPermission } from "@/lib/auth";
+import { requireAnyPermissionWithCsrf } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { PERMISSIONS } from "@/lib/permissions";
 
 export async function PATCH(request: NextRequest) {
-    const authCheck = await requireAnyPermission([PERMISSIONS.SLIP_APPROVE, PERMISSIONS.SLIP_REJECT]);
+    const authCheck = await requireAnyPermissionWithCsrf(request, [PERMISSIONS.SLIP_APPROVE, PERMISSIONS.SLIP_REJECT]);
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }

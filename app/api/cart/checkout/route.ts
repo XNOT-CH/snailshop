@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { isAuthenticatedWithCsrf } from "@/lib/auth";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { sendEmail } from "@/lib/mail";
@@ -104,6 +105,14 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+        const csrfAuth = await isAuthenticatedWithCsrf(request);
+        if (!csrfAuth.success || !csrfAuth.userId) {
+            return NextResponse.json(
+                { success: false, message: csrfAuth.error ?? MSG_LOGIN_REQUIRED },
+                { status: 401 }
+            );
+        }
+
         const { items, productIds, promoCode, pin } = await request.json();
         const checkoutItems = normalizeCheckoutItems(items, productIds);
 
@@ -117,8 +126,7 @@ export async function POST(request: NextRequest) {
         }
 
         const session = await auth();
-        const userId = session?.user?.id;
-        if (!userId) return NextResponse.json({ success: false, message: MSG_LOGIN_REQUIRED }, { status: 401 });
+        const userId = csrfAuth.userId;
 
         const user = await db.query.users.findFirst({
             where: eq(users.id, userId),

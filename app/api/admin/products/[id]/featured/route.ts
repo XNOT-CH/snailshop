@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, products } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { requirePermission } from "@/lib/auth";
+import { requirePermissionWithCsrf } from "@/lib/auth";
 import { invalidateProductCaches } from "@/lib/cache";
 import { z } from "zod";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -11,7 +11,7 @@ const featuredSchema = z.object({
 });
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const authCheck = await requirePermission(PERMISSIONS.PRODUCT_EDIT);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.PRODUCT_EDIT);
     if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     try {
         const { id } = await params;

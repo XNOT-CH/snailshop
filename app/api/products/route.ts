@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requirePermission } from "@/lib/auth";
+import { requirePermissionWithCsrf } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { invalidateProductCaches } from "@/lib/cache";
 import { createProduct } from "@/lib/features/products/mutations";
@@ -7,7 +7,7 @@ import { parseProductPrice, validateDiscountPrice, type ProductPayloadInput } fr
 import { PERMISSIONS } from "@/lib/permissions";
 
 export async function POST(request: NextRequest) {
-    const authCheck = await requirePermission(PERMISSIONS.PRODUCT_CREATE);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.PRODUCT_CREATE);
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }

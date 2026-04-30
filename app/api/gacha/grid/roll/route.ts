@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { and, count, eq, gte, isNull, lte } from "drizzle-orm";
-import { isAuthenticated } from "@/lib/auth";
+import { isAuthenticatedWithCsrf } from "@/lib/auth";
 import { db, gachaMachines, gachaRollLogs, users } from "@/lib/db";
 import {
     acquireGachaExecutionLock,
@@ -205,7 +205,7 @@ export async function POST(req: Request) {
         );
     }
 
-    const auth = await isAuthenticated();
+    const auth = await isAuthenticatedWithCsrf(req);
     if (!auth.success || !auth.userId) {
         return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
     }

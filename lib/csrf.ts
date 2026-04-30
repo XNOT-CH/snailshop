@@ -72,6 +72,62 @@ export async function validateCsrfToken(token: string): Promise<boolean> {
     }
 }
 
+function normalizeOrigin(value: string | null) {
+    if (!value) return null;
+
+    try {
+        return new URL(value).origin;
+    } catch {
+        return null;
+    }
+}
+
+function getRequestOrigin(request: Request) {
+    const origin = normalizeOrigin(request.headers.get("origin"));
+    if (origin) return origin;
+
+    const referer = request.headers.get("referer");
+    if (!referer) return null;
+
+    try {
+        return new URL(referer).origin;
+    } catch {
+        return null;
+    }
+}
+
+function getTrustedOrigins(request: Request) {
+    const requestUrl = new URL(request.url);
+    const trusted = new Set<string>([requestUrl.origin]);
+
+    for (const rawOrigin of [
+        process.env.ALLOWED_ORIGIN,
+        process.env.NEXT_PUBLIC_SITE_URL,
+        process.env.AUTH_URL,
+    ]) {
+        const normalized = normalizeOrigin(rawOrigin ?? null);
+        if (normalized) trusted.add(normalized);
+    }
+
+    return trusted;
+}
+
+export function isSameOriginRequest(request: Request): boolean {
+    const requestOrigin = getRequestOrigin(request);
+    if (!requestOrigin) return false;
+
+    return getTrustedOrigins(request).has(requestOrigin);
+}
+
+export async function validateCsrfRequest(request: Request): Promise<boolean> {
+    const csrfToken = getCsrfTokenFromRequest(request);
+    if (csrfToken && await validateCsrfToken(csrfToken)) {
+        return true;
+    }
+
+    return isSameOriginRequest(request);
+}
+
 /**
  * Get CSRF token from request headers or body
  */

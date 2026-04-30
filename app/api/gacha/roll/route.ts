@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { and, count, eq, gte, inArray, isNotNull, isNull, lte, or } from "drizzle-orm";
-import { isAuthenticated } from "@/lib/auth";
+import { isAuthenticatedWithCsrf } from "@/lib/auth";
 import { db, gachaMachines, gachaRewards, gachaRollLogs, products, users } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/encryption";
 import {
@@ -405,7 +405,13 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
 async function persistPendingSpin(pendingPayload: PendingSpinPayload) {
     const payload = encrypt(JSON.stringify(pendingPayload));
     const cookieStore = await cookies();
-    cookieStore.set(COOKIE_NAME, payload, { httpOnly: true, maxAge: COOKIE_TTL, path: "/" });
+    cookieStore.set(COOKIE_NAME, payload, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: COOKIE_TTL,
+        path: "/",
+    });
 
     purgeExpiredPendingSpinState(pendingPayload.iat);
     pendingSpinMemoryStore.set(pendingPayload.nonce, pendingPayload);
@@ -580,7 +586,7 @@ export async function POST(req: Request) {
         );
     }
 
-    const authCheck = await isAuthenticated();
+    const authCheck = await isAuthenticatedWithCsrf(req);
     if (!authCheck.success || !authCheck.userId) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }

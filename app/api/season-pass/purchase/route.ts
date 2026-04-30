@@ -1,13 +1,23 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { isAuthenticatedWithCsrf } from "@/lib/auth";
 import { purchaseSeasonPass } from "@/lib/seasonPassTransactions";
 
 export async function POST(request?: Request) {
-    const session = await auth();
-    const userId = session?.user?.id;
+    const authCheck = request
+        ? await isAuthenticatedWithCsrf(request)
+        : await auth().then((session) => ({
+            success: Boolean(session?.user?.id),
+            userId: session?.user?.id,
+            error: "กรุณาเข้าสู่ระบบก่อน",
+        }));
+    const userId = authCheck.userId;
 
-    if (!userId) {
-        return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
+    if (!authCheck.success || !userId) {
+        return NextResponse.json(
+            { success: false, message: authCheck.error ?? "กรุณาเข้าสู่ระบบก่อน" },
+            { status: 401 }
+        );
     }
 
     const result = await purchaseSeasonPass({ userId, request });

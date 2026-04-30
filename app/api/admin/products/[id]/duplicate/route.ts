@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, products } from "@/lib/db";
 import { mysqlNow } from "@/lib/utils/date";
 import { eq } from "drizzle-orm";
-import { requirePermission } from "@/lib/auth";
+import { requirePermissionWithCsrf } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const authCheck = await requirePermission(PERMISSIONS.PRODUCT_CREATE);
+        const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.PRODUCT_CREATE);
         if (!authCheck.success) return NextResponse.json({ error: "Admin access required" }, { status: 403 });
         const { id } = await params;
         const original = await db.query.products.findFirst({ where: eq(products.id, id) });

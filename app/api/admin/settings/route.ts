@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { db, siteSettings } from "@/lib/db";
-import { requirePermission } from "@/lib/auth";
+import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS, getChanges } from "@/lib/auditLog";
 import { mysqlNow } from "@/lib/utils/date";
 import { validateBody } from "@/lib/validations/validate";
@@ -62,7 +62,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-    const authCheck = await requirePermission(PERMISSIONS.SETTINGS_EDIT);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.SETTINGS_EDIT);
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }

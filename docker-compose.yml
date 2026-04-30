@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        DATABASE_URL: mysql://root:rootpassword@host.docker.internal:3307/my_game_store
+        DATABASE_URL: mysql://${MYSQL_APP_USER:-app_user}:${MYSQL_APP_PASSWORD}@host.docker.internal:3307/my_game_store
         AUTH_URL: https://www.snailshop.app
         NEXT_PUBLIC_SITE_URL: https://www.snailshop.app
         ALLOWED_ORIGIN: https://www.snailshop.app
@@ -18,7 +18,7 @@ services:
       NODE_ENV: production
       HOSTNAME: 0.0.0.0
       PORT: 3000
-      DATABASE_URL: mysql://root:rootpassword@app_db:3306/my_game_store
+      DATABASE_URL: mysql://${MYSQL_APP_USER:-app_user}:${MYSQL_APP_PASSWORD}@app_db:3306/my_game_store
       AUTH_URL: https://www.snailshop.app
       NEXT_PUBLIC_SITE_URL: https://www.snailshop.app
       ALLOWED_ORIGIN: https://www.snailshop.app
@@ -83,10 +83,12 @@ services:
     container_name: my_game_store_db
     restart: always
     environment:
-      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: my_game_store
+      MYSQL_USER: ${MYSQL_APP_USER:-app_user}
+      MYSQL_PASSWORD: ${MYSQL_APP_PASSWORD}
     ports:
-      - "3307:3306"
+      - "127.0.0.1:3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
     networks:
@@ -97,11 +99,10 @@ services:
     container_name: my_game_store_db_dev
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+      MYSQL_ROOT_PASSWORD: ${MYSQL_DEV_ROOT_PASSWORD:-dev_rootpassword_change_me}
       MYSQL_DATABASE: my_game_store_dev
     ports:
-      - "3308:3306"
+      - "127.0.0.1:3308:3306"
     volumes:
       - mysql_dev_data:/var/lib/mysql
     networks:
