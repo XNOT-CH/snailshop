@@ -1,10 +1,13 @@
 import type { NextRequest } from "next/server";
-import { auth } from "@/auth";
+import NextAuth from "next-auth";
+import { authConfig } from "@/auth.config";
 import {
     getAdminApiAccessResponse,
     getAdminPageAccessResponse,
     isProtectedPath,
 } from "@/lib/adminAccess";
+
+const { auth } = NextAuth(authConfig);
 
 export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
@@ -14,7 +17,6 @@ export async function proxy(request: NextRequest) {
         return;
     }
 
-    // ─── HTTPS Redirect (Production only) ─────────────────────────────
     if (process.env.NODE_ENV === "production") {
         const proto = request.headers.get("x-forwarded-proto");
         const host = request.headers.get("host");
@@ -30,14 +32,12 @@ export async function proxy(request: NextRequest) {
         }
     }
 
-    // ─── Auth Guard ────────────────────────────────────────────────────
     const isProtected = isProtectedPath(pathname);
 
     if (isProtected) {
         const session = await auth();
         const isApiRoute = pathname.startsWith("/api/");
 
-        // Not logged in
         if (!session?.user) {
             if (isApiRoute) {
                 return new Response(
@@ -45,6 +45,7 @@ export async function proxy(request: NextRequest) {
                     { status: 401, headers: { "Content-Type": "application/json" } }
                 );
             }
+
             const loginUrl = new URL("/login", request.nextUrl.origin);
             loginUrl.searchParams.set("callbackUrl", `${pathname}${request.nextUrl.search}`);
             return Response.redirect(loginUrl);

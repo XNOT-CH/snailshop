@@ -75,7 +75,7 @@ export default async function Navbar() {
                   icon: iconMap[item.icon?.toLowerCase() ?? ""] ?? Home,
               }))
             : [
-                  { href: "/", label: "หน้าแรก", icon: Home },
+                  { href: "/home", label: "หน้าแรก", icon: Home },
                   { href: "/shop", label: "ร้านค้า", icon: ShoppingBag },
                   { href: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
                   { href: "/help", label: "ช่วยเหลือ", icon: HelpCircle },
@@ -105,7 +105,7 @@ export default async function Navbar() {
         <MobileAutoHideHeader>
         <header id="main-navbar" className={`${themeClasses.header} w-full backdrop-blur-xl`}>
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 lg:px-6 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:gap-4 xl:px-8">
-                <Link href="/" className="flex min-w-0 items-center gap-3.5 text-lg font-semibold text-primary xl:min-w-0">
+                <Link href="/home" className="flex min-w-0 items-center gap-3.5 text-lg font-semibold text-primary xl:min-w-0">
                     {siteSettings?.logoUrl ? (
                         <Image
                             src={siteSettings.logoUrl}

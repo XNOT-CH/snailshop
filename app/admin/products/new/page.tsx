@@ -64,7 +64,7 @@ function getCalculatedDiscountPrice(
     return normalizeMoney(priceNumber - discountInputNumber, currency);
 }
 
-function getDiscountPlaceholder(discountMode: DiscountMode, currency: string) {
+function getDiscountPlaceholder(discountMode: DiscountMode) {
     if (discountMode === "percent") {
         return "เช่น 15";
     }
@@ -418,7 +418,7 @@ export default function AddProductPage() {
                                             id="discountPrice"
                                             name="discountPrice"
                                             type="number"
-                                            placeholder={getDiscountPlaceholder(discountMode, formData.currency)}
+                                            placeholder={getDiscountPlaceholder(discountMode)}
                                             min="0"
                                             max={discountMode === "percent" ? "99.99" : undefined}
                                             step={getDiscountInputStep(discountMode, formData.currency)}

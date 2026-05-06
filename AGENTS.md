@@ -49,6 +49,8 @@ Use this file as the repo-level starting point, then read the nearest nested `AG
   `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
 - Gacha:
   `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `components/AGENTS.md`
+- Deploy/CI/ops/scripts:
+  `scripts/AGENTS.md`, `scripts/windows/AGENTS.md`, `.github/workflows/AGENTS.md`, `docs/runbooks/AGENTS.md`
 
 ### Main ownership map
 

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -33,6 +34,7 @@ import {
     Image as ImageIcon,
     Eye,
     EyeOff,
+    Send,
 } from "lucide-react";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { updateProfile } from "@/lib/actions/user";
@@ -53,6 +55,30 @@ interface AddressData {
     district: string;
     subdistrict: string;
     postalCode: string;
+}
+
+async function parseApiResponse(response: Response) {
+    const contentType = response.headers.get("content-type") ?? "";
+    const isJsonResponse = contentType.toLowerCase().includes("application/json");
+
+    if (isJsonResponse) {
+        return response.json();
+    }
+
+    const bodyText = await response.text();
+    const normalizedBody = bodyText.trim().toLowerCase();
+
+    if (normalizedBody.startsWith("<!doctype") || normalizedBody.startsWith("<html")) {
+        return {
+            success: false,
+            message: "เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง หรือแจ้งแอดมินตรวจสอบระบบ production",
+        };
+    }
+
+    return {
+        success: false,
+        message: bodyText.trim() || "เซิร์ฟเวอร์ตอบกลับไม่ถูกต้อง",
+    };
 }
 
 function sanitizePhone(value: string) {
@@ -117,6 +143,8 @@ export default function ProfileSettingsPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [isSendingVerification, setIsSendingVerification] = useState(false);
+    const [isEditingVerifiedEmail, setIsEditingVerifiedEmail] = useState(false);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const profileImageInputRef = useRef<HTMLInputElement>(null);
     const cropUrlRef = useRef<string | null>(null);
@@ -153,6 +181,10 @@ export default function ProfileSettingsPage() {
         "border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/80 shadow-[0_18px_45px_-32px_rgba(15,23,42,0.22)]";
     const saveButtonClass =
         "h-11 w-full gap-2 rounded-2xl bg-blue-600 px-6 text-white shadow-[0_16px_30px_-18px_rgba(37,99,235,0.75)] transition hover:bg-blue-700 hover:shadow-[0_18px_36px_-18px_rgba(29,78,216,0.75)] sm:w-auto sm:min-w-[148px]";
+    const emailChanged = (formData.email || "").trim().toLowerCase() !== (profile?.email || "").trim().toLowerCase();
+    const isEmailVerified = Boolean(profile?.emailVerified) && !emailChanged;
+    const shouldLockVerifiedEmail = isEmailVerified && !isEditingVerifiedEmail;
+    const emailStatusLabel = emailChanged ? "ต้องยืนยันใหม่" : isEmailVerified ? "ยืนยันแล้ว" : "ยังไม่ยืนยัน";
 
     const refreshProfile = useCallback(async () => {
         const res = await fetch("/api/profile");
@@ -190,6 +222,7 @@ export default function ProfileSettingsPage() {
             subdistrict: user.shipSubdistrict || "",
             postalCode: user.shipPostalCode || "",
         });
+        setIsEditingVerifiedEmail(false);
     }, []);
 
     const buildSubmitData = (section: "contact" | "personal" | "password" | "tax" | "ship") => {
@@ -306,6 +339,9 @@ export default function ProfileSettingsPage() {
                 }
                 setEditingTax(false);
                 setEditingShip(false);
+                if (section === "contact") {
+                    setIsEditingVerifiedEmail(false);
+                }
                 // Refresh profile data
                 try {
                     await refreshProfile();
@@ -322,6 +358,44 @@ export default function ProfileSettingsPage() {
             await showErrorAlert("เกิดข้อผิดพลาด", "ไม่สามารถอัปเดตโปรไฟล์ได้");
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const handleCancelEmailEdit = () => {
+        setFormData((prev) => ({
+            ...prev,
+            email: profile?.email || "",
+        }));
+        setErrors((prev) => {
+            const nextErrors = { ...prev };
+            delete nextErrors.email;
+            return nextErrors;
+        });
+        setIsEditingVerifiedEmail(false);
+    };
+
+    const handleSendVerificationEmail = async () => {
+        if (!profile?.email || emailChanged || isEmailVerified) return;
+
+        setIsSendingVerification(true);
+        try {
+            const response = await fetchWithCsrf("/api/profile/send-verification-email", {
+                method: "POST",
+            });
+            const data = await parseApiResponse(response);
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || "ส่งอีเมลยืนยันไม่สำเร็จ");
+            }
+
+            await showSuccessAlert("ส่งอีเมลแล้ว", data.message);
+        } catch (error) {
+            await showErrorAlert(
+                "ส่งอีเมลไม่สำเร็จ",
+                error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการส่งอีเมลยืนยัน"
+            );
+        } finally {
+            setIsSendingVerification(false);
         }
     };
 
@@ -662,26 +736,107 @@ export default function ProfileSettingsPage() {
 
                             {/* Email */}
                             <div className="space-y-2">
-                                <Label htmlFor="email" className="flex items-center gap-2 text-muted-foreground">
-                                    <Mail className="h-4 w-4" />
-                                    อีเมล
-                                </Label>
+                                <div className="flex flex-wrap items-center justify-between gap-2">
+                                    <Label htmlFor="email" className="flex items-center gap-2 text-muted-foreground">
+                                        <Mail className="h-4 w-4" />
+                                        อีเมล
+                                    </Label>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {formData.email ? (
+                                            <Badge
+                                                variant="outline"
+                                                className={
+                                                    isEmailVerified
+                                                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                                                        : "border-amber-200 bg-amber-50 text-amber-700"
+                                                }
+                                            >
+                                                {isEmailVerified ? (
+                                                    <CheckCircle className="h-3 w-3" />
+                                                ) : (
+                                                    <AlertTriangle className="h-3 w-3" />
+                                                )}
+                                                {emailStatusLabel}
+                                            </Badge>
+                                        ) : null}
+                                        {isEmailVerified ? (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="h-8 gap-1.5 rounded-full px-3 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                                                onClick={() => setIsEditingVerifiedEmail(true)}
+                                                disabled={isEditingVerifiedEmail || isLoading}
+                                            >
+                                                <Pencil className="h-3.5 w-3.5" />
+                                                เปลี่ยนอีเมล
+                                            </Button>
+                                        ) : null}
+                                    </div>
+                                </div>
                                 <Input
                                     id="email"
                                     type="email"
                                     placeholder="ระบุอีเมลของคุณที่นี่"
                                     value={formData.email}
+                                    readOnly={shouldLockVerifiedEmail}
                                     onChange={(e) =>
                                         setFormData((prev) => ({
                                             ...prev,
                                             email: e.target.value,
                                         }))
                                     }
-                                    className="bg-muted/50 border-border"
+                                    className={
+                                        shouldLockVerifiedEmail
+                                            ? "border-emerald-200 bg-emerald-50/60 text-slate-700"
+                                            : "bg-muted/50 border-border"
+                                    }
                                 />
                                 {errors.email && (
                                     <p className="text-sm text-red-500">{errors.email[0]}</p>
                                 )}
+                                {shouldLockVerifiedEmail ? (
+                                    <p className="text-xs text-emerald-700">
+                                        อีเมลนี้ยืนยันแล้ว กดเปลี่ยนอีเมลก่อนหากต้องการแก้ไข
+                                    </p>
+                                ) : null}
+                                {emailChanged ? (
+                                    <p className="text-xs text-amber-600">
+                                        หลังบันทึกอีเมลใหม่แล้ว ระบบจะให้ยืนยันอีเมลอีกครั้ง
+                                    </p>
+                                ) : null}
+                                {isEditingVerifiedEmail ? (
+                                    <div className="flex justify-end pt-1">
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            className="h-9 rounded-full px-4 text-muted-foreground hover:bg-slate-100"
+                                            onClick={handleCancelEmailEdit}
+                                            disabled={isLoading}
+                                        >
+                                            <X className="h-4 w-4" />
+                                            ยกเลิกเปลี่ยนอีเมล
+                                        </Button>
+                                    </div>
+                                ) : null}
+                                {!isEmailVerified && profile?.email ? (
+                                    <div className="flex justify-end pt-1">
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="h-10 gap-2 rounded-2xl border-blue-200 px-4 text-blue-700 hover:bg-blue-50 hover:text-blue-800"
+                                            onClick={handleSendVerificationEmail}
+                                            disabled={isSendingVerification || isLoading || emailChanged}
+                                        >
+                                            {isSendingVerification ? (
+                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                            ) : (
+                                                <Send className="h-4 w-4" />
+                                            )}
+                                            ยืนยันอีเมล
+                                        </Button>
+                                    </div>
+                                ) : null}
                             </div>
 
                             {/* Save Button */}

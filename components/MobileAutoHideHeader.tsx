@@ -17,10 +17,10 @@ export function MobileAutoHideHeader({ children }: Readonly<MobileAutoHideHeader
     const forceVisible =
         pathname.startsWith("/dashboard") ||
         pathname.startsWith("/profile");
+    const shouldHide = forceVisible ? false : isHidden;
 
     useEffect(() => {
         if (forceVisible) {
-            setIsHidden(false);
             return;
         }
 
@@ -59,7 +59,7 @@ export function MobileAutoHideHeader({ children }: Readonly<MobileAutoHideHeader
 
     return (
         <div
-            className={`sticky top-0 z-50 w-full transition-transform duration-300 ease-out md:translate-y-0 ${isHidden ? "-translate-y-full" : "translate-y-0"}`}
+            className={`sticky top-0 z-50 w-full transition-transform duration-300 ease-out md:translate-y-0 ${shouldHide ? "-translate-y-full" : "translate-y-0"}`}
         >
             {children}
         </div>

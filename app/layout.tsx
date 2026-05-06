@@ -14,6 +14,7 @@ import { AnnouncementPopupWrapper } from "@/components/AnnouncementPopupWrapper"
 import { GlobalLoadingWrapper } from "@/components/GlobalLoadingWrapper";
 import { StructuredData } from "@/components/StructuredData";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import { RouteShell } from "@/components/RouteShell";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import {
   DEFAULT_SITE_DESCRIPTION,
@@ -132,32 +133,15 @@ export default async function RootLayout({
               {/* Global Navigation Loading Screen - client-only, no SSR to avoid hydration mismatch */}
               <GlobalLoadingWrapper />
 
-              {/* Navbar */}
-              <Navbar />
-
-              {/* Main Content - Responsive Container with Page Transition */}
-              <div id="main-container" className="flex-1 w-full max-w-7xl mx-auto px-3 pb-[calc(var(--mobile-bottom-nav-height)+0.75rem)] sm:px-4 md:pb-0 lg:px-6 xl:px-8">
-                <main className="animate-page-enter min-w-0">
-                  {children}
-                </main>
-              </div>
-
-              <MobileBottomNav />
-
-              {/* Footer */}
-              <div id="main-footer">
-                <Footer />
-              </div>
-
-              {/* Floating Chat Button */}
-              <div id="main-chat">
-                <FloatingChatButtonWrapper />
-              </div>
-
-              {/* Announcement Popup - Client Side Only */}
-              <div id="main-popup">
-                <AnnouncementPopupWrapper enabled={Boolean(session?.user)} />
-              </div>
+              <RouteShell
+                navbar={<Navbar />}
+                mobileBottomNav={<MobileBottomNav />}
+                footer={<Footer />}
+                floatingChat={<FloatingChatButtonWrapper />}
+                announcementPopup={<AnnouncementPopupWrapper enabled={Boolean(session?.user)} />}
+              >
+                {children}
+              </RouteShell>
             </CartProvider>
           </SweetAlertProvider>
         </ThemeProvider>

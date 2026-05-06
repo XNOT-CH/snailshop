@@ -8,13 +8,36 @@ type TurnstileResponse = {
     "error-codes"?: string[];
 };
 
+export const E2E_TURNSTILE_BYPASS_TOKEN = "__e2e_turnstile_bypass__";
+
+function isE2ETurnstileBypassEnabled() {
+    return (
+        process.env.E2E_AUTH_TEST_MODE === "1" &&
+        process.env.NODE_ENV !== "production"
+    );
+}
+
 export async function verifyTurnstileToken(
     token: string | undefined,
     ipAddress?: string
 ): Promise<TurnstileVerificationResult> {
+    if (
+        isE2ETurnstileBypassEnabled() &&
+        token === E2E_TURNSTILE_BYPASS_TOKEN
+    ) {
+        return { success: true };
+    }
+
     const secretKey = process.env.TURNSTILE_SECRET_KEY;
 
     if (!secretKey) {
+        if (process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) {
+            return {
+                success: false,
+                message: "ระบบยืนยันความปลอดภัยยังตั้งค่าไม่ครบ กรุณาติดต่อผู้ดูแลระบบ",
+            };
+        }
+
         return { success: true };
     }
 

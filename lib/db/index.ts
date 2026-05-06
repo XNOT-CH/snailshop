@@ -1,4 +1,5 @@
 import { drizzle } from "drizzle-orm/mysql2";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import mysql from "mysql2/promise";
 import * as schema from "./schema";
 
@@ -8,6 +9,31 @@ const globalForDb = globalThis as unknown as {
 };
 
 const isProduction = process.env.NODE_ENV === "production";
+
+function getHyperdrivePoolOptions(): mysql.PoolOptions | null {
+    try {
+        const hyperdrive = getCloudflareContext().env.HYPERDRIVE;
+        if (!hyperdrive) {
+            return null;
+        }
+
+        return {
+            host: hyperdrive.host,
+            user: hyperdrive.user,
+            password: hyperdrive.password,
+            database: hyperdrive.database,
+            port: hyperdrive.port,
+            waitForConnections: true,
+            connectionLimit: 5,
+            charset: "utf8mb4",
+            timezone: "+00:00",
+            connectTimeout: 10000,
+            disableEval: true,
+        } as mysql.PoolOptions;
+    } catch {
+        return null;
+    }
+}
 
 function normalizeDbUrl(rawUrl: string) {
     if (!rawUrl) {
@@ -30,8 +56,7 @@ function normalizeDbUrl(rawUrl: string) {
 
 const dbUrl = normalizeDbUrl(process.env.DATABASE_URL ?? "");
 const isTiDB = dbUrl.includes("tidbcloud.com");
-
-const pool = globalForDb.pool ?? mysql.createPool({
+const poolOptions = (isProduction ? getHyperdrivePoolOptions() : null) ?? {
     uri: dbUrl,
     waitForConnections: true,
     connectionLimit: isProduction ? 5 : 10,
@@ -39,7 +64,9 @@ const pool = globalForDb.pool ?? mysql.createPool({
     timezone: "+00:00",
     connectTimeout: 10000,
     ssl: isTiDB ? { rejectUnauthorized: true } : undefined,
-});
+};
+
+const pool = globalForDb.pool ?? mysql.createPool(poolOptions);
 
 if (!isProduction) globalForDb.pool = pool;
 

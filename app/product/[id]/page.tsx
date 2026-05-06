@@ -3,6 +3,7 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductActions } from "@/components/ProductActions";
+import { ProductCard } from "@/components/ProductCard";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { ShareButtons } from "@/components/ShareButtons";
 import { StructuredData } from "@/components/StructuredData";
@@ -16,8 +17,6 @@ import { formatCurrencyAmount } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { themeClasses } from "@/lib/theme";
-import Image from "next/image";
-import Link from "next/link";
 import { getPrimaryProductImage, normalizeProductImageUrls } from "@/lib/productImages";
 
 const getProduct = cache(async (id: string) => {
@@ -239,75 +238,33 @@ export default async function ProductDetailPage({
                         รายการสินค้าอื่น ๆ
                     </h2>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
-                        {relatedProducts.map((related) => {
+                    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                        {relatedProducts.map((related, index) => {
                             const relPrice = Number(related.price);
-                            const relDiscount = related.discountPrice ? Number(related.discountPrice) : null;
-                            const relDisplayPrice = relDiscount ?? relPrice;
+                            const relDiscount =
+                                related.discountPrice === null || related.discountPrice === undefined
+                                    ? null
+                                    : Number(related.discountPrice);
                             const relStock = getStockCount(
                                 decrypt(related.secretData || ""),
                                 related.stockSeparator || "newline"
                             );
-                            const relIsSold = Boolean(related.isSold);
-                            const relAvailable = !relIsSold && relStock > 0;
 
                             return (
-                                <Link href={`/product/${related.id}`} key={related.id} className="group cursor-pointer">
-                                    <div className={`${themeClasses.surface} flex h-full flex-col rounded-xl p-4 transition-shadow duration-300 hover:shadow-[0_20px_40px_rgba(0,0,0,0.28)]`}>
-                                        <div className="group relative mb-4 aspect-square w-full overflow-hidden rounded-lg bg-muted">
-                                            <Image
-                                                src={related.imageUrl || "/placeholder.jpg"}
-                                                alt={related.name}
-                                                fill
-                                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                                className="object-cover transition-all duration-500 group-hover:grayscale"
-                                            />
-                                            {relAvailable && (
-                                                <div className={`${themeClasses.overlayScrim} absolute inset-0 flex items-center justify-center backdrop-blur-[1px] opacity-0 transition duration-300 group-hover:opacity-100`}>
-                                                    <span className={`${themeClasses.badge} flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold`}>
-                                                        ดูรายละเอียด
-                                                    </span>
-                                                </div>
-                                            )}
-                                            {relDiscount && (
-                                                <div className="absolute top-2 left-2 z-10 rounded bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground shadow-sm">
-                                                    ลดราคา
-                                                </div>
-                                            )}
-                                        </div>
-
-                                        <div className="flex flex-col flex-1 text-center">
-                                            <h3 className="mb-1 line-clamp-2 text-center text-sm font-semibold text-foreground transition-colors group-hover:text-primary">
-                                                {related.name}
-                                            </h3>
-
-                                            <div className="mt-auto pt-2 flex flex-col items-center gap-1">
-                                                <div className="text-center">
-                                                    {relDiscount && (
-                                                        <div className="text-[10px] sm:text-xs text-muted-foreground line-through mb-0.5">
-                                                            {formatCurrencyAmount(relPrice, related.currency, currencySettings)}
-                                                        </div>
-                                                    )}
-                                                    <div className="text-sm font-semibold text-primary">
-                                                        {formatCurrencyAmount(relDisplayPrice, related.currency, currencySettings)}
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="mt-3 pt-3 border-t border-border flex items-center justify-between">
-                                                <span className="text-[10px] sm:text-xs text-muted-foreground font-medium">
-                                                    คงเหลือ {relStock} ชิ้น
-                                                </span>
-                                                <div className={`text-[10px] px-2 py-1 rounded-full font-semibold ${relAvailable
-                                                    ? "bg-primary/10 text-primary"
-                                                    : "bg-destructive/10 text-destructive"
-                                                    }`}>
-                                                    {relAvailable ? "พร้อมขาย" : "สินค้าหมด"}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </Link>
+                                <ProductCard
+                                    key={related.id}
+                                    id={related.id}
+                                    image={related.imageUrl || "/placeholder.jpg"}
+                                    title={related.name}
+                                    price={relPrice}
+                                    discountPrice={relDiscount}
+                                    currency={related.currency}
+                                    category={related.category}
+                                    isSold={Boolean(related.isSold)}
+                                    stockCount={relStock}
+                                    index={index}
+                                    currencySettings={currencySettings}
+                                />
                             );
                         })}
                     </div>

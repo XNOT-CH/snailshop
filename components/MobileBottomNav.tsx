@@ -44,17 +44,23 @@ export function MobileBottomNav() {
             aria-label="เมนูหลักบนมือถือ"
             className={`${themeClasses.mobileNav} fixed inset-x-0 bottom-0 z-40 backdrop-blur-xl md:hidden`}
         >
-            <div className="mx-auto flex min-h-[var(--mobile-bottom-nav-height)] max-w-7xl items-start justify-around px-1 pt-1.5 pb-[calc(env(safe-area-inset-bottom)+0.35rem)]">
+            <div className="mx-auto flex h-[var(--mobile-bottom-nav-height)] max-w-7xl items-center justify-around px-1 pb-[max(env(safe-area-inset-bottom),0.35rem)] pt-1.5">
                 {navItems.map((item) => {
                     const isActive = item.match(pathname);
                     const Icon = item.icon;
                     const itemClassName = cn(
-                        "flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 py-1 text-[10px] font-medium transition-colors",
+                        "group relative flex h-14 min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 overflow-hidden rounded-2xl px-1 py-1 text-[10px] font-semibold transition-[color,transform] duration-300 ease-out active:scale-[0.96]",
                         isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                     );
                     const iconWrapperClassName = cn(
-                        "flex h-9 w-9 items-center justify-center rounded-2xl transition-colors",
-                        isActive ? "bg-primary/12 text-primary" : "text-current"
+                        "relative z-10 flex h-8 w-8 items-center justify-center rounded-2xl transition-[background-color,color,box-shadow,transform] duration-300 ease-out group-active:scale-90",
+                        isActive
+                            ? "-translate-y-0.5 scale-105 bg-primary/12 text-primary shadow-sm"
+                            : "text-current group-hover:-translate-y-0.5"
+                    );
+                    const labelClassName = cn(
+                        "relative z-10 line-clamp-2 min-h-[1.35rem] text-center leading-[0.9rem] break-words transition-[opacity,transform] duration-300 ease-out",
+                        isActive ? "translate-y-0 opacity-100" : "translate-y-0.5 opacity-85 group-hover:translate-y-0 group-hover:opacity-100"
                     );
 
                     if ("action" in item && item.action === "chat") {
@@ -65,10 +71,17 @@ export function MobileBottomNav() {
                                 onClick={() => globalThis.dispatchEvent(new CustomEvent(OPEN_CHAT_EVENT))}
                                 className={itemClassName}
                             >
+                                <span
+                                    aria-hidden="true"
+                                    className={cn(
+                                        "absolute inset-x-2 bottom-1 top-1 rounded-2xl bg-primary/8 opacity-0 transition-[opacity,transform] duration-300 ease-out",
+                                        isActive ? "scale-100 opacity-100" : "scale-75 group-hover:scale-95 group-hover:opacity-50"
+                                    )}
+                                />
                                 <div className={iconWrapperClassName}>
                                     <Icon className="h-[18px] w-[18px]" />
                                 </div>
-                                <span className="line-clamp-2 min-h-[1.5rem] text-center leading-[0.75rem] break-words">{item.label}</span>
+                                <span className={labelClassName}>{item.label}</span>
                             </button>
                         );
                     }
@@ -79,10 +92,17 @@ export function MobileBottomNav() {
                             href={item.href}
                             className={itemClassName}
                         >
+                            <span
+                                aria-hidden="true"
+                                className={cn(
+                                    "absolute inset-x-2 bottom-1 top-1 rounded-2xl bg-primary/8 opacity-0 transition-[opacity,transform] duration-300 ease-out",
+                                    isActive ? "scale-100 opacity-100" : "scale-75 group-hover:scale-95 group-hover:opacity-50"
+                                )}
+                            />
                             <div className={iconWrapperClassName}>
                                 <Icon className="h-[18px] w-[18px]" />
                             </div>
-                            <span className="line-clamp-2 min-h-[1.5rem] text-center leading-[0.75rem] break-words">{item.label}</span>
+                            <span className={labelClassName}>{item.label}</span>
                         </Link>
                     );
                 })}

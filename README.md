@@ -42,12 +42,22 @@ scripts\windows\dev-web.bat
 
 หน้าเว็บ local อยู่ที่ [http://localhost:3001](http://localhost:3001)
 
+Playwright E2E:
+
+```bash
+npm run dev
+npm run test:e2e
+```
+
+ถ้ารันเว็บบนพอร์ตอื่น ให้กำหนด `PLAYWRIGHT_BASE_URL` ก่อนรัน เช่น `http://127.0.0.1:3002`
+
 ## Common Commands
 
 ```bash
 npm run dev
 npm run build
 npm run test
+npm run test:e2e
 npm run db:push
 npm run db:studio
 docker compose up -d --build web

@@ -71,9 +71,28 @@ export const usersRelations = relations(users, ({ many }) => ({
     topups: many(topups),
     apiKeys: many(apiKeys),
     auditLogs: many(auditLogs),
+    emailVerificationTokens: many(emailVerificationTokens),
     gachaRollLogs: many(gachaRollLogs),
     chatConversations: many(chatConversations),
     chatMessages: many(chatMessages),
+}));
+
+export const emailVerificationTokens = mysqlTable("EmailVerificationToken", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: varchar("userId", { length: 191 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+    email: varchar("email", { length: 191 }).notNull(),
+    tokenHash: varchar("tokenHash", { length: 64 }).notNull(),
+    expiresAt: datetime("expiresAt", { mode: "string" }).notNull(),
+    usedAt: datetime("usedAt", { mode: "string" }),
+    createdAt: now(),
+}, (t) => [
+    uniqueIndex("uq_email_verification_token_hash").on(t.tokenHash),
+    index("idx_email_verification_user_email").on(t.userId, t.email),
+    index("idx_email_verification_expires").on(t.expiresAt),
+]);
+
+export const emailVerificationTokensRelations = relations(emailVerificationTokens, ({ one }) => ({
+    user: one(users, { fields: [emailVerificationTokens.userId], references: [users.id] }),
 }));
 
 // ─────────────────────────────────────────────

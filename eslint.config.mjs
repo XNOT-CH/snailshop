@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "coverage/**",
+    ".open-next/**",
+    "storage/**",
     "lint-report.json",
     "next-env.d.ts",
   ]),

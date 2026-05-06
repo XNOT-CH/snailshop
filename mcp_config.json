@@ -1,5 +1,11 @@
 {
   "mcpServers": {
+    "cloudflare-api": {
+      "url": "https://mcp.cloudflare.com/mcp"
+    },
+    "cloudflare-docs": {
+      "url": "https://docs.mcp.cloudflare.com/mcp"
+    },
     "TestSprite": {
       "command": "npx",
       "args": [

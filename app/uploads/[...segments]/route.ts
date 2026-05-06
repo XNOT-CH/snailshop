@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { getContentTypeFromFilename, readUploadObject, storageKeyFromSegments } from "@/lib/cloudflareStorage";
 import {
     buildUploadPublicPath,
     getLegacyPublicUploadDir,
@@ -10,16 +11,6 @@ import {
 } from "@/lib/runtimeUploads";
 
 export const runtime = "nodejs";
-
-const CONTENT_TYPES: Record<string, string> = {
-    ".avif": "image/avif",
-    ".gif": "image/gif",
-    ".jpeg": "image/jpeg",
-    ".jpg": "image/jpeg",
-    ".png": "image/png",
-    ".svg": "image/svg+xml",
-    ".webp": "image/webp",
-};
 
 interface RouteParams {
     params: Promise<{ segments: string[] }>;
@@ -53,6 +44,24 @@ function resolveUploadFilePath(segments: string[]) {
 export async function GET(_request: NextRequest, { params }: RouteParams) {
     try {
         const { segments } = await params;
+
+        if (segments.length === 0 || !segments.every(isSafeUploadSegment)) {
+            return NextResponse.json({ success: false, message: "File not found" }, { status: 404 });
+        }
+
+        const storageKey = storageKeyFromSegments("uploads", ...segments);
+        const r2Object = await readUploadObject(storageKey);
+        if (r2Object) {
+            return new NextResponse(r2Object.body, {
+                status: 200,
+                headers: {
+                    "Cache-Control": "public, max-age=31536000, immutable",
+                    "Content-Length": String(r2Object.size),
+                    "Content-Type": r2Object.contentType,
+                },
+            });
+        }
+
         const filePath = resolveUploadFilePath(segments);
 
         if (!filePath) {
@@ -60,8 +69,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         }
 
         const fileBuffer = await readFile(filePath);
-        const extension = path.extname(filePath).toLowerCase();
-        const contentType = CONTENT_TYPES[extension] ?? "application/octet-stream";
+        const contentType = getContentTypeFromFilename(filePath);
 
         return new NextResponse(new Uint8Array(fileBuffer), {
             status: 200,

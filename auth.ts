@@ -1,11 +1,19 @@
 import { mysqlNow } from "@/lib/utils/date";
-import NextAuth from "next-auth";
+import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "@/auth.config";
 import { db, auditLogs } from "@/lib/db";
 import { AUDIT_ACTIONS } from "@/lib/auditLog";
 import { authenticateLoginAttempt } from "@/lib/login";
 
+class LoginAttemptError extends CredentialsSignin {
+    code: string;
+
+    constructor(code: string) {
+        super();
+        this.code = code;
+    }
+}
 
 async function logAudit(params: {
     action: string;
@@ -65,7 +73,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
                 });
 
                 if (!result.success) {
-                    throw new Error(result.message);
+                    throw new LoginAttemptError(result.code.toLowerCase());
                 }
 
                 return result.user;

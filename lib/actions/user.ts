@@ -1,7 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { auth } from "@/auth";
 import { createAuditLog, AUDIT_ACTIONS, getChanges } from "@/lib/auditLog";
 import { db, users } from "@/lib/db";
@@ -110,7 +110,28 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
         const updateData: Record<string, any> = {};
 
         if (validatedData.name !== undefined) updateData.name = validatedData.name || null;
-        if (validatedData.email !== undefined) updateData.email = validatedData.email || null;
+        if (validatedData.email !== undefined) {
+            const nextEmail = validatedData.email ? validatedData.email.trim().toLowerCase() : null;
+            if (nextEmail) {
+                const existingEmailUser = await db.query.users.findFirst({
+                    where: and(eq(users.email, nextEmail), ne(users.id, userId)),
+                    columns: { id: true },
+                });
+
+                if (existingEmailUser) {
+                    return {
+                        success: false,
+                        message: "อีเมลนี้ถูกใช้งานแล้ว",
+                        errors: { email: ["อีเมลนี้ถูกใช้งานแล้ว"] },
+                    };
+                }
+            }
+
+            updateData.email = nextEmail;
+            if ((currentUser.email ?? "").trim().toLowerCase() !== (nextEmail ?? "")) {
+                updateData.emailVerified = false;
+            }
+        }
         if (validatedData.phone !== undefined) updateData.phone = validatedData.phone || null;
         if (validatedData.firstName !== undefined) updateData.firstName = validatedData.firstName || null;
         if (validatedData.lastName !== undefined) updateData.lastName = validatedData.lastName || null;

@@ -7,9 +7,14 @@ import {
 
 /**
  * Edge-compatible auth config (no DB / bcrypt imports).
- * Used by middleware.ts for route protection.
+ * Used by proxy.ts for route protection.
  */
+const useSecureCookies =
+    process.env.NODE_ENV === "production" &&
+    process.env.E2E_AUTH_TEST_MODE !== "1";
+
 export const authConfig: NextAuthConfig = {
+    useSecureCookies,
     pages: {
         signIn: "/login",
     },

@@ -4,7 +4,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import AnnouncementPopup from "@/components/AnnouncementPopup";
 
 vi.mock("next/image", () => ({
-  default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => <img {...props} alt={props.alt ?? ""} />,
+  default: (props: React.ImgHTMLAttributes<HTMLImageElement>) => {
+    const { alt = "", ...rest } = props;
+    return React.createElement("img", { ...rest, alt });
+  },
 }));
 
 vi.mock("framer-motion", () => ({

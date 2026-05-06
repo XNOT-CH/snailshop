@@ -2,6 +2,7 @@ import { Resend } from "resend";
 
 const resendApiKey = process.env.RESEND_API_KEY;
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
+const emailFrom = process.env.EMAIL_FROM ?? "onboarding@resend.dev";
 
 export const sendEmail = async ({
     to,
@@ -19,7 +20,7 @@ export const sendEmail = async ({
         }
 
         const { data, error } = await resend.emails.send({
-            from: "onboarding@resend.dev", // Resend default test address
+            from: emailFrom,
             to,
             subject,
             react,

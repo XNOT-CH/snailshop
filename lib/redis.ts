@@ -3,6 +3,13 @@ import { Redis } from "@upstash/redis";
 // สร้าง Redis client - ใช้ environment variables จาก Upstash
 // ถ้าไม่มี credentials จะ return null และระบบจะทำงานโดยไม่ใช้ cache
 function createRedisClient(): Redis | null {
+    if (
+        process.env.E2E_AUTH_TEST_MODE === "1" &&
+        process.env.NODE_ENV !== "production"
+    ) {
+        return null;
+    }
+
     const url = process.env.UPSTASH_REDIS_REST_URL;
     const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 

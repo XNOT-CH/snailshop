@@ -8,6 +8,11 @@ import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { parseBody } from "@/lib/api";
 import { registerSchema } from "@/lib/validations";
 import { verifyTurnstileToken } from "@/lib/security/turnstile";
+import { createEmailVerificationToken } from "@/lib/emailVerification";
+import { sendEmail } from "@/lib/mail";
+import { EmailVerificationEmail } from "@/components/emails/EmailVerificationEmail";
+import { getSiteSettings } from "@/lib/getSiteSettings";
+import { resolveSiteName } from "@/lib/seo";
 
 export async function POST(request: NextRequest) {
     try {
@@ -88,9 +93,33 @@ export async function POST(request: NextRequest) {
             },
         });
 
+        let verificationEmailSent = false;
+        try {
+            const { verificationUrl } = await createEmailVerificationToken({
+                userId: user.id,
+                email,
+            });
+            const siteSettings = await getSiteSettings();
+            const siteName = resolveSiteName(siteSettings?.heroTitle);
+            const emailResult = await sendEmail({
+                to: email,
+                subject: `ยืนยันอีเมล ${siteName}`,
+                react: EmailVerificationEmail({
+                    siteName,
+                    verificationUrl,
+                    recipientName: username,
+                }),
+            });
+            verificationEmailSent = emailResult.success;
+        } catch (emailError) {
+            console.warn("[register] Email verification send failed", emailError);
+        }
+
         return NextResponse.json({
             success: true,
-            message: "สมัครสมาชิกสำเร็จ! เข้าสู่ระบบได้เลย",
+            message: verificationEmailSent
+                ? "สมัครสมาชิกสำเร็จ! กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชี"
+                : "สมัครสมาชิกสำเร็จ! เข้าสู่ระบบได้เลย และสามารถส่งอีเมลยืนยันจากหน้าข้อมูลติดต่อ",
             userId: user.id,
         });
     } catch (error) {

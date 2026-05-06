@@ -2,6 +2,7 @@
 
 import { signOut } from "next-auth/react";
 import { CART_STORAGE_KEY } from "@/components/providers/CartContext";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { showError } from "@/lib/swal";
 
 export function useLogout() {
@@ -15,7 +16,7 @@ export function useLogout() {
 
     return async function logout() {
         try {
-            const response = await fetch("/api/logout", {
+            const response = await fetchWithCsrf("/api/logout", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

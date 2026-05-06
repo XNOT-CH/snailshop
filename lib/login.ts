@@ -3,10 +3,13 @@ import { eq } from "drizzle-orm";
 import { db, users, roles } from "@/lib/db";
 import { getUserPermissions } from "@/lib/permissions";
 import {
+    checkLoginIpRateLimitShared,
     checkLoginRateLimitShared,
     clearLoginAttemptsShared,
     getClientIp,
+    getProgressiveLoginIpDelayShared,
     getProgressiveDelayShared,
+    recordFailedLoginIpShared,
     recordFailedLoginShared,
     sleep,
 } from "@/lib/rateLimit";
@@ -105,6 +108,14 @@ export async function authenticateLoginAttempt({
     const clientIp = resolveLoginIpAddress(request, ipAddress);
 
     if (!parsed.success) {
+        await writeAudit(onAudit, {
+            action: "LOGIN_FAILED",
+            resourceName: typeof payload.username === "string" ? payload.username.trim() : undefined,
+            status: "FAILURE",
+            reason: "ข้อมูลล็อกอินไม่ครบถ้วน",
+            ipAddress: clientIp,
+        });
+
         return {
             success: false,
             status: 400,
@@ -116,10 +127,19 @@ export async function authenticateLoginAttempt({
 
     const { username, password, turnstileToken } = parsed.data;
     const rateLimitUsername = username.toLowerCase();
-    const identifier = `${clientIp}:${rateLimitUsername}`;
+    const userIdentifier = `user:${rateLimitUsername}`;
+    const ipIdentifier = clientIp;
 
     const turnstileResult = await verifyTurnstileToken(turnstileToken ?? undefined, clientIp);
     if (!turnstileResult.success) {
+        await writeAudit(onAudit, {
+            action: "LOGIN_FAILED",
+            resourceName: username,
+            status: "FAILURE",
+            reason: "Turnstile verification failed",
+            ipAddress: clientIp,
+        });
+
         return {
             success: false,
             status: 400,
@@ -129,18 +149,48 @@ export async function authenticateLoginAttempt({
         };
     }
 
-    const rateLimit = await checkLoginRateLimitShared(identifier);
-    if (rateLimit.blocked) {
+    const ipRateLimit = await checkLoginIpRateLimitShared(ipIdentifier);
+    if (ipRateLimit.blocked) {
+        await writeAudit(onAudit, {
+            action: "LOGIN_FAILED",
+            resourceName: username,
+            status: "FAILURE",
+            reason: "IP rate limited",
+            ipAddress: clientIp,
+        });
+
         return {
             success: false,
             status: 429,
             code: "RATE_LIMITED",
-            message: rateLimit.message ?? "ล็อกอินบ่อยเกินไป กรุณาลองใหม่ภายหลัง",
+            message: ipRateLimit.message ?? "ล็อกอินบ่อยเกินไป กรุณาลองใหม่ภายหลัง",
             ipAddress: clientIp,
         };
     }
 
-    const delay = await getProgressiveDelayShared(identifier);
+    const userRateLimit = await checkLoginRateLimitShared(userIdentifier);
+    if (userRateLimit.blocked) {
+        await writeAudit(onAudit, {
+            action: "LOGIN_FAILED",
+            resourceName: username,
+            status: "FAILURE",
+            reason: "User rate limited",
+            ipAddress: clientIp,
+        });
+
+        return {
+            success: false,
+            status: 429,
+            code: "RATE_LIMITED",
+            message: userRateLimit.message ?? "ล็อกอินบ่อยเกินไป กรุณาลองใหม่ภายหลัง",
+            ipAddress: clientIp,
+        };
+    }
+
+    const delay = Math.max(
+        await getProgressiveDelayShared(userIdentifier),
+        await getProgressiveLoginIpDelayShared(ipIdentifier)
+    );
     if (delay > 0) {
         await sleep(delay);
     }
@@ -150,7 +200,8 @@ export async function authenticateLoginAttempt({
     });
 
     if (!user) {
-        await recordFailedLoginShared(identifier);
+        await recordFailedLoginShared(userIdentifier);
+        await recordFailedLoginIpShared(ipIdentifier);
         await writeAudit(onAudit, {
             action: "LOGIN_FAILED",
             resourceName: username,
@@ -169,7 +220,8 @@ export async function authenticateLoginAttempt({
 
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-        await recordFailedLoginShared(identifier);
+        await recordFailedLoginShared(userIdentifier);
+        await recordFailedLoginIpShared(ipIdentifier);
         await writeAudit(onAudit, {
             action: "LOGIN_FAILED",
             userId: user.id,
@@ -187,7 +239,7 @@ export async function authenticateLoginAttempt({
         };
     }
 
-    await clearLoginAttemptsShared(identifier);
+    await clearLoginAttemptsShared(userIdentifier);
     await writeAudit(onAudit, {
         action: "LOGIN",
         userId: user.id,

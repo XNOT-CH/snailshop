@@ -30,7 +30,7 @@ export default async function Footer() {
     const siteName = resolveSiteName(siteSettings?.heroTitle);
     const footerWidgetLinks = sanitizePublicFooterLinks(footerWidget.links);
     const menuLinks = [
-        { href: "/", label: "หน้าหลัก", icon: Home },
+        { href: "/home", label: "หน้าหลัก", icon: Home },
         { href: "/shop", label: "สินค้าทั้งหมด", icon: ShoppingBag },
         { href: "/help", label: "ศูนย์ช่วยเหลือ", icon: HelpCircle },
     ];
@@ -46,7 +46,7 @@ export default async function Footer() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="py-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
                     <div className="lg:col-span-1">
-                        <Link href="/" className="inline-flex items-center gap-3 mb-4 group">
+                        <Link href="/home" className="inline-flex items-center gap-3 mb-4 group">
                             {siteSettings?.logoUrl ? (
                                 <Image src={siteSettings.logoUrl} alt="Logo" width={48} height={48} className="h-12 w-12 rounded-xl object-contain shadow-lg ring-2 ring-primary/20 transition-all duration-300 group-hover:ring-primary/50" />
                             ) : (

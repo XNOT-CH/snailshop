@@ -22,6 +22,11 @@ const config = {
         windowMs: 15 * 60 * 1000, // 15 minutes window
         lockoutMs: 30 * 60 * 1000, // 30 minutes lockout
     },
+    loginIp: {
+        maxAttempts: 30,          // Broader IP-based throttle across usernames
+        windowMs: 15 * 60 * 1000,
+        lockoutMs: 15 * 60 * 1000,
+    },
     // General API rate limit
     api: {
         maxRequests: 100,         // Max requests per window
@@ -41,6 +46,11 @@ const config = {
     passwordResetAttempt: {
         maxAttempts: 5,
         windowMs: 30 * 60 * 1000,
+    },
+    // Email verification request
+    emailVerificationRequest: {
+        maxAttempts: 3,
+        windowMs: 15 * 60 * 1000,
     },
     // Chat image uploads
     chatImageUpload: {
@@ -85,7 +95,24 @@ export function checkLoginRateLimit(identifier: string): {
     lockoutRemaining?: number;
     message?: string;
 } {
-    const key = `login:${identifier}`;
+    return checkLoginRateLimitWithConfig(identifier, config.login, "login");
+}
+
+export function checkLoginIpRateLimit(identifier: string): {
+    blocked: boolean;
+    remainingAttempts: number;
+    lockoutRemaining?: number;
+    message?: string;
+} {
+    return checkLoginRateLimitWithConfig(identifier, config.loginIp, "login-ip");
+}
+
+function checkLoginRateLimitWithConfig(
+    identifier: string,
+    limitConfig: typeof config.login,
+    keyPrefix: string
+) {
+    const key = `${keyPrefix}:${identifier}`;
     const now = Date.now();
     const entry = rateLimitStore.get(key);
 
@@ -102,28 +129,28 @@ export function checkLoginRateLimit(identifier: string): {
     }
 
     // Check if window expired, reset if so
-    if (!entry || now - entry.firstAttempt > config.login.windowMs) {
+    if (!entry || now - entry.firstAttempt > limitConfig.windowMs) {
         return {
             blocked: false,
-            remainingAttempts: config.login.maxAttempts,
+            remainingAttempts: limitConfig.maxAttempts,
         };
     }
 
     // Check remaining attempts
-    const remainingAttempts = config.login.maxAttempts - entry.count;
+    const remainingAttempts = limitConfig.maxAttempts - entry.count;
 
     if (remainingAttempts <= 0) {
         // Lock the account
         rateLimitStore.set(key, {
             ...entry,
-            lockedUntil: now + config.login.lockoutMs,
+            lockedUntil: now + limitConfig.lockoutMs,
         });
 
-        const lockoutMinutes = Math.ceil(config.login.lockoutMs / 60000);
+        const lockoutMinutes = Math.ceil(limitConfig.lockoutMs / 60000);
         return {
             blocked: true,
             remainingAttempts: 0,
-            lockoutRemaining: config.login.lockoutMs,
+            lockoutRemaining: limitConfig.lockoutMs,
             message: `ล็อกอินผิดหลายครั้งเกินไป กรุณารอ ${lockoutMinutes} นาที`,
         };
     }
@@ -138,11 +165,23 @@ export function checkLoginRateLimit(identifier: string): {
  * Record a failed login attempt
  */
 export function recordFailedLogin(identifier: string): void {
-    const key = `login:${identifier}`;
+    recordFailedLoginWithConfig(identifier, config.login, "login");
+}
+
+export function recordFailedLoginIp(identifier: string): void {
+    recordFailedLoginWithConfig(identifier, config.loginIp, "login-ip");
+}
+
+function recordFailedLoginWithConfig(
+    identifier: string,
+    limitConfig: typeof config.login,
+    keyPrefix: string
+) {
+    const key = `${keyPrefix}:${identifier}`;
     const now = Date.now();
     const entry = rateLimitStore.get(key);
 
-    if (!entry || now - entry.firstAttempt > config.login.windowMs) {
+    if (!entry || now - entry.firstAttempt > limitConfig.windowMs) {
         // Start new window
         rateLimitStore.set(key, {
             count: 1,
@@ -178,12 +217,38 @@ function getLoginLockMessage(remainingMs: number) {
 }
 
 export async function checkLoginRateLimitShared(identifier: string): Promise<LoginRateLimitResult> {
+    return checkLoginRateLimitSharedWithConfig(
+        identifier,
+        config.login,
+        "login",
+        "login-lock",
+        checkLoginRateLimit
+    );
+}
+
+export async function checkLoginIpRateLimitShared(identifier: string): Promise<LoginRateLimitResult> {
+    return checkLoginRateLimitSharedWithConfig(
+        identifier,
+        config.loginIp,
+        "login-ip",
+        "login-ip-lock",
+        checkLoginIpRateLimit
+    );
+}
+
+async function checkLoginRateLimitSharedWithConfig(
+    identifier: string,
+    limitConfig: typeof config.login,
+    counterPrefix: string,
+    lockPrefix: string,
+    fallback: (identifier: string) => LoginRateLimitResult
+): Promise<LoginRateLimitResult> {
     if (!isRedisAvailable() || !redis) {
-        return checkLoginRateLimit(identifier);
+        return fallback(identifier);
     }
 
-    const counterKey = `login:${identifier}`;
-    const lockKey = `login-lock:${identifier}`;
+    const counterKey = `${counterPrefix}:${identifier}`;
+    const lockKey = `${lockPrefix}:${identifier}`;
 
     try {
         const lockTtlSeconds = await redis.ttl(lockKey);
@@ -198,14 +263,14 @@ export async function checkLoginRateLimitShared(identifier: string): Promise<Log
         }
 
         const count = Number(await redis.get(counterKey) ?? 0);
-        const remainingAttempts = config.login.maxAttempts - count;
+        const remainingAttempts = limitConfig.maxAttempts - count;
         if (remainingAttempts <= 0) {
-            await redis.set(lockKey, "1", { ex: Math.ceil(config.login.lockoutMs / 1000) });
+            await redis.set(lockKey, "1", { ex: Math.ceil(limitConfig.lockoutMs / 1000) });
             return {
                 blocked: true,
                 remainingAttempts: 0,
-                lockoutRemaining: config.login.lockoutMs,
-                message: `ล็อกอินผิดหลายครั้งเกินไป กรุณารอ ${Math.ceil(config.login.lockoutMs / 60000)} นาที`,
+                lockoutRemaining: limitConfig.lockoutMs,
+                message: `ล็อกอินผิดหลายครั้งเกินไป กรุณารอ ${Math.ceil(limitConfig.lockoutMs / 60000)} นาที`,
             };
         }
 
@@ -215,31 +280,57 @@ export async function checkLoginRateLimitShared(identifier: string): Promise<Log
         };
     } catch (error) {
         console.error("Redis login rate limit check failed, falling back to memory store:", error);
-        return checkLoginRateLimit(identifier);
+        return fallback(identifier);
     }
 }
 
 export async function recordFailedLoginShared(identifier: string): Promise<void> {
+    return recordFailedLoginSharedWithConfig(
+        identifier,
+        config.login,
+        "login",
+        "login-lock",
+        recordFailedLogin
+    );
+}
+
+export async function recordFailedLoginIpShared(identifier: string): Promise<void> {
+    return recordFailedLoginSharedWithConfig(
+        identifier,
+        config.loginIp,
+        "login-ip",
+        "login-ip-lock",
+        recordFailedLoginIp
+    );
+}
+
+async function recordFailedLoginSharedWithConfig(
+    identifier: string,
+    limitConfig: typeof config.login,
+    counterPrefix: string,
+    lockPrefix: string,
+    fallback: (identifier: string) => void
+): Promise<void> {
     if (!isRedisAvailable() || !redis) {
-        recordFailedLogin(identifier);
+        fallback(identifier);
         return;
     }
 
-    const counterKey = `login:${identifier}`;
-    const lockKey = `login-lock:${identifier}`;
+    const counterKey = `${counterPrefix}:${identifier}`;
+    const lockKey = `${lockPrefix}:${identifier}`;
 
     try {
         const newCount = await redis.incr(counterKey);
         if (newCount === 1) {
-            await redis.expire(counterKey, Math.ceil(config.login.windowMs / 1000));
+            await redis.expire(counterKey, Math.ceil(limitConfig.windowMs / 1000));
         }
 
-        if (newCount >= config.login.maxAttempts) {
-            await redis.set(lockKey, "1", { ex: Math.ceil(config.login.lockoutMs / 1000) });
+        if (newCount >= limitConfig.maxAttempts) {
+            await redis.set(lockKey, "1", { ex: Math.ceil(limitConfig.lockoutMs / 1000) });
         }
     } catch (error) {
         console.error("Redis login failure record failed, falling back to memory store:", error);
-        recordFailedLogin(identifier);
+        fallback(identifier);
     }
 }
 
@@ -258,19 +349,31 @@ export async function clearLoginAttemptsShared(identifier: string): Promise<void
 }
 
 export async function getProgressiveDelayShared(identifier: string): Promise<number> {
+    return getProgressiveDelaySharedWithPrefix(identifier, "login", getProgressiveDelay);
+}
+
+export async function getProgressiveLoginIpDelayShared(identifier: string): Promise<number> {
+    return getProgressiveDelaySharedWithPrefix(identifier, "login-ip", getProgressiveLoginIpDelay);
+}
+
+async function getProgressiveDelaySharedWithPrefix(
+    identifier: string,
+    keyPrefix: string,
+    fallback: (identifier: string) => number
+): Promise<number> {
     if (!isRedisAvailable() || !redis) {
-        return getProgressiveDelay(identifier);
+        return fallback(identifier);
     }
 
     try {
-        const count = Number(await redis.get(`login:${identifier}`) ?? 0);
+        const count = Number(await redis.get(`${keyPrefix}:${identifier}`) ?? 0);
         if (count <= 0) return 0;
 
         const delaySeconds = Math.pow(2, Math.min(count - 1, 5));
         return delaySeconds * 1000;
     } catch (error) {
         console.error("Redis login delay lookup failed, falling back to memory store:", error);
-        return getProgressiveDelay(identifier);
+        return fallback(identifier);
     }
 }
 
@@ -451,6 +554,35 @@ export async function checkPasswordResetAttemptRateLimitShared(identifier: strin
     }
 
     return checkPasswordResetAttemptRateLimit(identifier);
+}
+
+export async function checkEmailVerificationRequestRateLimitShared(identifier: string): Promise<{
+    blocked: boolean;
+    remainingAttempts: number;
+    retryAfter?: number;
+    message?: string;
+}> {
+    const distributed = await checkDistributedWindowRateLimit(
+        `email-verification-request:${identifier}`,
+        config.emailVerificationRequest.maxAttempts,
+        config.emailVerificationRequest.windowMs,
+    );
+
+    const result = distributed ?? checkWindowRateLimit(
+        `email-verification-request:${identifier}`,
+        config.emailVerificationRequest.maxAttempts,
+        config.emailVerificationRequest.windowMs,
+    );
+
+    if (!result.blocked) {
+        return result;
+    }
+
+    const retryAfterMinutes = Math.max(1, Math.ceil((result.retryAfter ?? 0) / 60000));
+    return {
+        ...result,
+        message: `ส่งอีเมลยืนยันบ่อยเกินไป กรุณารอประมาณ ${retryAfterMinutes} นาที`,
+    };
 }
 
 export function checkChatImageUploadRateLimit(identifier: string): {
@@ -731,7 +863,14 @@ export function getClientIp(request: Request): string {
  * Returns delay in milliseconds
  */
 export function getProgressiveDelay(identifier: string): number {
-    const key = `login:${identifier}`;
+    return getProgressiveDelayForKey(`login:${identifier}`);
+}
+
+export function getProgressiveLoginIpDelay(identifier: string): number {
+    return getProgressiveDelayForKey(`login-ip:${identifier}`);
+}
+
+function getProgressiveDelayForKey(key: string): number {
     const entry = rateLimitStore.get(key);
 
     if (!entry) return 0;

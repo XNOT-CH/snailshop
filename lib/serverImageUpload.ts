@@ -3,6 +3,7 @@ import path from "node:path";
 import { existsSync } from "node:fs";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import sharp from "sharp";
+import { deleteUploadObject, putUploadObject, storageKeyFromPublicUrl } from "@/lib/cloudflareStorage";
 import { getLegacyPublicUploadDir } from "@/lib/runtimeUploads";
 
 const IMAGE_SIGNATURES = {
@@ -142,17 +143,22 @@ export async function optimizeImageUpload(
 export async function saveOptimizedImageUpload(file: File, options: SaveOptimizedUploadOptions) {
     const { uploadDir, publicPath, ...optimizeOptions } = options;
     const optimized = await optimizeImageUpload(file, optimizeOptions);
+    const url = `${publicPath}/${optimized.filename}`;
+    const storageKey = storageKeyFromPublicUrl(url);
 
-    if (!existsSync(uploadDir)) {
-        await mkdir(uploadDir, { recursive: true });
+    const savedToR2 = await putUploadObject(storageKey, optimized.buffer, optimized.mimeType);
+    if (!savedToR2) {
+        if (!existsSync(uploadDir)) {
+            await mkdir(uploadDir, { recursive: true });
+        }
+
+        await writeFile(path.join(uploadDir, optimized.filename), optimized.buffer);
     }
-
-    await writeFile(path.join(uploadDir, optimized.filename), optimized.buffer);
 
     return {
         filename: optimized.filename,
         mimeType: optimized.mimeType,
-        url: `${publicPath}/${optimized.filename}`,
+        url,
     };
 }
 
@@ -210,6 +216,11 @@ export async function deleteManagedUpload(
 
     const filePaths = resolveManagedUploadPaths(fileUrl, uploadDir, publicPath, fallbackUploadDirs);
     let deleted = false;
+    const storageKey = storageKeyFromPublicUrl(fileUrl);
+
+    if (await deleteUploadObject(storageKey)) {
+        deleted = true;
+    }
 
     for (const filePath of filePaths) {
         if (!existsSync(filePath)) {

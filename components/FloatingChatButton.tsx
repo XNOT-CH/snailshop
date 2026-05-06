@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { ChangeEvent, KeyboardEvent, useEffect, useRef, useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
 import { ImagePlus, Loader2, LockKeyhole, Send } from "lucide-react";
@@ -313,9 +314,11 @@ export function FloatingChatButton() {
                         <ScrollArea className="relative min-h-0 flex-1 p-3 sm:p-4">
                             {/* Watermark */}
                             <div className="pointer-events-none absolute inset-0 z-0 flex items-center justify-center">
-                                <img
+                                <Image
                                     src="/chat-snail.png"
                                     alt=""
+                                    width={192}
+                                    height={192}
                                     className="h-40 w-40 object-contain opacity-[0.07] sm:h-48 sm:w-48"
                                     draggable={false}
                                 />

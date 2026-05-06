@@ -13,6 +13,41 @@ import { TurnstileWidget } from "@/components/TurnstileWidget";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Eye, EyeOff, Gamepad2 } from "lucide-react";
 
+const E2E_TURNSTILE_BYPASS_TOKEN = "__e2e_turnstile_bypass__";
+
+const LOGIN_ERROR_MESSAGES: Record<string, string> = {
+    invalid_payload: "กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบถ้วน",
+    turnstile_failed: "การยืนยันความปลอดภัยไม่สำเร็จ กรุณาลองใหม่อีกครั้ง",
+    rate_limited: "ล็อกอินบ่อยเกินไป กรุณาลองใหม่ภายหลัง",
+    invalid_credentials: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
+    credentials: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
+};
+
+function getLoginErrorMessage(error?: string, code?: string) {
+    if (code && LOGIN_ERROR_MESSAGES[code]) {
+        return LOGIN_ERROR_MESSAGES[code];
+    }
+
+    if (error === "CredentialsSignin") {
+        return LOGIN_ERROR_MESSAGES.credentials;
+    }
+
+    return error || "เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่";
+}
+
+function getSafeLoginRedirectUrl(value: string | null | undefined, fallback: string) {
+    if (!value) {
+        return fallback;
+    }
+
+    try {
+        const url = new URL(value, globalThis.location.origin);
+        return normalizeCallbackUrl(`${url.pathname}${url.search}${url.hash}`);
+    } catch {
+        return fallback;
+    }
+}
+
 interface LoginFormProps {
     readonly logoUrl: string | null;
     readonly turnstileConfigError?: string | null;
@@ -27,7 +62,12 @@ export function LoginForm({ logoUrl, turnstileConfigError = null }: Readonly<Log
     const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
     const [formData, setFormData] = useState({ username: "", password: "" });
     const callbackUrl = normalizeCallbackUrl(searchParams.get("callbackUrl"));
-    const hasTurnstile = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY);
+    const e2eTurnstileToken =
+        process.env.NEXT_PUBLIC_E2E_AUTH_TEST_MODE === "1" &&
+            process.env.NODE_ENV !== "production"
+            ? E2E_TURNSTILE_BYPASS_TOKEN
+            : null;
+    const hasTurnstile = Boolean(process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY) && !e2eTurnstileToken;
 
     const handleTurnstileChange = useCallback((token: string | null) => {
         setTurnstileToken(token);
@@ -50,15 +90,15 @@ export function LoginForm({ logoUrl, turnstileConfigError = null }: Readonly<Log
             const result = await signIn("credentials", {
                 username: formData.username,
                 password: formData.password,
-                turnstileToken,
+                turnstileToken: e2eTurnstileToken ?? turnstileToken,
                 callbackUrl,
                 redirect: false,
             });
 
             if (result?.error) {
-                showError(result.error);
+                showError(getLoginErrorMessage(result.error, result.code));
             } else if (result?.url) {
-                globalThis.location.href = result.url;
+                globalThis.location.href = getSafeLoginRedirectUrl(result.url, callbackUrl);
             } else {
                 globalThis.location.href = callbackUrl;
             }
