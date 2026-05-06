@@ -35,7 +35,7 @@ npm run ops:reconcile-commerce
 ถ้าต้องการดูย้อนหลังมากกว่า 24 ชั่วโมง:
 
 ```bash
-node scripts/reconcile-commerce.mjs --hours 72
+node scripts/ops/reconcile-commerce.mjs --hours 72
 ```
 
 สคริปต์นี้เป็น `read-only` ไม่แก้ข้อมูลเอง และจะรายงาน:

@@ -14,7 +14,7 @@ export default defineConfig({
     ? undefined
     : {
         command:
-          `node -e "process.env.E2E_AUTH_TEST_MODE='1';process.env.NEXT_PUBLIC_E2E_AUTH_TEST_MODE='1';process.env.PORT='${e2ePort}';import('./scripts/run-next-dev.mjs')"`,
+          `node -e "process.env.E2E_AUTH_TEST_MODE='1';process.env.NEXT_PUBLIC_E2E_AUTH_TEST_MODE='1';process.env.PORT='${e2ePort}';import('./scripts/dev/run-next-dev.mjs')"`,
         url: baseURL,
         reuseExistingServer: !process.env.CI,
         timeout: 120_000,

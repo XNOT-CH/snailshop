@@ -8,6 +8,8 @@ This folder contains human-facing project docs, runbooks, and DB notes.
   Broad project reference
 - `database/`
   DB plans and SQL
+- `planning/`
+  Requirements, roadmaps, testing plans, and future implementation plans
 - `runbooks/`
   Operational procedures
 
