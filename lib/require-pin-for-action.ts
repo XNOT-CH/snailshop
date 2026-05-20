@@ -1,11 +1,14 @@
 "use client";
 
+import { requestProfile } from "@/lib/client/accountClient";
 import { showErrorAlert, showPinPrompt } from "@/lib/swal";
 
 export async function requirePinForAction(actionLabel: string) {
     try {
-        const response = await fetch("/api/profile");
-        const data = await response.json();
+        const { data } = await requestProfile<{
+            hasPin?: boolean;
+            pinLockedUntil?: string | null;
+        }>();
 
         if (!data.success || !data.data?.hasPin) {
             return { allowed: true, pin: null } as const;

@@ -6,12 +6,13 @@ import { validateBody } from "@/lib/validations/validate";
 import { gachaRewardPatchSchema } from "@/lib/validations/gacha";
 import { PERMISSIONS } from "@/lib/permissions";
 import { disableMachineIfProbabilityInvalid } from "@/lib/gachaMachineProbability";
+import { gachaApiError, gachaApiSuccess } from "@/lib/features/gacha/apiResponse";
 
 interface RouteParams { params: Promise<{ id: string }> }
 
 export async function PUT(request: Request, { params }: RouteParams) {
     const authCheck = await requirePermission(PERMISSIONS.GACHA_EDIT);
-    if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    if (!authCheck.success) return gachaApiError(authCheck.error, { status: 401 });
     try {
         const { id } = await params;
         const existingReward = await db.query.gachaRewards.findFirst({
@@ -53,15 +54,15 @@ export async function PUT(request: Request, { params }: RouteParams) {
             await disableMachineIfProbabilityInvalid(machineId);
         }
         const updated = await db.query.gachaRewards.findFirst({ where: eq(gachaRewards.id, id) });
-        return NextResponse.json({ success: true, data: updated });
+        return gachaApiSuccess(updated);
     } catch (error) {
-        return NextResponse.json({ success: false, message: `เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : "Unknown"}` }, { status: 500 });
+        return gachaApiError(`เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : "Unknown"}`, { status: 500 });
     }
 }
 
 export async function DELETE(_request: Request, { params }: RouteParams) {
     const authCheck = await requirePermission(PERMISSIONS.GACHA_EDIT);
-    if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    if (!authCheck.success) return gachaApiError(authCheck.error, { status: 401 });
     try {
         const { id } = await params;
         const existingReward = await db.query.gachaRewards.findFirst({
@@ -76,6 +77,6 @@ export async function DELETE(_request: Request, { params }: RouteParams) {
         }
         return NextResponse.json({ success: true });
     } catch (error) {
-        return NextResponse.json({ success: false, message: `เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : "Unknown"}` }, { status: 500 });
+        return gachaApiError(`เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : "Unknown"}`, { status: 500 });
     }
 }

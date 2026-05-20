@@ -34,7 +34,30 @@ vi.mock("drizzle-orm", () => ({
   eq: vi.fn(), and: vi.fn(), gte: vi.fn(), lte: vi.fn(), sum: vi.fn(), count: vi.fn(), sql: vi.fn(),
 }));
 
-vi.mock("@/lib/auth", () => ({ isAdmin: vi.fn() }));
+const { isAdminMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+  isAuthenticated: vi.fn(async () => {
+    const { auth } = await import("@/auth");
+    const session = await auth();
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+    return { success: true, userId: session.user.id, user: session.user };
+  }),
+  isAuthenticatedWithCsrf: vi.fn(async () => {
+    const { auth } = await import("@/auth");
+    const session = await auth();
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+    return { success: true, userId: session.user.id, user: session.user };
+  }),
+}));
 
 vi.mock("@/lib/auditLog", () => ({
   auditFromRequest: vi.fn(),
@@ -43,6 +66,7 @@ vi.mock("@/lib/auditLog", () => ({
 
 vi.mock("@/lib/utils/date", () => ({
   mysqlNow: vi.fn(() => "2026-01-01 00:00:00"),
+  toMySQLDatetime: vi.fn(() => "2026-01-01 00:00:00"),
 }));
 
 vi.mock("node:fs/promises", () => ({
@@ -140,13 +164,18 @@ describe("API: /api/user/settings (PATCH)", () => {
 // Topup
 // ═══════════════════════════════════════
 describe("API: /api/topup (POST)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (auth as any).mockResolvedValue({ user: { id: "u1" } });
+  });
 
   it("returns 400 when no proof image", async () => {
     const { POST } = await import("@/app/api/topup/route");
+    const formData = new FormData();
+    formData.set("amount", "100");
     const req = new NextRequest("http://localhost/api/topup", {
       method: "POST",
-      body: JSON.stringify({}),
+      body: formData,
     });
     const res = await POST(req);
     expect(res.status).toBe(400);
@@ -163,14 +192,17 @@ describe("API: /api/topup (POST)", () => {
     expect(res.status).toBe(401);
   });
 
-  it("returns 413 when proof image is too large", async () => {
+  it("returns 400 when base64 proof image is too large", async () => {
     const { POST } = await import("@/app/api/topup/route");
-    const largeBase64 = "A".repeat((5 * 1024 * 1024 * 4) / 3 + 8);
+    const largeBase64 = Buffer.alloc(4 * 1024 * 1024 + 1).toString("base64");
+    const formData = new FormData();
+    formData.set("amount", "100");
+    formData.set("base64", largeBase64);
     const req = new NextRequest("http://localhost/api/topup", {
       method: "POST",
-      body: JSON.stringify({ proofImage: `data:image/jpeg;base64,${largeBase64}` }),
+      body: formData,
     });
     const res = await POST(req);
-    expect(res.status).toBe(413);
+    expect(res.status).toBe(400);
   });
 });

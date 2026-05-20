@@ -19,7 +19,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ found: false }, { status: 404 });
         }
 
-        const stockCount = getProductStockCount(product.secretData, product.stockSeparator);
+        const stockCount = product.stockCount ?? getProductStockCount(product.secretData, product.stockSeparator);
 
         return NextResponse.json({
             found: true,

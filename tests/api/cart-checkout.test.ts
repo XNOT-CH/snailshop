@@ -3,20 +3,36 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 
-vi.mock("@/lib/db", () => ({
-  db: {
-    $client: { getConnection: vi.fn() },
-    query: { users: { findFirst: vi.fn() } },
-    insert: vi.fn().mockReturnValue({ values: vi.fn() }),
-    update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
-    select: vi.fn().mockReturnValue({ from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }) }),
-  },
-  users: { id: "id", creditBalance: "creditBalance", pointBalance: "pointBalance" },
-  products: { id: "id", isSold: "isSold" },
-  orders: { id: "id" },
-  promoCodes: { id: "id", usedCount: "usedCount" },
-  promoUsages: { id: "id" },
+vi.mock("@/lib/auth", () => ({
+  isAuthenticatedWithCsrf: vi.fn(async () => {
+    const { auth } = await import("@/auth");
+    const session = await auth();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+    return { success: true, userId: session.user.id, user: session.user };
+  }),
 }));
+
+vi.mock("@/lib/db", () => {
+  const getConnection = vi.fn();
+
+  return {
+    db: {
+      $client: { getConnection },
+      query: { users: { findFirst: vi.fn() } },
+      insert: vi.fn().mockReturnValue({ values: vi.fn() }),
+      update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
+      select: vi.fn().mockReturnValue({ from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }) }),
+    },
+    rawDbPool: { getConnection },
+    users: { id: "id", creditBalance: "creditBalance", pointBalance: "pointBalance" },
+    products: { id: "id", isSold: "isSold" },
+    orders: { id: "id" },
+    promoCodes: { id: "id", usedCount: "usedCount" },
+    promoUsages: { id: "id" },
+  };
+});
 
 vi.mock("drizzle-orm", () => ({ eq: vi.fn(), inArray: vi.fn(), sql: Object.assign(vi.fn(), { join: vi.fn(() => ({})) }) }));
 vi.mock("@/lib/mail", () => ({ sendEmail: vi.fn().mockResolvedValue({}) }));
@@ -81,7 +97,10 @@ const mockCheckoutConnection = (products: any[], promoRow?: any) => {
 };
 
 describe("API: /api/cart/checkout (POST)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (auth as any).mockResolvedValue({ user: { id: "u1", email: null } });
+  });
 
   // ── validation ──────────────────────────────────────────────────────────
   it("returns 400 when productIds is missing", async () => {
@@ -412,8 +431,8 @@ describe("API: /api/cart/checkout (POST)", () => {
 
     expect(res.status).toBe(200);
     expect(conn.execute).toHaveBeenCalledWith(
-      "UPDATE Product SET secretData = ?, isSold = ?, orderId = ?, scheduledDeleteAt = ? WHERE id = ?",
-      ["", 1, expect.any(String), null, "p1"],
+      "UPDATE Product SET secretData = ?, stockCount = ?, isSold = ?, orderId = ?, scheduledDeleteAt = ? WHERE id = ?",
+      ["", 0, 1, expect.any(String), null, "p1"],
     );
   });
 });

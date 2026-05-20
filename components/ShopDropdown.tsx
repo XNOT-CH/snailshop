@@ -44,6 +44,7 @@ export function ShopDropdown({ categories }: Readonly<ShopDropdownProps>) {
                     {/* All products link */}
                     <Link
                         href="/shop"
+                        prefetch={false}
                         onClick={() => setOpen(false)}
                         className="flex w-full items-center gap-2.5 border-b border-border/60 px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-accent/65"
                     >
@@ -60,6 +61,7 @@ export function ShopDropdown({ categories }: Readonly<ShopDropdownProps>) {
                                 <Link
                                     key={cat}
                                     href={`/shop?category=${encodeURIComponent(cat)}`}
+                                    prefetch={false}
                                     onClick={() => setOpen(false)}
                                     className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm text-muted-foreground transition-colors hover:bg-accent/65 hover:text-foreground"
                                 >

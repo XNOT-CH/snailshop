@@ -7,23 +7,24 @@ import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
 import { popupSchema } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
+import { contentApiError } from "@/lib/features/content/apiResponse";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 export async function GET(_req: Request, { params }: RouteParams) {
     const authCheck = await requirePermission(PERMISSIONS.CONTENT_VIEW);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const { id } = await params;
         const popup = await db.query.announcementPopups.findFirst({ where: eq(announcementPopups.id, id) });
-        if (!popup) return NextResponse.json({ error: "Popup not found" }, { status: 404 });
+        if (!popup) return contentApiError("Popup not found", { status: 404 });
         return NextResponse.json(popup);
-    } catch { return NextResponse.json({ error: "Failed to fetch popup" }, { status: 500 }); }
+    } catch { return contentApiError("Failed to fetch popup", { status: 500 }); }
 }
 
 export async function PUT(request: Request, { params }: RouteParams) {
     const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const { id } = await params;
         const result = await validateBody(request, popupSchema.partial());
@@ -31,7 +32,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
         const { title, imageUrl, linkUrl, sortOrder, isActive, dismissOption } = result.data;
 
         const existing = await db.query.announcementPopups.findFirst({ where: eq(announcementPopups.id, id) });
-        if (!existing) return NextResponse.json({ error: "Popup not found" }, { status: 404 });
+        if (!existing) return contentApiError("Popup not found", { status: 404 });
 
         const newData = {
             title: title || null,
@@ -52,19 +53,19 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
         const updated = await db.query.announcementPopups.findFirst({ where: eq(announcementPopups.id, id) });
         return NextResponse.json(updated);
-    } catch { return NextResponse.json({ error: "Failed to update popup" }, { status: 500 }); }
+    } catch { return contentApiError("Failed to update popup", { status: 500 }); }
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
     const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const { id } = await params;
         const popup = await db.query.announcementPopups.findFirst({ where: eq(announcementPopups.id, id) });
-        if (!popup) return NextResponse.json({ error: "Popup not found" }, { status: 404 });
+        if (!popup) return contentApiError("Popup not found", { status: 404 });
         await db.delete(announcementPopups).where(eq(announcementPopups.id, id));
         await invalidatePopupCaches();
         await auditFromRequest(request, { action: AUDIT_ACTIONS.POPUP_DELETE, resource: "AnnouncementPopup", resourceId: id, details: { title: popup.title || "Untitled" } });
         return NextResponse.json({ success: true });
-    } catch { return NextResponse.json({ error: "Failed to delete popup" }, { status: 500 }); }
+    } catch { return contentApiError("Failed to delete popup", { status: 500 }); }
 }

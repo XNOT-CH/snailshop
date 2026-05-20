@@ -16,6 +16,26 @@ interface RouteParams {
     params: Promise<{ segments: string[] }>;
 }
 
+const MISSING_UPLOAD_IMAGE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"><rect width="96" height="96" rx="18" fill="#eef2f7"/><path d="M27 66h42L56 51l-8 9-6-7-15 13Z" fill="#94a3b8"/><circle cx="36" cy="35" r="7" fill="#cbd5e1"/></svg>`;
+
+function missingUploadImageResponse(filename: string) {
+    const contentType = getContentTypeFromFilename(filename);
+
+    if (!contentType.startsWith("image/")) {
+        return null;
+    }
+
+    return new NextResponse(MISSING_UPLOAD_IMAGE_SVG, {
+        status: 200,
+        headers: {
+            "Cache-Control": "public, max-age=300",
+            "Content-Length": String(Buffer.byteLength(MISSING_UPLOAD_IMAGE_SVG)),
+            "Content-Type": "image/svg+xml; charset=utf-8",
+            "X-Upload-Fallback": "missing-image",
+        },
+    });
+}
+
 function resolveUploadFilePath(segments: string[]) {
     if (segments.length === 0 || !segments.every(isSafeUploadSegment)) {
         return null;
@@ -44,8 +64,9 @@ function resolveUploadFilePath(segments: string[]) {
 export async function GET(_request: NextRequest, { params }: RouteParams) {
     try {
         const { segments } = await params;
+        const filename = segments.at(-1);
 
-        if (segments.length === 0 || !segments.every(isSafeUploadSegment)) {
+        if (segments.length === 0 || !filename || !segments.every(isSafeUploadSegment)) {
             return NextResponse.json({ success: false, message: "File not found" }, { status: 404 });
         }
 
@@ -65,6 +86,11 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         const filePath = resolveUploadFilePath(segments);
 
         if (!filePath) {
+            const fallback = missingUploadImageResponse(filename);
+            if (fallback) {
+                return fallback;
+            }
+
             return NextResponse.json({ success: false, message: "File not found" }, { status: 404 });
         }
 

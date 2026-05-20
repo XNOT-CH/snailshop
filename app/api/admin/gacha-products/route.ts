@@ -13,13 +13,15 @@ export async function GET() {
         const productList = await db.query.products.findMany({
             where: eq(products.isSold, false),
             orderBy: (t, { desc }) => desc(t.createdAt),
-            columns: { id: true, name: true, price: true, imageUrl: true, category: true, secretData: true, stockSeparator: true },
+            columns: { id: true, name: true, price: true, imageUrl: true, category: true, stockCount: true, secretData: true, stockSeparator: true },
         });
         return NextResponse.json({
             success: true,
             data: productList.map((p) => {
-                let stockCount = 0;
-                try { stockCount = getStockCount(decrypt(p.secretData || ""), p.stockSeparator || "newline"); } catch { stockCount = 0; }
+                let stockCount = typeof p.stockCount === "number" ? p.stockCount : 0;
+                if (typeof p.stockCount !== "number") {
+                    try { stockCount = getStockCount(decrypt(p.secretData || ""), p.stockSeparator || "newline"); } catch { stockCount = 0; }
+                }
                 return { id: p.id, name: p.name, price: Number(p.price), imageUrl: p.imageUrl, category: p.category, stockCount };
             }),
         });

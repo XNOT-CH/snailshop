@@ -70,6 +70,34 @@ export function decryptUserSensitiveFields<T extends Record<string, unknown>>(re
     };
 }
 
+export function encryptAddressProfileSensitiveFields<T extends Record<string, unknown>>(record: T): T {
+    return {
+        ...record,
+        ...transformOptionalField(record, "fullName", encryptNullable),
+        ...transformOptionalField(record, "phone", encryptNullable),
+        ...transformOptionalField(record, "address", encryptNullable),
+        ...transformOptionalField(record, "province", encryptNullable),
+        ...transformOptionalField(record, "district", encryptNullable),
+        ...transformOptionalField(record, "subdistrict", encryptNullable),
+        ...transformOptionalField(record, "postalCode", encryptNullable),
+        ...transformOptionalField(record, "taxId", encryptNullable),
+    };
+}
+
+export function decryptAddressProfileSensitiveFields<T extends Record<string, unknown>>(record: T): T {
+    return {
+        ...record,
+        fullName: decryptNullable(record.fullName as string | null | undefined),
+        phone: decryptNullable(record.phone as string | null | undefined),
+        address: decryptNullable(record.address as string | null | undefined),
+        province: decryptNullable(record.province as string | null | undefined),
+        district: decryptNullable(record.district as string | null | undefined),
+        subdistrict: decryptNullable(record.subdistrict as string | null | undefined),
+        postalCode: decryptNullable(record.postalCode as string | null | undefined),
+        taxId: decryptNullable(record.taxId as string | null | undefined),
+    };
+}
+
 export function encryptTopupSensitiveFields<T extends Record<string, unknown>>(record: T): T {
     return {
         ...record,

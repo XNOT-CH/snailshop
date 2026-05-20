@@ -70,9 +70,14 @@ describe("AnnouncementPopup timing dismissal", () => {
     const closeButton = screen.getByRole("button", { name: "ปิด" });
     fireEvent.click(closeButton);
 
-    const dismissedUntil = localStorage.getItem("popup_dismissed_until");
-    expect(dismissedUntil).not.toBeNull();
-    expect(Number(dismissedUntil)).toBe(Date.now() + 60 * 60 * 1000);
+    const dismissState = localStorage.getItem("popup_dismissed_until");
+    expect(dismissState).not.toBeNull();
+    const parsedDismissState = JSON.parse(dismissState ?? "{}") as {
+      dismissUntil?: number;
+      popupIds?: string[];
+    };
+    expect(parsedDismissState.dismissUntil).toBe(Date.now() + 60 * 60 * 1000);
+    expect(parsedDismissState.popupIds).toEqual(["popup-1"]);
 
     firstRender.unmount();
     vi.clearAllMocks();
@@ -86,7 +91,7 @@ describe("AnnouncementPopup timing dismissal", () => {
     await flushPopupCycle(600);
 
     expect(screen.queryByRole("button", { name: "ปิด" })).not.toBeInTheDocument();
-    expect(globalThis.fetch).not.toHaveBeenCalled();
+    expect(globalThis.fetch).toHaveBeenCalledWith("/api/popups");
 
     vi.setSystemTime(new Date("2026-04-11T13:00:01.000Z"));
 
@@ -107,4 +112,17 @@ describe("AnnouncementPopup timing dismissal", () => {
     expect(screen.getByRole("button", { name: "ปิด" })).toBeInTheDocument();
     expect(localStorage.getItem("popup_dismissed_until")).toBeNull();
   }, 10000);
+
+  it("keeps the page quiet when popup fetch fails", async () => {
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    globalThis.fetch = vi.fn().mockRejectedValue(new TypeError("Failed to fetch")) as unknown as typeof fetch;
+
+    render(<AnnouncementPopup />);
+
+    await flushPopupCycle(500);
+
+    expect(screen.queryByRole("button", { name: "ปิด" })).not.toBeInTheDocument();
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
+  });
 });

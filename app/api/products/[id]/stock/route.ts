@@ -82,8 +82,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         }
         // ──────────────────────────────────────────────────────────────
 
-        const hasStock = secretData.trim().length > 0;
-        await updateProductStock(id, secretData, hasStock);
+        await updateProductStock(id, secretData, existingProduct.stockSeparator);
 
         return NextResponse.json({ success: true, message: "Stock updated" });
     } catch (error) {

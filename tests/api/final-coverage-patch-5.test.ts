@@ -5,7 +5,21 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("@/auth",      () => ({ auth: vi.fn() }));
-vi.mock("@/lib/auth",  () => ({ isAdmin: vi.fn(), isAuthenticated: vi.fn() }));
+const { isAdminMock, isAuthenticatedMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+  isAuthenticatedMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth",  () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+  isAuthenticated: isAuthenticatedMock,
+  isAuthenticatedWithCsrf: isAuthenticatedMock,
+}));
 vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-03-14 00:00:00") }));
 vi.mock("@/lib/validations/validate", () => ({ validateBody: vi.fn() }));
 vi.mock("@/lib/cache", () => ({

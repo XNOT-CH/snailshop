@@ -1,7 +1,9 @@
+import { API_ROUTES } from "@/lib/constants/apiRoutes";
+
 let csrfTokenPromise: Promise<string> | null = null;
 
 async function requestCsrfToken() {
-    const response = await fetch("/api/csrf", {
+    const response = await fetch(API_ROUTES.CSRF, {
         method: "GET",
         cache: "no-store",
     });

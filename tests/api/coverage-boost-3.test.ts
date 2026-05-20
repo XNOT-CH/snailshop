@@ -10,8 +10,24 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 // ─── Mocks ────────────────────────────────────────────────────────
-vi.mock("@/lib/auth",  () => ({ isAdmin: vi.fn() }));
-vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-03-14 00:00:00") }));
+vi.mock("@/auth", () => ({ auth: vi.fn().mockResolvedValue(null) }));
+
+const { isAdminMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth",  () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+}));
+vi.mock("@/lib/utils/date", () => ({
+  mysqlNow: vi.fn(() => "2026-03-14 00:00:00"),
+  toMySQLDatetime: vi.fn(() => "2026-03-14 00:00:00"),
+}));
 vi.mock("@/lib/validations/validate", () => ({ validateBody: vi.fn() }));
 vi.mock("@/lib/validations/content", () => ({
   newsItemSchema: {}, popupSchema: { partial: vi.fn().mockReturnValue({}) },

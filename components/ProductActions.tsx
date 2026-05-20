@@ -1,17 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ShoppingCart, Loader2, Plus, Search, Tag } from "lucide-react";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { useCart } from "@/components/providers/CartContext";
-import { showPurchaseConfirm, showPurchaseSuccessModal, showWarning, showErrorAlert } from "@/lib/swal";
+import { showWarning, showErrorAlert } from "@/lib/swal";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 import { formatCurrencyAmount, normalizeCurrencyCode, type PublicCurrencySettings } from "@/lib/currencySettings";
-import { preparePurchase } from "@/lib/prepare-purchase";
 import { themeClasses } from "@/lib/theme";
+import {
+    buildAppliedPromoFromValidation,
+    buildPromoValidationPayload,
+    validatePromoCode,
+} from "@/lib/client/promoCodeClient";
+import { usePurchaseProduct } from "@/hooks/usePurchaseProduct";
 
 interface ProductActionsProps {
     product: {
@@ -34,11 +38,10 @@ export function ProductActions({
     maxQuantity = 99,
     currencySettings,
 }: Readonly<ProductActionsProps>) {
-    const router = useRouter();
     const maintenance = useMaintenanceStatus().purchase;
     const { addToCart, isInCart, isLoading: cartLoading, openCart } = useCart();
+    const { isPurchasing, purchaseProduct } = usePurchaseProduct();
     const [quantity, setQuantity] = useState(1);
-    const [isBuying, setIsBuying] = useState(false);
     const [isAdding, setIsAdding] = useState(false);
     const [promoCode, setPromoCode] = useState("");
     const [isCheckingPromo, setIsCheckingPromo] = useState(false);
@@ -51,6 +54,7 @@ export function ProductActions({
         finalPrice: number | null;
     } | null>(null);
     const inCart = isInCart(product.id);
+    const isBuying = isPurchasing(product.id);
     const normalizedCurrency = normalizeCurrencyCode(product.currency);
     const isPointCurrency = normalizedCurrency === "POINT";
     const hasAppliedPromo = Boolean(appliedPromo);
@@ -74,24 +78,26 @@ export function ProductActions({
         if (!promoCode.trim() || isCheckingPromo) return;
         setIsCheckingPromo(true);
         try {
-            const res = await fetch(`/api/promo-codes/validate`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
+            const data = await validatePromoCode(
+                buildPromoValidationPayload({
                     code: promoCode,
                     totalPrice: basePrice,
                     productCategory: product.category,
                 }),
-            });
-            const data = await res.json();
+            );
             if (data.valid) {
+                const appliedPromoData = buildAppliedPromoFromValidation({
+                    code: promoCode,
+                    data,
+                    fallbackFinalPrice: basePrice,
+                });
                 setAppliedPromo({
-                    code: promoCode.trim().toUpperCase(),
+                    code: appliedPromoData.code,
                     discountType: data.discountType,
                     discountValue: data.discount,
                     maxDiscount: data.maxDiscount,
-                    discountAmount: Number(data.discountAmount ?? 0),
-                    finalPrice: typeof data.finalPrice === "number" ? data.finalPrice : Number(data.finalPrice ?? basePrice),
+                    discountAmount: appliedPromoData.discountAmount,
+                    finalPrice: appliedPromoData.finalPrice,
                 });
                 if (!silent) {
                     showWarning(data.message);
@@ -136,63 +142,23 @@ export function ProductActions({
             ? `<small>โค้ดส่วนลด: <strong>${appliedPromo.code}</strong> (ราคาเดิม ฿${basePrice.toLocaleString()})</small>`
             : `<small>จำนวน: <strong>${quantity}</strong> ชิ้น</small>`;
 
-        const confirmed = await showPurchaseConfirm({
+        await purchaseProduct({
+            productId: product.id,
             productName: product.name,
-            priceText: formatCurrencyAmount(finalPrice, normalizedCurrency, currencySettings),
-            extraHtml: discountLine,
-        });
-
-        if (!confirmed) return;
-
-        const purchaseCheck = await preparePurchase({
-            router,
             amount: finalPrice,
             currency: normalizedCurrency,
             currencySettings,
-            pinActionLabel: "ยืนยัน PIN เพื่อซื้อสินค้า",
+            quantity,
+            promoCode: appliedPromo?.code || undefined,
+            priceText: formatCurrencyAmount(finalPrice, normalizedCurrency, currencySettings),
+            extraHtml: discountLine,
+            onError: async (error) => {
+                await showErrorAlert(
+                    "เกิดข้อผิดพลาด",
+                    error instanceof Error ? error.message : "กรุณาลองใหม่อีกครั้ง"
+                );
+            },
         });
-        if (!purchaseCheck.allowed) return;
-
-        setIsBuying(true);
-
-        try {
-            const response = await fetch("/api/purchase", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    productId: product.id,
-                    quantity,
-                    promoCode: appliedPromo?.code || undefined,
-                    pin: purchaseCheck.pin,
-                }),
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                const result = await showPurchaseSuccessModal({
-                    productName: data.productName,
-                    title: "ซื้อสำเร็จ",
-                    text: "ต้องการเข้าไปดูสินค้าที่ซื้อเลยไหม",
-                    confirmText: "ไปดูสินค้าเลย",
-                    cancelText: "อยู่หน้านี้",
-                    showCancelButton: true,
-                });
-                router.refresh();
-                if (result.isConfirmed) {
-                    router.push("/dashboard/inventory");
-                }
-            } else {
-                showWarning(data.message);
-            }
-        } catch (error) {
-            await showErrorAlert(
-                "เกิดข้อผิดพลาด",
-                error instanceof Error ? error.message : "กรุณาลองใหม่อีกครั้ง"
-            );
-        } finally {
-            setIsBuying(false);
-        }
     };
 
 

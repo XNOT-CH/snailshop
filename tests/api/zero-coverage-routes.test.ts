@@ -9,10 +9,27 @@ import { NextRequest, NextResponse } from "next/server";
 
 // ─── Mocks ────────────────────────────────────────────────────────
 vi.mock("react", () => ({ cache: (fn: unknown) => fn }));
-vi.mock("@/lib/auth", () => ({ isAdmin: vi.fn() }));
-vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-03-14 00:00:00") }));
+const { isAdminMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+}));
+vi.mock("@/lib/utils/date", () => ({
+  mysqlNow: vi.fn(() => "2026-03-14 00:00:00"),
+  toMySQLDatetime: vi.fn(() => "2026-03-14 00:00:00"),
+}));
 vi.mock("@/lib/validations/validate", () => ({ validateBody: vi.fn() }));
 vi.mock("@/lib/validations/gacha", () => ({ gachaRewardSchema: {} }));
+vi.mock("@/lib/gachaMachineProbability", () => ({
+  disableMachineIfProbabilityInvalid: vi.fn().mockResolvedValue(undefined),
+}));
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -25,7 +42,7 @@ vi.mock("@/lib/db", () => ({
     update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue({}) }) }),
     delete: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue({}) }),
   },
-  gachaRewards: { gachaMachineId: "gachaMachineId", id: "id" },
+  gachaRewards: { gachaMachineId: "gachaMachineId", isActive: "isActive", id: "id" },
   promoCodes:   { id: "id", code: "code" },
 }));
 
@@ -88,6 +105,10 @@ describe("API: /api/admin/gacha-rewards (GET + POST)", () => {
     const { GET } = await import("@/app/api/admin/gacha-rewards/route");
     const res = await GET(mkReq("GET"));
     expect(res.status).toBe(401);
+    await expect(res.json()).resolves.toEqual({
+      success: false,
+      message: "Unauthorized",
+    });
   });
 
   it("GET returns all rewards without filter", async () => {
@@ -102,9 +123,25 @@ describe("API: /api/admin/gacha-rewards (GET + POST)", () => {
     const res = await GET(mkReq("GET"));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.data).toHaveLength(1);
-    expect(body.data[0].rewardAmount).toBe(50); // converted to number
+    expect(body).toEqual({
+      success: true,
+      data: [
+        {
+          id: "r1",
+          tier: "GOLD",
+          isActive: true,
+          rewardType: "CREDIT",
+          productId: null,
+          rewardName: "50 Credit",
+          rewardAmount: 50,
+          rewardImageUrl: null,
+          probability: 0.1,
+          product: null,
+          createdAt: "2026-03-14",
+          updatedAt: "2026-03-14",
+        },
+      ],
+    });
   });
 
   it("GET returns rewards filtered by machineId", async () => {
@@ -114,7 +151,7 @@ describe("API: /api/admin/gacha-rewards (GET + POST)", () => {
     const res = await GET(mkReq("GET", undefined, "?machineId=m1"));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.data).toHaveLength(0);
+    expect(body).toEqual({ success: true, data: [] });
   });
 
   it("GET maps reward with product correctly", async () => {
@@ -130,9 +167,25 @@ describe("API: /api/admin/gacha-rewards (GET + POST)", () => {
     const res = await GET(mkReq("GET"));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.data[0].product.price).toBe(500); // converted to number
-    expect(body.data[0].probability).toBe(1); // null → default 1
-    expect(body.data[0].rewardAmount).toBeNull();
+    expect(body).toEqual({
+      success: true,
+      data: [
+        {
+          id: "r1",
+          tier: "SILVER",
+          isActive: true,
+          rewardType: "PRODUCT",
+          productId: "p1",
+          rewardName: null,
+          rewardAmount: null,
+          rewardImageUrl: null,
+          probability: 1,
+          product: { id: "p1", name: "ROV Account", price: 500, imageUrl: "/rov.webp", category: "GAME", isSold: false },
+          createdAt: "2026-03-14",
+          updatedAt: "2026-03-14",
+        },
+      ],
+    });
   });
 
   // ── POST ─────────────────────────────────────────────────────
@@ -141,6 +194,10 @@ describe("API: /api/admin/gacha-rewards (GET + POST)", () => {
     const { POST } = await import("@/app/api/admin/gacha-rewards/route");
     const res = await POST(mkReq("POST", {}));
     expect(res.status).toBe(401);
+    await expect(res.json()).resolves.toEqual({
+      success: false,
+      message: "Unauthorized",
+    });
   });
 
   it("POST creates PRODUCT reward", async () => {
@@ -154,7 +211,10 @@ describe("API: /api/admin/gacha-rewards (GET + POST)", () => {
     const res = await POST(mkReq("POST", {}));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.success).toBe(true);
+    expect(body).toEqual({
+      success: true,
+      data: { id: "r_new", rewardType: "PRODUCT" },
+    });
   });
 
   it("POST returns 400 for PRODUCT type with no productId", async () => {
@@ -165,8 +225,10 @@ describe("API: /api/admin/gacha-rewards (GET + POST)", () => {
     const { POST } = await import("@/app/api/admin/gacha-rewards/route");
     const res = await POST(mkReq("POST", {}));
     expect(res.status).toBe(400);
-    const body = await res.json();
-    expect(body.message).toContain("กรุณาเลือกสินค้า");
+    await expect(res.json()).resolves.toEqual({
+      success: false,
+      message: "กรุณาเลือกสินค้า",
+    });
   });
 
   it("POST creates CREDIT/POINT reward", async () => {
@@ -179,6 +241,10 @@ describe("API: /api/admin/gacha-rewards (GET + POST)", () => {
     const { POST } = await import("@/app/api/admin/gacha-rewards/route");
     const res = await POST(mkReq("POST", {}));
     expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      success: true,
+      data: { id: "r_new", rewardType: "CREDIT" },
+    });
   });
 
   it("POST returns 400 for non-PRODUCT type with no rewardAmount", async () => {
@@ -189,7 +255,10 @@ describe("API: /api/admin/gacha-rewards (GET + POST)", () => {
     const { POST } = await import("@/app/api/admin/gacha-rewards/route");
     const res = await POST(mkReq("POST", {}));
     expect(res.status).toBe(400);
-    expect((await res.json()).message).toContain("จำนวนรางวัล");
+    await expect(res.json()).resolves.toEqual({
+      success: false,
+      message: "กรุณากรอกจำนวนรางวัล",
+    });
   });
 
   it("POST returns 400 for non-PRODUCT type with no rewardName", async () => {
@@ -200,7 +269,10 @@ describe("API: /api/admin/gacha-rewards (GET + POST)", () => {
     const { POST } = await import("@/app/api/admin/gacha-rewards/route");
     const res = await POST(mkReq("POST", {}));
     expect(res.status).toBe(400);
-    expect((await res.json()).message).toContain("ชื่อรางวัล");
+    await expect(res.json()).resolves.toEqual({
+      success: false,
+      message: "กรุณากรอกชื่อรางวัล",
+    });
   });
 });
 

@@ -4,10 +4,9 @@ import { auth } from "@/auth";
 import { db, orders } from "@/lib/db";
 import { eq, and, gte, lte } from "drizzle-orm";
 import { decrypt } from "@/lib/encryption";
+import { toMySQLDatetime } from "@/lib/utils/date";
 
 export const dynamic = "force-dynamic";
-
-const toMySQLDatetime = (d: Date) => d.toISOString().slice(0, 19).replace("T", " ");
 
 export async function GET(request: NextRequest) {
     try {

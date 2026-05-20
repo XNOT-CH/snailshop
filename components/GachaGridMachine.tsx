@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import dynamic from "next/dynamic";
 import { Gamepad2, Gift, Loader2, RotateCcw, Sparkles, X } from "lucide-react";
 import Image from "next/image";
-import { GachaResultModal } from "@/components/GachaResultModal";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
 import { showError } from "@/lib/swal";
@@ -12,15 +12,20 @@ import { EMPTY_USER_BALANCES, getBalanceByCostType, type UserBalances } from "@/
 import { getGachaCostLabel, normalizeGachaCost } from "@/lib/gachaCost";
 import { useRouter } from "next/navigation";
 import { themeClasses } from "@/lib/theme";
+import { STORAGE_KEYS } from "@/lib/constants/storageKeys";
+import { fetchUserBalances } from "@/lib/client/userBalanceClient";
+import {
+    buildGachaGridRollPayload,
+    fetchGachaGridRewards,
+    getPaddedGridRewards,
+    requestGachaGridRoll,
+    type GridReward,
+} from "@/lib/client/gachaGridClient";
 
-interface GridReward {
-    id: string;
-    tier: "common" | "rare" | "epic" | "legendary";
-    rewardType: string;
-    rewardName: string;
-    rewardAmount: number | null;
-    imageUrl: string | null;
-}
+const GachaResultModal = dynamic(
+    () => import("@/components/GachaResultModal").then((mod) => mod.GachaResultModal),
+    { ssr: false }
+);
 
 interface GachaGridMachineProps {
     readonly machineId?: string;
@@ -191,7 +196,10 @@ export function GachaGridMachine({
 }: Readonly<GachaGridMachineProps>) {
     const router = useRouter();
     const currencySettings = useCurrencySettings();
-    const normalizedCost = normalizeGachaCost(costType, costAmount);
+    const normalizedCost = useMemo(
+        () => normalizeGachaCost(costType, costAmount),
+        [costAmount, costType]
+    );
     const [rewards, setRewards] = useState<Array<GridReward | null>>([]);
     const [loading, setLoading] = useState(true);
     const [spinning, setSpinning] = useState(false);
@@ -223,15 +231,9 @@ export function GachaGridMachine({
     const refreshBalances = useCallback(async () => {
         if (normalizedCost.costType === "FREE") return;
         try {
-            const res = await fetch("/api/user/balance", { cache: "no-store" });
-            if (!res.ok) return;
-            const json = await res.json() as ({ success?: boolean } & Partial<UserBalances>);
-            if (!json.success) return;
-            setBalances({
-                creditBalance: Number(json.creditBalance ?? 0),
-                pointBalance: Number(json.pointBalance ?? 0),
-                ticketBalance: Number(json.ticketBalance ?? 0),
-            });
+            const latestBalances = await fetchUserBalances();
+            if (!latestBalances) return;
+            setBalances(latestBalances);
         } catch {
             // Keep current values if refresh fails.
         }
@@ -250,15 +252,9 @@ export function GachaGridMachine({
     const fetchRewards = useCallback(async () => {
         setLoading(true);
         try {
-            const url = machineId
-                ? `/api/gacha/grid/rewards?machineId=${machineId}`
-                : "/api/gacha/grid/rewards";
-            const res = await fetch(url);
-            const json = await res.json() as { success: boolean; data: GridReward[] };
+            const json = await fetchGachaGridRewards(machineId);
             if (json.success) {
-                const limited = (json.data ?? []).filter(Boolean).slice(0, 9);
-                const padded = Array.from({ length: 9 }, (_, index) => limited[index] ?? null);
-                setRewards(padded);
+                setRewards(getPaddedGridRewards(json.data));
             }
         } catch {
             // Keep silent and render fallback state.
@@ -272,12 +268,12 @@ export function GachaGridMachine({
     useEffect(() => () => { clearQueuedTimeouts(); }, [clearQueuedTimeouts]);
     useEffect(() => {
         if (globalThis.window === undefined) return;
-        const saved = globalThis.window.localStorage.getItem("gacha-skip-animation");
+        const saved = globalThis.window.localStorage.getItem(STORAGE_KEYS.GACHA_SKIP_ANIMATION);
         setSkipAnimationEnabled(saved === "true");
     }, []);
     useEffect(() => {
         if (globalThis.window === undefined) return;
-        globalThis.window.localStorage.setItem("gacha-skip-animation", String(skipAnimationEnabled));
+        globalThis.window.localStorage.setItem(STORAGE_KEYS.GACHA_SKIP_ANIMATION, String(skipAnimationEnabled));
     }, [skipAnimationEnabled]);
 
     const handleSpin = useCallback(async () => {
@@ -298,24 +294,7 @@ export function GachaGridMachine({
         setHighlightIdx(null);
 
         try {
-            const res = await fetch("/api/gacha/grid/roll", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ machineId: machineId ?? null }),
-            });
-            const json = await res.json() as {
-                success: boolean;
-                message?: string;
-                data?: {
-                    wonIndex: number;
-                    rewardId: string;
-                    rewardName: string;
-                    rewardType: string;
-                    rewardAmount: number | null;
-                    imageUrl: string | null;
-                    tier: string;
-                };
-            };
+            const json = await requestGachaGridRoll(buildGachaGridRollPayload(machineId));
 
             if (!json.success || !json.data) {
                 showError(json.message ?? "สุ่มไม่สำเร็จ");

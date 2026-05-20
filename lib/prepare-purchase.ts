@@ -8,6 +8,7 @@ import {
     normalizeCurrencyCode,
     type PublicCurrencySettings,
 } from "@/lib/currencySettings";
+import { requestProfile } from "@/lib/client/accountClient";
 import { showWarning } from "@/lib/swal";
 
 type PurchaseProfile = {
@@ -46,8 +47,9 @@ export async function preparePurchase({
     const normalizedCurrency = normalizeCurrencyCode(currency);
 
     try {
-        const response = await fetch("/api/profile", { cache: "no-store" });
-        const data = await response.json();
+        const { response, data } = await requestProfile<PurchaseProfile>({
+            init: { cache: "no-store" },
+        });
 
         if (!response.ok || !data.success || !data.data) {
             showWarning(data.message || "ไม่สามารถตรวจสอบข้อมูลบัญชีได้");

@@ -6,6 +6,7 @@ vi.mock("@/auth", () => ({
 
 vi.mock("@/lib/csrf", () => ({
   getCsrfTokenFromRequest: vi.fn(),
+  validateCsrfRequest: vi.fn(),
   validateCsrfToken: vi.fn(),
 }));
 
@@ -29,7 +30,7 @@ vi.mock("drizzle-orm", () => ({
 }));
 
 import { auth } from "@/auth";
-import { getCsrfTokenFromRequest, validateCsrfToken } from "@/lib/csrf";
+import { getCsrfTokenFromRequest, validateCsrfRequest, validateCsrfToken } from "@/lib/csrf";
 import { db } from "@/lib/db";
 
 describe("lib/auth", () => {
@@ -37,6 +38,7 @@ describe("lib/auth", () => {
     vi.clearAllMocks();
     vi.mocked(db.query.users.findFirst).mockResolvedValue({ id: "u1", role: "ADMIN" } as never);
     vi.mocked(db.query.roles.findFirst).mockResolvedValue({ permissions: null } as never);
+    (validateCsrfRequest as any).mockResolvedValue(true);
   });
 
   describe("isAdmin", () => {
@@ -93,6 +95,7 @@ describe("lib/auth", () => {
     it("returns error if CSRF token missing", async () => {
       (auth as any).mockResolvedValue({ user: { id: "u1", role: "ADMIN" } });
       (getCsrfTokenFromRequest as any).mockReturnValue(null);
+      (validateCsrfRequest as any).mockResolvedValue(false);
       const { isAdminWithCsrf } = await import("@/lib/auth");
       const req = new Request("http://localhost");
       const result = await isAdminWithCsrf(req);
@@ -104,6 +107,7 @@ describe("lib/auth", () => {
       (auth as any).mockResolvedValue({ user: { id: "u1", role: "ADMIN" } });
       (getCsrfTokenFromRequest as any).mockReturnValue("token");
       (validateCsrfToken as any).mockResolvedValue(false);
+      (validateCsrfRequest as any).mockResolvedValue(false);
       const { isAdminWithCsrf } = await import("@/lib/auth");
       const req = new Request("http://localhost");
       const result = await isAdminWithCsrf(req);
@@ -114,6 +118,7 @@ describe("lib/auth", () => {
       (auth as any).mockResolvedValue({ user: { id: "u1", role: "ADMIN" } });
       (getCsrfTokenFromRequest as any).mockReturnValue("token");
       (validateCsrfToken as any).mockResolvedValue(true);
+      (validateCsrfRequest as any).mockResolvedValue(true);
       const { isAdminWithCsrf } = await import("@/lib/auth");
       const req = new Request("http://localhost");
       const result = await isAdminWithCsrf(req);
@@ -134,6 +139,7 @@ describe("lib/auth", () => {
       (auth as any).mockResolvedValue({ user: { id: "u1", role: "USER" } });
       (getCsrfTokenFromRequest as any).mockReturnValue("token");
       (validateCsrfToken as any).mockResolvedValue(true);
+      (validateCsrfRequest as any).mockResolvedValue(true);
       const { isAuthenticatedWithCsrf } = await import("@/lib/auth");
       const req = new Request("http://localhost");
       const result = await isAuthenticatedWithCsrf(req);

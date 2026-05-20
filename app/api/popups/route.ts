@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db, announcementPopups } from "@/lib/db";
 import { eq, asc, desc } from "drizzle-orm";
 import { cacheOrFetch, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
+import { contentApiError } from "@/lib/features/content/apiResponse";
 
 export async function GET() {
     try {
@@ -21,6 +22,6 @@ export async function GET() {
         return NextResponse.json(popups);
     } catch (error) {
         console.error("Error fetching popups:", error);
-        return NextResponse.json({ error: "Failed to fetch popups" }, { status: 500 });
+        return contentApiError("Failed to fetch popups", { status: 500 });
     }
 }

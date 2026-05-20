@@ -7,8 +7,25 @@ import { NextRequest } from "next/server";
 
 // ─── Global Mocks ──────────────────────────────────────────────
 vi.mock("@/auth",      () => ({ auth: vi.fn() }));
-vi.mock("@/lib/auth",  () => ({ isAdmin: vi.fn(), isAuthenticated: vi.fn() }));
-vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-03-14 00:00:00") }));
+const { isAdminMock, isAuthenticatedMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+  isAuthenticatedMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth",  () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+  isAuthenticated: isAuthenticatedMock,
+  isAuthenticatedWithCsrf: isAuthenticatedMock,
+}));
+vi.mock("@/lib/utils/date", () => ({
+  mysqlNow: vi.fn(() => "2026-03-14 00:00:00"),
+  toMySQLDatetime: vi.fn(() => "2026-03-14 00:00:00"),
+}));
 vi.mock("@/lib/validations/validate", () => ({ validateBody: vi.fn() }));
 vi.mock("@/lib/validations", () => ({ registerSchema: {} }));
 vi.mock("@/lib/validations/content", () => ({
@@ -353,6 +370,9 @@ describe("API: /api/admin/promo-codes/[id] (error paths)", () => {
 
   it("PUT returns 400 when code conflicts", async () => {
     (isAdmin as any).mockResolvedValue(ADMIN_OK);
+    (validateBody as any).mockResolvedValue({
+      data: { code: "new20", startsAt: "2026-01-01" },
+    });
     (db.query.promoCodes.findFirst as any)
       .mockResolvedValueOnce({ id: "c1", code: "OLD10" })  // existing
       .mockResolvedValueOnce({ id: "c2", code: "NEW20" });  // conflict

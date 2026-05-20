@@ -35,36 +35,36 @@ describe("lib/swal", () => {
   });
 
   describe("toast functions", () => {
-    it("showSuccess calls fire with success icon", () => {
+    it("showSuccess calls fire with success icon", async () => {
       swalModule.showSuccess("Success message");
-      expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
+      await vi.waitFor(() => expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
         icon: "success",
         title: "Success message"
-      }));
+      })));
     });
 
-    it("showError calls fire with error icon", () => {
+    it("showError calls fire with error icon", async () => {
       swalModule.showError("Error message");
-      expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
+      await vi.waitFor(() => expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
         icon: "error",
         title: "Error message"
-      }));
+      })));
     });
     
-    it("showWarning calls fire with warning icon", () => {
+    it("showWarning calls fire with warning icon", async () => {
       swalModule.showWarning("Warning message");
-      expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
+      await vi.waitFor(() => expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
         icon: "warning",
         title: "Warning message"
-      }));
+      })));
     });
     
-    it("showInfo calls fire with info icon", () => {
+    it("showInfo calls fire with info icon", async () => {
       swalModule.showInfo("Info message");
-      expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
+      await vi.waitFor(() => expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
         icon: "info",
         title: "Info message"
-      }));
+      })));
     });
   });
 
@@ -108,8 +108,8 @@ describe("lib/swal", () => {
       }));
     });
 
-    it("showPurchaseSuccessModal displays success view", () => {
-      swalModule.showPurchaseSuccessModal({ productName: "Game" });
+    it("showPurchaseSuccessModal displays success view", async () => {
+      await swalModule.showPurchaseSuccessModal({ productName: "Game" });
       
       expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
         icon: "success",
@@ -119,12 +119,12 @@ describe("lib/swal", () => {
   });
 
   describe("loading indicators", () => {
-    it("showLoading calls SweetAlert loading", () => {
+    it("showLoading calls SweetAlert loading", async () => {
       swalModule.showLoading("Loading...");
-      expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
+      await vi.waitFor(() => expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
         title: "Loading...",
         allowOutsideClick: false
-      }));
+      })));
       
       // Simulate didOpen
       const fireArgs = mockSwal.fire.mock.calls[0][0];
@@ -133,9 +133,9 @@ describe("lib/swal", () => {
       expect(mockSwal.showLoading).toHaveBeenCalled();
     });
 
-    it("hideLoading calls Swal close", () => {
+    it("hideLoading calls Swal close", async () => {
       swalModule.hideLoading();
-      expect(mockSwal.close).toHaveBeenCalled();
+      await vi.waitFor(() => expect(mockSwal.close).toHaveBeenCalled());
     });
   });
 });

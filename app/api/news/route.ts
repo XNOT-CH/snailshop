@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db, newsArticles } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { cacheOrFetch, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
+import { contentApiError } from "@/lib/features/content/apiResponse";
 
 export async function GET() {
     try {
@@ -17,6 +18,6 @@ export async function GET() {
         return NextResponse.json(news);
     } catch (error) {
         console.error("Error fetching news:", error);
-        return NextResponse.json({ error: "Failed to fetch news" }, { status: 500 });
+        return contentApiError("Failed to fetch news", { status: 500 });
     }
 }

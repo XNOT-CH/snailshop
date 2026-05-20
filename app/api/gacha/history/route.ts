@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { isAuthenticated } from "@/lib/auth";
 import { db, gachaRollLogs } from "@/lib/db";
 import { eq, and, gte, count, sql } from "drizzle-orm";
-
-function toMySQLDatetime(d: Date) { return d.toISOString().slice(0, 19).replace("T", " "); }
+import { toMySQLDatetime } from "@/lib/utils/date";
 
 export async function GET() {
     const authCheck = await isAuthenticated();

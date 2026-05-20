@@ -8,22 +8,23 @@ import { validateBody } from "@/lib/validations/validate";
 import { roleSchema } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
 import { resolveUniqueRoleCode } from "@/lib/roleCode";
+import { contentApiError } from "@/lib/features/content/apiResponse";
 
 export async function GET() {
     const authCheck = await requirePermission(PERMISSIONS.USER_MANAGE_ROLE);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const roleList = await db.query.roles.findMany({ orderBy: (t, { asc }) => [asc(t.sortOrder), asc(t.createdAt)] });
         return NextResponse.json(roleList);
     } catch (error) {
         console.error("Error fetching roles:", error);
-        return NextResponse.json({ error: "Failed to fetch roles" }, { status: 500 });
+        return contentApiError("Failed to fetch roles", { status: 500 });
     }
 }
 
 export async function POST(request: Request) {
     const authCheck = await requirePermission(PERMISSIONS.USER_MANAGE_ROLE);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const result = await validateBody(request, roleSchema);
         if ("error" in result) return result.error;
@@ -55,6 +56,6 @@ export async function POST(request: Request) {
         return NextResponse.json(role, { status: 201 });
     } catch (error) {
         console.error("Error creating role:", error);
-        return NextResponse.json({ error: "Failed to create role" }, { status: 500 });
+        return contentApiError("Failed to create role", { status: 500 });
     }
 }

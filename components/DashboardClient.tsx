@@ -12,6 +12,7 @@ import { DateRangePicker } from "@/components/DateRangePicker";
 import type { DateRange } from "react-day-picker";
 import { subDays, format } from "date-fns";
 import { th } from "date-fns/locale";
+import { formatThaiDateLong } from "@/lib/formatters/date";
 import {
     Wallet,
     Package,
@@ -70,15 +71,6 @@ export function DashboardClient({ }: Readonly<DashboardClientProps>) {
     }, [purchasesDate]);
 
     useEffect(() => { fetchPurchases(); }, [fetchPurchases]);
-
-    // ── Format selected date in Thai ────────────────────
-    const formatThaiDate = (date: Date) =>
-        date.toLocaleDateString("th-TH", {
-            weekday: "long",
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-        });
 
     let topupRangeLabel = "เลือกช่วงวันที่";
     if (topupRange?.from) {
@@ -145,7 +137,7 @@ export function DashboardClient({ }: Readonly<DashboardClientProps>) {
                 <div className="flex items-center justify-between flex-wrap gap-2">
                     <div>
                         <h2 className="text-lg font-semibold text-foreground">📦 สินค้าที่ซื้อ</h2>
-                        <p className="text-sm text-muted-foreground">{formatThaiDate(purchasesDate)}</p>
+                        <p className="text-sm text-muted-foreground">{formatThaiDateLong(purchasesDate)}</p>
                     </div>
                     <DatePicker
                         value={purchasesDate}

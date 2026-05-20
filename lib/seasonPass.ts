@@ -3,7 +3,8 @@ import { getPointCurrencyName, type PublicCurrencySettings } from "@/lib/currenc
 import { db, seasonPassClaims, seasonPassPlans, seasonPassRewards, seasonPassSubscriptions, users } from "@/lib/db";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { SEASON_PASS_REWARD_DAYS } from "@/lib/seasonPassConfig";
-import { formatDateInTimeZone, getFirstDayOfMonthInTimeZone, mysqlDateTimeToIso, mysqlNow, TH_TIME_ZONE } from "@/lib/utils/date";
+import { formatDateInTimeZone, getFirstDayOfMonthInTimeZone, mysqlDateTimeToIso, mysqlNow, TH_TIME_ZONE, toMySQLDatetime } from "@/lib/utils/date";
+import { formatThaiDateShort } from "@/lib/formatters/date";
 
 export type SeasonPassRewardType = "credits" | "points" | "tickets";
 export type SeasonPassRewardStatus = "claimed" | "missed" | "today" | "locked";
@@ -93,10 +94,6 @@ function addDays(date: Date, days: number) {
     return next;
 }
 
-function formatMySqlDateTime(date: Date) {
-    return date.toISOString().slice(0, 19).replace("T", " ");
-}
-
 function parseMySqlDateTime(value: string) {
     return new Date(mysqlDateTimeToIso(value) ?? value);
 }
@@ -110,13 +107,19 @@ function diffDaysByDateKey(from: string, to: string) {
     return Math.floor((dateKeyToUtcMs(to) - dateKeyToUtcMs(from)) / 86_400_000);
 }
 
-function formatThaiDate(value: string) {
-    return parseMySqlDateTime(value).toLocaleDateString("th-TH", {
-        timeZone: TH_TIME_ZONE,
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-    });
+function getEffectiveSeasonPassStartAt(startAt: string, createdAt?: string | null) {
+    if (!createdAt) {
+        return startAt;
+    }
+
+    const startDate = parseMySqlDateTime(startAt);
+    const createdDate = parseMySqlDateTime(createdAt);
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(createdDate.getTime())) {
+        return startAt;
+    }
+
+    return createdDate > startDate ? createdAt : startAt;
 }
 
 function normalizeRewardDefinition(reward: SeasonPassRewardDefinition) {
@@ -350,6 +353,7 @@ export async function getSeasonPassClaims(subscriptionId: string) {
 
 export function buildSeasonPassBoard(params: {
     startAt: string;
+    createdAt?: string | null;
     durationDays: number;
     claims: Awaited<ReturnType<typeof getSeasonPassClaims>>;
     rewardCatalog?: SeasonPassRewardDefinition[];
@@ -357,7 +361,8 @@ export function buildSeasonPassBoard(params: {
 }) {
     const now = params.now ?? new Date();
     const rewardCatalog = params.rewardCatalog ?? DEFAULT_REWARD_CATALOG;
-    const startKey = formatDateInTimeZone(parseMySqlDateTime(params.startAt), TH_TIME_ZONE);
+    const effectiveStartAt = getEffectiveSeasonPassStartAt(params.startAt, params.createdAt);
+    const startKey = formatDateInTimeZone(parseMySqlDateTime(effectiveStartAt), TH_TIME_ZONE);
     const todayKey = formatDateInTimeZone(now, TH_TIME_ZONE);
     const currentDay = Math.min(
         Math.max(diffDaysByDateKey(startKey, todayKey) + 1, 1),
@@ -411,7 +416,7 @@ export async function getSeasonPassDashboardState(userId: string, now?: Date) {
             plan,
             unlocked: false as const,
             latestSubscription,
-            latestEndAtText: latestSubscription?.endAt ? formatThaiDate(latestSubscription.endAt) : null,
+            latestEndAtText: latestSubscription?.endAt ? formatThaiDateShort(latestSubscription.endAt) : null,
             rewardPreview: rewardCatalog.slice(0, 6),
         };
     }
@@ -419,6 +424,7 @@ export async function getSeasonPassDashboardState(userId: string, now?: Date) {
     const claims = await getSeasonPassClaims(activeSubscription.id);
     const boardState = buildSeasonPassBoard({
         startAt: activeSubscription.startAt,
+        createdAt: activeSubscription.createdAt,
         durationDays: plan.durationDays,
         claims,
         rewardCatalog,
@@ -430,14 +436,14 @@ export async function getSeasonPassDashboardState(userId: string, now?: Date) {
         dayNumber: claim.dayNumber,
         rewardLabel: claim.rewardLabel,
         rewardAmount: claim.rewardAmount,
-        dateText: formatThaiDate(claim.createdAt),
+        dateText: formatThaiDateShort(claim.createdAt),
     }));
 
     return {
         plan,
         unlocked: true as const,
         subscription: activeSubscription,
-        endAtText: formatThaiDate(activeSubscription.endAt),
+        endAtText: formatThaiDateShort(activeSubscription.endAt),
         boardState,
         history,
     };
@@ -489,7 +495,7 @@ export async function getAdminSeasonPassOverview(now: Date = new Date()) {
     const rewardCatalog = await getSeasonPassRewardCatalog(plan.id);
     const todayKey = formatDateInTimeZone(now, TH_TIME_ZONE);
     const monthStart = `${getFirstDayOfMonthInTimeZone(now, TH_TIME_ZONE)} 00:00:00`;
-    const expiringSoonThreshold = formatMySqlDateTime(addDays(now, 3));
+    const expiringSoonThreshold = toMySQLDatetime(addDays(now, 3));
 
     await expireSeasonPassSubscriptions();
     await activateQueuedSeasonPassSubscriptions();
@@ -551,6 +557,7 @@ export async function getAdminSeasonPassOverview(now: Date = new Date()) {
             subscriptionId: seasonPassSubscriptions.id,
             userId: seasonPassSubscriptions.userId,
             startAt: seasonPassSubscriptions.startAt,
+            createdAt: seasonPassSubscriptions.createdAt,
             endAt: seasonPassSubscriptions.endAt,
             username: users.username,
             displayName: users.name,
@@ -572,6 +579,7 @@ export async function getAdminSeasonPassOverview(now: Date = new Date()) {
             const claims = await getSeasonPassClaims(subscription.subscriptionId);
             const boardState = buildSeasonPassBoard({
                 startAt: subscription.startAt,
+                createdAt: subscription.createdAt,
                 durationDays: plan.durationDays,
                 claims,
                 rewardCatalog,
@@ -598,7 +606,7 @@ export async function getAdminSeasonPassOverview(now: Date = new Date()) {
                 displayName: subscription.displayName,
                 statusLabel,
                 progressText: `${progressDays}/${plan.durationDays} วัน • รับแล้ว ${boardState.claimedCount}`,
-                expiresAtText: formatThaiDate(subscription.endAt),
+                expiresAtText: formatThaiDateShort(subscription.endAt),
                 note,
             } satisfies AdminSeasonPassOverviewSubscriber;
         }),
@@ -745,9 +753,9 @@ export function calculateSeasonPassDailyResetWindow(params?: { now?: Date }) {
 
 export function getSeasonPassExtensionEndAt(baseEndAt: string | null, durationDays: number) {
     const baseDate = baseEndAt ? parseMySqlDateTime(baseEndAt) : new Date();
-    return formatMySqlDateTime(addDays(baseDate, durationDays));
+    return toMySQLDatetime(addDays(baseDate, durationDays));
 }
 
 export function getSeasonPassInitialEndAt(durationDays: number) {
-    return formatMySqlDateTime(addDays(new Date(), durationDays));
+    return toMySQLDatetime(addDays(new Date(), durationDays));
 }

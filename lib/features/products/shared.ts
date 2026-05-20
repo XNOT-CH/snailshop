@@ -60,6 +60,8 @@ export function validateDiscountPrice(discountPrice: string | number | null | un
 export function buildProductInsertValues(input: Required<Pick<ProductPayloadInput, "title" | "category">> & ProductPayloadInput, priceNumber: number, discountPriceNumber: number | null) {
     const now = mysqlNow();
     const productImages = normalizeProductImages(input.images, input.image);
+    const stockSeparator = input.stockSeparator || "newline";
+    const stockCount = getStockCount(input.secretData || "", stockSeparator);
 
     return {
         id: crypto.randomUUID(),
@@ -72,8 +74,9 @@ export function buildProductInsertValues(input: Required<Pick<ProductPayloadInpu
         currency: input.currency || "THB",
         description: input.description || null,
         secretData: input.secretData ? encrypt(input.secretData) : "",
-        stockSeparator: input.stockSeparator || "newline",
-        isSold: false,
+        stockSeparator,
+        stockCount,
+        isSold: stockCount === 0,
         autoDeleteAfterSale: input.autoDeleteAfterSale ? Number(input.autoDeleteAfterSale) : null,
         createdAt: now,
         updatedAt: now,
@@ -82,6 +85,8 @@ export function buildProductInsertValues(input: Required<Pick<ProductPayloadInpu
 
 export function buildProductUpdateValues(input: ProductPayloadInput, priceNumber: number, discountPriceNumber: number | null) {
     const productImages = normalizeProductImages(input.images, input.image);
+    const stockSeparator = input.stockSeparator || "newline";
+    const stockCount = getStockCount(input.secretData || "", stockSeparator);
 
     return {
         name: input.title,
@@ -93,7 +98,9 @@ export function buildProductUpdateValues(input: ProductPayloadInput, priceNumber
         currency: input.currency || "THB",
         description: input.description || null,
         secretData: encrypt(input.secretData || ""),
-        stockSeparator: input.stockSeparator || "newline",
+        stockSeparator,
+        stockCount,
+        isSold: stockCount === 0,
         autoDeleteAfterSale: input.autoDeleteAfterSale != null && input.autoDeleteAfterSale !== ""
             ? Number(input.autoDeleteAfterSale)
             : null,

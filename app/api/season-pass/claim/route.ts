@@ -2,14 +2,12 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { isAuthenticatedWithCsrf } from "@/lib/auth";
 import { claimSeasonPass } from "@/lib/seasonPassTransactions";
+import { seasonPassApiError } from "@/lib/features/seasonPass/apiResponse";
 
 export async function POST(request: Request) {
     const authCheck = await isAuthenticatedWithCsrf(request);
     if (!authCheck.success || !authCheck.userId) {
-        return NextResponse.json(
-            { success: false, message: authCheck.error ?? "กรุณาเข้าสู่ระบบก่อน" },
-            { status: 401 }
-        );
+        return seasonPassApiError(authCheck.error ?? "กรุณาเข้าสู่ระบบก่อน", { status: 401 });
     }
 
     const session = await auth();
@@ -18,7 +16,7 @@ export async function POST(request: Request) {
 
     const result = await claimSeasonPass({ userId, role, request });
     if (!result.ok) {
-        return NextResponse.json({ success: false, message: result.message }, { status: result.status });
+        return seasonPassApiError(result.message, { status: result.status });
     }
 
     return NextResponse.json(result.body, { status: result.status });

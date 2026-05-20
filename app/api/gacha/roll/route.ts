@@ -1,9 +1,9 @@
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { and, count, eq, gte, inArray, isNotNull, isNull, lte, or } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
 import { isAuthenticatedWithCsrf } from "@/lib/auth";
-import { db, gachaMachines, gachaRewards, gachaRollLogs, products, users } from "@/lib/db";
+import { db, gachaRewards, gachaRollLogs, products } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/encryption";
 import {
     acquireGachaExecutionLock,
@@ -22,13 +22,16 @@ import {
 import { hasExactProbabilityTotal, pickWeightedCandidate } from "@/lib/gachaProbability";
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
+import { checkDailySpinLimit } from "@/lib/features/gacha/limits";
+import { buildGachaChosenRewardId, mapEligibleGachaRewardsToProductLite } from "@/lib/features/gacha/rewards";
+import { getSpinGachaSettings } from "@/lib/features/gacha/settings";
+import { fetchGachaUserOrError } from "@/lib/features/gacha/users";
 import { isRewardEligibleForRoll } from "@/lib/gachaRewardEligibility";
-import { getGachaRewardTypeLabel, normalizeGachaCost } from "@/lib/gachaCost";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkGachaRateLimit, getClientIp } from "@/lib/rateLimit";
 import { isRedisAvailable, redis } from "@/lib/redis";
+import { GACHA_PENDING_COOKIE_NAME } from "@/lib/constants/gacha";
 
-const COOKIE_NAME = "gacha_l_pending";
 const COOKIE_TTL = 300;
 const PENDING_SPIN_PREFIX = "gacha_pending_spin";
 const PENDING_SPIN_LOCK_PREFIX = "gacha_pending_spin_lock";
@@ -66,23 +69,6 @@ function purgeExpiredPendingSpinState(now = Date.now()) {
     }
 }
 
-function toMySQLDatetime(date: Date) {
-    return date.toISOString().slice(0, 19).replace("T", " ");
-}
-
-function getDayRange(date: Date) {
-    const start = new Date(date);
-    start.setHours(0, 0, 0, 0);
-
-    const end = new Date(date);
-    end.setHours(23, 59, 59, 999);
-
-    return {
-        start: toMySQLDatetime(start),
-        end: toMySQLDatetime(end),
-    };
-}
-
 function shouldFallbackProductReward(error: unknown) {
     if (!(error instanceof Error)) {
         return false;
@@ -94,21 +80,6 @@ function shouldFallbackProductReward(error: unknown) {
 
 function buildPendingSpinKey(nonce: string) {
     return `${PENDING_SPIN_PREFIX}:${nonce}`;
-}
-
-function buildChosenRewardId(reward: {
-    id: string;
-    rewardType: string;
-    productId: string | null;
-    product?: {
-        id: string;
-    } | null;
-}) {
-    if (reward.rewardType === "PRODUCT") {
-        return reward.productId ?? reward.product?.id ?? `reward:${reward.id}`;
-    }
-
-    return `reward:${reward.id}`;
 }
 
 async function fetchRewards(machineId: string | null) {
@@ -145,52 +116,20 @@ async function fetchRewards(machineId: string | null) {
 async function fetchTieredProducts(machineId: string | null) {
     const allRewards = await fetchRewards(machineId);
     const currencySettings = await getCurrencySettings().catch(() => null);
-    type RewardRow = (typeof allRewards)[number];
 
-    const tieredProducts: GachaProductLite[] = allRewards
-        .filter((reward: RewardRow) => isRewardEligibleForRoll(reward))
-        .map((reward: RewardRow) =>
-            reward.rewardType === "PRODUCT" && reward.product
-                ? {
-                    id: reward.product.id,
-                    imageUrl: reward.product.imageUrl,
-                    name: reward.product.name,
-                    price: Number(reward.product.price),
-                    tier: (reward.tier as GachaTier) ?? "common",
-                }
-                : {
-                    id: `reward:${reward.id}`,
-                    imageUrl: reward.rewardImageUrl ?? null,
-                    name: reward.rewardName ?? getGachaRewardTypeLabel(reward.rewardType, currencySettings),
-                    price: Number(reward.rewardAmount ?? 0),
-                    tier: (reward.tier as GachaTier) ?? "common",
-                }
-        );
+    const tieredProducts: GachaProductLite[] = mapEligibleGachaRewardsToProductLite(allRewards, currencySettings);
 
     return { allRewards, tieredProducts };
 }
 
-async function fetchUserOrError(userId: string) {
-    const user = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-        columns: { id: true },
-    });
-
-    if (!user) {
-        return { error: "ไม่พบผู้ใช้งาน", status: 404 };
-    }
-
-    return { user };
-}
-
 async function handleSpin1(userId: string, machineId: string | null, costType: string, costAmount: number, dailySpinLimit: number) {
-    const userRes = await fetchUserOrError(userId);
+    const userRes = await fetchGachaUserOrError(userId);
     if ("error" in userRes) {
-        return { error: userRes.error, status: userRes.status };
+        return userRes;
     }
 
     if (dailySpinLimit > 0) {
-        await checkDailySpinLimit(userId, machineId, dailySpinLimit);
+        await checkDailySpinLimit({ userId, machineId, dailySpinLimit });
     }
 
     const { allRewards, tieredProducts } = await fetchTieredProducts(machineId);
@@ -214,7 +153,7 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
         return { error: "ไม่พบรางวัลที่สามารถสุ่มได้", status: 400 };
     }
 
-    const chosenRewardId = buildChosenRewardId(chosenReward);
+    const chosenRewardId = buildGachaChosenRewardId(chosenReward);
     const validLSelectors = allValidLSelectors.filter((candidateLLabel) =>
         ["R1", "R2", "R3", "R4"].some((candidateRLabel) => {
             const tile = getIntersectionTile(tiles, candidateLLabel, candidateRLabel);
@@ -405,7 +344,7 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
 async function persistPendingSpin(pendingPayload: PendingSpinPayload) {
     const payload = encrypt(JSON.stringify(pendingPayload));
     const cookieStore = await cookies();
-    cookieStore.set(COOKIE_NAME, payload, {
+    cookieStore.set(GACHA_PENDING_COOKIE_NAME, payload, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: "strict",
@@ -424,7 +363,7 @@ async function persistPendingSpin(pendingPayload: PendingSpinPayload) {
 
 async function readPendingSpin(userId: string, machineId: string | null) {
     const cookieStore = await cookies();
-    const rawCookie = cookieStore.get(COOKIE_NAME)?.value;
+    const rawCookie = cookieStore.get(GACHA_PENDING_COOKIE_NAME)?.value;
     if (!rawCookie) {
         return { error: "กรุณากดสุ่มครั้งที่ 1 ก่อน", status: 400 };
     }
@@ -437,7 +376,7 @@ async function readPendingSpin(userId: string, machineId: string | null) {
         if (Date.now() - payload.iat > COOKIE_TTL * 1000) throw new Error("expired");
         if ((payload.machineId ?? null) !== machineId) throw new Error("machine mismatch");
     } catch {
-        cookieStore.delete(COOKIE_NAME);
+        cookieStore.delete(GACHA_PENDING_COOKIE_NAME);
         return { error: "เซสชันการสุ่มหมดอายุ กรุณาเริ่มใหม่", status: 400 };
     }
 
@@ -542,9 +481,9 @@ async function handleSpin2(userId: string, machineId: string | null) {
     }
 
     const { lLabel, message, orderId, product, rLabel, selectorLabel } = pendingRes;
-    const userRes = await fetchUserOrError(userId);
+    const userRes = await fetchGachaUserOrError(userId);
     if ("error" in userRes) {
-        return { error: userRes.error, status: userRes.status };
+        return userRes;
     }
 
     return {
@@ -613,7 +552,7 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { costAmount, costType, dailySpinLimit, isEnabled } = await getMachineSettingsOrDefaults(machineId);
+        const { costAmount, costType, dailySpinLimit, isEnabled } = await getSpinGachaSettings(machineId);
 
         if (!isEnabled) {
             return NextResponse.json({ success: false, message: "ระบบกาชาปิดอยู่ชั่วคราว" }, { status: 400 });
@@ -672,58 +611,5 @@ export async function POST(req: Request) {
         );
     } finally {
         await executionLock.release();
-    }
-}
-
-async function getMachineSettingsOrDefaults(machineId: string | null) {
-    if (machineId) {
-        const machine = await db.query.gachaMachines.findFirst({
-            where: eq(gachaMachines.id, machineId),
-            columns: {
-                costAmount: true,
-                costType: true,
-                dailySpinLimit: true,
-                isActive: true,
-                isEnabled: true,
-            },
-        });
-
-        if (!machine) {
-            throw new Error("ไม่พบตู้กาชา");
-        }
-        if (!machine.isActive) {
-            throw new Error("ตู้กาชานี้ปิดอยู่ชั่วคราว");
-        }
-
-        return {
-            ...normalizeGachaCost(machine.costType, machine.costAmount),
-            dailySpinLimit: machine.dailySpinLimit ?? 0,
-            isEnabled: machine.isEnabled ?? true,
-        };
-    }
-
-    const settings = await db.query.gachaSettings.findFirst().catch(() => null);
-    return {
-        ...normalizeGachaCost(settings?.costType ?? "FREE", settings?.costAmount ?? 0),
-        dailySpinLimit: settings?.dailySpinLimit ?? 0,
-        isEnabled: settings?.isEnabled ?? true,
-    };
-}
-
-async function checkDailySpinLimit(userId: string, machineId: string | null, dailySpinLimit: number) {
-    const { end, start } = getDayRange(new Date());
-
-    const [{ count: todayCount }] = await db
-        .select({ count: count() })
-        .from(gachaRollLogs)
-        .where(and(
-            eq(gachaRollLogs.userId, userId),
-            machineId ? eq(gachaRollLogs.gachaMachineId, machineId) : isNull(gachaRollLogs.gachaMachineId),
-            gte(gachaRollLogs.createdAt, start),
-            lte(gachaRollLogs.createdAt, end),
-        ));
-
-    if (Number(todayCount) >= dailySpinLimit) {
-        throw new Error(`คุณสุ่มครบ ${dailySpinLimit} ครั้ง/วันแล้ว`);
     }
 }

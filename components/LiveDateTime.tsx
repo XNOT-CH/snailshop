@@ -2,25 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { CalendarDays, Clock } from "lucide-react";
-
-const THAI_DAYS = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
-const THAI_MONTHS = [
-    "มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน",
-    "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม",
-];
-const THAI_MONTHS_SHORT = [
-    "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
-    "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค.",
-];
-
-function formatThaiDate(date: Date) {
-    const day = THAI_DAYS[date.getDay()];
-    const d = date.getDate();
-    const month = THAI_MONTHS[date.getMonth()];
-    const monthShort = THAI_MONTHS_SHORT[date.getMonth()];
-    const year = date.getFullYear() + 543; // พ.ศ.
-    return { day, d, month, monthShort, year };
-}
+import { getThaiDateParts } from "@/lib/formatters/date";
 
 function formatTime(date: Date) {
     return date.toLocaleTimeString("th-TH", {
@@ -45,7 +27,7 @@ export function LiveDateTime() {
 
     if (!now) return null;
 
-    const { day, d, month, year } = formatThaiDate(now);
+    const { day, d, month, year } = getThaiDateParts(now);
     const time = formatTime(now);
 
     return (

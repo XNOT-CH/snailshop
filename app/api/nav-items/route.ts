@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, navItems } from "@/lib/db";
 import { eq } from "drizzle-orm";
+import { contentApiError } from "@/lib/features/content/apiResponse";
 
 export async function GET() {
     try {
@@ -12,6 +13,6 @@ export async function GET() {
         return NextResponse.json(items);
     } catch (error) {
         console.error("Error fetching active nav items:", error);
-        return NextResponse.json({ error: "Failed to fetch nav items" }, { status: 500 });
+        return contentApiError("Failed to fetch nav items", { status: 500 });
     }
 }

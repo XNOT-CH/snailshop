@@ -16,7 +16,21 @@ import { NextRequest } from "next/server";
 
 // ─── Global mocks ────────────────────────────────────────────────
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
-vi.mock("@/lib/auth", () => ({ isAdmin: vi.fn(), isAuthenticated: vi.fn() }));
+const { isAdminMock, isAuthenticatedMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+  isAuthenticatedMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+  isAuthenticated: isAuthenticatedMock,
+  isAuthenticatedWithCsrf: isAuthenticatedMock,
+}));
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -58,6 +72,7 @@ vi.mock("@/lib/cache", () => ({
 }));
 vi.mock("@/lib/rateLimit", () => ({
   checkRegisterRateLimit: vi.fn(() => ({ blocked: false })),
+  checkTopupRateLimit: vi.fn(() => ({ blocked: false })),
   getClientIp: vi.fn(() => "127.0.0.1"),
 }));
 vi.mock("@/lib/api", () => ({ parseBody: vi.fn() }));
@@ -86,7 +101,7 @@ vi.mock("next/headers", () => ({
 }));
 
 import { auth } from "@/auth";
-import { isAdmin } from "@/lib/auth";
+import { isAdmin, isAuthenticatedWithCsrf } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { parseBody } from "@/lib/api";
 import { cacheOrFetch } from "@/lib/cache";
@@ -97,22 +112,30 @@ import { cacheOrFetch } from "@/lib/cache";
 describe("API: /api/topup (POST) — extended coverage", () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  const mkTopupReq = (body: object) =>
-    new NextRequest("http://localhost/api/topup", {
+  const mkTopupReq = (body: { amount?: number; proofImage?: string; base64?: string; url?: string; payload?: string; pin?: string }) => {
+    const formData = new FormData();
+    formData.set("amount", String(body.amount ?? 100));
+
+    if (body.pin) formData.set("pin", body.pin);
+    if (body.payload) formData.set("payload", body.payload);
+    else if (body.url) formData.set("url", body.url);
+    else formData.set("base64", body.base64 ?? body.proofImage ?? "iVBORw0KGgo=");
+
+    return new NextRequest("http://localhost/api/topup", {
       method: "POST",
-      body: JSON.stringify(body),
-      headers: { "Content-Type": "application/json" },
+      body: formData,
     });
+  };
 
   it("returns 404 when user not found after auth", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1" } });
+    (isAuthenticatedWithCsrf as any).mockResolvedValue({ success: true, userId: "u1" });
     (db.query.users.findFirst as any).mockResolvedValue(null);
 
     // Mock verifySlipWithEasySlip indirectly — we need fetch mock that returns ok status
     global.fetch = vi.fn().mockResolvedValue({
       json: () => Promise.resolve({ status: 200, data: { transRef: "TX001", amount: { amount: 100 }, sender: { bank: { name: "SCB" }, account: { name: { th: "สมชาย" } } }, receiver: { bank: { name: "KBANK" }, account: { name: { th: "ร้านค้า" } } } } }),
     }) as any;
-    process.env.EASYSLIP_TOKEN = "test-token";
+    process.env.EASYSLIP_API_KEY = "test-key";
 
     const { POST } = await import("@/app/api/topup/route");
     const res = await POST(mkTopupReq({ proofImage: "data:image/jpeg;base64,/9j/test" }));
@@ -120,29 +143,31 @@ describe("API: /api/topup (POST) — extended coverage", () => {
   });
 
   it("returns 400 when slip verification fails (invalid_payload)", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1" } });
+    (isAuthenticatedWithCsrf as any).mockResolvedValue({ success: true, userId: "u1" });
     (db.query.users.findFirst as any).mockResolvedValue({ id: "u1", creditBalance: "500", totalTopup: "0" });
 
     global.fetch = vi.fn().mockResolvedValue({
-      json: () => Promise.resolve({ status: 400, message: "invalid_payload" }),
+      status: 400,
+      json: () => Promise.resolve({ success: false, error: { code: "INVALID_IMAGE" } }),
     }) as any;
-    process.env.EASYSLIP_TOKEN = "test-token";
+    process.env.EASYSLIP_API_KEY = "test-key";
 
     const { POST } = await import("@/app/api/topup/route");
     const res = await POST(mkTopupReq({ proofImage: "data:image/jpeg;base64,/9j/test" }));
     expect(res.status).toBe(400);
     const body = await res.json();
-    expect(body.message).toContain("สลิปไม่ถูกต้อง");
+    expect(body.message).toContain("รูปภาพไม่ใช่สลิป");
   });
 
   it("returns 400 when slip is duplicate", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1" } });
+    (isAuthenticatedWithCsrf as any).mockResolvedValue({ success: true, userId: "u1" });
     (db.query.users.findFirst as any).mockResolvedValue({ id: "u1", creditBalance: "500", totalTopup: "0" });
 
     global.fetch = vi.fn().mockResolvedValue({
-      json: () => Promise.resolve({ status: 400, message: "duplicate_slip" }),
+      status: 400,
+      json: () => Promise.resolve({ success: false, error: { code: "duplicate_slip", message: "สลิปนี้เคยใช้แล้ว" } }),
     }) as any;
-    process.env.EASYSLIP_TOKEN = "test-token";
+    process.env.EASYSLIP_API_KEY = "test-key";
 
     const { POST } = await import("@/app/api/topup/route");
     const res = await POST(mkTopupReq({ proofImage: "data:image/jpeg;base64,/9j/test" }));
@@ -152,13 +177,17 @@ describe("API: /api/topup (POST) — extended coverage", () => {
   });
 
   it("returns 400 when amount is zero", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1" } });
+    (isAuthenticatedWithCsrf as any).mockResolvedValue({ success: true, userId: "u1" });
     (db.query.users.findFirst as any).mockResolvedValue({ id: "u1", creditBalance: "500", totalTopup: "0" });
 
     global.fetch = vi.fn().mockResolvedValue({
-      json: () => Promise.resolve({ status: 200, data: { transRef: "TX002", amount: { amount: 0 }, sender: { bank: {}, account: { name: {} } }, receiver: { bank: {}, account: { name: {} } } } }),
+      status: 200,
+      json: () => Promise.resolve({
+        success: true,
+        data: { rawSlip: { transRef: "TX002", amount: { amount: 0 }, sender: { bank: {}, account: { name: {} } }, receiver: { bank: {}, account: { name: {} } } } },
+      }),
     }) as any;
-    process.env.EASYSLIP_TOKEN = "test-token";
+    process.env.EASYSLIP_API_KEY = "test-key";
 
     const { POST } = await import("@/app/api/topup/route");
     const res = await POST(mkTopupReq({ proofImage: "data:image/jpeg;base64,/9j/test" }));
@@ -166,14 +195,18 @@ describe("API: /api/topup (POST) — extended coverage", () => {
   });
 
   it("returns 400 when transactionRef already exists in DB", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1" } });
+    (isAuthenticatedWithCsrf as any).mockResolvedValue({ success: true, userId: "u1" });
     (db.query.users.findFirst as any).mockResolvedValue({ id: "u1", creditBalance: "500", totalTopup: "0" });
     (db.query.topups.findFirst as any).mockResolvedValue({ id: "existing" });
 
     global.fetch = vi.fn().mockResolvedValue({
-      json: () => Promise.resolve({ status: 200, data: { transRef: "TX003", amount: { amount: 200 }, sender: { bank: { name: "SCB" }, account: { name: { th: "ผู้ส่ง" } } }, receiver: { bank: { name: "KBANK" }, account: { name: { th: "ร้าน" } } } } }),
+      status: 200,
+      json: () => Promise.resolve({
+        success: true,
+        data: { rawSlip: { transRef: "TX003", amount: { amount: 200 }, sender: { bank: { name: "SCB" }, account: { name: { th: "ผู้ส่ง" } } }, receiver: { bank: { name: "KBANK" }, account: { name: { th: "ร้าน" } } } } },
+      }),
     }) as any;
-    process.env.EASYSLIP_TOKEN = "test-token";
+    process.env.EASYSLIP_API_KEY = "test-key";
 
     const { POST } = await import("@/app/api/topup/route");
     const res = await POST(mkTopupReq({ proofImage: "data:image/jpeg;base64,/9j/test" }));
@@ -182,33 +215,38 @@ describe("API: /api/topup (POST) — extended coverage", () => {
     expect(body.message).toContain("เคยใช้เติมเงินแล้ว");
   });
 
-  it("returns 500 when EASYSLIP_TOKEN is not configured", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1" } });
+  it("falls back to pending review when EASYSLIP_API_KEY is not configured", async () => {
+    (isAuthenticatedWithCsrf as any).mockResolvedValue({ success: true, userId: "u1" });
     (db.query.users.findFirst as any).mockResolvedValue({ id: "u1", creditBalance: "500", totalTopup: "0" });
 
-    delete process.env.EASYSLIP_TOKEN;
+    delete process.env.EASYSLIP_API_KEY;
 
     const { POST } = await import("@/app/api/topup/route");
     const res = await POST(mkTopupReq({ proofImage: "data:image/jpeg;base64,/9j/test" }));
-    expect(res.status).toBe(500);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.data.status).toBe("PENDING");
   });
 
   it("topup succeeds and returns topup data", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1" } });
+    (isAuthenticatedWithCsrf as any).mockResolvedValue({ success: true, userId: "u1" });
     (db.query.users.findFirst as any).mockResolvedValue({ id: "u1", creditBalance: "500", totalTopup: "0" });
     (db.query.topups.findFirst as any).mockResolvedValue(null);
 
     global.fetch = vi.fn().mockResolvedValue({
+      status: 200,
       json: () => Promise.resolve({
-        status: 200,
+        success: true,
         data: {
-          transRef: "TX999", amount: { amount: 500 },
-          sender: { bank: { name: "SCB" }, account: { name: { th: "สมชาย" } } },
-          receiver: { bank: { name: "KBANK" }, account: { name: { th: "ร้านค้า" } } },
+          rawSlip: {
+            transRef: "TX999", amount: { amount: 500 },
+            sender: { bank: { name: "SCB" }, account: { name: { th: "สมชาย" } } },
+            receiver: { bank: { name: "KBANK" }, account: { name: { th: "ร้านค้า" } } },
+          },
         },
       }),
     }) as any;
-    process.env.EASYSLIP_TOKEN = "test-token";
+    process.env.EASYSLIP_API_KEY = "test-key";
 
     const { POST } = await import("@/app/api/topup/route");
     const res = await POST(mkTopupReq({ proofImage: "data:image/jpeg;base64,/9j/test" }));

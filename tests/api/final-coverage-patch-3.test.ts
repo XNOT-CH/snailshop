@@ -7,8 +7,25 @@ import { NextRequest } from "next/server";
 
 // ─── Global Mocks ──────────────────────────────────────────────
 vi.mock("@/auth",      () => ({ auth: vi.fn() }));
-vi.mock("@/lib/auth",  () => ({ isAdmin: vi.fn(), isAuthenticated: vi.fn() }));
-vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-03-14 00:00:00") }));
+const { isAdminMock, isAuthenticatedMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+  isAuthenticatedMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth",  () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+  isAuthenticated: isAuthenticatedMock,
+  isAuthenticatedWithCsrf: isAuthenticatedMock,
+}));
+vi.mock("@/lib/utils/date", () => ({
+  mysqlNow: vi.fn(() => "2026-03-14 00:00:00"),
+  toMySQLDatetime: vi.fn(() => "2026-03-14 00:00:00"),
+}));
 vi.mock("@/lib/validations/validate", () => ({ validateBody: vi.fn() }));
 vi.mock("@/lib/validations", () => ({ loginSchema: {}, registerSchema: {} }));
 vi.mock("@/lib/validations/content", () => ({
@@ -255,13 +272,16 @@ describe("API: /api/login (progressive delay + 500)", () => {
 describe("API: /api/admin/roles (POST paths)", () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it("POST returns 400 when role code already exists", async () => {
+  it("POST creates role with a resolved unique code when the base code already exists", async () => {
     (isAdmin as any).mockResolvedValue(ADMIN_OK);
     (validateBody as any).mockResolvedValue({ data: { name: "Admin User", description: "", permissions: [] } });
-    (db.query.roles.findFirst as any).mockResolvedValue({ id: "r1", code: "ADMIN_USER" });
+    (db.query.roles.findFirst as any)
+      .mockResolvedValueOnce({ id: "r1", code: "ADMIN_USER" })
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: "new-id", code: "ADMIN_USER_1" });
     const { POST } = await import("@/app/api/admin/roles/route");
     const res = await POST(new Request("http://localhost", { method: "POST" }));
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(201);
   });
 
   it("POST returns 500 on DB error", async () => {
@@ -399,6 +419,7 @@ describe("lib/auth (direct tests)", () => {
 
   it("isAdmin warns when ADMIN role missing from Role table", async () => {
     (auth as any).mockResolvedValue({ user: { id: "u1", role: "ADMIN" } });
+    (db.query.users.findFirst as any).mockResolvedValue({ id: "u1", role: "ADMIN" });
     (db.query.roles.findFirst as any).mockResolvedValue(null); // no admin role in table
     const realAuth = await vi.importActual<typeof import("@/lib/auth")>("@/lib/auth");
     const result = await realAuth.isAdmin();

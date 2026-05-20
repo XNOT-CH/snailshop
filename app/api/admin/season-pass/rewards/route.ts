@@ -2,27 +2,28 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth";
 import { getAdminSeasonPassRewards, updateAdminSeasonPassRewards } from "@/lib/seasonPass";
 import { PERMISSIONS } from "@/lib/permissions";
+import { contentApiError } from "@/lib/features/content/apiResponse";
 
 const ALLOWED_TYPES = new Set(["credits", "points", "tickets"]);
 
 export async function GET() {
     const authCheck = await requirePermission(PERMISSIONS.SEASON_PASS_VIEW);
     if (!authCheck.success) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return contentApiError("Unauthorized", { status: 401 });
     }
 
     try {
         const rewards = await getAdminSeasonPassRewards();
         return NextResponse.json(rewards);
     } catch {
-        return NextResponse.json({ error: "Failed to fetch season pass rewards" }, { status: 500 });
+        return contentApiError("Failed to fetch season pass rewards", { status: 500 });
     }
 }
 
 export async function PUT(request: NextRequest) {
     const authCheck = await requirePermission(PERMISSIONS.SEASON_PASS_EDIT);
     if (!authCheck.success) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return contentApiError("Unauthorized", { status: 401 });
     }
 
     try {
@@ -41,20 +42,20 @@ export async function PUT(request: NextRequest) {
 
         const rewards = body.rewards;
         if (!Array.isArray(rewards) || rewards.length === 0) {
-            return NextResponse.json({ error: "Rewards payload is required" }, { status: 400 });
+            return contentApiError("Rewards payload is required", { status: 400 });
         }
 
         for (const reward of rewards) {
             if (!Number.isInteger(reward.dayNumber) || reward.dayNumber < 1 || reward.dayNumber > 30) {
-                return NextResponse.json({ error: "Invalid day number" }, { status: 400 });
+                return contentApiError("Invalid day number", { status: 400 });
             }
 
             if (!ALLOWED_TYPES.has(reward.rewardType)) {
-                return NextResponse.json({ error: "Invalid reward type" }, { status: 400 });
+                return contentApiError("Invalid reward type", { status: 400 });
             }
 
             if (!reward.label?.trim() || !reward.amount?.trim()) {
-                return NextResponse.json({ error: "Reward label and amount are required" }, { status: 400 });
+                return contentApiError("Reward label and amount are required", { status: 400 });
             }
         }
 
@@ -73,8 +74,8 @@ export async function PUT(request: NextRequest) {
 
         return NextResponse.json(updatedRewards);
     } catch (error) {
-        return NextResponse.json(
-            { error: error instanceof Error ? error.message : "Failed to update season pass rewards" },
+        return contentApiError(
+            error instanceof Error ? error.message : "Failed to update season pass rewards",
             { status: 500 },
         );
     }

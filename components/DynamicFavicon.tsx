@@ -1,26 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
-export function DynamicFavicon() {
-    const [faviconUrl, setFaviconUrl] = useState<string | null>(null);
+interface DynamicFaviconProps {
+    faviconUrl?: string | null;
+}
 
-    useEffect(() => {
-        const fetchFavicon = async () => {
-            try {
-                const res = await fetch("/api/admin/settings");
-                const data = await res.json();
-                if (data.success && data.data?.logoUrl) {
-                    setFaviconUrl(data.data.logoUrl);
-                }
-            } catch (error) {
-                console.error("Failed to fetch favicon:", error);
-            }
-        };
-
-        fetchFavicon();
-    }, []);
-
+export function DynamicFavicon({ faviconUrl }: Readonly<DynamicFaviconProps>) {
     useEffect(() => {
         if (!faviconUrl) return;
 

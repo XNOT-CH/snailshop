@@ -12,8 +12,17 @@ vi.mock("@/lib/db", () => ({
   products: {},
 }));
 
+const { isAdminMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+}));
+
 vi.mock("@/lib/auth", () => ({
-  isAdmin: vi.fn(),
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
 }));
 
 vi.mock("@/lib/auditLog", () => ({

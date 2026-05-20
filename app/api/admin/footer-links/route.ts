@@ -7,6 +7,7 @@ import { validateBody } from "@/lib/validations/validate";
 import { footerLinkSchema } from "@/lib/validations/content";
 import { FOOTER_WIDGET_SETTINGS_SINGLETON_ID } from "@/lib/db/singletons";
 import { PERMISSIONS } from "@/lib/permissions";
+import { contentApiError } from "@/lib/features/content/apiResponse";
 
 async function getFooterWidgetSettingsRecord() {
     return (
@@ -18,7 +19,7 @@ async function getFooterWidgetSettingsRecord() {
 
 export async function GET() {
     const authCheck = await requirePermission(PERMISSIONS.SETTINGS_VIEW);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         let settings = await getFooterWidgetSettingsRecord();
         if (!settings) {
@@ -29,13 +30,13 @@ export async function GET() {
         return NextResponse.json({ settings, links });
     } catch (error) {
         console.error("Error fetching footer links:", error);
-        return NextResponse.json({ error: "Failed to fetch footer links" }, { status: 500 });
+        return contentApiError("Failed to fetch footer links", { status: 500 });
     }
 }
 
 export async function POST(request: NextRequest) {
     const authCheck = await requirePermission(PERMISSIONS.SETTINGS_EDIT);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const result = await validateBody(request, footerLinkSchema);
         if ("error" in result) return result.error;
@@ -49,6 +50,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(link, { status: 201 });
     } catch (error) {
         console.error("Error creating footer link:", error);
-        return NextResponse.json({ error: "Failed to create footer link" }, { status: 500 });
+        return contentApiError("Failed to create footer link", { status: 500 });
     }
 }

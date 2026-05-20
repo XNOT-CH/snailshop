@@ -72,9 +72,38 @@ export const usersRelations = relations(users, ({ many }) => ({
     apiKeys: many(apiKeys),
     auditLogs: many(auditLogs),
     emailVerificationTokens: many(emailVerificationTokens),
+    addressProfiles: many(userAddressProfiles),
     gachaRollLogs: many(gachaRollLogs),
     chatConversations: many(chatConversations),
     chatMessages: many(chatMessages),
+}));
+
+export const userAddressProfiles = mysqlTable("UserAddressProfile", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: varchar("userId", { length: 191 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+    label: varchar("label", { length: 100 }).notNull(),
+    kind: varchar("kind", { length: 20 }).default("both").notNull(),
+    fullName: text("fullName"),
+    phone: text("phone"),
+    address: text("address"),
+    province: text("province"),
+    district: text("district"),
+    subdistrict: text("subdistrict"),
+    postalCode: text("postalCode"),
+    taxId: text("taxId"),
+    isDefaultTax: boolean("isDefaultTax").default(false).notNull(),
+    isDefaultShipping: boolean("isDefaultShipping").default(false).notNull(),
+    createdAt: now(),
+    updatedAt: updatedAt(),
+}, (t) => [
+    index("idx_user_address_profile_user").on(t.userId),
+    index("idx_user_address_profile_user_kind").on(t.userId, t.kind),
+    index("idx_user_address_profile_default_tax").on(t.userId, t.isDefaultTax),
+    index("idx_user_address_profile_default_shipping").on(t.userId, t.isDefaultShipping),
+]);
+
+export const userAddressProfilesRelations = relations(userAddressProfiles, ({ one }) => ({
+    user: one(users, { fields: [userAddressProfiles.userId], references: [users.id] }),
 }));
 
 export const emailVerificationTokens = mysqlTable("EmailVerificationToken", {
@@ -155,6 +184,7 @@ export const products = mysqlTable("Product", {
     currency: varchar("currency", { length: 10 }).default("THB").notNull(),
     secretData: text("secretData").notNull(),
     stockSeparator: varchar("stockSeparator", { length: 20 }).default("newline").notNull(),
+    stockCount: int("stockCount"),
     isSold: boolean("isSold").default(false).notNull(),
     isFeatured: boolean("isFeatured").default(false).notNull(),
     sortOrder: int("sortOrder").default(0).notNull(),
@@ -165,6 +195,7 @@ export const products = mysqlTable("Product", {
     updatedAt: updatedAt(),
 }, (t) => [
     index("idx_product_isSold_category").on(t.isSold, t.category),
+    index("idx_product_isSold_stockCount_category").on(t.isSold, t.stockCount, t.category),
     index("idx_product_isFeatured_isSold").on(t.isFeatured, t.isSold),
     index("idx_product_sortOrder").on(t.sortOrder),
 ]);

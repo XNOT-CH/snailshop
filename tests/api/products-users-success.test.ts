@@ -5,7 +5,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/auth", () => ({ isAdmin: vi.fn() }));
+const { isAdminMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+}));
 vi.mock("@/lib/db", () => ({
   db: {
     query: {

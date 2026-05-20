@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { FOOTER_WIDGET_SETTINGS_SINGLETON_ID } from "@/lib/db/singletons";
 import { requirePermission } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
+import { contentApiError } from "@/lib/features/content/apiResponse";
 
 async function getFooterWidgetSettingsRecord() {
     return (
@@ -16,7 +17,7 @@ async function getFooterWidgetSettingsRecord() {
 
 export async function GET() {
     const authCheck = await requirePermission(PERMISSIONS.SETTINGS_VIEW);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         let settings = await getFooterWidgetSettingsRecord();
         if (!settings) {
@@ -25,13 +26,13 @@ export async function GET() {
         }
         return NextResponse.json(settings);
     } catch {
-        return NextResponse.json({ error: "Failed to fetch footer settings" }, { status: 500 });
+        return contentApiError("Failed to fetch footer settings", { status: 500 });
     }
 }
 
 export async function PUT(request: NextRequest) {
     const authCheck = await requirePermission(PERMISSIONS.SETTINGS_EDIT);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const body = await request.json();
         const { isActive, title } = body;
@@ -47,6 +48,6 @@ export async function PUT(request: NextRequest) {
         const updated = await getFooterWidgetSettingsRecord();
         return NextResponse.json(updated);
     } catch {
-        return NextResponse.json({ error: "Failed to update footer settings" }, { status: 500 });
+        return contentApiError("Failed to update footer settings", { status: 500 });
     }
 }

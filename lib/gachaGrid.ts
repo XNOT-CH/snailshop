@@ -1,4 +1,6 @@
-export type GachaTier = "common" | "rare" | "epic" | "legendary";
+import type { GachaTier } from "@/lib/constants/gacha";
+
+export type { GachaTier };
 export type TileType = "start" | "selector" | GachaTier;
 
 export interface GachaProductLite {

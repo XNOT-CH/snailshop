@@ -25,7 +25,7 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    files: ["app/admin/gacha-machines/**/*.tsx"],
+    files: ["app/**/admin/gacha-machines/**/*.tsx"],
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
     },

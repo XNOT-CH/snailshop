@@ -70,6 +70,7 @@ const pool = globalForDb.pool ?? mysql.createPool(poolOptions);
 
 if (!isProduction) globalForDb.pool = pool;
 
+export const rawDbPool = pool;
 export const db = drizzle(pool, { schema, mode: "planetscale" });
 
 // Re-export schema for convenience

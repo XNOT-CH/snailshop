@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db, products } from "@/lib/db";
 import { buildProductInsertValues, buildProductUpdateValues } from "@/lib/features/products/shared";
 import { encrypt } from "@/lib/encryption";
+import { getStockCount } from "@/lib/stock";
 import type { ProductPayloadInput } from "./shared";
 
 export async function createProduct(input: Required<Pick<ProductPayloadInput, "title" | "category">> & ProductPayloadInput, priceNumber: number, discountPriceNumber: number | null) {
@@ -25,9 +26,11 @@ export function deleteProduct(id: string) {
     return db.delete(products).where(eq(products.id, id));
 }
 
-export function updateProductStock(id: string, secretData: string, hasStock: boolean) {
+export function updateProductStock(id: string, secretData: string, stockSeparator: string | null | undefined) {
+    const stockCount = getStockCount(secretData, stockSeparator || "newline");
+
     return db
         .update(products)
-        .set({ secretData: encrypt(secretData), isSold: !hasStock })
+        .set({ secretData: encrypt(secretData), stockCount, isSold: stockCount === 0 })
         .where(eq(products.id, id));
 }

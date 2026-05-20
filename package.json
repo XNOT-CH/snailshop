@@ -27,6 +27,7 @@
     "db:studio": "npx drizzle-kit studio",
     "products:export:dev": "node scripts/products/export-products-dev.mjs",
     "products:import:prod": "node scripts/products/import-products-prod.mjs",
+    "products:backfill-stock-count": "npx tsx scripts/products/backfill-stock-count.ts",
     "db:migrate-sensitive": "node scripts/db/migrate-sensitive-data.mjs",
     "storage:migrate-slips": "node scripts/storage/migrate-slip-files.mjs",
     "storage:migrate-r2": "node scripts/migrate-local-storage-to-r2.mjs",

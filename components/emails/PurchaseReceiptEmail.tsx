@@ -1,17 +1,16 @@
 import {
-    Body,
-    Container,
-    Head,
     Heading,
-    Html,
-    Preview,
     Text,
     Section,
     Row,
     Column,
     Hr,
 } from "@react-email/components";
-import * as React from "react";
+import { EmailLayout } from "@/components/emails/EmailLayout";
+import {
+    emailReceiptHeading,
+    emailReceiptText,
+} from "@/components/emails/emailStyles";
 import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
 
 interface PurchaseReceiptEmailProps {
@@ -38,84 +37,47 @@ export const PurchaseReceiptEmail = ({
     items = [],
 }: Readonly<PurchaseReceiptEmailProps>) => {
     return (
-        <Html>
-            <Head />
-            <Preview>{`ขอบคุณสำหรับการสั่งซื้อจาก ${siteName} 🎉`}</Preview>
-            <Body style={main}>
-                <Container style={container}>
-                    <Heading style={h1}>{`ใบเสร็จรับเงิน / ${siteName}`}</Heading>
-                    <Text style={text}>สวัสดีคุณ {userName},</Text>
-                    <Text style={text}>
-                        ขอบคุณสำหรับการสั่งซื้อสินค้าจำนวน {orderCount} รายการ สำเร็จเรียบร้อยแล้ว
-                    </Text>
+        <EmailLayout preview={`ขอบคุณสำหรับการสั่งซื้อจาก ${siteName} 🎉`}>
+            <Heading style={emailReceiptHeading}>{`ใบเสร็จรับเงิน / ${siteName}`}</Heading>
+            <Text style={emailReceiptText}>สวัสดีคุณ {userName},</Text>
+            <Text style={emailReceiptText}>
+                ขอบคุณสำหรับการสั่งซื้อสินค้าจำนวน {orderCount} รายการ สำเร็จเรียบร้อยแล้ว
+            </Text>
 
-                    <Section style={receiptSection}>
-                        <Text style={receiptHeading}>สรุปรายการสั่งซื้อ:</Text>
-                        {items.map((item, index) => (
-                            <Row key={`${item.productName}-${index}`} style={itemRow}>
-                                <Column style={itemLeft}>
-                                    <Text style={itemText}>{item.productName}</Text>
-                                </Column>
-                                <Column style={itemRight}>
-                                    <Text style={itemText}>
-                                        {formatCurrencyAmount(item.price, item.currency, currencySettings)}
-                                    </Text>
-                                </Column>
-                            </Row>
-                        ))}
-                        <Hr style={hr} />
-                        <Row>
-                            <Column style={totalLeft}>
-                                <Text style={totalTextBold}>ยอดรวมทั้งหมด</Text>
-                            </Column>
-                            <Column style={totalRight}>
-                                {totalTHB > 0 && <Text style={totalTextBold}>{formatCurrencyAmount(totalTHB, "THB", currencySettings)}</Text>}
-                                {totalPoints > 0 && <Text style={totalTextBold}>{formatCurrencyAmount(totalPoints, "POINT", currencySettings)}</Text>}
-                            </Column>
-                        </Row>
-                    </Section>
+            <Section style={receiptSection}>
+                <Text style={receiptHeading}>สรุปรายการสั่งซื้อ:</Text>
+                {items.map((item, index) => (
+                    <Row key={`${item.productName}-${index}`} style={itemRow}>
+                        <Column style={itemLeft}>
+                            <Text style={itemText}>{item.productName}</Text>
+                        </Column>
+                        <Column style={itemRight}>
+                            <Text style={itemText}>
+                                {formatCurrencyAmount(item.price, item.currency, currencySettings)}
+                            </Text>
+                        </Column>
+                    </Row>
+                ))}
+                <Hr style={hr} />
+                <Row>
+                    <Column style={totalLeft}>
+                        <Text style={totalTextBold}>ยอดรวมทั้งหมด</Text>
+                    </Column>
+                    <Column style={totalRight}>
+                        {totalTHB > 0 && <Text style={totalTextBold}>{formatCurrencyAmount(totalTHB, "THB", currencySettings)}</Text>}
+                        {totalPoints > 0 && <Text style={totalTextBold}>{formatCurrencyAmount(totalPoints, "POINT", currencySettings)}</Text>}
+                    </Column>
+                </Row>
+            </Section>
 
-                    <Text style={footerText}>
-                        หากคุณมีข้อสงสัยเกี่ยวกับการสั่งซื้อ โปรดติดต่อทีมสนับสนุนของเรา
-                    </Text>
-                </Container>
-            </Body>
-        </Html>
+            <Text style={footerText}>
+                หากคุณมีข้อสงสัยเกี่ยวกับการสั่งซื้อ โปรดติดต่อทีมสนับสนุนของเรา
+            </Text>
+        </EmailLayout>
     );
 };
 
 export default PurchaseReceiptEmail;
-
-const main = {
-    backgroundColor: "#f6f9fc",
-    fontFamily:
-        '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Ubuntu,sans-serif',
-};
-
-const container = {
-    backgroundColor: "#ffffff",
-    margin: "0 auto",
-    padding: "20px 0 48px",
-    marginBottom: "64px",
-    borderRadius: "8px",
-    boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-};
-
-const h1 = {
-    color: "#333",
-    fontSize: "24px",
-    fontWeight: "bold",
-    padding: "0 48px",
-    margin: "30px 0 15px",
-};
-
-const text = {
-    color: "#525f7f",
-    fontSize: "16px",
-    lineHeight: "26px",
-    padding: "0 48px",
-    margin: "10px 0",
-};
 
 const receiptSection = {
     padding: "20px 48px",

@@ -51,6 +51,10 @@ const HIDDEN_PATH_PREFIXES = ["/login", "/register", "/admin"];
 const MOBILE_BOTTOM_NAV_OFFSET = "bottom-[calc(env(safe-area-inset-bottom)+5.5rem)]";
 const OPEN_CHAT_EVENT = "open-customer-chat";
 
+interface FloatingChatButtonProps {
+    defaultOpen?: boolean;
+}
+
 function isMessageReadByAdmin(message: ChatMessage, adminLastReadAt: string | null) {
     if (!adminLastReadAt) {
         return false;
@@ -87,10 +91,12 @@ function ChatBubble({
     );
 }
 
-export function FloatingChatButton() {
+export function FloatingChatButton({
+    defaultOpen = false,
+}: Readonly<FloatingChatButtonProps>) {
     const pathname = usePathname();
     const [isMounted, setIsMounted] = useState(false);
-    const [isOpen, setIsOpen] = useState(false);
+    const [isOpen, setIsOpen] = useState(defaultOpen);
     const [conversation, setConversation] = useState<ChatConversation | null>(null);
     const [draft, setDraft] = useState("");
     const [isLoading, setIsLoading] = useState(false);

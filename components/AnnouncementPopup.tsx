@@ -4,8 +4,13 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+    clearPopupDismissal,
+    savePopupDismissal,
+    shouldShowPopup,
+} from "@/lib/client/popupDismissal";
 
-interface PopupData {
+export interface PopupData {
     id: string;
     title: string | null;
     imageUrl: string;
@@ -13,88 +18,28 @@ interface PopupData {
     dismissOption: string;
 }
 
-const DISMISS_STORAGE_KEY = "popup_dismissed_until";
-const DISMISS_DURATION_MS = 60 * 60 * 1000; // 1 hour
-
-interface PopupDismissState {
-    dismissUntil: number;
-    popupIds: string[];
+interface AnnouncementPopupProps {
+    initialPopups?: PopupData[];
+    defaultVisible?: boolean;
 }
 
-function readDismissState(): PopupDismissState | null {
-    if (typeof globalThis.window === "undefined") return null;
-
-    const rawValue = localStorage.getItem(DISMISS_STORAGE_KEY);
-    if (!rawValue) return null;
-
-    try {
-        const parsed = JSON.parse(rawValue) as Partial<PopupDismissState>;
-        if (
-            typeof parsed.dismissUntil !== "number" ||
-            !Array.isArray(parsed.popupIds) ||
-            parsed.popupIds.some((id) => typeof id !== "string")
-        ) {
-            localStorage.removeItem(DISMISS_STORAGE_KEY);
-            return null;
-        }
-
-        return {
-            dismissUntil: parsed.dismissUntil,
-            popupIds: parsed.popupIds,
-        };
-    } catch {
-        const legacyDismissUntil = Number.parseInt(rawValue, 10);
-        if (Number.isNaN(legacyDismissUntil)) {
-            localStorage.removeItem(DISMISS_STORAGE_KEY);
-            return null;
-        }
-
-        return {
-            dismissUntil: legacyDismissUntil,
-            popupIds: [],
-        };
-    }
-}
-
-function shouldShowPopup(popups: PopupData[]) {
-    if (popups.length === 0 || typeof globalThis.window === "undefined") return false;
-
-    const dismissOption = popups[0]?.dismissOption || "show_always";
-    if (dismissOption !== "hide_1_hour") {
-        localStorage.removeItem(DISMISS_STORAGE_KEY);
-        return true;
-    }
-
-    const dismissState = readDismissState();
-    if (!dismissState) return true;
-
-    if (Date.now() >= dismissState.dismissUntil) {
-        localStorage.removeItem(DISMISS_STORAGE_KEY);
-        return true;
-    }
-
-    const activePopupIds = popups.map((popup) => popup.id).sort((a, b) => a.localeCompare(b));
-    const dismissedPopupIds = [...dismissState.popupIds].sort((a, b) => a.localeCompare(b));
-
-    if (
-        dismissedPopupIds.length === activePopupIds.length &&
-        dismissedPopupIds.every((id, index) => id === activePopupIds[index])
-    ) {
-        return false;
-    }
-
-    localStorage.removeItem(DISMISS_STORAGE_KEY);
-    return true;
-}
-
-export default function AnnouncementPopup() {
-    const [popups, setPopups] = useState<PopupData[]>([]);
+export default function AnnouncementPopup({
+    initialPopups,
+    defaultVisible = false,
+}: Readonly<AnnouncementPopupProps> = {}) {
+    const [popups, setPopups] = useState<PopupData[]>(() => initialPopups ?? []);
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [isVisible, setIsVisible] = useState(false);
-    const [isLoaded, setIsLoaded] = useState(false);
+    const [isVisible, setIsVisible] = useState(defaultVisible);
+    const [isLoaded, setIsLoaded] = useState(Boolean(initialPopups));
 
     // Fetch popups on mount
     useEffect(() => {
+        if (initialPopups) {
+            return;
+        }
+
+        let isMounted = true;
+
         const fetchPopups = async () => {
             try {
                 const res = await fetch("/api/popups");
@@ -102,26 +47,37 @@ export default function AnnouncementPopup() {
                 if (res.ok) {
                     const data = await res.json() as PopupData[];
 
-                    if (data && data.length > 0) {
+                    if (isMounted && data && data.length > 0) {
                         setPopups(data);
 
                         if (shouldShowPopup(data)) {
                             // Small delay before showing for smoother UX
                             setTimeout(() => {
-                                setIsVisible(true);
+                                if (isMounted) {
+                                    setIsVisible(true);
+                                }
                             }, 500);
                         }
                     }
                 }
             } catch (error) {
-                console.error("Error fetching popups:", error);
+                if (process.env.NODE_ENV === "development") {
+                    const message = error instanceof Error ? error.message : "unknown error";
+                    console.warn(`Announcement popup fetch skipped: ${message}`);
+                }
             } finally {
-                setIsLoaded(true);
+                if (isMounted) {
+                    setIsLoaded(true);
+                }
             }
         };
 
         void fetchPopups();
-    }, []);
+
+        return () => {
+            isMounted = false;
+        };
+    }, [initialPopups]);
 
     // Handle close with animation
     const handleClose = () => {
@@ -130,13 +86,9 @@ export default function AnnouncementPopup() {
 
         // If dismiss option is "hide_1_hour", save to localStorage
         if (dismissOption === "hide_1_hour") {
-            const dismissUntil = Date.now() + DISMISS_DURATION_MS;
-            localStorage.setItem(DISMISS_STORAGE_KEY, JSON.stringify({
-                dismissUntil,
-                popupIds: popups.map((popup) => popup.id),
-            }));
+            savePopupDismissal(popups);
         } else {
-            localStorage.removeItem(DISMISS_STORAGE_KEY);
+            clearPopupDismissal();
         }
 
         setIsVisible(false);
@@ -182,7 +134,7 @@ export default function AnnouncementPopup() {
                 >
                     {/* Backdrop */}
                     <motion.div
-                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                        className="absolute inset-0 bg-black/62"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
@@ -209,7 +161,7 @@ export default function AnnouncementPopup() {
                         {/* Close Button */}
                         <motion.button
                             onClick={handleClose}
-                            className="absolute -top-3 -right-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-card/95 text-foreground shadow-xl shadow-black/25 backdrop-blur-md transition-colors hover:bg-accent"
+                            className="absolute -top-3 -right-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-card/95 text-foreground shadow-xl shadow-black/25 transition-colors hover:bg-accent"
                             aria-label="ปิด"
                             initial={{ scale: 0, rotate: -180 }}
                             animate={{ scale: 1, rotate: 0 }}
@@ -227,7 +179,7 @@ export default function AnnouncementPopup() {
 
                         {/* Image Container */}
                         {currentPopup.linkUrl ? (
-                            <div className="relative w-full aspect-square overflow-hidden rounded-[1.75rem] border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)] backdrop-blur-md">
+                            <div className="relative w-full aspect-square overflow-hidden rounded-[1.75rem] border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)]">
                                 <button
                                     type="button"
                                     className="absolute inset-0 z-0 cursor-pointer"
@@ -240,7 +192,8 @@ export default function AnnouncementPopup() {
                                     fill
                                     sizes="(max-width: 768px) 90vw, 500px"
                                     className="object-cover"
-                                    priority
+                                    loading="lazy"
+                                    fetchPriority="low"
                                 />
 
                                 {/* Carousel Navigation */}
@@ -288,14 +241,15 @@ export default function AnnouncementPopup() {
                                 )}
                             </div>
                         ) : (
-                            <div className="relative w-full aspect-square overflow-hidden rounded-[1.75rem] border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)] backdrop-blur-md">
+                            <div className="relative w-full aspect-square overflow-hidden rounded-[1.75rem] border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)]">
                                 <Image
                                     src={currentPopup.imageUrl}
                                     alt={currentPopup.title || "ประชาสัมพันธ์"}
                                     fill
                                     sizes="(max-width: 768px) 90vw, 500px"
                                     className="object-cover"
-                                    priority
+                                    loading="lazy"
+                                    fetchPriority="low"
                                 />
                             </div>
                         )}

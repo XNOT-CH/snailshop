@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db, users, orders, topups } from "@/lib/db";
 import { eq, and, gte, lte, sum, count } from "drizzle-orm";
+import { toMySQLDatetime } from "@/lib/utils/date";
 
 export const dynamic = "force-dynamic";
-
-const toMySQLDatetime = (d: Date) => d.toISOString().slice(0, 19).replace("T", " ");
 
 export async function GET(request: NextRequest) {
     try {

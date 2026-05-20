@@ -1,28 +1,32 @@
 import Image from "next/image";
-import { db } from "@/lib/db";
 
-// Server Component — ไม่ต้องการ 'use client' เพราะ query DB ตรงๆ บน server
-export async function DynamicBackground() {
-    const settings = await db.query.siteSettings.findFirst({
-        columns: { backgroundImage: true, backgroundBlur: true },
-    });
+interface DynamicBackgroundProps {
+    backgroundImage?: string | null;
+    backgroundBlur?: boolean | null;
+}
 
-    const isBlur = settings?.backgroundBlur ?? true;
+export function DynamicBackground({
+    backgroundImage,
+    backgroundBlur,
+}: Readonly<DynamicBackgroundProps>) {
+    const isBlur = backgroundBlur ?? true;
 
-    if (!settings?.backgroundImage) {
-        return <div className="fixed inset-0 -z-10 bg-[#eaf2fb] backdrop-blur-[2px] dark:bg-[#08111c] sm:hidden" aria-hidden="true" />;
+    if (!backgroundImage) {
+        return <div className="fixed inset-0 -z-10 bg-[#eaf2fb] dark:bg-[#08111c] sm:hidden" aria-hidden="true" />;
     }
 
     return (
         <div className="fixed inset-0 -z-10 pointer-events-none">
             {/* Background Image */}
             <Image
-                src={settings.backgroundImage}
+                src={backgroundImage}
                 alt=""
                 fill
                 sizes="100vw"
                 quality={70}
-                className={`object-cover object-center ${isBlur ? "blur-sm scale-105" : ""}`}
+                loading="lazy"
+                fetchPriority="low"
+                className={`object-cover object-center ${isBlur ? "scale-[1.02] opacity-75" : ""}`}
                 aria-hidden="true"
             />
             {/* Overlay: heavier when blurred, lighter when clear */}

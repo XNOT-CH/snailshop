@@ -17,12 +17,12 @@ export function ChatBrandLogo({
             aria-hidden="true"
         >
             <Image
-                src="/chat-snail.png"
+                src="/chat-snail-icon.webp"
                 alt=""
                 width={96}
                 height={96}
+                sizes="96px"
                 className="h-full w-full object-contain"
-                unoptimized
             />
         </span>
     );

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
 import { auth } from "@/auth";
-import { db, users, navItems } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { db, users, navItems, products } from "@/lib/db";
+import { asc, eq } from "drizzle-orm";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { NavbarInteractive } from "@/components/NavbarInteractive";
 import {
     Dices,
     Gamepad2,
+    Gift,
     HelpCircle,
     Home,
     LayoutDashboard,
@@ -24,6 +25,10 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { resolveSiteName } from "@/lib/seo";
 import { MobileAutoHideHeader } from "@/components/MobileAutoHideHeader";
 import { themeClasses } from "@/lib/theme";
+
+function normalizeNavHref(href: string) {
+    return href === "/" ? "/home" : href;
+}
 
 export default async function Navbar() {
     const session = await auth();
@@ -41,17 +46,19 @@ export default async function Navbar() {
             where: eq(navItems.isActive, true),
             orderBy: (table, { asc }) => asc(table.sortOrder),
         }),
-        db.query.products.findMany({
-                columns: { category: true },
-                where: (table, { eq: equals }) => equals(table.isSold, false),
-        }),
+        db.select({ category: products.category })
+            .from(products)
+            .where(eq(products.isSold, false))
+            .groupBy(products.category)
+            .orderBy(asc(products.category)),
         getCurrencySettings(),
     ]);
     const siteName = resolveSiteName(siteSettings?.heroTitle);
 
     const avatarVersion = user?.image ?? "default-avatar";
 
-    const shopCategories = [...new Set(allProducts.map((product) => product.category))]
+    const shopCategories = allProducts
+        .map((product) => product.category)
         .filter(Boolean)
         .sort((left, right) => left.localeCompare(right));
 
@@ -65,12 +72,15 @@ export default async function Navbar() {
         settings: Settings,
         dices: Dices,
         gacha: Dices,
+        gift: Gift,
+        season: Gift,
+        "season-pass": Gift,
     };
 
     const baseNavLinks =
         dbNavItems.length > 0
             ? dbNavItems.map((item) => ({
-                  href: item.href,
+                  href: normalizeNavHref(item.href),
                   label: item.label,
                   icon: iconMap[item.icon?.toLowerCase() ?? ""] ?? Home,
               }))
@@ -81,31 +91,49 @@ export default async function Navbar() {
                   { href: "/help", label: "ช่วยเหลือ", icon: HelpCircle },
               ];
 
-    const hasGachapons = baseNavLinks.some((link) => link.href === "/gachapons");
-    const navLinks = hasGachapons
-        ? baseNavLinks
-        : (() => {
-              const shopIndex = baseNavLinks.findIndex((link) => link.href === "/shop");
-              const hubItem = {
-                  href: "/gachapons",
-                  label: "หมวดหมู่กาชา",
-                  icon: Dices,
-              };
-              const nextLinks = [...baseNavLinks];
+    const navLinks = (() => {
+        const nextLinks = [...baseNavLinks];
 
-              if (shopIndex >= 0) {
-                  nextLinks.splice(shopIndex + 1, 0, hubItem);
-                  return nextLinks;
-              }
+        if (!nextLinks.some((link) => link.href === "/gachapons")) {
+            const shopIndex = nextLinks.findIndex((link) => link.href === "/shop");
+            const hubItem = {
+                href: "/gachapons",
+                label: "หมวดหมู่กาชา",
+                icon: Dices,
+            };
 
-              return [...nextLinks, hubItem];
-          })();
+            if (shopIndex >= 0) {
+                nextLinks.splice(shopIndex + 1, 0, hubItem);
+            } else {
+                nextLinks.push(hubItem);
+            }
+        }
+
+        if (!nextLinks.some((link) => link.href === "/season-pass")) {
+            const gachaIndex = nextLinks.findIndex((link) => link.href === "/gachapons");
+            const shopIndex = nextLinks.findIndex((link) => link.href === "/shop");
+            const seasonPassItem = {
+                href: "/season-pass",
+                label: "Season Pass",
+                icon: Gift,
+            };
+            const insertIndex = gachaIndex >= 0 ? gachaIndex + 1 : shopIndex >= 0 ? shopIndex + 1 : nextLinks.length;
+
+            nextLinks.splice(insertIndex, 0, seasonPassItem);
+        }
+
+        return nextLinks;
+    })();
 
     return (
         <MobileAutoHideHeader>
-        <header id="main-navbar" className={`${themeClasses.header} w-full backdrop-blur-xl`}>
+        <header id="main-navbar" className={`${themeClasses.header} w-full md:backdrop-blur-xl`}>
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 lg:px-6 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:gap-4 xl:px-8">
-                <Link href="/home" className="flex min-w-0 items-center gap-3.5 text-lg font-semibold text-primary xl:min-w-0">
+                <Link
+                    href="/home"
+                    prefetch={false}
+                    className="flex shrink-0 items-center gap-3.5 text-lg font-semibold text-primary xl:min-w-0"
+                >
                     {siteSettings?.logoUrl ? (
                         <Image
                             src={siteSettings.logoUrl}
@@ -120,7 +148,7 @@ export default async function Navbar() {
                             <Gamepad2 className="h-6 w-6 text-white sm:h-7 sm:w-7" />
                         </div>
                     )}
-                    <span className="hidden truncate font-bold tracking-tight text-foreground sm:inline sm:text-[1.15rem] lg:text-[1.22rem]">
+                    <span className="hidden whitespace-nowrap pr-1 font-bold leading-none tracking-tight text-foreground sm:inline sm:text-[1.15rem] lg:text-[1.22rem]">
                         {siteName}
                     </span>
                 </Link>
@@ -137,6 +165,7 @@ export default async function Navbar() {
                             <Link
                                 key={link.href}
                                 href={link.href}
+                                prefetch={false}
                                 className="flex whitespace-nowrap items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent/80 hover:text-foreground"
                             >
                                 <Icon className="h-4 w-4 flex-shrink-0" />
@@ -162,7 +191,7 @@ export default async function Navbar() {
 
                     {user ? (
                         <>
-                            <Link href="/dashboard/topup" className="hidden lg:block">
+                            <Link href="/dashboard/topup" prefetch={false} className="hidden lg:block">
                                 <Button variant="ghost" size="sm" className="gap-1.5 rounded-xl font-medium text-muted-foreground hover:bg-accent hover:text-primary">
                                     <Wallet className="h-4 w-4 shrink-0 text-primary" />
                                     <span className="font-semibold text-foreground">
@@ -173,12 +202,12 @@ export default async function Navbar() {
                         </>
                     ) : (
                         <div className="hidden items-center gap-2 lg:flex">
-                            <Link href="/login">
+                            <Link href="/login" prefetch={false}>
                                 <Button variant="ghost" size="sm" className="rounded-xl text-muted-foreground hover:bg-accent hover:text-primary">
                                     เข้าสู่ระบบ
                                 </Button>
                             </Link>
-                            <Link href="/register">
+                            <Link href="/register" prefetch={false}>
                                 <Button size="sm" className="rounded-xl">
                                     สมัครสมาชิก
                                 </Button>

@@ -8,10 +8,11 @@ import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
 import { popupSchema } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
+import { contentApiError } from "@/lib/features/content/apiResponse";
 
 export async function GET(request: Request) {
     const authCheck = await requirePermission(PERMISSIONS.CONTENT_VIEW);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const { searchParams } = new URL(request.url);
         const activeOnly = searchParams.get("active") === "true";
@@ -21,13 +22,13 @@ export async function GET(request: Request) {
         });
         return NextResponse.json(popups);
     } catch {
-        return NextResponse.json({ error: "Failed to fetch popups" }, { status: 500 });
+        return contentApiError("Failed to fetch popups", { status: 500 });
     }
 }
 
 export async function POST(request: Request) {
     const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const result = await validateBody(request, popupSchema);
         if ("error" in result) return result.error;
@@ -45,6 +46,6 @@ export async function POST(request: Request) {
         await auditFromRequest(request, { action: AUDIT_ACTIONS.POPUP_CREATE, resource: "AnnouncementPopup", resourceId: newId, details: { title: title || "Untitled" } });
         return NextResponse.json(popup, { status: 201 });
     } catch {
-        return NextResponse.json({ error: "Failed to create popup" }, { status: 500 });
+        return contentApiError("Failed to create popup", { status: 500 });
     }
 }

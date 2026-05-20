@@ -1,4 +1,9 @@
 import { NextResponse } from "next/server";
+import {
+    createApiErrorPayload,
+    createApiSuccessPayload,
+    parseJsonBody,
+} from "@/lib/api";
 
 /**
  * Standardized API Response Helper
@@ -8,12 +13,10 @@ import { NextResponse } from "next/server";
 // Standard success response
 export function apiSuccess<T>(data: T, message?: string, statusCode: number = 200) {
     return NextResponse.json(
-        {
-            success: true,
+        createApiSuccessPayload(data, {
             message: message || "Success",
-            data,
-            timestamp: new Date().toISOString(),
-        },
+            timestamp: true,
+        }),
         { status: statusCode }
     );
 }
@@ -25,12 +28,10 @@ export function apiError(
     errorCode?: string
 ) {
     return NextResponse.json(
-        {
-            success: false,
-            message,
+        createApiErrorPayload(message, {
             errorCode: errorCode || `ERR_${statusCode}`,
-            timestamp: new Date().toISOString(),
-        },
+            timestamp: true,
+        }),
         { status: statusCode }
     );
 }
@@ -116,15 +117,15 @@ export function validateRequired(
 export async function parseRequestBody<T = Record<string, unknown>>(
     request: Request
 ): Promise<{ success: true; data: T } | { success: false; error: NextResponse }> {
-    try {
-        const body = await request.json();
-        return { success: true, data: body as T };
-    } catch {
+    const parsed = await parseJsonBody(request);
+    if ("error" in parsed) {
         return {
             success: false,
             error: API_ERRORS.BAD_REQUEST("Invalid JSON body"),
         };
     }
+
+    return { success: true, data: parsed.data as T };
 }
 
 /**

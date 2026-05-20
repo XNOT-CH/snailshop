@@ -1,9 +1,6 @@
-"use client";
-
 import Image from "next/image";
 import Link from "next/link";
-import { Calendar, ArrowRight, Loader2, Newspaper } from "lucide-react";
-import { useState, useEffect } from "react";
+import { Calendar, ArrowRight, Newspaper } from "lucide-react";
 import { themeClasses } from "@/lib/theme";
 
 interface NewsArticle {
@@ -20,30 +17,7 @@ interface NewsSectionProps {
 }
 
 export function NewsSection({ initialNews }: Readonly<NewsSectionProps>) {
-    const [news, setNews] = useState<NewsArticle[]>(() => initialNews ?? []);
-    const [loading, setLoading] = useState(!Array.isArray(initialNews));
-
-    useEffect(() => {
-        if (Array.isArray(initialNews)) {
-            return;
-        }
-
-        const fetchNews = async () => {
-            try {
-                const res = await fetch("/api/news");
-                if (res.ok) {
-                    const data = await res.json();
-                    setNews(data);
-                }
-            } catch (error) {
-                console.error("Error fetching news:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchNews();
-    }, [initialNews]);
+    const news = initialNews ?? [];
 
     // Format date to Thai format
     const formatDate = (dateString: string) => {
@@ -58,8 +32,7 @@ export function NewsSection({ initialNews }: Readonly<NewsSectionProps>) {
         return `${day} ${month} ${year}`;
     };
 
-    // Don't render if no news
-    if (!loading && news.length === 0) {
+    if (news.length === 0) {
         return null;
     }
 
@@ -75,20 +48,12 @@ export function NewsSection({ initialNews }: Readonly<NewsSectionProps>) {
                 </p>
             </div>
 
-            {/* Loading State */}
-            {loading ? (
-                <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
-            ) : (
-                /* News Grid */
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                    {news.map((article) => (
-                        <article
-                            key={article.id}
-                            className={`${themeClasses.surface} group flex flex-col overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_20px_38px_-28px_rgba(39,71,121,0.18)] dark:hover:shadow-[0_24px_48px_-32px_rgba(0,0,0,0.9)]`}
-                        >
-                            {/* Image */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                {news.map((article) => (
+                    <article
+                        key={article.id}
+                        className={`${themeClasses.surface} group flex flex-col overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_20px_38px_-28px_rgba(39,71,121,0.18)] dark:hover:shadow-[0_24px_48px_-32px_rgba(0,0,0,0.9)]`}
+                    >
                             <div className="relative w-full aspect-video overflow-hidden bg-muted">
                                 {article.imageUrl ? (
                                     <Image
@@ -96,43 +61,36 @@ export function NewsSection({ initialNews }: Readonly<NewsSectionProps>) {
                                         alt={article.title}
                                         fill
                                         sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                        loading="lazy"
+                                        fetchPriority="low"
                                         className="object-cover"
-                                        onError={(e) => {
-                                            (e.target as HTMLImageElement).src =
-                                                "https://placehold.co/800x450/1e293b/94a3b8?text=News";
-                                        }}
                                     />
                                 ) : (
-                                            <div className="flex h-full w-full items-center justify-center bg-muted">
+                                    <div className="flex h-full w-full items-center justify-center bg-muted">
                                         <Newspaper className="h-10 w-10 text-muted-foreground/30" />
                                     </div>
                                 )}
                             </div>
 
-                            {/* Content */}
                             <div className="flex flex-col flex-1 p-4 sm:p-5">
-                                {/* Title */}
                                 <h3 className="font-semibold text-foreground text-base leading-snug mb-2 group-hover:text-primary transition-colors line-clamp-2">
                                     {article.title}
                                 </h3>
 
-                                {/* Description */}
                                 <p className="text-muted-foreground text-sm line-clamp-2 flex-1 mb-4">
                                     {article.description}
                                 </p>
 
-                                {/* Footer */}
                                 <div className="flex items-center justify-between border-t border-border/80 pt-3">
-                                    {/* Date */}
                                     <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
                                         <Calendar className="w-3.5 h-3.5" />
                                         <span>{formatDate(article.createdAt)}</span>
                                     </div>
 
-                                    {/* Read More Link */}
                                     {article.link && (
                                         <Link
                                             href={article.link}
+                                            prefetch={false}
                                             target="_blank"
                                             rel="noopener noreferrer"
                                             className={`${themeClasses.link} group/link flex items-center gap-1 text-xs font-medium transition-colors`}
@@ -143,10 +101,9 @@ export function NewsSection({ initialNews }: Readonly<NewsSectionProps>) {
                                     )}
                                 </div>
                             </div>
-                        </article>
-                    ))}
-                </div>
-            )}
+                    </article>
+                ))}
+            </div>
         </section>
     );
 }

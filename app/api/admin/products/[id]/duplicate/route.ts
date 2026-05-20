@@ -17,7 +17,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             id: newId, name: `${original.name} (สำเนา)`, description: original.description,
             price: original.price, discountPrice: original.discountPrice, imageUrl: original.imageUrl,
             imageUrls: original.imageUrls, category: original.category, currency: original.currency,
-            secretData: "", stockSeparator: original.stockSeparator, isSold: false, isFeatured: false, sortOrder: 0,
+            secretData: "", stockSeparator: original.stockSeparator, stockCount: 0, isSold: true, isFeatured: false, sortOrder: 0,
             autoDeleteAfterSale: original.autoDeleteAfterSale,
             createdAt: mysqlNow(),
             updatedAt: mysqlNow(),

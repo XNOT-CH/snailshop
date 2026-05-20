@@ -11,8 +11,22 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 // ─── Mocks ────────────────────────────────────────────────────────
-vi.mock("@/lib/auth", () => ({ isAdmin: vi.fn() }));
-vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-03-14 00:00:00") }));
+const { isAdminMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+}));
+vi.mock("@/lib/utils/date", () => ({
+  mysqlNow: vi.fn(() => "2026-03-14 00:00:00"),
+  toMySQLDatetime: vi.fn(() => "2026-03-14 00:00:00"),
+}));
 vi.mock("@/lib/validations/validate", () => ({ validateBody: vi.fn() }));
 vi.mock("@/lib/validations/content", () => ({
   navItemSchema: {},
@@ -104,10 +118,10 @@ describe("API: /api/gacha/drop-rates (GET)", () => {
 
   it("returns drop rates with machineId filter", async () => {
     (db.query.gachaRewards.findMany as any).mockResolvedValue([
-      { tier: "legendary", probability: "0.05" },
-      { tier: "epic",      probability: "0.15" },
-      { tier: "rare",      probability: "0.30" },
-      { tier: "common",    probability: "0.50" },
+      { tier: "legendary", probability: "0.05", rewardType: "CREDIT", rewardName: "Legendary Credit", rewardAmount: "1" },
+      { tier: "epic",      probability: "0.15", rewardType: "CREDIT", rewardName: "Epic Credit", rewardAmount: "1" },
+      { tier: "rare",      probability: "0.30", rewardType: "CREDIT", rewardName: "Rare Credit", rewardAmount: "1" },
+      { tier: "common",    probability: "0.50", rewardType: "CREDIT", rewardName: "Common Credit", rewardAmount: "1" },
     ]);
     const { GET } = await import("@/app/api/gacha/drop-rates/route");
     const res = await GET(mkReq("m1"));
@@ -122,7 +136,7 @@ describe("API: /api/gacha/drop-rates (GET)", () => {
 
   it("returns drop rates without machineId (uses isNull)", async () => {
     (db.query.gachaRewards.findMany as any).mockResolvedValue([
-      { tier: "common", probability: "1" },
+      { tier: "common", probability: "1", rewardType: "CREDIT", rewardName: "Credit", rewardAmount: "1" },
     ]);
     const { GET } = await import("@/app/api/gacha/drop-rates/route");
     const res = await GET(mkReq()); // no machineId
@@ -133,7 +147,7 @@ describe("API: /api/gacha/drop-rates (GET)", () => {
 
   it("handles null tier (defaults to common)", async () => {
     (db.query.gachaRewards.findMany as any).mockResolvedValue([
-      { tier: null, probability: null }, // both null
+      { tier: null, probability: null, rewardType: "CREDIT", rewardName: "Credit", rewardAmount: "1" }, // both null
     ]);
     const { GET } = await import("@/app/api/gacha/drop-rates/route");
     const res = await GET(mkReq("m1"));
@@ -352,6 +366,7 @@ describe("API: /api/admin/gacha-machines/[id]/duplicate (POST)", () => {
     const { POST } = await import("@/app/api/admin/gacha-machines/[id]/duplicate/route");
     const res = await POST(new Request("http://localhost"), mkParams("m1"));
     expect(res.status).toBe(401);
+    await expect(res.json()).resolves.toEqual({ success: false });
   });
 
   it("returns 404 when machine not found", async () => {
@@ -360,6 +375,10 @@ describe("API: /api/admin/gacha-machines/[id]/duplicate (POST)", () => {
     const { POST } = await import("@/app/api/admin/gacha-machines/[id]/duplicate/route");
     const res = await POST(new Request("http://localhost"), mkParams("m_none"));
     expect(res.status).toBe(404);
+    await expect(res.json()).resolves.toEqual({
+      success: false,
+      message: "ไม่พบข้อมูลเดิม",
+    });
   });
 
   it("duplicates machine with rewards", async () => {
@@ -378,8 +397,10 @@ describe("API: /api/admin/gacha-machines/[id]/duplicate (POST)", () => {
     const res = await POST(new Request("http://localhost"), mkParams("m1"));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.data.id).toBeDefined();
+    expect(body).toEqual({
+      success: true,
+      data: { id: expect.any(String) },
+    });
     expect(db.insert).toHaveBeenCalledTimes(2); // machine + rewards
   });
 
@@ -394,6 +415,10 @@ describe("API: /api/admin/gacha-machines/[id]/duplicate (POST)", () => {
     const { POST } = await import("@/app/api/admin/gacha-machines/[id]/duplicate/route");
     const res = await POST(new Request("http://localhost"), mkParams("m1"));
     expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      success: true,
+      data: { id: expect.any(String) },
+    });
     expect(db.insert).toHaveBeenCalledTimes(1); // only machine, no rewards
   });
 });

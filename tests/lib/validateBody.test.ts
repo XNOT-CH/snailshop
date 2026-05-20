@@ -38,11 +38,29 @@ describe("validateBody", () => {
   it("returns error for invalid JSON", async () => {
     const result = await validateBody(mockBadRequest(), testSchema);
     expect("error" in result).toBe(true);
+    if ("error" in result) {
+      expect(result.error.status).toBe(400);
+      const body = await result.error.json();
+      expect(body).toEqual({
+        success: false,
+        message: "Request body ไม่ถูกต้อง (invalid JSON)",
+      });
+    }
   });
 
   it("returns error for schema validation failure", async () => {
     const result = await validateBody(mockRequest({ name: "", age: -1 }), testSchema);
     expect("error" in result).toBe(true);
+    if ("error" in result) {
+      expect(result.error.status).toBe(400);
+      const body = await result.error.json();
+      expect(body.success).toBe(false);
+      expect(body.message).toBe("Name is required");
+      expect(body.errors).toEqual({
+        name: ["Name is required"],
+        age: ["Age must be >= 0"],
+      });
+    }
   });
 
   it("returns error for missing fields", async () => {
@@ -53,5 +71,10 @@ describe("validateBody", () => {
   it("returns error with first issue message", async () => {
     const result = await validateBody(mockRequest({ name: 123 }), testSchema);
     expect("error" in result).toBe(true);
+    if ("error" in result) {
+      const body = await result.error.json();
+      expect(body.message).toBe("Invalid input: expected string, received number");
+      expect(Object.keys(body.errors)).toEqual(["name", "age"]);
+    }
   });
 });

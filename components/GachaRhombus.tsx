@@ -1,19 +1,24 @@
 "use client";
 
 import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
+import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dices, Loader2, Gamepad2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { showError, showSuccess } from "@/lib/swal";
-import { GachaResultModal } from "@/components/GachaResultModal";
-import { GachaRecentFeed } from "@/components/GachaRecentFeed";
-import { DropRateModal } from "@/components/DropRateModal";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
 import { shouldBypassImageOptimization } from "@/lib/imageUrl";
 import { EMPTY_USER_BALANCES, getBalanceByCostType, type UserBalances } from "@/lib/userBalances";
 import { getGachaCostLabel, normalizeGachaCost } from "@/lib/gachaCost";
+import { STORAGE_KEYS } from "@/lib/constants/storageKeys";
+import { fetchUserBalances } from "@/lib/client/userBalanceClient";
+import {
+  buildGachaRollPayload,
+  requestGachaRoll,
+  type GachaRollSpin,
+} from "@/lib/client/gachaRollClient";
 import {
   buildGrid,
   findTileIndex,
@@ -23,6 +28,21 @@ import {
   type TileType,
   type GachaProductLite,
 } from "@/lib/gachaGrid";
+
+const GachaResultModal = dynamic(
+  () => import("@/components/GachaResultModal").then((mod) => mod.GachaResultModal),
+  { ssr: false }
+);
+
+const GachaRecentFeed = dynamic(
+  () => import("@/components/GachaRecentFeed").then((mod) => mod.GachaRecentFeed),
+  { ssr: false }
+);
+
+const DropRateModal = dynamic(
+  () => import("@/components/DropRateModal").then((mod) => mod.DropRateModal),
+  { ssr: false }
+);
 
 type Phase = "idle" | "rolling1" | "waitSpin2" | "rolling2" | "revealing" | "result";
 type Particle = { id: number; tx: string; ty: string; color: string; dur: string; delay: string; size: number };
@@ -185,6 +205,7 @@ interface GachaRhombusProps {
   initialBalances?: UserBalances;
   machineId?: string;
   maintenance?: { enabled: boolean; message: string };
+  shouldRestorePendingSpin?: boolean;
 }
 
 export function GachaRhombus({
@@ -193,6 +214,7 @@ export function GachaRhombus({
   initialBalances = EMPTY_USER_BALANCES,
   machineId,
   maintenance,
+  shouldRestorePendingSpin = false,
 }: Readonly<GachaRhombusProps>) {
   const router = useRouter();
   const currencySettings = useCurrencySettings();
@@ -244,26 +266,20 @@ export function GachaRhombus({
   useEffect(() => setBalances(initialBalances), [initialBalances]);
   useEffect(() => {
     if (globalThis.window === undefined) return;
-    const saved = globalThis.window.localStorage.getItem("gacha-skip-animation");
+    const saved = globalThis.window.localStorage.getItem(STORAGE_KEYS.GACHA_SKIP_ANIMATION);
     setSkipAnimationEnabled(saved === "true");
   }, []);
   useEffect(() => {
     if (globalThis.window === undefined) return;
-    globalThis.window.localStorage.setItem("gacha-skip-animation", String(skipAnimationEnabled));
+    globalThis.window.localStorage.setItem(STORAGE_KEYS.GACHA_SKIP_ANIMATION, String(skipAnimationEnabled));
   }, [skipAnimationEnabled]);
 
   const refreshBalances = useCallback(async () => {
     if (normalizedCost.costType === "FREE") return;
     try {
-      const res = await fetch("/api/user/balance", { cache: "no-store" });
-      if (!res.ok) return;
-      const json = await res.json() as ({ success?: boolean } & Partial<UserBalances>);
-      if (!json.success) return;
-      setBalances({
-        creditBalance: Number(json.creditBalance ?? 0),
-        pointBalance: Number(json.pointBalance ?? 0),
-        ticketBalance: Number(json.ticketBalance ?? 0),
-      });
+      const latestBalances = await fetchUserBalances();
+      if (!latestBalances) return;
+      setBalances(latestBalances);
     } catch {
       // Keep the most recent known balance if refresh fails.
     }
@@ -355,17 +371,8 @@ export function GachaRhombus({
     }, 500);
   }, [finalizeResult, queueTimeout, tiles]);
 
-  const callRollApi = useCallback(async (spinNum: 1 | 2 | 3) => {
-    const res = await fetch("/api/gacha/roll", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ spin: spinNum, machineId }),
-    });
-    try {
-      return await res.json();
-    } catch {
-      return { success: false, message: res.status === 401 ? "กรุณาเข้าสู่ระบบก่อน" : "เกิดข้อผิดพลาด" };
-    }
+  const callRollApi = useCallback(async (spinNum: GachaRollSpin) => {
+    return requestGachaRoll(buildGachaRollPayload(spinNum, machineId));
   }, [machineId]);
 
   const reset = useCallback(() => {
@@ -386,6 +393,7 @@ export function GachaRhombus({
   }, [clearQueuedTimeouts]);
 
   useEffect(() => {
+    if (!shouldRestorePendingSpin) return;
     if (restoringPendingRef.current) return;
     restoringPendingRef.current = true;
 
@@ -396,9 +404,9 @@ export function GachaRhombus({
         if (data.message) {
           showSuccess(data.message);
         }
-        const { lLabel, rLabel, product } = data.data ?? {};
-        if (!lLabel || !rLabel || !product) return;
-        finalizeResult(lLabel, rLabel, product, false);
+        const restoredData = data.data;
+        if (!restoredData?.lLabel || !restoredData.rLabel || !restoredData.product) return;
+        finalizeResult(restoredData.lLabel, restoredData.rLabel, restoredData.product, false);
         await refreshBalances();
       } catch {
         // Ignore resume failures and let the user start a new spin manually.
@@ -406,7 +414,7 @@ export function GachaRhombus({
     }
 
     restorePendingSpin().catch(() => undefined);
-  }, [callRollApi, finalizeResult, refreshBalances]);
+  }, [callRollApi, finalizeResult, refreshBalances, shouldRestorePendingSpin]);
 
   const handleFirstSpin = useCallback(async () => {
     if (phase !== "idle") return;
@@ -471,12 +479,13 @@ export function GachaRhombus({
       if (data.message) {
         showSuccess(data.message);
       }
-      const { rLabel, product } = data.data ?? {};
-      if (!rLabel || !product) {
+      const secondSpinData = data.data;
+      if (!secondSpinData?.rLabel || !secondSpinData.product) {
         showError("ข้อมูลสุ่มไม่ครบถ้วน");
         reset();
         return;
       }
+      const { rLabel, product } = secondSpinData;
       pendingSecondSpinRef.current = { rLabel, product };
       refreshBalances().catch(() => undefined);
       if ((skipAnimationEnabled || skipRequestedPhaseRef.current === "rolling2") && selectedLLabel) {
@@ -535,7 +544,8 @@ export function GachaRhombus({
     if (!el) return;
     const observer = new ResizeObserver((entries) => {
       const width = entries[0]?.contentRect.width ?? el.clientWidth;
-      setScale(Math.min(1, width / gridWidth));
+      const nextScale = Math.min(1, width / gridWidth);
+      setScale((current) => (Math.abs(current - nextScale) < 0.001 ? current : nextScale));
     });
     observer.observe(el);
     return () => observer.disconnect();

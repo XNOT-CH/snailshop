@@ -14,9 +14,17 @@ vi.mock("@/lib/db", () => ({
   users: {},
 }));
 
+const { isAdminMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+}));
+
 vi.mock("@/lib/auth", () => ({
-  isAdmin: vi.fn(),
-  requirePermission: vi.fn(),
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
 }));
 
 vi.mock("@/lib/auditLog", () => ({

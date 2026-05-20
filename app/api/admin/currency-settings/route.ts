@@ -6,12 +6,13 @@ import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { currencySettingsSchema } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
+import { contentApiError } from "@/lib/features/content/apiResponse";
 
 const DEFAULT_SETTINGS = { id: "default", name: "พอยท์", symbol: "💎", code: "POINT", description: null, isActive: true, updatedAt: "" };
 
 export async function GET() {
     const authCheck = await requirePermission(PERMISSIONS.SETTINGS_VIEW);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         let settings = await db.query.currencySettings.findFirst({ where: eq(currencySettings.id, "default") });
         if (!settings) {
@@ -20,13 +21,13 @@ export async function GET() {
         }
         return NextResponse.json(settings);
     } catch {
-        return NextResponse.json({ error: "Failed to fetch currency settings" }, { status: 500 });
+        return contentApiError("Failed to fetch currency settings", { status: 500 });
     }
 }
 
 export async function PUT(request: NextRequest) {
     const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.SETTINGS_EDIT);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const result = await validateBody(request, currencySettingsSchema);
         if ("error" in result) return result.error;
@@ -41,6 +42,6 @@ export async function PUT(request: NextRequest) {
         const settings = await db.query.currencySettings.findFirst({ where: eq(currencySettings.id, "default") });
         return NextResponse.json(settings);
     } catch {
-        return NextResponse.json({ error: "Failed to update currency settings" }, { status: 500 });
+        return contentApiError("Failed to update currency settings", { status: 500 });
     }
 }

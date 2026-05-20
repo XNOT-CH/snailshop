@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { rawDbPool } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/encryption";
 import { splitStock, getDelimiter } from "@/lib/stock";
 import {
@@ -48,7 +48,7 @@ export type PurchasePromoData = {
 
 type RawConnection = {
     beginTransaction: () => Promise<void>;
-    execute: (query: string, params?: unknown[]) => Promise<[unknown]>;
+    execute: (query: string, params?: unknown[]) => Promise<[unknown, unknown]>;
     commit: () => Promise<void>;
     rollback: () => Promise<void>;
     release: () => void;
@@ -106,6 +106,7 @@ export function processStock(decryptedData: string, separatorType: string, qty: 
     return {
         givenJoined: givenItems.join(delimiter),
         remainingData: remainingItems.join(delimiter),
+        remainingCount: remainingItems.length,
         isLastStock: remainingItems.length === 0,
     };
 }
@@ -235,13 +236,11 @@ export function validateAndSummarizeCartProducts(
 }
 
 export async function getRawTransactionConnection() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const getConnection = (db as any).$client?.getConnection;
-    if (typeof getConnection !== "function") {
+    if (typeof rawDbPool?.getConnection !== "function") {
         throw new Error("Purchases require a transactional MySQL connection");
     }
 
-    return getConnection() as Promise<RawConnection>;
+    return rawDbPool.getConnection() as Promise<RawConnection>;
 }
 
 export async function validatePromoInTransaction(
@@ -360,7 +359,7 @@ export async function executeSingleProductPurchaseTransaction(params: {
 
         const decryptedData = decrypt(product.secretData || "");
         const separatorType = product.stockSeparator || "newline";
-        const { givenJoined, remainingData, isLastStock } = processStock(decryptedData, separatorType, qty);
+        const { givenJoined, remainingData, remainingCount, isLastStock } = processStock(decryptedData, separatorType, qty);
 
         const orderId = crypto.randomUUID();
         await conn.execute(
@@ -381,9 +380,10 @@ export async function executeSingleProductPurchaseTransaction(params: {
         }
 
         await conn.execute(
-            "UPDATE Product SET secretData = ?, isSold = ?, orderId = ?, scheduledDeleteAt = ? WHERE id = ?",
+            "UPDATE Product SET secretData = ?, stockCount = ?, isSold = ?, orderId = ?, scheduledDeleteAt = ? WHERE id = ?",
             [
                 encrypt(remainingData),
+                remainingCount,
                 isLastStock ? 1 : 0,
                 orderId,
                 isLastStock ? getAutoDeleteTimestamp(product.autoDeleteAfterSale) : null,
@@ -473,7 +473,7 @@ export async function executeCartPurchaseTransaction(params: {
 
             const decrypted = decrypt(product.secretData || "");
             const separatorType = product.stockSeparator || "newline";
-            const { givenJoined, remainingData, isLastStock } = processStock(
+            const { givenJoined, remainingData, remainingCount, isLastStock } = processStock(
                 decrypted,
                 separatorType,
                 item.quantity,
@@ -489,9 +489,10 @@ export async function executeCartPurchaseTransaction(params: {
             );
 
             await conn.execute(
-                "UPDATE Product SET secretData = ?, isSold = ?, orderId = ?, scheduledDeleteAt = ? WHERE id = ?",
+                "UPDATE Product SET secretData = ?, stockCount = ?, isSold = ?, orderId = ?, scheduledDeleteAt = ? WHERE id = ?",
                 [
                     encrypt(remainingData),
+                    remainingCount,
                     isLastStock ? 1 : 0,
                     orderId,
                     isLastStock ? getAutoDeleteTimestamp(product.autoDeleteAfterSale) : null,

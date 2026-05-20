@@ -9,6 +9,7 @@ import {
     Clock3,
     Coins,
     Gift,
+    Loader2,
     Lock,
     Sparkles,
     Ticket,
@@ -18,7 +19,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { SeasonPassClaimButton } from "@/components/season-pass/SeasonPassClaimButton";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { getPointCurrencyName } from "@/lib/currencySettings";
+import { showError, showSuccess, showWarning } from "@/lib/swal";
 import { themeClasses } from "@/lib/theme";
 import type { SeasonPassBoardReward, SeasonPassRewardType } from "@/lib/seasonPass";
 
@@ -40,6 +43,13 @@ type SeasonPassDashboardContentProps = {
     initialBoard: SeasonPassBoardReward[];
     initialHistory: SeasonPassHistoryEntry[];
     mockDate?: string | null;
+};
+
+type ClaimSuccessPayload = {
+    dayNumber: number;
+    rewardLabel: string;
+    rewardAmount: string;
+    claimedAtText: string;
 };
 
 const rewardConfig: Record<
@@ -100,27 +110,34 @@ const rewardLegend = [
     { key: "tickets", title: "ตั๋วสุ่ม", detail: "ใช้เป็นรางวัลตั๋วสุ่มตามจำนวนที่กำหนด" },
 ] as const;
 
-function RewardTile({ reward }: Readonly<{ reward: SeasonPassBoardReward }>) {
+function RewardTile({
+    reward,
+    isClaiming = false,
+    onClaim,
+}: Readonly<{
+    reward: SeasonPassBoardReward;
+    isClaiming?: boolean;
+    onClaim?: () => Promise<void> | void;
+}>) {
     const rewardInfo = rewardConfig[reward.type];
     const stateInfo = statusConfig[reward.status];
     const Icon = rewardInfo.icon;
-    const StateIcon = stateInfo.icon;
+    const StateIcon = isClaiming ? Loader2 : stateInfo.icon;
     const rewardImage = reward.imageUrl;
     const isClaimed = reward.status === "claimed";
     const isLocked = reward.status === "locked";
+    const canClaim = reward.status === "today" && Boolean(onClaim);
     const tileAccentClass = isClaimed
         ? "from-slate-100 to-white dark:from-slate-700/70 dark:to-slate-900/90"
         : rewardInfo.tileAccent;
     const iconWrapClass = isClaimed
         ? "bg-slate-100 text-slate-500 dark:bg-slate-700/80 dark:text-slate-300"
         : rewardInfo.iconWrap;
-
-    return (
-        <div
-            className={`relative min-h-36 rounded-[22px] border p-3 transition-transform duration-200 hover:-translate-y-0.5 ${stateInfo.card} ${
-                reward.highlight ? "ring-1 ring-amber-200/80 dark:ring-amber-300/55" : ""
-            }`}
-        >
+    const tileClassName = `relative block min-h-36 w-full rounded-[22px] border p-3 text-left transition-transform duration-200 hover:-translate-y-0.5 ${stateInfo.card} ${
+        reward.highlight ? "ring-1 ring-amber-200/80 dark:ring-amber-300/55" : ""
+    } ${canClaim ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-wait" : ""}`;
+    const content = (
+        <>
             <div className="flex items-start justify-between gap-2">
                 <span className="rounded-full bg-white/90 px-2 py-1 text-[11px] font-semibold text-slate-500 shadow-sm dark:bg-slate-800/95 dark:text-slate-300 dark:shadow-none">
                     Day {String(reward.day).padStart(2, "0")}
@@ -157,13 +174,34 @@ function RewardTile({ reward }: Readonly<{ reward: SeasonPassBoardReward }>) {
                     data-season-pass-status={isLocked ? "locked" : undefined}
                     className={`rounded-full px-2.5 py-1 text-[10px] font-semibold tracking-[0.12em] ${stateInfo.badge}`}
                 >
-                    {stateInfo.label}
+                    {isClaiming ? "กำลังรับ" : stateInfo.label}
                 </span>
                 <StateIcon
                     data-season-pass-icon={isLocked ? "locked" : undefined}
-                    className={`h-4 w-4 ${stateInfo.iconClass}`}
+                    className={`h-4 w-4 ${isClaiming ? "animate-spin text-blue-600 dark:text-sky-300" : stateInfo.iconClass}`}
                 />
             </div>
+        </>
+    );
+
+    if (canClaim) {
+        return (
+            <button
+                type="button"
+                className={tileClassName}
+                onClick={() => void onClaim?.()}
+                disabled={isClaiming}
+                aria-busy={isClaiming}
+                aria-label={`รับของ Day ${String(reward.day).padStart(2, "0")} ${reward.label} จำนวน ${reward.amount}`}
+            >
+                {content}
+            </button>
+        );
+    }
+
+    return (
+        <div className={tileClassName}>
+            {content}
         </div>
     );
 }
@@ -183,6 +221,7 @@ export function SeasonPassDashboardContent({
     const currencySettings = useCurrencySettings();
     const [board, setBoard] = useState(initialBoard);
     const [history, setHistory] = useState(initialHistory);
+    const [claimPending, setClaimPending] = useState(false);
     const pointCurrencyName = getPointCurrencyName(currencySettings);
 
     const boardSummary = useMemo(() => {
@@ -194,7 +233,7 @@ export function SeasonPassDashboardContent({
         return { claimedCount, missedCount, remainingCount, currentReward };
     }, [board, currentDay, durationDays]);
 
-    const handleClaimSuccess = (payload: { dayNumber: number; rewardLabel: string; rewardAmount: string; claimedAtText: string }) => {
+    const handleClaimSuccess = (payload: ClaimSuccessPayload) => {
         setBoard((currentBoard) =>
             currentBoard.map((reward) => {
                 if (reward.day === payload.dayNumber) {
@@ -226,6 +265,41 @@ export function SeasonPassDashboardContent({
     const currentReward = boardSummary.currentReward;
     const CurrentIcon = rewardConfig[currentReward.type].icon;
     const canClaim = currentReward.status === "today";
+
+    const handleClaim = async () => {
+        if (!canClaim || claimPending) {
+            return;
+        }
+
+        setClaimPending(true);
+
+        try {
+            const endpoint = mockDate ? `/api/season-pass/claim?mockDate=${encodeURIComponent(mockDate)}` : "/api/season-pass/claim";
+            const response = await fetchWithCsrf(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+            });
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                showWarning(data.message || "ไม่สามารถรับของวันนี้ได้");
+                return;
+            }
+
+            handleClaimSuccess({
+                dayNumber: data.dayNumber,
+                rewardLabel: data.rewardLabel ?? currentReward.label,
+                rewardAmount: data.rewardAmount ?? currentReward.amount,
+                claimedAtText: data.claimedAtText,
+            });
+            showSuccess("รับรางวัลสำเร็จ");
+        } catch (error) {
+            console.error("[SEASON_PASS_CLAIM]", error);
+            showError("เกิดข้อผิดพลาดในการรับของวันนี้");
+        } finally {
+            setClaimPending(false);
+        }
+    };
 
     const summaryCards = [
         { label: "รับแล้ว", value: `${boardSummary.claimedCount} วัน`, hint: "ของสะสมเข้าคลังแล้ว" },
@@ -313,7 +387,12 @@ export function SeasonPassDashboardContent({
 
                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
                             {board.map((reward) => (
-                                <RewardTile key={reward.day} reward={reward} />
+                                <RewardTile
+                                    key={reward.day}
+                                    reward={reward}
+                                    isClaiming={claimPending && reward.status === "today"}
+                                    onClaim={reward.status === "today" ? handleClaim : undefined}
+                                />
                             ))}
                         </div>
                     </div>
@@ -352,10 +431,8 @@ export function SeasonPassDashboardContent({
 
                             <SeasonPassClaimButton
                                 canClaim={canClaim}
-                                rewardLabel={currentReward.label}
-                                rewardAmount={currentReward.amount}
-                                onClaimSuccess={handleClaimSuccess}
-                                mockDate={mockDate}
+                                isLoading={claimPending}
+                                onClaim={handleClaim}
                             />
                         </div>
 

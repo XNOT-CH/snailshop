@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, Loader2 } from "lucide-react";
-import { showPurchaseConfirm, showPurchaseSuccessModal, showWarning, showErrorAlert } from "@/lib/swal";
+import { showWarning, showErrorAlert } from "@/lib/swal";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
-import { preparePurchase } from "@/lib/prepare-purchase";
+import { usePurchaseProduct } from "@/hooks/usePurchaseProduct";
 
 interface BuyButtonProps {
     productId: string;
@@ -15,8 +13,8 @@ interface BuyButtonProps {
 }
 
 export function BuyButton({ productId, price, disabled }: Readonly<BuyButtonProps>) {
-    const router = useRouter();
-    const [isLoading, setIsLoading] = useState(false);
+    const { isPurchasing, purchaseProduct } = usePurchaseProduct();
+    const isLoading = isPurchasing(productId);
     const maintenance = useMaintenanceStatus().purchase;
     const isBlocked = Boolean(disabled || isLoading || maintenance?.enabled);
 
@@ -28,57 +26,18 @@ export function BuyButton({ productId, price, disabled }: Readonly<BuyButtonProp
 
         if (disabled || isLoading) return;
 
-        const confirmed = await showPurchaseConfirm({
-            priceText: `฿${price.toLocaleString()}`,
-        });
-
-        if (!confirmed) return;
-
-        const purchaseCheck = await preparePurchase({
-            router,
+        await purchaseProduct({
+            productId,
             amount: price,
             currency: "THB",
-            pinActionLabel: "ยืนยัน PIN เพื่อซื้อสินค้า",
+            priceText: `฿${price.toLocaleString()}`,
+            onError: async (error) => {
+                await showErrorAlert(
+                    "เกิดข้อผิดพลาด",
+                    error instanceof Error ? error.message : "กรุณาลองใหม่อีกครั้ง"
+                );
+            },
         });
-        if (!purchaseCheck.allowed) return;
-
-        setIsLoading(true);
-
-        try {
-            const response = await fetch("/api/purchase", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ productId, pin: purchaseCheck.pin }),
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                const result = await showPurchaseSuccessModal({
-                    productName: data.productName,
-                    title: "ซื้อสำเร็จ",
-                    text: "ต้องการเข้าไปดูสินค้าที่ซื้อเลยไหม",
-                    confirmText: "ไปดูสินค้าเลย",
-                    cancelText: "อยู่หน้านี้",
-                    showCancelButton: true,
-                });
-                router.refresh();
-                if (result.isConfirmed) {
-                    router.push("/dashboard/inventory");
-                }
-            } else {
-                showWarning(data.message);
-            }
-        } catch (error) {
-            await showErrorAlert(
-                "เกิดข้อผิดพลาด",
-                error instanceof Error ? error.message : "กรุณาลองใหม่อีกครั้ง"
-            );
-        } finally {
-            setIsLoading(false);
-        }
     };
 
     return (

@@ -2,13 +2,9 @@ import { createHash, randomBytes, randomUUID, timingSafeEqual } from "node:crypt
 import { and, eq, isNull } from "drizzle-orm";
 import { db, emailVerificationTokens, users } from "@/lib/db";
 import { absoluteUrl } from "@/lib/seo";
-import { mysqlNow } from "@/lib/utils/date";
+import { mysqlNow, toMySQLDatetime } from "@/lib/utils/date";
 
 const EMAIL_VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
-
-function toMysqlDateTime(date: Date) {
-    return date.toISOString().slice(0, 19).replace("T", " ");
-}
 
 function hashEmailVerificationToken(token: string) {
     return createHash("sha256").update(token).digest("hex");
@@ -34,7 +30,7 @@ export async function createEmailVerificationToken({
     const normalizedEmail = email.trim().toLowerCase();
     const token = randomBytes(32).toString("base64url");
     const tokenHash = hashEmailVerificationToken(token);
-    const expiresAt = toMysqlDateTime(new Date(now + EMAIL_VERIFICATION_TTL_MS));
+    const expiresAt = toMySQLDatetime(new Date(now + EMAIL_VERIFICATION_TTL_MS));
 
     await db
         .update(emailVerificationTokens)

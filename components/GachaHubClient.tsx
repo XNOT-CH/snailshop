@@ -142,6 +142,7 @@ export function GachaHubClient({ machines }: Readonly<GachaHubClientProps>) {
                             <Link
                                 key={machine.id}
                                 href={machine.gameType === "GRID_3X3" ? `/gacha-grid/${machine.id}` : `/gacha/${machine.id}`}
+                                prefetch={false}
                                 className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-card/90 transition-all duration-200 hover:border-blue-400/60 hover:shadow-[0_22px_48px_-28px_rgba(37,99,235,0.45)]"
                             >
                                 <div className="w-full overflow-hidden bg-muted/60" style={{ aspectRatio: "2000/500" }}>

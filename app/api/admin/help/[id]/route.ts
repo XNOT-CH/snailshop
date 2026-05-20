@@ -7,12 +7,13 @@ import { validateBody } from "@/lib/validations/validate";
 import { helpItemSchema, type HelpItemInput } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
 import { mysqlNow } from "@/lib/utils/date";
+import { contentApiError } from "@/lib/features/content/apiResponse";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
     const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const { id } = await params;
         const result = await validateBody(request, helpItemSchema.partial());
@@ -20,7 +21,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         const { title, content, category, sortOrder, isActive } = result.data as Partial<HelpItemInput>;
 
         const existing = await db.query.helpArticles.findFirst({ where: eq(helpArticles.id, id) });
-        if (!existing) return NextResponse.json({ error: "Article not found" }, { status: 404 });
+        if (!existing) return contentApiError("Article not found", { status: 404 });
 
         const updateData: Record<string, unknown> = {};
         if (title) updateData.question = title;
@@ -36,7 +37,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         const updated = await db.query.helpArticles.findFirst({ where: eq(helpArticles.id, id) });
         return NextResponse.json(updated);
-    } catch { return NextResponse.json({ error: "Failed to update article" }, { status: 500 }); }
+    } catch { return contentApiError("Failed to update article", { status: 500 }); }
 }
 
 function generateChanges(
@@ -71,13 +72,13 @@ function generateChanges(
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const { id } = await params;
         const article = await db.query.helpArticles.findFirst({ where: eq(helpArticles.id, id) });
-        if (!article) return NextResponse.json({ error: "Article not found" }, { status: 404 });
+        if (!article) return contentApiError("Article not found", { status: 404 });
         await db.delete(helpArticles).where(eq(helpArticles.id, id));
         await auditFromRequest(request, { action: AUDIT_ACTIONS.HELP_DELETE, resource: "HelpArticle", resourceId: id, resourceName: article.question, details: { resourceName: article.question, deletedData: { question: article.question, category: article.category } } });
         return NextResponse.json({ success: true });
-    } catch { return NextResponse.json({ error: "Failed to delete article" }, { status: 500 }); }
+    } catch { return contentApiError("Failed to delete article", { status: 500 }); }
 }

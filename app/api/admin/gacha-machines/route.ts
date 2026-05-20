@@ -1,5 +1,4 @@
 import { mysqlNow } from "@/lib/utils/date";
-import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth";
 import { db, gachaMachines } from "@/lib/db";
 import { eq } from "drizzle-orm";
@@ -8,10 +7,11 @@ import { gachaMachineSchema } from "@/lib/validations/gacha";
 import { PERMISSIONS } from "@/lib/permissions";
 import { getMachineProbabilitySummary } from "@/lib/gachaMachineProbability";
 import { normalizeGachaCost } from "@/lib/gachaCost";
+import { gachaApiError, gachaApiSuccess } from "@/lib/features/gacha/apiResponse";
 
 export async function GET() {
     const auth = await requirePermission(PERMISSIONS.GACHA_VIEW);
-    if (!auth.success) return NextResponse.json({ success: false }, { status: 401 });
+    if (!auth.success) return gachaApiError(undefined, { status: 401 });
     const machines = await db.query.gachaMachines.findMany({
         orderBy: (t, { asc }) => asc(t.sortOrder),
         with: {
@@ -37,12 +37,12 @@ export async function GET() {
             rewards: undefined,
         };
     });
-    return NextResponse.json({ success: true, data });
+    return gachaApiSuccess(data);
 }
 
 export async function POST(req: Request) {
     const auth = await requirePermission(PERMISSIONS.GACHA_EDIT);
-    if (!auth.success) return NextResponse.json({ success: false }, { status: 401 });
+    if (!auth.success) return gachaApiError(undefined, { status: 401 });
 
     const result = await validateBody(req, gachaMachineSchema);
     if ("error" in result) return result.error;
@@ -68,5 +68,5 @@ export async function POST(req: Request) {
         updatedAt: mysqlNow(),
     });
     const machine = await db.query.gachaMachines.findFirst({ where: eq(gachaMachines.id, newId) });
-    return NextResponse.json({ success: true, data: machine });
+    return gachaApiSuccess(machine);
 }

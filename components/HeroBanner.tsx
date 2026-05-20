@@ -1,15 +1,14 @@
-import { db } from "@/lib/db";
 import { HeroBannerClient } from "./HeroBannerClient";
 import ReactDOM from "react-dom";
+import { getSiteSettings } from "@/lib/getSiteSettings";
 
 // Next.js image optimization proxy prefix
 function getNextImageUrl(src: string) {
-    return `/_next/image?url=${encodeURIComponent(src)}&w=1920&q=85`;
+    return `/_next/image?url=${encodeURIComponent(src)}&w=1920&q=75`;
 }
 
 export async function HeroBanner() {
-    // Fetch settings from database
-    const settings = await db.query.siteSettings.findFirst();
+    const settings = await getSiteSettings();
 
     // Default banners if no settings
     const banners = [

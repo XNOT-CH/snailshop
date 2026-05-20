@@ -5,7 +5,7 @@ import { decrypt, encrypt } from "@/lib/encryption";
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { isRedisAvailable, redis } from "@/lib/redis";
-import { takeFirstStock } from "@/lib/stock";
+import { getStockCount, takeFirstStock } from "@/lib/stock";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -213,6 +213,7 @@ export async function claimProductRewardOrThrow(tx: DbTransaction, input: ClaimP
     }
 
     const isLastStock = !remainingData || remainingData.trim().length === 0;
+    const remainingCount = getStockCount(remainingData, input.stockSeparator || "newline");
     const nextSecretData = isLastStock ? encrypt(taken) : encrypt(remainingData);
     const nextOrderId = crypto.randomUUID();
 
@@ -222,6 +223,7 @@ export async function claimProductRewardOrThrow(tx: DbTransaction, input: ClaimP
             isSold: isLastStock,
             orderId: isLastStock ? nextOrderId : null,
             secretData: nextSecretData,
+            stockCount: remainingCount,
         })
         .where(and(
             eq(products.id, input.productId),

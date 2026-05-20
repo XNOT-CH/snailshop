@@ -2,6 +2,8 @@
 
 @import "tw-animate-css";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 
 
 
@@ -261,7 +263,7 @@
       radial-gradient(circle at top, rgba(47, 125, 246, 0.08), transparent 30%),
       radial-gradient(circle at 18% 12%, rgba(143, 231, 255, 0.2), transparent 24%),
       linear-gradient(180deg, #f5f9ff 0%, #eef4fb 48%, #e6eef8 100%);
-    background-attachment: fixed;
+    background-attachment: scroll;
 
   }
 
@@ -271,7 +273,7 @@
       radial-gradient(circle at top, rgba(88, 166, 255, 0.14), transparent 28%),
       radial-gradient(circle at 20% 18%, rgba(143, 231, 255, 0.08), transparent 24%),
       linear-gradient(180deg, #101a2c 0%, #0a1220 44%, #08111c 100%);
-    background-attachment: fixed;
+    background-attachment: scroll;
 
   }
 
@@ -444,6 +446,18 @@ html.dark .bg-card:hover {
   box-shadow:
     0 18px 34px -28px rgba(39, 71, 121, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.92);
+}
+
+.progressive-image-placeholder {
+  background:
+    radial-gradient(circle at 24% 20%, rgba(88, 166, 255, 0.18), transparent 34%),
+    linear-gradient(135deg, rgba(231, 238, 247, 0.96), rgba(210, 224, 241, 0.88));
+}
+
+html.dark .progressive-image-placeholder {
+  background:
+    radial-gradient(circle at 24% 20%, rgba(88, 166, 255, 0.18), transparent 34%),
+    linear-gradient(135deg, rgba(20, 33, 51, 0.96), rgba(12, 22, 37, 0.92));
 }
 
 .storefront-product-action {
@@ -961,12 +975,18 @@ html.dark tbody tr:hover {
 
 /* Navbar glass effect */
 
-html.dark nav,
+@media (min-width: 768px) {
+  html.dark nav,
+  html.dark header {
+    backdrop-filter: blur(10px);
+  }
+}
 
-html.dark header {
-
-  backdrop-filter: blur(12px);
-
+@media (max-width: 767px) {
+  html.dark nav,
+  html.dark header {
+    backdrop-filter: none;
+  }
 }
 
 
@@ -1004,6 +1024,30 @@ html.dark header {
 .animate-page-enter {
 
   animation: pageEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+
+}
+
+@keyframes productCardEnter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-product-card {
+  animation: productCardEnter 0.36s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-enter,
+  .animate-product-card {
+    animation: none;
+  }
 
 }
 
@@ -3268,7 +3312,6 @@ svg {
   line-height: 0.94;
   letter-spacing: 0.08em;
   animation: snailWelcomeTitleRise 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
-  will-change: transform, opacity;
 }
 
 .snail-welcome-heading {

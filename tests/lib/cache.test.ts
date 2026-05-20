@@ -12,7 +12,7 @@ describe("lib/cache", () => {
 
   it("exports CACHE_KEYS and CACHE_TTL constants", async () => {
     const { CACHE_KEYS, CACHE_TTL } = await import("@/lib/cache");
-    expect(CACHE_KEYS.FEATURED_PRODUCTS).toBe("featured_products");
+    expect(CACHE_KEYS.FEATURED_PRODUCTS).toBe("featured_products_v2");
     expect(CACHE_TTL.SHORT).toBe(300);
     expect(CACHE_TTL.MEDIUM).toBe(900);
     expect(CACHE_TTL.LONG).toBe(3600);

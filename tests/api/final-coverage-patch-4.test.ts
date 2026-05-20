@@ -7,10 +7,36 @@ import { NextRequest } from "next/server";
 
 // ─── Global Mocks ──────────────────────────────────────────────
 vi.mock("@/auth",      () => ({ auth: vi.fn() }));
-vi.mock("@/lib/auth",  () => ({ isAdmin: vi.fn(), isAuthenticated: vi.fn() }));
-vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-03-14 00:00:00") }));
+const { isAdminMock, isAuthenticatedMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+  isAuthenticatedMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth",  () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+  isAuthenticated: isAuthenticatedMock,
+  isAuthenticatedWithCsrf: vi.fn(async () => {
+    const { auth } = await import("@/auth");
+    const session = await auth();
+    if (!session?.user?.id) return { success: false, error: "Unauthorized" };
+    return { success: true, userId: session.user.id, user: session.user };
+  }),
+}));
+vi.mock("@/lib/utils/date", () => ({
+  mysqlNow: vi.fn(() => "2026-03-14 00:00:00"),
+  toMySQLDatetime: vi.fn(() => "2026-03-14 00:00:00"),
+}));
 vi.mock("@/lib/validations/validate", () => ({ validateBody: vi.fn() }));
-vi.mock("@/lib/validations/gacha", () => ({ gachaMachineSchema: { partial: vi.fn().mockReturnValue({}) }, gachaRewardSchema: {} }));
+vi.mock("@/lib/validations/gacha", () => ({
+  gachaMachineSchema: { partial: vi.fn().mockReturnValue({}) },
+  gachaMachinePatchSchema: {},
+  gachaRewardSchema: {},
+}));
 vi.mock("@/lib/cache", () => ({
   invalidateCache: vi.fn().mockResolvedValue(true),
   invalidateProductCaches: vi.fn().mockResolvedValue(undefined),
@@ -48,13 +74,14 @@ vi.mock("@/lib/db", () => ({
     $client: { getConnection: vi.fn() },
   },
   gachaMachines: { id: "id", sortOrder: "sortOrder" },
+  gachaRewards:  { id: "id", gachaMachineId: "gachaMachineId", isActive: "isActive" },
   products:      { id: "id", isFeatured: "isFeatured" },
   users:         { id: "id" },
   promoCodes:    { id: "id", code: "code" },
 }));
 
 vi.mock("drizzle-orm", () => ({
-  eq: vi.fn(), and: vi.fn(), gte: vi.fn(), lte: vi.fn(),
+  eq: vi.fn(), and: vi.fn(), gte: vi.fn(), lte: vi.fn(), isNull: vi.fn(),
   count: vi.fn(), max: vi.fn(), sql: vi.fn(), desc: vi.fn(), asc: vi.fn(),
 }));
 
@@ -78,6 +105,10 @@ describe("API: /api/admin/gacha-machines/reorder", () => {
     const { POST } = await import("@/app/api/admin/gacha-machines/reorder/route");
     const res = await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ orders: "not-array" }) }));
     expect(res.status).toBe(400);
+    await expect(res.json()).resolves.toEqual({
+      success: false,
+      message: "Invalid payload",
+    });
   });
 
   it("POST returns 500 with non-Error thrown object", async () => {
@@ -86,6 +117,10 @@ describe("API: /api/admin/gacha-machines/reorder", () => {
     const { POST } = await import("@/app/api/admin/gacha-machines/reorder/route");
     const res = await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ orders: [{ id: "m1", sortOrder: 0 }] }) }));
     expect(res.status).toBe(500);
+    await expect(res.json()).resolves.toEqual({
+      success: false,
+      message: "Unknown error",
+    });
   });
 });
 
@@ -169,6 +204,9 @@ describe("API: /api/admin/gacha-machines/[id] (missing paths)", () => {
     (isAdmin as any).mockResolvedValue(ADMIN_OK);
     (validateBody as any).mockResolvedValue({ data: { costAmount: 100, isActive: true } });
     (db.query.gachaMachines.findFirst as any).mockResolvedValue({ id: "m1", name: "Test" });
+    (db.query.gachaRewards.findMany as any).mockResolvedValue([
+      { probability: "100", isActive: true, rewardType: "CREDIT", rewardName: "Credit", rewardAmount: "1" },
+    ]);
     const { PATCH } = await import("@/app/api/admin/gacha-machines/[id]/route");
     const res = await PATCH(new Request("http://localhost", { method: "PATCH" }), mkP("m1"));
     expect(res.status).toBe(200);

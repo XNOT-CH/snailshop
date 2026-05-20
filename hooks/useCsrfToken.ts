@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { API_ROUTES } from "@/lib/constants/apiRoutes";
 
 /**
  * Hook for managing CSRF token in forms
@@ -11,7 +12,7 @@ export function useCsrfToken() {
 
     const fetchCsrfToken = useCallback(async () => {
         try {
-            const res = await fetch("/api/csrf");
+            const res = await fetch(API_ROUTES.CSRF);
             const data = await res.json();
             if (data.success) {
                 setCsrfToken(data.csrfToken);

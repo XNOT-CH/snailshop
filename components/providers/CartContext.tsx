@@ -24,6 +24,7 @@ interface CartContextType {
     items: CartItem[];
     addToCart: (product: CartItem) => Promise<boolean>;
     removeFromCart: (productId: string) => void;
+    replaceCartItems: (nextItems: CartItem[]) => void;
     updateQuantity: (productId: string, quantity: number) => void;
     clearCart: () => void;
     isInCart: (productId: string) => boolean;
@@ -43,107 +44,88 @@ export const CART_STORAGE_KEY = "gamestore_cart";
 
 interface CartProviderProps {
     children: ReactNode;
+    initialAuthenticated?: boolean;
 }
 
-export function CartProvider({ children }: Readonly<CartProviderProps>) {
+function readStoredCart(): CartItem[] {
+    if (typeof window === "undefined") {
+        return [];
+    }
+
+    try {
+        const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+        if (!savedCart) {
+            return [];
+        }
+
+        const parsedCart = JSON.parse(savedCart);
+        return Array.isArray(parsedCart) ? parsedCart : [];
+    } catch (error) {
+        console.error("Failed to read cart from localStorage:", error);
+        return [];
+    }
+}
+
+export function CartProvider({
+    children,
+    initialAuthenticated = false,
+}: Readonly<CartProviderProps>) {
     const router = useRouter();
-    const [items, setItems] = useState<CartItem[]>([]);
+    const [items, setItems] = useState<CartItem[]>(() => initialAuthenticated ? readStoredCart() : []);
+    const itemsRef = React.useRef(items);
+    const pendingAddIdsRef = React.useRef<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(false);
-    const [isInitialized, setIsInitialized] = useState(false);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(initialAuthenticated);
     const [isCartOpen, setIsCartOpen] = useState(false);
 
-    const syncCartWithSession = useCallback(async (options?: { initial?: boolean }) => {
-        const initial = options?.initial ?? false;
-
-        try {
-            const response = await fetch("/api/session", {
-                method: "GET",
-                credentials: "same-origin",
-                cache: "no-store",
-            });
-
-            if (!response.ok) {
-                throw new Error("Session request failed");
-            }
-
-            const data = (await response.json()) as { authenticated?: boolean };
-            const authenticated = Boolean(data.authenticated);
-
-            setIsAuthenticated(authenticated);
-
-            if (!authenticated) {
-                setItems([]);
-                localStorage.removeItem(CART_STORAGE_KEY);
-                return;
-            }
-
-            const savedCart = localStorage.getItem(CART_STORAGE_KEY);
-            if (savedCart) {
-                const parsedCart = JSON.parse(savedCart);
-                if (Array.isArray(parsedCart)) {
-                    setItems(parsedCart);
-                    return;
-                }
-            }
-
-            setItems([]);
-        } catch (error) {
-            console.error("Failed to sync cart with session:", error);
-            if (initial) {
-                setItems([]);
-                setIsAuthenticated(false);
-            }
-        } finally {
-            if (initial) {
-                setIsInitialized(true);
-            }
-        }
-    }, []);
-
-    // Resolve session first so guests never see stale cart state from localStorage.
     useEffect(() => {
-        async function initializeCart() {
-            await syncCartWithSession({ initial: true });
-        }
-
-        initializeCart().catch(() => undefined);
-    }, [syncCartWithSession]);
+        itemsRef.current = items;
+    }, [items]);
 
     useEffect(() => {
-        if (!isInitialized) {
+        setIsAuthenticated(initialAuthenticated);
+
+        if (initialAuthenticated) {
+            setItems(readStoredCart());
             return;
         }
 
-        const handleWindowFocus = () => {
-            syncCartWithSession().catch(() => undefined);
-        };
+        setItems([]);
+        try {
+            localStorage.removeItem(CART_STORAGE_KEY);
+        } catch (error) {
+            console.error("Failed to clear cart for guest session:", error);
+        }
+    }, [initialAuthenticated]);
 
-        const handleVisibilityChange = () => {
-            if (document.visibilityState === "visible") {
-                syncCartWithSession().catch(() => undefined);
+    useEffect(() => {
+        if (!isAuthenticated) {
+            return;
+        }
+
+        const handleStorage = (event: StorageEvent) => {
+            if (event.key === CART_STORAGE_KEY) {
+                setItems(readStoredCart());
             }
         };
 
-        window.addEventListener("focus", handleWindowFocus);
-        document.addEventListener("visibilitychange", handleVisibilityChange);
+        window.addEventListener("storage", handleStorage);
 
         return () => {
-            window.removeEventListener("focus", handleWindowFocus);
-            document.removeEventListener("visibilitychange", handleVisibilityChange);
+            window.removeEventListener("storage", handleStorage);
         };
-    }, [isInitialized, syncCartWithSession]);
+    }, [isAuthenticated]);
 
     // Save cart to localStorage whenever items change
     useEffect(() => {
-        if (isInitialized && isAuthenticated) {
+        if (isAuthenticated) {
             try {
                 localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
             } catch (error) {
                 console.error("Failed to save cart to localStorage:", error);
             }
         }
-    }, [items, isAuthenticated, isInitialized]);
+    }, [items, isAuthenticated]);
 
     // Update item quantity
     const updateQuantity = useCallback((productId: string, quantity: number) => {
@@ -166,11 +148,24 @@ export function CartProvider({ children }: Readonly<CartProviderProps>) {
             return false;
         }
 
+        const requestedQuantity = product.quantity;
+        if (!Number.isInteger(requestedQuantity) || requestedQuantity < 1) {
+            showError("จำนวนสินค้าต้องเป็นจำนวนเต็มบวก");
+            return false;
+        }
+
         // Check if already in cart
-        if (items.some((item) => item.id === product.id)) {
+        if (itemsRef.current.some((item) => item.id === product.id)) {
             showInfo(`สินค้านี้อยู่ในตะกร้าแล้ว: ${product.name}`);
             return false;
         }
+
+        if (pendingAddIdsRef.current.has(product.id)) {
+            showInfo(`กำลังเพิ่มลงตะกร้า: ${product.name}`);
+            return false;
+        }
+
+        pendingAddIdsRef.current.add(product.id);
 
         // Validate stock via public availability API
         setIsLoading(true);
@@ -186,13 +181,37 @@ export function CartProvider({ children }: Readonly<CartProviderProps>) {
                 showError("ไม่พบสินค้านี้");
                 return false;
             }
-            if (data.isSold || data.stockCount === 0) {
+            const stockCount = Number(data.stockCount);
+            const hasStockCount = Number.isFinite(stockCount);
+            if (data.isSold || (hasStockCount && stockCount <= 0)) {
                 showError(`สินค้านี้หมดแล้ว: ${product.name}`);
+                return false;
+            }
+            if (hasStockCount && requestedQuantity > stockCount) {
+                showError(`สต็อกไม่เพียงพอ (เหลือ ${stockCount} รายการ)`);
+                return false;
+            }
+
+            if (itemsRef.current.some((item) => item.id === product.id)) {
+                showInfo(`สินค้านี้อยู่ในตะกร้าแล้ว: ${product.name}`);
                 return false;
             }
 
             // Add to cart with actual stock count so QuantitySelector can cap correctly
-            setItems((prev) => [...prev, { ...product, quantity: product.quantity || 1, stock: data.stockCount }]);
+            const cartItem = {
+                ...product,
+                quantity: requestedQuantity,
+                stock: hasStockCount ? stockCount : undefined,
+            };
+            setItems((prev) => {
+                if (prev.some((item) => item.id === product.id)) {
+                    return prev;
+                }
+
+                const nextItems = [...prev, cartItem];
+                itemsRef.current = nextItems;
+                return nextItems;
+            });
             showSuccess(`เพิ่มลงตะกร้าแล้ว: ${product.name}`);
             return true;
         } catch (error) {
@@ -200,9 +219,10 @@ export function CartProvider({ children }: Readonly<CartProviderProps>) {
             showError("ไม่สามารถตรวจสอบสินค้าได้");
             return false;
         } finally {
+            pendingAddIdsRef.current.delete(product.id);
             setIsLoading(false);
         }
-    }, [items, router]);
+    }, [router]);
 
     // Remove item from cart
     const removeFromCart = useCallback((productId: string) => {
@@ -213,6 +233,11 @@ export function CartProvider({ children }: Readonly<CartProviderProps>) {
             }
             return prev.filter((i) => i.id !== productId);
         });
+    }, []);
+
+    const replaceCartItems = useCallback((nextItems: CartItem[]) => {
+        itemsRef.current = nextItems;
+        setItems(nextItems);
     }, []);
 
     // Clear all items from cart
@@ -234,42 +259,40 @@ export function CartProvider({ children }: Readonly<CartProviderProps>) {
         setIsCartOpen(false);
     }, []);
 
-    // Calculate item count (total quantities)
-    const itemCount = items.reduce((count, item) => count + (item.quantity || 1), 0);
+    const cartTotals = React.useMemo(() => {
+        const totalsByCurrency = items.reduce<Record<ProductCurrencyCode, number>>((accumulator, item) => {
+            const currency = normalizeCurrencyCode(item.currency);
+            const price = item.discountPrice ?? item.price;
+            accumulator[currency] += price * (item.quantity || 1);
+            return accumulator;
+        }, { THB: 0, POINT: 0 });
+        const subtotal = totalsByCurrency.THB;
 
-    // Calculate subtotal (using discount price if available, multiplied by quantity)
-    const subtotal = items.reduce((sum, item) => {
-        const price = item.discountPrice ?? item.price;
-        return normalizeCurrencyCode(item.currency) === "THB"
-            ? sum + price * (item.quantity || 1)
-            : sum;
-    }, 0);
-
-    // Total (same as subtotal for now, can add fees/discounts later)
-    const total = subtotal;
-    const totalsByCurrency = items.reduce<Record<ProductCurrencyCode, number>>((accumulator, item) => {
-        const currency = normalizeCurrencyCode(item.currency);
-        const price = item.discountPrice ?? item.price;
-        accumulator[currency] += price * (item.quantity || 1);
-        return accumulator;
-    }, { THB: 0, POINT: 0 });
+        return {
+            itemCount: items.reduce((count, item) => count + (item.quantity || 1), 0),
+            subtotal,
+            total: subtotal,
+            totalsByCurrency,
+        };
+    }, [items]);
 
     const value: CartContextType = React.useMemo(() => ({
         items,
         addToCart,
         updateQuantity,
         removeFromCart,
+        replaceCartItems,
         clearCart,
         isInCart,
         isCartOpen,
         openCart,
         closeCart,
-        itemCount,
-        subtotal,
-        total,
-        totalsByCurrency,
+        itemCount: cartTotals.itemCount,
+        subtotal: cartTotals.subtotal,
+        total: cartTotals.total,
+        totalsByCurrency: cartTotals.totalsByCurrency,
         isLoading,
-    }), [items, addToCart, updateQuantity, removeFromCart, clearCart, isInCart, isCartOpen, openCart, closeCart, itemCount, subtotal, total, totalsByCurrency, isLoading]);
+    }), [items, addToCart, updateQuantity, removeFromCart, replaceCartItems, clearCart, isInCart, isCartOpen, openCart, closeCart, cartTotals, isLoading]);
 
     return (
         <CartContext.Provider value={value}>

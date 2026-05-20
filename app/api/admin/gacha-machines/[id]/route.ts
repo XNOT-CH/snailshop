@@ -7,24 +7,25 @@ import { gachaMachinePatchSchema } from "@/lib/validations/gacha";
 import { PERMISSIONS } from "@/lib/permissions";
 import { getMachineProbabilitySummary } from "@/lib/gachaMachineProbability";
 import { normalizeGachaCost } from "@/lib/gachaCost";
+import { gachaApiError, gachaApiSuccess } from "@/lib/features/gacha/apiResponse";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
 export async function GET(_req: Request, { params }: RouteParams) {
     const auth = await requirePermission(PERMISSIONS.GACHA_VIEW);
-    if (!auth.success) return NextResponse.json({ success: false }, { status: 401 });
+    if (!auth.success) return gachaApiError(undefined, { status: 401 });
     const { id } = await params;
     const machine = await db.query.gachaMachines.findFirst({
         where: eq(gachaMachines.id, id),
         with: { category: { columns: { id: true, name: true } } },
     });
-    if (!machine) return NextResponse.json({ success: false, message: "ไม่พบตู้กาชา" }, { status: 404 });
-    return NextResponse.json({ success: true, data: machine });
+    if (!machine) return gachaApiError("ไม่พบตู้กาชา", { status: 404 });
+    return gachaApiSuccess(machine);
 }
 
 export async function PATCH(req: Request, { params }: RouteParams) {
     const auth = await requirePermission(PERMISSIONS.GACHA_EDIT);
-    if (!auth.success) return NextResponse.json({ success: false }, { status: 401 });
+    if (!auth.success) return gachaApiError(undefined, { status: 401 });
     const { id } = await params;
 
     const result = await validateBody(req, gachaMachinePatchSchema);
@@ -49,21 +50,21 @@ export async function PATCH(req: Request, { params }: RouteParams) {
     if (body.isActive === true) {
         const probability = await getMachineProbabilitySummary(id);
         if (!probability.isComplete) {
-            return NextResponse.json({
-                success: false,
-                message: `ไม่สามารถเปิดใช้งานตู้ได้ เนื่องจากโอกาสรวมของรางวัลไม่ครบ 100% (ปัจจุบัน ${probability.totalProbability}%)`,
-            }, { status: 400 });
+            return gachaApiError(
+                `ไม่สามารถเปิดใช้งานตู้ได้ เนื่องจากโอกาสรวมของรางวัลไม่ครบ 100% (ปัจจุบัน ${probability.totalProbability}%)`,
+                { status: 400 },
+            );
         }
     }
 
     await db.update(gachaMachines).set(set).where(eq(gachaMachines.id, id));
     const updated = await db.query.gachaMachines.findFirst({ where: eq(gachaMachines.id, id) });
-    return NextResponse.json({ success: true, data: updated });
+    return gachaApiSuccess(updated);
 }
 
 export async function DELETE(_req: Request, { params }: RouteParams) {
     const auth = await requirePermission(PERMISSIONS.GACHA_EDIT);
-    if (!auth.success) return NextResponse.json({ success: false }, { status: 401 });
+    if (!auth.success) return gachaApiError(undefined, { status: 401 });
     const { id } = await params;
     await db.delete(gachaMachines).where(eq(gachaMachines.id, id));
     return NextResponse.json({ success: true });

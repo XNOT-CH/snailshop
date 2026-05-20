@@ -9,7 +9,7 @@ import { themeClasses } from "@/lib/theme";
 const OPEN_CHAT_EVENT = "open-customer-chat";
 
 const DEFAULT_NAV_ITEMS = [
-    { href: "/", label: "หน้าแรก", icon: Home, match: (pathname: string) => pathname === "/" },
+    { href: "/home", label: "หน้าแรก", icon: Home, match: (pathname: string) => pathname === "/home" },
     { href: "/shop", label: "ร้านค้า", icon: ShoppingBag, match: (pathname: string) => pathname === "/shop" || pathname.startsWith("/product") },
     { href: "/gachapons", label: "กาชา", icon: Dices, match: (pathname: string) => pathname === "/gachapons" || pathname.startsWith("/gacha") },
     { href: "/help", label: "ติดต่อร้าน", icon: HelpCircle, match: (pathname: string) => pathname === "/help", action: "chat" as const },
@@ -22,7 +22,7 @@ const ACCOUNT_NAV_ITEMS = [
     { href: "/dashboard/wallet", label: "กระเป๋า", icon: ShoppingBag, match: (pathname: string) => pathname.startsWith("/dashboard/wallet") },
     { href: "/dashboard/inventory", label: "คลัง", icon: Package, match: (pathname: string) => pathname.startsWith("/dashboard/inventory") },
     { href: "/dashboard/settings", label: "ตั้งค่า", icon: Settings, match: (pathname: string) => pathname.startsWith("/dashboard/settings") || pathname.startsWith("/profile") },
-    { href: "/", label: "หน้าร้าน", icon: ArrowLeft, match: () => false },
+    { href: "/home", label: "หน้าร้าน", icon: ArrowLeft, match: () => false },
 ] as const;
 
 const HIDDEN_PREFIXES = ["/admin", "/login", "/register"];
@@ -49,7 +49,7 @@ export function MobileBottomNav() {
                     const isActive = item.match(pathname);
                     const Icon = item.icon;
                     const itemClassName = cn(
-                        "group relative flex h-14 min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 overflow-hidden rounded-2xl px-1 py-1 text-[10px] font-semibold transition-[color,transform] duration-300 ease-out active:scale-[0.96]",
+                        "group relative flex h-14 min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 overflow-hidden rounded-2xl px-1 py-1 text-[10px] font-medium transition-[color,transform] duration-300 ease-out active:scale-[0.96]",
                         isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                     );
                     const iconWrapperClassName = cn(
@@ -59,7 +59,7 @@ export function MobileBottomNav() {
                             : "text-current group-hover:-translate-y-0.5"
                     );
                     const labelClassName = cn(
-                        "relative z-10 line-clamp-2 min-h-[1.35rem] text-center leading-[0.9rem] break-words transition-[opacity,transform] duration-300 ease-out",
+                        "relative z-10 line-clamp-2 min-h-[1.35rem] text-center leading-[0.95rem] break-words transition-[opacity,transform] duration-300 ease-out",
                         isActive ? "translate-y-0 opacity-100" : "translate-y-0.5 opacity-85 group-hover:translate-y-0 group-hover:opacity-100"
                     );
 
@@ -90,6 +90,7 @@ export function MobileBottomNav() {
                         <Link
                             key={item.href}
                             href={item.href}
+                            prefetch={false}
                             className={itemClassName}
                         >
                             <span

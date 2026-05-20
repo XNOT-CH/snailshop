@@ -33,7 +33,7 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     const authCheck = await requireAnyPermissionWithCsrf(request, [PERMISSIONS.USER_EDIT, PERMISSIONS.USER_MANAGE_ROLE]);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return NextResponse.json({ error: authCheck.error ?? "Unauthorized" }, { status: 401 });
     try {
         const { id } = await params;
 

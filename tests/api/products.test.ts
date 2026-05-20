@@ -1,8 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+const { isAdminMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+}));
+
 vi.mock("@/lib/auth", () => ({
-  isAdmin: vi.fn(),
+  isAdmin: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -25,7 +30,7 @@ vi.mock("@/lib/utils/date", () => ({
   mysqlNow: vi.fn(() => "2026-01-01 00:00:00"),
 }));
 
-import { isAdmin } from "@/lib/auth";
+import { requirePermissionWithCsrf } from "@/lib/auth";
 import { db } from "@/lib/db";
 
 describe("API: /api/products (POST)", () => {
@@ -41,7 +46,7 @@ describe("API: /api/products (POST)", () => {
     });
 
   it("returns 401 when not admin", async () => {
-    (isAdmin as any).mockResolvedValue({ success: false, error: "Unauthorized" });
+    (requirePermissionWithCsrf as any).mockResolvedValue({ success: false, error: "Unauthorized" });
 
     const { POST } = await import("@/app/api/products/route");
     const res = await POST(createRequest({ title: "Test", price: 100, category: "Games" }));
@@ -52,7 +57,7 @@ describe("API: /api/products (POST)", () => {
   });
 
   it("returns 400 when missing required fields", async () => {
-    (isAdmin as any).mockResolvedValue({ success: true, user: { id: "admin" } });
+    (requirePermissionWithCsrf as any).mockResolvedValue({ success: true, user: { id: "admin" } });
 
     const { POST } = await import("@/app/api/products/route");
     const res = await POST(createRequest({ title: "Test" })); // missing price, category
@@ -63,7 +68,7 @@ describe("API: /api/products (POST)", () => {
   });
 
   it("returns 400 for invalid price", async () => {
-    (isAdmin as any).mockResolvedValue({ success: true, user: { id: "admin" } });
+    (requirePermissionWithCsrf as any).mockResolvedValue({ success: true, user: { id: "admin" } });
 
     const { POST } = await import("@/app/api/products/route");
     const res = await POST(createRequest({ title: "Test", price: -5, category: "Games" }));
@@ -74,7 +79,7 @@ describe("API: /api/products (POST)", () => {
   });
 
   it("returns 400 when discount price >= original price", async () => {
-    (isAdmin as any).mockResolvedValue({ success: true, user: { id: "admin" } });
+    (requirePermissionWithCsrf as any).mockResolvedValue({ success: true, user: { id: "admin" } });
 
     const { POST } = await import("@/app/api/products/route");
     const res = await POST(createRequest({
@@ -87,7 +92,7 @@ describe("API: /api/products (POST)", () => {
   });
 
   it("creates product successfully", async () => {
-    (isAdmin as any).mockResolvedValue({ success: true, user: { id: "admin" } });
+    (requirePermissionWithCsrf as any).mockResolvedValue({ success: true, user: { id: "admin" } });
 
     const { POST } = await import("@/app/api/products/route");
     const res = await POST(createRequest({

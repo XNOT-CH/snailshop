@@ -21,7 +21,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ShoppingCart, Trash2, Loader2, ShoppingBag, Search, Tag, ChevronDown } from "lucide-react";
-import { useCart } from "@/components/providers/CartContext";
+import { useCart, type CartItem as CartContextItem } from "@/components/providers/CartContext";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { CartItem } from "./CartItem";
 import { CartIcon } from "./CartIcon";
@@ -36,18 +36,79 @@ import {
 } from "@/lib/currencySettings";
 import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
 import { requirePinForAction } from "@/lib/require-pin-for-action";
+import {
+    buildCartCheckoutPayload,
+    buildCartCheckoutSuccessLabel,
+    checkoutCart,
+} from "@/lib/client/cartCheckoutClient";
+import {
+    buildCartRefreshPayload,
+    refreshCartItems,
+    type RefreshedCartItem,
+} from "@/lib/client/cartRefreshClient";
+import {
+    buildAppliedPromoFromValidation,
+    buildPromoValidationPayload,
+    getCartPromoProductCategory,
+    validatePromoCode,
+} from "@/lib/client/promoCodeClient";
+import {
+    fetchCartRecommendationProducts,
+    getFilteredCartRecommendations,
+    type CartRecommendationProduct,
+} from "@/lib/client/cartRecommendationsClient";
 import { themeClasses } from "@/lib/theme";
 
-interface RecommendedProduct {
-    id: string;
-    name: string;
-    price: number;
-    discountPrice?: number | null;
-    currency?: string | null;
-    imageUrl: string | null;
-    category: string;
-    isSold: boolean;
-    isFeatured?: boolean;
+function normalizeOptionalPrice(value: number | null | undefined) {
+    return value == null ? null : Number(value);
+}
+
+function buildSyncedCartItem(
+    currentItem: CartContextItem,
+    refreshedItem: RefreshedCartItem,
+): CartContextItem {
+    return {
+        ...currentItem,
+        name: refreshedItem.name,
+        price: refreshedItem.price,
+        discountPrice: refreshedItem.discountPrice,
+        currency: refreshedItem.currency,
+        imageUrl: refreshedItem.imageUrl,
+        category: refreshedItem.category,
+        quantity: refreshedItem.quantity,
+        stock: refreshedItem.stock,
+    };
+}
+
+function hasCartItemChanged(currentItem: CartContextItem, syncedItem: CartContextItem) {
+    return currentItem.name !== syncedItem.name
+        || Number(currentItem.price) !== Number(syncedItem.price)
+        || normalizeOptionalPrice(currentItem.discountPrice) !== normalizeOptionalPrice(syncedItem.discountPrice)
+        || normalizeCurrencyCode(currentItem.currency) !== normalizeCurrencyCode(syncedItem.currency)
+        || currentItem.imageUrl !== syncedItem.imageUrl
+        || currentItem.category !== syncedItem.category
+        || (currentItem.quantity || 1) !== (syncedItem.quantity || 1)
+        || currentItem.stock !== syncedItem.stock;
+}
+
+function hasCheckoutRelevantChange(currentItem: CartContextItem, syncedItem: CartContextItem) {
+    return Number(currentItem.price) !== Number(syncedItem.price)
+        || normalizeOptionalPrice(currentItem.discountPrice) !== normalizeOptionalPrice(syncedItem.discountPrice)
+        || normalizeCurrencyCode(currentItem.currency) !== normalizeCurrencyCode(syncedItem.currency)
+        || (currentItem.quantity || 1) !== (syncedItem.quantity || 1);
+}
+
+function getCartTotalsByCurrency(cartItems: CartContextItem[]) {
+    return cartItems.reduce<Record<ProductCurrencyCode, number>>((accumulator, item) => {
+        const currency = normalizeCurrencyCode(item.currency);
+        const price = item.discountPrice ?? item.price;
+        accumulator[currency] += price * (item.quantity || 1);
+        return accumulator;
+    }, { THB: 0, POINT: 0 });
+}
+
+function getCartItemCount(cartItems: CartContextItem[]) {
+    return cartItems.reduce((count, item) => count + (item.quantity || 1), 0);
 }
 
 function CartSheetContent() {
@@ -57,6 +118,7 @@ function CartSheetContent() {
     const {
         items,
         removeFromCart,
+        replaceCartItems,
         updateQuantity,
         clearCart,
         total,
@@ -70,7 +132,7 @@ function CartSheetContent() {
     const [isOrderSummaryOpen, setIsOrderSummaryOpen] = useState(false);
     const [promoCode, setPromoCode] = useState("");
     const [isCheckingPromo, setIsCheckingPromo] = useState(false);
-    const [recommendedProducts, setRecommendedProducts] = useState<RecommendedProduct[]>([]);
+    const [recommendedProducts, setRecommendedProducts] = useState<CartRecommendationProduct[]>([]);
     const [isRecommendationsLoading, setIsRecommendationsLoading] = useState(false);
     const [appliedPromo, setAppliedPromo] = useState<{
         code: string;
@@ -90,26 +152,12 @@ function CartSheetContent() {
         async function fetchRecommendedProducts() {
             setIsRecommendationsLoading(true);
             try {
-                const response = await fetch("/api/products/list", { cache: "no-store" });
-                if (!response.ok) {
+                const products = await fetchCartRecommendationProducts();
+                if (!isActive || !products) {
                     return;
                 }
 
-                const data = await response.json();
-                if (!isActive || !Array.isArray(data)) {
-                    return;
-                }
-
-                setRecommendedProducts(
-                    data.map((product) => ({
-                        ...product,
-                        price: Number(product.price),
-                        discountPrice:
-                            product.discountPrice === null || product.discountPrice === undefined
-                                ? null
-                                : Number(product.discountPrice),
-                    })),
-                );
+                setRecommendedProducts(products);
             } catch (error) {
                 console.error("Cart recommendation fetch error:", error);
             } finally {
@@ -158,62 +206,27 @@ function CartSheetContent() {
             productDiscount: Math.max(0, (originalUnitPrice - unitPrice) * quantity),
         };
     });
-    const cartProductIds = new Set(items.map((item) => item.id));
-    const preferredCategories = new Set(items.map((item) => item.category).filter(Boolean));
-    const filteredRecommendedProducts = recommendedProducts
-        .filter((product) => !product.isSold && !cartProductIds.has(product.id))
-        .sort((left, right) => {
-            const leftPreferred = preferredCategories.has(left.category);
-            const rightPreferred = preferredCategories.has(right.category);
-
-            if (leftPreferred !== rightPreferred) {
-                return leftPreferred ? -1 : 1;
-            }
-
-            const leftDiscount = (left.price ?? 0) - (left.discountPrice ?? left.price ?? 0);
-            const rightDiscount = (right.price ?? 0) - (right.discountPrice ?? right.price ?? 0);
-            if (leftDiscount !== rightDiscount) {
-                return rightDiscount - leftDiscount;
-            }
-
-            if (Boolean(left.isFeatured) !== Boolean(right.isFeatured)) {
-                return left.isFeatured ? -1 : 1;
-            }
-
-            return left.name.localeCompare(right.name);
-        })
-        .slice(0, 4);
+    const filteredRecommendedProducts = getFilteredCartRecommendations(recommendedProducts, items);
 
     const handleCheckPromo = async () => {
         if (!promoCode.trim() || isCheckingPromo || items.length === 0 || thbTotal <= 0) return;
 
         setIsCheckingPromo(true);
         try {
-            const categories = Array.from(
-                new Set(
-                    items
-                        .filter((item) => (item.currency ?? "THB") !== "POINT")
-                        .map((item) => item.category)
-                        .filter(Boolean),
-                ),
-            );
-            const res = await fetch("/api/promo-codes/validate", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
+            const data = await validatePromoCode(
+                buildPromoValidationPayload({
                     code: promoCode,
                     totalPrice: thbTotal,
-                    productCategory: categories.length === 1 ? categories[0] : null,
+                    productCategory: getCartPromoProductCategory(items),
                 }),
-            });
-            const data = await res.json();
+            );
 
             if (data.valid) {
-                setAppliedPromo({
-                    code: promoCode.trim().toUpperCase(),
-                    discountAmount: Number(data.discountAmount ?? 0),
-                    finalPrice: Number(data.finalPrice ?? thbTotal),
-                });
+                setAppliedPromo(buildAppliedPromoFromValidation({
+                    code: promoCode,
+                    data,
+                    fallbackFinalPrice: thbTotal,
+                }));
                 showWarning(data.message);
                 return;
             }
@@ -245,45 +258,94 @@ function CartSheetContent() {
             return;
         }
 
-        closeCart();
-        await new Promise((r) => setTimeout(r, 300));
-
-        const confirmed = await showPurchaseConfirm({
-            productName: itemCount > 1 ? `${itemCount} รายการ` : items[0]?.name,
-            priceText: buildCurrencyBreakdownLabel(finalTotals, currencySettings),
-            extraHtml: appliedPromo
-                ? `<small>โค้ดส่วนลด: <strong>${appliedPromo.code}</strong> ลด ฿${appliedPromo.discountAmount.toLocaleString()}</small>`
-                : undefined,
-            confirmText: "ยืนยันการสั่งซื้อ",
-            cancelText: "ยกเลิก",
-        });
-        if (!confirmed) {
-            openCart();
-            return;
-        }
-
-        const pinCheck = await requirePinForAction("ยืนยัน PIN เพื่อชำระเงิน");
-        if (!pinCheck.allowed) {
-            openCart();
-            return;
-        }
-
         setIsCheckingOut(true);
         try {
-            const response = await fetch("/api/cart/checkout", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    items: items.map((item) => ({
-                        productId: item.id,
-                        quantity: item.quantity || 1,
-                    })),
-                    promoCode: appliedPromo?.code || undefined,
-                    pin: pinCheck.pin || undefined,
-                }),
-            });
+            const refreshData = await refreshCartItems(buildCartRefreshPayload({ items }));
+            if (!refreshData.success) {
+                showError(refreshData.message || "ไม่สามารถตรวจสอบข้อมูลตะกร้าได้ กรุณาลองใหม่");
+                return;
+            }
 
-            const data = await response.json();
+            const refreshedItems = refreshData.items ?? [];
+            const refreshedById = new Map(refreshedItems.map((item) => [item.id, item]));
+            const syncedItems = items
+                .map((item) => {
+                    const refreshedItem = refreshedById.get(item.id);
+                    return refreshedItem ? buildSyncedCartItem(item, refreshedItem) : null;
+                })
+                .filter((item): item is CartContextItem => item !== null);
+            const removedProductIds = [
+                ...(refreshData.missingProductIds ?? []),
+                ...(refreshData.soldProductIds ?? []),
+            ];
+            const hasRemovedProducts = syncedItems.length !== items.length || removedProductIds.length > 0;
+            const hasQuantityAdjustments = (refreshData.quantityAdjustedProductIds ?? []).length > 0;
+            const hasItemChanges = syncedItems.some((syncedItem, index) => hasCartItemChanged(items[index], syncedItem));
+            const hasRelevantChanges = hasRemovedProducts
+                || hasQuantityAdjustments
+                || syncedItems.some((syncedItem, index) => hasCheckoutRelevantChange(items[index], syncedItem))
+                || Boolean(appliedPromo && syncedItems.some((syncedItem, index) => items[index]?.category !== syncedItem.category));
+
+            if (hasItemChanges || hasRemovedProducts) {
+                replaceCartItems(syncedItems);
+            }
+
+            if (syncedItems.length === 0) {
+                setAppliedPromo(null);
+                openCart();
+                showError("สินค้าที่อยู่ในตะกร้าไม่พร้อมจำหน่ายแล้ว ระบบอัปเดตตะกร้าให้แล้ว");
+                return;
+            }
+
+            if (hasRelevantChanges) {
+                setAppliedPromo(null);
+                openCart();
+                if (hasRemovedProducts) {
+                    showWarning("บางสินค้าไม่พร้อมจำหน่ายแล้ว ระบบอัปเดตตะกร้าให้แล้ว กรุณาตรวจสอบอีกครั้ง");
+                } else if (hasQuantityAdjustments) {
+                    showWarning("จำนวนสินค้าบางรายการถูกปรับตามสต็อกล่าสุด กรุณาตรวจสอบก่อนชำระเงิน");
+                } else {
+                    showWarning("ราคาหรือข้อมูลสินค้ามีการอัปเดต กรุณาตรวจสอบยอดใหม่ก่อนชำระเงิน");
+                }
+                return;
+            }
+
+            const checkoutTotalsByCurrency = getCartTotalsByCurrency(syncedItems);
+            const checkoutItemCount = getCartItemCount(syncedItems);
+            const checkoutFinalTotals = {
+                THB: appliedPromo?.finalPrice ?? checkoutTotalsByCurrency.THB,
+                POINT: checkoutTotalsByCurrency.POINT,
+            };
+
+            closeCart();
+            await new Promise((r) => setTimeout(r, 300));
+
+            const confirmed = await showPurchaseConfirm({
+                productName: checkoutItemCount > 1 ? `${checkoutItemCount} รายการ` : syncedItems[0]?.name,
+                priceText: buildCurrencyBreakdownLabel(checkoutFinalTotals, currencySettings),
+                extraHtml: appliedPromo
+                    ? `<small>โค้ดส่วนลด: <strong>${appliedPromo.code}</strong> ลด ฿${appliedPromo.discountAmount.toLocaleString()}</small>`
+                    : undefined,
+                confirmText: "ยืนยันการสั่งซื้อ",
+                cancelText: "ยกเลิก",
+            });
+            if (!confirmed) {
+                openCart();
+                return;
+            }
+
+            const pinCheck = await requirePinForAction("ยืนยัน PIN เพื่อชำระเงิน");
+            if (!pinCheck.allowed) {
+                openCart();
+                return;
+            }
+
+            const checkoutPayload = buildCartCheckoutPayload({
+                items: syncedItems,
+                promoCode: appliedPromo?.code,
+                pin: pinCheck.pin,
+            });
+            const data = await checkoutCart(checkoutPayload);
 
             if (data.success) {
                 clearCart();
@@ -295,9 +357,7 @@ function CartSheetContent() {
                     },
                     currencySettings,
                 );
-                const label = data.purchasedCount === 1
-                    ? data.orders?.[0]?.productName
-                    : `${data.purchasedCount} รายการ รวม ${totalDisplay}`;
+                const label = buildCartCheckoutSuccessLabel(data, totalDisplay);
                 const result = await showPurchaseSuccessModal({
                     productName: label,
                     title: "ซื้อสำเร็จ",
@@ -630,7 +690,7 @@ function CartSheetContent() {
                                                     setAppliedPromo(null);
                                                 }}
                                                 onKeyDown={(event) => event.key === "Enter" && handleCheckPromo()}
-                                                className="h-10 border-border bg-background text-sm text-foreground placeholder:text-muted-foreground"
+                                                className="h-10 border-border bg-background text-base text-foreground placeholder:text-muted-foreground md:text-sm"
                                                 disabled={isCheckingPromo || isCheckingOut}
                                             />
                                             <Button

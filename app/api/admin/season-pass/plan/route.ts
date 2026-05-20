@@ -5,6 +5,7 @@ import { db, seasonPassPlans } from "@/lib/db";
 import { SEASON_PASS_REWARD_DAYS } from "@/lib/seasonPassConfig";
 import { getOrCreateSeasonPassPlan } from "@/lib/seasonPass";
 import { PERMISSIONS } from "@/lib/permissions";
+import { contentApiError } from "@/lib/features/content/apiResponse";
 
 function normalizePrice(value: unknown) {
     const price = Number(value);
@@ -27,21 +28,21 @@ function normalizeDuration(value: unknown) {
 export async function GET() {
     const authCheck = await requirePermission(PERMISSIONS.SEASON_PASS_VIEW);
     if (!authCheck.success) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return contentApiError("Unauthorized", { status: 401 });
     }
 
     try {
         const plan = await getOrCreateSeasonPassPlan();
         return NextResponse.json(plan);
     } catch {
-        return NextResponse.json({ error: "Failed to fetch season pass plan" }, { status: 500 });
+        return contentApiError("Failed to fetch season pass plan", { status: 500 });
     }
 }
 
 export async function PUT(request: NextRequest) {
     const authCheck = await requirePermission(PERMISSIONS.SEASON_PASS_EDIT);
     if (!authCheck.success) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        return contentApiError("Unauthorized", { status: 401 });
     }
 
     try {
@@ -60,16 +61,16 @@ export async function PUT(request: NextRequest) {
         const durationDays = normalizeDuration(body.durationDays ?? SEASON_PASS_REWARD_DAYS);
 
         if (!name) {
-            return NextResponse.json({ error: "Plan name is required" }, { status: 400 });
+            return contentApiError("Plan name is required", { status: 400 });
         }
 
         if (price === null) {
-            return NextResponse.json({ error: "Invalid price" }, { status: 400 });
+            return contentApiError("Invalid price", { status: 400 });
         }
 
         if (durationDays === null) {
-            return NextResponse.json(
-                { error: `Season Pass currently supports a fixed ${SEASON_PASS_REWARD_DAYS}-day reward board` },
+            return contentApiError(
+                `Season Pass currently supports a fixed ${SEASON_PASS_REWARD_DAYS}-day reward board`,
                 { status: 400 },
             );
         }
@@ -91,6 +92,6 @@ export async function PUT(request: NextRequest) {
 
         return NextResponse.json(updatedPlan);
     } catch {
-        return NextResponse.json({ error: "Failed to update season pass plan" }, { status: 500 });
+        return contentApiError("Failed to update season pass plan", { status: 500 });
     }
 }

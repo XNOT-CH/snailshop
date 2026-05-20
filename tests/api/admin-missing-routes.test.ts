@@ -16,7 +16,21 @@ import { NextRequest } from "next/server";
 
 // ─── Global mocks ─────────────────────────────────────────────────
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
-vi.mock("@/lib/auth", () => ({ isAdmin: vi.fn(), isAuthenticated: vi.fn() }));
+const { isAdminMock, isAuthenticatedMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+  isAuthenticatedMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+  isAuthenticated: isAuthenticatedMock,
+  isAuthenticatedWithCsrf: isAuthenticatedMock,
+}));
 
 vi.mock("@/lib/db", () => ({
   db: {

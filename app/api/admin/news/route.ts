@@ -8,10 +8,11 @@ import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
 import { newsItemSchema } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
+import { contentApiError } from "@/lib/features/content/apiResponse";
 
 export async function GET(request: Request) {
     const authCheck = await requirePermission(PERMISSIONS.CONTENT_VIEW);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const { searchParams } = new URL(request.url);
         const activeOnly = searchParams.get("active") === "true";
@@ -22,13 +23,13 @@ export async function GET(request: Request) {
         return NextResponse.json(articles);
     } catch (error) {
         console.error("[NEWS_GET]", error);
-        return NextResponse.json({ error: "Failed to fetch news" }, { status: 500 });
+        return contentApiError("Failed to fetch news", { status: 500 });
     }
 }
 
 export async function POST(request: Request) {
     const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const result = await validateBody(request, newsItemSchema);
         if ("error" in result) return result.error;
@@ -48,6 +49,6 @@ export async function POST(request: Request) {
         return NextResponse.json(news, { status: 201 });
     } catch (error) {
         console.error("[NEWS_POST]", error);
-        return NextResponse.json({ error: "Failed to create news" }, { status: 500 });
+        return contentApiError("Failed to create news", { status: 500 });
     }
 }

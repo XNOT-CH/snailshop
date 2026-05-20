@@ -43,6 +43,7 @@ export function SeasonPassLinkButton({ href, children }: Readonly<SeasonPassLink
         <Button asChild className={seasonPassButtonShellClass}>
             <Link
                 href={href}
+                prefetch={false}
                 className="relative inline-flex h-full items-center justify-center overflow-hidden rounded-full"
             >
                 <SeasonPassButtonFrame />

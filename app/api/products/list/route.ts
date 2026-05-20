@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { asc, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq, gt, isNull, or } from "drizzle-orm";
 import { db, products } from "@/lib/db";
 import { cacheOrFetch, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
 
@@ -20,7 +20,10 @@ export async function GET() {
                 isSold: products.isSold,
                 isFeatured: products.isFeatured,
             }).from(products)
-                .where(eq(products.isSold, false))
+                .where(and(
+                    eq(products.isSold, false),
+                    or(gt(products.stockCount, 0), isNull(products.stockCount)),
+                ))
                 .orderBy(desc(products.isFeatured), asc(products.category), desc(products.createdAt))
                 .limit(120),
             CACHE_TTL.MEDIUM,

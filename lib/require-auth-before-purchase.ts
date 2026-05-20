@@ -1,5 +1,6 @@
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { normalizeCallbackUrl } from "@/lib/authRedirect";
+import { requestSessionStatus } from "@/lib/client/accountClient";
 
 function buildCurrentUrl() {
     if (typeof globalThis.window === "undefined") {
@@ -12,17 +13,12 @@ function buildCurrentUrl() {
 
 export async function requireAuthBeforePurchase(router: AppRouterInstance) {
     try {
-        const response = await fetch("/api/session", {
-            method: "GET",
-            credentials: "same-origin",
-            cache: "no-store",
-        });
+        const { response, data } = await requestSessionStatus();
 
         if (!response.ok) {
             return { allowed: true } as const;
         }
 
-        const data = (await response.json()) as { authenticated?: boolean };
         if (data.authenticated) {
             return { allowed: true } as const;
         }

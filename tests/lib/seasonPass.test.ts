@@ -52,6 +52,21 @@ describe("lib/seasonPass", () => {
         expect(board.board[3]?.status).toBe("today");
     });
 
+    it("starts from subscription creation when startAt is older than the actual purchase record", () => {
+        const board = buildSeasonPassBoard({
+            startAt: "2026-04-01 00:00:00",
+            createdAt: "2026-04-05 02:00:00",
+            durationDays: 30,
+            claims: [] as never,
+            now: new Date("2026-04-05T05:00:00Z"),
+        });
+
+        expect(board.currentDay).toBe(1);
+        expect(board.missedCount).toBe(0);
+        expect(board.board[0]?.status).toBe("today");
+        expect(board.board[1]?.status).toBe("locked");
+    });
+
     it("returns reward definition for a given day", async () => {
         const reward = await getSeasonPassRewardByDay(30, "mock-plan-id");
 

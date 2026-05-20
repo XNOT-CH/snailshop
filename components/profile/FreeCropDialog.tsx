@@ -5,6 +5,16 @@ import { Crop, Move, RefreshCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
+  getCenteredSquareCropRect,
+  getExtensionFromMimeType,
+  getNextSquareCropRect,
+  getSquareCropHandlePosition,
+  getSquareCropSourceRect,
+  SQUARE_CROP_HANDLES,
+  type SquareCropDragMode,
+  type SquareCropRect,
+} from "@/components/image-crop/squareCrop";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -12,14 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-type ResizeHandle = "nw" | "ne" | "sw" | "se";
-
-interface CropRect {
-  x: number;
-  y: number;
-  size: number;
-}
 
 interface FreeCropDialogProps {
   open: boolean;
@@ -31,36 +33,8 @@ interface FreeCropDialogProps {
 
 const MIN_CROP_SIZE = 80;
 const PREVIEW_SIZE = 112;
+const OUTPUT_SIZE = 768;
 const CROPPED_IMAGE_TYPE = "image/png";
-
-function getExtensionFromMimeType(mimeType: string) {
-  switch (mimeType) {
-    case "image/png":
-      return "png";
-    case "image/jpeg":
-      return "jpg";
-    case "image/webp":
-      return "webp";
-    default:
-      return "png";
-  }
-}
-
-function getHandlePosition(handle: ResizeHandle) {
-  if (handle === "nw") {
-    return "left-0 top-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize";
-  }
-
-  if (handle === "ne") {
-    return "right-0 top-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize";
-  }
-
-  if (handle === "sw") {
-    return "bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize";
-  }
-
-  return "bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize";
-}
 
 export function FreeCropDialog({
   open,
@@ -70,8 +44,8 @@ export function FreeCropDialog({
   onConfirm,
 }: Readonly<FreeCropDialogProps>) {
   const imageRef = useRef<HTMLImageElement | null>(null);
-  const [cropRect, setCropRect] = useState<CropRect>({ x: 40, y: 40, size: 220 });
-  const [dragMode, setDragMode] = useState<"move" | ResizeHandle | null>(null);
+  const [cropRect, setCropRect] = useState<SquareCropRect>({ x: 40, y: 40, size: 220 });
+  const [dragMode, setDragMode] = useState<SquareCropDragMode | null>(null);
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [naturalSize, setNaturalSize] = useState({ width: 0, height: 0 });
@@ -101,30 +75,10 @@ export function FreeCropDialog({
       return;
     }
 
-    const size = Math.max(
-      Math.min(Math.min(image.clientWidth, image.clientHeight) * 0.68, image.clientWidth, image.clientHeight),
-      MIN_CROP_SIZE,
-    );
-
-    setCropRect({
-      x: Math.max((image.clientWidth - size) / 2, 0),
-      y: Math.max((image.clientHeight - size) / 2, 0),
-      size,
-    });
-  };
-
-  const clampCropRect = (nextRect: CropRect) => {
-    const image = imageRef.current;
-    if (!image) {
-      return nextRect;
-    }
-
-    const maxSize = Math.min(image.clientWidth, image.clientHeight);
-    const size = Math.max(Math.min(nextRect.size, maxSize), MIN_CROP_SIZE);
-    const x = Math.min(Math.max(nextRect.x, 0), image.clientWidth - size);
-    const y = Math.min(Math.max(nextRect.y, 0), image.clientHeight - size);
-
-    return { x, y, size };
+    setCropRect(getCenteredSquareCropRect({
+      width: image.clientWidth,
+      height: image.clientHeight,
+    }, MIN_CROP_SIZE));
   };
 
   const updateCropRect = useCallback((clientX: number, clientY: number) => {
@@ -134,40 +88,24 @@ export function FreeCropDialog({
 
     const deltaX = clientX - lastPoint.x;
     const deltaY = clientY - lastPoint.y;
+    const image = imageRef.current;
+
+    if (!image) {
+      return;
+    }
 
     setCropRect((current) => {
-      const nextRect = { ...current };
-
-      if (dragMode === "move") {
-        nextRect.x += deltaX;
-        nextRect.y += deltaY;
-      } else if (dragMode === "nw") {
-        const anchorX = current.x + current.size;
-        const anchorY = current.y + current.size;
-        const resizeDelta = Math.max(deltaX, deltaY);
-        nextRect.size = current.size - resizeDelta;
-        nextRect.x = anchorX - nextRect.size;
-        nextRect.y = anchorY - nextRect.size;
-      } else if (dragMode === "ne") {
-        const anchorX = current.x;
-        const anchorY = current.y + current.size;
-        const resizeDelta = Math.max(deltaX, -deltaY);
-        nextRect.size = current.size + resizeDelta;
-        nextRect.x = anchorX;
-        nextRect.y = anchorY - nextRect.size;
-      } else if (dragMode === "sw") {
-        const anchorX = current.x + current.size;
-        const anchorY = current.y;
-        const resizeDelta = Math.max(-deltaX, deltaY);
-        nextRect.size = current.size + resizeDelta;
-        nextRect.x = anchorX - nextRect.size;
-        nextRect.y = anchorY;
-      } else if (dragMode === "se") {
-        const resizeDelta = Math.max(deltaX, deltaY);
-        nextRect.size = current.size + resizeDelta;
-      }
-
-      return clampCropRect(nextRect);
+      return getNextSquareCropRect({
+        current,
+        mode: dragMode,
+        deltaX,
+        deltaY,
+        dimensions: {
+          width: image.clientWidth,
+          height: image.clientHeight,
+        },
+        minCropSize: MIN_CROP_SIZE,
+      });
     });
 
     setLastPoint({ x: clientX, y: clientY });
@@ -196,7 +134,7 @@ export function FreeCropDialog({
     };
   }, [dragMode, updateCropRect]);
 
-  const beginDrag = (mode: "move" | ResizeHandle, event: React.PointerEvent) => {
+  const beginDrag = (mode: SquareCropDragMode, event: React.PointerEvent) => {
     event.preventDefault();
     event.stopPropagation();
     setDragMode(mode);
@@ -221,12 +159,14 @@ export function FreeCropDialog({
       return;
     }
 
-    const scaleX = naturalSize.width / image.clientWidth;
-    const scaleY = naturalSize.height / image.clientHeight;
-    const sourceX = cropRect.x * scaleX;
-    const sourceY = cropRect.y * scaleY;
-    const sourceSizeX = cropRect.size * scaleX;
-    const sourceSizeY = cropRect.size * scaleY;
+    const { sourceX, sourceY, sourceSizeX, sourceSizeY } = getSquareCropSourceRect({
+      cropRect,
+      naturalSize,
+      displaySize: {
+        width: image.clientWidth,
+        height: image.clientHeight,
+      },
+    });
 
     const canvas = globalThis.document.createElement("canvas");
     canvas.width = PREVIEW_SIZE;
@@ -272,16 +212,18 @@ export function FreeCropDialog({
     setIsSaving(true);
 
     try {
-      const scaleX = naturalSize.width / image.clientWidth;
-      const scaleY = naturalSize.height / image.clientHeight;
-      const sourceX = cropRect.x * scaleX;
-      const sourceY = cropRect.y * scaleY;
-      const sourceSizeX = cropRect.size * scaleX;
-      const sourceSizeY = cropRect.size * scaleY;
+      const { sourceX, sourceY, sourceSizeX, sourceSizeY } = getSquareCropSourceRect({
+        cropRect,
+        naturalSize,
+        displaySize: {
+          width: image.clientWidth,
+          height: image.clientHeight,
+        },
+      });
 
       const canvas = globalThis.document.createElement("canvas");
-      canvas.width = 768;
-      canvas.height = 768;
+      canvas.width = OUTPUT_SIZE;
+      canvas.height = OUTPUT_SIZE;
 
       const context = canvas.getContext("2d");
       if (!context) {
@@ -377,12 +319,12 @@ export function FreeCropDialog({
                         <div className="pointer-events-none absolute inset-[10%] rounded-full border border-white/55" />
                         <div className="pointer-events-none absolute inset-[18%] rounded-full border border-white/20" />
 
-                        {(["nw", "ne", "sw", "se"] as ResizeHandle[]).map((handle) => {
+                        {SQUARE_CROP_HANDLES.map((handle) => {
                           return (
                             <button
                               key={handle}
                               type="button"
-                              className={`absolute h-5 w-5 touch-none rounded-full border-2 border-white bg-blue-600 shadow ${getHandlePosition(handle)}`}
+                              className={`absolute h-5 w-5 touch-none rounded-full border-2 border-white bg-blue-600 shadow ${getSquareCropHandlePosition(handle)}`}
                               onPointerDown={(event) => beginDrag(handle, event)}
                               aria-label={`Resize crop ${handle}`}
                             />

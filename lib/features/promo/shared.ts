@@ -1,4 +1,4 @@
-import { mysqlNow } from "@/lib/utils/date";
+import { mysqlNow, toMySQLDatetime } from "@/lib/utils/date";
 import type { PromoCodeInput } from "@/lib/validations/promoCode";
 
 type PromoRecordInput = Record<string, unknown>;
@@ -18,10 +18,6 @@ export interface PromoUpdateInput {
     excludedCategories?: string[] | null;
     isNewUserOnly?: boolean;
     isActive?: boolean;
-}
-
-export function toMySQLDatetime(value: Date) {
-    return value.toISOString().slice(0, 19).replace("T", " ");
 }
 
 export function parseOptionalDecimal(value: string | number | null | undefined) {

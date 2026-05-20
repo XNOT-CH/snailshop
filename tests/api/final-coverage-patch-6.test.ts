@@ -7,8 +7,25 @@ import { NextRequest } from "next/server";
 
 // ─── Global mocks for route tests ──────────────────────────
 vi.mock("@/auth",     () => ({ auth: vi.fn() }));
-vi.mock("@/lib/auth", () => ({ isAdmin: vi.fn(), isAuthenticated: vi.fn() }));
-vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-03-15 00:00:00") }));
+const { isAdminMock, isAuthenticatedMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+  isAuthenticatedMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+  isAuthenticated: isAuthenticatedMock,
+  isAuthenticatedWithCsrf: isAuthenticatedMock,
+}));
+vi.mock("@/lib/utils/date", () => ({
+  mysqlNow: vi.fn(() => "2026-03-15 00:00:00"),
+  toMySQLDatetime: vi.fn(() => "2026-03-15 00:00:00"),
+}));
 vi.mock("@/lib/validations/validate", () => ({ validateBody: vi.fn() }));
 vi.mock("@/lib/cache", () => ({
   invalidateCache: vi.fn(), cacheOrFetch: vi.fn((_k: string, fn: () => Promise<unknown>) => fn()),
@@ -29,7 +46,7 @@ vi.mock("@/lib/db", () => ({
       navItems:           { findMany: vi.fn(), findFirst: vi.fn() },
       newsArticles:       { findMany: vi.fn(), findFirst: vi.fn() },
       products:           { findMany: vi.fn(), findFirst: vi.fn() },
-      gachaRewards:       { findMany: vi.fn(), findFirst: vi.fn() },
+      gachaRewards:       { findMany: vi.fn().mockResolvedValue([]), findFirst: vi.fn() },
       gachaMachines:      { findMany: vi.fn(), findFirst: vi.fn() },
       gachaProducts:      { findMany: vi.fn(), findFirst: vi.fn() },
       announcementPopups: { findMany: vi.fn(), findFirst: vi.fn() },
@@ -45,7 +62,7 @@ vi.mock("@/lib/db", () => ({
   navItems:    { id: "id" },
   newsArticles: { id: "id" },
   products:    { id: "id" },
-  gachaRewards: { id: "id" },
+  gachaRewards: { id: "id", isActive: "isActive", gachaMachineId: "gachaMachineId" },
   gachaMachines: { id: "id" },
   gachaProducts: { id: "id" },
   announcementPopups: { id: "id" },
@@ -53,7 +70,7 @@ vi.mock("@/lib/db", () => ({
 }));
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn(), and: vi.fn(), or: vi.fn(), gte: vi.fn(), lte: vi.fn(), lt: vi.fn(),
-  count: vi.fn(), sql: vi.fn(), desc: vi.fn(), asc: vi.fn(), inArray: vi.fn(),
+  count: vi.fn(), sql: vi.fn(), desc: vi.fn(), asc: vi.fn(), inArray: vi.fn(), isNull: vi.fn(),
 }));
 
 import { isAdmin } from "@/lib/auth";

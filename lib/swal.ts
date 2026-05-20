@@ -1,50 +1,63 @@
-﻿import Swal from "sweetalert2";
+type SweetAlert = typeof import("sweetalert2").default;
+type ToastIcon = "success" | "error" | "warning" | "info";
 
 const modalDefaults = {
     scrollbarPadding: false,
     heightAuto: false,
 } as const;
 
-// Custom SweetAlert Toast (สำหรับแจ้งเตือนเล็ก ๆ)
-const Toast = Swal.mixin({
-    toast: true,
-    position: "top-end",
-    showConfirmButton: false,
-    timer: 1800,
-    timerProgressBar: true,
-    didOpen: (toast) => {
-        toast.onmouseenter = Swal.stopTimer;
-        toast.onmouseleave = Swal.resumeTimer;
-    },
-});
+let swalPromise: Promise<SweetAlert> | null = null;
+let toastPromise: Promise<ReturnType<SweetAlert["mixin"]>> | null = null;
+let loadingRequestId = 0;
+
+function loadSwal() {
+    if (!swalPromise) {
+        swalPromise = import("sweetalert2").then((module) => module.default);
+    }
+
+    return swalPromise;
+}
+
+function loadToast() {
+    if (!toastPromise) {
+        toastPromise = loadSwal().then((Swal) =>
+            Swal.mixin({
+                toast: true,
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 1800,
+                timerProgressBar: true,
+                didOpen: (toast: HTMLElement) => {
+                    toast.onmouseenter = Swal.stopTimer;
+                    toast.onmouseleave = Swal.resumeTimer;
+                },
+            }),
+        );
+    }
+
+    return toastPromise;
+}
+
+async function fireToast(icon: ToastIcon, title: string) {
+    const Toast = await loadToast();
+    await Toast.fire({ icon, title });
+}
 
 // Toast functions
 export const showSuccess = (message: string) => {
-    Toast.fire({
-        icon: "success",
-        title: message,
-    });
+    void fireToast("success", message);
 };
 
 export const showError = (message: string) => {
-    Toast.fire({
-        icon: "error",
-        title: message,
-    });
+    void fireToast("error", message);
 };
 
 export const showWarning = (message: string) => {
-    Toast.fire({
-        icon: "warning",
-        title: message,
-    });
+    void fireToast("warning", message);
 };
 
 export const showInfo = (message: string) => {
-    Toast.fire({
-        icon: "info",
-        title: message,
-    });
+    void fireToast("info", message);
 };
 
 // Confirm dialog
@@ -54,6 +67,7 @@ export const showConfirm = async (
     confirmText = "ยืนยัน",
     cancelText = "ยกเลิก"
 ): Promise<boolean> => {
+    const Swal = await loadSwal();
     const result = await Swal.fire({
         ...modalDefaults,
         title,
@@ -80,6 +94,7 @@ export const showConfirm = async (
 export const showDeleteConfirm = async (
     itemName: string
 ): Promise<boolean> => {
+    const Swal = await loadSwal();
     const result = await Swal.fire({
         ...modalDefaults,
         title: "ยืนยันการลบ?",
@@ -103,7 +118,8 @@ export const showDeleteConfirm = async (
 };
 
 // Success alert with action
-export const showSuccessAlert = (title: string, text?: string) => {
+export const showSuccessAlert = async (title: string, text?: string) => {
+    const Swal = await loadSwal();
     return Swal.fire({
         ...modalDefaults,
         icon: "success",
@@ -127,6 +143,7 @@ export const showPurchaseConfirm = async (params: {
     cancelText?: string;
     confirmButtonColor?: string;
 }): Promise<boolean> => {
+    const Swal = await loadSwal();
     const result = await Swal.fire({
         ...modalDefaults,
         title: "ยืนยันการสั่งซื้อ",
@@ -171,7 +188,7 @@ export const showPurchaseConfirm = async (params: {
     return result.isConfirmed;
 };
 
-export const showPurchaseSuccessModal = (params: {
+export const showPurchaseSuccessModal = async (params: {
     productName?: string;
     title?: string;
     text?: string;
@@ -180,6 +197,7 @@ export const showPurchaseSuccessModal = (params: {
     cancelText?: string;
     showCancelButton?: boolean;
 }) => {
+    const Swal = await loadSwal();
     return Swal.fire({
         ...modalDefaults,
         icon: "success",
@@ -208,7 +226,8 @@ export const showPurchaseSuccessModal = (params: {
 };
 
 // Purchase success popup (centered modal with green button)
-export const showPurchaseSuccess = (title: string, text?: string) => {
+export const showPurchaseSuccess = async (title: string, text?: string) => {
+    const Swal = await loadSwal();
     return Swal.fire({
         ...modalDefaults,
         icon: "success",
@@ -225,7 +244,8 @@ export const showPurchaseSuccess = (title: string, text?: string) => {
 };
 
 // Error alert
-export const showErrorAlert = (title: string, text?: string) => {
+export const showErrorAlert = async (title: string, text?: string) => {
+    const Swal = await loadSwal();
     return Swal.fire({
         ...modalDefaults,
         icon: "error",
@@ -243,22 +263,31 @@ export const showErrorAlert = (title: string, text?: string) => {
 
 // Loading
 export const showLoading = (title = "กำลังดำเนินการ...") => {
-    Swal.fire({
-        ...modalDefaults,
-        title,
-        allowOutsideClick: false,
-        allowEscapeKey: false,
-        didOpen: () => {
-            Swal.showLoading();
-        },
+    const requestId = ++loadingRequestId;
+    void loadSwal().then((Swal) => {
+        if (requestId !== loadingRequestId) {
+            return;
+        }
+
+        void Swal.fire({
+            ...modalDefaults,
+            title,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => {
+                Swal.showLoading();
+            },
+        });
     });
 };
 
 export const hideLoading = () => {
-    Swal.close();
+    loadingRequestId += 1;
+    void loadSwal().then((Swal) => Swal.close());
 };
 
 export const showPinPrompt = async (actionLabel = "ยืนยันรายการ"): Promise<string | null> => {
+    const Swal = await loadSwal();
     const result = await Swal.fire({
         ...modalDefaults,
         title: actionLabel,
@@ -308,7 +337,3 @@ export const showPinPrompt = async (actionLabel = "ยืนยันราย�
 
     return result.isConfirmed ? result.value : null;
 };
-
-export default Swal;
-
-

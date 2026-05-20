@@ -6,7 +6,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/auth", () => ({ isAdmin: vi.fn() }));
+const { isAdminMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+}));
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -17,7 +28,7 @@ vi.mock("@/lib/db", () => ({
       gachaMachines: { findMany: vi.fn().mockResolvedValue([]), findFirst: vi.fn() },
       gachaSettings: { findFirst: vi.fn() },
       gachaCategories: { findFirst: vi.fn() },
-      gachaRewards: { findFirst: vi.fn() },
+      gachaRewards: { findMany: vi.fn().mockResolvedValue([]), findFirst: vi.fn() },
       footerLinks: { findFirst: vi.fn() },
       footerWidgetSettings: { findFirst: vi.fn() },
       navItems: { findFirst: vi.fn() },
@@ -26,13 +37,13 @@ vi.mock("@/lib/db", () => ({
   gachaMachines: { id: "id", sortOrder: "sortOrder" },
   gachaSettings: { id: "id" },
   gachaCategories: { id: "id" },
-  gachaRewards: { id: "id" },
+  gachaRewards: { id: "id", isActive: "isActive", gachaMachineId: "gachaMachineId", createdAt: "createdAt" },
   footerLinks: { id: "id" },
   footerWidgetSettings: { id: "id" },
   navItems: { id: "id" },
 }));
 
-vi.mock("drizzle-orm", () => ({ eq: vi.fn(), asc: vi.fn() }));
+vi.mock("drizzle-orm", () => ({ eq: vi.fn(), and: vi.fn(), isNull: vi.fn(), asc: vi.fn() }));
 
 vi.mock("@/lib/auditLog", () => ({
   auditFromRequest: vi.fn(), auditUpdate: vi.fn(),
@@ -44,13 +55,17 @@ vi.mock("@/lib/validations/gacha", () => ({
   gachaMachineSchema: {},
   gachaSettingsSchema: {},
   gachaRewardSchema: { partial: vi.fn().mockReturnValue({}) },
+  gachaRewardPatchSchema: {},
 }));
 vi.mock("@/lib/validations/content", () => ({
   footerLinkSchema: { partial: vi.fn().mockReturnValue({}) },
   navItemSchema: { partial: vi.fn().mockReturnValue({}) },
   footerWidgetSettingsSchema: { partial: vi.fn().mockReturnValue({}) },
 }));
-vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-01-01 00:00:00") }));
+vi.mock("@/lib/utils/date", () => ({
+  mysqlNow: vi.fn(() => "2026-01-01 00:00:00"),
+  toMySQLDatetime: vi.fn(() => "2026-01-01 00:00:00"),
+}));
 
 import { isAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";
@@ -69,6 +84,7 @@ describe("API: /api/admin/gacha-machines", () => {
     const { GET } = await import("@/app/api/admin/gacha-machines/route");
     const res = await GET();
     expect(res.status).toBe(401);
+    await expect(res.json()).resolves.toEqual({ success: false });
   });
 
   it("GET returns machines", async () => {
@@ -80,8 +96,19 @@ describe("API: /api/admin/gacha-machines", () => {
     const res = await GET();
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.data[0]._count.rewards).toBe(2);
+    expect(body).toEqual({
+      success: true,
+      data: [
+        {
+          id: "m1",
+          name: "Lucky Box",
+          category: { name: "Action" },
+          _count: { rewards: 2 },
+          probabilityTotal: 0,
+          isProbabilityComplete: false,
+        },
+      ],
+    });
   });
 
   it("POST returns 401 when not admin", async () => {
@@ -90,6 +117,7 @@ describe("API: /api/admin/gacha-machines", () => {
     const req = new Request("http://localhost", { method: "POST" });
     const res = await POST(req);
     expect(res.status).toBe(401);
+    await expect(res.json()).resolves.toEqual({ success: false });
   });
 
   it("POST creates machine", async () => {
@@ -104,7 +132,10 @@ describe("API: /api/admin/gacha-machines", () => {
     const res = await POST(req);
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.success).toBe(true);
+    expect(body).toEqual({
+      success: true,
+      data: { id: "new-id", name: "Lucky Box" },
+    });
   });
 });
 
@@ -119,6 +150,10 @@ describe("API: /api/admin/gacha-settings", () => {
     const { GET } = await import("@/app/api/admin/gacha-settings/route");
     const res = await GET();
     expect(res.status).toBe(401);
+    await expect(res.json()).resolves.toEqual({
+      success: false,
+      message: "Unauthorized",
+    });
   });
 
   it("GET returns existing settings", async () => {
@@ -129,6 +164,10 @@ describe("API: /api/admin/gacha-settings", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
+    expect(body).toEqual({
+      success: true,
+      data: { id: "default", isEnabled: true },
+    });
   });
 
   it("GET creates defaults when none exist", async () => {
@@ -163,6 +202,11 @@ describe("API: /api/admin/gacha-settings", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
+    expect(body).toEqual({
+      success: true,
+      message: "บันทึกการตั้งค่ากาชาสำเร็จ",
+      data: { id: "default" },
+    });
   });
 });
 

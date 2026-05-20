@@ -1,18 +1,9 @@
-﻿"use client";
-
-import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { showPurchaseConfirm, showPurchaseSuccessModal, showError, showWarning } from "@/lib/swal";
-import { ShoppingCart, Eye, Loader2 } from "lucide-react";
-import { AddToCartButton } from "@/components/cart/AddToCartButton";
-import { useCart } from "@/components/providers/CartContext";
-import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
+import { ProductCardActions } from "@/components/ProductCardActions";
 import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
-import { preparePurchase } from "@/lib/prepare-purchase";
 import { themeClasses } from "@/lib/theme";
+import type { MaintenanceEntry } from "@/hooks/useMaintenanceStatus";
 
 interface ProductCardProps {
     id: string;
@@ -25,7 +16,9 @@ interface ProductCardProps {
     isSold: boolean;
     stockCount?: number;
     index?: number;
+    priorityImage?: boolean;
     currencySettings?: PublicCurrencySettings;
+    initialPurchaseMaintenance?: MaintenanceEntry;
 }
 
 export function ProductCard({
@@ -39,199 +32,85 @@ export function ProductCard({
     isSold,
     stockCount,
     index = 0,
+    priorityImage = false,
     currencySettings,
+    initialPurchaseMaintenance,
 }: Readonly<ProductCardProps>) {
-    const router = useRouter();
-    const maintenance = useMaintenanceStatus().purchase;
-    const { isInCart, openCart } = useCart();
-    const [isLoading, setIsLoading] = useState(false);
-    const [isVisible, setIsVisible] = useState(false);
-    const inCart = isInCart(id);
     const hasDiscount = discountPrice !== null && discountPrice < price;
     const activePrice = hasDiscount && discountPrice !== null ? discountPrice : price;
     const isUnavailable = isSold || stockCount === 0;
 
-    useEffect(() => {
-        const timer = setTimeout(() => {
-            setIsVisible(true);
-        }, index * 50);
-        return () => clearTimeout(timer);
-    }, [index]);
-
-    const handleBuy = async () => {
-        if (inCart) {
-            openCart();
-            return;
-        }
-
-        if (maintenance?.enabled) {
-            showWarning(maintenance.message);
-            return;
-        }
-
-        if (isUnavailable || isLoading) return;
-
-        const confirmed = await showPurchaseConfirm({
-            productName: title,
-            priceText: formatCurrencyAmount(activePrice, currency, currencySettings),
-            extraHtml: hasDiscount
-                ? `<span class="text-sm text-gray-500 line-through">ราคาปกติ: ${formatCurrencyAmount(price, currency, currencySettings)}</span>`
-                : undefined,
-        });
-
-        if (!confirmed) return;
-
-        const purchaseCheck = await preparePurchase({
-            router,
-            amount: activePrice,
-            currency,
-            currencySettings,
-            pinActionLabel: "ยืนยัน PIN เพื่อซื้อสินค้า",
-        });
-        if (!purchaseCheck.allowed) return;
-
-        setIsLoading(true);
-
-        try {
-            const response = await fetch("/api/purchase", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ productId: id, pin: purchaseCheck.pin }),
-            });
-
-            const data = await response.json();
-
-            if (data.success) {
-                const result = await showPurchaseSuccessModal({
-                    productName: data.productName,
-                    title: "ซื้อสำเร็จ",
-                    text: "ต้องการเข้าไปดูสินค้าที่ซื้อเลยไหม",
-                    confirmText: "ไปดูสินค้าเลย",
-                    cancelText: "อยู่หน้านี้",
-                    showCancelButton: true,
-                });
-                router.refresh();
-                if (result.isConfirmed) {
-                    router.push("/dashboard/inventory");
-                }
-            } else {
-                showWarning(data.message);
-            }
-        } catch {
-            showError("เกิดข้อผิดพลาดในการสั่งซื้อ กรุณาลองใหม่อีกครั้ง");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
     return (
         <div
-            className={`
-                ${themeClasses.surface} storefront-product-card group relative overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_22px_42px_-28px_rgba(39,71,121,0.24)] dark:hover:shadow-[0_26px_50px_-34px_rgba(0,0,0,0.92)]
-                ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}
-            `}
-            style={{
-                transitionDelay: `${index * 50}ms`,
-            }}
+            className="animate-product-card"
+            style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}
         >
-            <div className={`${themeClasses.surfaceMedia} relative aspect-square overflow-hidden border-b border-border/80`}>
-                <div className="absolute top-3 left-3 z-10">
-                    <span className={`${themeClasses.badge} storefront-product-category rounded-full px-2 py-1 text-xs font-medium shadow-sm`}>
-                        {category}
-                    </span>
-                </div>
-                {isUnavailable && (
-                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
-                        <span className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-full transform -rotate-12">
-                            {isSold ? "ขายแล้ว" : "สินค้าหมด"}
+            <div
+                className={`
+                    ${themeClasses.surface} storefront-product-card group relative flex flex-col overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_20px_38px_-28px_rgba(39,71,121,0.18)] dark:hover:shadow-[0_24px_48px_-32px_rgba(0,0,0,0.9)]
+                `}
+            >
+                <div className={`${themeClasses.surfaceMedia} relative aspect-square overflow-hidden border-b border-border/80`}>
+                    <div className="absolute top-3 left-3 z-10">
+                        <span className={`${themeClasses.badge} storefront-product-category rounded-full px-2 py-1 text-xs font-medium shadow-sm`}>
+                            {category}
                         </span>
                     </div>
-                )}
-                {!isUnavailable && (
-                    <Link href={`/product/${id}`} className={`${themeClasses.overlayScrim} absolute inset-0 z-10 flex items-center justify-center opacity-0 backdrop-blur-[1px] transition duration-300 group-hover:opacity-100`}>
-                        <span className={`${themeClasses.badge} storefront-product-category flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold`}>
-                            ดูรายละเอียด
-                        </span>
-                    </Link>
-                )}
-                <Image
-                    src={image || "/placeholder.jpg"}
-                    alt={title}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    className="object-cover group-hover:grayscale-[50%] group-hover:blur-[1px] transition-all duration-300 ease-out"
-                    onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = "https://placehold.co/600x400/f1f5f9/64748b?text=No+Image";
-                    }}
-                />
-            </div>
-            <div className="p-4 text-center">
-                <h3 className="mb-1 truncate text-center font-semibold text-foreground">{title}</h3>
-                <div className="text-center">
-                    {hasDiscount && (
-                        <p className="text-sm text-muted-foreground line-through">
-                            {formatCurrencyAmount(price, currency, currencySettings)}
-                        </p>
+                    {isUnavailable && (
+                        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
+                            <span className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-full transform -rotate-12">
+                                {isSold ? "ขายแล้ว" : "สินค้าหมด"}
+                            </span>
+                        </div>
                     )}
-                    <p className={`text-lg font-bold ${hasDiscount ? "text-red-500 dark:text-red-400" : "text-primary"}`}>
-                        {formatCurrencyAmount(activePrice, currency, currencySettings)}
-                    </p>
+                    {!isUnavailable && (
+                        <Link href={`/product/${id}`} prefetch={false} className={`${themeClasses.overlayScrim} absolute inset-0 z-10 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100`}>
+                            <span className={`${themeClasses.badge} storefront-product-category flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold`}>
+                                ดูรายละเอียด
+                            </span>
+                        </Link>
+                    )}
+                    <Image
+                        src={image || "/placeholder.jpg"}
+                        alt={title}
+                        fill
+                        sizes="(max-width: 640px) calc(50vw - 24px), (max-width: 1024px) calc(50vw - 32px), (max-width: 1280px) calc(33vw - 32px), (max-width: 1536px) calc(25vw - 32px), 20vw"
+                        loading={priorityImage ? undefined : "lazy"}
+                        fetchPriority={priorityImage ? "high" : "low"}
+                        preload={priorityImage}
+                        className="object-cover"
+                    />
                 </div>
-                <div className="grid grid-cols-2 gap-2 mt-3">
-                    {isUnavailable ? (
-                        <Button variant="outline" className="col-span-2 w-full border-border/80 bg-accent/40 text-foreground" disabled>
-                            <ShoppingCart className="h-4 w-4 mr-2" />
-                            {isSold ? "ขายแล้ว" : "สินค้าหมด"}
-                        </Button>
-                    ) : (
-                        <>
-                            <Button
-                                className="col-span-2 w-full"
-                                onClick={() => void handleBuy()}
-                                disabled={isLoading || maintenance?.enabled}
-                            >
-                                {isLoading ? (
-                                    <>
-                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        กำลังสั่งซื้อ
-                                    </>
-                                ) : (
-                                    <>
-                                        <ShoppingCart className="h-4 w-4 mr-2" />
-                                        {maintenance?.enabled
-                                            ? "ปิดปรับปรุง"
-                                            : inCart
-                                                ? "ดูในตะกร้า"
-                                                : "สั่งซื้อ"}
-                                    </>
-                                )}
-                            </Button>
-                            <AddToCartButton
-                                product={{
-                                    id,
-                                    name: title,
-                                    price,
-                                    discountPrice: hasDiscount ? activePrice : undefined,
-                                    currency,
-                                    imageUrl: image,
-                                    category,
-                                    quantity: 1,
-                                }}
-                                className={`${themeClasses.actionMuted} storefront-product-action w-full`}
-                                showText={false}
-                                size="icon"
-                            />
-                        </>
-                    )}
-                    <Link href={`/product/${id}`} className="block">
-                        <Button variant="outline" size="icon" className={`${themeClasses.actionMuted} storefront-product-action w-full`} aria-label={`ดูรายละเอียด ${title}`}>
-                            <Eye className="h-4 w-4" />
-                        </Button>
-                    </Link>
+                <div className="p-3 text-center sm:p-4">
+                    <h3 className="mb-1 truncate text-center text-[14px] font-semibold leading-tight text-foreground sm:text-base">
+                        {title}
+                    </h3>
+                    <div className="text-center">
+                        {hasDiscount && (
+                            <p className="text-sm text-muted-foreground line-through">
+                                {formatCurrencyAmount(price, currency, currencySettings)}
+                            </p>
+                        )}
+                        <p className={`text-[16px] font-bold leading-tight sm:text-lg ${hasDiscount ? "text-red-500 dark:text-red-400" : "text-primary"}`}>
+                            {formatCurrencyAmount(activePrice, currency, currencySettings)}
+                        </p>
+                    </div>
+                    <ProductCardActions
+                        id={id}
+                        image={image}
+                        title={title}
+                        price={price}
+                        activePrice={activePrice}
+                        hasDiscount={hasDiscount}
+                        currency={currency}
+                        category={category}
+                        isUnavailable={isUnavailable}
+                        isSold={isSold}
+                        currencySettings={currencySettings}
+                        initialPurchaseMaintenance={initialPurchaseMaintenance}
+                    />
                 </div>
             </div>
         </div>
     );
 }
-

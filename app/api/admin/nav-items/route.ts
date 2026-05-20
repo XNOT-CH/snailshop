@@ -6,9 +6,10 @@ import { requirePermission } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { navItemSchema } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
+import { contentApiError } from "@/lib/features/content/apiResponse";
 
 const DEFAULT_NAV_ITEMS = [
-    { label: "หน้าแรก", href: "/", icon: "home", sortOrder: 0 },
+    { label: "หน้าแรก", href: "/home", icon: "home", sortOrder: 0 },
     { label: "ร้านค้า", href: "/shop", icon: "shop", sortOrder: 1 },
     { label: "แดชบอร์ด", href: "/dashboard", icon: "dashboard", sortOrder: 2 },
     { label: "ช่วยเหลือ", href: "/help", icon: "help", sortOrder: 3 },
@@ -16,7 +17,7 @@ const DEFAULT_NAV_ITEMS = [
 
 export async function GET() {
     const authCheck = await requirePermission(PERMISSIONS.SETTINGS_VIEW);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const [{ count: navCount }] = await db.select({ count: count() }).from(navItems);
         if (Number(navCount) === 0) {
@@ -26,13 +27,13 @@ export async function GET() {
         return NextResponse.json(items);
     } catch (error) {
         console.error("Error fetching nav items:", error);
-        return NextResponse.json({ error: "Failed to fetch nav items" }, { status: 500 });
+        return contentApiError("Failed to fetch nav items", { status: 500 });
     }
 }
 
 export async function POST(request: NextRequest) {
     const authCheck = await requirePermission(PERMISSIONS.SETTINGS_EDIT);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const result = await validateBody(request, navItemSchema);
         if ("error" in result) return result.error;
@@ -46,6 +47,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json(item, { status: 201 });
     } catch (error) {
         console.error("Error creating nav item:", error);
-        return NextResponse.json({ error: "Failed to create nav item" }, { status: 500 });
+        return contentApiError("Failed to create nav item", { status: 500 });
     }
 }

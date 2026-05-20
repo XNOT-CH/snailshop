@@ -1,14 +1,14 @@
-import { NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth";
 import { db, gachaMachines, gachaRewards } from "@/lib/db";
 import { mysqlNow } from "@/lib/utils/date";
 import { eq } from "drizzle-orm";
 import { PERMISSIONS } from "@/lib/permissions";
 import { normalizeGachaCost } from "@/lib/gachaCost";
+import { gachaApiError, gachaApiSuccess } from "@/lib/features/gacha/apiResponse";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
     const auth = await requirePermission(PERMISSIONS.GACHA_EDIT);
-    if (!auth.success) return NextResponse.json({ success: false }, { status: 401 });
+    if (!auth.success) return gachaApiError(undefined, { status: 401 });
 
     try {
         const { id } = await params;
@@ -17,7 +17,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             with: { rewards: true },
         });
 
-        if (!original) return NextResponse.json({ success: false, message: "ไม่พบข้อมูลเดิม" }, { status: 404 });
+        if (!original) return gachaApiError("ไม่พบข้อมูลเดิม", { status: 404 });
 
         const newId = crypto.randomUUID();
         const normalizedCost = normalizeGachaCost(original.costType, original.costAmount);
@@ -57,9 +57,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
             await db.insert(gachaRewards).values(newRewards);
         }
 
-        return NextResponse.json({ success: true, data: { id: newId } });
+        return gachaApiSuccess({ id: newId });
     } catch (e: unknown) {
         const errorMsg = e instanceof Error ? e.message : "อัพเดทไม่สำเร็จ";
-        return NextResponse.json({ success: false, message: errorMsg }, { status: 500 });
+        return gachaApiError(errorMsg, { status: 500 });
     }
 }

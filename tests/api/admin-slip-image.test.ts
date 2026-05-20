@@ -1,10 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
-import path from "node:path";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+
+const { isAdminMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+}));
 
 vi.mock("@/lib/auth", () => ({
-  isAdmin: vi.fn(),
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -25,7 +32,7 @@ vi.mock("@/lib/sensitiveData", () => ({
 }));
 
 vi.mock("@/lib/slipStorage", () => ({
-  resolveStoredSlipPath: vi.fn(),
+  readStoredSlipFile: vi.fn(),
 }));
 
 describe("API: /api/admin/slips/[id]/image", () => {
@@ -47,18 +54,19 @@ describe("API: /api/admin/slips/[id]/image", () => {
   it("streams the slip image for admins", async () => {
     const { isAdmin } = await import("@/lib/auth");
     const { db } = await import("@/lib/db");
-    const { resolveStoredSlipPath } = await import("@/lib/slipStorage");
-    const tempDir = path.join(process.cwd(), "storage", "tmp-tests");
-    const tempFile = path.join(tempDir, "admin-slip-image.webp");
+    const { readStoredSlipFile } = await import("@/lib/slipStorage");
 
     (isAdmin as any).mockResolvedValue({ success: true, userId: "admin-1" });
     (db.query.topups.findFirst as any).mockResolvedValue({
       id: "t1",
       proofImage: "/private/slips/example.webp",
     });
-    await mkdir(tempDir, { recursive: true });
-    await writeFile(tempFile, Buffer.from("image-bytes"));
-    (resolveStoredSlipPath as any).mockReturnValue(tempFile);
+    (readStoredSlipFile as any).mockResolvedValue({
+      body: new Uint8Array(Buffer.from("image-bytes")).buffer,
+      contentType: "image/webp",
+      filename: "admin-slip-image.webp",
+      size: 11,
+    });
 
     const { GET } = await import("@/app/api/admin/slips/[id]/image/route");
     const res = await GET(new NextRequest("http://localhost/api/admin/slips/t1/image"), {
@@ -67,6 +75,5 @@ describe("API: /api/admin/slips/[id]/image", () => {
 
     expect(res.status).toBe(200);
     expect(res.headers.get("Content-Type")).toBe("image/webp");
-    await rm(tempFile, { force: true });
   });
 });

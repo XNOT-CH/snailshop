@@ -3,17 +3,33 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 
-vi.mock("@/lib/db", () => ({
-  db: {
-    query: {
-      users: { findFirst: vi.fn() },
-      promoCodes: { findFirst: vi.fn() },
-    },
-    $client: { getConnection: vi.fn() },
-  },
-  users: { id: "id" },
-  promoCodes: { code: "code" },
+vi.mock("@/lib/auth", () => ({
+  isAuthenticatedWithCsrf: vi.fn(async () => {
+    const { auth } = await import("@/auth");
+    const session = await auth();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+    return { success: true, userId: session.user.id, user: session.user };
+  }),
 }));
+
+vi.mock("@/lib/db", () => {
+  const getConnection = vi.fn();
+
+  return {
+    db: {
+      query: {
+        users: { findFirst: vi.fn() },
+        promoCodes: { findFirst: vi.fn() },
+      },
+      $client: { getConnection },
+    },
+    rawDbPool: { getConnection },
+    users: { id: "id" },
+    promoCodes: { code: "code" },
+  };
+});
 
 vi.mock("drizzle-orm", () => ({ eq: vi.fn() }));
 
@@ -91,7 +107,10 @@ const MOCK_PRODUCT = {
 
 // ─── tests ───────────────────────────────────────────────────────────────────
 describe("API: /api/purchase (POST)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (auth as any).mockResolvedValue({ user: { id: "u1" } });
+  });
 
   // ── validation ──────────────────────────────────────────────────────────────
   it("returns 400 when productId is missing", async () => {
@@ -504,8 +523,8 @@ describe("API: /api/purchase (POST)", () => {
     expect(res.status).toBe(200);
     expect(conn.commit).toHaveBeenCalled();
     expect(conn.execute).toHaveBeenCalledWith(
-      "UPDATE Product SET secretData = ?, isSold = ?, orderId = ?, scheduledDeleteAt = ? WHERE id = ?",
-      ["enc_", 1, expect.any(String), null, "p1"]
+      "UPDATE Product SET secretData = ?, stockCount = ?, isSold = ?, orderId = ?, scheduledDeleteAt = ? WHERE id = ?",
+      ["enc_", 0, 1, expect.any(String), null, "p1"]
     );
   });
 

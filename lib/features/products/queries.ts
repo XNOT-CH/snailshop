@@ -13,6 +13,7 @@ export function findProductAvailabilityById(id: string) {
         columns: {
             id: true,
             isSold: true,
+            stockCount: true,
             secretData: true,
             stockSeparator: true,
         },

@@ -61,7 +61,7 @@ export function AddToCartButton({
             {isAdding && <Loader2 className="h-4 w-4 animate-spin" />}
             {!isAdding && inCart && <ShoppingCart className="h-4 w-4" />}
             {!isAdding && !inCart && <Plus className="h-4 w-4" />}
-            {showText && (inCart ? "ดูในตะกร้า" : "ตะกร้า")}
+            {showText && (inCart ? "ดูในตะกร้า" : "เพิ่มลงในตะกร้า")}
         </Button>
     );
 }

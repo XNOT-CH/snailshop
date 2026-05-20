@@ -23,6 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { showConfirm, showError, showSuccess } from "@/lib/swal";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { cn } from "@/lib/utils";
 import {
   ChevronLeft,
@@ -549,7 +550,7 @@ export default function ProductTable({
     setLoadingId(productId);
 
     try {
-      const response = await fetch(`/api/admin/products/${productId}/featured`, {
+      const response = await fetchWithCsrf(`/api/admin/products/${productId}/featured`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
@@ -577,7 +578,7 @@ export default function ProductTable({
     setLoadingId(productId);
 
     try {
-      const response = await fetch(`/api/admin/products/${productId}/duplicate`, {
+      const response = await fetchWithCsrf(`/api/admin/products/${productId}/duplicate`, {
         method: "POST",
       });
 
@@ -608,7 +609,7 @@ export default function ProductTable({
     setLoadingId(productId);
 
     try {
-      const response = await fetch(`/api/products/${productId}`, {
+      const response = await fetchWithCsrf(`/api/products/${productId}`, {
         method: "DELETE",
       });
 

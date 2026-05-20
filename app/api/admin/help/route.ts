@@ -7,10 +7,11 @@ import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
 import { helpItemSchema } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
+import { contentApiError } from "@/lib/features/content/apiResponse";
 
 export async function GET() {
     const authCheck = await requirePermission(PERMISSIONS.CONTENT_VIEW);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const articles = await db.query.helpArticles.findMany({
             orderBy: (t, { asc }) => [asc(t.category), asc(t.sortOrder)],
@@ -23,7 +24,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
     const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
-    if (!authCheck.success) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const result = await validateBody(request, helpItemSchema);
         if ("error" in result) return result.error;
@@ -44,6 +45,6 @@ export async function POST(request: NextRequest) {
         await auditFromRequest(request, { action: AUDIT_ACTIONS.HELP_CREATE, resource: "HelpArticle", resourceId: newId, resourceName: title, details: { resourceName: title, category: category || "general" } });
         return NextResponse.json(article);
     } catch {
-        return NextResponse.json({ error: "Failed to create article" }, { status: 500 });
+        return contentApiError("Failed to create article", { status: 500 });
     }
 }

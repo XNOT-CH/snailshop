@@ -9,7 +9,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/auth", () => ({ isAdmin: vi.fn() }));
+const { isAdminMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+}));
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -32,12 +43,14 @@ vi.mock("drizzle-orm", () => ({
   eq: vi.fn(), and: vi.fn(), isNull: vi.fn(), asc: vi.fn(),
 }));
 vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-03-14 00:00:00") }));
+vi.mock("@/lib/getCurrencySettings", () => ({ getCurrencySettings: vi.fn().mockResolvedValue(null) }));
 vi.mock("@/lib/validations/validate", () => ({ validateBody: vi.fn() }));
 vi.mock("@/lib/validations/content", () => ({
   footerLinkSchema: { partial: vi.fn().mockReturnValue({}) },
 }));
 vi.mock("@/lib/validations/gacha", () => ({
   gachaRewardSchema: { partial: vi.fn().mockReturnValue({}) },
+  gachaRewardPatchSchema: {},
   gachaSettingsSchema: {},
   gachaMachineSchema: { partial: vi.fn().mockReturnValue({}) },
 }));
@@ -124,6 +137,10 @@ describe("API: /api/admin/gacha-rewards/[id] (PUT + DELETE)", () => {
     const { PUT } = await import("@/app/api/admin/gacha-rewards/[id]/route");
     const res = await PUT(new Request("http://localhost"), mkParams("r1"));
     expect(res.status).toBe(401);
+    await expect(res.json()).resolves.toEqual({
+      success: false,
+      message: "Unauthorized",
+    });
   });
 
   it("PUT updates gacha reward fields", async () => {
@@ -138,7 +155,15 @@ describe("API: /api/admin/gacha-rewards/[id] (PUT + DELETE)", () => {
     const res = await PUT(new Request("http://localhost"), mkParams("r1"));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.success).toBe(true);
+    expect(body).toEqual({
+      success: true,
+      data: {
+        id: "r1",
+        tier: "GOLD",
+        isActive: true,
+        rewardName: "Gold Medal",
+      },
+    });
   });
 
   it("PUT updates with partial fields only", async () => {
@@ -148,6 +173,10 @@ describe("API: /api/admin/gacha-rewards/[id] (PUT + DELETE)", () => {
     const { PUT } = await import("@/app/api/admin/gacha-rewards/[id]/route");
     const res = await PUT(new Request("http://localhost"), mkParams("r1"));
     expect(res.status).toBe(200);
+    await expect(res.json()).resolves.toEqual({
+      success: true,
+      data: { id: "r1", tier: "SILVER", isActive: false },
+    });
   });
 
   it("DELETE returns 401 when not admin", async () => {
@@ -155,6 +184,10 @@ describe("API: /api/admin/gacha-rewards/[id] (PUT + DELETE)", () => {
     const { DELETE } = await import("@/app/api/admin/gacha-rewards/[id]/route");
     const res = await DELETE(new Request("http://localhost"), mkParams("r1"));
     expect(res.status).toBe(401);
+    await expect(res.json()).resolves.toEqual({
+      success: false,
+      message: "Unauthorized",
+    });
   });
 
   it("DELETE removes reward", async () => {
@@ -163,7 +196,7 @@ describe("API: /api/admin/gacha-rewards/[id] (PUT + DELETE)", () => {
     const res = await DELETE(new Request("http://localhost"), mkParams("r1"));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.success).toBe(true);
+    expect(body).toEqual({ success: true });
   });
 });
 
@@ -302,8 +335,8 @@ describe("API: /api/gacha/grid/rewards (GET)", () => {
   it("returns rewards with machineId param", async () => {
     (db.query.gachaRewards.findMany as any).mockResolvedValue([
       { id: "r1", tier: "GOLD", rewardType: "CUSTOM", rewardName: "Gold Badge", rewardAmount: "100", rewardImageUrl: "/gold.webp", product: null },
-      { id: "r2", tier: "SILVER", rewardType: "CREDIT", rewardName: null, rewardAmount: "50", rewardImageUrl: null, product: null },
-      { id: "r3", tier: "BRONZE", rewardType: "POINT", rewardName: null, rewardAmount: "10", rewardImageUrl: null, product: null },
+      { id: "r2", tier: "SILVER", rewardType: "CREDIT", rewardName: "เครดิต", rewardAmount: "50", rewardImageUrl: null, product: null },
+      { id: "r3", tier: "BRONZE", rewardType: "POINT", rewardName: "พอยต์", rewardAmount: "10", rewardImageUrl: null, product: null },
     ]);
     const { GET } = await import("@/app/api/gacha/grid/rewards/route");
     const res = await GET(mkReq("m1"));
@@ -349,6 +382,6 @@ describe("API: /api/gacha/grid/rewards (GET)", () => {
     const res = await GET(mkReq("m1"));
     expect(res.status).toBe(200);
     const body = await res.json();
-    expect(body.data[0].rewardName).toBe("รางวัล"); // fallback name
+    expect(body.data).toHaveLength(0); // product rewards without product are not eligible
   });
 });

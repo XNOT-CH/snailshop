@@ -8,8 +8,25 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 vi.mock("@/auth",     () => ({ auth: vi.fn() }));
-vi.mock("@/lib/auth", () => ({ isAdmin: vi.fn(), isAuthenticated: vi.fn() }));
-vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-03-15 00:00:00") }));
+const { isAdminMock, isAuthenticatedMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+  isAuthenticatedMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+  isAuthenticated: isAuthenticatedMock,
+  isAuthenticatedWithCsrf: isAuthenticatedMock,
+}));
+vi.mock("@/lib/utils/date", () => ({
+  mysqlNow: vi.fn(() => "2026-03-15 00:00:00"),
+  toMySQLDatetime: vi.fn(() => "2026-03-15 00:00:00"),
+}));
 vi.mock("@/lib/validations/validate", () => ({ validateBody: vi.fn() }));
 vi.mock("@/lib/validations/content", () => ({
   helpItemSchema: {}, newsItemSchema: {}, navItemSchema: {}, popupSchema: {},
@@ -122,7 +139,7 @@ describe("API: /api/gacha/grid/rewards (branch coverage)", () => {
 
   it("GET maps CREDIT rewardType to เครดิต", async () => {
     (db.query.gachaRewards.findMany as any).mockResolvedValue([
-      { id: "r1", tier: "COMMON", rewardType: "CREDIT", rewardName: null, rewardAmount: "100", rewardImageUrl: null, product: null },
+      { id: "r1", tier: "COMMON", rewardType: "CREDIT", rewardName: "เครดิต", rewardAmount: "100", rewardImageUrl: null, product: null },
     ]);
     const { GET } = await import("@/app/api/gacha/grid/rewards/route");
     const res = await GET(new Request("http://localhost/api/gacha/grid/rewards?machineId=m1"));
@@ -132,7 +149,7 @@ describe("API: /api/gacha/grid/rewards (branch coverage)", () => {
 
   it("GET maps POINT rewardType to พอยต์", async () => {
     (db.query.gachaRewards.findMany as any).mockResolvedValue([
-      { id: "r2", tier: "RARE", rewardType: "POINT", rewardName: null, rewardAmount: "50", rewardImageUrl: null, product: null },
+      { id: "r2", tier: "RARE", rewardType: "POINT", rewardName: "พอยต์", rewardAmount: "50", rewardImageUrl: null, product: null },
     ]);
     const { GET } = await import("@/app/api/gacha/grid/rewards/route");
     const res = await GET(new Request("http://localhost/api/gacha/grid/rewards?machineId=m1"));
@@ -142,7 +159,7 @@ describe("API: /api/gacha/grid/rewards (branch coverage)", () => {
 
   it("GET uses rewardName when rewardType is OTHER", async () => {
     (db.query.gachaRewards.findMany as any).mockResolvedValue([
-      { id: "r3", tier: "EPIC", rewardType: "OTHER", rewardName: "Special Prize", rewardAmount: null, rewardImageUrl: "img.jpg", product: null },
+      { id: "r3", tier: "EPIC", rewardType: "OTHER", rewardName: "Special Prize", rewardAmount: "1", rewardImageUrl: "img.jpg", product: null },
     ]);
     const { GET } = await import("@/app/api/gacha/grid/rewards/route");
     const res = await GET(new Request("http://localhost/api/gacha/grid/rewards?machineId=m1"));

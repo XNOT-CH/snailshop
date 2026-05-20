@@ -1,5 +1,4 @@
 import { mysqlNow } from "@/lib/utils/date";
-import { NextResponse } from "next/server";
 import { db, gachaRewards } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { requirePermission } from "@/lib/auth";
@@ -7,10 +6,11 @@ import { validateBody } from "@/lib/validations/validate";
 import { gachaRewardSchema } from "@/lib/validations/gacha";
 import { PERMISSIONS } from "@/lib/permissions";
 import { disableMachineIfProbabilityInvalid } from "@/lib/gachaMachineProbability";
+import { gachaApiError, gachaApiSuccess } from "@/lib/features/gacha/apiResponse";
 
 export async function GET(request: Request) {
     const authCheck = await requirePermission(PERMISSIONS.GACHA_VIEW);
-    if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    if (!authCheck.success) return gachaApiError(authCheck.error, { status: 401 });
     try {
         const { searchParams } = new URL(request.url);
         const machineId = searchParams.get("machineId");
@@ -20,9 +20,8 @@ export async function GET(request: Request) {
             with: { product: { columns: { id: true, name: true, price: true, imageUrl: true, category: true, isSold: true, orderId: true } } },
         });
         type RewardRow = (typeof rewards)[number];
-        return NextResponse.json({
-            success: true,
-            data: rewards.map((r: RewardRow) => ({
+        return gachaApiSuccess(
+            rewards.map((r: RewardRow) => ({
                 id: r.id, tier: r.tier, isActive: r.isActive, rewardType: r.rewardType,
                 productId: r.productId, rewardName: r.rewardName,
                 rewardAmount: r.rewardAmount ? Number(r.rewardAmount) : null,
@@ -31,15 +30,15 @@ export async function GET(request: Request) {
                 product: r.product ? { ...r.product, price: Number(r.product.price) } : null,
                 createdAt: r.createdAt, updatedAt: r.updatedAt,
             })),
-        });
+        );
     } catch (error) {
-        return NextResponse.json({ success: false, message: `เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : "Unknown"}` }, { status: 500 });
+        return gachaApiError(`เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : "Unknown"}`, { status: 500 });
     }
 }
 
 export async function POST(request: Request) {
     const authCheck = await requirePermission(PERMISSIONS.GACHA_EDIT);
-    if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+    if (!authCheck.success) return gachaApiError(authCheck.error, { status: 401 });
     try {
         const result = await validateBody(request, gachaRewardSchema);
         if ("error" in result) return result.error;
@@ -47,7 +46,7 @@ export async function POST(request: Request) {
 
         const newId = crypto.randomUUID();
         if (body.rewardType === "PRODUCT") {
-            if (!body.productId) return NextResponse.json({ success: false, message: "กรุณาเลือกสินค้า" }, { status: 400 });
+            if (!body.productId) return gachaApiError("กรุณาเลือกสินค้า", { status: 400 });
             await db.insert(gachaRewards).values({
                 id: newId, productId: body.productId, tier: body.tier, isActive: body.isActive,
                 rewardType: "PRODUCT", gachaMachineId: body.gachaMachineId ?? null,
@@ -57,8 +56,8 @@ export async function POST(request: Request) {
                 updatedAt: mysqlNow(),
             });
         } else {
-            if (!body.rewardAmount || body.rewardAmount <= 0) return NextResponse.json({ success: false, message: "กรุณากรอกจำนวนรางวัล" }, { status: 400 });
-            if (!body.rewardName) return NextResponse.json({ success: false, message: "กรุณากรอกชื่อรางวัล" }, { status: 400 });
+            if (!body.rewardAmount || body.rewardAmount <= 0) return gachaApiError("กรุณากรอกจำนวนรางวัล", { status: 400 });
+            if (!body.rewardName) return gachaApiError("กรุณากรอกชื่อรางวัล", { status: 400 });
             await db.insert(gachaRewards).values({
                 id: newId, rewardType: body.rewardType, rewardName: body.rewardName,
                 rewardAmount: body.rewardAmount == null ? null : String(body.rewardAmount), rewardImageUrl: body.rewardImageUrl || null,
@@ -72,8 +71,8 @@ export async function POST(request: Request) {
             await disableMachineIfProbabilityInvalid(body.gachaMachineId);
         }
         const created = await db.query.gachaRewards.findFirst({ where: eq(gachaRewards.id, newId) });
-        return NextResponse.json({ success: true, data: created });
+        return gachaApiSuccess(created);
     } catch (error) {
-        return NextResponse.json({ success: false, message: `เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : "Unknown"}` }, { status: 500 });
+        return gachaApiError(`เกิดข้อผิดพลาด: ${error instanceof Error ? error.message : "Unknown"}`, { status: 500 });
     }
 }

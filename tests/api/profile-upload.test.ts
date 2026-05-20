@@ -85,8 +85,9 @@ describe("API: /api/profile/upload-image (POST)", () => {
         expect(db.update).toHaveBeenCalled();
         expect(deleteManagedUpload).toHaveBeenCalledWith(
             "/uploads/profiles/old-avatar.webp",
-            expect.stringContaining("public"),
-            "/uploads/profiles"
+            expect.stringContaining("storage"),
+            "/uploads/profiles",
+            [expect.stringContaining("public")]
         );
     });
 

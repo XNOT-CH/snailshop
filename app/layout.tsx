@@ -1,20 +1,6 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { Prompt } from "next/font/google";
-import { auth } from "@/auth";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import { DynamicBackground } from "@/components/DynamicBackground";
-import { DynamicFavicon } from "@/components/DynamicFavicon";
-import { ThemeProvider } from "@/components/providers/ThemeProvider";
-import { CartProvider } from "@/components/providers/CartContext";
-import { FloatingChatButtonWrapper } from "@/components/FloatingChatButtonWrapper";
-import { SweetAlertProvider } from "@/components/SweetAlertProvider";
-import { AnnouncementPopupWrapper } from "@/components/AnnouncementPopupWrapper";
-import { GlobalLoadingWrapper } from "@/components/GlobalLoadingWrapper";
-import { StructuredData } from "@/components/StructuredData";
-import { MobileBottomNav } from "@/components/MobileBottomNav";
-import { RouteShell } from "@/components/RouteShell";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import {
   DEFAULT_SITE_DESCRIPTION,
@@ -44,6 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const siteName = resolveSiteName(settings?.heroTitle);
   const siteDescription = settings?.heroDescription?.trim() || DEFAULT_SITE_DESCRIPTION;
   const siteTitle = `${siteName} - Game ID Marketplace`;
+  const faviconUrl = toAbsoluteAssetUrl(settings?.logoUrl);
   const socialImage =
     toAbsoluteAssetUrl(settings?.ogImageUrl || settings?.bannerImage1 || settings?.logoUrl) ||
     absoluteUrl(DEFAULT_OG_IMAGE_PATH);
@@ -77,6 +64,15 @@ export async function generateMetadata(): Promise<Metadata> {
       description: siteDescription,
       images: [socialImage],
     },
+    ...(faviconUrl
+      ? {
+          icons: {
+            icon: faviconUrl,
+            shortcut: faviconUrl,
+            apple: faviconUrl,
+          },
+        }
+      : {}),
     robots: {
       index: true,
       follow: true,
@@ -89,29 +85,6 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth();
-  const settings = await getSiteSettings();
-  const siteName = resolveSiteName(settings?.heroTitle);
-  const logoUrl = toAbsoluteAssetUrl(settings?.logoUrl);
-  const heroDescription = settings?.heroDescription?.trim() || DEFAULT_SITE_DESCRIPTION;
-  const structuredData = [
-    {
-      "@context": "https://schema.org",
-      "@type": "Organization",
-      name: siteName,
-      url: absoluteUrl("/"),
-      ...(logoUrl ? { logo: logoUrl } : {}),
-    },
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      name: siteName,
-      url: absoluteUrl("/"),
-      inLanguage: "th",
-      description: heroDescription,
-    },
-  ];
-
   return (
     <html
       lang="th"
@@ -120,31 +93,7 @@ export default async function RootLayout({
       className={prompt.variable}
     >
       <body className="font-sans antialiased min-h-screen bg-background flex flex-col">
-        <StructuredData data={structuredData} />
-        <ThemeProvider>
-          <SweetAlertProvider>
-            <CartProvider>
-              {/* Dynamic Background Image */}
-              <DynamicBackground />
-
-              {/* Dynamic Favicon from Settings */}
-              <DynamicFavicon />
-
-              {/* Global Navigation Loading Screen - client-only, no SSR to avoid hydration mismatch */}
-              <GlobalLoadingWrapper />
-
-              <RouteShell
-                navbar={<Navbar />}
-                mobileBottomNav={<MobileBottomNav />}
-                footer={<Footer />}
-                floatingChat={<FloatingChatButtonWrapper />}
-                announcementPopup={<AnnouncementPopupWrapper enabled={Boolean(session?.user)} />}
-              >
-                {children}
-              </RouteShell>
-            </CartProvider>
-          </SweetAlertProvider>
-        </ThemeProvider>
+        {children}
       </body>
     </html>
   );

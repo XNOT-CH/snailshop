@@ -46,7 +46,7 @@ export default async function Footer() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="py-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
                     <div className="lg:col-span-1">
-                        <Link href="/home" className="inline-flex items-center gap-3 mb-4 group">
+                        <Link href="/home" prefetch={false} className="inline-flex items-center gap-3 mb-4 group">
                             {siteSettings?.logoUrl ? (
                                 <Image src={siteSettings.logoUrl} alt="Logo" width={48} height={48} className="h-12 w-12 rounded-xl object-contain shadow-lg ring-2 ring-primary/20 transition-all duration-300 group-hover:ring-primary/50" />
                             ) : (
@@ -75,7 +75,7 @@ export default async function Footer() {
                                 const Icon = link.icon;
                                 return (
                                     <li key={link.href}>
-                                        <Link href={link.href} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group">
+                                        <Link href={link.href} prefetch={false} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group">
                                             <ChevronRight className="h-3 w-3 text-primary opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
                                             <Icon className="h-4 w-4" />{link.label}
                                         </Link>
@@ -98,7 +98,7 @@ export default async function Footer() {
                                                 <FileText className="h-4 w-4" />{link.label}
                                             </a>
                                         ) : (
-                                            <Link href={link.href} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group">
+                                            <Link href={link.href} prefetch={false} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group">
                                                 <ChevronRight className="h-3 w-3 text-primary opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
                                                 <FileText className="h-4 w-4" />{link.label}
                                             </Link>
@@ -110,7 +110,7 @@ export default async function Footer() {
                                     const Icon = link.icon;
                                     return (
                                         <li key={link.href}>
-                                            <Link href={link.href} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group">
+                                            <Link href={link.href} prefetch={false} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group">
                                                 <ChevronRight className="h-3 w-3 text-primary opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
                                                 <Icon className="h-4 w-4" />{link.label}
                                             </Link>

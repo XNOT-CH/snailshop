@@ -6,7 +6,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/auth", () => ({ isAdmin: vi.fn() }));
+const { isAdminMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+}));
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -23,7 +34,10 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("drizzle-orm", () => ({ eq: vi.fn(), desc: vi.fn() }));
-vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-03-14 00:00:00") }));
+vi.mock("@/lib/utils/date", () => ({
+  mysqlNow: vi.fn(() => "2026-03-14 00:00:00"),
+  toMySQLDatetime: vi.fn(() => "2026-03-14 00:00:00"),
+}));
 vi.mock("@/lib/validations/promoCode", () => ({ promoCodeSchema: {} }));
 vi.mock("@/lib/validations/validate", () => ({ validateBody: vi.fn() }));
 vi.mock("@/lib/auditLog", () => ({
@@ -145,14 +159,15 @@ describe("API: /api/admin/roles/[id]", () => {
     expect(body.name).toBe("Seller");
   });
 
-  it("PUT returns 400 when name or code missing", async () => {
-    (db.query.roles.findFirst as any).mockResolvedValue(mkRole());
+  it("PUT accepts missing code and keeps the current role code", async () => {
+    (db.query.roles.findFirst as any)
+      .mockResolvedValueOnce(mkRole())
+      .mockResolvedValueOnce(mkRole());
     const { PUT } = await import("@/app/api/admin/roles/[id]/route");
     const res = await PUT(new Request("http://localhost", {
       method: "PUT", body: JSON.stringify({ name: "Seller" }) // missing code
     }), mkParams("r1"));
-    expect(res.status).toBe(400);
-    expect((await res.json()).error).toContain("required");
+    expect(res.status).toBe(200);
   });
 
   it("PUT returns 404 when role not found", async () => {
@@ -164,16 +179,17 @@ describe("API: /api/admin/roles/[id]", () => {
     expect(res.status).toBe(404);
   });
 
-  it("PUT returns 400 when code conflicts with another role", async () => {
+  it("PUT resolves a conflicting code instead of returning a conflict", async () => {
     (db.query.roles.findFirst as any)
       .mockResolvedValueOnce(mkRole({ code: "SELLER" })) // existing role
-      .mockResolvedValueOnce({ id: "r99", code: "ADMIN" }); // conflict
+      .mockResolvedValueOnce({ id: "r99", code: "ADMIN" }) // conflict
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ ...mkRole(), name: "Admin", code: "ADMIN_1" });
     const { PUT } = await import("@/app/api/admin/roles/[id]/route");
     const res = await PUT(new Request("http://localhost", {
       method: "PUT", body: JSON.stringify({ name: "Admin", code: "admin" }), // ADMIN ≠ SELLER → check conflict
     }), mkParams("r1"));
-    expect(res.status).toBe(400);
-    expect((await res.json()).error).toContain("already exists");
+    expect(res.status).toBe(200);
   });
 
   it("PUT updates role successfully", async () => {

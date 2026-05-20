@@ -18,7 +18,13 @@ const optionalEnglishNameSchema = z
         message: "กรอกได้เฉพาะภาษาอังกฤษเท่านั้น",
     });
 
-const addressSchema = z.object({
+const optionalThaiTaxIdSchema = z
+    .string()
+    .refine((value) => value === "" || /^\d{13}$/.test(value), {
+        message: "เลขประจำตัวผู้เสียภาษีต้องเป็นตัวเลข 13 หลัก",
+    });
+
+export const addressSchema = z.object({
     fullName: z
         .string()
         .max(200)
@@ -37,6 +43,20 @@ const addressSchema = z.object({
     district: z.string().max(100).optional().or(z.literal("")),
     subdistrict: z.string().max(100).optional().or(z.literal("")),
     postalCode: z.string().max(10).optional().or(z.literal("")),
+});
+
+export const addressProfileSchema = addressSchema.extend({
+    id: z.string().optional(),
+    label: z.string().trim().min(1, "กรุณาตั้งชื่อข้อมูลนี้").max(100, "ชื่อต้องไม่เกิน 100 ตัวอักษร"),
+    kind: z.enum(["tax", "shipping", "both"]),
+    taxId: z
+        .string()
+        .transform((value) => value.replace(/\D/g, ""))
+        .pipe(optionalThaiTaxIdSchema)
+        .optional()
+        .or(z.literal("")),
+    isDefaultTax: z.boolean().optional(),
+    isDefaultShipping: z.boolean().optional(),
 });
 
 const profileImageValue = z

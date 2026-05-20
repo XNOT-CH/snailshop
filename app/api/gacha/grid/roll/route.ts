@@ -1,8 +1,7 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
-import { and, count, eq, gte, isNull, lte } from "drizzle-orm";
 import { isAuthenticatedWithCsrf } from "@/lib/auth";
-import { db, gachaMachines, gachaRollLogs, users } from "@/lib/db";
+import { db, gachaRollLogs } from "@/lib/db";
 import {
     acquireGachaExecutionLock,
     claimProductRewardOrThrow,
@@ -11,10 +10,13 @@ import {
 } from "@/lib/gachaExecution";
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
+import { checkDailySpinLimit } from "@/lib/features/gacha/limits";
+import { getGachaRollRewardDetails } from "@/lib/features/gacha/rewards";
+import { getGridGachaSettings } from "@/lib/features/gacha/settings";
+import { fetchGachaUserOrError } from "@/lib/features/gacha/users";
 import { isRewardEligibleForRoll } from "@/lib/gachaRewardEligibility";
 import { fetchActiveGridRewards } from "@/lib/gachaRewardQueries";
 import { hasExactProbabilityTotal, pickWeightedCandidate } from "@/lib/gachaProbability";
-import { getGachaRewardTypeLabel, normalizeGachaCost } from "@/lib/gachaCost";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkGachaRateLimit, getClientIp } from "@/lib/rateLimit";
 
@@ -44,41 +46,6 @@ interface RewardChoice {
         secretData?: string;
         stockSeparator?: string | null;
     } | null;
-}
-
-async function fetchUserOrError(userId: string) {
-    const user = await db.query.users.findFirst({
-        where: eq(users.id, userId),
-        columns: { id: true },
-    });
-
-    if (!user) {
-        return { error: "ไม่พบผู้ใช้งาน", status: 404 };
-    }
-
-    return { user };
-}
-
-function getRewardDetails(chosen: {
-    rewardType: string;
-    product?: { name?: string; imageUrl?: string | null } | null;
-    rewardName?: string | null;
-    rewardAmount?: string | number | null;
-    rewardImageUrl?: string | null;
-}, currencySettings?: Awaited<ReturnType<typeof getCurrencySettings>> | null) {
-    let rewardName: string;
-    if (chosen.rewardType === "PRODUCT") {
-        rewardName = chosen.product?.name ?? "รางวัล";
-    } else if (chosen.rewardName) {
-        rewardName = chosen.rewardName;
-    } else {
-        rewardName = getGachaRewardTypeLabel(chosen.rewardType, currencySettings);
-    }
-
-    const imageUrl = chosen.rewardType === "PRODUCT" ? chosen.product?.imageUrl : chosen.rewardImageUrl;
-    const rewardAmountStr = chosen.rewardAmount ? String(chosen.rewardAmount) : null;
-    const rewardAmount = rewardAmountStr ? Number(rewardAmountStr) : null;
-    return { rewardName, imageUrl: imageUrl || null, rewardAmount };
 }
 
 interface RollTxContext {
@@ -137,9 +104,9 @@ async function executeRollTransaction(ctx: RollTxContext) {
 }
 
 async function handleGridRoll(userId: string, machineId: string | null, costType: string, costAmount: number) {
-    const userRes = await fetchUserOrError(userId);
+    const userRes = await fetchGachaUserOrError(userId);
     if ("error" in userRes) {
-        return { error: userRes.error, status: userRes.status };
+        return userRes;
     }
     const user = userRes.user;
 
@@ -160,7 +127,7 @@ async function handleGridRoll(userId: string, machineId: string | null, costType
     }
     const wonIndex = eligible.findIndex((reward) => reward.id === chosen.id);
     const currencySettings = await getCurrencySettings().catch(() => null);
-    const { rewardName, imageUrl, rewardAmount } = getRewardDetails(chosen, currencySettings);
+    const { rewardName, imageUrl, rewardAmount } = getGachaRollRewardDetails(chosen, currencySettings);
 
     await db.transaction(async (tx) => {
         await executeRollTransaction({ tx, user, chosen, costType, costAmount, rewardName, imageUrl, machineId });
@@ -222,10 +189,10 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { costType, costAmount, dailySpinLimit } = await getMachineSettings(machineId);
+        const { costType, costAmount, dailySpinLimit } = await getGridGachaSettings(machineId);
 
         if (dailySpinLimit > 0) {
-            await checkDailySpinLimit(auth.userId, machineId, dailySpinLimit);
+            await checkDailySpinLimit({ userId: auth.userId, machineId, dailySpinLimit });
         }
 
         const result = await handleGridRoll(auth.userId, machineId, costType, costAmount);
@@ -258,50 +225,5 @@ export async function POST(req: Request) {
         return NextResponse.json({ success: false, message: error.message || "เกิดข้อผิดพลาด" }, { status: 500 });
     } finally {
         await executionLock.release();
-    }
-}
-
-async function getMachineSettings(machineId: string | null) {
-    if (machineId) {
-        const machine = await db.query.gachaMachines.findFirst({ where: eq(gachaMachines.id, machineId) });
-        if (!machine || !machine.isActive || !machine.isEnabled) {
-            throw new Error("ตู้กาชานี้ปิดอยู่ชั่วคราว");
-        }
-
-        return {
-            ...normalizeGachaCost(machine.costType, machine.costAmount),
-            dailySpinLimit: machine.dailySpinLimit ?? 0,
-        };
-    }
-
-    const settings = await db.query.gachaSettings.findFirst().catch(() => null);
-    if (settings && !settings.isEnabled) {
-        throw new Error("ระบบกาชาปิดอยู่ชั่วคราว");
-    }
-
-    return {
-        ...normalizeGachaCost(settings?.costType ?? "FREE", settings?.costAmount ?? 0),
-        dailySpinLimit: settings?.dailySpinLimit ?? 0,
-    };
-}
-
-async function checkDailySpinLimit(userId: string, machineId: string | null, dailySpinLimit: number) {
-    const now = new Date();
-    const start = new Date(now);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(now);
-    end.setHours(23, 59, 59, 999);
-    const toMySQLDatetime = (date: Date) => date.toISOString().slice(0, 19).replace("T", " ");
-
-    const whereCondition = and(
-        eq(gachaRollLogs.userId, userId),
-        machineId ? eq(gachaRollLogs.gachaMachineId, machineId) : isNull(gachaRollLogs.gachaMachineId),
-        gte(gachaRollLogs.createdAt, toMySQLDatetime(start)),
-        lte(gachaRollLogs.createdAt, toMySQLDatetime(end)),
-    );
-
-    const [{ count: todayCount }] = await db.select({ count: count() }).from(gachaRollLogs).where(whereCondition);
-    if (Number(todayCount) >= dailySpinLimit) {
-        throw new Error(`คุณสุ่มครบ ${dailySpinLimit} ครั้ง/วันแล้ว`);
     }
 }

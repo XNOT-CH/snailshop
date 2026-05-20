@@ -43,7 +43,7 @@ export function ProductGallery({ images }: Readonly<ProductGalleryProps>) {
                             src={galleryImages[selectedImage].url}
                             alt="Product"
                             fill
-                            sizes="(max-width: 768px) 100vw, 50vw"
+                            sizes="(max-width: 640px) calc(100vw - 56px), (max-width: 1024px) 380px, 420px"
                             className="object-cover"
                             priority
                         />

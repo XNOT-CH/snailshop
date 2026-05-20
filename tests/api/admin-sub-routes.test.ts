@@ -5,7 +5,18 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/auth", () => ({ isAdmin: vi.fn() }));
+const { isAdminMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+}));
+
+vi.mock("@/lib/auth", () => ({
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
+}));
 
 vi.mock("@/lib/db", () => ({
   db: {
@@ -49,7 +60,10 @@ vi.mock("@/lib/validations/promoCode", () => ({ promoCodeSchema: {} }));
 vi.mock("@/lib/validations/content", () => ({
   navItemSchema: {}, footerLinkSchema: {},
 }));
-vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-01-01 00:00:00") }));
+vi.mock("@/lib/utils/date", () => ({
+  mysqlNow: vi.fn(() => "2026-01-01 00:00:00"),
+  toMySQLDatetime: vi.fn(() => "2026-01-01 00:00:00"),
+}));
 
 import { isAdmin } from "@/lib/auth";
 import { db } from "@/lib/db";

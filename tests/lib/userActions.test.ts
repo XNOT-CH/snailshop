@@ -9,6 +9,13 @@ vi.mock("@/auth", () => ({
   auth: vi.fn(),
 }));
 
+vi.mock("bcryptjs", () => ({
+  default: {
+    compare: vi.fn().mockResolvedValue(true),
+    hash: vi.fn().mockResolvedValue("newhash"),
+  },
+}));
+
 vi.mock("@/lib/db", () => ({
   db: {
     query: {
@@ -20,7 +27,9 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("drizzle-orm", () => ({
+  and: vi.fn(),
   eq: vi.fn(),
+  ne: vi.fn(),
 }));
 
 vi.mock("@/lib/auditLog", () => ({
@@ -89,10 +98,10 @@ describe("lib/actions/user: updateProfile", () => {
       success: true,
       data: { name: "John Updated", email: "john@test.com", phone: "0812345678" },
     });
-    (db.query.users.findFirst as any).mockResolvedValue({
+    (db.query.users.findFirst as any).mockResolvedValueOnce({
       id: "u1", name: "John", email: null, image: null, password: "hash",
       firstName: null, lastName: null, firstNameEn: null, lastNameEn: null,
-    });
+    }).mockResolvedValueOnce(null);
     const { updateProfile } = await import("@/lib/actions/user");
     const result = await updateProfile({ name: "John Updated" } as any);
     expect(result.success).toBe(true);
@@ -103,14 +112,14 @@ describe("lib/actions/user: updateProfile", () => {
     (auth as any).mockResolvedValue(mkSession("u1"));
     (updateProfileSchema.safeParse as any).mockReturnValue({
       success: true,
-      data: { name: "John", password: "newpass123", email: null, phone: null },
+      data: { name: "John", password: "newpass123", currentPassword: "oldpass123", email: null, phone: null },
     });
     (db.query.users.findFirst as any).mockResolvedValue({
       id: "u1", name: "John", email: null, image: null, password: "oldhash",
       firstName: null, lastName: null, firstNameEn: null, lastNameEn: null,
     });
     const { updateProfile } = await import("@/lib/actions/user");
-    const result = await updateProfile({ name: "John", password: "newpass123" } as any);
+    const result = await updateProfile({ name: "John", password: "newpass123", currentPassword: "oldpass123" } as any);
     expect(result.success).toBe(true);
     expect(result.message).toContain("รหัสผ่าน");
   });

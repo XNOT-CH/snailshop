@@ -5,8 +5,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+const { isAdminMock } = vi.hoisted(() => ({
+  isAdminMock: vi.fn(),
+}));
+
 vi.mock("@/lib/auth", () => ({
-  isAdmin: vi.fn(),
+  isAdmin: isAdminMock,
+  isAdminWithCsrf: isAdminMock,
+  requirePermission: isAdminMock,
+  requirePermissionWithCsrf: isAdminMock,
+  requireAnyPermission: isAdminMock,
+  requireAnyPermissionWithCsrf: isAdminMock,
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -189,14 +198,17 @@ describe("API: /api/admin/roles", () => {
       expect(res.status).toBe(401);
     });
 
-    it("returns 400 if role code already exists", async () => {
+    it("creates role with a resolved unique code when the base code already exists", async () => {
       (isAdmin as any).mockResolvedValue({ success: true });
       (validateBody as any).mockResolvedValue({ data: { name: "Admin", description: "", permissions: [] } });
-      (db.query.roles.findFirst as any).mockResolvedValue({ id: "existing" });
+      (db.query.roles.findFirst as any)
+        .mockResolvedValueOnce({ id: "existing", code: "ADMIN" })
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({ id: "new-id", name: "Admin", code: "ADMIN_1" });
       const { POST } = await import("@/app/api/admin/roles/route");
       const req = new Request("http://localhost/api/admin/roles", { method: "POST" });
       const res = await POST(req);
-      expect(res.status).toBe(400);
+      expect(res.status).toBe(201);
     });
 
     it("creates role successfully", async () => {

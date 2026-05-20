@@ -3,6 +3,17 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/auth", () => ({ auth: vi.fn() }));
 
+vi.mock("@/lib/auth", () => ({
+    isAuthenticatedWithCsrf: vi.fn(async () => {
+        const { auth } = await import("@/auth");
+        const session = await auth();
+        if (!session?.user?.id) {
+            return { success: false, error: "Unauthorized" };
+        }
+        return { success: true, userId: session.user.id, user: session.user };
+    }),
+}));
+
 vi.mock("@/lib/db", () => ({
     db: {
         $client: { getConnection: vi.fn() },

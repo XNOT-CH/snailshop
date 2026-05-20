@@ -8,7 +8,7 @@ import { usePathname } from "next/navigation";
 import {
     X, Home, ShoppingBag, LayoutDashboard, HelpCircle,
     Dices, Wallet, User, ChevronRight, Gamepad2,
-    Lock, UserPlus, Menu, LogOut, CircleDollarSign,
+    Lock, UserPlus, Menu, LogOut, CircleDollarSign, Gift,
 } from "lucide-react";
 import { useLogout } from "@/components/useLogout";
 import { withImageVersion } from "@/lib/imageUrl";
@@ -30,17 +30,19 @@ interface NavigationDrawerProps {
 }
 
 const DEFAULT_NAV: SerializableNavLink[] = [
-    { href: "/",          label: "หน้าแรก" },
+    { href: "/home",      label: "หน้าแรก" },
     { href: "/shop",      label: "ร้านค้า" },
     { href: "/gachapons", label: "หมวดหมู่กาชา" },
+    { href: "/season-pass", label: "Season Pass" },
     { href: "/dashboard", label: "แดชบอร์ด" },
     { href: "/help",      label: "ช่วยเหลือ" },
 ];
 
 const ICON_MAP: Record<string, React.ElementType> = {
-    "/":                 Home,
+    "/home":             Home,
     "/shop":             ShoppingBag,
     "/gachapons":        Dices,
+    "/season-pass":      Gift,
     "/dashboard":        LayoutDashboard,
     "/dashboard/topup":  Wallet,
     "/help":             HelpCircle,
@@ -58,6 +60,7 @@ export function NavigationDrawer({
 }: NavigationDrawerProps) {
     const [isOpen, setIsOpen]             = useState(false);
     const [mounted, setMounted]           = useState(false);
+    const [hasOpened, setHasOpened]       = useState(false);
     const [shopExpanded, setShopExpanded] = useState(false);
     const [logoutPending, setLogoutPending] = useState(false);
     const pathname = usePathname();
@@ -95,6 +98,11 @@ export function NavigationDrawer({
     const isActive = (href: string) =>
         href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
 
+    const openDrawer = () => {
+        setHasOpened(true);
+        setIsOpen(true);
+    };
+
     // ─── Portal content ───────────────────────────────────
     const portal = (
         <>
@@ -120,7 +128,12 @@ export function NavigationDrawer({
                     className="flex items-center justify-between px-5 py-4 flex-shrink-0"
                     style={drawerStyles.header}
                 >
-                    <Link href="/" onClick={() => setIsOpen(false)} className="flex items-center gap-2.5">
+                    <Link
+                        href="/home"
+                        prefetch={false}
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center gap-2.5"
+                    >
                         {logoUrl ? (
                             <Image src={logoUrl} alt={siteName} width={32} height={32} className="object-contain" />
                         ) : (
@@ -177,6 +190,7 @@ export function NavigationDrawer({
                             {/* Topup Button */}
                             <Link
                                 href="/dashboard/topup"
+                                prefetch={false}
                                 onClick={() => setIsOpen(false)}
                                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 active:scale-[0.98] bg-primary"
                             >
@@ -190,11 +204,11 @@ export function NavigationDrawer({
                         </div>
                     ) : (
                         <div className="flex flex-col gap-2">
-                            <Link href="/login" onClick={() => setIsOpen(false)}
+                            <Link href="/login" prefetch={false} onClick={() => setIsOpen(false)}
                                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-semibold text-primary-foreground transition-all hover:opacity-90 bg-primary">
                                 <Lock className="h-4 w-4" /> เข้าสู่ระบบ
                             </Link>
-                            <Link href="/register" onClick={() => setIsOpen(false)}
+                            <Link href="/register" prefetch={false} onClick={() => setIsOpen(false)}
                                 className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-all"
                                 style={drawerStyles.secondaryButton}>
                                 <UserPlus className="h-4 w-4" /> สมัครสมาชิก
@@ -228,6 +242,7 @@ export function NavigationDrawer({
                                             {categories.map((cat) => (
                                                 <Link key={cat}
                                                     href={`/shop?category=${encodeURIComponent(cat)}`}
+                                                    prefetch={false}
                                                     className="flex items-center pl-12 pr-5 py-2.5 text-xs transition-colors hover:bg-accent"
                                                     style={drawerStyles.inactive}
                                                     onClick={() => setIsOpen(false)}>
@@ -242,6 +257,7 @@ export function NavigationDrawer({
 
                         return (
                             <Link key={link.href} href={link.href}
+                                prefetch={false}
                                 onClick={() => setIsOpen(false)}
                                 className="flex items-center gap-3.5 px-5 py-3.5 text-sm font-medium transition-colors"
                                 style={active ? activeStyle : inactiveStyle}
@@ -256,7 +272,7 @@ export function NavigationDrawer({
                     {user && (
                         <>
                             <div className="my-1 mx-4" style={{ height: "1px", ...drawerStyles.divider }} />
-                            <Link href="/profile/settings" onClick={() => setIsOpen(false)}
+                            <Link href="/profile/settings" prefetch={false} onClick={() => setIsOpen(false)}
                                 className="flex items-center gap-3.5 px-5 py-3.5 text-sm font-medium transition-colors"
                                 style={pathname.startsWith("/profile") ? drawerStyles.active : drawerStyles.inactive}>
                                 <User className="h-[19px] w-[19px] flex-shrink-0" />
@@ -287,13 +303,13 @@ export function NavigationDrawer({
     return (
         <>
             <button
-                onClick={() => setIsOpen(true)}
+                onClick={openDrawer}
                 className={`${themeClasses.actionMuted} flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-primary xl:hidden`}
                 aria-label="เปิดเมนู"
             >
                 <Menu className="h-5 w-5" />
             </button>
-            {mounted && createPortal(portal, document.body)}
+            {mounted && hasOpened && createPortal(portal, document.body)}
         </>
     );
 }

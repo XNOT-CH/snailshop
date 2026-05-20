@@ -9,6 +9,7 @@ import {
     Tooltip,
     ResponsiveContainer,
 } from "recharts";
+import { formatCompactBaht as formatCurrency } from "@/lib/formatters/currency";
 
 // ─── Types ──────────────────────────────────────────────
 type Granularity = "day" | "week" | "month" | "year";
@@ -46,13 +47,6 @@ function formatXAxis(dateStr: string, granularity: Granularity): string {
         default:
             return dateStr;
     }
-}
-
-// ─── Currency Formatter ─────────────────────────────────
-function formatCurrency(value: number): string {
-    if (value >= 1_000_000) return `฿${(value / 1_000_000).toFixed(1)}M`;
-    if (value >= 1_000) return `฿${(value / 1_000).toFixed(0)}k`;
-    return `฿${value}`;
 }
 
 // ─── Custom Tooltip ─────────────────────────────────────

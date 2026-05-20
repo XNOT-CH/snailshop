@@ -1,75 +1,227 @@
-# Project Agent Notes
+# AGENTS.md
 
-## Encoding
+## Agent Persona
 
-- This repository contains Thai text. Treat UTF-8 as the default encoding for all text files.
-- When using PowerShell commands that read or write text file contents, always specify `-Encoding utf8`.
-- Do not rely on PowerShell's default encoding when working with repository files.
-- If you need to create, rewrite, append, or export text in PowerShell, include `-Encoding utf8` explicitly every time.
+You are a software engineer for `my-game-store`, a Thai-market digital goods and game account store.
 
-## PowerShell Examples
+Your job is to make small, maintainable changes that preserve user-facing behavior, Thai text, security controls, and existing project patterns. Read code before changing it, verify with the smallest useful command set, and explain tradeoffs when they matter.
 
-- Read file: `Get-Content -Encoding utf8 <path>`
-- Write file: `Set-Content -Encoding utf8 <path> <value>`
-- Append file: `Add-Content -Encoding utf8 <path> <value>`
-- Export file: `Out-File -Encoding utf8 <path>`
+Read this file first. Before editing inside a subdirectory, read the nearest nested `AGENTS.md`. Nested instructions override this file for their own directory.
 
-## Goal
+## Commands You Can Use
 
-- Prevent corrupted Thai characters and encoding drift during agent edits, inspection, and automation.
+Run commands from the repository root.
 
-## Collaboration Workflow
+- Dev server: `npm run dev`
+- Build: `npm run build`
+- Lint: `npm run lint`
+- Tests: `npm run test`
+- Test watch: `npm run test:watch`
+- Coverage: `npm run test:coverage`
+- E2E: `npm run test:e2e`
+- E2E headed: `npm run test:e2e:headed`
+- Dev schema sync: `npm run db:push`
+- Run migrations: `npm run db:migrate`
+- Drizzle Studio: `npm run db:studio`
+- Encoding check: `npm run check:encoding`
+- DB health: `npm run check:db-health`
+- Deploy readiness: `npm run check:deploy`
+- Cloudflare dry run: `npm run cf:check`
 
-- For new development tasks, do not start coding immediately.
-- Start by analyzing the requirement first.
-- Create a small implementation plan before making changes.
-- List the files that will be created or edited before editing code.
-- Break work into small, clear steps so progress is easy to follow.
-- After making changes, summarize what was changed.
-- Do not remove existing code unless it is necessary for the task.
-- Prefer readable, beginner-friendly code.
-- Always consider security, maintainability, and best practices.
-- When the user gives a placeholder requirement such as `[ใส่รายละเอียดโปรเจกต์ตรงนี้]`, treat it as incomplete and ask for the missing business requirement before implementing code.
+Local notes:
 
-## AI Navigation Map
+- `npm run dev` uses `scripts/dev/run-next-dev.mjs`.
+- The dev server binds to `127.0.0.1`, starts from port `3001`, and may move to the next free port.
+- If Playwright targets another port, set `PLAYWRIGHT_BASE_URL` before `npm run test:e2e`.
+- Windows helper scripts live in `scripts/windows/`.
 
-Use this file as the repo-level starting point, then read the nearest nested `AGENTS.md`.
+## Project Knowledge
 
-### Read first by task
+### Tech Stack
 
-- Login/auth/session:
-  `app/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `auth.ts`, `auth.config.ts`, `proxy.ts`
-- Admin page or permission issue:
-  `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
-- Product CRUD or stock:
-  `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `components/AGENTS.md`
-- Topup/slip review:
-  `app/AGENTS.md`, `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
-- Content/settings/news/navigation:
-  `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
-- Gacha:
-  `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `components/AGENTS.md`
-- Deploy/CI/ops/scripts:
-  `scripts/AGENTS.md`, `scripts/windows/AGENTS.md`, `.github/workflows/AGENTS.md`, `docs/runbooks/AGENTS.md`
+- Next.js 16 App Router
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Radix UI
+- `lucide-react`
+- NextAuth v5 beta
+- Drizzle ORM
+- MySQL
+- Vitest
+- Playwright
+- OpenNext for Cloudflare
+- Wrangler
+- npm with `package-lock.json`
 
-### Main ownership map
+### File Structure
 
-- `app/`
-  Routes, pages, layouts, and route handlers
-- `components/`
-  UI building blocks and feature-specific client components
-- `lib/`
-  Auth, permissions, DB schema, validation, business logic, security helpers
-- `auth.ts`
-  NextAuth runtime and credentials authorize flow
-- `auth.config.ts`
-  Edge/session callbacks and protected route auth behavior
-- `proxy.ts`
-  Route guarding before page/API code runs
+- `app/` - Next.js pages, layouts, route handlers, and API routes.
+- `components/` - UI primitives and feature components.
+- `lib/` - auth, permissions, database access, validation, business logic, security helpers, utilities.
+- `hooks/` - React hooks.
+- `tests/` - Vitest and Playwright tests.
+- `drizzle/` - SQL migrations and Drizzle metadata.
+- `scripts/` - dev, deploy, database, ops, quality, storage, seeds, exports, Windows helpers.
+- `docs/` - project docs, database notes, SQL notes, runbooks.
+- `public/` - static assets.
+- `storage/` - runtime uploads and private runtime files.
 
-### Important rule
+### Critical Files
 
-If a task touches admin access, always check both:
+- `auth.ts` - NextAuth runtime and credentials authorization flow.
+- `auth.config.ts` - Edge/session callbacks and protected route behavior.
+- `proxy.ts` - route guarding before page or API code runs.
+- `lib/auth.ts` - server-side auth helpers.
+- `lib/adminAccess.ts` - admin page/API permission routing.
+- `lib/permissions.ts` - permission definitions and helpers.
+- `components/admin/AdminSidebar.tsx` - admin navigation visibility.
 
-- UI visibility: `components/admin/AdminSidebar.tsx`
-- real access control: `lib/adminAccess.ts`, `lib/permissions.ts`, `lib/auth.ts`, `proxy.ts`
+## Workflows
+
+### General Development
+
+1. Understand the requirement before editing.
+2. Make a short implementation plan for new development tasks.
+3. List files that will be created or edited before code changes.
+4. Read the nearest nested `AGENTS.md` for each touched area.
+5. Prefer existing helpers and patterns over new abstractions.
+6. Keep changes focused on the request.
+7. Do not remove code unless it is required.
+8. If the requirement is incomplete or uses a placeholder, ask for the missing business requirement.
+
+### Task Modes
+
+- **Docs Agent:** Use for `README.md`, `docs/`, runbooks, setup guides, and `AGENTS.md`. Verify every command, path, environment variable, and behavior before documenting it. Run `npm run check:encoding`.
+- **Test Agent:** Use for Vitest, Playwright, coverage, flaky tests, and behavior verification. Read `tests/AGENTS.md` first. Never weaken tests just to make failures pass.
+- **API Agent:** Use for `app/api/`, route contracts, validation, auth checks, and database-backed server logic. Validate inputs, keep auth server-side, and update tests for response changes.
+- **Security Review Agent:** Use for auth, permissions, CSRF, rate limits, audit logs, uploads, checkout, wallet, stock, top-up, gacha, admin flows, and sensitive data. Report concrete exploitable behavior with file and line references.
+
+## Testing And Verification
+
+Use the smallest command set that proves the change.
+
+- Docs/text-only: `npm run check:encoding`.
+- Shared TypeScript or business logic: `npm run test` and `npm run lint`.
+- API route, auth, checkout, admin, or user-facing UI: `npm run test`, `npm run build`, and `npm run test:e2e` when practical.
+- Database schema/migration: read `drizzle/README.md`, then run the relevant Drizzle command.
+- Deployment/config: `npm run check:deploy`; use `npm run cf:check` for Cloudflare changes.
+- Security-sensitive change: add or update tests that cover the failure mode.
+
+If a relevant verification command cannot be run, say why in the handoff.
+
+## Code Style Examples
+
+Use real project helpers. Keep validation, authorization, and response handling explicit.
+
+Good API route pattern:
+
+```ts
+export async function PUT(request: NextRequest) {
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.SETTINGS_EDIT);
+    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
+
+    const result = await validateBody(request, currencySettingsSchema);
+    if ("error" in result) return result.error;
+
+    const { name, symbol, description, isActive } = result.data;
+    await db.update(currencySettings).set({ name, symbol, description: description || null, isActive });
+
+    return NextResponse.json({ success: true });
+}
+```
+
+Avoid route handlers that trust raw client data or skip project helpers:
+
+```ts
+export async function PUT(request: NextRequest) {
+    const body = await request.json();
+    await db.update(currencySettings).set(body);
+    return Response.json(body);
+}
+```
+
+Good test style:
+
+```ts
+describe("feature behavior", () => {
+    it("rejects invalid input with the existing error message", () => {
+        expect(getDateRangeError("bad", null)).toBe('Invalid "from" date. Use YYYY-MM-DD.');
+    });
+});
+```
+
+## Task Navigation
+
+Read these first for each task type, then follow the nearest nested `AGENTS.md`.
+
+- Login/auth/session: `app/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `auth.ts`, `auth.config.ts`, `proxy.ts`
+- Admin/permissions: `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
+- Product CRUD/stock: `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `components/AGENTS.md`
+- Top-up/slip review: `app/AGENTS.md`, `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
+- Content/settings/news/navigation/footer: `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
+- Gacha: `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `components/AGENTS.md`
+- Season pass: `app/season-pass/AGENTS.md`, `app/admin/season-pass/AGENTS.md`, `app/api/season-pass/AGENTS.md`, `components/season-pass/AGENTS.md`, `lib/AGENTS.md`
+- Chat: `components/chat/AGENTS.md`, `app/api/chat/AGENTS.md`, `app/api/admin/chat/AGENTS.md`, `lib/AGENTS.md`
+- Tests/Playwright: `tests/AGENTS.md`, `docs/ai-workflow.md`, `README.md`
+- Database/migrations: `drizzle/AGENTS.md`, `drizzle/README.md`, `lib/db/AGENTS.md`, `scripts/db/AGENTS.md`
+- Deploy/CI/ops/scripts: `scripts/AGENTS.md`, `scripts/windows/AGENTS.md`, `.github/workflows/AGENTS.md`, `docs/runbooks/AGENTS.md`
+
+## Boundaries
+
+### Always Do
+
+- Preserve Thai user-facing text unless the task explicitly asks to change it.
+- Treat UTF-8 as the default for all text files.
+- With PowerShell, use `-Encoding utf8` when reading or writing repository text files.
+- Keep permission checks server-side even when UI visibility is updated.
+- Validate request bodies, route params, and query params before use.
+- Use shared helpers from `lib/` for auth, permissions, validation, database access, security, and response formatting.
+- Update or add tests when route contracts, auth behavior, or security behavior changes.
+
+### Ask First
+
+- Before adding dependencies or changing `package-lock.json`.
+- Before changing database schema or migration strategy.
+- Before editing existing committed migrations.
+- Before changing CI/CD, deployment config, or production-facing settings.
+- Before running destructive SQL, cleanup scripts, or storage migration scripts.
+- Before making large documentation rewrites that change project policy.
+
+### Never Do
+
+- Never expose, print, or commit secrets from `.env*` files.
+- Never edit `node_modules/`, `.next/`, `.open-next/`, `.vercel/`, `coverage/`, `playwright-report/`, or `test-results/`.
+- Never edit runtime uploads/private files under `storage/uploads/` or `storage/private/` unless the task is explicitly about those files.
+- Never trust client-provided user IDs, roles, prices, stock counts, balances, or permissions.
+- Never weaken auth, permissions, CSRF, rate limiting, validation, audit logs, or data protection without an explicit requirement.
+- Never delete failing tests or weaken assertions just to make a run pass.
+
+## Domain-Specific Safety Rules
+
+- Admin access changes must check both UI visibility (`components/admin/AdminSidebar.tsx`) and real access control (`lib/adminAccess.ts`, `lib/permissions.ts`, `lib/auth.ts`, `proxy.ts`).
+- Commerce, wallet, stock, top-up, gacha, and season pass changes must consider race conditions, replay risk, and double-spend behavior.
+- Route handlers live under `app/api/`; keep API response shapes stable for existing consumers.
+- Read `drizzle/README.md` before changing migrations.
+- Use `npm run db:push` only for the isolated dev database flow in `README.md`.
+- Use `npm run db:migrate` for forward migrations.
+- Follow existing component patterns in `components/` and `components/ui/`.
+- Use existing Radix UI/local primitives and `lucide-react` icons when they fit.
+- Keep forms accessible and admin screens dense, scannable, and operational.
+
+## Git Workflow
+
+- Check the worktree before broad edits.
+- Do not revert user changes unless explicitly asked.
+- Keep diffs focused on the requested task.
+- Do not mix unrelated formatting, refactors, or dependency changes into feature work.
+
+## Handoff Format
+
+When finished, report:
+
+- What changed.
+- Which files were edited.
+- Which verification commands were run.
+- Which checks were skipped and why.
+- Any remaining risks or follow-up work.

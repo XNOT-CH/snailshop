@@ -21,6 +21,7 @@ import {
     parseMockDateKey,
     TH_TIME_ZONE,
 } from "@/lib/utils/date";
+import { formatThaiDateShort } from "@/lib/formatters/date";
 
 type LockedUserRow = {
     id: string;
@@ -30,18 +31,10 @@ type LockedUserRow = {
 type LockedSubscriptionRow = {
     id: string;
     startAt: string;
+    createdAt?: string;
     endAt: string;
     status: string;
 };
-
-function formatThaiDate(value: string) {
-    return new Date(value.replace(" ", "T") + "Z").toLocaleDateString("th-TH", {
-        timeZone: TH_TIME_ZONE,
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-    });
-}
 
 function formatClaimDate(now: Date) {
     return new Intl.DateTimeFormat("th-TH", {
@@ -178,10 +171,10 @@ export async function purchaseSeasonPass(params: {
                 success: true,
                 message: queued ? "ต่ออายุ Season Pass สำเร็จ" : "ซื้อ Season Pass สำเร็จ",
                 endAt,
-                endAtText: formatThaiDate(endAt),
+                endAtText: formatThaiDateShort(endAt),
                 queued,
                 startsAt: queuedStartAt,
-                startsAtText: queuedStartAt ? formatThaiDate(queuedStartAt) : null,
+                startsAtText: queuedStartAt ? formatThaiDateShort(queuedStartAt) : null,
             },
         };
     } catch (error) {
@@ -221,6 +214,7 @@ export async function claimSeasonPass(params: {
 
     const boardState = buildSeasonPassBoard({
         startAt: activeSubscription.startAt,
+        createdAt: activeSubscription.createdAt,
         durationDays: plan.durationDays,
         claims: [],
         rewardCatalog,
@@ -248,7 +242,7 @@ export async function claimSeasonPass(params: {
         const activatedCount = await activateQueuedSubscriptionsForUser(conn, params.userId);
 
         const [subscriptionRows] = await conn.execute(
-            "SELECT id, startAt FROM SeasonPassSubscription WHERE userId = ? AND status = 'ACTIVE' AND startAt <= UTC_TIMESTAMP() AND endAt >= UTC_TIMESTAMP() ORDER BY endAt DESC LIMIT 1 FOR UPDATE",
+            "SELECT id, startAt, createdAt FROM SeasonPassSubscription WHERE userId = ? AND status = 'ACTIVE' AND startAt <= UTC_TIMESTAMP() AND endAt >= UTC_TIMESTAMP() ORDER BY endAt DESC LIMIT 1 FOR UPDATE",
             [params.userId],
         );
         const lockedSubscription = (subscriptionRows as LockedSubscriptionRow[])[0];
@@ -259,6 +253,7 @@ export async function claimSeasonPass(params: {
 
         const lockedBoardState = buildSeasonPassBoard({
             startAt: lockedSubscription.startAt,
+            createdAt: lockedSubscription.createdAt,
             durationDays: plan.durationDays,
             claims: [],
             rewardCatalog,

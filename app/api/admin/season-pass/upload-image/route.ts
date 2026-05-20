@@ -3,11 +3,12 @@ import { requirePermission } from "@/lib/auth";
 import { saveOptimizedImageUpload } from "@/lib/serverImageUpload";
 import { PERMISSIONS } from "@/lib/permissions";
 import { getRuntimeUploadDir } from "@/lib/runtimeUploads";
+import { seasonPassApiError } from "@/lib/features/seasonPass/apiResponse";
 
 export async function POST(request: NextRequest) {
     const authCheck = await requirePermission(PERMISSIONS.SEASON_PASS_EDIT);
     if (!authCheck.success) {
-        return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
+        return seasonPassApiError(authCheck.error, { status: 401 });
     }
 
     try {
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
         const file = formData.get("file") as File | null;
 
         if (!file) {
-            return NextResponse.json({ success: false, message: "ไม่พบไฟล์รูปที่อัปโหลด" }, { status: 400 });
+            return seasonPassApiError("ไม่พบไฟล์รูปที่อัปโหลด", { status: 400 });
         }
 
         const savedFile = await saveOptimizedImageUpload(file, {
@@ -31,6 +32,6 @@ export async function POST(request: NextRequest) {
     } catch (error) {
         console.error("Season Pass reward upload error:", error);
         const message = error instanceof Error ? error.message : "อัปโหลดรูปไม่สำเร็จ";
-        return NextResponse.json({ success: false, message }, { status: /file|image/i.test(message) ? 400 : 500 });
+        return seasonPassApiError(message, { status: /file|image/i.test(message) ? 400 : 500 });
     }
 }

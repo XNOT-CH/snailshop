@@ -31,6 +31,7 @@ describe("apiSecurity - response helpers", () => {
       expect(res.status).toBe(200);
       const body = await res.json();
       expect(body.success).toBe(true);
+      expect(body.message).toBe("Success");
       expect(body.data.id).toBe(1);
       expect(body.timestamp).toBeDefined();
     });
@@ -53,7 +54,9 @@ describe("apiSecurity - response helpers", () => {
       expect(res.status).toBe(400);
       const body = await res.json();
       expect(body.success).toBe(false);
+      expect(body.message).toBe("Bad request");
       expect(body.errorCode).toBe("ERR_400");
+      expect(body.timestamp).toBeDefined();
     });
 
     it("uses custom error code", async () => {
@@ -145,6 +148,16 @@ describe("apiSecurity - parseRequestBody", () => {
   it("returns error for invalid JSON", async () => {
     const result = await parseRequestBody(mockBadRequest());
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.status).toBe(400);
+      const body = await result.error.json();
+      expect(body).toMatchObject({
+        success: false,
+        message: "Invalid JSON body",
+        errorCode: "BAD_REQUEST",
+      });
+      expect(body.timestamp).toBeDefined();
+    }
   });
 });
 
@@ -157,6 +170,15 @@ describe("apiSecurity - validateRequestBody", () => {
   it("returns error for missing required fields", async () => {
     const result = await validateRequestBody(mockRequest({ name: "test" }), ["name", "email"]);
     expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.status).toBe(400);
+      const body = await result.error.json();
+      expect(body).toMatchObject({
+        success: false,
+        message: "กรุณากรอกข้อมูลให้ครบ: email",
+        errorCode: "BAD_REQUEST",
+      });
+    }
   });
 
   it("returns error for invalid JSON", async () => {

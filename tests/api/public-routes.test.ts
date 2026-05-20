@@ -4,6 +4,8 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
+vi.mock("@/auth", () => ({ auth: vi.fn().mockResolvedValue(null) }));
+
 vi.mock("@/lib/db", () => ({
   db: {
     query: {
@@ -127,7 +129,7 @@ describe("API: /api/footer-widget (GET)", () => {
 
   it("returns links when active", async () => {
     (db.query.footerWidgetSettings.findFirst as any).mockResolvedValue({ isActive: true, title: "Links" });
-    (db.query.footerLinks.findMany as any).mockResolvedValue([{ id: "1", label: "Link" }]);
+    (db.query.footerLinks.findMany as any).mockResolvedValue([{ id: "1", label: "Link", href: "/link", openInNewTab: false }]);
     const { GET } = await import("@/app/api/footer-widget/route");
     const res = await GET();
     expect(res.status).toBe(200);

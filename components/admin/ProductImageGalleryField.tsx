@@ -1,11 +1,19 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { GripVertical, ImagePlus, Loader2, Star, Trash2, Upload } from "lucide-react";
+import {
+    GripVertical,
+    ImagePlus,
+    Loader2,
+    Star,
+    Trash2,
+    Upload,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { compressImage } from "@/lib/compressImage";
+import { uploadFileToApi } from "@/lib/client/uploadClient";
 import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 import { showError, showSuccess } from "@/lib/swal";
 
@@ -59,14 +67,7 @@ export function ProductImageGalleryField({
 
             for (const file of files) {
                 const compressed = await compressImage(file);
-                const uploadFormData = new FormData();
-                uploadFormData.append("file", compressed);
-
-                const response = await fetch("/api/upload", {
-                    method: "POST",
-                    body: uploadFormData,
-                });
-                const data = await response.json();
+                const data = await uploadFileToApi(compressed);
 
                 if (!data.success || !data.url) {
                     throw new Error(data.message || "อัปโหลดรูปไม่สำเร็จ");
