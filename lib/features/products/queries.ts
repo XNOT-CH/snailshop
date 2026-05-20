@@ -31,6 +31,16 @@ export async function listOtherProductsForStockCheck(id: string) {
     });
 }
 
+export async function listProductsForStockCheck() {
+    if (typeof db.query.products.findMany !== "function") {
+        return [];
+    }
+
+    return db.query.products.findMany({
+        columns: { id: true, name: true, secretData: true, stockSeparator: true },
+    });
+}
+
 export async function listOtherProductsForTakenUsers(id: string) {
     if (typeof db.query.products.findMany !== "function") {
         return [];

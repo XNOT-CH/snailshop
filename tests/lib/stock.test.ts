@@ -13,7 +13,7 @@ vi.mock("@/lib/permissions", () => ({ hasPermission: vi.fn(() => true), Permissi
 vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-01-01 00:00:00") }));
 
 import {
-  getDelimiter, splitStock, getStockCount, takeFirstStock, joinStock
+  getDelimiter, splitStock, getStockCount, takeFirstStock, joinStock, getStockUser, findDuplicateStockUser
 } from "@/lib/stock";
 
 describe("lib/stock", () => {
@@ -47,6 +47,26 @@ describe("lib/stock", () => {
     });
     it("returns correct count", () => {
       expect(getStockCount("a\nb\nc", "newline")).toBe(3);
+    });
+  });
+
+  describe("getStockUser", () => {
+    it("extracts the username before the stock delimiter", () => {
+      expect(getStockUser(" user1 / pass1 ")).toBe("user1");
+    });
+
+    it("returns the whole trimmed item when no password delimiter exists", () => {
+      expect(getStockUser(" user-only ")).toBe("user-only");
+    });
+  });
+
+  describe("findDuplicateStockUser", () => {
+    it("returns the first duplicate stock username", () => {
+      expect(findDuplicateStockUser("user1 / pass1\nuser2 / pass2\nuser1 / pass3", "newline")).toBe("user1");
+    });
+
+    it("returns null when all stock usernames are unique", () => {
+      expect(findDuplicateStockUser("user1 / pass1\nuser2 / pass2", "newline")).toBeNull();
     });
   });
 

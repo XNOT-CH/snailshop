@@ -3,8 +3,9 @@ import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { invalidateProductCaches } from "@/lib/cache";
 import { clearProductOrder, deleteProduct, updateProduct } from "@/lib/features/products/mutations";
-import { findProductById } from "@/lib/features/products/queries";
+import { findProductById, listOtherProductsForStockCheck } from "@/lib/features/products/queries";
 import { decryptProductSecret, parseProductPrice, validateDiscountPrice, type ProductPayloadInput } from "@/lib/features/products/shared";
+import { findProductStockUserConflict, productStockUserConflictResponseMessage } from "@/lib/features/products/stockValidation";
 import { PERMISSIONS } from "@/lib/permissions";
 
 interface RouteParams { params: Promise<{ id: string }> }
@@ -44,6 +45,18 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         const discountValidation = validateDiscountPrice(discountPrice, priceNumber);
         if ("error" in discountValidation) return NextResponse.json({ success: false, message: discountValidation.error }, { status: 400 });
         const discountPriceNumber = discountValidation.value;
+
+        const stockConflict = await findProductStockUserConflict(
+            secretData || "",
+            stockSeparator || "newline",
+            () => listOtherProductsForStockCheck(id)
+        );
+        if (stockConflict) {
+            return NextResponse.json(
+                { success: false, message: productStockUserConflictResponseMessage(stockConflict) },
+                { status: 409 }
+            );
+        }
 
         await updateProduct(id, {
             title,

@@ -5,18 +5,10 @@ import { Loader2, User, Gift } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { shouldBypassImageOptimization } from "@/lib/imageUrl";
-
-interface RecentLog {
-    id: string;
-    tier: string;
-    rewardName: string;
-    rewardImageUrl: string | null;
-    username: string;
-    createdAt: string;
-}
+import { fetchGachaRecentActivity, type RecentGachaLog } from "@/lib/client/gachaActivityClient";
 
 export function GachaRecentFeed({ refreshKey }: Readonly<{ refreshKey: number }>) {
-    const [logs, setLogs] = useState<RecentLog[]>([]);
+    const [logs, setLogs] = useState<RecentGachaLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [isHovered, setIsHovered] = useState(false);
 
@@ -39,9 +31,7 @@ export function GachaRecentFeed({ refreshKey }: Readonly<{ refreshKey: number }>
         const fetchRecent = async () => {
             setLoading(true);
             try {
-                const res = await fetch("/api/gacha/recent");
-                if (!res.ok) throw new Error("Failed to fetch recent logs");
-                const json = await res.json();
+                const json = await fetchGachaRecentActivity();
                 if (json.success && mounted) {
                     setLogs(json.data);
                 }

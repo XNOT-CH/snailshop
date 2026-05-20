@@ -13,12 +13,18 @@ vi.mock("@/lib/auth", () => ({
 vi.mock("@/lib/db", () => ({
   db: {
     insert: vi.fn().mockReturnValue({ values: vi.fn() }),
+    query: {
+      products: {
+        findMany: vi.fn().mockResolvedValue([]),
+      },
+    },
   },
   products: {},
 }));
 
 vi.mock("@/lib/encryption", () => ({
   encrypt: vi.fn((data: string) => `encrypted_${data}`),
+  decrypt: vi.fn((data: string) => data?.replace?.("encrypted_", "") ?? ""),
 }));
 
 vi.mock("@/lib/auditLog", () => ({
@@ -36,6 +42,7 @@ import { db } from "@/lib/db";
 describe("API: /api/products (POST)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    (db.query.products.findMany as any).mockResolvedValue([]);
   });
 
   const createRequest = (body: object) =>
@@ -89,6 +96,52 @@ describe("API: /api/products (POST)", () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.message).toContain("less than original price");
+  });
+
+  it("returns 409 when initial stock contains duplicate users", async () => {
+    (requirePermissionWithCsrf as any).mockResolvedValue({ success: true, user: { id: "admin" } });
+
+    const { POST } = await import("@/app/api/products/route");
+    const res = await POST(createRequest({
+      title: "My Game",
+      price: 100,
+      category: "Games",
+      secretData: "user1 / pass1\nuser2 / pass2\nuser1 / pass3",
+      stockSeparator: "newline",
+    }));
+
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.success).toBe(false);
+    expect(body.message).toContain('User "user1"');
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("returns 409 when initial stock user already exists in another product", async () => {
+    (requirePermissionWithCsrf as any).mockResolvedValue({ success: true, user: { id: "admin" } });
+    (db.query.products.findMany as any).mockResolvedValue([
+      {
+        id: "p1",
+        name: "Existing Game",
+        secretData: "encrypted_user1 / old-pass",
+        stockSeparator: "newline",
+      },
+    ]);
+
+    const { POST } = await import("@/app/api/products/route");
+    const res = await POST(createRequest({
+      title: "My Game",
+      price: 100,
+      category: "Games",
+      secretData: "user1 / pass1",
+      stockSeparator: "newline",
+    }));
+
+    expect(res.status).toBe(409);
+    const body = await res.json();
+    expect(body.success).toBe(false);
+    expect(body.message).toContain('สินค้า "Existing Game"');
+    expect(db.insert).not.toHaveBeenCalled();
   });
 
   it("creates product successfully", async () => {

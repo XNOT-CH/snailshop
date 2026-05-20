@@ -3,22 +3,11 @@
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
 import { shouldBypassImageOptimization } from "@/lib/imageUrl";
-
-interface RollLog {
-    id: string;
-    tier: string;
-    rewardName: string;
-    rewardImageUrl: string | null;
-    costType: string;
-    costAmount: number;
-    createdAt: string;
-}
-
-interface Stats {
-    todayCount: number;
-    totalCount: number;
-    topTier: string | null;
-}
+import {
+    fetchGachaHistoryActivity,
+    type GachaHistoryLog,
+    type GachaHistoryStats,
+} from "@/lib/client/gachaActivityClient";
 
 const tierConfig: Record<string, { label: string; color: string; emoji: string }> = {
     common: { label: "Common", color: "bg-orange-500/15 text-orange-600 border-orange-400/30", emoji: "🟠" },
@@ -38,16 +27,14 @@ function timeAgo(iso: string): string {
 }
 
 export function GachaHistory({ refreshKey }: Readonly<{ refreshKey: number }>) {
-    const [logs, setLogs] = useState<RollLog[]>([]);
-    const [stats, setStats] = useState<Stats | null>(null);
+    const [logs, setLogs] = useState<GachaHistoryLog[]>([]);
+    const [stats, setStats] = useState<GachaHistoryStats | null>(null);
     const [loading, setLoading] = useState(true);
 
     const fetchHistory = useCallback(async () => {
         try {
-            const res = await fetch("/api/gacha/history");
-            if (!res.ok) return;
-            const data = await res.json();
-            if (data.success) {
+            const data = await fetchGachaHistoryActivity();
+            if (data?.success) {
                 setLogs(data.data.logs);
                 setStats(data.data.stats);
             }

@@ -26,6 +26,23 @@ export function splitStock(secretData: string, separatorType: string): string[] 
     return secretData.split(delimiter).filter(item => item.trim() !== "");
 }
 
+export function getStockUser(stockItem: string): string {
+    return stockItem.split(" / ")[0]?.trim() || "";
+}
+
+export function findDuplicateStockUser(secretData: string, separatorType: string): string | null {
+    const seenUsers = new Set<string>();
+
+    for (const item of splitStock(secretData, separatorType)) {
+        const user = getStockUser(item);
+        if (!user) continue;
+        if (seenUsers.has(user)) return user;
+        seenUsers.add(user);
+    }
+
+    return null;
+}
+
 /**
  * Get stock count from secretData
  */

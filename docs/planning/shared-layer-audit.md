@@ -6,6 +6,15 @@
 
 โปรเจกต์นี้มีระบบส่วนกลางอยู่แล้ว แต่การใช้งานยังไม่สม่ำเสมอทุก domain
 
+สถานะ practical closure: ปิดแล้ว 2026-05-20
+
+ขอบเขตที่ปิด:
+
+- ปิดงาน shared-layer audit แบบ practical แล้ว หลังทำ low-risk/medium-risk shared extraction, route response guard/helper, client helper, และ final audit หลาย phase
+- ไม่มี step ถัดไปที่ควรทำต่อโดย default โดยไม่รับ requirement ใหม่ เพราะส่วนที่เหลือเป็นงานเสี่ยงสูงหรือเปลี่ยน contract ได้ง่าย
+- step เก่าในเอกสารที่ยังมีข้อความเชิง historical เช่น "เริ่มทำ" ถูก supersede ด้วย baseline/full test รอบหลังแล้ว และไม่ถือเป็น active blocker ของ practical closure
+- ถ้าจะทำต่อ ควรเปิดเป็นงานใหม่แบบ scoped requirement ต่อ domain เช่น transaction service extraction, response contract migration, หรือ UI validation consolidation พร้อม guard tests ก่อนแตะ production code
+
 ส่วนที่เป็น shared layer ชัดเจน:
 
 - `components/ui/*` เป็น design system primitives
@@ -3158,6 +3167,284 @@ test หลังทำ:
 - ปิด gacha grid client helper phase นี้ได้แล้ว: rewards URL build, rewards padding, roll payload, rewards fetch, และ grid roll POST request อยู่ใน shared helper แล้ว
 - ไม่แตะ `app/api/gacha/grid/rewards`, `app/api/gacha/grid/roll`, classic gacha roll API, DB, probability, daily limit, pending spin state, หรือ transaction logic
 - ไม่ stage ไฟล์ใด ๆ และไม่รวม `.obsidian/workspace.json`
+
+### Step 24.1: Gacha activity client helper
+
+สถานะล่าสุด: เสร็จ 2026-05-20
+
+เป้าหมาย:
+
+- แยก client helper สำหรับ `components/GachaRecentFeed.tsx` และ `components/GachaHistory.tsx` ที่เรียก `/api/gacha/recent` และ `/api/gacha/history`
+- รวม endpoint constants, fetch helpers, และ response parsing fallback แบบบาง ๆ ไว้ใน `lib/client`
+- คง loading state, empty state, silent failure, Thai copy, image display, time formatting, และ stats rendering เดิมทั้งหมด
+
+ไฟล์ที่จะสร้าง:
+
+- `lib/client/gachaActivityClient.ts`
+- `tests/lib/gachaActivityClient.test.ts`
+
+ไฟล์ที่จะแก้ในรอบนี้:
+
+- `lib/constants/apiRoutes.ts`
+- `components/GachaRecentFeed.tsx`
+- `components/GachaHistory.tsx`
+- `docs/planning/shared-layer-audit.md`
+
+ข้อจำกัดของรอบนี้:
+
+- แยกเฉพาะ client request/response helper ที่ปลอดภัย
+- ไม่เปลี่ยน production behavior, endpoint, response handling, loading behavior, empty state, animation, stats display, Thai copy, หรือ error handling
+- ไม่แตะ `app/api/gacha/recent`, `app/api/gacha/history`, DB, reward mapping, probability, daily limit, หรือ transaction logic
+- ไม่ stage หรือรวม `.obsidian/workspace.json`
+
+test หลังทำ:
+
+- ผ่าน: `npx vitest run tests/lib/gachaActivityClient.test.ts tests/api/new-code-routes.test.ts tests/lib/utils-coverage.test.ts tests/api/final-coverage-patch.test.ts tests/api/final-coverage-patch-6.test.ts tests/api/final-coverage-patch-7.test.ts` (6 files / 138 tests)
+- ผ่าน: `npm test` (141 files / 1531 tests, skipped 6)
+- ผ่าน: `npm run lint`
+
+สิ่งที่แก้ใน Step 24.1:
+
+- เพิ่ม `API_ROUTES.GACHA_RECENT` และ `API_ROUTES.GACHA_HISTORY` ใน `lib/constants/apiRoutes.ts`
+- สร้าง `lib/client/gachaActivityClient.ts` สำหรับ fetch `/api/gacha/recent` และ `/api/gacha/history` พร้อม type ของ recent logs, history logs, และ stats
+- สร้าง `tests/lib/gachaActivityClient.test.ts` เพื่อ lock endpoint, recent non-ok thrown error, history non-ok silent null fallback, และ response passthrough เดิม
+- ปรับ `components/GachaRecentFeed.tsx` ให้ใช้ `fetchGachaRecentActivity` แทน fetch ตรง โดยคง mounted guard, loading state, empty state, animation, Thai copy, และ image display เดิม
+- ปรับ `components/GachaHistory.tsx` ให้ใช้ `fetchGachaHistoryActivity` แทน fetch ตรง โดยคง silent failure, loading state, empty state, stats display, time formatting, และ Thai copy เดิม
+- ไม่แตะ `app/api/gacha/recent`, `app/api/gacha/history`, DB, reward mapping, probability, daily limit, หรือ transaction logic
+- ไม่ stage ไฟล์ใด ๆ และไม่รวม `.obsidian/workspace.json`
+
+### Step 24.2: Gacha activity client cleanup and final audit
+
+สถานะล่าสุด: เสร็จ 2026-05-20
+
+เป้าหมาย:
+
+- ปิด phase gacha activity client helper หลัง Step 24.1
+- audit ว่ายังมี client-side direct fetch ไป `/api/gacha/recent` หรือ `/api/gacha/history` ที่ควรใช้ helper หรือไม่
+- cleanup เฉพาะ import/flow/readability/test naming ใน helper, test, และ gacha activity components ถ้าจำเป็น
+
+ไฟล์ที่จะสร้าง:
+
+- ไม่มี
+
+ไฟล์ที่จะแก้ในรอบนี้:
+
+- `lib/client/gachaActivityClient.ts`
+- `tests/lib/gachaActivityClient.test.ts`
+- `components/GachaRecentFeed.tsx`
+- `components/GachaHistory.tsx`
+- `docs/planning/shared-layer-audit.md`
+
+ข้อจำกัดของรอบนี้:
+
+- ไม่ย้าย logic เพิ่มถ้าไม่จำเป็น
+- ไม่เปลี่ยน production behavior, endpoint, response handling, loading behavior, empty state, animation, stats display, Thai copy, หรือ error handling
+- ไม่แตะ `app/api/gacha/recent`, `app/api/gacha/history`, DB, reward mapping, probability, daily limit, หรือ transaction logic
+- ไม่ stage หรือรวม `.obsidian/workspace.json`
+
+test หลังทำ:
+
+- ผ่าน: `npx vitest run tests/lib/gachaActivityClient.test.ts tests/api/new-code-routes.test.ts tests/lib/utils-coverage.test.ts tests/api/final-coverage-patch.test.ts tests/api/final-coverage-patch-6.test.ts tests/api/final-coverage-patch-7.test.ts` (6 files / 138 tests)
+- ผ่าน: `npm test` (141 files / 1531 tests, skipped 6)
+- ผ่าน: `npm run lint`
+
+สิ่งที่แก้ใน Step 24.2:
+
+- audit direct client usage ด้วย `rg` แล้วไม่พบ direct client fetch ไป `/api/gacha/recent` หรือ `/api/gacha/history` เหลือใน `components`, `app`, `lib`, หรือ `tests`
+- ยืนยันว่า `components/GachaRecentFeed.tsx` ใช้ `fetchGachaRecentActivity` แล้ว
+- ยืนยันว่า `components/GachaHistory.tsx` ใช้ `fetchGachaHistoryActivity` แล้ว
+- ไม่แก้ production/test code เพิ่ม เพราะ helper, test naming, import, และ flow อ่านชัดพอหลัง Step 24.1
+- ปิด gacha activity client helper phase นี้ได้แล้ว: recent/history endpoint constants, fetch helpers, response passthrough, และ fallback behavior อยู่ใน shared helper แล้ว
+- ไม่แตะ `app/api/gacha/recent`, `app/api/gacha/history`, DB, reward mapping, probability, daily limit, หรือ transaction logic
+- ไม่ stage ไฟล์ใด ๆ และไม่รวม `.obsidian/workspace.json`
+
+### Step 25.1: Product stock duplicate user helper
+
+สถานะล่าสุด: เสร็จ 2026-05-20
+
+เป้าหมาย:
+
+- รวม duplicate stock username validation ที่ใช้ใน product create/update/stock API ให้เป็น helper กลางของ product feature
+- คง behavior เดิมของ response status/message เมื่อพบ username ซ้ำใน stock เดียวกันหรือซ้ำกับสินค้าอื่น
+- ลด loop/decrypt/collision logic ซ้ำใน route โดยไม่เปลี่ยน product payload, audit log, cache invalidation, หรือ stock update behavior
+
+ไฟล์ที่จะสร้าง:
+
+- `lib/features/products/stockValidation.ts`
+- `tests/lib/productStockValidation.test.ts`
+
+ไฟล์ที่จะแก้ในรอบนี้:
+
+- `app/api/products/route.ts`
+- `app/api/products/[id]/route.ts`
+- `app/api/products/[id]/stock/route.ts`
+- `lib/features/products/queries.ts`
+- `lib/stock.ts`
+- `tests/api/products.test.ts`
+- `tests/lib/stock.test.ts`
+- `docs/planning/shared-layer-audit.md`
+
+ข้อจำกัดของรอบนี้:
+
+- ย้ายเฉพาะ duplicate stock username validation
+- ไม่เปลี่ยน production behavior, response shape, response message/status, auth/CSRF checks, audit log, cache invalidation, product mutation, stock separator handling, encryption/decryption behavior, หรือ stock count behavior
+- ไม่แตะ UI validation, DB schema, migration, purchase flow, order flow, หรือ gacha flow
+- ไม่ stage หรือรวม `.obsidian/workspace.json`
+
+test หลังทำ:
+
+- ผ่าน: `npx vitest run tests/lib/productStockValidation.test.ts tests/lib/stock.test.ts tests/api/products.test.ts tests/api/product-stock-separator.test.ts tests/api/coverage-boost.test.ts tests/api/admin-settings-products.test.ts tests/api/products-id.test.ts tests/api/products-users-success.test.ts` (8 files / 109 tests, skipped 5)
+- ผ่าน: `npm test` (142 files / 1536 tests, skipped 6)
+- ผ่าน: `npm run lint`
+
+สิ่งที่แก้ใน Step 25.1:
+
+- สร้าง `lib/features/products/stockValidation.ts` เพื่อรวม duplicate username validation สำหรับ stock เดียวกันและ cross-product stock collision
+- สร้าง `tests/lib/productStockValidation.test.ts` เพื่อ lock duplicate conflict, empty stock no-op, cross-product conflict, undecryptable product skip, และ response message formatting
+- ปรับ `app/api/products/route.ts`, `app/api/products/[id]/route.ts`, และ `app/api/products/[id]/stock/route.ts` ให้ใช้ `findProductStockUserConflict` และ `productStockUserConflictResponseMessage` แทน loop/response message ที่ซ้ำใน route
+- คง `lib/stock.ts` helper สำหรับ extract username และ duplicate detection ใน stock เดียวกัน พร้อม test ใน `tests/lib/stock.test.ts`
+- คง `lib/features/products/queries.ts` helper สำหรับโหลด product stock list ที่ route ต้องใช้
+- ไม่เปลี่ยน production behavior, response shape, response message/status, auth/CSRF checks, audit log, cache invalidation, product mutation, stock separator handling, encryption/decryption behavior, หรือ stock count behavior
+- ไม่ stage ไฟล์ใด ๆ และไม่รวม `.obsidian/workspace.json`
+
+### Step 25.2: Product stock duplicate helper cleanup and final audit
+
+สถานะล่าสุด: เสร็จ 2026-05-20
+
+เป้าหมาย:
+
+- ปิด phase product stock duplicate helper หลัง Step 25.1
+- audit ว่ายังมี duplicate username validation loop ใน product create/update/stock API ที่ควรใช้ helper กลางหรือไม่
+- cleanup เฉพาะ import/flow/readability/test naming ใน helper, routes, และ tests ถ้าจำเป็น
+
+ไฟล์ที่จะสร้าง:
+
+- ไม่มี
+
+ไฟล์ที่จะแก้ในรอบนี้:
+
+- `lib/features/products/stockValidation.ts`
+- `tests/lib/productStockValidation.test.ts`
+- `app/api/products/route.ts`
+- `app/api/products/[id]/route.ts`
+- `app/api/products/[id]/stock/route.ts`
+- `lib/features/products/queries.ts`
+- `lib/stock.ts`
+- `tests/api/products.test.ts`
+- `tests/lib/stock.test.ts`
+- `docs/planning/shared-layer-audit.md`
+
+ข้อจำกัดของรอบนี้:
+
+- ไม่ย้าย logic เพิ่มถ้าไม่จำเป็น
+- ไม่เปลี่ยน production behavior, response shape, response message/status, auth/CSRF checks, audit log, cache invalidation, product mutation, stock separator handling, encryption/decryption behavior, หรือ stock count behavior
+- ไม่แตะ UI validation, DB schema, migration, purchase flow, order flow, หรือ gacha flow
+- ไม่ stage หรือรวม `.obsidian/workspace.json`
+
+test หลังทำ:
+
+- ผ่าน: `npx vitest run tests/lib/productStockValidation.test.ts tests/lib/stock.test.ts tests/api/products.test.ts tests/api/product-stock-separator.test.ts tests/api/coverage-boost.test.ts tests/api/admin-settings-products.test.ts tests/api/products-id.test.ts tests/api/products-users-success.test.ts` (8 files / 109 tests, skipped 5)
+- ผ่าน: `npm test` (142 files / 1536 tests, skipped 6)
+- ผ่าน: `npm run lint`
+
+สิ่งที่ตรวจใน Step 25.2:
+
+- audit ด้วย `rg` แล้วไม่พบ duplicate username validation path ที่เหลือใน product create/update/stock routes ที่ควรย้ายเพิ่ม
+- ยืนยันว่า `app/api/products/route.ts`, `app/api/products/[id]/route.ts`, และ `app/api/products/[id]/stock/route.ts` ใช้ `findProductStockUserConflict` และ `productStockUserConflictResponseMessage` แล้ว
+- ยืนยันว่า loop ที่ยังอยู่ใน `GET /api/products/[id]/stock` เป็นการสร้าง `takenUsers` map สำหรับ UI ไม่ใช่ validation/response path เดียวกับ Step 25.1 จึงไม่ย้ายในรอบนี้
+- ไม่แก้ production/test code เพิ่ม เพราะ helper, test naming, import, และ flow อ่านชัดพอหลัง Step 25.1
+- ปิด product stock duplicate helper phase นี้ได้แล้ว: duplicate username validation ใน stock เดียวกันและ cross-product stock collision อยู่ใน shared helper แล้ว
+- ไม่เปลี่ยน production behavior, response shape, response message/status, auth/CSRF checks, audit log, cache invalidation, product mutation, stock separator handling, encryption/decryption behavior, หรือ stock count behavior
+- ไม่ stage ไฟล์ใด ๆ และไม่รวม `.obsidian/workspace.json`
+
+### Step 26.1: Product stock taken-users helper and create route
+
+สถานะล่าสุด: เสร็จ 2026-05-20
+
+เป้าหมาย:
+
+- เพิ่ม shared helper สำหรับสร้าง `takenUsers` map จาก encrypted product stock เพื่อใช้ซ้ำใน product stock UI/API
+- เพิ่ม `GET /api/products/new/stock` สำหรับ create product flow ที่ต้องตรวจ user ซ้ำกับสินค้าทั้งหมด
+- ปรับ `GET /api/products/[id]/stock` ให้ใช้ helper กลางแทน loop local โดยคง response shape `{ success: true, takenUsers }`
+
+ไฟล์ที่จะสร้าง:
+
+- `app/api/products/new/stock/route.ts`
+- `tests/lib/productStockTakenUsers.test.ts`
+
+ไฟล์ที่จะแก้ในรอบนี้:
+
+- `app/api/products/[id]/stock/route.ts`
+- `lib/features/products/stockValidation.ts`
+- `tests/api/product-stock-taken-users.test.ts`
+- `docs/planning/shared-layer-audit.md`
+
+ข้อจำกัดของรอบนี้:
+
+- ทำเฉพาะ taken-users map/read-only route สำหรับ stock duplicate UI
+- ไม่เปลี่ยน product create/update/stock mutation behavior, response message/status ของ mutation, auth/CSRF checks ของ mutation, audit log, cache invalidation, encryption/decryption behavior, stock separator handling, หรือ stock count behavior
+- ไม่แตะ DB schema, migration, purchase flow, order flow, หรือ gacha flow
+- ไม่ stage หรือรวม `.obsidian/workspace.json`
+
+test หลังทำ:
+
+- ผ่าน: `npx vitest run tests/lib/productStockTakenUsers.test.ts tests/lib/productStockValidation.test.ts tests/api/product-stock-taken-users.test.ts tests/api/product-stock-separator.test.ts tests/api/coverage-boost.test.ts tests/api/products.test.ts` (6 files / 47 tests, skipped 5)
+- ผ่าน: `npm test` (144 files / 1543 tests, skipped 6)
+- ผ่าน: `npm run lint`
+
+สิ่งที่แก้ใน Step 26.1:
+
+- เพิ่ม `buildProductStockTakenUsers` ใน `lib/features/products/stockValidation.ts` เพื่อสร้าง `takenUsers` map จาก encrypted stock และ skip stock ที่ decrypt ไม่ได้ตาม behavior เดิม
+- ปรับ `GET /api/products/[id]/stock` ให้ใช้ `buildProductStockTakenUsers` โดยคง response shape `{ success: true, takenUsers }` และ auth/error shape เดิม
+- เพิ่ม `GET /api/products/new/stock` สำหรับ create product flow ที่คืน `{ success: true, takenUsers }` และใช้ `PERMISSIONS.PRODUCT_CREATE`
+- เพิ่ม `tests/lib/productStockTakenUsers.test.ts` เพื่อ lock map building, empty/undecryptable skip, และ duplicate user overwrite ตาม scan order เดิม
+- เพิ่ม `tests/api/product-stock-taken-users.test.ts` เพื่อ guard existing product stock page response, unauthorized shape, create product stock endpoint, และ unauthorized create endpoint
+- focused test รอบแรก fail เฉพาะ fixture ใหม่ที่ใช้ separator ที่ไม่มีใน `lib/stock.ts`; แก้ test fixture ให้ตรง behavior จริงโดยไม่แตะ production code
+- ไม่เปลี่ยน product create/update/stock mutation behavior, response message/status ของ mutation, auth/CSRF checks ของ mutation, audit log, cache invalidation, encryption/decryption behavior, stock separator handling, หรือ stock count behavior
+- ไม่ stage ไฟล์ใด ๆ และไม่รวม `.obsidian/workspace.json`
+
+### Step 27: Practical closure
+
+สถานะล่าสุด: เสร็จ 2026-05-20
+
+เป้าหมาย:
+
+- ปิด shared-layer audit แบบ practical หลังทำมาหลายวัน
+- แยกสิ่งที่ "ควรหยุด" ออกจากสิ่งที่ยังเป็น backlog ระยะยาว
+- ระบุเกณฑ์ว่าถ้าจะทำต่อควรเปิดเป็นงานใหม่พร้อม requirement เฉพาะ ไม่ต่อ audit แบบ open-ended
+
+ไฟล์ที่จะสร้าง:
+
+- ไม่มี
+
+ไฟล์ที่แก้ในรอบนี้:
+
+- `docs/planning/shared-layer-audit.md`
+
+ผลสรุป practical closure:
+
+- ปิด audit นี้ได้แล้วในเชิง practical เพราะ phase ที่ความเสี่ยงต่ำถึงกลางถูกทำและ verify แล้วหลายกลุ่ม:
+  - shared constants/formatter/pricing
+  - purchase/cart/promo/account/gacha client helpers
+  - upload/admin gacha/content/settings/season-pass response helper guards
+  - topup/gacha/dashboard/admin export helper extraction บางส่วน
+  - product stock duplicate/taken-users helper และ route guard ล่าสุด
+- ไม่ควรทำ refactor ต่อแบบอัตโนมัติจากเอกสารนี้ เพราะรายการที่เหลือเป็นงานที่อาจแตะธุรกรรม, เงิน, stock/order mutation, response contract public/admin, หรือ route ใหญ่ที่ต้องมี requirement และ guard test เฉพาะ
+- historical notes ที่ยังพูดว่า "ควรทำต่อ" หรือ "เริ่มทำ" ในส่วนเก่าไม่ถือเป็น active next step หลัง practical closure นี้ เว้นแต่มี requirement ใหม่อ้างอิงกลับไป
+- `.obsidian/workspace.json` ยังเป็น local workspace state ที่ไม่ควร stage
+
+backlog ที่ยังเปิดได้ภายหลัง แต่ไม่อยู่ใน practical closure:
+
+- transaction/service extraction ของ purchase/order/topup/gacha/season-pass เฉพาะเมื่อมี requirement ชัด
+- response contract migration ขนาดใหญ่ เฉพาะเมื่อมี consumer guard ครบและยอมรับ shape change ได้
+- UI validation consolidation ของ product stock/create/edit เฉพาะถ้าจะทำ UX pass แยก
+- API route cleanup ขนาดใหญ่ เฉพาะเป็น domain-by-domain task พร้อม focused tests
+
+test หลังปิด:
+
+- ผ่าน: `npm run check:encoding`
+- ผ่าน: `npm test` (144 files / 1543 tests, skipped 6)
+- ผ่าน: `npm run lint`
 
 ### Step 1: Shared constants และ formatter
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAdmin, isAdminWithCsrf } from "@/lib/auth";
 import { updateProductStock } from "@/lib/features/products/mutations";
 import { findProductById, listOtherProductsForStockCheck, listOtherProductsForTakenUsers } from "@/lib/features/products/queries";
-import { extractStockUsers, extractUsersFromEncryptedStock } from "@/lib/features/products/shared";
+import { buildProductStockTakenUsers, findProductStockUserConflict, productStockUserConflictResponseMessage } from "@/lib/features/products/stockValidation";
 
 interface RouteParams { params: Promise<{ id: string }> }
 
@@ -17,18 +17,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params;
         const otherProducts = await listOtherProductsForTakenUsers(id);
-
-        // Collect all usernames used in other products
-        const takenUsers: Record<string, string> = {}; // user -> productName
-        for (const other of otherProducts) {
-            if (!other.secretData?.trim()) continue;
-            try {
-                const users = extractUsersFromEncryptedStock(other.secretData, other.stockSeparator);
-                for (const user of users) {
-                    if (user) takenUsers[user] = other.name;
-                }
-            } catch { /* skip undecryptable */ }
-        }
+        const takenUsers = buildProductStockTakenUsers(otherProducts);
 
         return NextResponse.json({ success: true, takenUsers });
     } catch (error) {
@@ -53,34 +42,17 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         const existingProduct = await findProductById(id);
         if (!existingProduct) return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
 
-        // ── Cross-product duplicate check ──────────────────────────────
-        // Extract the usernames from the new secretData being saved
-        const newUsers = extractStockUsers(secretData, existingProduct.stockSeparator);
-
-        if (newUsers.length > 0) {
-            // Fetch all OTHER products that still have stock
-            const otherProducts = await listOtherProductsForStockCheck(id);
-
-            for (const other of otherProducts) {
-                if (!other.secretData?.trim()) continue;
-                try {
-                    const otherUsers = new Set(extractUsersFromEncryptedStock(other.secretData, other.stockSeparator));
-                    const collision = newUsers.find((u) => otherUsers.has(u));
-                    if (collision) {
-                        return NextResponse.json(
-                            {
-                                success: false,
-                                message: `User "${collision}" มีอยู่ในสต็อกของสินค้า "${other.name}" แล้ว`,
-                            },
-                            { status: 409 }
-                        );
-                    }
-                } catch {
-                    // If decrypt fails for another product, skip it
-                }
-            }
+        const stockConflict = await findProductStockUserConflict(
+            secretData,
+            existingProduct.stockSeparator,
+            () => listOtherProductsForStockCheck(id)
+        );
+        if (stockConflict) {
+            return NextResponse.json(
+                { success: false, message: productStockUserConflictResponseMessage(stockConflict) },
+                { status: 409 }
+            );
         }
-        // ──────────────────────────────────────────────────────────────
 
         await updateProductStock(id, secretData, existingProduct.stockSeparator);
 

@@ -11,6 +11,8 @@ export const API_ROUTES = {
     SALE_PRODUCTS: "/api/sale-products",
     USER_BALANCE: "/api/user/balance",
     PROMO_CODE_VALIDATE: "/api/promo-codes/validate",
+    GACHA_RECENT: "/api/gacha/recent",
+    GACHA_HISTORY: "/api/gacha/history",
     GACHA_ROLL: "/api/gacha/roll",
     GACHA_GRID_REWARDS: "/api/gacha/grid/rewards",
     GACHA_GRID_ROLL: "/api/gacha/grid/roll",

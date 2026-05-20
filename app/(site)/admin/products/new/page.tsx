@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -26,7 +26,7 @@ import { ProductImageGalleryField } from "@/components/admin/ProductImageGallery
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { PERMISSIONS } from "@/lib/permissions";
 import { showError, showSuccess } from "@/lib/swal";
-import { splitStock, type StockSeparatorType } from "@/lib/stock";
+import { findDuplicateStockUser, getStockUser, splitStock, type StockSeparatorType } from "@/lib/stock";
 import {
     getCalculatedDiscountPrice,
     getDiscountAmountButtonLabel,
@@ -64,6 +64,7 @@ export default function AddProductPage() {
     const [singlePass, setSinglePass] = useState("");
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [discountMode, setDiscountMode] = useState<DiscountMode>("amount");
+    const [takenUsers, setTakenUsers] = useState<Record<string, string>>({});
 
     const stockItems = useMemo(
         () => splitStock(formData.secretData, formData.stockSeparator),
@@ -87,6 +88,29 @@ export default function AddProductPage() {
     );
     const normalizedDiscountPrice = getNormalizedDiscountPrice(calculatedDiscountPrice);
 
+    useEffect(() => {
+        if (!canCreateProduct) return;
+
+        let cancelled = false;
+
+        fetch("/api/products/new/stock")
+            .then((response) => response.json())
+            .then((data: { success: boolean; takenUsers?: Record<string, string> }) => {
+                if (!cancelled && data.success) {
+                    setTakenUsers(data.takenUsers || {});
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setTakenUsers({});
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [canCreateProduct]);
+
     const handleAddSingleStock = () => {
         if (!canCreateProduct) {
             showError("คุณไม่มีสิทธิ์เพิ่มสินค้า");
@@ -98,7 +122,19 @@ export default function AddProductPage() {
             return;
         }
 
-        const newEntry = `${singleUser.trim()} / ${singlePass.trim()}`;
+        const newUser = singleUser.trim();
+        const isDuplicate = stockItems.some((item) => getStockUser(item) === newUser);
+        if (isDuplicate) {
+            showError(`User "${newUser}" มีในสต็อกอยู่แล้ว`);
+            return;
+        }
+
+        if (takenUsers[newUser]) {
+            showError(`User "${newUser}" มีอยู่ในสต็อกของสินค้า "${takenUsers[newUser]}" แล้ว`);
+            return;
+        }
+
+        const newEntry = `${newUser} / ${singlePass.trim()}`;
         setFormData((prev) => ({
             ...prev,
             secretData: prev.secretData ? `${prev.secretData}\n${newEntry}` : newEntry,
@@ -168,6 +204,20 @@ export default function AddProductPage() {
                 showError("ราคาหลังลดต้องมากกว่า 0");
                 return;
             }
+        }
+
+        const duplicateUser = findDuplicateStockUser(formData.secretData, formData.stockSeparator);
+        if (duplicateUser) {
+            showError(`User "${duplicateUser}" มีในสต็อกอยู่แล้ว`);
+            return;
+        }
+
+        const takenUser = stockItems
+            .map((item) => getStockUser(item))
+            .find((user) => user && takenUsers[user]);
+        if (takenUser) {
+            showError(`User "${takenUser}" มีอยู่ในสต็อกของสินค้า "${takenUsers[takenUser]}" แล้ว`);
+            return;
         }
 
         setIsLoading(true);
