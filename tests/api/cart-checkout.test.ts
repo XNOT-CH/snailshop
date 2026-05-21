@@ -73,7 +73,7 @@ const mkProducts = (overrides: Partial<{
     discountPrice: null, currency: "THB", isSold: false, secretData: "code1\ncode2\ncode3", stockSeparator: "newline", ...o,
   }));
 
-const mockCheckoutConnection = (products: any[], promoRow?: any) => {
+const mockCheckoutConnection = (products: any[], promoRow?: any, lockedUser: any = MOCK_USER) => {
   const connection = {
     beginTransaction: vi.fn().mockResolvedValue(undefined),
     commit: vi.fn().mockResolvedValue(undefined),
@@ -82,6 +82,10 @@ const mockCheckoutConnection = (products: any[], promoRow?: any) => {
     execute: vi.fn(async (query: string) => {
       if (query.includes("FROM Product WHERE id IN")) {
         return [products];
+      }
+
+      if (query.includes("FROM User WHERE id = ? FOR UPDATE")) {
+        return [[lockedUser]];
       }
 
       if (query.includes("FROM PromoCode WHERE code = ? FOR UPDATE")) {
@@ -178,7 +182,7 @@ describe("API: /api/cart/checkout (POST)", () => {
   it("returns 400 when insufficient credit balance", async () => {
     (auth as any).mockResolvedValue({ user: { id: "u1", email: null } });
     (db.query.users.findFirst as any).mockResolvedValue({ ...MOCK_USER, creditBalance: "10" });
-    mockCheckoutConnection(mkProducts([{ price: "500" }]));
+    mockCheckoutConnection(mkProducts([{ price: "500" }]), undefined, { ...MOCK_USER, creditBalance: "10" });
     const { POST } = await import("@/app/api/cart/checkout/route");
     const res = await POST(mkReq({ productIds: ["p1"] }));
     expect(res.status).toBe(400);
@@ -188,7 +192,7 @@ describe("API: /api/cart/checkout (POST)", () => {
   it("returns 400 when insufficient point balance", async () => {
     (auth as any).mockResolvedValue({ user: { id: "u1", email: null } });
     (db.query.users.findFirst as any).mockResolvedValue({ ...MOCK_USER, pointBalance: "0" });
-    mockCheckoutConnection(mkProducts([{ currency: "POINT", price: "200" }]));
+    mockCheckoutConnection(mkProducts([{ currency: "POINT", price: "200" }]), undefined, { ...MOCK_USER, pointBalance: "0" });
     const { POST } = await import("@/app/api/cart/checkout/route");
     const res = await POST(mkReq({ productIds: ["p1"] }));
     expect(res.status).toBe(400);
@@ -199,7 +203,7 @@ describe("API: /api/cart/checkout (POST)", () => {
   it("succeeds with THB products (no email)", async () => {
     (auth as any).mockResolvedValue({ user: { id: "u1", email: null, name: "Test" } });
     (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
-    mockCheckoutConnection(mkProducts([{ price: "100" }]));
+    const conn = mockCheckoutConnection(mkProducts([{ price: "100" }]));
     const { POST } = await import("@/app/api/cart/checkout/route");
     const res = await POST(mkReq({ productIds: ["p1"] }));
     expect(res.status).toBe(200);
@@ -207,6 +211,10 @@ describe("API: /api/cart/checkout (POST)", () => {
     expect(body.success).toBe(true);
     expect(body.purchasedCount).toBe(1);
     expect(body.totalTHB).toBe(100);
+    expect(conn.execute).toHaveBeenCalledWith(
+      "SELECT id, creditBalance, pointBalance FROM User WHERE id = ? FOR UPDATE",
+      ["u1"],
+    );
   });
 
   it("succeeds with THB products and sends email receipt", async () => {
@@ -292,7 +300,7 @@ describe("API: /api/cart/checkout (POST)", () => {
       excludedCategories: null,
       isNewUserOnly: false,
       isActive: true,
-    });
+    }, { ...MOCK_USER, creditBalance: "90" });
 
     const { POST } = await import("@/app/api/cart/checkout/route");
     const res = await POST(mkReq({ productIds: ["p1"], promoCode: "SAVE10" }));
@@ -314,6 +322,9 @@ describe("API: /api/cart/checkout (POST)", () => {
       execute: vi.fn(async (query: string) => {
         if (query.includes("FROM Product WHERE id IN")) {
           return [mkProducts([{ price: "100" }])];
+        }
+        if (query.includes("FROM User WHERE id = ? FOR UPDATE")) {
+          return [[MOCK_USER]];
         }
         if (query.includes("FROM PromoCode WHERE code = ? FOR UPDATE")) {
           return [[{
@@ -360,6 +371,9 @@ describe("API: /api/cart/checkout (POST)", () => {
       execute: vi.fn(async (query: string) => {
         if (query.includes("FROM Product WHERE id IN")) {
           return [mkProducts([{ price: "100" }])];
+        }
+        if (query.includes("FROM User WHERE id = ? FOR UPDATE")) {
+          return [[MOCK_USER]];
         }
         if (query.includes("FROM PromoCode WHERE code = ? FOR UPDATE")) {
           return [[{

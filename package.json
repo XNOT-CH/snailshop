@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/dev/run-next-dev.mjs",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "test:e2e": "playwright test",
     "test:e2e:headed": "playwright test --headed",

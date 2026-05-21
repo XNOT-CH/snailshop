@@ -1,8 +1,10 @@
 import type { NextConfig } from "next";
 import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const isProduction = process.env.NODE_ENV === "production";
+const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
 function normalizeOrigin(value: string) {
   if (value.startsWith("http://") || value.startsWith("https://")) {
@@ -23,7 +25,7 @@ const configuredOrigin =
 const nextConfig: NextConfig = {
   output: "standalone",
   turbopack: {
-    root: path.resolve(__dirname),
+    root: projectRoot,
   },
   experimental: {
     optimizePackageImports: [

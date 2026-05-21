@@ -71,7 +71,7 @@ Local notes:
 
 - `auth.ts` - NextAuth runtime and credentials authorization flow.
 - `auth.config.ts` - Edge/session callbacks and protected route behavior.
-- `proxy.ts` - route guarding before page or API code runs.
+- `middleware.ts` - edge route guarding before page or API code runs.
 - `lib/auth.ts` - server-side auth helpers.
 - `lib/adminAccess.ts` - admin page/API permission routing.
 - `lib/permissions.ts` - permission definitions and helpers.
@@ -89,6 +89,12 @@ Local notes:
 6. Keep changes focused on the request.
 7. Do not remove code unless it is required.
 8. If the requirement is incomplete or uses a placeholder, ask for the missing business requirement.
+
+### Skill Usage
+
+- Before using any installed workflow skill, explicitly tell the user which skill is being used and why.
+- This applies especially to `debug-mantra`, `scrutinize`, `post-mortem`, and `management-talk`.
+- Do not silently apply these skills or infer their use without first naming them to the user.
 
 ### Task Modes
 
@@ -155,7 +161,7 @@ describe("feature behavior", () => {
 
 Read these first for each task type, then follow the nearest nested `AGENTS.md`.
 
-- Login/auth/session: `app/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `auth.ts`, `auth.config.ts`, `proxy.ts`
+- Login/auth/session: `app/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `auth.ts`, `auth.config.ts`, `middleware.ts`
 - Admin/permissions: `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
 - Product CRUD/stock: `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `components/AGENTS.md`
 - Top-up/slip review: `app/AGENTS.md`, `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
@@ -199,7 +205,7 @@ Read these first for each task type, then follow the nearest nested `AGENTS.md`.
 
 ## Domain-Specific Safety Rules
 
-- Admin access changes must check both UI visibility (`components/admin/AdminSidebar.tsx`) and real access control (`lib/adminAccess.ts`, `lib/permissions.ts`, `lib/auth.ts`, `proxy.ts`).
+- Admin access changes must check both UI visibility (`components/admin/AdminSidebar.tsx`) and real access control (`lib/adminAccess.ts`, `lib/permissions.ts`, `lib/auth.ts`, `middleware.ts`).
 - Commerce, wallet, stock, top-up, gacha, and season pass changes must consider race conditions, replay risk, and double-spend behavior.
 - Route handlers live under `app/api/`; keep API response shapes stable for existing consumers.
 - Read `drizzle/README.md` before changing migrations.

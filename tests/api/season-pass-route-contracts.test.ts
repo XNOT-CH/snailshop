@@ -33,14 +33,17 @@ describe("public season-pass route response contracts", () => {
         vi.resetModules();
     });
 
-    it("preserves purchase unauthenticated fallback and CSRF-auth error contracts", async () => {
-        authMock.mockResolvedValue(null);
+    it("preserves purchase CSRF-auth error contracts", async () => {
+        isAuthenticatedWithCsrfMock.mockResolvedValue({
+            success: false,
+            error: "กรุณาเข้าสู่ระบบก่อน",
+        });
         const { POST } = await import("@/app/api/season-pass/purchase/route");
 
-        const noRequestResponse = await POST();
+        const unauthenticatedResponse = await POST(request("http://localhost/api/season-pass/purchase"));
 
-        expect(noRequestResponse.status).toBe(401);
-        await expect(noRequestResponse.json()).resolves.toEqual({
+        expect(unauthenticatedResponse.status).toBe(401);
+        await expect(unauthenticatedResponse.json()).resolves.toEqual({
             success: false,
             message: "กรุณาเข้าสู่ระบบก่อน",
         });

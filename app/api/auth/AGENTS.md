@@ -12,7 +12,7 @@ This folder contains the NextAuth route.
 - `auth.ts`
 - `auth.config.ts`
 - `lib/auth.ts`
-- `proxy.ts`
+- `middleware.ts`
 - `app/login/LoginForm.tsx`
 
 ## Watchouts

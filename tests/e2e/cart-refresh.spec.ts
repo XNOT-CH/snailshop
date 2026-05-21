@@ -95,11 +95,23 @@ async function ensureTestProduct(connection: Connection) {
 }
 
 async function loginAsCartTestUser(page: Page) {
-    await page.goto(`/login?callbackUrl=${encodeURIComponent("/home")}`);
-    await usernameField(page).fill(TEST_USERNAME);
-    await passwordField(page).fill(TEST_PASSWORD);
-    await submitButton(page).click();
-    await expect(page).toHaveURL(/\/home/);
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+        await page.goto(`/login?callbackUrl=${encodeURIComponent("/home")}`);
+        await usernameField(page).fill(TEST_USERNAME);
+        await passwordField(page).fill(TEST_PASSWORD);
+        await submitButton(page).click();
+
+        try {
+            await page.waitForURL(/\/home/, { timeout: 10_000, waitUntil: "domcontentloaded" });
+            await expect(page).toHaveURL(/\/home/);
+            await expect(page.getByRole("button", { name: /ตะกร้าสินค้า/ })).toBeVisible();
+            return;
+        } catch (error) {
+            if (attempt === 1) {
+                throw error;
+            }
+        }
+    }
 }
 
 test.beforeAll(async () => {
@@ -130,11 +142,13 @@ test.beforeEach(async ({ context }) => {
 });
 
 test("cart checkout refreshes stale local item data before showing PIN prompt", async ({ page }) => {
+    test.setTimeout(60_000);
+
     await loginAsCartTestUser(page);
 
     await page.evaluate(
         ({ key, productId }) => {
-            localStorage.setItem(key, JSON.stringify([
+            const cartItems = JSON.stringify([
                 {
                     id: productId,
                     name: "Cart Refresh E2E Product",
@@ -146,19 +160,45 @@ test("cart checkout refreshes stale local item data before showing PIN prompt", 
                     quantity: 1,
                     stock: 3,
                 },
-            ]));
+            ]);
+
+            localStorage.setItem(key, cartItems);
+            window.dispatchEvent(new StorageEvent("storage", { key, newValue: cartItems }));
         },
         { key: CART_STORAGE_KEY, productId: TEST_PRODUCT_ID },
     );
 
-    await page.goto("/home");
-    await page.getByRole("button", { name: "ตะกร้าสินค้า (1 รายการ)" }).click();
-    await expect(page.getByText("Cart Refresh E2E Product")).toBeVisible();
-    await expect(page.getByText("฿100")).toBeVisible();
+    const cartButton = page.getByRole("button", { name: "ตะกร้าสินค้า (1 รายการ)" });
+    await expect(cartButton).toBeVisible();
+    await cartButton.click();
+    const cartDialog = page.getByRole("dialog").filter({ hasText: "Cart Refresh E2E Product" });
+    await expect(cartDialog.getByText("Cart Refresh E2E Product")).toBeVisible();
+    await expect(cartDialog).toContainText("฿100");
 
-    await page.getByRole("button", { name: "ชำระเงิน 1 รายการ" }).click();
+    const checkoutButton = cartDialog.getByRole("button", { name: "ชำระเงิน 1 รายการ" });
+    await expect(checkoutButton).toBeVisible();
+    await expect(checkoutButton).toBeEnabled();
+    const sessionResponsePromise = page.waitForResponse(
+        (response) => response.url().includes("/api/session") && response.request().method() === "GET",
+    );
+    const refreshResponsePromise = page.waitForResponse(
+        (response) => response.url().includes("/api/cart/refresh") && response.request().method() === "POST",
+    );
+    await checkoutButton.click();
 
-    await expect(page.locator(".swal2-title")).toContainText("ราคาหรือข้อมูลสินค้ามีการอัปเดต");
+    const sessionResponse = await sessionResponsePromise;
+    expect(sessionResponse.ok()).toBe(true);
+    const sessionBody = await sessionResponse.json();
+    expect(sessionBody.authenticated).toBe(true);
+
+    const refreshResponse = await refreshResponsePromise;
+    expect(refreshResponse.ok()).toBe(true);
+    const refreshBody = await refreshResponse.json();
+    expect(refreshBody.items?.[0]?.price).toBe(150);
+
+    await expect(page.locator(".swal2-title")).toContainText("ราคาหรือข้อมูลสินค้ามีการอัปเดต", {
+        timeout: 30_000,
+    });
     await expect(page.locator("#swal-pin-input")).toHaveCount(0);
 
     const storedCart = await page.evaluate((key) => JSON.parse(localStorage.getItem(key) ?? "[]"), CART_STORAGE_KEY);

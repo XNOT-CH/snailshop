@@ -33,7 +33,7 @@ This folder contains admin pages.
 - Add/remove admin menu:
   `components/admin/AdminSidebar.tsx`, `lib/adminAccess.ts`, `lib/permissions.ts`
 - Admin access bug:
-  `app/admin/layout.tsx`, `lib/auth.ts`, `lib/adminAccess.ts`, `proxy.ts`
+  `app/admin/layout.tsx`, `lib/auth.ts`, `lib/adminAccess.ts`, `middleware.ts`
 - Slip approval:
   `slips/page.tsx`, `components/admin/SlipTable.tsx`, `app/api/admin/slips/route.ts`
 - Product admin:

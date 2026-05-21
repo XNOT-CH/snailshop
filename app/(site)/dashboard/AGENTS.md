@@ -28,5 +28,5 @@ This folder contains logged-in user dashboard pages.
 
 ## Watchouts
 
-- These pages are protected by `proxy.ts`.
+- These pages are protected by `middleware.ts`.
 - Many pages combine server rendering with client components and API fetches.

@@ -27,6 +27,7 @@ import {
 import Image from "next/image";
 import { Switch } from "@/components/ui/switch";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { PERMISSIONS } from "@/lib/permissions";
 
 interface ExtraBanner {
@@ -146,7 +147,7 @@ export default function AdminSettingsPage() {
                 ...settings,
                 bannersJson: JSON.stringify(extraBanners),
             };
-            const res = await fetch("/api/admin/settings", {
+            const res = await fetchWithCsrf("/api/admin/settings", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),

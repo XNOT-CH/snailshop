@@ -2464,6 +2464,7 @@ body.admin-layout #main-container {
   padding: 0;
 }
 
+body.dashboard-layout #main-navbar,
 body.dashboard-layout #main-footer,
 body.dashboard-layout #main-chat,
 body.dashboard-layout #main-popup {

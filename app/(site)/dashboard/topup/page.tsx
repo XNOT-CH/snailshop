@@ -744,7 +744,7 @@ export default function TopupPage() {
                                                 }
                                             }}
                                             className={[
-                                                "rounded-[0.95rem] border-2 border-dashed border-slate-400 px-3 py-3 text-center transition-all duration-200 sm:rounded-[1.2rem] sm:px-5 sm:py-5",
+                                                "w-full rounded-[0.95rem] border-2 border-dashed border-slate-400 px-3 py-3 text-center transition-all duration-200 sm:rounded-[1.2rem] sm:px-5 sm:py-5",
                                                 isDragging ? "bg-slate-50" : "hover:bg-slate-50/80",
                                             ].join(" ")}
                                         >
@@ -969,7 +969,7 @@ export default function TopupPage() {
                                                     }
                                                 }}
                                                 className={[
-                                                    "rounded-[1.6rem] border-2 border-dashed p-5 text-center transition-all duration-200 sm:p-8",
+                                                    "w-full rounded-[1.6rem] border-2 border-dashed p-5 text-center transition-all duration-200 sm:p-8",
                                                     isDragging
                                                         ? "border-blue-500 bg-blue-50"
                                                         : "border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-blue-50/50",

@@ -64,7 +64,7 @@ export default async function InventoryPage() {
                     </CardContent>
                 </Card>
             ) : (
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 items-start">
+                <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-1 min-[900px]:grid-cols-2 xl:grid-cols-3 items-start">
                     {orderList.map(
                         (order) =>
                             order.product && (

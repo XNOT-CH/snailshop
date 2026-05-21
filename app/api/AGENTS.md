@@ -24,7 +24,7 @@ This folder contains public and admin route handlers.
 - Login/auth:
   `auth/[...nextauth]/route.ts`, `login/route.ts`, `csrf/route.ts`, `session/route.ts`
 - Admin permission problem:
-  `lib/adminAccess.ts`, `lib/auth.ts`, `proxy.ts`
+  `lib/adminAccess.ts`, `lib/auth.ts`, `middleware.ts`
 - Product mutation:
   `products/[id]/route.ts`, `admin/products/[id]/featured/route.ts`, `admin/products/[id]/duplicate/route.ts`
 - Topup:

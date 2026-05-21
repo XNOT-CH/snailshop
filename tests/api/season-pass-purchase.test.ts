@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@/auth", () => ({ auth: vi.fn() }));
+vi.mock("@/lib/auth", () => ({ isAuthenticatedWithCsrf: vi.fn() }));
 
 vi.mock("@/lib/db", () => ({
     db: {
@@ -28,8 +28,8 @@ vi.mock("@/lib/seasonPassObservability", () => ({
     logSeasonPassEvent: vi.fn(),
 }));
 
-import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { isAuthenticatedWithCsrf } from "@/lib/auth";
 import {
     getCurrentSeasonPassSubscription,
     getOrCreateSeasonPassPlan,
@@ -58,7 +58,10 @@ describe("API: /api/season-pass/purchase (POST)", () => {
     });
 
     it("rejects purchases when the season pass plan is inactive", async () => {
-        (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ user: { id: "u1" } });
+        (isAuthenticatedWithCsrf as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+            success: true,
+            userId: "u1",
+        });
         (getOrCreateSeasonPassPlan as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
             id: "plan-1",
             price: "50.00",
@@ -67,7 +70,7 @@ describe("API: /api/season-pass/purchase (POST)", () => {
         });
 
         const { POST } = await import("@/app/api/season-pass/purchase/route");
-        const res = await POST();
+        const res = await POST(new Request("http://localhost/api/season-pass/purchase", { method: "POST" }));
 
         expect(res.status).toBe(403);
         expect(await res.json()).toMatchObject({
@@ -77,7 +80,10 @@ describe("API: /api/season-pass/purchase (POST)", () => {
     });
 
     it("queues a new subscription instead of extending the current active row", async () => {
-        (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ user: { id: "u1" } });
+        (isAuthenticatedWithCsrf as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+            success: true,
+            userId: "u1",
+        });
         (getOrCreateSeasonPassPlan as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
             id: "plan-1",
             price: "50.00",
@@ -104,7 +110,7 @@ describe("API: /api/season-pass/purchase (POST)", () => {
         (db.$client.getConnection as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(conn);
 
         const { POST } = await import("@/app/api/season-pass/purchase/route");
-        const res = await POST();
+        const res = await POST(new Request("http://localhost/api/season-pass/purchase", { method: "POST" }));
         const body = await res.json();
 
         expect(res.status).toBe(200);
@@ -126,7 +132,10 @@ describe("API: /api/season-pass/purchase (POST)", () => {
     });
 
     it("creates an active subscription immediately for a first-time purchase", async () => {
-        (auth as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({ user: { id: "u1" } });
+        (isAuthenticatedWithCsrf as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
+            success: true,
+            userId: "u1",
+        });
         (getOrCreateSeasonPassPlan as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
             id: "plan-1",
             price: "50.00",
@@ -153,7 +162,7 @@ describe("API: /api/season-pass/purchase (POST)", () => {
         (db.$client.getConnection as unknown as ReturnType<typeof vi.fn>).mockResolvedValue(conn);
 
         const { POST } = await import("@/app/api/season-pass/purchase/route");
-        const res = await POST();
+        const res = await POST(new Request("http://localhost/api/season-pass/purchase", { method: "POST" }));
         const body = await res.json();
 
         expect(res.status).toBe(200);

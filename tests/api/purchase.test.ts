@@ -82,8 +82,10 @@ function mkConn(productRow?: object, promoRow?: object | null) {
   if (productRow) {
     // First call: SELECT product FOR UPDATE
     conn.execute.mockResolvedValueOnce([[productRow]]);
+    // Second call: SELECT user balance FOR UPDATE
+    conn.execute.mockResolvedValueOnce([[MOCK_USER]]);
     if (promoRow !== undefined) {
-      // Second call: SELECT promo FOR UPDATE
+      // Third call: SELECT promo FOR UPDATE
       conn.execute.mockResolvedValueOnce([promoRow ? [promoRow] : []]);
     }
     // Subsequent calls: INSERT, UPDATE User, UPDATE Product, promo usage updates
@@ -346,6 +348,7 @@ describe("API: /api/purchase (POST)", () => {
       beginTransaction: vi.fn().mockResolvedValue(undefined),
       execute: vi.fn()
         .mockResolvedValueOnce([[MOCK_PRODUCT]])
+        .mockResolvedValueOnce([[MOCK_USER]])
         .mockResolvedValueOnce([[{
           id: "promo-new", code: "NEWONLY", isActive: true,
           startsAt: new Date(Date.now() - 1000),
@@ -374,6 +377,7 @@ describe("API: /api/purchase (POST)", () => {
       beginTransaction: vi.fn().mockResolvedValue(undefined),
       execute: vi.fn()
         .mockResolvedValueOnce([[MOCK_PRODUCT]])
+        .mockResolvedValueOnce([[MOCK_USER]])
         .mockResolvedValueOnce([[{
           id: "promo-limit", code: "LIMIT1", isActive: true,
           startsAt: new Date(Date.now() - 1000),
@@ -440,7 +444,9 @@ describe("API: /api/purchase (POST)", () => {
     const expensiveProduct = { ...MOCK_PRODUCT, price: "500" };
     const conn = {
       beginTransaction: vi.fn().mockResolvedValue(undefined),
-      execute: vi.fn().mockResolvedValue([[expensiveProduct]]),
+      execute: vi.fn()
+        .mockResolvedValueOnce([[expensiveProduct]])
+        .mockResolvedValueOnce([[{ ...MOCK_USER, creditBalance: "10" }]]),
       commit: vi.fn(), rollback: vi.fn().mockResolvedValue(undefined),
       release: vi.fn().mockResolvedValue(undefined),
     };
@@ -459,7 +465,9 @@ describe("API: /api/purchase (POST)", () => {
     (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
     const conn = {
       beginTransaction: vi.fn().mockResolvedValue(undefined),
-      execute: vi.fn().mockResolvedValue([[MOCK_PRODUCT]]),
+      execute: vi.fn()
+        .mockResolvedValueOnce([[MOCK_PRODUCT]])
+        .mockResolvedValueOnce([[MOCK_USER]]),
       commit: vi.fn(), rollback: vi.fn().mockResolvedValue(undefined),
       release: vi.fn().mockResolvedValue(undefined),
     };
@@ -478,7 +486,9 @@ describe("API: /api/purchase (POST)", () => {
     (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
     const conn = {
       beginTransaction: vi.fn().mockResolvedValue(undefined),
-      execute: vi.fn().mockResolvedValue([[MOCK_PRODUCT]]),
+      execute: vi.fn()
+        .mockResolvedValueOnce([[MOCK_PRODUCT]])
+        .mockResolvedValueOnce([[MOCK_USER]]),
       commit: vi.fn(), rollback: vi.fn().mockResolvedValue(undefined),
       release: vi.fn().mockResolvedValue(undefined),
     };
@@ -507,6 +517,10 @@ describe("API: /api/purchase (POST)", () => {
     expect(body.success).toBe(true);
     expect(body.orderId).toBeDefined();
     expect(body.productName).toBe("Test Product");
+    expect(conn.execute).toHaveBeenCalledWith(
+      "SELECT id, creditBalance, pointBalance FROM User WHERE id = ? FOR UPDATE",
+      ["u1"],
+    );
     expect(conn.commit).toHaveBeenCalled();
     expect(conn.release).toHaveBeenCalled();
   });

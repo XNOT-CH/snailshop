@@ -18,10 +18,10 @@ This folder is the UI entry for sign-in.
 - `lib/auth.ts`
 - `lib/validations/auth.ts`
 - `lib/security/turnstile.ts`
-- `proxy.ts`
+- `middleware.ts`
 
 ## Watchouts
 
 - UI branding comes from site settings.
 - Login rules are split across UI, custom API, and NextAuth credentials flow.
-- Route access after login may still be redirected by `proxy.ts`.
+- Route access after login may still be redirected by `middleware.ts`.

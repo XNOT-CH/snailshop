@@ -44,5 +44,5 @@ This folder is the main route tree for the app.
 ## Watchouts
 
 - Some page files contain direct DB/business logic, not just rendering.
-- A route may still be blocked earlier by `proxy.ts`.
+- A route may still be blocked earlier by `middleware.ts`.
 - For admin pages, read `app/admin/AGENTS.md` next.

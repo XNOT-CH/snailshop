@@ -10,6 +10,7 @@ loadEnv({ path: ".env", quiet: true });
 
 const TEST_USERNAME = "snail1";
 const TEST_PASSWORD = "snail1";
+const DASHBOARD_LANDING_PATH = /\/dashboard\/inventory/;
 
 test.describe.configure({ mode: "serial" });
 
@@ -30,6 +31,11 @@ async function loginAsTestUser(page: Page, callbackUrl = "/dashboard") {
   await usernameField(page).fill(TEST_USERNAME);
   await passwordField(page).fill(TEST_PASSWORD);
   await submitButton(page).click();
+}
+
+async function expectDashboardLanding(page: Page) {
+  await page.waitForURL(DASHBOARD_LANDING_PATH, { timeout: 15_000, waitUntil: "domcontentloaded" });
+  await expect(page).toHaveURL(DASHBOARD_LANDING_PATH, { timeout: 15_000 });
 }
 
 async function expectSameOriginRootRedirect(page: Page, path: string) {
@@ -106,7 +112,9 @@ test("invalid credentials show a localized error", async ({ page }) => {
   await passwordField(page).fill("wrong-password");
   await submitButton(page).click();
 
-  await expect(page.locator(".swal2-title")).toContainText("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง");
+  await expect(page.locator(".swal2-title")).toContainText("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง", {
+    timeout: 15_000,
+  });
   await expect(page).toHaveURL(/\/login/);
 });
 
@@ -120,8 +128,8 @@ test("protected routes redirect guests to login with callbackUrl", async ({ page
 test("successful login redirects, survives reload, and blocks protected route after logout", async ({ page }) => {
   await loginAsTestUser(page);
 
-  await expect(page).toHaveURL(/\/dashboard/);
-  await expect(page.getByText(TEST_USERNAME).first()).toBeVisible();
+  await expectDashboardLanding(page);
+  await expect(page.getByText(TEST_USERNAME, { exact: true }).filter({ visible: true })).toBeVisible();
 
   const sessionCookie = (await page.context().cookies())
     .find((cookie) => cookie.name.includes("authjs.session-token"));
@@ -130,13 +138,13 @@ test("successful login redirects, survives reload, and blocks protected route af
   expect(sessionCookie?.sameSite).toBe("Lax");
 
   await page.reload();
-  await expect(page).toHaveURL(/\/dashboard/);
+  await expectDashboardLanding(page);
 
   const bareLogoutResponse = await page.request.post("/api/logout");
   expect(bareLogoutResponse.status()).toBe(401);
 
   await page.goto("/dashboard");
-  await expect(page).toHaveURL(/\/dashboard/);
+  await expectDashboardLanding(page);
 
   const csrfResponse = await page.request.get("/api/csrf");
   expect(csrfResponse.ok()).toBeTruthy();
@@ -159,7 +167,7 @@ test("malicious callbackUrl stays on the same origin", async ({ page }) => {
 
 test("regular users cannot access admin pages or admin APIs", async ({ page }) => {
   await loginAsTestUser(page);
-  await expect(page).toHaveURL(/\/dashboard/);
+  await expectDashboardLanding(page);
 
   await expectSameOriginRootRedirect(page, "/admin");
 

@@ -97,7 +97,7 @@ export function PurchasedItem({
     };
 
     return (
-        <Card className={`${themeClasses.surface} overflow-hidden rounded-3xl border border-border/80 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg card-tilt touch-feedback`}>
+        <Card className={`${themeClasses.surface} min-w-0 overflow-hidden rounded-3xl border border-border/80 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg card-tilt touch-feedback`}>
             <div className="relative aspect-[4/3] border-b border-border/80 bg-muted">
                 <Image
                     src={image}
@@ -111,14 +111,14 @@ export function PurchasedItem({
                     }}
                 />
                 <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-2 bg-gradient-to-b from-black/35 via-black/10 to-transparent p-3">
-                    <Badge className="h-8 gap-1 rounded-full border border-emerald-200 bg-white/95 px-2.5 font-medium text-emerald-700 shadow-sm backdrop-blur hover:bg-white dark:border-emerald-400/25 dark:bg-slate-950/80 dark:text-emerald-100">
+                    <Badge className="h-8 gap-1 rounded-full border border-primary/20 bg-primary px-2.5 font-medium text-primary-foreground shadow-sm shadow-primary/20 backdrop-blur hover:bg-primary/90">
                         <PackageCheck className="h-3 w-3" />
                         รับแล้ว
                     </Badge>
                     <Button
                         variant="outline"
                         size="sm"
-                        className="h-8 rounded-full border-rose-200 bg-white/95 px-2.5 font-medium text-rose-600 shadow-sm backdrop-blur hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700 dark:border-rose-400/25 dark:bg-slate-950/80 dark:text-rose-200 dark:hover:bg-rose-500/10 dark:hover:text-rose-100"
+                        className="h-8 rounded-full border-border/80 bg-background/95 px-2.5 font-medium text-foreground shadow-sm backdrop-blur hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive dark:bg-slate-950/80 dark:hover:bg-destructive/15"
                         onClick={handleDelete}
                         disabled={isDeleting}
                         aria-label="ลบรายการนี้ออกจากคลัง"
@@ -144,12 +144,12 @@ export function PurchasedItem({
                         {date}
                     </div>
                 </div>
-                <div className="grid grid-cols-1 gap-2 min-[430px]:grid-cols-2">
-                    <span className="inline-flex h-8 w-full items-center justify-center gap-1 whitespace-nowrap rounded-full border border-primary bg-primary px-3 text-xs font-semibold text-primary-foreground shadow-sm">
+                <div className="grid min-w-0 grid-cols-1 gap-2 xl:grid-cols-2">
+                    <span className="inline-flex min-h-8 w-full min-w-0 items-center justify-center gap-1 rounded-full border border-primary bg-primary px-3 py-1.5 text-center text-xs font-semibold leading-snug text-primary-foreground shadow-sm">
                         <ShieldCheck className="h-3 w-3 text-current" />
                         ข้อมูลพร้อมใช้งาน
                     </span>
-                    <span className="inline-flex h-8 w-full items-center justify-center whitespace-nowrap rounded-full border border-foreground bg-foreground px-3 text-xs font-semibold text-background shadow-sm">
+                    <span className="inline-flex min-h-8 w-full min-w-0 items-center justify-center rounded-full border border-foreground bg-foreground px-3 py-1.5 text-center text-xs font-semibold leading-snug text-background shadow-sm">
                         เปิดดูได้ตลอด
                     </span>
                 </div>
@@ -184,8 +184,8 @@ export function PurchasedItem({
 
                     <CollapsibleContent className="mt-3">
                         <div className="space-y-3 rounded-2xl border border-border bg-muted/50 p-3">
-                            <div className="flex items-center justify-between">
-                                <Badge variant="secondary" className="gap-1 rounded-full border border-border/70 bg-background text-foreground dark:bg-slate-800 dark:text-slate-100">
+                            <div className="flex min-w-0 flex-wrap items-center justify-between gap-2">
+                                <Badge variant="secondary" className="min-w-0 gap-1 rounded-full border border-border/70 bg-background text-foreground dark:bg-slate-800 dark:text-slate-100">
                                     <Lock className="h-3 w-3" />
                                     ข้อมูลลับ
                                 </Badge>
@@ -193,7 +193,7 @@ export function PurchasedItem({
                                     variant="ghost"
                                     size="sm"
                                     onClick={() => handleCopy(secretData, "all")}
-                                    className="h-8 gap-1 rounded-full"
+                                    className="h-8 min-w-0 gap-1 rounded-full px-2 text-xs sm:px-3"
                                 >
                                     {copiedField === "all" ? (
                                         <>

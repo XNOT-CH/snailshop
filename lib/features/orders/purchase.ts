@@ -302,6 +302,20 @@ export async function validatePromoInTransaction(
     };
 }
 
+async function lockPurchaseUserForUpdate(conn: RawConnection, userId: string): Promise<PurchaseTransactionUser> {
+    const [userRows] = await conn.execute(
+        "SELECT id, creditBalance, pointBalance FROM User WHERE id = ? FOR UPDATE",
+        [userId],
+    );
+    const lockedUser = (userRows as PurchaseTransactionUser[])[0];
+
+    if (!lockedUser) {
+        throw new Error("ไม่พบผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่");
+    }
+
+    return lockedUser;
+}
+
 export async function executeSingleProductPurchaseTransaction(params: {
     conn: RawConnection;
     productId: string;
@@ -324,6 +338,7 @@ export async function executeSingleProductPurchaseTransaction(params: {
         if (!product) throw new Error("ไม่พบสินค้านี้ในระบบ");
         if (Boolean(product.isSold)) throw new Error("สินค้านี้ถูกขายไปแล้ว");
 
+        const lockedUser = await lockPurchaseUserForUpdate(conn, user.id);
         const unitPrice = getActivePrice(product);
         const baseTotalPrice = unitPrice * qty;
         const isPointCurrency = product.currency === "POINT";
@@ -338,7 +353,7 @@ export async function executeSingleProductPurchaseTransaction(params: {
             0,
             Math.round((baseTotalPrice - (promoData?.discountAmount ?? 0)) * 100) / 100,
         );
-        const userBalance = isPointCurrency ? Number(user.pointBalance ?? 0) : Number(user.creditBalance);
+        const userBalance = isPointCurrency ? Number(lockedUser.pointBalance ?? 0) : Number(lockedUser.creditBalance);
 
         if (userBalance < totalPrice) {
             const requiredAmount = formatCurrencyAmount(
@@ -433,7 +448,7 @@ export async function executeCartPurchaseTransaction(params: {
     promoCode?: string | null;
     currencySettings?: PublicCurrencySettings | null;
 }) {
-    const { conn, items, userId, user, promoCode, currencySettings } = params;
+    const { conn, items, userId, promoCode, currencySettings } = params;
     const productIds = items.map((item) => item.productId);
 
     try {
@@ -445,10 +460,11 @@ export async function executeCartPurchaseTransaction(params: {
             productIds,
         );
         const productList = rows as PurchaseProductRow[];
+        const lockedUser = await lockPurchaseUserForUpdate(conn, userId);
         const { totalTHB, totalPoints, productCategory } = validateAndSummarizeCartProducts(
             productList,
             items,
-            user,
+            lockedUser,
             currencySettings,
             { checkThbBalance: false },
         );
@@ -458,9 +474,9 @@ export async function executeCartPurchaseTransaction(params: {
         const discountedPriceMap = buildDiscountedThbPriceMap(productList, items, appliedPromo?.discountAmount ?? 0);
         const finalTotalTHB = items.reduce((sum, item) => sum + (discountedPriceMap.get(item.productId) ?? 0), 0);
 
-        if (finalTotalTHB > 0 && Number(user.creditBalance) < finalTotalTHB) {
+        if (finalTotalTHB > 0 && Number(lockedUser.creditBalance) < finalTotalTHB) {
             throw new Error(
-                `เครดิตไม่เพียงพอ (ต้องการ ${formatCurrencyAmount(finalTotalTHB, "THB", currencySettings)} แต่มี ${formatCurrencyAmount(Number(user.creditBalance), "THB", currencySettings)})`,
+                `เครดิตไม่เพียงพอ (ต้องการ ${formatCurrencyAmount(finalTotalTHB, "THB", currencySettings)} แต่มี ${formatCurrencyAmount(Number(lockedUser.creditBalance), "THB", currencySettings)})`,
             );
         }
 
