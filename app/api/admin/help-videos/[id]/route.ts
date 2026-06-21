@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, helpVideos } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { requirePermission } from "@/lib/auth";
+import { requirePermissionWithCsrf } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { helpVideoSchema, type HelpVideoInput } from "@/lib/validations/content";
 import { normalizeYouTubeVideo } from "@/lib/helpVideos";
@@ -12,7 +12,7 @@ import { contentApiError } from "@/lib/features/content/apiResponse";
 type RouteParams = { params: Promise<{ id: string }> };
 
 export async function PUT(request: Request, { params }: RouteParams) {
-    const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CONTENT_EDIT);
     if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
 
     try {
@@ -50,7 +50,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
-    const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CONTENT_EDIT);
     if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
 
     try {

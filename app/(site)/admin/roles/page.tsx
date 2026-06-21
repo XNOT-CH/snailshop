@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { showDeleteConfirm, showError, showSuccess, showWarning } from "@/lib/swal";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import {
   PERMISSIONS,
   getRequiredPermissions,
@@ -261,7 +262,7 @@ export default function AdminRolesPage() {
     try {
       const url = selectedRole ? `/api/admin/roles/${selectedRole.id}` : "/api/admin/roles";
       const method = selectedRole ? "PUT" : "POST";
-      const response = await fetch(url, {
+      const response = await fetchWithCsrf(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -299,7 +300,7 @@ export default function AdminRolesPage() {
     }
 
     try {
-      const response = await fetch(`/api/admin/roles/${role.id}`, { method: "DELETE" });
+      const response = await fetchWithCsrf(`/api/admin/roles/${role.id}`, { method: "DELETE" });
       if (response.ok) {
         await fetchRoles();
         showSuccess("ลบยศเรียบร้อย");

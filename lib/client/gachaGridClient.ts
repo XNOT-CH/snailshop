@@ -1,4 +1,5 @@
 import { API_ROUTES } from "@/lib/constants/apiRoutes";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 
 export interface GridReward {
     id: string;
@@ -78,7 +79,7 @@ export function buildGachaGridRollPayload(machineId?: string): GachaGridRollPayl
 
 export async function requestGachaGridRoll(
     payload: GachaGridRollPayload,
-    { fetcher = fetch }: GachaGridClientOptions = {},
+    { fetcher = fetchWithCsrf }: GachaGridClientOptions = {},
 ): Promise<GachaGridRollResponse> {
     const response = await fetcher(API_ROUTES.GACHA_GRID_ROLL, {
         ...GACHA_GRID_ROLL_REQUEST_INIT,

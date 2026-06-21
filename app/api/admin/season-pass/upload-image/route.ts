@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requirePermission } from "@/lib/auth";
+import { requirePermissionWithCsrf } from "@/lib/auth";
 import { saveOptimizedImageUpload } from "@/lib/serverImageUpload";
 import { PERMISSIONS } from "@/lib/permissions";
 import { getRuntimeUploadDir } from "@/lib/runtimeUploads";
 import { seasonPassApiError } from "@/lib/features/seasonPass/apiResponse";
 
 export async function POST(request: NextRequest) {
-    const authCheck = await requirePermission(PERMISSIONS.SEASON_PASS_EDIT);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.SEASON_PASS_EDIT);
     if (!authCheck.success) {
         return seasonPassApiError(authCheck.error, { status: 401 });
     }

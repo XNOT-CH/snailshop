@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { PERMISSIONS } from "@/lib/permissions";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import {
     Check,
     X,
@@ -115,7 +116,7 @@ export function TopupTable({ topups }: Readonly<TopupTableProps>) {
 
         setProcessingId(topupId);
         try {
-            const response = await fetch("/api/admin/slips", {
+            const response = await fetchWithCsrf("/api/admin/slips", {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ id: topupId, action }),

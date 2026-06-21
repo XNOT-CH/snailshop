@@ -5,6 +5,12 @@ import {
     calculatePromoDiscountAmount,
     validatePromoCode,
 } from "@/lib/promo";
+import {
+    checkPromoValidationRateLimit,
+    clearPromoValidationAttempts,
+    getClientIp,
+    recordFailedPromoValidation,
+} from "@/lib/rateLimit";
 
 export async function POST(request: NextRequest) {
     try {
@@ -19,6 +25,14 @@ export async function POST(request: NextRequest) {
 
         const session = await auth();
         const userId = session?.user?.id ?? null;
+        const rateLimitIdentifier = `${getClientIp(request)}:${userId ?? "guest"}`;
+        const rateLimit = checkPromoValidationRateLimit(rateLimitIdentifier);
+        if (rateLimit.blocked) {
+            return NextResponse.json({
+                valid: false,
+                message: rateLimit.message ?? "กรอกโค้ดผิดบ่อยเกินไป กรุณาลองใหม่ภายหลัง",
+            }, { status: 429 });
+        }
 
         const result = await validatePromoCode({
             code,
@@ -28,8 +42,11 @@ export async function POST(request: NextRequest) {
         });
 
         if (!result.valid) {
+            recordFailedPromoValidation(rateLimitIdentifier);
             return NextResponse.json(result);
         }
+
+        clearPromoValidationAttempts(rateLimitIdentifier);
 
         const { minPurchase, discountAmount } = calculatePromoDiscountAmount(
             result.promo,

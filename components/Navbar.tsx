@@ -153,7 +153,7 @@ export default async function Navbar() {
                     </span>
                 </Link>
 
-                <nav className={`${themeClasses.navPill} hidden items-center justify-center gap-1 rounded-full px-1.5 py-1 xl:flex`}>
+                <nav className="hidden translate-x-8 items-center justify-center gap-1 xl:flex">
                     {navLinks.map((link) => {
                         const Icon = link.icon;
 

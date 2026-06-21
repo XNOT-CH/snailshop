@@ -53,6 +53,7 @@ const nextConfig: NextConfig = {
   images: {
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
+    contentSecurityPolicy: "default-src 'none'; script-src 'none'; sandbox;",
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 3600,
     qualities: [70, 75],
@@ -108,7 +109,7 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: "frame-ancestors 'self'",
+            value: "base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'self'",
           },
           ...(isProduction
             ? [

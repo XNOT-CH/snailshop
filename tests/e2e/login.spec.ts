@@ -112,7 +112,7 @@ test("invalid credentials show a localized error", async ({ page }) => {
   await passwordField(page).fill("wrong-password");
   await submitButton(page).click();
 
-  await expect(page.locator(".swal2-title")).toContainText("ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง", {
+  await expect(page.getByRole("status").filter({ hasText: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง" })).toBeVisible({
     timeout: 15_000,
   });
   await expect(page).toHaveURL(/\/login/);

@@ -9,6 +9,7 @@ import {
     savePopupDismissal,
     shouldShowPopup,
 } from "@/lib/client/popupDismissal";
+import { toSafePublicHref } from "@/lib/sanitize";
 
 export interface PopupData {
     id: string;
@@ -97,8 +98,9 @@ export default function AnnouncementPopup({
     // Handle image click (open link)
     const handleImageClick = () => {
         const currentPopup = popups[currentIndex];
-        if (currentPopup?.linkUrl) {
-            globalThis.open(currentPopup.linkUrl, "_blank", "noopener,noreferrer");
+        const safeLinkUrl = toSafePublicHref(currentPopup?.linkUrl, "");
+        if (safeLinkUrl) {
+            globalThis.open(safeLinkUrl, "_blank", "noopener,noreferrer");
         }
     };
 
@@ -119,6 +121,7 @@ export default function AnnouncementPopup({
     }
 
     const currentPopup = popups[currentIndex];
+    const currentPopupLinkUrl = toSafePublicHref(currentPopup.linkUrl, "");
     const hasMultiple = popups.length > 1;
 
     return (
@@ -178,7 +181,7 @@ export default function AnnouncementPopup({
                         </motion.button>
 
                         {/* Image Container */}
-                        {currentPopup.linkUrl ? (
+                        {currentPopupLinkUrl ? (
                             <div className="relative w-full aspect-square overflow-hidden rounded-[1.75rem] border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)]">
                                 <button
                                     type="button"

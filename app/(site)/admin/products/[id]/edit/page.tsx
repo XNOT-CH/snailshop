@@ -18,6 +18,7 @@ import { showError, showSuccess } from "@/lib/swal";
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { normalizeProductImageUrls } from "@/lib/productImages";
 import { PERMISSIONS } from "@/lib/permissions";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import {
     getCalculatedDiscountPrice,
     getDiscountHelperText,
@@ -192,7 +193,7 @@ export default function EditProductPage() {
         setIsLoading(true);
 
         try {
-            const response = await fetch(`/api/products/${productId}`, {
+            const response = await fetchWithCsrf(`/api/products/${productId}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

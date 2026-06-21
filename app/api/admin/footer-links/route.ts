@@ -2,7 +2,7 @@ import { mysqlNow } from "@/lib/utils/date";
 import { NextRequest, NextResponse } from "next/server";
 import { db, footerWidgetSettings, footerLinks } from "@/lib/db";
 import { max } from "drizzle-orm";
-import { requirePermission } from "@/lib/auth";
+import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { footerLinkSchema } from "@/lib/validations/content";
 import { FOOTER_WIDGET_SETTINGS_SINGLETON_ID } from "@/lib/db/singletons";
@@ -35,7 +35,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-    const authCheck = await requirePermission(PERMISSIONS.SETTINGS_EDIT);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.SETTINGS_EDIT);
     if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const result = await validateBody(request, footerLinkSchema);

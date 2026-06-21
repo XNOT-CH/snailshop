@@ -6,6 +6,7 @@ import { type ReactNode, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { fetchWithCsrf } from "@/lib/csrf-client";
+import { escapeHtml } from "@/lib/sanitize";
 import { showError, showPurchaseConfirm, showPurchaseSuccessModal, showWarning } from "@/lib/swal";
 
 type SeasonPassPurchaseButtonProps = {
@@ -104,9 +105,9 @@ export function SeasonPassPurchaseButton({
                 title: data.queued ? "ต่ออายุ Season Pass สำเร็จ" : "ซื้อ Season Pass สำเร็จ",
                 html: `
                     <div class="space-y-3 text-left">
-                        <p><strong>${planName}</strong> ${data.queued ? "ถูกเพิ่มเข้าคิวรอบถัดไปแล้ว" : "ถูกเปิดใช้งานแล้ว"}</p>
-                        ${data.startsAtText ? `<p>รอบถัดไปจะเริ่ม <strong>${data.startsAtText}</strong></p>` : ""}
-                        <p>สิทธิ์ทั้งหมดจะสิ้นสุด <strong>${data.endAtText}</strong></p>
+                        <p><strong>${escapeHtml(planName)}</strong> ${data.queued ? "ถูกเพิ่มเข้าคิวรอบถัดไปแล้ว" : "ถูกเปิดใช้งานแล้ว"}</p>
+                        ${data.startsAtText ? `<p>รอบถัดไปจะเริ่ม <strong>${escapeHtml(data.startsAtText)}</strong></p>` : ""}
+                        <p>สิทธิ์ทั้งหมดจะสิ้นสุด <strong>${escapeHtml(data.endAtText)}</strong></p>
                     </div>
                 `,
                 confirmText: "ไปหน้ารับของ",

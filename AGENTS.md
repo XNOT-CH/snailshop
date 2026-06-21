@@ -14,25 +14,47 @@ Run commands from the repository root.
 
 - Dev server: `npm run dev`
 - Build: `npm run build`
+- Start prod server: `npm run start`
 - Lint: `npm run lint`
 - Tests: `npm run test`
 - Test watch: `npm run test:watch`
 - Coverage: `npm run test:coverage`
 - E2E: `npm run test:e2e`
 - E2E headed: `npm run test:e2e:headed`
+- E2E UI mode: `npm run test:e2e:ui`
 - Dev schema sync: `npm run db:push`
 - Run migrations: `npm run db:migrate`
 - Drizzle Studio: `npm run db:studio`
 - Encoding check: `npm run check:encoding`
 - DB health: `npm run check:db-health`
+- Purchase locking check: `npm run check:purchase-locking`
 - Deploy readiness: `npm run check:deploy`
 - Cloudflare dry run: `npm run cf:check`
+- Cloudflare preview: `npm run cf:preview`
+- Cloudflare deploy: `npm run cf:deploy`
+- Cloudflare typegen: `npm run cf:typegen`
+- Cloudflare account check: `npm run cf:whoami`
+- Commerce reconciliation: `npm run ops:reconcile-commerce`
+- Product export from dev: `npm run products:export:dev`
+- Product import to prod: `npm run products:import:prod`
+- Product stock backfill: `npm run products:backfill-stock-count`
+- Sensitive data migration: `npm run db:migrate-sensitive`
+- Slip storage migration: `npm run storage:migrate-slips`
+- R2 storage migration: `npm run storage:migrate-r2`
+- Legacy slip cleanup: `npm run storage:cleanup-legacy-slips`
+- Sonar scan: `npm run sonar:scan`
+- Sonar fetch: `npm run sonar:fetch`
+- Sonar summary: `npm run sonar:summary`
 
 Local notes:
 
 - `npm run dev` uses `scripts/dev/run-next-dev.mjs`.
 - The dev server binds to `127.0.0.1`, starts from port `3001`, and may move to the next free port.
 - If Playwright targets another port, set `PLAYWRIGHT_BASE_URL` before `npm run test:e2e`.
+- `npm run check:purchase-locking` writes a temporary product row during the lock handoff check and removes it at the end.
+- `npm run cf:check`, `npm run cf:preview`, and `npm run cf:deploy` use `scripts/deploy/run-opennext-cloudflare.mjs`; on Windows, prefer these wrappers over calling OpenNext directly.
+- `npm run ops:reconcile-commerce` runs in read-only mode by default; use `node scripts/ops/reconcile-commerce.mjs --hours <n>` for a longer lookback window.
+- For isolated dev DB work on Windows, prefer `scripts/windows/start-dev-db.bat`, `scripts/windows/db-push-dev.bat`, and `scripts/windows/db-studio-dev.bat`.
 - Windows helper scripts live in `scripts/windows/`.
 
 ## Project Knowledge
@@ -110,8 +132,9 @@ Use the smallest command set that proves the change.
 - Docs/text-only: `npm run check:encoding`.
 - Shared TypeScript or business logic: `npm run test` and `npm run lint`.
 - API route, auth, checkout, admin, or user-facing UI: `npm run test`, `npm run build`, and `npm run test:e2e` when practical.
+- Concurrency-sensitive commerce work: add `npm run check:purchase-locking` when purchase locking, stock handoff, or checkout locking changes.
 - Database schema/migration: read `drizzle/README.md`, then run the relevant Drizzle command.
-- Deployment/config: `npm run check:deploy`; use `npm run cf:check` for Cloudflare changes.
+- Deployment/config: `npm run check:deploy`; use `npm run cf:check`, `npm run cf:preview`, and `npm run cf:deploy` as the task requires.
 - Security-sensitive change: add or update tests that cover the failure mode.
 
 If a relevant verification command cannot be run, say why in the handoff.
@@ -162,16 +185,16 @@ describe("feature behavior", () => {
 Read these first for each task type, then follow the nearest nested `AGENTS.md`.
 
 - Login/auth/session: `app/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `auth.ts`, `auth.config.ts`, `middleware.ts`
-- Admin/permissions: `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
-- Product CRUD/stock: `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `components/AGENTS.md`
-- Top-up/slip review: `app/AGENTS.md`, `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
-- Content/settings/news/navigation/footer: `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
-- Gacha: `app/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `components/AGENTS.md`
-- Season pass: `app/season-pass/AGENTS.md`, `app/admin/season-pass/AGENTS.md`, `app/api/season-pass/AGENTS.md`, `components/season-pass/AGENTS.md`, `lib/AGENTS.md`
+- Admin/permissions: `app/(site)/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
+- Product CRUD/stock: `app/(site)/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `components/AGENTS.md`
+- Top-up/slip review: `app/AGENTS.md`, `app/(site)/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
+- Content/settings/news/navigation/footer: `app/(site)/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
+- Gacha: `app/(site)/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `components/AGENTS.md`
+- Season pass: `app/(site)/season-pass/AGENTS.md`, `app/(site)/admin/season-pass/AGENTS.md`, `app/api/season-pass/AGENTS.md`, `components/season-pass/AGENTS.md`, `lib/AGENTS.md`
 - Chat: `components/chat/AGENTS.md`, `app/api/chat/AGENTS.md`, `app/api/admin/chat/AGENTS.md`, `lib/AGENTS.md`
 - Tests/Playwright: `tests/AGENTS.md`, `docs/ai-workflow.md`, `README.md`
 - Database/migrations: `drizzle/AGENTS.md`, `drizzle/README.md`, `lib/db/AGENTS.md`, `scripts/db/AGENTS.md`
-- Deploy/CI/ops/scripts: `scripts/AGENTS.md`, `scripts/windows/AGENTS.md`, `.github/workflows/AGENTS.md`, `docs/runbooks/AGENTS.md`
+- Deploy/CI/ops/scripts: `scripts/AGENTS.md`, `scripts/windows/AGENTS.md`, `scripts/sonar/AGENTS.md`, `.github/workflows/AGENTS.md`, `docs/runbooks/AGENTS.md`
 
 ## Boundaries
 
@@ -180,6 +203,7 @@ Read these first for each task type, then follow the nearest nested `AGENTS.md`.
 - Preserve Thai user-facing text unless the task explicitly asks to change it.
 - Treat UTF-8 as the default for all text files.
 - With PowerShell, use `-Encoding utf8` when reading or writing repository text files.
+- With PowerShell, use `-LiteralPath` when reading or editing routes with bracketed segments such as `app/api/admin/slips/[id]/image/route.ts`.
 - Keep permission checks server-side even when UI visibility is updated.
 - Validate request bodies, route params, and query params before use.
 - Use shared helpers from `lib/` for auth, permissions, validation, database access, security, and response formatting.

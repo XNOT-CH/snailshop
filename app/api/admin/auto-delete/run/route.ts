@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runAutoDelete } from "@/lib/autoDelete";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
-import { requirePermission } from "@/lib/auth";
+import { requirePermissionWithCsrf } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
 
 // Protected by CRON_SECRET env var
@@ -20,13 +20,22 @@ export async function GET(request: NextRequest) {
     }
 
     if (!isCronRequest) {
-        const permissionCheck = await requirePermission(PERMISSIONS.PRODUCT_DELETE);
-        if (!permissionCheck.success) {
-            return NextResponse.json({ success: false, message: permissionCheck.error }, { status: 401 });
-        }
-        adminUserId = permissionCheck.userId;
+        return NextResponse.json({ success: false, message: "Invalid cron secret" }, { status: 401 });
     }
 
+    return runAutoDeleteAndRespond(request, adminUserId);
+}
+
+export async function POST(request: NextRequest) {
+    const permissionCheck = await requirePermissionWithCsrf(request, PERMISSIONS.PRODUCT_DELETE);
+    if (!permissionCheck.success) {
+        return NextResponse.json({ success: false, message: permissionCheck.error }, { status: 401 });
+    }
+
+    return runAutoDeleteAndRespond(request, permissionCheck.userId);
+}
+
+async function runAutoDeleteAndRespond(request: NextRequest, adminUserId: string | undefined) {
     try {
         const { deleted, names, deletedItems } = await runAutoDelete();
 

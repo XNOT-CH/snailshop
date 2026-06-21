@@ -1,10 +1,46 @@
-import type { SlipVerificationData } from "@/lib/features/topup/easySlipService";
-import type { EasySlipVerifyTarget } from "@/lib/features/topup/slipHelpers";
+import type {
+    EasySlipBankVerifyData,
+    EasySlipTrueWalletVerifyData,
+} from "@/lib/features/topup/easySlipService";
+import type { TopupVerifyTarget } from "@/lib/features/topup/slipHelpers";
 
 export type TopupVerifyMethod = "payload" | "base64" | "url" | "image";
+export type VerifiedTopupSlip =
+    | { verifyTarget: "bank"; data: EasySlipBankVerifyData }
+    | { verifyTarget: "truewallet"; data: EasySlipTrueWalletVerifyData };
 
-export function getVerifiedTopupAmount(verifiedSlip: SlipVerificationData) {
-    return verifiedSlip.amount?.amount || 0;
+export function getVerifiedTopupAmount(verifiedSlip: VerifiedTopupSlip) {
+    return verifiedSlip.data.amountInSlip;
+}
+
+export function getVerifiedTopupTransactionRef(verifiedSlip: VerifiedTopupSlip) {
+    return verifiedSlip.verifyTarget === "truewallet"
+        ? verifiedSlip.data.rawSlip.transactionId
+        : verifiedSlip.data.rawSlip.transRef;
+}
+
+export function getVerifiedTopupSenderName(verifiedSlip: VerifiedTopupSlip) {
+    return verifiedSlip.verifyTarget === "truewallet"
+        ? verifiedSlip.data.rawSlip.sender.name
+        : verifiedSlip.data.rawSlip.sender.account.name.th ?? verifiedSlip.data.rawSlip.sender.account.name.en ?? null;
+}
+
+export function getVerifiedTopupSenderBank(verifiedSlip: VerifiedTopupSlip) {
+    return verifiedSlip.verifyTarget === "truewallet"
+        ? null
+        : verifiedSlip.data.rawSlip.sender.bank.name;
+}
+
+export function getVerifiedTopupReceiverName(verifiedSlip: VerifiedTopupSlip) {
+    return verifiedSlip.verifyTarget === "truewallet"
+        ? verifiedSlip.data.rawSlip.receiver.name
+        : verifiedSlip.data.rawSlip.receiver.account.name.th ?? verifiedSlip.data.rawSlip.receiver.account.name.en ?? null;
+}
+
+export function getVerifiedTopupReceiverBank(verifiedSlip: VerifiedTopupSlip) {
+    return verifiedSlip.verifyTarget === "truewallet"
+        ? verifiedSlip.data.matchedAccount?.bank.nameTh ?? null
+        : verifiedSlip.data.rawSlip.receiver.bank.name;
 }
 
 export function buildPendingTopupInsert(input: {
@@ -29,7 +65,7 @@ export function buildPendingTopupAudit(input: {
     requestedAmount: number;
     proofImage: string | null;
     verifyMethod: TopupVerifyMethod;
-    verifyTarget: EasySlipVerifyTarget;
+    verifyTarget: TopupVerifyTarget;
 }) {
     return {
         resource: "TopupRequest",
@@ -62,7 +98,7 @@ export function buildPendingTopupResponseData(input: {
 export function buildApprovedTopupInsert(input: {
     topupId: string;
     userId: string;
-    verifiedSlip: SlipVerificationData;
+    verifiedSlip: VerifiedTopupSlip;
     verifiedAmount: number;
     proofImage: string | null;
     createdAt: string;
@@ -73,11 +109,11 @@ export function buildApprovedTopupInsert(input: {
         amount: String(input.verifiedAmount),
         proofImage: input.proofImage,
         status: "APPROVED",
-        transactionRef: input.verifiedSlip.transRef,
-        senderName: input.verifiedSlip.sender.account?.name?.th || null,
-        senderBank: input.verifiedSlip.sender.bank?.name || null,
-        receiverName: input.verifiedSlip.receiver.account?.name?.th || null,
-        receiverBank: input.verifiedSlip.receiver.bank?.name || null,
+        transactionRef: getVerifiedTopupTransactionRef(input.verifiedSlip),
+        senderName: getVerifiedTopupSenderName(input.verifiedSlip),
+        senderBank: getVerifiedTopupSenderBank(input.verifiedSlip),
+        receiverName: getVerifiedTopupReceiverName(input.verifiedSlip),
+        receiverBank: getVerifiedTopupReceiverBank(input.verifiedSlip),
         createdAt: input.createdAt,
     };
 }
@@ -85,11 +121,10 @@ export function buildApprovedTopupInsert(input: {
 export function buildApprovedTopupAudit(input: {
     topupId: string;
     requestedAmount: number;
-    verifiedSlip: SlipVerificationData;
+    verifiedSlip: VerifiedTopupSlip;
     verifiedAmount: number;
     proofImage: string | null;
     verifyMethod: TopupVerifyMethod;
-    verifyTarget: EasySlipVerifyTarget;
 }) {
     return {
         resource: "TopupRequest",
@@ -98,29 +133,31 @@ export function buildApprovedTopupAudit(input: {
         details: {
             amount: input.verifiedAmount,
             requestedAmount: input.requestedAmount,
-            transRef: input.verifiedSlip.transRef,
-            senderNameStored: Boolean(input.verifiedSlip.sender.account?.name?.th),
+            transRef: getVerifiedTopupTransactionRef(input.verifiedSlip),
             proofImageStored: Boolean(input.proofImage),
             status: "APPROVED",
-            verification: "automatic",
+            verification: "easyslip-v2",
             verifyMethod: input.verifyMethod,
-            verifyTarget: input.verifyTarget,
+            verifyTarget: input.verifiedSlip.verifyTarget,
+            isDuplicate: input.verifiedSlip.data.isDuplicate,
+            isAmountMatched: input.verifiedSlip.data.isAmountMatched,
+            matchedAccountFound: Boolean(input.verifiedSlip.data.matchedAccount),
         },
     };
 }
 
 export function buildApprovedTopupResponseData(input: {
     topupId: string;
-    verifiedSlip: SlipVerificationData;
+    verifiedSlip: VerifiedTopupSlip;
     verifiedAmount: number;
     proofImage: string | null;
 }) {
     return {
         topupId: input.topupId,
         amount: input.verifiedAmount,
-        senderName: input.verifiedSlip.sender.account?.name?.th,
-        senderBank: input.verifiedSlip.sender.bank?.name,
-        transRef: input.verifiedSlip.transRef,
+        senderName: getVerifiedTopupSenderName(input.verifiedSlip),
+        senderBank: getVerifiedTopupSenderBank(input.verifiedSlip),
+        transRef: getVerifiedTopupTransactionRef(input.verifiedSlip),
         proofImage: input.proofImage,
         status: "APPROVED",
     };

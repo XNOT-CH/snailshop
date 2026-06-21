@@ -17,6 +17,25 @@ interface RouteParams {
 }
 
 const MISSING_UPLOAD_IMAGE_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96" viewBox="0 0 96 96"><rect width="96" height="96" rx="18" fill="#eef2f7"/><path d="M27 66h42L56 51l-8 9-6-7-15 13Z" fill="#94a3b8"/><circle cx="36" cy="35" r="7" fill="#cbd5e1"/></svg>`;
+const SVG_SANDBOX_CSP = "default-src 'none'; script-src 'none'; sandbox";
+
+function sanitizeDispositionFilename(filename: string) {
+    return filename.replace(/[^\w.\-]/g, "_").slice(0, 120) || "upload";
+}
+
+function getUploadSecurityHeaders(contentType: string, filename: string) {
+    const headers: Record<string, string> = {
+        "X-Content-Type-Options": "nosniff",
+    };
+
+    const isSvg = contentType.toLowerCase().startsWith("image/svg+xml") || filename.toLowerCase().endsWith(".svg");
+    if (isSvg) {
+        headers["Content-Security-Policy"] = SVG_SANDBOX_CSP;
+        headers["Content-Disposition"] = `attachment; filename="${sanitizeDispositionFilename(filename)}"`;
+    }
+
+    return headers;
+}
 
 function missingUploadImageResponse(filename: string) {
     const contentType = getContentTypeFromFilename(filename);
@@ -31,6 +50,8 @@ function missingUploadImageResponse(filename: string) {
             "Cache-Control": "public, max-age=300",
             "Content-Length": String(Buffer.byteLength(MISSING_UPLOAD_IMAGE_SVG)),
             "Content-Type": "image/svg+xml; charset=utf-8",
+            "Content-Security-Policy": SVG_SANDBOX_CSP,
+            "X-Content-Type-Options": "nosniff",
             "X-Upload-Fallback": "missing-image",
         },
     });
@@ -79,6 +100,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
                     "Cache-Control": "public, max-age=31536000, immutable",
                     "Content-Length": String(r2Object.size),
                     "Content-Type": r2Object.contentType,
+                    ...getUploadSecurityHeaders(r2Object.contentType, filename),
                 },
             });
         }
@@ -103,6 +125,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
                 "Cache-Control": "public, max-age=31536000, immutable",
                 "Content-Length": String(fileBuffer.byteLength),
                 "Content-Type": contentType,
+                ...getUploadSecurityHeaders(contentType, filename),
             },
         });
     } catch (error) {

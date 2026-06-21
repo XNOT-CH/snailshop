@@ -1,178 +1,227 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
-    verifySlipWithEasySlip,
-    verifySlipWithEasySlipV2,
+    EASYSLIP_V2_INFO_URL,
+    EASYSLIP_V2_VERIFY_BANK_URL,
+    EASYSLIP_V2_VERIFY_TRUEWALLET_URL,
+    getEasySlipInfo,
+    verifyBankSlipWithEasySlipV2,
+    verifyTrueWalletSlipWithEasySlipV2,
 } from "@/lib/features/topup/easySlipService";
 
-describe("topup EasySlip service", () => {
-    afterEach(() => {
-        vi.unstubAllEnvs();
-        vi.unstubAllGlobals();
-    });
+const fetchMock = vi.fn();
 
-    it("throws when legacy EasySlip token is not configured", async () => {
-        await expect(verifySlipWithEasySlip(new File(["x"], "slip.png", { type: "image/png" })))
-            .rejects
-            .toThrow("EASYSLIP_NOT_CONFIGURED");
+function mockEasySlipResponse(body: unknown, status = 200) {
+    fetchMock.mockResolvedValue({
+        status,
+        json: vi.fn().mockResolvedValue(body),
     });
+}
 
-    it("posts image files to legacy EasySlip v1 with duplicate checking", async () => {
-        vi.stubEnv("EASYSLIP_TOKEN", "legacy-token");
-        const fetchMock = vi.fn().mockResolvedValue({
-            json: vi.fn().mockResolvedValue({ status: 200, data: { transRef: "TX001" } }),
-        });
+describe("EasySlip API v2 service", () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        process.env.EASYSLIP_API_KEY = "test-easyslip-key";
         vi.stubGlobal("fetch", fetchMock);
-
-        const result = await verifySlipWithEasySlip(new File(["x"], "slip.png", { type: "image/png" }));
-
-        expect(result.status).toBe(200);
-        expect(fetchMock).toHaveBeenCalledTimes(1);
-        const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-        expect(url).toBe("https://developer.easyslip.com/api/v1/verify");
-        expect(init.method).toBe("POST");
-        expect(init.headers).toEqual({ Authorization: "Bearer legacy-token" });
-        const body = init.body as FormData;
-        expect(body.get("checkDuplicate")).toBe("true");
-        expect(body.get("file")).toBeInstanceOf(File);
     });
 
-    it("throws when EasySlip v2 API key is not configured", async () => {
-        await expect(verifySlipWithEasySlipV2({ base64: "abc" }))
-            .rejects
-            .toThrow("EASYSLIP_V2_NOT_CONFIGURED");
-    });
-
-    it("posts JSON verification payloads to EasySlip v2 bank endpoint", async () => {
-        vi.stubEnv("EASYSLIP_API_KEY", "v2-key");
-        const fetchMock = vi.fn().mockResolvedValue({
-            status: 200,
-            json: vi.fn().mockResolvedValue({
-                success: true,
-                message: "ok",
-                data: {
-                    rawSlip: {
-                        payload: "qr",
-                        transRef: "TX999",
-                        date: "2026-05-07T00:00:00.000Z",
-                        countryCode: "TH",
-                        amount: { amount: 500, local: { amount: 500, currency: "THB" } },
-                        sender: { bank: { name: "SCB" }, account: { name: { th: "สมชาย" } } },
-                        receiver: { bank: { name: "KBANK" }, account: { name: { th: "ร้านค้า" } } },
+    it("gets EasySlip info through the v2 info endpoint", async () => {
+        mockEasySlipResponse({
+            success: true,
+            data: {
+                application: {
+                    name: "App",
+                    autoRenew: {
+                        expired: false,
+                        quota: true,
+                        createdAt: "2024-01-01T00:00:00+07:00",
+                        expiresAt: "2025-01-01T00:00:00+07:00",
+                    },
+                    quota: {
+                        used: 1,
+                        max: 100,
+                        remaining: 99,
+                        totalUsed: 1,
                     },
                 },
-            }),
-        });
-        vi.stubGlobal("fetch", fetchMock);
-
-        const result = await verifySlipWithEasySlipV2({
-            base64: "base64-slip",
-            expectedAmount: 500,
-            remark: "order-1",
-        });
-
-        expect(result.status).toBe(200);
-        expect(result.data?.transRef).toBe("TX999");
-        const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-        expect(url).toBe("https://api.easyslip.com/v2/verify/bank");
-        expect(init.headers).toEqual({
-            Authorization: "Bearer v2-key",
-            "Content-Type": "application/json",
-        });
-        expect(JSON.parse(String(init.body))).toEqual({
-            matchAccount: true,
-            checkDuplicate: true,
-            base64: "base64-slip",
-            matchAmount: 500,
-            remark: "order-1",
-        });
-    });
-
-    it("posts image verification payloads to EasySlip v2 as FormData", async () => {
-        vi.stubEnv("EASYSLIP_API_KEY", "v2-key");
-        const fetchMock = vi.fn().mockResolvedValue({
-            status: 400,
-            json: vi.fn().mockResolvedValue({ success: false, error: { code: "INVALID_IMAGE" } }),
-        });
-        vi.stubGlobal("fetch", fetchMock);
-
-        const result = await verifySlipWithEasySlipV2({
-            image: new File(["x"], "slip.jpg", { type: "image/jpeg" }),
-            expectedAmount: 100,
-            remark: "image-flow",
-        });
-
-        expect(result.status).toBe(400);
-        expect(result.message).toBe("รูปภาพไม่ใช่สลิปที่ถูกต้อง");
-        const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-        expect(init.headers).toEqual({ Authorization: "Bearer v2-key" });
-        const body = init.body as FormData;
-        expect(body.get("matchAccount")).toBe("true");
-        expect(body.get("checkDuplicate")).toBe("true");
-        expect(body.get("matchAmount")).toBe("100");
-        expect(body.get("remark")).toBe("image-flow");
-        expect(body.get("image")).toBeInstanceOf(File);
-    });
-
-    it("does not call EasySlip v2 when truewallet is requested with a QR payload", async () => {
-        vi.stubEnv("EASYSLIP_API_KEY", "v2-key");
-        const fetchMock = vi.fn();
-        vi.stubGlobal("fetch", fetchMock);
-
-        const result = await verifySlipWithEasySlipV2({ payload: "qr" }, "truewallet");
-
-        expect(result).toEqual({
-            status: 400,
-            message: "TrueMoney Wallet does not support payload verification",
-        });
-        expect(fetchMock).not.toHaveBeenCalled();
-    });
-
-    it("maps truewallet raw slips to the shared verification result shape", async () => {
-        vi.stubEnv("EASYSLIP_API_KEY", "v2-key");
-        const fetchMock = vi.fn().mockResolvedValue({
-            status: 200,
-            json: vi.fn().mockResolvedValue({
-                success: true,
-                message: "wallet ok",
-                data: {
-                    rawSlip: {
-                        transactionId: "TW001",
-                        date: "2026-05-07T00:00:00.000Z",
-                        amount: 120,
-                        sender: { name: "ผู้ส่ง" },
-                        receiver: { name: "ร้านค้า", phone: "0812345678" },
+                branch: {
+                    name: "Main",
+                    isActive: true,
+                    quota: {
+                        used: 1,
+                        totalUsed: 1,
                     },
                 },
-            }),
+                account: {
+                    email: "owner@example.com",
+                    credit: 100,
+                },
+                product: {
+                    name: "Pro Plan",
+                },
+            },
+            message: "Information retrieved successfully",
         });
-        vi.stubGlobal("fetch", fetchMock);
 
-        const result = await verifySlipWithEasySlipV2({ base64: "wallet-slip" }, "truewallet");
+        const result = await getEasySlipInfo();
 
         expect(result.status).toBe(200);
-        expect(result.data?.transRef).toBe("TW001");
-        expect(result.data?.amount.amount).toBe(120);
-        expect(result.data?.sender.bank.name).toBe("TrueMoney Wallet");
-        expect(result.data?.receiver.account.proxy).toEqual({
-            type: "MSISDN",
-            account: "0812345678",
-        });
-        const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
-        expect(url).toBe("https://api.easyslip.com/v2/verify/truewallet");
-    });
-
-    it("returns an incomplete slip response when EasySlip v2 has no raw slip reference", async () => {
-        vi.stubEnv("EASYSLIP_API_KEY", "v2-key");
-        vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
-            status: 200,
-            json: vi.fn().mockResolvedValue({ success: true, data: { rawSlip: {} } }),
+        expect(fetchMock).toHaveBeenCalledWith(EASYSLIP_V2_INFO_URL, expect.objectContaining({
+            method: "GET",
         }));
+        const headers = fetchMock.mock.calls[0][1].headers as Headers;
+        expect(headers.get("Authorization")).toBe("Bearer test-easyslip-key");
+    });
 
-        const result = await verifySlipWithEasySlipV2({ base64: "missing-slip" });
+    it("verifies bank slips with payload using only the v2 bank endpoint and documented JSON fields", async () => {
+        mockEasySlipResponse({
+            success: false,
+            error: {
+                code: "SLIP_NOT_FOUND",
+                message: "The slip could not be found or is invalid",
+            },
+        }, 404);
+
+        const result = await verifyBankSlipWithEasySlipV2({
+            payload: "QR_PAYLOAD",
+            remark: "Order #123",
+            matchAccount: true,
+            matchAmount: 1500,
+            checkDuplicate: true,
+        });
 
         expect(result).toEqual({
-            status: 400,
-            message: "ข้อมูลสลิปไม่สมบูรณ์",
+            status: 404,
+            response: {
+                success: false,
+                error: {
+                    code: "SLIP_NOT_FOUND",
+                    message: "The slip could not be found or is invalid",
+                },
+            },
         });
+        expect(fetchMock).toHaveBeenCalledWith(EASYSLIP_V2_VERIFY_BANK_URL, expect.any(Object));
+        const init = fetchMock.mock.calls[0][1] as RequestInit;
+        const headers = init.headers as Headers;
+        expect(headers.get("Authorization")).toBe("Bearer test-easyslip-key");
+        expect(headers.get("Content-Type")).toBe("application/json");
+        expect(JSON.parse(String(init.body))).toEqual({
+            payload: "QR_PAYLOAD",
+            remark: "Order #123",
+            matchAccount: true,
+            matchAmount: 1500,
+            checkDuplicate: true,
+        });
+    });
+
+    it("verifies bank slips with image as multipart/form-data without setting a JSON content type", async () => {
+        mockEasySlipResponse({
+            success: true,
+            data: {
+                remark: "Order #123",
+                isDuplicate: false,
+                matchedAccount: null,
+                amountInOrder: 1500,
+                amountInSlip: 1500,
+                isAmountMatched: true,
+                rawSlip: {
+                    payload: "payload",
+                    transRef: "bank-ref",
+                    date: "2024-01-15T14:30:00+07:00",
+                    countryCode: "TH",
+                    amount: {
+                        amount: 1500,
+                        local: {
+                            amount: 1500,
+                            currency: "THB",
+                        },
+                    },
+                    fee: 0,
+                    ref1: "",
+                    ref2: "",
+                    ref3: "",
+                    sender: {
+                        bank: { id: "004", name: "กสิกรไทย", short: "KBANK" },
+                        account: { name: { th: "นาย ผู้โอน ทดสอบ" } },
+                    },
+                    receiver: {
+                        bank: { id: "014", name: "ไทยพาณิชย์", short: "SCB" },
+                        account: { name: { th: "นาย รับเงิน ทดสอบ" } },
+                        merchantId: null,
+                    },
+                },
+            },
+            message: "Bank slip verified successfully",
+        });
+        const file = new File(["image"], "slip.png", { type: "image/png" });
+
+        const result = await verifyBankSlipWithEasySlipV2({
+            image: file,
+            matchAccount: true,
+            matchAmount: 1500,
+            checkDuplicate: true,
+        });
+
+        expect(result.response.success).toBe(true);
+        expect(fetchMock).toHaveBeenCalledWith(EASYSLIP_V2_VERIFY_BANK_URL, expect.any(Object));
+        const init = fetchMock.mock.calls[0][1] as RequestInit;
+        const headers = init.headers as Headers;
+        const body = init.body as FormData;
+        const image = body.get("image") as File;
+        expect(headers.get("Content-Type")).toBeNull();
+        expect(image.name).toBe("slip.png");
+        expect(image.type).toBe("image/png");
+        expect(image.size).toBe(file.size);
+        expect(body.get("matchAccount")).toBe("true");
+        expect(body.get("matchAmount")).toBe("1500");
+        expect(body.get("checkDuplicate")).toBe("true");
+    });
+
+    it("verifies TrueMoney Wallet slips through the v2 truewallet endpoint without payload support", async () => {
+        mockEasySlipResponse({
+            success: true,
+            data: {
+                isDuplicate: false,
+                matchedAccount: null,
+                amountInOrder: 500,
+                amountInSlip: 500,
+                isAmountMatched: true,
+                rawSlip: {
+                    transactionId: "wallet-ref",
+                    date: "2024-01-15T14:30:00+07:00",
+                    amount: 500,
+                    sender: {
+                        name: "นาย ผู้โอน ทดสอบ",
+                    },
+                    receiver: {
+                        name: "นาย รับเงิน ทดสอบ",
+                        phone: "08x-xxx-4567",
+                    },
+                },
+            },
+            message: "TrueMoney Wallet slip verified successfully",
+        });
+
+        await verifyTrueWalletSlipWithEasySlipV2({
+            base64: "data:image/jpeg;base64,aGVsbG8=",
+            checkDuplicate: true,
+        });
+
+        expect(fetchMock).toHaveBeenCalledWith(EASYSLIP_V2_VERIFY_TRUEWALLET_URL, expect.any(Object));
+        const init = fetchMock.mock.calls[0][1] as RequestInit;
+        expect(JSON.parse(String(init.body))).toEqual({
+            base64: "data:image/jpeg;base64,aGVsbG8=",
+            checkDuplicate: true,
+        });
+    });
+
+    it("requires EASYSLIP_API_KEY server-side before making requests", async () => {
+        delete process.env.EASYSLIP_API_KEY;
+
+        await expect(verifyBankSlipWithEasySlipV2({
+            payload: "QR_PAYLOAD",
+            checkDuplicate: true,
+        })).rejects.toThrow("EASYSLIP_API_KEY is not configured.");
+        expect(fetchMock).not.toHaveBeenCalled();
     });
 });

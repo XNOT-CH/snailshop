@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import { db, orders, products, users } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/encryption";
 import { getPointCurrencyName } from "@/lib/currencySettings";
@@ -12,6 +12,11 @@ type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 const EXECUTION_LOCK_TTL_SECONDS = 15;
 const EXECUTION_LOCK_PREFIX = "gacha_execution_lock";
 const executionMemoryLocks = new Map<string, { token: string; expiresAt: number }>();
+export const GACHA_REDIS_REQUIRED_MESSAGE = "ระบบกาชายังไม่พร้อมใช้งาน กรุณาลองใหม่อีกครั้งภายหลัง";
+
+export function isProductionGachaRedisMissing() {
+    return process.env.NODE_ENV === "production" && (!isRedisAvailable() || !redis);
+}
 
 function purgeExpiredExecutionLocks(now = Date.now()) {
     for (const [key, value] of executionMemoryLocks.entries()) {
@@ -26,6 +31,10 @@ function getExecutionLockKey(userId: string, machineId: string | null) {
 }
 
 export async function acquireGachaExecutionLock(userId: string, machineId: string | null) {
+    if (isProductionGachaRedisMissing()) {
+        throw new Error(GACHA_REDIS_REQUIRED_MESSAGE);
+    }
+
     const key = getExecutionLockKey(userId, machineId);
     const token = crypto.randomUUID();
 
@@ -71,6 +80,10 @@ export async function acquireGachaExecutionLock(userId: string, machineId: strin
 }
 
 export function getAffectedRows(result: unknown) {
+    if (Array.isArray(result)) {
+        return getAffectedRows(result[0]);
+    }
+
     if (!result || typeof result !== "object") {
         return null;
     }
@@ -102,69 +115,51 @@ export async function deductUserBalanceOrThrow(
     }
 
     if (costType === "CREDIT") {
-        const currentUser = await tx.query.users.findFirst({
-            where: eq(users.id, userId),
-            columns: { creditBalance: true },
-        });
-
-        if (Number(currentUser?.creditBalance ?? 0) < costAmount) {
-            throw new Error("เครดิตไม่เพียงพอ");
-        }
-
         const result = await tx
             .update(users)
             .set({ creditBalance: sql`creditBalance - ${costAmount}` })
-            .where(eq(users.id, userId));
+            .where(and(
+                eq(users.id, userId),
+                gte(users.creditBalance, String(costAmount)),
+            ));
 
         const affectedRows = getAffectedRows(result);
-        if (affectedRows !== null && affectedRows !== 1) {
-            throw new Error("ไม่สามารถหักเครดิตได้");
+        if (affectedRows !== 1) {
+            throw new Error("เครดิตไม่เพียงพอ");
         }
 
         return;
     }
 
     if (costType === "POINT") {
-        const currentUser = await tx.query.users.findFirst({
-            where: eq(users.id, userId),
-            columns: { pointBalance: true },
-        });
-
-        if (Number(currentUser?.pointBalance ?? 0) < costAmount) {
-            throw new Error(`${getPointCurrencyName(currencySettings)}ไม่เพียงพอ`);
-        }
-
         const result = await tx
             .update(users)
             .set({ pointBalance: sql`pointBalance - ${costAmount}` })
-            .where(eq(users.id, userId));
+            .where(and(
+                eq(users.id, userId),
+                gte(users.pointBalance, costAmount),
+            ));
 
         const affectedRows = getAffectedRows(result);
-        if (affectedRows !== null && affectedRows !== 1) {
-            throw new Error(`ไม่สามารถหัก${getPointCurrencyName(currencySettings)}ได้`);
+        if (affectedRows !== 1) {
+            throw new Error(`${getPointCurrencyName(currencySettings)}ไม่เพียงพอ`);
         }
 
         return;
     }
 
     if (costType === "TICKET") {
-        const currentUser = await tx.query.users.findFirst({
-            where: eq(users.id, userId),
-            columns: { ticketBalance: true },
-        });
-
-        if (Number(currentUser?.ticketBalance ?? 0) < costAmount) {
-            throw new Error("ตั๋วสุ่มไม่เพียงพอ");
-        }
-
         const result = await tx
             .update(users)
             .set({ ticketBalance: sql`ticketBalance - ${costAmount}` })
-            .where(eq(users.id, userId));
+            .where(and(
+                eq(users.id, userId),
+                gte(users.ticketBalance, costAmount),
+            ));
 
         const affectedRows = getAffectedRows(result);
-        if (affectedRows !== null && affectedRows !== 1) {
-            throw new Error("ไม่สามารถหักตั๋วสุ่มได้");
+        if (affectedRows !== 1) {
+            throw new Error("ตั๋วสุ่มไม่เพียงพอ");
         }
     }
 }
@@ -201,6 +196,25 @@ type ClaimProductRewardInput = {
     secretData: string;
     stockSeparator: string | null;
 };
+
+export async function fetchProductRewardForClaimOrThrow(tx: DbTransaction, productId: string) {
+    const product = await tx.query.products.findFirst({
+        where: eq(products.id, productId),
+        columns: {
+            id: true,
+            isSold: true,
+            orderId: true,
+            secretData: true,
+            stockSeparator: true,
+        },
+    });
+
+    if (!product) {
+        throw new Error("รางวัลนี้ถูกใช้งานไปแล้ว กรุณาสุ่มใหม่");
+    }
+
+    return product;
+}
 
 export async function claimProductRewardOrThrow(tx: DbTransaction, input: ClaimProductRewardInput) {
     if (input.isSold) {

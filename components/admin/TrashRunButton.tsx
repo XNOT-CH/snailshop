@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Trash2, Loader2 } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 import { PERMISSIONS } from "@/lib/permissions";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 
 interface TrashRunButtonProps {
     count: number;
@@ -28,7 +29,7 @@ export function TrashRunButton({ count }: TrashRunButtonProps) {
 
         setIsRunning(true);
         try {
-            const res = await fetch("/api/admin/auto-delete/run");
+            const res = await fetchWithCsrf("/api/admin/auto-delete/run", { method: "POST" });
             const data = await res.json();
             if (data.success) {
                 showSuccess(`🗑️ ลบสำเร็จ ${data.deleted} รายการ`);

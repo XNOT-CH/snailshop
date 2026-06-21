@@ -12,6 +12,7 @@ import {
 } from "@/lib/swal";
 import { compressImage } from "@/lib/compressImage";
 import { uploadFileToApi } from "@/lib/client/uploadClient";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -36,6 +37,7 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { PERMISSIONS } from "@/lib/permissions";
+import { escapeHtml, toSafePublicHref } from "@/lib/sanitize";
 import {
     NEWS_DESCRIPTION_MAX_LENGTH,
     NEWS_MAX_UPLOAD_BYTES,
@@ -243,6 +245,12 @@ export default function AdminNewsPage() {
         }
         uploadedUrlRef.current = article?.imageUrl || "";
         dialogSubmittingRef.current = false;
+        const escapedTitle = escapeHtml(article?.title ?? "");
+        const escapedDescription = escapeHtml(article?.description ?? "");
+        const escapedImageUrl = escapeHtml(article?.imageUrl ?? "");
+        const escapedLink = escapeHtml(article?.link ?? "");
+        const safeImageUrl = escapeHtml(toSafePublicHref(article?.imageUrl, ""));
+        const safeLink = escapeHtml(toSafePublicHref(article?.link, ""));
 
         void Swal.fire({
             title: article ? "แก้ไขข่าวสาร" : "เพิ่มข่าวสารใหม่",
@@ -277,7 +285,7 @@ export default function AdminNewsPage() {
                             maxlength="${NEWS_TITLE_MAX_LENGTH}"
                             class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="เช่น โปรโมชันเติมเกมสุดคุ้ม"
-                            value="${article?.title || ""}"
+                            value="${escapedTitle}"
                         />
                         <p class="mt-1 text-xs text-gray-500">กรอกได้สูงสุด ${NEWS_TITLE_MAX_LENGTH} ตัวอักษร และห้ามเว้นว่างล้วน</p>
                     </div>
@@ -289,7 +297,7 @@ export default function AdminNewsPage() {
                             maxlength="${NEWS_DESCRIPTION_MAX_LENGTH}"
                             class="w-full resize-none rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="สรุปข่าวสารหรือโปรโมชันแบบสั้น กระชับ และอ่านง่าย"
-                        >${article?.description || ""}</textarea>
+                        >${escapedDescription}</textarea>
                         <p class="mt-1 text-xs text-gray-500">กรอกได้สูงสุด ${NEWS_DESCRIPTION_MAX_LENGTH} ตัวอักษร ระบบจะย่อช่องว่างที่เกินจำเป็นให้อัตโนมัติ</p>
                     </div>
                     <div>
@@ -309,11 +317,11 @@ export default function AdminNewsPage() {
                                 id="swal-imageUrl"
                                 class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="https://example.com/news-cover.webp"
-                                value="${article?.imageUrl || ""}"
+                                value="${escapedImageUrl}"
                             />
-                            <div id="swal-img-preview" class="mt-3 ${article?.imageUrl ? "" : "hidden"}">
+                            <div id="swal-img-preview" class="mt-3 ${safeImageUrl ? "" : "hidden"}">
                                 <img
-                                    src="${article?.imageUrl || ""}"
+                                    src="${safeImageUrl}"
                                     class="h-36 w-full rounded-xl border border-gray-200 object-cover"
                                     onerror="this.src='https://placehold.co/960x540/e5e7eb/64748b?text=Preview'"
                                 />
@@ -331,14 +339,14 @@ export default function AdminNewsPage() {
                                     id="swal-link"
                                     class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     placeholder="https://example.com/promo"
-                                    value="${article?.link || ""}"
+                                    value="${escapedLink}"
                                 />
                                 <a
                                     id="swal-link-preview"
-                                    href="${article?.link || "#"}"
+                                    href="${safeLink || "#"}"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    class="${article?.link ? "inline-flex" : "hidden"} items-center justify-center rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+                                    class="${safeLink ? "inline-flex" : "hidden"} items-center justify-center rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50"
                                 >
                                     เปิดลิงก์
                                 </a>
@@ -447,7 +455,7 @@ export default function AdminNewsPage() {
         try {
             const url = article ? `/api/admin/news/${article.id}` : "/api/admin/news";
             const method = article ? "PUT" : "POST";
-            const res = await fetch(url, {
+            const res = await fetchWithCsrf(url, {
                 method,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(result.value),
@@ -482,7 +490,7 @@ export default function AdminNewsPage() {
 
         showLoading("กำลังลบ...");
         try {
-            const res = await fetch(`/api/admin/news/${article.id}`, { method: "DELETE" });
+            const res = await fetchWithCsrf(`/api/admin/news/${article.id}`, { method: "DELETE" });
             hideLoading();
 
             if (res.ok) {
@@ -508,7 +516,7 @@ export default function AdminNewsPage() {
         }
         try {
             setTogglePending(article.id, true);
-            const res = await fetch(`/api/admin/news/${article.id}`, {
+            const res = await fetchWithCsrf(`/api/admin/news/${article.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ...article, isActive: !article.isActive }),
@@ -559,7 +567,7 @@ export default function AdminNewsPage() {
         try {
             await Promise.all(
                 updates.map((item) =>
-                    fetch(`/api/admin/news/${item.id}`, {
+                    fetchWithCsrf(`/api/admin/news/${item.id}`, {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ sortOrder: item.sortOrder }),

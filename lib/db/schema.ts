@@ -335,6 +335,7 @@ export const siteSettings = mysqlTable("SiteSettings", {
     bannerTitle3: varchar("bannerTitle3", { length: 255 }),
     bannerSubtitle3: varchar("bannerSubtitle3", { length: 255 }),
     bannersJson: text("bannersJson"),
+    welcomeStripImagesJson: text("welcomeStripImagesJson"),
     logoUrl: text("logoUrl"),
     ogImageUrl: text("ogImageUrl"),
     backgroundImage: text("backgroundImage"),
@@ -682,3 +683,16 @@ export const gachaRollLogsRelations = relations(gachaRollLogs, ({ one }) => ({
     product: one(products, { fields: [gachaRollLogs.productId], references: [products.id] }),
     gachaMachine: one(gachaMachines, { fields: [gachaRollLogs.gachaMachineId], references: [gachaMachines.id] }),
 }));
+
+export const gachaDailySpinCounters = mysqlTable("GachaDailySpinCounter", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: varchar("userId", { length: 36 }).notNull(),
+    machineScope: varchar("machineScope", { length: 64 }).notNull(),
+    spinDate: varchar("spinDate", { length: 10 }).notNull(),
+    spinCount: int("spinCount").default(0).notNull(),
+    createdAt: now(),
+    updatedAt: updatedAt(),
+}, (t) => [
+    uniqueIndex("uq_gacha_daily_spin_counter_scope").on(t.userId, t.machineScope, t.spinDate),
+    index("idx_gacha_daily_spin_counter_date").on(t.spinDate),
+]);

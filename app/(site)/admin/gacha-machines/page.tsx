@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Plus, Trash2, Loader2, LayoutGrid, Upload, X, ImageIcon, Copy, GripVertical, Sparkles } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 import { compressImage } from "@/lib/compressImage";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 import Image from "next/image";
@@ -171,7 +172,7 @@ export default function GachaMachinesAdminPage() {
             const preparedFile = await compressImage(file, 4.5 * 1024 * 1024);
             const formData = new FormData();
             formData.append("file", preparedFile);
-            const res = await fetch("/api/admin/gacha-machines/upload-image", {
+            const res = await fetchWithCsrf("/api/admin/gacha-machines/upload-image", {
                 method: "POST",
                 body: formData,
             });
@@ -214,7 +215,7 @@ export default function GachaMachinesAdminPage() {
         };
         setSavingMachine(true);
         try {
-            const res = await fetch("/api/admin/gacha-machines", {
+            const res = await fetchWithCsrf("/api/admin/gacha-machines", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -236,7 +237,7 @@ export default function GachaMachinesAdminPage() {
         // Optimistic update: no full reload so page doesn't scroll
         setMachines(prev => prev.map(m => m.id === id ? { ...m, [field]: val } : m));
         try {
-            const response = await fetch(`/api/admin/gacha-machines/${id}`, {
+            const response = await fetchWithCsrf(`/api/admin/gacha-machines/${id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ [field]: val }),
@@ -261,7 +262,7 @@ export default function GachaMachinesAdminPage() {
         // Optimistic: remove from state immediately
         setMachines(prev => prev.filter(m => m.id !== id));
         try {
-            const res = await fetch(`/api/admin/gacha-machines/${id}`, { method: "DELETE" });
+            const res = await fetchWithCsrf(`/api/admin/gacha-machines/${id}`, { method: "DELETE" });
             const json = await res.json() as { success: boolean };
             if (!json.success) {
                 // Revert if server said no
@@ -690,7 +691,7 @@ function MachineTable({
 
         // Persist to DB
         try {
-            await fetch("/api/admin/gacha-machines/reorder", {
+            await fetchWithCsrf("/api/admin/gacha-machines/reorder", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -719,7 +720,7 @@ function MachineTable({
         }
         setDuplicatingId(id);
         try {
-            const res = await fetch(`/api/admin/gacha-machines/${id}/duplicate`, { method: "POST" });
+            const res = await fetchWithCsrf(`/api/admin/gacha-machines/${id}/duplicate`, { method: "POST" });
             const json = await res.json() as { success: boolean; message?: string };
             if (json.success) { showSuccess(`คัดลอก "${name}" สำเร็จ`); onRefresh(); }
             else showError(json.message ?? "เกิดข้อผิดพลาดในการคัดลอก");

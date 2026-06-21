@@ -1,16 +1,25 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
     buildUploadFormData,
     parseUploadResponse,
     uploadFileToApi,
 } from "@/lib/client/uploadClient";
 import { API_ROUTES } from "@/lib/constants/apiRoutes";
+import { fetchWithCsrf } from "@/lib/csrf-client";
+
+vi.mock("@/lib/csrf-client", () => ({
+    fetchWithCsrf: vi.fn(),
+}));
 
 function getSentFormData(fetcher: ReturnType<typeof vi.fn>) {
     return fetcher.mock.calls[0]?.[1]?.body as FormData;
 }
 
 describe("lib/client/uploadClient", () => {
+    beforeEach(() => {
+        vi.mocked(fetchWithCsrf).mockReset();
+    });
+
     it("builds FormData with the existing file field by default", () => {
         const file = new File(["image"], "banner.png", { type: "image/png" });
 
@@ -22,16 +31,16 @@ describe("lib/client/uploadClient", () => {
     it("posts uploads to the shared upload endpoint and parses the response", async () => {
         const file = new File(["image"], "news.webp", { type: "image/webp" });
         const responseBody = { success: true as const, url: "/uploads/products/news.webp" };
-        const fetcher = vi.fn(async () => Response.json(responseBody));
+        vi.mocked(fetchWithCsrf).mockResolvedValue(Response.json(responseBody));
 
-        const result = await uploadFileToApi(file, { fetcher });
+        const result = await uploadFileToApi(file);
 
         expect(result).toEqual(responseBody);
-        expect(fetcher).toHaveBeenCalledWith(API_ROUTES.UPLOAD, {
+        expect(fetchWithCsrf).toHaveBeenCalledWith(API_ROUTES.UPLOAD, {
             method: "POST",
             body: expect.any(FormData),
         });
-        expect(getSentFormData(fetcher).get("file")).toBe(file);
+        expect(getSentFormData(vi.mocked(fetchWithCsrf)).get("file")).toBe(file);
     });
 
     it("allows callers to keep a custom endpoint or field contract when needed", async () => {

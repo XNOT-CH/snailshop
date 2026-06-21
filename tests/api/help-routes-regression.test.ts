@@ -7,6 +7,7 @@ const { updateSetSpy } = vi.hoisted(() => ({
 
 vi.mock("@/lib/auth", () => ({
     requirePermission: vi.fn(),
+    requirePermissionWithCsrf: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
@@ -58,7 +59,7 @@ vi.mock("@/lib/utils/date", () => ({
     mysqlNow: vi.fn(() => "2026-04-26 12:34:56"),
 }));
 
-import { requirePermission } from "@/lib/auth";
+import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { validateBody } from "@/lib/validations/validate";
 
@@ -69,6 +70,7 @@ describe("help route regressions", () => {
         vi.clearAllMocks();
         updateSetSpy.mockReturnValue({ where: vi.fn() });
         (requirePermission as any).mockResolvedValue({ success: true });
+        (requirePermissionWithCsrf as any).mockResolvedValue({ success: true });
     });
 
     it("updates help article timestamps on PUT", async () => {

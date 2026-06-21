@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -357,7 +358,7 @@ export default function AdminGachaSettingsPage() {
         }
         setIsSaving(true);
         try {
-            const res = await fetch("/api/admin/gacha-settings", {
+            const res = await fetchWithCsrf("/api/admin/gacha-settings", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(settings),

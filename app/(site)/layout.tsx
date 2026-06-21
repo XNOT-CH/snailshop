@@ -5,6 +5,7 @@ import Footer from "@/components/Footer";
 import { DynamicBackground } from "@/components/DynamicBackground";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { CartProvider } from "@/components/providers/CartContext";
+import { ToastProvider } from "@/components/providers/ToastProvider";
 import { FloatingChatButtonWrapper } from "@/components/FloatingChatButtonWrapper";
 import { AnnouncementPopupWrapper } from "@/components/AnnouncementPopupWrapper";
 import { GlobalLoadingWrapper } from "@/components/GlobalLoadingWrapper";
@@ -51,22 +52,24 @@ export default async function SiteLayout({
     <>
       <StructuredData data={structuredData} />
       <ThemeProvider>
-        <CartProvider initialAuthenticated={Boolean(session?.user)}>
-          <DynamicBackground
-            backgroundImage={settings?.backgroundImage}
-            backgroundBlur={settings?.backgroundBlur}
-          />
-          <GlobalLoadingWrapper />
-          <RouteShell
-            navbar={<Navbar />}
-            mobileBottomNav={<MobileBottomNav />}
-            footer={<Footer />}
-            floatingChat={<FloatingChatButtonWrapper />}
-            announcementPopup={<AnnouncementPopupWrapper enabled={Boolean(session?.user)} />}
-          >
-            {children}
-          </RouteShell>
-        </CartProvider>
+        <ToastProvider>
+          <CartProvider initialAuthenticated={Boolean(session?.user)}>
+            <DynamicBackground
+              backgroundImage={settings?.backgroundImage}
+              backgroundBlur={settings?.backgroundBlur}
+            />
+            <GlobalLoadingWrapper />
+            <RouteShell
+              navbar={<Navbar />}
+              mobileBottomNav={<MobileBottomNav />}
+              footer={<Footer />}
+              floatingChat={<FloatingChatButtonWrapper />}
+              announcementPopup={<AnnouncementPopupWrapper enabled={Boolean(session?.user)} />}
+            >
+              {children}
+            </RouteShell>
+          </CartProvider>
+        </ToastProvider>
       </ThemeProvider>
     </>
   );

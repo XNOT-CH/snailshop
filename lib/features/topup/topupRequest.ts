@@ -3,7 +3,7 @@ import {
     parseStringField,
     parseTopupAmount,
     parseVerifyTarget,
-    type EasySlipVerifyTarget,
+    type TopupVerifyTarget,
 } from "@/lib/features/topup/slipHelpers";
 import type { TopupVerifyMethod } from "@/lib/features/topup/topupBuilders";
 
@@ -14,7 +14,7 @@ export interface ParsedTopupRequest {
     base64: string | null;
     imageUrl: string | null;
     remark: string | null;
-    verifyTarget: EasySlipVerifyTarget;
+    verifyTarget: TopupVerifyTarget;
     pin: string | null;
     verifyMethod: TopupVerifyMethod;
     providedMethods: number;
@@ -93,6 +93,13 @@ export function validateParsedTopupRequest(input: ParsedTopupRequest): TopupRequ
     if (input.verifyTarget === "truewallet" && input.qrPayload) {
         return {
             message: "TrueMoney Wallet รองรับเฉพาะ image, base64 หรือ url",
+            status: 400,
+        };
+    }
+
+    if (input.remark && input.remark.length > 255) {
+        return {
+            message: "หมายเหตุต้องไม่เกิน 255 ตัวอักษร",
             status: 400,
         };
     }

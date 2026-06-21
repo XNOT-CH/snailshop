@@ -127,24 +127,29 @@ export default async function HelpPage() {
 
                 <div className="space-y-6">
                     {videos.length > 0 && (
-                        <Card className={`${themeClasses.surface} overflow-hidden gap-0 border-primary/10 shadow-lg shadow-primary/5`}>
-                            <CardHeader
-                                className={`${themeClasses.surfaceMedia} border-b border-border/70 text-foreground`}
-                            >
-                                <CardTitle className="flex items-center gap-2 text-foreground">
-                                    <PlayCircle className="h-5 w-5 text-red-500" />
-                                    วิดีโอช่วยเหลือ
-                                </CardTitle>
-                                <p className="text-sm text-muted-foreground">
-                                    ถ้าลูกค้ากำลังงง สามารถเริ่มดูวิธีแก้ปัญหาจากคลิปด้านล่างได้ทันที
-                                </p>
+                        <Card className={`${themeClasses.surface} overflow-hidden gap-0 rounded-2xl border-primary/15 shadow-lg shadow-primary/5`}>
+                            <CardHeader className="relative overflow-hidden border-b border-border/70 px-4 py-4 text-foreground sm:px-5">
+                                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(47,125,246,0.16),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.82),rgba(236,243,252,0.62))] dark:bg-[radial-gradient(circle_at_top_left,rgba(88,166,255,0.18),transparent_42%),linear-gradient(135deg,rgba(24,37,57,0.94),rgba(15,26,43,0.82))]" />
+                                <div className="relative flex min-w-0 items-start gap-3">
+                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10 text-primary shadow-sm">
+                                        <PlayCircle className="h-5 w-5" />
+                                    </div>
+                                    <div className="min-w-0 space-y-1">
+                                        <CardTitle className="text-base font-bold text-foreground sm:text-lg">
+                                            วิดีโอช่วยเหลือ
+                                        </CardTitle>
+                                        <p className="text-sm leading-6 text-muted-foreground">
+                                            ถ้าลูกค้ากำลังงง สามารถเริ่มดูวิธีแก้ปัญหาจากคลิปด้านล่างได้ทันที
+                                        </p>
+                                    </div>
+                                </div>
                             </CardHeader>
-                            <CardContent className="pt-6">
+                            <CardContent className="p-4 sm:p-5">
                                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                                     {videos.map((video) => (
                                         <div
                                             key={video.id}
-                                            className={`${themeClasses.surfaceSoft} overflow-hidden rounded-2xl border border-border/80 shadow-sm`}
+                                            className={`${themeClasses.surfaceSoft} group overflow-hidden rounded-xl border border-border/80 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-[0_18px_36px_-28px_rgba(39,71,121,0.26)]`}
                                         >
                                             <div className="relative aspect-video overflow-hidden bg-black">
                                                 <iframe
@@ -155,8 +160,11 @@ export default async function HelpPage() {
                                                     allowFullScreen
                                                 />
                                             </div>
-                                            <div className="p-4">
-                                                <p className="line-clamp-2 text-sm font-semibold text-foreground">
+                                            <div className="flex items-start gap-3 p-3.5">
+                                                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                                    <PlayCircle className="h-4 w-4" />
+                                                </span>
+                                                <p className="line-clamp-2 text-sm font-semibold leading-6 text-foreground">
                                                     {video.title}
                                                 </p>
                                             </div>

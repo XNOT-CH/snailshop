@@ -842,19 +842,30 @@ export function checkGachaRateLimit(identifier: string) {
 /**
  * Get client IP from request headers
  */
+function getFirstHeaderValue(value: string | null) {
+    return value?.split(",")[0]?.trim() ?? "";
+}
+
+function isUsableClientIp(value: string) {
+    return Boolean(value)
+        && value.length <= 128
+        && value.toLowerCase() !== "unknown"
+        && !/[\u0000-\u001F\u007F\s]/.test(value);
+}
+
 export function getClientIp(request: Request): string {
-    // Check various headers for client IP
-    const forwarded = request.headers.get("x-forwarded-for");
-    if (forwarded) {
-        return forwarded.split(",")[0].trim();
+    const candidates = [
+        getFirstHeaderValue(request.headers.get("cf-connecting-ip")),
+        getFirstHeaderValue(request.headers.get("x-forwarded-for")),
+        getFirstHeaderValue(request.headers.get("x-real-ip")),
+    ];
+
+    for (const candidate of candidates) {
+        if (isUsableClientIp(candidate)) {
+            return candidate;
+        }
     }
 
-    const realIp = request.headers.get("x-real-ip");
-    if (realIp) {
-        return realIp;
-    }
-
-    // Fallback
     return "unknown";
 }
 

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db, announcementPopups } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { requirePermission } from "@/lib/auth";
+import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { invalidatePopupCaches } from "@/lib/cache";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
@@ -23,7 +23,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
 }
 
 export async function PUT(request: Request, { params }: RouteParams) {
-    const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CONTENT_EDIT);
     if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const { id } = await params;
@@ -57,7 +57,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(request: Request, { params }: RouteParams) {
-    const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CONTENT_EDIT);
     if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const { id } = await params;

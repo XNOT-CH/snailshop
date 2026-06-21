@@ -34,6 +34,7 @@ import {
     normalizeCurrencyCode,
     type ProductCurrencyCode,
 } from "@/lib/currencySettings";
+import { escapeHtml } from "@/lib/sanitize";
 import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
 import { requirePinForAction } from "@/lib/require-pin-for-action";
 import {
@@ -324,7 +325,7 @@ function CartSheetContent() {
                 productName: checkoutItemCount > 1 ? `${checkoutItemCount} รายการ` : syncedItems[0]?.name,
                 priceText: buildCurrencyBreakdownLabel(checkoutFinalTotals, currencySettings),
                 extraHtml: appliedPromo
-                    ? `<small>โค้ดส่วนลด: <strong>${appliedPromo.code}</strong> ลด ฿${appliedPromo.discountAmount.toLocaleString()}</small>`
+                    ? `<small>โค้ดส่วนลด: <strong>${escapeHtml(appliedPromo.code)}</strong> ลด ฿${escapeHtml(appliedPromo.discountAmount.toLocaleString())}</small>`
                     : undefined,
                 confirmText: "ยืนยันการสั่งซื้อ",
                 cancelText: "ยกเลิก",

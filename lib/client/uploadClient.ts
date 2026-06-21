@@ -1,4 +1,5 @@
 import { API_ROUTES } from "@/lib/constants/apiRoutes";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 
 export type UploadClientResponse =
     | { success: true; url: string; message?: string }
@@ -30,7 +31,7 @@ export async function uploadFileToApi(
     {
         endpoint = API_ROUTES.UPLOAD,
         fieldName = DEFAULT_UPLOAD_FIELD_NAME,
-        fetcher = fetch,
+        fetcher = fetchWithCsrf,
     }: UploadFileOptions = {},
 ): Promise<UploadClientResponse> {
     const response = await fetcher(endpoint, {

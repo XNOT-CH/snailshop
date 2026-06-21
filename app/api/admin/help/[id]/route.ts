@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db, helpArticles } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { requirePermission } from "@/lib/auth";
+import { requirePermissionWithCsrf } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
 import { helpItemSchema, type HelpItemInput } from "@/lib/validations/content";
@@ -12,7 +12,7 @@ import { contentApiError } from "@/lib/features/content/apiResponse";
 type RouteParams = { params: Promise<{ id: string }> };
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
-    const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CONTENT_EDIT);
     if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const { id } = await params;
@@ -71,7 +71,7 @@ function generateChanges(
 }
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
-    const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CONTENT_EDIT);
     if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const { id } = await params;

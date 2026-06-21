@@ -9,6 +9,10 @@ vi.mock("@/lib/encryption", () => ({
     decrypt: vi.fn((value: string) => value.replace(/^enc:/, "")),
 }));
 
+vi.mock("@/lib/auth", () => ({
+    isAuthenticatedWithCsrf: vi.fn(),
+}));
+
 const { whereMock, deleteMock } = vi.hoisted(() => {
     const where = vi.fn();
     const del = vi.fn(() => ({ where }));
@@ -37,6 +41,7 @@ vi.mock("drizzle-orm", () => ({
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";
+import { isAuthenticatedWithCsrf } from "@/lib/auth";
 
 const mkParams = (id: string) => ({ params: Promise.resolve({ id }) });
 const mkReq = () => new NextRequest("http://localhost/api/orders/o1");
@@ -90,7 +95,7 @@ describe("API: /api/orders/[id]", () => {
     });
 
     it("DELETE returns 404 when order does not belong to the authenticated user", async () => {
-        vi.mocked(auth).mockResolvedValue({ user: { id: "u1" } } as never);
+        vi.mocked(isAuthenticatedWithCsrf).mockResolvedValue({ success: true, userId: "u1" } as never);
         vi.mocked(db.query.orders.findFirst).mockResolvedValue(null as never);
 
         const { DELETE } = await import("@/app/api/orders/[id]/route");
@@ -100,8 +105,20 @@ describe("API: /api/orders/[id]", () => {
         expect(deleteMock).not.toHaveBeenCalled();
     });
 
+    it("DELETE returns 401 when CSRF-backed authentication fails", async () => {
+        vi.mocked(isAuthenticatedWithCsrf).mockResolvedValue({ success: false, error: "Invalid CSRF token" } as never);
+
+        const { DELETE } = await import("@/app/api/orders/[id]/route");
+        const res = await DELETE(mkReq(), mkParams("o1"));
+        const body = await res.json();
+
+        expect(res.status).toBe(401);
+        expect(body).toEqual({ success: false, message: "Invalid CSRF token" });
+        expect(deleteMock).not.toHaveBeenCalled();
+    });
+
     it("DELETE removes an order for its owner", async () => {
-        vi.mocked(auth).mockResolvedValue({ user: { id: "u1" } } as never);
+        vi.mocked(isAuthenticatedWithCsrf).mockResolvedValue({ success: true, userId: "u1" } as never);
         vi.mocked(db.query.orders.findFirst).mockResolvedValue({
             id: "o1",
             userId: "u1",

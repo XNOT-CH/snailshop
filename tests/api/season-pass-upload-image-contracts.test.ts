@@ -8,6 +8,7 @@ const { getRuntimeUploadDirMock, requirePermissionMock, saveOptimizedImageUpload
 
 vi.mock("@/lib/auth", () => ({
     requirePermission: requirePermissionMock,
+    requirePermissionWithCsrf: requirePermissionMock,
 }));
 
 vi.mock("@/lib/runtimeUploads", () => ({

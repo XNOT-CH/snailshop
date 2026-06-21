@@ -54,6 +54,27 @@ describe("components/auth shared components", () => {
         expect(screen.queryByAltText("Logo")).not.toBeInTheDocument();
     });
 
+    it("can render without the full-height auth frame", () => {
+        const { container } = render(
+            <AuthFormShell logoUrl={null} title="สมัครสมาชิก" subtitle="Register" fullHeight={false}>
+                <div>content</div>
+            </AuthFormShell>
+        );
+
+        expect(container.firstElementChild).not.toHaveClass("min-h-screen");
+    });
+
+    it("can render the separated card treatment for register-style pages", () => {
+        const { container } = render(
+            <AuthFormShell logoUrl={null} title="สมัครสมาชิก" subtitle="Register" fullHeight={false} variant="separated">
+                <div>content</div>
+            </AuthFormShell>
+        );
+
+        expect(container.firstElementChild).toHaveClass("bg-[#f4f6f8]");
+        expect(screen.getByRole("heading", { name: "สมัครสมาชิก" })).toHaveClass("text-xl");
+    });
+
     it("renders Turnstile with error copy only when enabled and forwards token changes", () => {
         const onTokenChange = vi.fn();
 

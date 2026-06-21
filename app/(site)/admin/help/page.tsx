@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -157,7 +158,7 @@ export default function AdminHelpPage() {
                 isActive: editingArticle?.isActive ?? true,
             };
 
-            const response = await fetch(url, {
+            const response = await fetchWithCsrf(url, {
                 method,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -196,7 +197,7 @@ export default function AdminHelpPage() {
                 isActive: editingVideo?.isActive ?? true,
             };
 
-            const response = await fetch(url, {
+            const response = await fetchWithCsrf(url, {
                 method,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -259,7 +260,7 @@ export default function AdminHelpPage() {
         if (!confirmed) return;
 
         try {
-            const response = await fetch(`/api/admin/help/${id}`, { method: "DELETE" });
+            const response = await fetchWithCsrf(`/api/admin/help/${id}`, { method: "DELETE" });
             if (!response.ok) {
                 showError("ลบคำถามไม่สำเร็จ");
                 return;
@@ -283,7 +284,7 @@ export default function AdminHelpPage() {
         if (!confirmed) return;
 
         try {
-            const response = await fetch(`/api/admin/help-videos/${id}`, { method: "DELETE" });
+            const response = await fetchWithCsrf(`/api/admin/help-videos/${id}`, { method: "DELETE" });
             if (!response.ok) {
                 showError("ลบคลิปช่วยเหลือไม่สำเร็จ");
                 return;
@@ -304,7 +305,7 @@ export default function AdminHelpPage() {
         }
 
         try {
-            const response = await fetch(`/api/admin/help/${article.id}`, {
+            const response = await fetchWithCsrf(`/api/admin/help/${article.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ isActive: !article.isActive }),
@@ -330,7 +331,7 @@ export default function AdminHelpPage() {
         }
 
         try {
-            const response = await fetch(`/api/admin/help-videos/${video.id}`, {
+            const response = await fetchWithCsrf(`/api/admin/help-videos/${video.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ isActive: !video.isActive }),

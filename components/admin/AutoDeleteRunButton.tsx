@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Timer, Loader2 } from "lucide-react";
 import { showSuccess, showError } from "@/lib/swal";
 import { PERMISSIONS } from "@/lib/permissions";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 
 export function AutoDeleteRunButton() {
     const permissions = useAdminPermissions();
@@ -21,7 +22,7 @@ export function AutoDeleteRunButton() {
         }
         setIsRunning(true);
         try {
-            const res = await fetch("/api/admin/auto-delete/run");
+            const res = await fetchWithCsrf("/api/admin/auto-delete/run", { method: "POST" });
             const data = await res.json();
             if (data.success) {
                 if (data.deleted > 0) {

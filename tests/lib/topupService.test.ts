@@ -4,40 +4,41 @@ const {
     auditFromRequestMock,
     encryptTopupSensitiveFieldsMock,
     eqMock,
-    findFirstTopupMock,
     insertMock,
     mysqlNowMock,
+    queryTopupFindFirstMock,
+    setMock,
     sqlMock,
     transactionMock,
     txInsertMock,
-    txInsertValuesMock,
+    txSetMock,
     txUpdateMock,
-    txUpdateSetMock,
-    txUpdateWhereMock,
+    txValuesMock,
+    txWhereMock,
+    updateMock,
     valuesMock,
+    whereMock,
 } = vi.hoisted(() => ({
     auditFromRequestMock: vi.fn(),
     encryptTopupSensitiveFieldsMock: vi.fn((record: Record<string, unknown>) => ({
         ...record,
         encrypted: true,
     })),
-    eqMock: vi.fn((left: unknown, right: unknown) => ({ left, right, type: "eq" })),
-    findFirstTopupMock: vi.fn(),
+    eqMock: vi.fn(() => "eq-condition"),
     insertMock: vi.fn(),
     mysqlNowMock: vi.fn(() => "2026-05-07 10:00:00"),
-    sqlMock: vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({ strings: Array.from(strings), values })),
+    queryTopupFindFirstMock: vi.fn(),
+    setMock: vi.fn(),
+    sqlMock: vi.fn(() => "sql-expression"),
     transactionMock: vi.fn(),
     txInsertMock: vi.fn(),
-    txInsertValuesMock: vi.fn(),
+    txSetMock: vi.fn(),
     txUpdateMock: vi.fn(),
-    txUpdateSetMock: vi.fn(),
-    txUpdateWhereMock: vi.fn(),
+    txValuesMock: vi.fn(),
+    txWhereMock: vi.fn(),
+    updateMock: vi.fn(),
     valuesMock: vi.fn(),
-}));
-
-vi.mock("drizzle-orm", () => ({
-    eq: eqMock,
-    sql: sqlMock,
+    whereMock: vi.fn(),
 }));
 
 vi.mock("@/lib/auditLog", () => ({
@@ -52,10 +53,11 @@ vi.mock("@/lib/db", () => ({
         insert: insertMock,
         query: {
             topups: {
-                findFirst: findFirstTopupMock,
+                findFirst: queryTopupFindFirstMock,
             },
         },
         transaction: transactionMock,
+        update: updateMock,
     },
     topups: {
         id: "id",
@@ -66,6 +68,11 @@ vi.mock("@/lib/db", () => ({
     },
 }));
 
+vi.mock("drizzle-orm", () => ({
+    eq: eqMock,
+    sql: sqlMock,
+}));
+
 vi.mock("@/lib/sensitiveData", () => ({
     encryptTopupSensitiveFields: encryptTopupSensitiveFieldsMock,
 }));
@@ -74,30 +81,75 @@ vi.mock("@/lib/utils/date", () => ({
     mysqlNow: mysqlNowMock,
 }));
 
-import { topups, users } from "@/lib/db";
-import type { SlipVerificationData } from "@/lib/features/topup/easySlipService";
+import { topups } from "@/lib/db";
 import {
     createApprovedTopup,
     createPendingTopup,
     hasDuplicateTopupTransactionRef,
 } from "@/lib/features/topup/topupService";
+import type { VerifiedTopupSlip } from "@/lib/features/topup/topupBuilders";
+
+const bankVerifiedSlip: VerifiedTopupSlip = {
+    verifyTarget: "bank",
+    data: {
+        isDuplicate: false,
+        matchedAccount: {
+            bank: {
+                nameTh: "ไทยพาณิชย์",
+                nameEn: "SIAM COMMERCIAL BANK",
+                code: "014",
+                shortCode: "SCB",
+            },
+            nameTh: "บริษัท ตัวอย่าง จำกัด",
+            nameEn: "EXAMPLE CO., LTD.",
+            type: "JURISTIC",
+            bankNumber: "123-4-56789-0",
+        },
+        amountInOrder: 1500,
+        amountInSlip: 1500,
+        isAmountMatched: true,
+        rawSlip: {
+            payload: "payload",
+            transRef: "bank-ref",
+            date: "2024-01-15T14:30:00+07:00",
+            countryCode: "TH",
+            amount: {
+                amount: 1500,
+                local: {
+                    amount: 1500,
+                    currency: "THB",
+                },
+            },
+            fee: 0,
+            ref1: "",
+            ref2: "",
+            ref3: "",
+            sender: {
+                bank: { id: "004", name: "กสิกรไทย", short: "KBANK" },
+                account: { name: { th: "นาย ผู้โอน ทดสอบ" } },
+            },
+            receiver: {
+                bank: { id: "014", name: "ไทยพาณิชย์", short: "SCB" },
+                account: { name: { th: "บริษัท ตัวอย่าง จำกัด" } },
+                merchantId: null,
+            },
+        },
+    },
+};
 
 describe("topup service", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         insertMock.mockReturnValue({ values: valuesMock });
-        txInsertMock.mockReturnValue({ values: txInsertValuesMock });
-        txUpdateMock.mockReturnValue({ set: txUpdateSetMock });
-        txUpdateSetMock.mockReturnValue({ where: txUpdateWhereMock });
-        transactionMock.mockImplementation(async (callback: (tx: {
-            insert: typeof txInsertMock;
-            update: typeof txUpdateMock;
-        }) => Promise<void>) => {
-            await callback({
-                insert: txInsertMock,
-                update: txUpdateMock,
-            });
-        });
+        transactionMock.mockImplementation(async (callback) => callback({
+            insert: txInsertMock,
+            update: txUpdateMock,
+        }));
+        txInsertMock.mockReturnValue({ values: txValuesMock });
+        txUpdateMock.mockReturnValue({ set: txSetMock });
+        txSetMock.mockReturnValue({ where: txWhereMock });
+        updateMock.mockReturnValue({ set: setMock });
+        setMock.mockReturnValue({ where: whereMock });
     });
 
     it("creates pending topup records and writes audit logs", async () => {
@@ -179,210 +231,74 @@ describe("topup service", () => {
         expect(result.proofImage).toBeNull();
     });
 
-    it("creates approved topup transaction, updates balance, and writes audit logs", async () => {
+    it("creates approved topup records and updates the user balance", async () => {
         const request = new Request("http://localhost/api/topup", { method: "POST" });
-        const verifiedSlip: SlipVerificationData = {
-            payload: "payload",
-            transRef: "ref-1",
-            date: "2026-05-07T10:00:00+07:00",
-            countryCode: "TH",
-            amount: {
-                amount: 500,
-                local: {
-                    amount: 500,
-                    currency: "THB",
-                },
-            },
-            sender: {
-                bank: { name: "Sender Bank" },
-                account: {
-                    name: {
-                        th: "ผู้โอน",
-                    },
-                },
-            },
-            receiver: {
-                bank: { name: "Receiver Bank" },
-                account: {
-                    name: {
-                        th: "ผู้รับ",
-                    },
-                },
-            },
-        };
 
         const result = await createApprovedTopup({
             request,
             topupId: "t3",
             userId: "u3",
-            requestedAmount: 500,
-            verifiedSlip,
-            verifiedAmount: 500,
+            requestedAmount: 1500,
+            verifiedSlip: bankVerifiedSlip,
+            verifiedAmount: 1500,
             proofImage: "/private/slips/t3.webp",
             verifyMethod: "payload",
-            verifyTarget: "bank",
         });
 
-        expect(transactionMock).toHaveBeenCalledTimes(1);
         expect(txInsertMock).toHaveBeenCalledWith(topups);
         expect(encryptTopupSensitiveFieldsMock).toHaveBeenCalledWith({
             id: "t3",
             userId: "u3",
-            amount: "500",
+            amount: "1500",
             proofImage: "/private/slips/t3.webp",
             status: "APPROVED",
-            transactionRef: "ref-1",
-            senderName: "ผู้โอน",
-            senderBank: "Sender Bank",
-            receiverName: "ผู้รับ",
-            receiverBank: "Receiver Bank",
+            transactionRef: "bank-ref",
+            senderName: "นาย ผู้โอน ทดสอบ",
+            senderBank: "กสิกรไทย",
+            receiverName: "บริษัท ตัวอย่าง จำกัด",
+            receiverBank: "ไทยพาณิชย์",
             createdAt: "2026-05-07 10:00:00",
         });
-        expect(txInsertValuesMock).toHaveBeenCalledWith({
+        expect(txValuesMock).toHaveBeenCalledWith(expect.objectContaining({
             id: "t3",
-            userId: "u3",
-            amount: "500",
-            proofImage: "/private/slips/t3.webp",
             status: "APPROVED",
-            transactionRef: "ref-1",
-            senderName: "ผู้โอน",
-            senderBank: "Sender Bank",
-            receiverName: "ผู้รับ",
-            receiverBank: "Receiver Bank",
-            createdAt: "2026-05-07 10:00:00",
+            transactionRef: "bank-ref",
             encrypted: true,
+        }));
+        expect(txUpdateMock).toHaveBeenCalled();
+        expect(txSetMock).toHaveBeenCalledWith({
+            creditBalance: "sql-expression",
+            totalTopup: "sql-expression",
         });
-        expect(txUpdateMock).toHaveBeenCalledWith(users);
-        expect(sqlMock).toHaveBeenCalledTimes(2);
-        expect(txUpdateSetMock).toHaveBeenCalledWith({
-            creditBalance: {
-                strings: ["creditBalance + ", ""],
-                values: [500],
-            },
-            totalTopup: {
-                strings: ["totalTopup + ", ""],
-                values: [500],
-            },
-        });
-        expect(eqMock).toHaveBeenCalledWith(users.id, "u3");
-        expect(txUpdateWhereMock).toHaveBeenCalledWith({
-            left: users.id,
-            right: "u3",
-            type: "eq",
-        });
-        expect(auditFromRequestMock).toHaveBeenCalledWith(request, {
+        expect(eqMock).toHaveBeenCalledWith("user_id", "u3");
+        expect(txWhereMock).toHaveBeenCalledWith("eq-condition");
+        expect(auditFromRequestMock).toHaveBeenCalledWith(request, expect.objectContaining({
             action: "TOPUP_REQUEST",
             resource: "TopupRequest",
             resourceId: "t3",
-            resourceName: "฿500",
-            details: {
-                amount: 500,
-                requestedAmount: 500,
-                transRef: "ref-1",
-                senderNameStored: true,
-                proofImageStored: true,
-                status: "APPROVED",
-                verification: "automatic",
+            details: expect.objectContaining({
+                verification: "easyslip-v2",
                 verifyMethod: "payload",
                 verifyTarget: "bank",
-            },
-        });
-        expect(result).toEqual({
-            topupId: "t3",
-            amount: 500,
-            senderName: "ผู้โอน",
-            senderBank: "Sender Bank",
-            transRef: "ref-1",
-            proofImage: "/private/slips/t3.webp",
-            status: "APPROVED",
-        });
-    });
-
-    it("preserves null approved topup sensitive fields", async () => {
-        const request = new Request("http://localhost/api/topup", { method: "POST" });
-        const verifiedSlip: SlipVerificationData = {
-            payload: "",
-            transRef: "wallet-ref-1",
-            date: "2026-05-07T10:00:00+07:00",
-            countryCode: "TH",
-            amount: {
-                amount: 300,
-                local: {},
-            },
-            sender: {
-                bank: {},
-                account: {
-                    name: {},
-                },
-            },
-            receiver: {
-                bank: {},
-                account: {
-                    name: {},
-                },
-            },
-        };
-
-        const result = await createApprovedTopup({
-            request,
-            topupId: "t4",
-            userId: "u4",
-            requestedAmount: 250,
-            verifiedSlip,
-            verifiedAmount: 300,
-            proofImage: null,
-            verifyMethod: "image",
-            verifyTarget: "truewallet",
-        });
-
-        expect(encryptTopupSensitiveFieldsMock).toHaveBeenCalledWith(expect.objectContaining({
-            proofImage: null,
-            senderName: null,
-            senderBank: null,
-            receiverName: null,
-            receiverBank: null,
-        }));
-        expect(auditFromRequestMock).toHaveBeenCalledWith(request, expect.objectContaining({
-            details: expect.objectContaining({
-                requestedAmount: 250,
-                proofImageStored: false,
-                senderNameStored: false,
-                verifyMethod: "image",
-                verifyTarget: "truewallet",
+                transRef: "bank-ref",
             }),
         }));
         expect(result).toEqual({
-            topupId: "t4",
-            amount: 300,
-            senderName: undefined,
-            senderBank: undefined,
-            transRef: "wallet-ref-1",
-            proofImage: null,
+            topupId: "t3",
+            amount: 1500,
+            senderName: "นาย ผู้โอน ทดสอบ",
+            senderBank: "กสิกรไทย",
+            transRef: "bank-ref",
+            proofImage: "/private/slips/t3.webp",
             status: "APPROVED",
         });
     });
 
     it("detects duplicate topup transaction refs", async () => {
-        findFirstTopupMock.mockResolvedValue({ id: "existing-topup" });
+        queryTopupFindFirstMock.mockResolvedValueOnce({ id: "existing" });
+        await expect(hasDuplicateTopupTransactionRef("bank-ref")).resolves.toBe(true);
 
-        const result = await hasDuplicateTopupTransactionRef("ref-duplicate");
-
-        expect(result).toBe(true);
-        expect(eqMock).toHaveBeenCalledWith(topups.transactionRef, "ref-duplicate");
-        expect(findFirstTopupMock).toHaveBeenCalledWith({
-            where: {
-                left: topups.transactionRef,
-                right: "ref-duplicate",
-                type: "eq",
-            },
-            columns: { id: true },
-        });
-    });
-
-    it("returns false when topup transaction ref is unused", async () => {
-        findFirstTopupMock.mockResolvedValue(null);
-
-        await expect(hasDuplicateTopupTransactionRef("ref-new")).resolves.toBe(false);
-        expect(eqMock).toHaveBeenCalledWith(topups.transactionRef, "ref-new");
+        queryTopupFindFirstMock.mockResolvedValueOnce(null);
+        await expect(hasDuplicateTopupTransactionRef("new-ref")).resolves.toBe(false);
     });
 });

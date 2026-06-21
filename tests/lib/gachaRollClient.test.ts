@@ -1,10 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import {
     buildGachaRollPayload,
     parseGachaRollResponse,
     requestGachaRoll,
 } from "@/lib/client/gachaRollClient";
 import { API_ROUTES } from "@/lib/constants/apiRoutes";
+
+vi.mock("@/lib/csrf-client", () => ({
+    fetchWithCsrf: vi.fn(async () => Response.json({ success: true })),
+}));
 
 function getRequestInit(fetcher: ReturnType<typeof vi.fn>) {
     return fetcher.mock.calls[0]?.[1] as RequestInit;
@@ -41,6 +46,18 @@ describe("lib/client/gachaRollClient", () => {
             body: JSON.stringify(payload),
         });
         expect(JSON.parse(String(getRequestInit(fetcher).body))).toEqual(payload);
+    });
+
+    it("uses the CSRF-aware fetcher by default for roll requests", async () => {
+        const payload = buildGachaRollPayload(1, "machine-1");
+
+        await requestGachaRoll(payload);
+
+        expect(fetchWithCsrf).toHaveBeenCalledWith(API_ROUTES.GACHA_ROLL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
     });
 
     it("parses roll responses without changing fields", async () => {

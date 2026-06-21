@@ -29,6 +29,7 @@ export interface PurchaseProductOptions {
     quantity?: number;
     promoCode?: string;
     extraHtml?: string;
+    helperText?: string;
     confirmButtonColor?: string;
     pinActionLabel?: string;
     onSuccess?: (data: PurchaseProductResponse) => void | Promise<void>;
@@ -54,6 +55,7 @@ export function usePurchaseProduct() {
         quantity,
         promoCode,
         extraHtml,
+        helperText = "ระบบจะซื้อเฉพาะสินค้านี้เท่านั้น สินค้าในตะกร้าจะยังอยู่เหมือนเดิม",
         confirmButtonColor,
         pinActionLabel = "ยืนยัน PIN เพื่อซื้อสินค้า",
         onSuccess,
@@ -63,6 +65,7 @@ export function usePurchaseProduct() {
             productName,
             priceText,
             extraHtml,
+            helperText,
             confirmButtonColor,
         });
         if (!confirmed) return false;

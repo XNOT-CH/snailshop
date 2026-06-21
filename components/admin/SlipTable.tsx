@@ -16,6 +16,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Check, ExternalLink, ImageOff, Loader2, X } from "lucide-react";
 import { PERMISSIONS } from "@/lib/permissions";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 
 interface Slip {
     id: string;
@@ -57,7 +58,7 @@ export function SlipTable({ slips }: Readonly<SlipTableProps>) {
         setProcessingId(slipId);
 
         try {
-            const response = await fetch("/api/admin/slips", {
+            const response = await fetchWithCsrf("/api/admin/slips", {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ id: slipId, action }),

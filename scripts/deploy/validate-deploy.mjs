@@ -28,7 +28,6 @@ const recommendedVars = [
   "UPSTASH_REDIS_REST_URL",
   "UPSTASH_REDIS_REST_TOKEN",
   "RESEND_API_KEY",
-  "EASYSLIP_TOKEN",
 ];
 
 const missingRequired = requiredVars.filter((name) => !process.env[name]?.trim());

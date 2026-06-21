@@ -28,6 +28,7 @@ vi.mock("@/lib/rateLimit", () => ({
 }));
 
 import { db } from "@/lib/db";
+import { checkPromoValidationRateLimit, clearPromoValidationAttempts, recordFailedPromoValidation } from "@/lib/rateLimit";
 
 const mkReq = (body: object) =>
   new NextRequest("http://localhost/api/promo-codes/validate", {
@@ -65,6 +66,23 @@ describe("API: /api/promo-codes/validate (POST)", () => {
     expect(body.valid).toBe(false);
   });
 
+  it("rate limits repeated invalid promo validation attempts", async () => {
+    (checkPromoValidationRateLimit as any).mockReturnValueOnce({
+      blocked: true,
+      remainingAttempts: 0,
+      message: "กรอกโค้ดผิดบ่อยเกินไป กรุณารอ 15 นาที",
+    });
+
+    const { POST } = await import("@/app/api/promo-codes/validate/route");
+    const res = await POST(mkReq({ code: "WRONG" }));
+    const body = await res.json();
+
+    expect(res.status).toBe(429);
+    expect(body.valid).toBe(false);
+    expect(body.message).toContain("กรอกโค้ดผิดบ่อยเกินไป");
+    expect(db.query.promoCodes.findFirst).not.toHaveBeenCalled();
+  });
+
   it("returns valid:false when code not found", async () => {
     (db.query.promoCodes.findFirst as any).mockResolvedValue(null);
     const { POST } = await import("@/app/api/promo-codes/validate/route");
@@ -72,6 +90,7 @@ describe("API: /api/promo-codes/validate (POST)", () => {
     const body = await res.json();
     expect(body.valid).toBe(false);
     expect(body.message).toContain("ไม่ถูกต้อง");
+    expect(recordFailedPromoValidation).toHaveBeenCalledWith("127.0.0.1:guest");
   });
 
   it("returns valid:false when code is inactive", async () => {
@@ -127,6 +146,7 @@ describe("API: /api/promo-codes/validate (POST)", () => {
     expect(body.valid).toBe(true);
     expect(body.discountAmount).toBe(100); // 20% of 500
     expect(body.discountType).toBe("PERCENTAGE");
+    expect(clearPromoValidationAttempts).toHaveBeenCalledWith("127.0.0.1:guest");
   });
 
   it("valid PERCENTAGE promo capped at maxDiscount", async () => {

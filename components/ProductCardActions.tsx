@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { useMaintenanceStatus, type MaintenanceEntry } from "@/hooks/useMaintenanceStatus";
 import { usePurchaseProduct } from "@/hooks/usePurchaseProduct";
 import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
+import { escapeHtml } from "@/lib/sanitize";
 import { showError, showWarning } from "@/lib/swal";
 import { themeClasses } from "@/lib/theme";
 
@@ -50,7 +51,7 @@ export const ProductCardActions = memo(function ProductCardActions({
     const { isPurchasing, purchaseProduct } = usePurchaseProduct();
     const inCart = isInCart(id);
     const isLoading = isPurchasing(id);
-    const primaryActionLabel = inCart ? "ดูในตะกร้า" : "สั่งซื้อ";
+    const primaryActionLabel = inCart ? "ดูตะกร้า" : "ซื้อทันที";
     const cartProduct = useMemo(
         () => ({
             id,
@@ -85,7 +86,7 @@ export const ProductCardActions = memo(function ProductCardActions({
             currencySettings,
             priceText: formatCurrencyAmount(activePrice, currency, currencySettings),
             extraHtml: hasDiscount
-                ? `<span class="text-sm text-gray-500 line-through">ราคาปกติ: ${formatCurrencyAmount(price, currency, currencySettings)}</span>`
+                ? `<span class="text-sm text-gray-500 line-through">ราคาปกติ: ${escapeHtml(formatCurrencyAmount(price, currency, currencySettings))}</span>`
                 : undefined,
             onError: () => {
                 showError("เกิดข้อผิดพลาดในการสั่งซื้อ กรุณาลองใหม่อีกครั้ง");
@@ -124,7 +125,7 @@ export const ProductCardActions = memo(function ProductCardActions({
                         {isLoading ? (
                             <>
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                กำลังเพิ่ม...
+                                กำลังซื้อ...
                             </>
                         ) : (
                             <>

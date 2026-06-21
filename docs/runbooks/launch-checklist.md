@@ -47,8 +47,6 @@ npm run cf:deploy
 - `UPSTASH_REDIS_REST_TOKEN`
 - `RESEND_API_KEY`
 - `EMAIL_FROM`
-- `EASYSLIP_API_KEY`
-- `EASYSLIP_TOKEN`
 - `NEXT_PUBLIC_TURNSTILE_SITE_KEY`
 - `TURNSTILE_SECRET_KEY`
 - `CLOUDFLARE_R2_UPLOADS_BUCKET`
@@ -127,17 +125,12 @@ npm run storage:migrate-r2
 - slip/private storage เป็นข้อมูล sensitive
 - สคริปต์ `storage:migrate-slips` และ `storage:cleanup-legacy-slips` ต้องใช้ `ENCRYPTION_KEY`; ใช้เฉพาะเมื่อ task ระบุ migration/cleanup ชัดเจน
 
-## EasySlip And Topup
-
-ตั้งค่า:
-
-- `EASYSLIP_API_KEY` สำหรับ EasySlip v2 เช่น `/v2/verify/bank` และ TrueMoney Wallet verify
-- `EASYSLIP_TOKEN` เป็น legacy fallback สำหรับ image-upload verification flow เก่า
+## Topup
 
 พฤติกรรมสำคัญ:
 
-- ถ้า EasySlip config หายหรือ external call ล้ม ระบบเติมเงิน fallback เป็น manual review/PENDING แทนการ approve อัตโนมัติ
-- ตรวจ admin EasySlip info และ topup smoke test หลัง deploy
+- ระบบเติมเงินสร้างรายการ manual review/PENDING เพื่อให้แอดมินตรวจสลิปก่อนอนุมัติ
+- ตรวจ topup smoke test และ admin slip review หลัง deploy
 - ถ้าเกิด incident เติมเงิน ใช้ `MAINTENANCE_MODE_TOPUP=true` หรือ `MAINTENANCE_MODE=true` แล้ว redeploy ตาม `docs/runbooks/incident-commerce.md`
 
 ## Email
@@ -180,7 +173,6 @@ npm run cf:check
 - ยืนยัน `npm run cf:check` ผ่าน
 - ยืนยัน Turnstile site/secret key เป็นคู่เดียวกัน
 - ยืนยัน Resend sender domain พร้อมใช้งาน
-- ยืนยัน EasySlip key/token และบัญชีรับเงินตรงกับ production
 - ยืนยัน R2 bucket/binding พร้อม และ migration dry run ไม่มี path แปลก
 - ยืนยัน admin account, role, และ permissions ใช้งานได้
 - ถ้า deploy เสี่ยงต่อ commerce ให้เตรียม maintenance env และ runbook incident-commerce
@@ -195,7 +187,7 @@ npm run cf:check
 - upload/read รูป public เช่น product/gacha/profile ใช้งานได้
 - admin slip image อ่านผ่าน API ได้เมื่อมีสิทธิ์
 - forgot/reset password หรือ email flow ที่เกี่ยวข้องส่งเมลได้
-- topup สร้างรายการได้; ถ้า EasySlip verify ไม่พร้อมต้องกลายเป็น PENDING/manual review อย่างปลอดภัย
+- topup สร้างรายการ PENDING/manual review ได้ และแอดมินอนุมัติผ่านหน้าตรวจสลิปได้
 - cart/checkout/purchase 1 รายการทดสอบผ่าน และสินค้าไปที่ inventory
 - gacha flow ที่เปิดใช้งาน roll ได้ตาม config
 - chat image upload/read/delete ทำงานถ้า release แตะ chat
@@ -227,6 +219,6 @@ npm run cf:check
 - response contract migration และ UI validation consolidation ยังเปลี่ยน behavior/consumer ได้ง่าย ต้อง audit client ก่อนแก้
 - ถ้าไม่ตั้ง Upstash Redis ใน production, rate limit/cache บางส่วนเป็น in-memory และไม่ shared ข้าม instance
 - ถ้าไม่มี R2 binding หรือ bucket ผิด, upload จะ fallback local ซึ่งไม่เหมาะกับ stateless Cloudflare production
-- ถ้า EasySlip config หายหรือ external API ล้ม, topup จะไป manual review/PENDING ต้องมี admin process รองรับ
+- topup ยังเป็น manual review/PENDING จนกว่าจะเชื่อม provider ตรวจสลิปใหม่ ต้องมี admin process รองรับ
 - ถ้า `RESEND_API_KEY` หรือ sender domain ไม่พร้อม, email receipt/reset/verification จะไม่ส่งจริง
 - placeholder ใน `wrangler.jsonc` เช่น Hyperdrive id ต้องเปลี่ยนเป็น production value ก่อน deploy จริง

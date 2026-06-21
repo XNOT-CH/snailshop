@@ -113,6 +113,10 @@ describe("content validations", () => {
     it("rejects empty label", () => {
       expect(navItemSchema.safeParse({ label: "", href: "/" }).success).toBe(false);
     });
+    it("rejects unsafe nav href schemes", () => {
+      expect(navItemSchema.safeParse({ label: "Bad", href: "javascript:alert(1)" }).success).toBe(false);
+      expect(navItemSchema.safeParse({ label: "Bad", href: "//evil.example/path" }).success).toBe(false);
+    });
   });
 
   describe("newsItemSchema", () => {
@@ -121,6 +125,14 @@ describe("content validations", () => {
     });
     it("rejects empty title", () => {
       expect(newsItemSchema.safeParse({ title: "", description: "Content" }).success).toBe(false);
+    });
+    it("rejects unsafe news links", () => {
+      const result = newsItemSchema.safeParse({
+        title: "News",
+        description: "Content",
+        link: "data:text/html,<h1>x</h1>",
+      });
+      expect(result.success).toBe(false);
     });
   });
 
@@ -131,6 +143,12 @@ describe("content validations", () => {
     it("rejects invalid imageUrl", () => {
       expect(popupSchema.safeParse({ imageUrl: "not-a-url" }).success).toBe(false);
     });
+    it("rejects unsafe popup click links", () => {
+      expect(popupSchema.safeParse({
+        imageUrl: "https://example.com/img.png",
+        linkUrl: "javascript:alert(1)",
+      }).success).toBe(false);
+    });
   });
 
   describe("footerLinkSchema", () => {
@@ -139,6 +157,10 @@ describe("content validations", () => {
     });
     it("rejects empty label", () => {
       expect(footerLinkSchema.safeParse({ label: "", href: "/about" }).success).toBe(false);
+    });
+    it("rejects unsafe footer href schemes", () => {
+      expect(footerLinkSchema.safeParse({ label: "Bad", href: "javascript:alert(1)" }).success).toBe(false);
+      expect(footerLinkSchema.safeParse({ label: "Bad", href: "//evil.example/path" }).success).toBe(false);
     });
   });
 
@@ -326,6 +348,24 @@ describe("settings validations", () => {
     });
     it("rejects invalid image URL", () => {
       const result = siteSettingsSchema.safeParse({ logoUrl: "not-a-url" });
+      expect(result.success).toBe(false);
+    });
+    it("accepts welcome strip image JSON", () => {
+      const result = siteSettingsSchema.safeParse({
+        welcomeStripImagesJson: JSON.stringify(["/uploads/welcome-1.png", "https://example.com/welcome-2.webp"]),
+      });
+      expect(result.success).toBe(true);
+    });
+    it("accepts expanded welcome strip image JSON", () => {
+      const result = siteSettingsSchema.safeParse({
+        welcomeStripImagesJson: JSON.stringify(Array.from({ length: 13 }, () => "/uploads/welcome.png")),
+      });
+      expect(result.success).toBe(true);
+    });
+    it("rejects invalid welcome strip image JSON", () => {
+      const result = siteSettingsSchema.safeParse({
+        welcomeStripImagesJson: JSON.stringify(["not-a-url"]),
+      });
       expect(result.success).toBe(false);
     });
   });

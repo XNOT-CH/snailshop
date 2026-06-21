@@ -23,6 +23,7 @@ import {
 import { showSuccess, showError } from "@/lib/swal";
 import { getDelimiter, splitStock, type StockSeparatorType } from "@/lib/stock";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { PERMISSIONS } from "@/lib/permissions";
 
 export default function StockManagementPage() {
@@ -189,7 +190,7 @@ export default function StockManagementPage() {
         setIsSaving(true);
 
         try {
-            const response = await fetch(`/api/products/${productId}/stock`, {
+            const response = await fetchWithCsrf(`/api/products/${productId}/stock`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ secretData }),

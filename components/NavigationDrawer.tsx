@@ -15,6 +15,7 @@ import { withImageVersion } from "@/lib/imageUrl";
 import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
 import { SITE_NAME } from "@/lib/seo";
 import { themeClasses } from "@/lib/theme";
+import { toSafePublicHref } from "@/lib/sanitize";
 
 interface SerializableNavLink { href: string; label: string; }
 
@@ -65,7 +66,10 @@ export function NavigationDrawer({
     const [logoutPending, setLogoutPending] = useState(false);
     const pathname = usePathname();
     const logout = useLogout();
-    const links = navLinks && navLinks.length > 0 ? navLinks : DEFAULT_NAV;
+    const links = (navLinks && navLinks.length > 0 ? navLinks : DEFAULT_NAV).flatMap((link) => {
+        const safeHref = toSafePublicHref(link.href, "");
+        return safeHref ? [{ ...link, href: safeHref }] : [];
+    });
     const shownUserName = user?.name?.trim() || user?.username || "";
     const drawerStyles = {
         panel: { background: "var(--surface-shell-2)", borderRight: "1px solid var(--surface-stroke)" },
@@ -304,7 +308,7 @@ export function NavigationDrawer({
         <>
             <button
                 onClick={openDrawer}
-                className={`${themeClasses.actionMuted} flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-primary xl:hidden`}
+                className={`${themeClasses.actionMuted} flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-primary lg:hidden`}
                 aria-label="เปิดเมนู"
             >
                 <Menu className="h-5 w-5" />

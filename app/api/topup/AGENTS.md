@@ -5,14 +5,13 @@ This folder contains the main user topup submission handler.
 ## Files
 
 - `route.ts`
-  Accepts topup request, verifies slip, stores result, may auto-approve or fall back to pending
+  Accepts topup request, verifies with EasySlip API v2, stores proof image, and creates an approved topup after verified success
 
 ## Read with
 
 - `app/dashboard/topup/page.tsx`
 - `app/admin/slips/page.tsx`
 - `app/api/admin/slips/route.ts`
-- `app/api/admin/easyslip-info/route.ts`
 - `lib/validations/topup.ts`
 - `lib/serverImageUpload.ts`
 - `lib/slipStorage.ts`
@@ -23,5 +22,6 @@ This folder contains the main user topup submission handler.
 ## Watchouts
 
 - Multiple input methods are supported.
-- Uses external EasySlip endpoints and fallback behavior.
-- May store pending topups for admin review instead of instant approval.
+- Use only EasySlip API v2 endpoints under `https://api.easyslip.com/v2`.
+- Do not approve without server-side CSRF/auth, PIN checks, duplicate checks, and audit logging.
+- Keep `EASYSLIP_API_KEY` server-side only.

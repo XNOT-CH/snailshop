@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -78,7 +79,7 @@ export default function NavItemsAdminPage() {
             return;
         }
         try {
-            const res = await fetch(`/api/admin/nav-items/${item.id}`, {
+            const res = await fetchWithCsrf(`/api/admin/nav-items/${item.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ isActive: !item.isActive }),
@@ -107,7 +108,7 @@ export default function NavItemsAdminPage() {
 
         setSaving(true);
         try {
-            const res = await fetch("/api/admin/nav-items", {
+            const res = await fetchWithCsrf("/api/admin/nav-items", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -156,7 +157,7 @@ export default function NavItemsAdminPage() {
 
         setSaving(true);
         try {
-            const res = await fetch(`/api/admin/nav-items/${editingItem.id}`, {
+            const res = await fetchWithCsrf(`/api/admin/nav-items/${editingItem.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -191,7 +192,7 @@ export default function NavItemsAdminPage() {
         if (!confirmed) return;
 
         try {
-            const res = await fetch(`/api/admin/nav-items/${item.id}`, {
+            const res = await fetchWithCsrf(`/api/admin/nav-items/${item.id}`, {
                 method: "DELETE",
             });
 

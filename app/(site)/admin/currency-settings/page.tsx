@@ -10,6 +10,7 @@ import { Loader2, Gem, Save } from "lucide-react";
 import { showSuccess, showError } from "@/lib/swal";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { PERMISSIONS } from "@/lib/permissions";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 
 interface CurrencySettings {
     id: string;
@@ -69,7 +70,7 @@ export default function CurrencySettingsPage() {
         }
         setSaving(true);
         try {
-            const res = await fetch("/api/admin/currency-settings", {
+            const res = await fetchWithCsrf("/api/admin/currency-settings", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(settings),

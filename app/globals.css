@@ -176,6 +176,15 @@
   padding: 2rem !important;
 }
 
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
 .dark {
   --background: #0a1220;
   --foreground: #f4f8ff;
@@ -3258,7 +3267,7 @@ svg {
 
 .snail-welcome-page {
   font-family: var(--font-prompt), "Noto Sans Thai", "Leelawadee UI", sans-serif;
-  padding: clamp(1.5rem, 4vw, 3rem);
+  padding: clamp(1.5rem, 4vw, 3rem) clamp(1.5rem, 4vw, 3rem) clamp(7.25rem, 13vh, 8.75rem);
 }
 
 .snail-welcome-bg {
@@ -3357,6 +3366,59 @@ svg {
   font-size: 1.75rem;
 }
 
+.snail-welcome-frame-band {
+  bottom: clamp(0.75rem, 2.2vw, 1.35rem);
+  border-top: 1px solid rgba(9, 42, 117, 0.08);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), #ffffff 42%, rgba(241, 250, 255, 0.98));
+  box-shadow: 0 -18px 48px rgba(7, 61, 151, 0.14);
+  overflow: hidden;
+  padding-block: 0.7rem;
+}
+
+.snail-welcome-frame-track {
+  position: relative;
+  height: clamp(3.1rem, 6vw, 4.45rem);
+}
+
+.snail-welcome-frame-set {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  gap: clamp(0.55rem, 1.5vw, 1rem);
+  width: max-content;
+  padding-inline: clamp(0.75rem, 3vw, 2.5rem);
+  animation: snailWelcomeFrameMarquee 35s linear infinite;
+  will-change: transform;
+}
+
+.snail-welcome-frame-set:nth-child(2) {
+  animation-delay: -17.5s;
+}
+
+.snail-welcome-frame {
+  aspect-ratio: 1;
+  width: clamp(3.1rem, 6vw, 4.45rem);
+  flex: 0 0 auto;
+  overflow: hidden;
+  border: 2px solid rgba(7, 86, 190, 0.22);
+  border-radius: 1rem;
+  background:
+    linear-gradient(135deg, rgba(255, 210, 31, 0.26), rgba(255, 255, 255, 0) 42%),
+    linear-gradient(145deg, rgba(15, 154, 234, 0.18), rgba(255, 255, 255, 0.94));
+  box-shadow:
+    0 10px 24px rgba(7, 61, 151, 0.14),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+}
+
+.snail-welcome-frame-image {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+}
+
 @media (max-width: 1024px) {
   .snail-welcome-copy {
     width: min(100%, 40rem);
@@ -3389,7 +3451,7 @@ svg {
 
 @media (max-width: 768px) {
   .snail-welcome-page {
-    padding: 1.5rem 1.1rem 2rem;
+    padding: 1.5rem 1.1rem 7rem;
     align-items: center;
   }
 
@@ -3444,7 +3506,7 @@ svg {
 @media (max-width: 640px) {
   .snail-welcome-page {
     min-height: 100svh;
-    padding: 1.25rem 0.95rem 1.8rem;
+    padding: 1.25rem 0.95rem 6.8rem;
   }
 
   .snail-welcome-inner {
@@ -3500,6 +3562,29 @@ svg {
     height: 116%;
     width: clamp(92px, 18vw, 132px);
     display: none;
+  }
+
+  .snail-welcome-frame-band {
+    bottom: 0.75rem;
+    padding-block: 0.58rem;
+  }
+
+  .snail-welcome-frame-track {
+    height: 3.45rem;
+  }
+
+  .snail-welcome-frame-set {
+    gap: 0.55rem;
+    animation-duration: 24s;
+  }
+
+  .snail-welcome-frame-set:nth-child(2) {
+    animation-delay: -12s;
+  }
+
+  .snail-welcome-frame {
+    width: 3.45rem;
+    border-radius: 0.82rem;
   }
 }
 
@@ -3576,5 +3661,15 @@ svg {
     opacity: 1;
     clip-path: inset(0 0 0 0);
     transform: translateY(0);
+  }
+}
+
+@keyframes snailWelcomeFrameMarquee {
+  from {
+    transform: translateX(100vw);
+  }
+
+  to {
+    transform: translateX(-100%);
   }
 }

@@ -78,6 +78,15 @@ describe("news validation", () => {
     );
   });
 
+  it("rejects unsafe news URL schemes and protocol-relative URLs", () => {
+    expect(validateNewsUrlInput("javascript:alert(1)")).toBe(
+      "URL ไม่ถูกต้อง (ต้องขึ้นต้นด้วย / หรือ http:// หรือ https://)",
+    );
+    expect(validateNewsUrlInput("//evil.example/promo")).toBe(
+      "URL ไม่ถูกต้อง (ต้องขึ้นต้นด้วย / หรือ http:// หรือ https://)",
+    );
+  });
+
   it("rejects uploads over 5MB before sending them", () => {
     const file = new File(["x"], "banner.jpg", { type: "image/jpeg" });
     Object.defineProperty(file, "size", {

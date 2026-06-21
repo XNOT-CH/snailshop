@@ -5,7 +5,7 @@ import {
 import {
     decodeBase64ImageSize,
     validatePublicImageUrl,
-    type EasySlipVerifyTarget,
+    type TopupVerifyTarget,
 } from "@/lib/features/topup/slipHelpers";
 
 export const TOPUP_MAX_SLIP_BYTES = 4 * 1024 * 1024;
@@ -20,7 +20,7 @@ export async function validateTopupProofInput(input: {
     file: File | null;
     base64: string | null;
     imageUrl: string | null;
-    verifyTarget: EasySlipVerifyTarget;
+    verifyTarget: TopupVerifyTarget;
 }): Promise<TopupProofValidationError | null> {
     if (input.file) {
         validateImageFile(input.file, {

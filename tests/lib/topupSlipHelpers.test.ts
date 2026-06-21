@@ -1,17 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
-    createSlipProxy,
     decodeBase64ImageSize,
-    getImageExtension,
     getSlipVerifyMethod,
     isPrivateOrBlockedHostname,
-    mapEasySlipV2Error,
-    mapSlipError,
     parseStringField,
     parseTopupAmount,
     parseVerifyTarget,
     validatePublicImageUrl,
-    withOptionalRemark,
 } from "@/lib/features/topup/slipHelpers";
 
 describe("topup slip helpers", () => {
@@ -31,7 +26,7 @@ describe("topup slip helpers", () => {
         expect(parseStringField(new File(["x"], "x.txt"))).toBeNull();
     });
 
-    it("parses EasySlip verify target aliases", () => {
+    it("parses topup verify target aliases", () => {
         expect(parseVerifyTarget(null)).toBe("bank");
         expect(parseVerifyTarget("bank")).toBe("bank");
         expect(parseVerifyTarget("truewallet")).toBe("truewallet");
@@ -45,27 +40,6 @@ describe("topup slip helpers", () => {
         expect(getSlipVerifyMethod(null, "base64", "https://example.com/slip.jpg")).toBe("base64");
         expect(getSlipVerifyMethod(null, null, "https://example.com/slip.jpg")).toBe("url");
         expect(getSlipVerifyMethod(null, null, null)).toBe("image");
-    });
-
-    it("maps image MIME types to file extensions", () => {
-        expect(getImageExtension("image/png")).toBe("png");
-        expect(getImageExtension("image/webp")).toBe("webp");
-        expect(getImageExtension("image/gif")).toBe("gif");
-        expect(getImageExtension("image/jpeg")).toBe("jpg");
-        expect(getImageExtension("application/octet-stream")).toBe("jpg");
-    });
-
-    it("creates TrueMoney proxy objects only when a phone exists", () => {
-        expect(createSlipProxy()).toBeUndefined();
-        expect(createSlipProxy("0812345678")).toEqual({
-            type: "MSISDN",
-            account: "0812345678",
-        });
-    });
-
-    it("adds optional remarks without changing missing remark behavior", () => {
-        expect(withOptionalRemark({ payload: "abc" }, "note")).toEqual({ payload: "abc", remark: "note" });
-        expect(withOptionalRemark({ payload: "abc" }, null)).toEqual({ payload: "abc", remark: undefined });
     });
 
     it("decodes base64 image payload sizes and rejects invalid input", () => {
@@ -92,15 +66,4 @@ describe("topup slip helpers", () => {
         expect(() => validatePublicImageUrl("https://example.com/slip.jpg", 10)).toThrow("INVALID_IMAGE_URL");
     });
 
-    it("maps legacy EasySlip errors with fallback behavior", () => {
-        expect(mapSlipError(undefined)).toBe("เกิดข้อผิดพลาดในการตรวจสอบสลิป");
-        expect(mapSlipError("duplicate_slip")).toBe("สลิปนี้ถูกใช้ตรวจสอบไปแล้ว");
-        expect(mapSlipError("custom_error")).toBe("custom_error");
-    });
-
-    it("maps EasySlip v2 errors with fallback behavior", () => {
-        expect(mapEasySlipV2Error("INVALID_IMAGE")).toBe("รูปภาพไม่ใช่สลิปที่ถูกต้อง");
-        expect(mapEasySlipV2Error(undefined, "custom message")).toBe("custom message");
-        expect(mapEasySlipV2Error()).toBe("ตรวจสอบสลิปไม่สำเร็จ");
-    });
 });

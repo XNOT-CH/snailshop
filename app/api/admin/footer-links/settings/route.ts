@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, footerWidgetSettings } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { FOOTER_WIDGET_SETTINGS_SINGLETON_ID } from "@/lib/db/singletons";
-import { requirePermission } from "@/lib/auth";
+import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
 import { contentApiError } from "@/lib/features/content/apiResponse";
 
@@ -31,7 +31,7 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
-    const authCheck = await requirePermission(PERMISSIONS.SETTINGS_EDIT);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.SETTINGS_EDIT);
     if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const body = await request.json();

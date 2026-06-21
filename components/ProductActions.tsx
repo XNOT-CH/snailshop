@@ -3,12 +3,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Loader2, Plus, Search, Tag } from "lucide-react";
+import { CheckCircle2, ShoppingCart, Loader2, Plus, Search, Tag } from "lucide-react";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { useCart } from "@/components/providers/CartContext";
 import { showWarning, showErrorAlert } from "@/lib/swal";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 import { formatCurrencyAmount, normalizeCurrencyCode, type PublicCurrencySettings } from "@/lib/currencySettings";
+import { escapeHtml } from "@/lib/sanitize";
 import { themeClasses } from "@/lib/theme";
 import {
     buildAppliedPromoFromValidation,
@@ -139,8 +140,8 @@ export function ProductActions({
         if (disabled || isBuying) return;
 
         const discountLine = appliedPromo
-            ? `<small>โค้ดส่วนลด: <strong>${appliedPromo.code}</strong> (ราคาเดิม ฿${basePrice.toLocaleString()})</small>`
-            : `<small>จำนวน: <strong>${quantity}</strong> ชิ้น</small>`;
+            ? `<small>โค้ดส่วนลด: <strong>${escapeHtml(appliedPromo.code)}</strong> (ราคาเดิม ฿${escapeHtml(basePrice.toLocaleString())})</small>`
+            : `<small>จำนวน: <strong>${escapeHtml(quantity.toString())}</strong> ชิ้น</small>`;
 
         await purchaseProduct({
             productId: product.id,
@@ -198,120 +199,144 @@ export function ProductActions({
                     <p className="mt-1 text-xs text-amber-800/90">{maintenance.message}</p>
                 </div>
             )}
-            {/* 1. Quantity Selector */}
-            {!disabled && (
-                <div className="flex justify-center">
-                    <QuantitySelector
-                        value={quantity}
-                        onChange={setQuantity}
-                        min={1}
-                        max={maxQuantity}
-                        size="md"
-                        disabled={isProcessing}
-                        label="จำนวนสินค้า"
-                    />
-                </div>
-            )}
-
-            {/* 2. Promo Code */}
-            {!isPointCurrency && (
-                <div>
-                    <p className="text-sm text-muted-foreground mb-1.5">ส่วนลด</p>
-                    <div className="flex flex-col gap-2 sm:flex-row">
-                        <Input
-                            placeholder="กรอกส่วนลดของท่าน"
-                            value={promoCode}
-                            onChange={(e) => {
-                                setPromoCode(e.target.value);
-                                setAppliedPromo(null);
-                            }}
-                            onKeyDown={(e) => e.key === "Enter" && handleCheckPromo()}
-                            className={`flex-1 rounded-full border-border/80 bg-background/90 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/35 ${appliedPromo ? "border-primary" : ""}`}
-                            disabled={isProcessing}
-                        />
-                        <Button
-                            variant="outline"
-                            className={`${themeClasses.actionMuted} shrink-0 rounded-full gap-1.5 px-4 hover:text-primary`}
-                            onClick={handleCheckPromo}
-                            disabled={isCheckingPromo || !promoCode.trim()}
-                        >
-                            {isCheckingPromo && (
-                                <Loader2 className="h-4 w-4 animate-spin" />
-                            )}
-                            {!isCheckingPromo && (
-                                <Search className="h-4 w-4" />
-                            )}
-                            ตรวจสอบ
-                        </Button>
-                    </div>
-                    {appliedPromo && (
-                        <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm font-medium text-foreground">
-                            <Tag className="h-3.5 w-3.5" />
-                            <span>ใช้โค้ด {appliedPromo.code} — ราคาลดเหลือ </span>
-                            <span className="text-red-500 dark:text-red-400">
-                                {formatCurrencyAmount(finalPrice, normalizedCurrency, currencySettings)}
+            {inCart ? (
+                <div className="space-y-3">
+                    <div className="rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3 text-left text-sm shadow-sm">
+                        <div className="flex gap-3">
+                            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                <CheckCircle2 className="h-4 w-4" />
                             </span>
+                            <div>
+                                <p className="font-semibold text-foreground">สินค้านี้อยู่ในตะกร้าแล้ว</p>
+                                <p className="mt-1 text-muted-foreground">
+                                    ไปที่ตะกร้าเพื่อตรวจสอบจำนวนสินค้า ใช้ส่วนลด และชำระเงิน
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <Button
+                        type="button"
+                        size="lg"
+                        className="w-full gap-2 rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-[0_18px_36px_-24px_rgba(88,166,255,0.7)] hover:bg-primary/90"
+                        disabled={cartLoading}
+                        onClick={openCart}
+                    >
+                        <ShoppingCart className="h-5 w-5" />
+                        ไปที่ตะกร้า
+                    </Button>
+                </div>
+            ) : (
+                <>
+                    {/* 1. Quantity Selector */}
+                    {!disabled && (
+                        <div className="flex justify-center">
+                            <QuantitySelector
+                                value={quantity}
+                                onChange={setQuantity}
+                                min={1}
+                                max={maxQuantity}
+                                size="md"
+                                disabled={isProcessing}
+                                label="จำนวนสินค้า"
+                            />
                         </div>
                     )}
-                </div>
+
+                    {/* 2. Promo Code */}
+                    {!isPointCurrency && (
+                        <div>
+                            <p className="text-sm text-muted-foreground mb-1.5">ส่วนลด</p>
+                            <div className="flex flex-col gap-2 sm:flex-row">
+                                <Input
+                                    placeholder="กรอกส่วนลดของท่าน"
+                                    value={promoCode}
+                                    onChange={(e) => {
+                                        setPromoCode(e.target.value);
+                                        setAppliedPromo(null);
+                                    }}
+                                    onKeyDown={(e) => e.key === "Enter" && handleCheckPromo()}
+                                    className={`flex-1 rounded-full border-border/80 bg-background/90 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/35 ${appliedPromo ? "border-primary" : ""}`}
+                                    disabled={isProcessing}
+                                />
+                                <Button
+                                    variant="outline"
+                                    className={`${themeClasses.actionMuted} shrink-0 rounded-full gap-1.5 px-4 hover:text-primary`}
+                                    onClick={handleCheckPromo}
+                                    disabled={isCheckingPromo || !promoCode.trim()}
+                                >
+                                    {isCheckingPromo && (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    )}
+                                    {!isCheckingPromo && (
+                                        <Search className="h-4 w-4" />
+                                    )}
+                                    ตรวจสอบ
+                                </Button>
+                            </div>
+                            {appliedPromo && (
+                                <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-sm font-medium text-foreground">
+                                    <Tag className="h-3.5 w-3.5" />
+                                    <span>ใช้โค้ด {appliedPromo.code} — ราคาลดเหลือ </span>
+                                    <span className="text-red-500 dark:text-red-400">
+                                        {formatCurrencyAmount(finalPrice, normalizedCurrency, currencySettings)}
+                                    </span>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+
+                    {/* 3. Buy Now */}
+                    <Button
+                        size="lg"
+                        className={`w-full gap-2 text-base rounded-full font-semibold ${disabled
+                            ? "cursor-not-allowed border border-border/70 bg-accent/40 text-muted-foreground hover:bg-accent/40"
+                            : "bg-primary text-primary-foreground shadow-[0_18px_36px_-24px_rgba(88,166,255,0.7)] hover:bg-primary/90"
+                            }`}
+                        disabled={disabled || isBuying || maintenance?.enabled}
+                        onClick={handlePurchase}
+                    >
+                        {isBuying && (
+                            <>
+                                <Loader2 className="h-5 w-5 animate-spin" />
+                                กำลังดำเนินการ...
+                            </>
+                        )}
+                        {!isBuying && (
+                            <>
+                                <ShoppingCart className="h-5 w-5" />
+                                {maintenance?.enabled
+                                    ? "ปิดปรับปรุงชั่วคราว"
+                                    : disabled
+                                        ? "สินค้าหมด 🚫"
+                                        : `ซื้อทันที - ${formatCurrencyAmount(finalPrice, normalizedCurrency, currencySettings)}`}
+                            </>
+                        )}
+                    </Button>
+
+                    {/* 4. Add to Cart */}
+                    <Button
+                        variant="outline"
+                        size="lg"
+                        className="w-full gap-2 rounded-full border-primary/45 bg-transparent text-base text-primary hover:bg-primary/10 hover:text-primary"
+                        disabled={disabled || isAdding || cartLoading}
+                        onClick={handleAddToCart}
+                    >
+                        {isAdding && (
+                            <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                กำลังเพิ่ม...
+                            </>
+                        )}
+                        {!isAdding && (
+                            <>
+                                <Plus className="h-4 w-4" />
+                                เพิ่มลงตะกร้า
+                            </>
+                        )}
+                    </Button>
+                </>
             )}
-
-
-            {/* 3. Buy Now */}
-            <Button
-                size="lg"
-                className={`w-full gap-2 text-base rounded-full font-semibold ${disabled
-                    ? "cursor-not-allowed border border-border/70 bg-accent/40 text-muted-foreground hover:bg-accent/40"
-                    : "bg-primary text-primary-foreground shadow-[0_18px_36px_-24px_rgba(88,166,255,0.7)] hover:bg-primary/90"
-                    }`}
-                disabled={disabled || isBuying || maintenance?.enabled}
-                onClick={handlePurchase}
-            >
-                {isBuying && (
-                    <>
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                        กำลังดำเนินการ...
-                    </>
-                )}
-                {!isBuying && (
-                    <>
-                        <ShoppingCart className="h-5 w-5" />
-                        {maintenance?.enabled
-                            ? "ปิดปรับปรุงชั่วคราว"
-                            : disabled
-                                ? "สินค้าหมด 🚫"
-                                : `ซื้อเลย - ${formatCurrencyAmount(finalPrice, normalizedCurrency, currencySettings)}`}
-                    </>
-                )}
-            </Button>
-
-            {/* 4. Add to Cart */}
-            <Button
-                variant="outline"
-                size="lg"
-                className="w-full gap-2 rounded-full border-primary/45 bg-transparent text-base text-primary hover:bg-primary/10 hover:text-primary"
-                disabled={disabled || isAdding || cartLoading}
-                onClick={handleAddToCart}
-            >
-                {isAdding && (
-                    <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        กำลังเพิ่ม...
-                    </>
-                )}
-                {!isAdding && inCart && (
-                    <>
-                        <ShoppingCart className="h-4 w-4" />
-                        ดูในตะกร้า
-                    </>
-                )}
-                {!isAdding && !inCart && (
-                    <>
-                        <Plus className="h-4 w-4" />
-                        เพิ่มลงตะกร้า
-                    </>
-                )}
-            </Button>
         </div>
     );
 }

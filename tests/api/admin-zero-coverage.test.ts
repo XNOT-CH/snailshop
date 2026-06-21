@@ -23,10 +23,10 @@ vi.mock("@/lib/auth", () => ({
 vi.mock("@/lib/db", () => ({
   db: {
     insert: vi.fn().mockReturnValue({ values: vi.fn() }),
-    update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
+    update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue({ affectedRows: 1 }) }) }),
     delete: vi.fn().mockReturnValue({ where: vi.fn() }),
     transaction: vi.fn(async (cb: any) => cb({
-      update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
+      update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue({ affectedRows: 1 }) }) }),
     })),
     query: {
       gachaCategories: { findMany: vi.fn().mockResolvedValue([]), findFirst: vi.fn() },

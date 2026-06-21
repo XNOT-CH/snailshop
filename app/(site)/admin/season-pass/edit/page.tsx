@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { showError, showSuccess } from "@/lib/swal";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { getPointCurrencyName } from "@/lib/currencySettings";
@@ -240,7 +241,7 @@ export default function AdminSeasonPassEditPage() {
         setSavingPlan(true);
 
         try {
-            const response = await fetch("/api/admin/season-pass/plan", {
+            const response = await fetchWithCsrf("/api/admin/season-pass/plan", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
@@ -282,7 +283,7 @@ export default function AdminSeasonPassEditPage() {
         setSavingRewards(true);
 
         try {
-            const response = await fetch("/api/admin/season-pass/rewards", {
+            const response = await fetchWithCsrf("/api/admin/season-pass/rewards", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -382,7 +383,7 @@ export default function AdminSeasonPassEditPage() {
             const formData = new FormData();
             formData.append("file", file);
 
-            const response = await fetch("/api/admin/season-pass/upload-image", {
+            const response = await fetchWithCsrf("/api/admin/season-pass/upload-image", {
                 method: "POST",
                 body: formData,
             });

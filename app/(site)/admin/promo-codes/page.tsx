@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -178,7 +179,7 @@ export default function AdminPromoCodesPage() {
                     isActive: formData.isActive,
                 };
 
-            const response = await fetch(url, {
+            const response = await fetchWithCsrf(url, {
                 method,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
@@ -211,7 +212,7 @@ export default function AdminPromoCodesPage() {
         if (!confirmed) return;
 
         try {
-            const response = await fetch(`/api/admin/promo-codes/${id}`, {
+            const response = await fetchWithCsrf(`/api/admin/promo-codes/${id}`, {
                 method: "DELETE",
             });
             const data = await response.json();
@@ -235,7 +236,7 @@ export default function AdminPromoCodesPage() {
             return;
         }
         try {
-            const response = await fetch(`/api/admin/promo-codes/${promoCode.id}`, {
+            const response = await fetchWithCsrf(`/api/admin/promo-codes/${promoCode.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ isActive: !promoCode.isActive }),

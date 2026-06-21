@@ -15,6 +15,18 @@ class LoginAttemptError extends CredentialsSignin {
     }
 }
 
+const e2eAuthLogger =
+    process.env.E2E_AUTH_TEST_MODE === "1"
+        ? {
+              error(error: Error) {
+                  const authError = error as Error & { type?: string };
+                  if (authError.type === "CredentialsSignin") return;
+
+                  console.error(error);
+              },
+          }
+        : undefined;
+
 async function logAudit(params: {
     action: string;
     userId?: string;
@@ -41,6 +53,7 @@ async function logAudit(params: {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig,
+    logger: e2eAuthLogger,
     providers: [
         Credentials({
             name: "credentials",

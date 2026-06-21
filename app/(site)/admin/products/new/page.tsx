@@ -23,6 +23,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { ProductImageGalleryField } from "@/components/admin/ProductImageGalleryField";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { PERMISSIONS } from "@/lib/permissions";
 import { showError, showSuccess } from "@/lib/swal";
@@ -222,7 +223,7 @@ export default function AddProductPage() {
 
         setIsLoading(true);
         try {
-            const response = await fetch("/api/products", {
+            const response = await fetchWithCsrf("/api/products", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

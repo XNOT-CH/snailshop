@@ -3,8 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import { db, topups, users } from "@/lib/db";
 import { encryptTopupSensitiveFields } from "@/lib/sensitiveData";
 import { mysqlNow } from "@/lib/utils/date";
-import type { SlipVerificationData } from "@/lib/features/topup/easySlipService";
-import type { EasySlipVerifyTarget } from "@/lib/features/topup/slipHelpers";
+import type { TopupVerifyTarget } from "@/lib/features/topup/slipHelpers";
 import {
     buildApprovedTopupAudit,
     buildApprovedTopupInsert,
@@ -13,6 +12,7 @@ import {
     buildPendingTopupInsert,
     buildPendingTopupResponseData,
     type TopupVerifyMethod,
+    type VerifiedTopupSlip,
 } from "@/lib/features/topup/topupBuilders";
 
 export async function createPendingTopup(input: {
@@ -22,7 +22,7 @@ export async function createPendingTopup(input: {
     requestedAmount: number;
     proofImage: string | null;
     verifyMethod: TopupVerifyMethod;
-    verifyTarget: EasySlipVerifyTarget;
+    verifyTarget: TopupVerifyTarget;
 }) {
     await db.insert(topups).values(encryptTopupSensitiveFields(buildPendingTopupInsert({
         topupId: input.topupId,
@@ -55,11 +55,10 @@ export async function createApprovedTopup(input: {
     topupId: string;
     userId: string;
     requestedAmount: number;
-    verifiedSlip: SlipVerificationData;
+    verifiedSlip: VerifiedTopupSlip;
     verifiedAmount: number;
     proofImage: string | null;
     verifyMethod: TopupVerifyMethod;
-    verifyTarget: EasySlipVerifyTarget;
 }) {
     await db.transaction(async (tx) => {
         await tx.insert(topups).values(encryptTopupSensitiveFields(buildApprovedTopupInsert({
@@ -86,7 +85,6 @@ export async function createApprovedTopup(input: {
             verifiedAmount: input.verifiedAmount,
             proofImage: input.proofImage,
             verifyMethod: input.verifyMethod,
-            verifyTarget: input.verifyTarget,
         }),
     });
 

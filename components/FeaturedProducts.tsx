@@ -1,4 +1,3 @@
-import { Flame } from "lucide-react";
 import { ProductCard } from "@/components/ProductCard";
 import { ProductCarouselControls } from "@/components/ProductCarouselControls";
 import { themeClasses } from "@/lib/theme";
@@ -61,7 +60,6 @@ export function FeaturedProducts({
         containerClassName="swipe-container scrollbar-hide -mt-2 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-4 pt-2"
         header={(
           <div className="flex min-w-0 items-center gap-2">
-            <Flame className="h-5 w-5 animate-pulse text-orange-500 dark:text-red-400 sm:h-6 sm:w-6" />
             <h2 className="text-xl font-bold leading-tight text-foreground sm:text-2xl">สินค้าแนะนำ</h2>
           </div>
         )}

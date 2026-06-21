@@ -51,7 +51,7 @@ export function ProductCard({
                 `}
             >
                 <div className={`${themeClasses.surfaceMedia} relative aspect-square overflow-hidden border-b border-border/80`}>
-                    <div className="absolute top-3 left-3 z-10">
+                    <div className="absolute top-3 left-3 z-10 hidden sm:block">
                         <span className={`${themeClasses.badge} storefront-product-category rounded-full px-2 py-1 text-xs font-medium shadow-sm`}>
                             {category}
                         </span>

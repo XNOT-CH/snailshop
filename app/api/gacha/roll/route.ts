@@ -3,13 +3,16 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { and, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
 import { isAuthenticatedWithCsrf } from "@/lib/auth";
-import { db, gachaRewards, gachaRollLogs, products } from "@/lib/db";
+import { db, gachaRewards, gachaRollLogs } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/encryption";
 import {
     acquireGachaExecutionLock,
     claimProductRewardOrThrow,
     deductUserBalanceOrThrow,
+    fetchProductRewardForClaimOrThrow,
+    GACHA_REDIS_REQUIRED_MESSAGE,
     grantCurrencyReward,
+    isProductionGachaRedisMissing,
 } from "@/lib/gachaExecution";
 import {
     buildGrid,
@@ -105,8 +108,6 @@ async function fetchRewards(machineId: string | null) {
                     name: true,
                     orderId: true,
                     price: true,
-                    secretData: true,
-                    stockSeparator: true,
                 },
             },
         },
@@ -126,10 +127,6 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
     const userRes = await fetchGachaUserOrError(userId);
     if ("error" in userRes) {
         return userRes;
-    }
-
-    if (dailySpinLimit > 0) {
-        await checkDailySpinLimit({ userId, machineId, dailySpinLimit });
     }
 
     const { allRewards, tieredProducts } = await fetchTieredProducts(machineId);
@@ -183,6 +180,10 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
     );
 
     const finalizedResult = await db.transaction(async (tx) => {
+        if (dailySpinLimit > 0) {
+            await checkDailySpinLimit({ dbClient: tx, userId, machineId, dailySpinLimit });
+        }
+
         if (chosenRewardId.startsWith("reward:")) {
             const rewardRowId = chosenRewardId.replace("reward:", "");
             const chosenRewardRow = allRewards.find((reward) => reward.id === rewardRowId);
@@ -219,23 +220,7 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
             };
         }
 
-        const product = await tx.query.products.findFirst({
-            where: eq(products.id, chosenRewardId),
-            columns: {
-                id: true,
-                imageUrl: true,
-                isSold: true,
-                name: true,
-                orderId: true,
-                price: true,
-                secretData: true,
-                stockSeparator: true,
-            },
-        });
-
-        if (!product) {
-            throw new Error("รางวัลนี้ถูกใช้งานไปแล้ว กรุณาสุ่มใหม่");
-        }
+        const product = await fetchProductRewardForClaimOrThrow(tx, chosenRewardId);
 
         try {
             const claimedReward = await claimProductRewardOrThrow(tx, {
@@ -256,8 +241,8 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
                 gachaMachineId: machineId,
                 id: crypto.randomUUID(),
                 productId: product.id,
-                rewardImageUrl: product.imageUrl ?? null,
-                rewardName: product.name,
+                rewardImageUrl: rewardMeta?.imageUrl ?? null,
+                rewardName: rewardMeta?.name ?? "รางวัล",
                 selectorLabel,
                 tier,
                 userId,
@@ -268,9 +253,9 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
                 orderId: claimedReward.orderId,
                 product: {
                     id: product.id,
-                    imageUrl: product.imageUrl,
-                    name: product.name,
-                    price: Number(product.price),
+                    imageUrl: rewardMeta?.imageUrl ?? null,
+                    name: rewardMeta?.name ?? "รางวัล",
+                    price: rewardMeta?.price ?? 0,
                     tier,
                 },
                 rLabel,
@@ -281,7 +266,7 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
                 throw error;
             }
 
-            const fallbackAmount = Math.max(0, Number(chosenProductReward?.rewardAmount ?? product.price ?? 0));
+            const fallbackAmount = Math.max(0, Number(chosenProductReward?.rewardAmount ?? rewardMeta?.price ?? 0));
 
             await finalizeCurrencyRewardRoll(
                 tx,
@@ -294,8 +279,8 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
                 fallbackAmount,
                 {
                     id: `fallback-credit:${product.id}`,
-                    imageUrl: product.imageUrl,
-                    name: `เครดิตชดเชยแทน ${product.name}`,
+                    imageUrl: rewardMeta?.imageUrl ?? null,
+                    name: `เครดิตชดเชยแทน ${rewardMeta?.name ?? "รางวัล"}`,
                     price: fallbackAmount,
                     rewardAmount: fallbackAmount,
                     rewardType: "CREDIT",
@@ -309,8 +294,8 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
                 orderId: null,
                 product: {
                     id: `fallback-credit:${product.id}`,
-                    imageUrl: product.imageUrl,
-                    name: `เครดิตชดเชยแทน ${product.name}`,
+                    imageUrl: rewardMeta?.imageUrl ?? null,
+                    name: `เครดิตชดเชยแทน ${rewardMeta?.name ?? "รางวัล"}`,
                     price: fallbackAmount,
                     rewardAmount: fallbackAmount,
                     rewardType: "CREDIT",
@@ -538,6 +523,13 @@ export async function POST(req: Request) {
         machineId = (body.machineId as string | null | undefined) ?? null;
     } catch {
         // Ignore missing body and use defaults.
+    }
+
+    if (isProductionGachaRedisMissing()) {
+        return NextResponse.json(
+            { success: false, message: GACHA_REDIS_REQUIRED_MESSAGE },
+            { status: 503 },
+        );
     }
 
     const executionLock = spin === 3

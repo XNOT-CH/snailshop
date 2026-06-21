@@ -41,6 +41,7 @@ export async function GET() {
                 bannerImage3: "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=2000&h=500&fit=crop",
                 bannerTitle3: "Instant Delivery 24/7",
                 bannerSubtitle3: "ระบบอัตโนมัติ ได้ของทันทีไม่ต้องรอ",
+                welcomeStripImagesJson: "[]",
                 createdAt: mysqlNow(),
                 updatedAt: mysqlNow(),
             });

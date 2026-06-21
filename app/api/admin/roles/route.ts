@@ -2,7 +2,7 @@ import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
 import { db, roles } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { requirePermission } from "@/lib/auth";
+import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
 import { roleSchema } from "@/lib/validations/content";
@@ -23,7 +23,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-    const authCheck = await requirePermission(PERMISSIONS.USER_MANAGE_ROLE);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.USER_MANAGE_ROLE);
     if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const result = await validateBody(request, roleSchema);

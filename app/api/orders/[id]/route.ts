@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { auth } from "@/auth";
+import { isAuthenticatedWithCsrf } from "@/lib/auth";
 import { db, orders } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
 import {
@@ -54,12 +55,12 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
  * DELETE /api/orders/[id]
  * Allows the authenticated user to delete (hide) one of their own orders from their inventory.
  */
-export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
     try {
-        const session = await auth();
-        const userId = session?.user?.id;
-        if (!userId) {
-            return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
+        const authCheck = await isAuthenticatedWithCsrf(request);
+        const userId = authCheck.userId;
+        if (!authCheck.success || !userId) {
+            return NextResponse.json({ success: false, message: authCheck.error ?? "กรุณาเข้าสู่ระบบก่อน" }, { status: 401 });
         }
 
         const { id } = await params;

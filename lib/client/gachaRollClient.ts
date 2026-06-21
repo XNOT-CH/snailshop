@@ -1,4 +1,5 @@
 import { API_ROUTES } from "@/lib/constants/apiRoutes";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import type { GachaProductLite } from "@/lib/gachaGrid";
 
 export type GachaRollSpin = 1 | 2 | 3;
@@ -58,7 +59,7 @@ export async function parseGachaRollResponse(response: Response): Promise<GachaR
 
 export async function requestGachaRoll(
     payload: GachaRollRequestPayload,
-    { fetcher = fetch }: RequestGachaRollOptions = {},
+    { fetcher = fetchWithCsrf }: RequestGachaRollOptions = {},
 ): Promise<GachaRollResponse> {
     const response = await fetcher(API_ROUTES.GACHA_ROLL, {
         ...GACHA_ROLL_REQUEST_INIT,

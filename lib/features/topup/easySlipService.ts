@@ -1,303 +1,272 @@
-import {
-    createSlipProxy,
-    getImageExtension,
-    mapEasySlipV2Error,
-    type EasySlipV2VerifyInput,
-    type EasySlipVerifyTarget,
-} from "@/lib/features/topup/slipHelpers";
+export const EASYSLIP_V2_BASE_URL = "https://api.easyslip.com/v2";
+export const EASYSLIP_V2_INFO_URL = `${EASYSLIP_V2_BASE_URL}/info`;
+export const EASYSLIP_V2_VERIFY_BANK_URL = `${EASYSLIP_V2_BASE_URL}/verify/bank`;
+export const EASYSLIP_V2_VERIFY_TRUEWALLET_URL = `${EASYSLIP_V2_BASE_URL}/verify/truewallet`;
 
-const EASYSLIP_API_URL = "https://developer.easyslip.com/api/v1/verify";
-const EASYSLIP_V2_VERIFY_BANK_URL = "https://api.easyslip.com/v2/verify/bank";
-const EASYSLIP_V2_VERIFY_TRUEWALLET_URL = "https://api.easyslip.com/v2/verify/truewallet";
-const TRUEWALLET_BANK = {
-    id: "TRUEMONEYWALLET",
-    name: "TrueMoney Wallet",
-    short: "TRUEWALLET",
-};
+const EASYSLIP_API_KEY_ENV = "EASYSLIP_API_KEY";
 
-export interface SlipPartyInfo {
-    bank: { id?: string; name?: string; short?: string };
+export interface EasySlipV2Error {
+    code: string;
+    message: string;
+}
+
+export interface EasySlipV2SuccessResponse<TData> {
+    success: true;
+    data: TData;
+    message: string;
+}
+
+export interface EasySlipV2ErrorResponse {
+    success: false;
+    error: EasySlipV2Error;
+}
+
+export type EasySlipV2Response<TData> = EasySlipV2SuccessResponse<TData> | EasySlipV2ErrorResponse;
+
+export interface EasySlipV2RequestResult<TData> {
+    status: number;
+    response: EasySlipV2Response<TData>;
+}
+
+export interface EasySlipMatchedAccount {
+    bank: {
+        nameTh: string;
+        nameEn: string;
+        code: string;
+        shortCode: string;
+    };
+    nameTh: string;
+    nameEn: string;
+    type: "PERSONAL" | "JURISTIC";
+    bankNumber: string;
+}
+
+export interface EasySlipBankParty {
+    bank: {
+        id: string;
+        name: string;
+        short: string;
+    };
     account: {
-        name: { th?: string; en?: string };
-        bank?: { type?: string; account?: string };
-        proxy?: { type?: string; account?: string };
+        name: {
+            th?: string;
+            en?: string;
+        };
+        bank?: {
+            type: "BANKAC" | "TOKEN" | "DUMMY";
+            account: string;
+        };
+        proxy?: {
+            type: "NATID" | "MSISDN" | "EWALLETID" | "EMAIL" | "BILLERID";
+            account: string;
+        };
     };
 }
 
-export interface SlipVerificationData {
+export interface EasySlipBankRawSlip {
     payload: string;
     transRef: string;
     date: string;
     countryCode: string;
     amount: {
         amount: number;
-        local: { amount?: number; currency?: string };
-    };
-    fee?: number;
-    ref1?: string;
-    ref2?: string;
-    ref3?: string;
-    sender: SlipPartyInfo;
-    receiver: SlipPartyInfo & { merchantId?: string | null };
-}
-
-export interface SlipVerificationResult {
-    status: number;
-    message?: string;
-    data?: SlipVerificationData;
-}
-
-interface EasySlipV2Response {
-    success: boolean;
-    data?: {
-        remark?: string;
-        isDuplicate?: boolean;
-        matchedAccount?: {
-            bank?: {
-                nameTh?: string;
-                nameEn?: string;
-                code?: string;
-                shortCode?: string;
-            };
-            nameTh?: string;
-            nameEn?: string;
-            type?: "PERSONAL" | "JURISTIC";
-            bankNumber?: string;
-        } | null;
-        amountInOrder?: number;
-        amountInSlip?: number;
-        isAmountMatched?: boolean;
-        rawSlip?: {
-            payload: string;
-            transRef: string;
-            date: string;
-            countryCode: string;
-            amount: {
-                amount: number;
-                local: { amount?: number; currency?: string };
-            };
-            fee?: number;
-            ref1?: string;
-            ref2?: string;
-            ref3?: string;
-            sender?: SlipPartyInfo;
-            receiver?: SlipPartyInfo & { merchantId?: string | null };
-        };
-    };
-    error?: {
-        code?: string;
-        message?: string;
-    };
-    message?: string;
-}
-
-interface EasySlipV2TrueWalletResponse {
-    success: boolean;
-    data?: {
-        remark?: string;
-        isDuplicate?: boolean;
-        matchedAccount?: {
-            bank?: {
-                nameTh?: string;
-                nameEn?: string;
-                code?: string;
-                shortCode?: string;
-            };
-            nameTh?: string;
-            nameEn?: string;
-            type?: "PERSONAL" | "JURISTIC";
-            bankNumber?: string;
-        } | null;
-        amountInOrder?: number;
-        amountInSlip?: number;
-        isAmountMatched?: boolean;
-        rawSlip?: {
-            transactionId: string;
-            date: string;
+        local: {
             amount: number;
-            sender?: {
-                name?: string;
-            };
-            receiver?: {
-                name?: string;
-                phone?: string;
-            };
+            currency: string;
         };
     };
-    error?: {
-        code?: string;
-        message?: string;
-    };
-    message?: string;
+    fee: number;
+    ref1: string;
+    ref2: string;
+    ref3: string;
+    sender: EasySlipBankParty;
+    receiver: EasySlipBankParty & { merchantId?: string | null };
 }
 
-export async function verifySlipWithEasySlip(file: File): Promise<SlipVerificationResult> {
-    const token = process.env.EASYSLIP_TOKEN;
-    if (!token) {
-        throw new Error("EASYSLIP_NOT_CONFIGURED");
+export interface EasySlipBankVerifyData {
+    remark?: string;
+    isDuplicate: boolean;
+    matchedAccount: EasySlipMatchedAccount | null;
+    amountInOrder?: number;
+    amountInSlip: number;
+    isAmountMatched?: boolean;
+    rawSlip: EasySlipBankRawSlip;
+}
+
+export interface EasySlipTrueWalletRawSlip {
+    transactionId: string;
+    date: string;
+    amount: number;
+    sender: {
+        name: string;
+    };
+    receiver: {
+        name: string;
+        phone: string;
+    };
+}
+
+export interface EasySlipTrueWalletVerifyData {
+    remark?: string;
+    isDuplicate: boolean;
+    matchedAccount: EasySlipMatchedAccount | null;
+    amountInOrder?: number;
+    amountInSlip: number;
+    isAmountMatched?: boolean;
+    rawSlip: EasySlipTrueWalletRawSlip;
+}
+
+export interface EasySlipInfoData {
+    application: {
+        name: string;
+        autoRenew: {
+            expired: boolean;
+            quota: boolean;
+            createdAt: string;
+            expiresAt: string;
+        };
+        quota: {
+            used: number;
+            max: number | null;
+            remaining: number | null;
+            totalUsed: number;
+        };
+    };
+    branch: {
+        name: string;
+        isActive: boolean;
+        quota: {
+            used: number;
+            totalUsed: number;
+        };
+    };
+    account: {
+        email: string;
+        credit: number;
+    };
+    product: {
+        name: string;
+    };
+}
+
+export interface EasySlipV2VerifyOptions {
+    remark?: string;
+    matchAccount?: boolean;
+    matchAmount?: number;
+    checkDuplicate?: boolean;
+}
+
+export type EasySlipBankVerifyInput =
+    | ({ payload: string } & EasySlipV2VerifyOptions)
+    | ({ image: File } & EasySlipV2VerifyOptions)
+    | ({ base64: string } & EasySlipV2VerifyOptions)
+    | ({ url: string } & EasySlipV2VerifyOptions);
+
+export type EasySlipTrueWalletVerifyInput =
+    | ({ image: File } & EasySlipV2VerifyOptions)
+    | ({ base64: string } & EasySlipV2VerifyOptions)
+    | ({ url: string } & EasySlipV2VerifyOptions);
+
+function getEasySlipApiKey() {
+    const apiKey = process.env[EASYSLIP_API_KEY_ENV]?.trim();
+    if (!apiKey) {
+        throw new Error(`${EASYSLIP_API_KEY_ENV} is not configured.`);
     }
 
-    const extension = getImageExtension(file.type);
+    return apiKey;
+}
 
+function appendEasySlipFormOption(formData: FormData, key: keyof EasySlipV2VerifyOptions, value: unknown) {
+    if (value === undefined || value === null || value === "") {
+        return;
+    }
+
+    formData.append(key, typeof value === "boolean" ? String(value) : String(value));
+}
+
+function buildEasySlipJsonBody(input: EasySlipBankVerifyInput | EasySlipTrueWalletVerifyInput) {
+    const body: Record<string, string | number | boolean> = {};
+
+    if ("payload" in input) body.payload = input.payload;
+    if ("base64" in input) body.base64 = input.base64;
+    if ("url" in input) body.url = input.url;
+    if (input.remark) body.remark = input.remark;
+    if (typeof input.matchAccount === "boolean") body.matchAccount = input.matchAccount;
+    if (typeof input.matchAmount === "number") body.matchAmount = input.matchAmount;
+    if (typeof input.checkDuplicate === "boolean") body.checkDuplicate = input.checkDuplicate;
+
+    return body;
+}
+
+function buildEasySlipImageFormData(input: { image: File } & EasySlipV2VerifyOptions) {
     const formData = new FormData();
-    formData.append("file", file, `slip.${extension}`);
-    formData.append("checkDuplicate", "true");
+    formData.append("image", input.image, input.image.name || "slip");
+    appendEasySlipFormOption(formData, "remark", input.remark);
+    appendEasySlipFormOption(formData, "matchAccount", input.matchAccount);
+    appendEasySlipFormOption(formData, "matchAmount", input.matchAmount);
+    appendEasySlipFormOption(formData, "checkDuplicate", input.checkDuplicate);
 
-    const response = await fetch(EASYSLIP_API_URL, {
-        method: "POST",
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-        body: formData,
+    return formData;
+}
+
+async function requestEasySlipV2<TData>(
+    url: string,
+    init: RequestInit,
+): Promise<EasySlipV2RequestResult<TData>> {
+    const headers = new Headers(init.headers);
+    headers.set("Authorization", `Bearer ${getEasySlipApiKey()}`);
+
+    const response = await fetch(url, {
+        ...init,
+        headers,
     });
 
-    return response.json() as Promise<SlipVerificationResult>;
+    return {
+        status: response.status,
+        response: await response.json() as EasySlipV2Response<TData>,
+    };
 }
 
-export async function verifySlipWithEasySlipV2(
-    input: EasySlipV2VerifyInput,
-    target: EasySlipVerifyTarget = "bank",
-): Promise<SlipVerificationResult> {
-    const apiKey = process.env.EASYSLIP_API_KEY;
-    if (!apiKey) {
-        throw new Error("EASYSLIP_V2_NOT_CONFIGURED");
-    }
+export async function getEasySlipInfo(): Promise<EasySlipV2RequestResult<EasySlipInfoData>> {
+    return requestEasySlipV2<EasySlipInfoData>(EASYSLIP_V2_INFO_URL, {
+        method: "GET",
+    });
+}
 
-    if (target === "truewallet" && "payload" in input) {
-        return {
-            status: 400,
-            message: "TrueMoney Wallet does not support payload verification",
-        };
-    }
-
-    let response: Response;
-    const endpoint = target === "truewallet"
-        ? EASYSLIP_V2_VERIFY_TRUEWALLET_URL
-        : EASYSLIP_V2_VERIFY_BANK_URL;
-
+export async function verifyBankSlipWithEasySlipV2(
+    input: EasySlipBankVerifyInput,
+): Promise<EasySlipV2RequestResult<EasySlipBankVerifyData>> {
     if ("image" in input) {
-        const formData = new FormData();
-        formData.append("image", input.image, input.image.name || "slip");
-        formData.append("matchAccount", "true");
-        formData.append("checkDuplicate", "true");
-        if (typeof input.expectedAmount === "number" && Number.isFinite(input.expectedAmount) && input.expectedAmount > 0) {
-            formData.append("matchAmount", String(input.expectedAmount));
-        }
-        if (input.remark) {
-            formData.append("remark", input.remark);
-        }
-
-        response = await fetch(endpoint, {
+        return requestEasySlipV2<EasySlipBankVerifyData>(EASYSLIP_V2_VERIFY_BANK_URL, {
             method: "POST",
-            headers: {
-                Authorization: `Bearer ${apiKey}`,
-            },
-            body: formData,
-        });
-    } else {
-        const requestBody: Record<string, unknown> = {
-            matchAccount: true,
-            checkDuplicate: true,
-        };
-
-        if ("payload" in input) requestBody.payload = input.payload;
-        if ("base64" in input) requestBody.base64 = input.base64;
-        if ("url" in input) requestBody.url = input.url;
-        if (typeof input.expectedAmount === "number" && Number.isFinite(input.expectedAmount) && input.expectedAmount > 0) {
-            requestBody.matchAmount = input.expectedAmount;
-        }
-        if (input.remark) {
-            requestBody.remark = input.remark;
-        }
-
-        response = await fetch(endpoint, {
-            method: "POST",
-            headers: {
-                Authorization: `Bearer ${apiKey}`,
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(requestBody),
+            body: buildEasySlipImageFormData(input),
         });
     }
 
-    const result = await response.json() as EasySlipV2Response | EasySlipV2TrueWalletResponse;
-
-    if (!result.success) {
-        return {
-            status: response.status,
-            message: mapEasySlipV2Error(result.error?.code, result.error?.message),
-        };
-    }
-
-    if (target === "truewallet") {
-        const walletResult = result as EasySlipV2TrueWalletResponse;
-        const slip = walletResult.data?.rawSlip;
-        if (!slip?.transactionId) {
-            return {
-                status: 400,
-                message: "ข้อมูลสลิปไม่สมบูรณ์",
-            };
-        }
-
-        return {
-            status: 200,
-            message: walletResult.message,
-            data: {
-                payload: "",
-                transRef: slip.transactionId,
-                date: slip.date,
-                countryCode: "TH",
-                amount: {
-                    amount: slip.amount,
-                    local: {
-                        amount: slip.amount,
-                        currency: "THB",
-                    },
-                },
-                sender: {
-                    bank: TRUEWALLET_BANK,
-                    account: {
-                        name: {
-                            th: slip.sender?.name,
-                        },
-                    },
-                },
-                receiver: {
-                    bank: TRUEWALLET_BANK,
-                    account: {
-                        name: {
-                            th: slip.receiver?.name,
-                        },
-                        proxy: createSlipProxy(slip.receiver?.phone),
-                    },
-                },
-            },
-        };
-    }
-
-    const slip = (result as EasySlipV2Response).data?.rawSlip;
-    if (!slip?.transRef) {
-        return {
-            status: 400,
-            message: "ข้อมูลสลิปไม่สมบูรณ์",
-        };
-    }
-
-    return {
-        status: 200,
-        message: result.message,
-        data: {
-            payload: slip.payload,
-            transRef: slip.transRef,
-            date: slip.date,
-            countryCode: slip.countryCode,
-            amount: slip.amount,
-            fee: slip.fee,
-            ref1: slip.ref1,
-            ref2: slip.ref2,
-            ref3: slip.ref3,
-            sender: slip.sender ?? { bank: {}, account: { name: {} } },
-            receiver: slip.receiver ?? { bank: {}, account: { name: {} } },
+    return requestEasySlipV2<EasySlipBankVerifyData>(EASYSLIP_V2_VERIFY_BANK_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
         },
-    };
+        body: JSON.stringify(buildEasySlipJsonBody(input)),
+    });
+}
+
+export async function verifyTrueWalletSlipWithEasySlipV2(
+    input: EasySlipTrueWalletVerifyInput,
+): Promise<EasySlipV2RequestResult<EasySlipTrueWalletVerifyData>> {
+    if ("image" in input) {
+        return requestEasySlipV2<EasySlipTrueWalletVerifyData>(EASYSLIP_V2_VERIFY_TRUEWALLET_URL, {
+            method: "POST",
+            body: buildEasySlipImageFormData(input),
+        });
+    }
+
+    return requestEasySlipV2<EasySlipTrueWalletVerifyData>(EASYSLIP_V2_VERIFY_TRUEWALLET_URL, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify(buildEasySlipJsonBody(input)),
+    });
 }

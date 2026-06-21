@@ -25,6 +25,7 @@ import {
     ShieldCheck,
 } from "lucide-react";
 import { showSuccess, showDeleteConfirm, showError } from "@/lib/swal";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { themeClasses } from "@/lib/theme";
 
 interface PurchasedItemProps {
@@ -79,7 +80,7 @@ export function PurchasedItem({
 
         setIsDeleting(true);
         try {
-            const response = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
+            const response = await fetchWithCsrf(`/api/orders/${orderId}`, { method: "DELETE" });
             const data = await response.json();
 
             if (data.success) {

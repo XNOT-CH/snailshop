@@ -1,24 +1,20 @@
+import { SAFE_PUBLIC_URL_ERROR, isSafePublicUrl, normalizeSafeUrlInput } from "@/lib/sanitize";
+
 export const NEWS_TITLE_MAX_LENGTH = 180;
 export const NEWS_DESCRIPTION_MAX_LENGTH = 1200;
 export const NEWS_MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 export const NEWS_MAX_IMAGE_ASPECT_RATIO = 4;
-
-const ABSOLUTE_HTTP_URL_PATTERN = /^https?:\/\/.+/i;
 
 export function normalizeNewsTextInput(value: string): string {
   return value.trim().replaceAll(/\s+/g, " ");
 }
 
 export function normalizeNewsUrlInput(value: string): string {
-  return value.trim();
+  return normalizeSafeUrlInput(value);
 }
 
 export function isValidNewsUrl(value: string): boolean {
-  return (
-    !value ||
-    value.startsWith("/") ||
-    ABSOLUTE_HTTP_URL_PATTERN.test(value)
-  );
+  return !value || isSafePublicUrl(value);
 }
 
 export function validateNewsUrlInput(value: string): string | null {
@@ -29,7 +25,7 @@ export function validateNewsUrlInput(value: string): string | null {
   }
 
   if (!isValidNewsUrl(normalized)) {
-    return "URL ไม่ถูกต้อง (ต้องขึ้นต้นด้วย / หรือ http:// หรือ https://)";
+    return SAFE_PUBLIC_URL_ERROR;
   }
 
   return null;

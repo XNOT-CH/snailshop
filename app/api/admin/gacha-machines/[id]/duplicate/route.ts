@@ -1,4 +1,4 @@
-import { requirePermission } from "@/lib/auth";
+import { requirePermissionWithCsrf } from "@/lib/auth";
 import { db, gachaMachines, gachaRewards } from "@/lib/db";
 import { mysqlNow } from "@/lib/utils/date";
 import { eq } from "drizzle-orm";
@@ -7,7 +7,7 @@ import { normalizeGachaCost } from "@/lib/gachaCost";
 import { gachaApiError, gachaApiSuccess } from "@/lib/features/gacha/apiResponse";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-    const auth = await requirePermission(PERMISSIONS.GACHA_EDIT);
+    const auth = await requirePermissionWithCsrf(req, PERMISSIONS.GACHA_EDIT);
     if (!auth.success) return gachaApiError(undefined, { status: 401 });
 
     try {

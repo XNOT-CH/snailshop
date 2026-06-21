@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq, ne, sql } from "drizzle-orm";
-import { auth } from "@/auth";
+import { isAuthenticatedWithCsrf } from "@/lib/auth";
 import { db, promoCodes, promoUsages, users } from "@/lib/db";
+import {
+    checkPromoValidationRateLimit,
+    clearPromoValidationAttempts,
+    getClientIp,
+    recordFailedPromoValidation,
+} from "@/lib/rateLimit";
 import { assertPinForProtectedAction } from "@/lib/security/pin";
 
 function getCreditCodeValidationMessage(promo: {
@@ -38,12 +44,17 @@ function getCreditCodeValidationMessage(promo: {
 }
 
 export async function POST(request: NextRequest) {
-    try {
-        const session = await auth();
-        const userId = session?.user?.id;
+    let rateLimitIdentifier: string | null = null;
 
-        if (!userId) {
-            return NextResponse.json({ success: false, message: "กรุณาเข้าสู่ระบบก่อนเติมโค้ด" }, { status: 401 });
+    try {
+        const authCheck = await isAuthenticatedWithCsrf(request);
+        const userId = authCheck.userId;
+
+        if (!authCheck.success || !userId) {
+            return NextResponse.json({
+                success: false,
+                message: authCheck.error ?? "กรุณาเข้าสู่ระบบก่อนเติมโค้ด",
+            }, { status: 401 });
         }
 
         const body = await request.json() as { code?: string; pin?: string };
@@ -53,8 +64,19 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: "กรุณากรอกโค้ดก่อนเติมโค้ด" }, { status: 400 });
         }
 
+        const promoRateLimitIdentifier = `${getClientIp(request)}:${userId}`;
+        rateLimitIdentifier = promoRateLimitIdentifier;
+        const rateLimit = checkPromoValidationRateLimit(promoRateLimitIdentifier);
+        if (rateLimit.blocked) {
+            return NextResponse.json({
+                success: false,
+                message: rateLimit.message ?? "กรอกโค้ดผิดบ่อยเกินไป กรุณาลองใหม่ภายหลัง",
+            }, { status: 429 });
+        }
+
         const pinCheck = await assertPinForProtectedAction(userId, body.pin);
         if (!pinCheck.success) {
+            recordFailedPromoValidation(promoRateLimitIdentifier);
             return NextResponse.json({ success: false, message: pinCheck.message }, { status: pinCheck.status });
         }
 
@@ -127,12 +149,18 @@ export async function POST(request: NextRequest) {
             };
         });
 
+        clearPromoValidationAttempts(promoRateLimitIdentifier);
+
         return NextResponse.json({
             success: true,
             message: `เติมเครดิตสำเร็จ +฿${result.amount.toLocaleString()}`,
             data: result,
         });
     } catch (error) {
+        if (rateLimitIdentifier) {
+            recordFailedPromoValidation(rateLimitIdentifier);
+        }
+
         return NextResponse.json({
             success: false,
             message: error instanceof Error ? error.message : "ไม่สามารถเติมโค้ดได้",

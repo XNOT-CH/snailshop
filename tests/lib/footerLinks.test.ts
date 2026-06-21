@@ -10,6 +10,8 @@ describe("footer link sanitization", () => {
   it("rejects loopback and malformed links", () => {
     expect(isUnsafePublicFooterHref("http://localhost:3000/")).toBe(true);
     expect(isUnsafePublicFooterHref("http://127.0.0.1:3001/")).toBe(true);
+    expect(isUnsafePublicFooterHref("//evil.example/path")).toBe(true);
+    expect(isUnsafePublicFooterHref("javascript:alert(1)")).toBe(true);
     expect(isUnsafePublicFooterHref("notaurl")).toBe(true);
   });
 
@@ -17,7 +19,8 @@ describe("footer link sanitization", () => {
     const result = sanitizePublicFooterLinks([
       { id: "1", label: "Help", href: "/help", openInNewTab: false },
       { id: "2", label: "Local", href: "http://localhost:3000/", openInNewTab: true },
-      { id: "3", label: "Facebook", href: "https://facebook.com/example", openInNewTab: true },
+      { id: "3", label: "Facebook", href: "  https://facebook.com/example  ", openInNewTab: true },
+      { id: "4", label: "Bad", href: "//evil.example/path", openInNewTab: true },
     ]);
 
     expect(result).toEqual([

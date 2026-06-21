@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { requirePermission } from "@/lib/auth";
+import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { db, seasonPassPlans } from "@/lib/db";
 import { SEASON_PASS_REWARD_DAYS } from "@/lib/seasonPassConfig";
 import { getOrCreateSeasonPassPlan } from "@/lib/seasonPass";
@@ -40,7 +40,7 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
-    const authCheck = await requirePermission(PERMISSIONS.SEASON_PASS_EDIT);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.SEASON_PASS_EDIT);
     if (!authCheck.success) {
         return contentApiError("Unauthorized", { status: 401 });
     }

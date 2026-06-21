@@ -15,7 +15,7 @@ This folder contains public and admin route handlers.
 - Content:
   `news/route.ts`, `popups/route.ts`, `nav-items/route.ts`, `footer-widget/route.ts`
 - Topup:
-  `topup/route.ts`, `admin/slips/route.ts`, `admin/easyslip-info/route.ts`
+  `topup/route.ts`, `admin/slips/route.ts`
 - Gacha:
   `gacha/*`, `admin/gacha-*/*`
 
@@ -28,7 +28,7 @@ This folder contains public and admin route handlers.
 - Product mutation:
   `products/[id]/route.ts`, `admin/products/[id]/featured/route.ts`, `admin/products/[id]/duplicate/route.ts`
 - Topup:
-  `topup/route.ts`, `admin/slips/route.ts`, `admin/easyslip-info/route.ts`
+  `topup/route.ts`, `admin/slips/route.ts`
 - Site settings/content:
   `admin/settings/route.ts`, `admin/news/route.ts`, `admin/nav-items/route.ts`, `admin/footer-links/route.ts`
 - Gacha:
@@ -48,4 +48,4 @@ This folder contains public and admin route handlers.
 - Some admin routes require `requirePermission`, others `requireAnyPermission`.
 - Topup and security-sensitive routes may require both auth and PIN/CSRF validation.
 - External services involved:
-  EasySlip, upload endpoints, email, optional Redis-backed services
+  EasySlip API v2, upload endpoints, email, optional Redis-backed services

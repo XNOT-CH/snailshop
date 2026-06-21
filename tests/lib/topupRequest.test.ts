@@ -130,6 +130,15 @@ describe("topup request parser", () => {
         });
     });
 
+    it("rejects remarks longer than the EasySlip v2 remark limit", () => {
+        expect(validateParsedTopupRequest(buildParsedTopupRequest({
+            remark: "x".repeat(256),
+        }))).toEqual({
+            message: "หมายเหตุต้องไม่เกิน 255 ตัวอักษร",
+            status: 400,
+        });
+    });
+
     it("accepts valid parsed topup requests", () => {
         expect(validateParsedTopupRequest(buildParsedTopupRequest())).toBeNull();
     });

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requirePermission } from "@/lib/auth";
+import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { db, gachaMachines } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { validateBody } from "@/lib/validations/validate";
@@ -24,7 +24,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
 }
 
 export async function PATCH(req: Request, { params }: RouteParams) {
-    const auth = await requirePermission(PERMISSIONS.GACHA_EDIT);
+    const auth = await requirePermissionWithCsrf(req, PERMISSIONS.GACHA_EDIT);
     if (!auth.success) return gachaApiError(undefined, { status: 401 });
     const { id } = await params;
 
@@ -63,7 +63,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(_req: Request, { params }: RouteParams) {
-    const auth = await requirePermission(PERMISSIONS.GACHA_EDIT);
+    const auth = await requirePermissionWithCsrf(_req, PERMISSIONS.GACHA_EDIT);
     if (!auth.success) return gachaApiError(undefined, { status: 401 });
     const { id } = await params;
     await db.delete(gachaMachines).where(eq(gachaMachines.id, id));

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
-import { auth } from "@/auth";
 import { EmailVerificationEmail } from "@/components/emails/EmailVerificationEmail";
+import { isAuthenticatedWithCsrf } from "@/lib/auth";
 import { db, users } from "@/lib/db";
 import { createEmailVerificationToken } from "@/lib/emailVerification";
 import { getSiteSettings } from "@/lib/getSiteSettings";
@@ -11,12 +11,12 @@ import { resolveSiteName } from "@/lib/seo";
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await auth();
-        const userId = session?.user?.id;
+        const authCheck = await isAuthenticatedWithCsrf(request);
+        const userId = authCheck.userId;
 
-        if (!userId) {
+        if (!authCheck.success || !userId) {
             return NextResponse.json(
-                { success: false, message: "กรุณาเข้าสู่ระบบก่อน" },
+                { success: false, message: authCheck.error ?? "กรุณาเข้าสู่ระบบก่อน" },
                 { status: 401 }
             );
         }

@@ -2,7 +2,7 @@ import { mysqlNow } from "@/lib/utils/date";
 import { NextResponse } from "next/server";
 import { db, helpVideos } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { requirePermission } from "@/lib/auth";
+import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
 import { helpVideoSchema } from "@/lib/validations/content";
 import { normalizeYouTubeVideo } from "@/lib/helpVideos";
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-    const authCheck = await requirePermission(PERMISSIONS.CONTENT_EDIT);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CONTENT_EDIT);
     if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
 
     try {

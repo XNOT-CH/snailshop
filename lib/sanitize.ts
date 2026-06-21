@@ -53,6 +53,55 @@ export function escapeHtml(input: string): string {
     return input.replaceAll(/[&<>"'`=/]/g, (char) => htmlEntities[char] || char);
 }
 
+const LOOPBACK_HOSTNAMES = new Set(["localhost", "127.0.0.1", "::1", "0.0.0.0"]);
+const UNSAFE_URL_CHARACTERS = /[\u0000-\u001F\u007F\s\\]/;
+
+export const SAFE_PUBLIC_URL_ERROR =
+    "URL ไม่ถูกต้อง (ต้องขึ้นต้นด้วย / หรือ http:// หรือ https://)";
+
+export function normalizeSafeUrlInput(value: string): string {
+    return typeof value === "string" ? value.trim() : "";
+}
+
+/**
+ * Allows root-relative app paths and normal http(s) links only.
+ * Rejects protocol-relative links, credentials, loopback hosts, controls, spaces, and backslashes.
+ */
+export function isSafePublicUrl(value: string): boolean {
+    const normalized = normalizeSafeUrlInput(value);
+    if (!normalized || UNSAFE_URL_CHARACTERS.test(normalized)) {
+        return false;
+    }
+
+    if (normalized.startsWith("/")) {
+        return !normalized.startsWith("//") && !normalized.startsWith("/\\");
+    }
+
+    try {
+        const parsed = new URL(normalized);
+        if (!["http:", "https:"].includes(parsed.protocol)) {
+            return false;
+        }
+
+        if (parsed.username || parsed.password) {
+            return false;
+        }
+
+        return !LOOPBACK_HOSTNAMES.has(parsed.hostname);
+    } catch {
+        return false;
+    }
+}
+
+export function toSafePublicHref(value: string | null | undefined, fallback = "#"): string {
+    if (typeof value !== "string") {
+        return fallback;
+    }
+
+    const normalized = normalizeSafeUrlInput(value);
+    return isSafePublicUrl(normalized) ? normalized : fallback;
+}
+
 /**
  * Sanitize object - applies sanitize to all string values
  */

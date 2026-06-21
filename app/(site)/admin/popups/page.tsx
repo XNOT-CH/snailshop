@@ -12,6 +12,7 @@ import {
 } from "@/lib/swal";
 import { compressImage } from "@/lib/compressImage";
 import { uploadFileToApi } from "@/lib/client/uploadClient";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import {
@@ -34,6 +35,7 @@ import {
 import Image from "next/image";
 import { PERMISSIONS } from "@/lib/permissions";
 import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
+import { SAFE_PUBLIC_URL_ERROR, escapeHtml, isSafePublicUrl, toSafePublicHref } from "@/lib/sanitize";
 
 interface AnnouncementPopup {
     id: string;
@@ -113,7 +115,13 @@ export default function AdminPopupsPage() {
                     return;
                 }
 
-                linkPreview.href = nextLink;
+                if (!isSafePublicUrl(nextLink)) {
+                    linkPreview.classList.add("hidden");
+                    linkHint.textContent = SAFE_PUBLIC_URL_ERROR;
+                    return;
+                }
+
+                linkPreview.href = toSafePublicHref(nextLink);
                 linkPreview.classList.remove("hidden");
                 linkHint.textContent = "กดเปิดลิงก์เพื่อเช็กปลายทางก่อนบันทึกได้ทันที";
             };
@@ -195,6 +203,11 @@ export default function AdminPopupsPage() {
             showError("คุณไม่มีสิทธิ์แก้ไข Pop-up");
             return;
         }
+        const escapedTitle = escapeHtml(popup?.title ?? "");
+        const escapedImageUrl = escapeHtml(popup?.imageUrl ?? "");
+        const escapedLinkUrl = escapeHtml(popup?.linkUrl ?? "");
+        const safeImageUrl = escapeHtml(toSafePublicHref(popup?.imageUrl, ""));
+        const safeLinkUrl = escapeHtml(toSafePublicHref(popup?.linkUrl, ""));
         void Swal.fire({
             title: popup ? "แก้ไข Pop-up" : "เพิ่ม Pop-up ใหม่",
             width: "min(96vw, 620px)",
@@ -223,7 +236,7 @@ export default function AdminPopupsPage() {
                             id="swal-title"
                             class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="เช่น โปรโมชันหน้าฝน"
-                            value="${popup?.title || ""}"
+                            value="${escapedTitle}"
                         />
                     </div>
                     <div>
@@ -243,11 +256,11 @@ export default function AdminPopupsPage() {
                                 id="swal-imageUrl"
                                 class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 placeholder="https://example.com/popup-cover.webp"
-                                value="${popup?.imageUrl || ""}"
+                                value="${escapedImageUrl}"
                             />
-                            <div id="swal-img-preview" class="mt-3 ${popup?.imageUrl ? "" : "hidden"}">
+                            <div id="swal-img-preview" class="mt-3 ${safeImageUrl ? "" : "hidden"}">
                                 <img
-                                    src="${popup?.imageUrl || ""}"
+                                    src="${safeImageUrl}"
                                     class="mx-auto h-40 w-40 rounded-2xl border border-gray-200 object-cover"
                                     onerror="this.src='https://placehold.co/300x300/e5e7eb/64748b?text=Preview'"
                                 />
@@ -265,14 +278,14 @@ export default function AdminPopupsPage() {
                                     id="swal-linkUrl"
                                     class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                                     placeholder="https://example.com/promo"
-                                    value="${popup?.linkUrl || ""}"
+                                    value="${escapedLinkUrl}"
                                 />
                                 <a
                                     id="swal-link-preview"
-                                    href="${popup?.linkUrl || "#"}"
+                                    href="${safeLinkUrl || "#"}"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    class="${popup?.linkUrl ? "inline-flex" : "hidden"} items-center justify-center rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50"
+                                    class="${safeLinkUrl ? "inline-flex" : "hidden"} items-center justify-center rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50"
                                 >
                                     เปิดลิงก์
                                 </a>
@@ -369,7 +382,7 @@ export default function AdminPopupsPage() {
         try {
             const url = popup ? `/api/admin/popups/${popup.id}` : "/api/admin/popups";
             const method = popup ? "PUT" : "POST";
-            const res = await fetch(url, {
+            const res = await fetchWithCsrf(url, {
                 method,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(result.value),
@@ -400,7 +413,7 @@ export default function AdminPopupsPage() {
 
         showLoading("กำลังลบ...");
         try {
-            const res = await fetch(`/api/admin/popups/${popup.id}`, { method: "DELETE" });
+            const res = await fetchWithCsrf(`/api/admin/popups/${popup.id}`, { method: "DELETE" });
             hideLoading();
 
             if (res.ok) {
@@ -422,7 +435,7 @@ export default function AdminPopupsPage() {
             return;
         }
         try {
-            const res = await fetch(`/api/admin/popups/${popup.id}`, {
+            const res = await fetchWithCsrf(`/api/admin/popups/${popup.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ...popup, isActive: !popup.isActive }),
@@ -538,7 +551,7 @@ export default function AdminPopupsPage() {
                                     <div className="mt-4 space-y-1.5">
                                         {popup.linkUrl ? (
                                             <a
-                                                href={popup.linkUrl}
+                                                href={toSafePublicHref(popup.linkUrl)}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 className="inline-flex max-w-full items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline"
@@ -647,7 +660,7 @@ export default function AdminPopupsPage() {
                                             <div className="space-y-1.5">
                                                 {popup.linkUrl ? (
                                                     <a
-                                                        href={popup.linkUrl}
+                                                        href={toSafePublicHref(popup.linkUrl)}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="inline-flex max-w-[250px] items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline"

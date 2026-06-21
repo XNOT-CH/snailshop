@@ -196,7 +196,7 @@ test("cart checkout refreshes stale local item data before showing PIN prompt", 
     const refreshBody = await refreshResponse.json();
     expect(refreshBody.items?.[0]?.price).toBe(150);
 
-    await expect(page.locator(".swal2-title")).toContainText("ราคาหรือข้อมูลสินค้ามีการอัปเดต", {
+    await expect(page.getByRole("status").filter({ hasText: "ราคาหรือข้อมูลสินค้ามีการอัปเดต" })).toBeVisible({
         timeout: 30_000,
     });
     await expect(page.locator("#swal-pin-input")).toHaveCount(0);

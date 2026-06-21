@@ -6,11 +6,34 @@ import {
   normalizeNewsTextInput,
 } from "@/lib/newsValidation";
 import { extractYouTubeVideoId } from "@/lib/helpVideos";
+import {
+  SAFE_PUBLIC_URL_ERROR,
+  isSafePublicUrl,
+  normalizeSafeUrlInput,
+} from "@/lib/sanitize";
+
+const safeRequiredUrl = z
+  .string()
+  .min(1, "กรุณากรอก URL")
+  .max(500)
+  .transform((value) => normalizeSafeUrlInput(value))
+  .refine((value) => isSafePublicUrl(value), {
+    message: SAFE_PUBLIC_URL_ERROR,
+  });
+
+const safeOptionalUrl = z
+  .string()
+  .max(500)
+  .optional()
+  .transform((value) => (typeof value === "string" ? normalizeSafeUrlInput(value) : value))
+  .refine((value) => !value || isSafePublicUrl(value), {
+    message: SAFE_PUBLIC_URL_ERROR,
+  });
 
 // Nav item
 export const navItemSchema = z.object({
   label: z.string().min(1, "กรุณากรอกชื่อเมนู").max(100),
-  href: z.string().min(1, "กรุณากรอก URL").max(500),
+  href: safeRequiredUrl,
   icon: z.string().max(100).optional().or(z.literal("")),
   isActive: z.boolean().default(true),
   sortOrder: z.coerce.number().int().min(0).default(0),
@@ -25,25 +48,6 @@ export const currencySettingsSchema = z.object({
   isActive: z.boolean().default(true),
 });
 export type CurrencySettingsInput = z.infer<typeof currencySettingsSchema>;
-
-// Shared URL validators
-const optionalUrl = z
-  .string()
-  .optional()
-  .refine(
-    (v) => !v || v === "" || v.startsWith("/") || /^https?:\/\/.+/.test(v),
-    { message: "URL ไม่ถูกต้อง (ต้องขึ้นต้นด้วย / หรือ http:// หรือ https://)" }
-  );
-
-const requiredUrl = z.string().refine(
-  (v) => !!v && (v.startsWith("/") || /^https?:\/\/.+/.test(v)),
-  { message: "URL ไม่ถูกต้อง (ต้องขึ้นต้นด้วย / หรือ http:// หรือ https://)" }
-);
-
-const normalizedOptionalUrl = z.preprocess(
-  (value) => (typeof value === "string" ? value.trim() : value),
-  optionalUrl,
-);
 
 const requiredNewsText = (label: string, maxLength: number) =>
   z
@@ -60,8 +64,8 @@ const requiredNewsText = (label: string, maxLength: number) =>
 export const newsItemSchema = z.object({
   title: requiredNewsText("หัวข้อข่าว", NEWS_TITLE_MAX_LENGTH),
   description: requiredNewsText("รายละเอียด", NEWS_DESCRIPTION_MAX_LENGTH),
-  imageUrl: normalizedOptionalUrl,
-  link: normalizedOptionalUrl,
+  imageUrl: safeOptionalUrl,
+  link: safeOptionalUrl,
   sortOrder: z.coerce.number().int().min(0).default(0),
   isActive: z.boolean().default(true),
 });
@@ -70,8 +74,8 @@ export type NewsItemInput = z.infer<typeof newsItemSchema>;
 // Popup
 export const popupSchema = z.object({
   title: z.string().max(200).optional().or(z.literal("")),
-  imageUrl: requiredUrl,
-  linkUrl: optionalUrl,
+  imageUrl: safeRequiredUrl,
+  linkUrl: safeOptionalUrl,
   sortOrder: z.coerce.number().int().min(0).default(0),
   isActive: z.boolean().default(true),
   dismissOption: z
@@ -83,7 +87,7 @@ export type PopupInput = z.infer<typeof popupSchema>;
 // Footer link
 export const footerLinkSchema = z.object({
   label: z.string().min(1, "กรุณากรอกชื่อลิงก์").max(100),
-  href: z.string().min(1, "กรุณากรอก URL").max(500),
+  href: safeRequiredUrl,
   openInNewTab: z.boolean().default(false),
   sortOrder: z.coerce.number().int().min(0).optional(),
 });

@@ -28,6 +28,8 @@ This folder contains Windows-specific helper scripts.
   sets `APP_ENV=development` then runs `npm run db:studio`
 - `backup-prod-db.bat`
   runs `mysqldump` inside `app_db` and writes SQL backups under `backups/`
+- `backup-docker-mysql-auto.bat`
+  runs scheduled-friendly `mysqldump` inside `app_db` and writes dated SQL backups under `C:\backup\docker-mysql`
 
 ## Watchout
 

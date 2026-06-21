@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import Swal from "sweetalert2";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -26,6 +27,7 @@ import {
     Trash2,
 } from "lucide-react";
 import { showDeleteConfirm, showError, showSuccess } from "@/lib/swal";
+import { escapeHtml, toSafePublicHref } from "@/lib/sanitize";
 import { PERMISSIONS } from "@/lib/permissions";
 import {
     DndContext,
@@ -64,9 +66,11 @@ interface FooterSettings {
 }
 
 function getDomainLabel(href: string) {
-    if (href.startsWith("/")) return "ลิงก์ภายในเว็บ";
+    const safeHref = toSafePublicHref(href, "");
+    if (!safeHref) return "ลิงก์ไม่ปลอดภัย";
+    if (safeHref.startsWith("/")) return "ลิงก์ภายในเว็บ";
     try {
-        return new URL(href).hostname.replace(/^www\./, "");
+        return new URL(safeHref).hostname.replace(/^www\./, "");
     } catch {
         return "ลิงก์ภายนอก";
     }
@@ -113,7 +117,7 @@ function SortableRow({ link, canEditSettings, onEdit, onDelete }: SortableRowPro
             </TableCell>
             <TableCell>
                 <a
-                    href={link.href}
+                    href={toSafePublicHref(link.href)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex max-w-[300px] items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline"
@@ -238,7 +242,7 @@ function SortableCard({ link, canEditSettings, onEdit, onDelete }: SortableCardP
 
             <div className="mt-3 rounded-2xl bg-muted/30 px-3 py-2.5">
                 <a
-                    href={link.href}
+                    href={toSafePublicHref(link.href)}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex max-w-full items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline"
@@ -378,7 +382,7 @@ export default function FooterLinksAdminPage() {
         try {
             await Promise.all(
                 reordered.map((l, i) =>
-                    fetch(`/api/admin/footer-links/${l.id}`, {
+                    fetchWithCsrf(`/api/admin/footer-links/${l.id}`, {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ sortOrder: i }),
@@ -400,7 +404,7 @@ export default function FooterLinksAdminPage() {
             return;
         }
         try {
-            const res = await fetch("/api/admin/footer-links/settings", {
+            const res = await fetchWithCsrf("/api/admin/footer-links/settings", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ isActive }),
@@ -431,7 +435,7 @@ export default function FooterLinksAdminPage() {
 
         setSaving(true);
         try {
-            const res = await fetch("/api/admin/footer-links", {
+            const res = await fetchWithCsrf("/api/admin/footer-links", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -476,7 +480,7 @@ export default function FooterLinksAdminPage() {
 
         setSaving(true);
         try {
-            const res = await fetch(`/api/admin/footer-links/${link.id}`, {
+            const res = await fetchWithCsrf(`/api/admin/footer-links/${link.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(result.value),
@@ -501,6 +505,9 @@ export default function FooterLinksAdminPage() {
             showError("คุณไม่มีสิทธิ์แก้ไขลิงก์");
             return;
         }
+        const escapedLabel = escapeHtml(link.label);
+        const escapedHref = escapeHtml(link.href);
+        const safeHref = escapeHtml(toSafePublicHref(link.href));
         void Swal.fire({
             title: "แก้ไขลิงก์",
             width: "min(96vw, 540px)",
@@ -528,7 +535,7 @@ export default function FooterLinksAdminPage() {
                         <input
                             id="swal-label"
                             class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            value="${link.label}"
+                            value="${escapedLabel}"
                         />
                     </div>
                     <div>
@@ -538,10 +545,10 @@ export default function FooterLinksAdminPage() {
                                 <input
                                     id="swal-href"
                                     class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value="${link.href}"
+                                    value="${escapedHref}"
                                 />
                                 <a
-                                    href="${link.href}"
+                                    href="${safeHref}"
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     class="inline-flex items-center justify-center rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-700 transition hover:bg-blue-50"
@@ -587,7 +594,7 @@ export default function FooterLinksAdminPage() {
         if (!confirmed) return;
 
         try {
-            const res = await fetch(`/api/admin/footer-links/${link.id}`, {
+            const res = await fetchWithCsrf(`/api/admin/footer-links/${link.id}`, {
                 method: "DELETE",
             });
 

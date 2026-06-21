@@ -1,5 +1,5 @@
 import { mysqlNow } from "@/lib/utils/date";
-import { requirePermission } from "@/lib/auth";
+import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { db, gachaMachines } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { validateBody } from "@/lib/validations/validate";
@@ -41,7 +41,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-    const auth = await requirePermission(PERMISSIONS.GACHA_EDIT);
+    const auth = await requirePermissionWithCsrf(req, PERMISSIONS.GACHA_EDIT);
     if (!auth.success) return gachaApiError(undefined, { status: 401 });
 
     const result = await validateBody(req, gachaMachineSchema);

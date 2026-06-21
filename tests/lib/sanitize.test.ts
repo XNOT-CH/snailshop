@@ -5,6 +5,9 @@ import {
   sanitizeObject,
   isValidUrl,
   sanitizeUrl,
+  isSafePublicUrl,
+  normalizeSafeUrlInput,
+  toSafePublicHref,
 } from "@/lib/sanitize";
 
 describe("sanitize utilities", () => {
@@ -143,6 +146,27 @@ describe("sanitize utilities", () => {
 
     it("strips data: protocol", () => {
       expect(sanitizeUrl("data:text/html,<h1>x</h1>")).toBe("");
+    });
+  });
+
+  describe("safe public URL helpers", () => {
+    it("allows root-relative and normal http(s) URLs", () => {
+      expect(isSafePublicUrl("/help")).toBe(true);
+      expect(isSafePublicUrl("https://example.com/promo")).toBe(true);
+    });
+
+    it("rejects script, data, protocol-relative, credentialed, and loopback URLs", () => {
+      expect(isSafePublicUrl("javascript:alert(1)")).toBe(false);
+      expect(isSafePublicUrl("data:text/html,<h1>x</h1>")).toBe(false);
+      expect(isSafePublicUrl("//evil.example/path")).toBe(false);
+      expect(isSafePublicUrl("https://user:pass@example.com")).toBe(false);
+      expect(isSafePublicUrl("http://localhost:3000")).toBe(false);
+    });
+
+    it("normalizes safe hrefs and falls back for unsafe hrefs", () => {
+      expect(normalizeSafeUrlInput("  /help  ")).toBe("/help");
+      expect(toSafePublicHref("https://example.com")).toBe("https://example.com");
+      expect(toSafePublicHref("javascript:alert(1)")).toBe("#");
     });
   });
 });

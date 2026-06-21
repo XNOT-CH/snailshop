@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidWelcomeStripImagesJson, WELCOME_STRIP_MAX_SLOT_COUNT } from "@/lib/welcomeStrip";
 
 // Accepts full URLs (http/https) OR local paths starting with / (e.g. /uploads/...)
 const imageUrl = z
@@ -42,6 +43,13 @@ export const siteSettingsSchema = z.object({
     bannerTitle3: z.string().max(200).optional().or(z.literal("")),
     bannerSubtitle3: z.string().max(300).optional().or(z.literal("")),
     bannersJson: z.string().optional().or(z.literal("")),
+    welcomeStripImagesJson: z
+        .string()
+        .optional()
+        .or(z.literal(""))
+        .refine(isValidWelcomeStripImagesJson, {
+            message: `รูป Welcome Strip ต้องเป็น JSON array ของ URL หรือ path รูปไม่เกิน ${WELCOME_STRIP_MAX_SLOT_COUNT} รายการ`,
+        }),
     // Social
     lineUrl: z.url({ error: "URL ไม่ถูกต้อง" }).optional().or(z.literal("")),
     facebookUrl: z.url({ error: "URL ไม่ถูกต้อง" }).optional().or(z.literal("")),

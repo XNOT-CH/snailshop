@@ -11,7 +11,7 @@ import { normalizeCallbackUrl } from "@/lib/authRedirect";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AuthFormShell } from "@/components/auth/AuthFormShell";
 import { TurnstileField } from "@/components/auth/TurnstileField";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, LogIn } from "lucide-react";
 
 const E2E_TURNSTILE_BYPASS_TOKEN = "__e2e_turnstile_bypass__";
 
@@ -176,7 +176,7 @@ export function LoginForm({ logoUrl, turnstileConfigError = null }: Readonly<Log
                         {/* Submit Button */}
                         <Button
                             type="submit"
-                            className="w-full h-12 rounded-xl bg-gradient-to-r from-purple-300 to-blue-300 hover:from-purple-400 hover:to-blue-400 text-primary font-medium shadow-lg shadow-purple-200/50 transition-all"
+                            className="w-full h-12 rounded-[4px] bg-[#1f8f55] text-white shadow-none hover:bg-[#187a49] font-semibold transition-colors"
                             disabled={isLoading || Boolean(turnstileConfigError)}
                         >
                             {isLoading ? (
@@ -185,7 +185,10 @@ export function LoginForm({ logoUrl, turnstileConfigError = null }: Readonly<Log
                                     กำลังเข้าสู่ระบบ...
                                 </>
                             ) : (
-                                "เข้าสู่ระบบ"
+                                <>
+                                    <LogIn className="h-4 w-4" />
+                                    เข้าสู่ระบบ
+                                </>
                             )}
                         </Button>
 

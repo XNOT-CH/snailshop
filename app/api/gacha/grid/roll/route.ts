@@ -6,7 +6,10 @@ import {
     acquireGachaExecutionLock,
     claimProductRewardOrThrow,
     deductUserBalanceOrThrow,
+    fetchProductRewardForClaimOrThrow,
+    GACHA_REDIS_REQUIRED_MESSAGE,
     grantCurrencyReward,
+    isProductionGachaRedisMissing,
 } from "@/lib/gachaExecution";
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
@@ -43,8 +46,6 @@ interface RewardChoice {
         imageUrl?: string | null;
         isSold?: boolean;
         orderId?: string | null;
-        secretData?: string;
-        stockSeparator?: string | null;
     } | null;
 }
 
@@ -54,6 +55,7 @@ interface RollTxContext {
     chosen: RewardChoice;
     costType: string;
     costAmount: number;
+    dailySpinLimit: number;
     rewardName: string;
     imageUrl: string | null;
     machineId: string | null;
@@ -72,22 +74,27 @@ async function processProductReward(tx: DbTransaction, userId: string, costAmoun
 }
 
 async function executeRollTransaction(ctx: RollTxContext) {
-    const { tx, user, chosen, costType, costAmount, rewardName, imageUrl, machineId } = ctx;
+    const { tx, user, chosen, costType, costAmount, dailySpinLimit, rewardName, imageUrl, machineId } = ctx;
+
+    if (dailySpinLimit > 0) {
+        await checkDailySpinLimit({ dbClient: tx, userId: user.id, machineId, dailySpinLimit });
+    }
+
+    if (chosen.rewardType === "PRODUCT" && chosen.product) {
+        const product = await fetchProductRewardForClaimOrThrow(tx, chosen.product.id);
+        await processProductReward(tx, user.id, costAmount, {
+            id: product.id,
+            isSold: product.isSold,
+            orderId: product.orderId,
+            secretData: product.secretData,
+            stockSeparator: product.stockSeparator,
+        });
+    }
 
     await deductUserBalanceOrThrow(tx, user.id, costType, costAmount);
 
     const rewardAmount = chosen.rewardAmount ? Number(chosen.rewardAmount) : null;
     await grantCurrencyReward(tx, user.id, chosen.rewardType, rewardAmount);
-
-    if (chosen.rewardType === "PRODUCT" && chosen.product) {
-        await processProductReward(tx, user.id, costAmount, {
-            id: chosen.product.id,
-            isSold: Boolean(chosen.product.isSold),
-            orderId: chosen.product.orderId ?? null,
-            secretData: chosen.product.secretData ?? "",
-            stockSeparator: chosen.product.stockSeparator ?? "newline",
-        });
-    }
 
     await tx.insert(gachaRollLogs).values({
         id: crypto.randomUUID(),
@@ -103,7 +110,13 @@ async function executeRollTransaction(ctx: RollTxContext) {
     });
 }
 
-async function handleGridRoll(userId: string, machineId: string | null, costType: string, costAmount: number) {
+async function handleGridRoll(
+    userId: string,
+    machineId: string | null,
+    costType: string,
+    costAmount: number,
+    dailySpinLimit: number,
+) {
     const userRes = await fetchGachaUserOrError(userId);
     if ("error" in userRes) {
         return userRes;
@@ -130,7 +143,17 @@ async function handleGridRoll(userId: string, machineId: string | null, costType
     const { rewardName, imageUrl, rewardAmount } = getGachaRollRewardDetails(chosen, currencySettings);
 
     await db.transaction(async (tx) => {
-        await executeRollTransaction({ tx, user, chosen, costType, costAmount, rewardName, imageUrl, machineId });
+        await executeRollTransaction({
+            tx,
+            user,
+            chosen,
+            costType,
+            costAmount,
+            dailySpinLimit,
+            rewardName,
+            imageUrl,
+            machineId,
+        });
     });
 
     return {
@@ -179,6 +202,13 @@ export async function POST(req: Request) {
 
     const body = await req.json().catch(() => ({})) as { machineId?: string };
     const machineId = body.machineId ?? null;
+    if (isProductionGachaRedisMissing()) {
+        return NextResponse.json(
+            { success: false, message: GACHA_REDIS_REQUIRED_MESSAGE },
+            { status: 503 },
+        );
+    }
+
     const executionLock = await acquireGachaExecutionLock(auth.userId, machineId);
 
     if (!executionLock.acquired) {
@@ -191,11 +221,7 @@ export async function POST(req: Request) {
     try {
         const { costType, costAmount, dailySpinLimit } = await getGridGachaSettings(machineId);
 
-        if (dailySpinLimit > 0) {
-            await checkDailySpinLimit({ userId: auth.userId, machineId, dailySpinLimit });
-        }
-
-        const result = await handleGridRoll(auth.userId, machineId, costType, costAmount);
+        const result = await handleGridRoll(auth.userId, machineId, costType, costAmount, dailySpinLimit);
         if ("error" in result) {
             return NextResponse.json({ success: false, message: result.error }, { status: result.status || 400 });
         }

@@ -90,13 +90,25 @@ describe("lib/swal", () => {
         confirmButtonColor: "#ef4444"
       }));
     });
+
+    it("showDeleteConfirm escapes item names before inserting HTML", async () => {
+      await swalModule.showDeleteConfirm('<img src=x onerror="alert(1)">');
+
+      expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
+        html: expect.stringContaining("&lt;img src"),
+      }));
+      expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
+        html: expect.not.stringContaining("<img"),
+      }));
+    });
   });
 
   describe("purchase dialogs", () => {
     it("showPurchaseConfirm displays accurate HTML", async () => {
       await swalModule.showPurchaseConfirm({
         productName: "Game",
-        priceText: "99 THB"
+        priceText: "99 THB",
+        helperText: "ระบบจะซื้อเฉพาะสินค้านี้เท่านั้น สินค้าในตะกร้าจะยังอยู่เหมือนเดิม",
       });
       
       expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
@@ -106,6 +118,34 @@ describe("lib/swal", () => {
       expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
         html: expect.stringContaining("99 THB"),
       }));
+      expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
+        html: expect.stringContaining("สินค้าในตะกร้าจะยังอยู่เหมือนเดิม"),
+      }));
+    });
+
+    it("showPurchaseConfirm omits helper text when not provided", async () => {
+      await swalModule.showPurchaseConfirm({
+        productName: "Cart item",
+        priceText: "199 THB",
+      });
+
+      expect(mockSwal.fire).toHaveBeenCalledWith(expect.objectContaining({
+        html: expect.not.stringContaining("สินค้าในตะกร้าจะยังอยู่เหมือนเดิม"),
+      }));
+    });
+
+    it("showPurchaseConfirm escapes product, price, and helper text", async () => {
+      await swalModule.showPurchaseConfirm({
+        productName: "<strong>Game</strong>",
+        priceText: "<img src=x>",
+        helperText: "<script>alert(1)</script>",
+      });
+
+      const html = mockSwal.fire.mock.calls.at(-1)?.[0]?.html;
+      expect(html).toContain("&lt;strong&gt;Game&lt;&#x2F;strong&gt;");
+      expect(html).toContain("&lt;img src&#x3D;x&gt;");
+      expect(html).toContain("&lt;script&gt;alert(1)&lt;&#x2F;script&gt;");
+      expect(html).not.toContain("<script>");
     });
 
     it("showPurchaseSuccessModal displays success view", async () => {
@@ -115,6 +155,14 @@ describe("lib/swal", () => {
         icon: "success",
         html: expect.stringContaining("Game")
       }));
+    });
+
+    it("showPurchaseSuccessModal escapes product name in the default HTML", async () => {
+      await swalModule.showPurchaseSuccessModal({ productName: "<b>Game</b>" });
+
+      const html = mockSwal.fire.mock.calls.at(-1)?.[0]?.html;
+      expect(html).toContain("&lt;b&gt;Game&lt;&#x2F;b&gt;");
+      expect(html).not.toContain("<b>Game</b>");
     });
   });
 

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { requirePermission } from "@/lib/auth";
+import { requirePermissionWithCsrf } from "@/lib/auth";
 import { db, gachaMachines } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { PERMISSIONS } from "@/lib/permissions";
 import { gachaApiError } from "@/lib/features/gacha/apiResponse";
 
 export async function POST(req: Request) {
-    const auth = await requirePermission(PERMISSIONS.GACHA_EDIT);
+    const auth = await requirePermissionWithCsrf(req, PERMISSIONS.GACHA_EDIT);
     if (!auth.success) return gachaApiError(undefined, { status: 401 });
     try {
         const body = await req.json() as { orders: { id: string; sortOrder: number }[] };

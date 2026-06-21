@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Calendar, ArrowRight, Newspaper } from "lucide-react";
 import { themeClasses } from "@/lib/theme";
+import { toSafePublicHref } from "@/lib/sanitize";
 
 interface NewsArticle {
     id: string;
@@ -49,11 +50,14 @@ export function NewsSection({ initialNews }: Readonly<NewsSectionProps>) {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                {news.map((article) => (
-                    <article
-                        key={article.id}
-                        className={`${themeClasses.surface} group flex flex-col overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_20px_38px_-28px_rgba(39,71,121,0.18)] dark:hover:shadow-[0_24px_48px_-32px_rgba(0,0,0,0.9)]`}
-                    >
+                {news.map((article) => {
+                    const safeArticleLink = toSafePublicHref(article.link, "");
+
+                    return (
+                        <article
+                            key={article.id}
+                            className={`${themeClasses.surface} group flex flex-col overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_20px_38px_-28px_rgba(39,71,121,0.18)] dark:hover:shadow-[0_24px_48px_-32px_rgba(0,0,0,0.9)]`}
+                        >
                             <div className="relative w-full aspect-video overflow-hidden bg-muted">
                                 {article.imageUrl ? (
                                     <Image
@@ -87,9 +91,9 @@ export function NewsSection({ initialNews }: Readonly<NewsSectionProps>) {
                                         <span>{formatDate(article.createdAt)}</span>
                                     </div>
 
-                                    {article.link && (
+                                    {safeArticleLink && (
                                         <Link
-                                            href={article.link}
+                                            href={safeArticleLink}
                                             prefetch={false}
                                             target="_blank"
                                             rel="noopener noreferrer"
@@ -101,8 +105,9 @@ export function NewsSection({ initialNews }: Readonly<NewsSectionProps>) {
                                     )}
                                 </div>
                             </div>
-                    </article>
-                ))}
+                        </article>
+                    );
+                })}
             </div>
         </section>
     );

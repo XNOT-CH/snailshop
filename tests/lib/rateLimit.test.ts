@@ -165,6 +165,17 @@ describe("rateLimit utilities", () => {
   });
 
   describe("getClientIp", () => {
+    it("prefers Cloudflare client IP when present", () => {
+      const req = new Request("http://localhost", {
+        headers: {
+          "cf-connecting-ip": "203.0.113.10",
+          "x-forwarded-for": "1.2.3.4",
+          "x-real-ip": "10.0.0.1",
+        },
+      });
+      expect(getClientIp(req)).toBe("203.0.113.10");
+    });
+
     it("reads x-forwarded-for header", () => {
       const req = new Request("http://localhost", {
         headers: { "x-forwarded-for": "1.2.3.4, 5.6.7.8" },
@@ -189,6 +200,13 @@ describe("rateLimit utilities", () => {
     it("returns unknown when no headers", () => {
       const req = new Request("http://localhost");
       expect(getClientIp(req)).toBe("unknown");
+    });
+
+    it("skips unusable forwarded header values", () => {
+      const req = new Request("http://localhost", {
+        headers: { "x-forwarded-for": "unknown", "x-real-ip": "198.51.100.20" },
+      });
+      expect(getClientIp(req)).toBe("198.51.100.20");
     });
   });
 

@@ -1,3 +1,6 @@
+import { emitToast } from "@/lib/toast";
+import { escapeHtml } from "@/lib/sanitize";
+
 type SweetAlert = typeof import("sweetalert2").default;
 type ToastIcon = "success" | "error" | "warning" | "info";
 
@@ -39,6 +42,10 @@ function loadToast() {
 }
 
 async function fireToast(icon: ToastIcon, title: string) {
+    if (emitToast(icon, title)) {
+        return;
+    }
+
     const Toast = await loadToast();
     await Toast.fire({ icon, title });
 }
@@ -95,10 +102,11 @@ export const showDeleteConfirm = async (
     itemName: string
 ): Promise<boolean> => {
     const Swal = await loadSwal();
+    const escapedItemName = escapeHtml(itemName);
     const result = await Swal.fire({
         ...modalDefaults,
         title: "ยืนยันการลบ?",
-        html: `คุณต้องการลบ <strong>"${itemName}"</strong> ใช่หรือไม่?`,
+        html: `คุณต้องการลบ <strong>"${escapedItemName}"</strong> ใช่หรือไม่?`,
         icon: "warning",
         width: "min(92vw, 32rem)",
         showCancelButton: true,
@@ -139,11 +147,15 @@ export const showPurchaseConfirm = async (params: {
     productName?: string;
     priceText: string;
     extraHtml?: string;
+    helperText?: string;
     confirmText?: string;
     cancelText?: string;
     confirmButtonColor?: string;
 }): Promise<boolean> => {
     const Swal = await loadSwal();
+    const escapedProductName = params.productName ? escapeHtml(params.productName) : "";
+    const escapedPriceText = escapeHtml(params.priceText);
+    const escapedHelperText = params.helperText ? escapeHtml(params.helperText) : "";
     const result = await Swal.fire({
         ...modalDefaults,
         title: "ยืนยันการสั่งซื้อ",
@@ -159,11 +171,12 @@ export const showPurchaseConfirm = async (params: {
 
                 <div class="max-w-sm mx-auto bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm">
                     <p class="text-sm text-gray-500 mb-1">รายการสั่งซื้อ</p>
-                    ${params.productName ? `<p class="font-bold text-gray-900 text-base">${params.productName}</p>` : ""}
+                    ${escapedProductName ? `<p class="font-bold text-gray-900 text-base">${escapedProductName}</p>` : ""}
                     <div class="font-semibold text-blue-500 text-xl mt-2">
-                        ${params.priceText}
+                        ${escapedPriceText}
                     </div>
                     ${params.extraHtml ? `<div class="mt-3 text-sm text-gray-500 border-t border-gray-200 pt-3">${params.extraHtml}</div>` : ""}
+                    ${escapedHelperText ? `<p class="mt-3 rounded-lg bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">${escapedHelperText}</p>` : ""}
                 </div>
             </div>
         `,
@@ -198,6 +211,7 @@ export const showPurchaseSuccessModal = async (params: {
     showCancelButton?: boolean;
 }) => {
     const Swal = await loadSwal();
+    const escapedProductName = params.productName ? escapeHtml(params.productName) : "";
     return Swal.fire({
         ...modalDefaults,
         icon: "success",
@@ -205,8 +219,8 @@ export const showPurchaseSuccessModal = async (params: {
         text: params.text,
         html:
             params.html ||
-            (params.productName
-                ? `ซื้อ <strong>${params.productName}</strong> เรียบร้อยแล้ว<br><small>ดูข้อมูลสินค้าได้ที่หน้าคลังสินค้า</small>`
+            (escapedProductName
+                ? `ซื้อ <strong>${escapedProductName}</strong> เรียบร้อยแล้ว<br><small>ดูข้อมูลสินค้าได้ที่หน้าคลังสินค้า</small>`
                 : undefined),
         width: "min(92vw, 36rem)",
         showCancelButton: params.showCancelButton ?? false,

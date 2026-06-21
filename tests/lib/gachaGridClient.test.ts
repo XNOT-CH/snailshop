@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 import {
     buildGachaGridRewardsUrl,
     buildGachaGridRollPayload,
@@ -8,6 +9,10 @@ import {
     type GridReward,
 } from "@/lib/client/gachaGridClient";
 import { API_ROUTES } from "@/lib/constants/apiRoutes";
+
+vi.mock("@/lib/csrf-client", () => ({
+    fetchWithCsrf: vi.fn(async () => Response.json({ success: true })),
+}));
 
 function getRequestInit(fetcher: ReturnType<typeof vi.fn>) {
     return fetcher.mock.calls[0]?.[1] as RequestInit;
@@ -92,5 +97,17 @@ describe("lib/client/gachaGridClient", () => {
             body: JSON.stringify(payload),
         });
         expect(JSON.parse(String(getRequestInit(fetcher).body))).toEqual(payload);
+    });
+
+    it("uses the CSRF-aware fetcher by default for grid roll requests", async () => {
+        const payload = buildGachaGridRollPayload("machine-1");
+
+        await requestGachaGridRoll(payload);
+
+        expect(fetchWithCsrf).toHaveBeenCalledWith(API_ROUTES.GACHA_GRID_ROLL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        });
     });
 });

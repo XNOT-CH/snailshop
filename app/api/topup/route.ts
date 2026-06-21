@@ -5,22 +5,80 @@ import { isAuthenticatedWithCsrf } from "@/lib/auth";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkTopupRateLimit, getClientIp } from "@/lib/rateLimit";
 import { assertPinForProtectedAction } from "@/lib/security/pin";
-import { mapSlipError } from "@/lib/features/topup/slipHelpers";
-import { getVerifiedTopupAmount } from "@/lib/features/topup/topupBuilders";
 import {
     createApprovedTopup,
-    createPendingTopup,
     hasDuplicateTopupTransactionRef,
 } from "@/lib/features/topup/topupService";
 import {
+    getVerifiedTopupAmount,
+    getVerifiedTopupTransactionRef,
+    type VerifiedTopupSlip,
+} from "@/lib/features/topup/topupBuilders";
+import {
     parseTopupRequestFormData,
     validateParsedTopupRequest,
+    type ParsedTopupRequest,
 } from "@/lib/features/topup/topupRequest";
 import { validateTopupProofInput } from "@/lib/features/topup/topupProofValidation";
-import { verifyTopupSlip } from "@/lib/features/topup/topupVerificationFlow";
 import { saveTopupProofImage } from "@/lib/features/topup/topupProofStorage";
+import {
+    verifyBankSlipWithEasySlipV2,
+    verifyTrueWalletSlipWithEasySlipV2,
+    type EasySlipV2Error,
+} from "@/lib/features/topup/easySlipService";
 
 export const runtime = "nodejs";
+
+type TopupEasySlipVerificationResult =
+    | { success: true; status: number; verifiedSlip: VerifiedTopupSlip }
+    | { success: false; status: number; error: EasySlipV2Error };
+
+async function verifyParsedTopupWithEasySlipV2(
+    input: ParsedTopupRequest & { requestedAmount: number },
+): Promise<TopupEasySlipVerificationResult> {
+    const options = {
+        remark: input.remark ?? undefined,
+        matchAccount: true,
+        matchAmount: input.requestedAmount,
+        checkDuplicate: true,
+    };
+
+    if (input.verifyTarget === "truewallet") {
+        const result = input.file
+            ? await verifyTrueWalletSlipWithEasySlipV2({ image: input.file, ...options })
+            : input.base64
+                ? await verifyTrueWalletSlipWithEasySlipV2({ base64: input.base64, ...options })
+                : await verifyTrueWalletSlipWithEasySlipV2({ url: input.imageUrl ?? "", ...options });
+
+        if (!result.response.success) {
+            return { success: false, status: result.status, error: result.response.error };
+        }
+
+        return {
+            success: true,
+            status: result.status,
+            verifiedSlip: { verifyTarget: "truewallet", data: result.response.data },
+        };
+    }
+
+    const result = input.qrPayload
+        ? await verifyBankSlipWithEasySlipV2({ payload: input.qrPayload, ...options })
+        : input.file
+            ? await verifyBankSlipWithEasySlipV2({ image: input.file, ...options })
+            : input.base64
+                ? await verifyBankSlipWithEasySlipV2({ base64: input.base64, ...options })
+                : await verifyBankSlipWithEasySlipV2({ url: input.imageUrl ?? "", ...options });
+
+    if (!result.response.success) {
+        return { success: false, status: result.status, error: result.response.error };
+    }
+
+    return {
+        success: true,
+        status: result.status,
+        verifiedSlip: { verifyTarget: "bank", data: result.response.data },
+    };
+}
 
 export async function POST(request: NextRequest) {
     const maintenance = getMaintenanceState("topup");
@@ -124,33 +182,77 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const {
-            verificationResult,
-            shouldFallbackToPending,
-        } = await verifyTopupSlip({
-            qrPayload,
-            base64,
-            imageUrl,
-            file,
-            requestedAmount,
-            remark,
-            verifyTarget,
-        });
+        let verification: TopupEasySlipVerificationResult;
+        try {
+            verification = await verifyParsedTopupWithEasySlipV2({
+                ...parsedTopupRequest,
+                requestedAmount,
+                qrPayload,
+                remark,
+                verifyTarget,
+            });
+        } catch (error) {
+            if (error instanceof Error && error.message === "EASYSLIP_API_KEY is not configured.") {
+                return NextResponse.json(
+                    { success: false, message: "ระบบตรวจสลิปยังไม่ได้ตั้งค่า EasySlip API key" },
+                    { status: 503 },
+                );
+            }
 
-        if (!shouldFallbackToPending && verificationResult && verificationResult.status !== 200) {
+            console.error("[TOPUP_EASYSLIP_V2]", error);
             return NextResponse.json(
-                { success: false, message: mapSlipError(verificationResult.message) },
+                { success: false, message: "ไม่สามารถเชื่อมต่อ EasySlip ได้ กรุณาลองใหม่อีกครั้ง" },
+                { status: 502 },
+            );
+        }
+
+        if (!verification.success) {
+            return NextResponse.json(
+                {
+                    success: false,
+                    message: verification.error.message,
+                    error: verification.error,
+                },
+                { status: verification.status },
+            );
+        }
+
+        const { verifiedSlip } = verification;
+        if (verifiedSlip.data.isDuplicate) {
+            return NextResponse.json(
+                { success: false, message: "สลิปนี้เคยใช้เติมเงินแล้ว" },
                 { status: 400 },
             );
         }
 
-        if (!shouldFallbackToPending && verificationResult?.data?.transRef) {
-            if (await hasDuplicateTopupTransactionRef(verificationResult.data.transRef)) {
-                return NextResponse.json(
-                    { success: false, message: "สลิปนี้เคยใช้เติมเงินแล้ว" },
-                    { status: 400 },
-                );
-            }
+        if (verifiedSlip.data.isAmountMatched !== true) {
+            return NextResponse.json(
+                { success: false, message: "จำนวนเงินในสลิปไม่ตรงกับยอดที่ส่งตรวจ" },
+                { status: 400 },
+            );
+        }
+
+        if (!verifiedSlip.data.matchedAccount) {
+            return NextResponse.json(
+                { success: false, message: "บัญชีผู้รับในสลิปไม่ตรงกับบัญชีที่ลงทะเบียนไว้" },
+                { status: 400 },
+            );
+        }
+
+        const transactionRef = getVerifiedTopupTransactionRef(verifiedSlip);
+        if (await hasDuplicateTopupTransactionRef(transactionRef)) {
+            return NextResponse.json(
+                { success: false, message: "สลิปนี้เคยใช้เติมเงินแล้ว" },
+                { status: 400 },
+            );
+        }
+
+        const verifiedAmount = getVerifiedTopupAmount(verifiedSlip);
+        if (!Number.isFinite(verifiedAmount) || verifiedAmount <= 0) {
+            return NextResponse.json(
+                { success: false, message: "ไม่สามารถอ่านจำนวนเงินจากสลิปได้" },
+                { status: 400 },
+            );
         }
 
         const topupId = crypto.randomUUID();
@@ -158,33 +260,6 @@ export async function POST(request: NextRequest) {
             file,
             imageUrl,
         });
-
-        if (shouldFallbackToPending || !verificationResult?.data) {
-            const pendingTopup = await createPendingTopup({
-                request,
-                topupId,
-                userId: user.id,
-                requestedAmount,
-                proofImage,
-                verifyMethod,
-                verifyTarget,
-            });
-
-            return NextResponse.json({
-                success: true,
-                message: `ส่งสลิปสำเร็จ จำนวน ฿${requestedAmount.toLocaleString("th-TH")} และรอแอดมินตรวจสอบ`,
-                data: pendingTopup,
-            });
-        }
-
-        const verifiedSlip = verificationResult.data;
-        const verifiedAmount = getVerifiedTopupAmount(verifiedSlip);
-        if (verifiedAmount <= 0) {
-            return NextResponse.json(
-                { success: false, message: "ไม่สามารถอ่านจำนวนเงินจากสลิปได้" },
-                { status: 400 },
-            );
-        }
 
         const approvedTopup = await createApprovedTopup({
             request,
@@ -195,7 +270,6 @@ export async function POST(request: NextRequest) {
             verifiedAmount,
             proofImage,
             verifyMethod,
-            verifyTarget,
         });
 
         return NextResponse.json({

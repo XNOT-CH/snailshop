@@ -35,6 +35,7 @@ import {
 import Swal from "sweetalert2";
 import { PERMISSIONS } from "@/lib/permissions";
 import { fetchWithCsrf } from "@/lib/csrf-client";
+import { escapeHtml } from "@/lib/sanitize";
 
 interface AuditChange {
     field: string;
@@ -277,9 +278,9 @@ function getResourceDetailsHtml(resourceName?: string, resourceType?: string | n
         return "";
     }
 
-    const resourceNameHtml = resourceName ? `<p class="font-medium">${resourceName}</p>` : "";
+    const resourceNameHtml = resourceName ? `<p class="font-medium">${escapeHtml(resourceName)}</p>` : "";
     const resourceTypeHtml = resourceType
-        ? `<p class="text-xs text-gray-500">${RESOURCE_LABELS[resourceType] || resourceType}</p>`
+        ? `<p class="text-xs text-gray-500">${escapeHtml(RESOURCE_LABELS[resourceType] || resourceType)}</p>`
         : "";
 
     return `
@@ -370,16 +371,16 @@ export default function AdminAuditLogsPage() {
         const changesHtml = hasChanges
             ? changes.map((change) => `
                 <div class="mb-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                    <p class="mb-2 text-sm font-semibold text-gray-700">${getFieldLabel(change.field)}</p>
+                    <p class="mb-2 text-sm font-semibold text-gray-700">${escapeHtml(getFieldLabel(change.field))}</p>
                     <div class="flex items-center gap-2 text-sm">
                         <div class="flex-1 rounded bg-red-50 px-2 py-1 text-xs text-red-700">
                             <span class="mr-1 text-gray-500">เดิม:</span>
-                            <span class="break-all font-mono">${getChangeValue(change, "old")}</span>
+                            <span class="break-all font-mono">${escapeHtml(getChangeValue(change, "old"))}</span>
                         </div>
                         <span class="text-gray-400">→</span>
                         <div class="flex-1 rounded bg-green-50 px-2 py-1 text-xs text-green-700">
                             <span class="mr-1 text-gray-500">ใหม่:</span>
-                            <span class="break-all font-mono">${getChangeValue(change, "new")}</span>
+                            <span class="break-all font-mono">${escapeHtml(getChangeValue(change, "new"))}</span>
                         </div>
                     </div>
                 </div>
@@ -388,6 +389,9 @@ export default function AdminAuditLogsPage() {
 
         const statusClass = log.status === "SUCCESS" ? "text-green-600" : "text-red-600";
         const statusText = log.status === "SUCCESS" ? "สำเร็จ" : "ล้มเหลว";
+        const actorName = escapeHtml(log.user?.username || "ระบบ");
+        const actorId = log.user?.id ? escapeHtml(log.user.id) : "";
+        const ipAddress = escapeHtml(log.ipAddress || "-");
 
         const resourceSection = getResourceDetailsHtml(details?.resourceName, log.resource);
 
@@ -414,8 +418,8 @@ export default function AdminAuditLogsPage() {
                     <div class="grid grid-cols-2 gap-3 text-sm">
                         <div class="rounded-xl bg-gray-50 p-3">
                             <p class="mb-1 text-gray-500">ผู้ดำเนินการ</p>
-                            <p class="font-semibold">${log.user?.username || "ระบบ"}</p>
-                            ${log.user?.id ? `<p class="font-mono text-xs text-gray-400">${log.user.id}</p>` : ""}
+                            <p class="font-semibold">${actorName}</p>
+                            ${actorId ? `<p class="font-mono text-xs text-gray-400">${actorId}</p>` : ""}
                         </div>
                         <div class="rounded-xl bg-gray-50 p-3">
                             <p class="mb-1 text-gray-500">เวลา</p>
@@ -423,7 +427,7 @@ export default function AdminAuditLogsPage() {
                         </div>
                         <div class="rounded-xl bg-gray-50 p-3">
                             <p class="mb-1 text-gray-500">IP Address</p>
-                            <p class="font-mono text-sm">${log.ipAddress || "-"}</p>
+                            <p class="font-mono text-sm">${ipAddress}</p>
                         </div>
                         <div class="rounded-xl bg-gray-50 p-3">
                             <p class="mb-1 text-gray-500">สถานะ</p>

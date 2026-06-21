@@ -29,6 +29,7 @@ const ADMIN_PAGE_RULES: AdminAccessRule[] = [
     { path: "/admin/audit-logs", permission: PERMISSIONS.AUDIT_LOG_VIEW, exact: true },
     { path: "/admin/slips", permission: PERMISSIONS.SLIP_VIEW, exact: true },
     { path: "/admin/settings", permission: PERMISSIONS.SETTINGS_VIEW, exact: true },
+    { path: "/admin/welcome-strip", permission: PERMISSIONS.SETTINGS_VIEW, exact: true },
     { path: "/admin/currency-settings", permission: PERMISSIONS.SETTINGS_VIEW, exact: true },
     { path: "/admin/footer-links", permission: PERMISSIONS.SETTINGS_VIEW, exact: true },
     { path: "/admin/nav-items", permission: PERMISSIONS.SETTINGS_VIEW, exact: true },
@@ -36,6 +37,7 @@ const ADMIN_PAGE_RULES: AdminAccessRule[] = [
 ];
 
 const ADMIN_API_RULES: AdminAccessRule[] = [
+    { path: "/api/admin/auto-delete", permission: PERMISSIONS.PRODUCT_DELETE },
     { path: "/api/admin/chat", permission: PERMISSIONS.CHAT_VIEW },
     { path: "/api/admin/export", permission: PERMISSIONS.EXPORT_DATA },
     { path: "/api/admin/news", permission: PERMISSIONS.CONTENT_VIEW },

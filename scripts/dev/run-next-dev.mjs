@@ -48,11 +48,47 @@ const env = {
   PORT: String(port),
 };
 
+const suppressFastRefreshReloadWarning = env.E2E_SUPPRESS_FAST_REFRESH_RELOAD_WARNING === "1";
+const childStdio = suppressFastRefreshReloadWarning ? ["inherit", "pipe", "pipe"] : "inherit";
+
+function createLineFilter(write) {
+  let pending = "";
+
+  return {
+    write(chunk) {
+      pending += chunk.toString();
+      const lines = pending.split(/\r?\n/);
+      pending = lines.pop() ?? "";
+
+      for (const line of lines) {
+        if (line.includes("Fast Refresh had to perform a full reload")) continue;
+        write(`${line}\n`);
+      }
+    },
+    flush() {
+      if (!pending.includes("Fast Refresh had to perform a full reload")) {
+        write(pending);
+      }
+      pending = "";
+    },
+  };
+}
+
 const child = spawn(process.execPath, [nextBin, "dev", "--webpack", "--hostname", host, "--port", String(port)], {
   cwd: projectRoot,
-  stdio: "inherit",
+  stdio: childStdio,
   env,
 });
+
+if (suppressFastRefreshReloadWarning) {
+  const stdoutFilter = createLineFilter((line) => process.stdout.write(line));
+  const stderrFilter = createLineFilter((line) => process.stderr.write(line));
+
+  child.stdout.on("data", (chunk) => stdoutFilter.write(chunk));
+  child.stderr.on("data", (chunk) => stderrFilter.write(chunk));
+  child.stdout.on("end", () => stdoutFilter.flush());
+  child.stderr.on("end", () => stderrFilter.flush());
+}
 
 child.on("exit", (code, signal) => {
   if (signal) {

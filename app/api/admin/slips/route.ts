@@ -1,9 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db, topups, users } from "@/lib/db";
 import { requireAnyPermissionWithCsrf } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { PERMISSIONS } from "@/lib/permissions";
+
+class AlreadyProcessedTopupError extends Error {
+    constructor() {
+        super("Request already processed");
+    }
+}
+
+function getAffectedRows(result: unknown): number | null {
+    if (Array.isArray(result)) {
+        return getAffectedRows(result[0]);
+    }
+
+    if (!result || typeof result !== "object") {
+        return null;
+    }
+
+    const maybeResult = result as { affectedRows?: unknown; rowsAffected?: unknown };
+    if (typeof maybeResult.affectedRows === "number") {
+        return maybeResult.affectedRows;
+    }
+
+    if (typeof maybeResult.rowsAffected === "number") {
+        return maybeResult.rowsAffected;
+    }
+
+    return null;
+}
+
+function assertSinglePendingTransition(result: unknown) {
+    if (getAffectedRows(result) !== 1) {
+        throw new AlreadyProcessedTopupError();
+    }
+}
 
 export async function PATCH(request: NextRequest) {
     const authCheck = await requireAnyPermissionWithCsrf(request, [PERMISSIONS.SLIP_APPROVE, PERMISSIONS.SLIP_REJECT]);
@@ -36,13 +69,29 @@ export async function PATCH(request: NextRequest) {
 
         if (action === "APPROVE") {
             // Keep the balance credit and status change atomic.
-            await db.transaction(async (tx) => {
-                await tx.update(topups).set({ status: "APPROVED" }).where(eq(topups.id, id));
-                await tx
-                    .update(users)
-                    .set({ creditBalance: sql`creditBalance + ${Number(topup.amount)}` })
-                    .where(eq(users.id, topup.userId));
-            });
+            try {
+                await db.transaction(async (tx) => {
+                    const updateResult = await tx
+                        .update(topups)
+                        .set({ status: "APPROVED" })
+                        .where(and(
+                            eq(topups.id, id),
+                            eq(topups.status, "PENDING"),
+                        ));
+                    assertSinglePendingTransition(updateResult);
+
+                    await tx
+                        .update(users)
+                        .set({ creditBalance: sql`creditBalance + ${Number(topup.amount)}` })
+                        .where(eq(users.id, topup.userId));
+                });
+            } catch (error) {
+                if (error instanceof AlreadyProcessedTopupError) {
+                    return NextResponse.json({ success: false, message: error.message }, { status: 400 });
+                }
+
+                throw error;
+            }
 
             await auditFromRequest(request, {
                 userId: authCheck.userId,
@@ -64,7 +113,16 @@ export async function PATCH(request: NextRequest) {
             });
         }
 
-        await db.update(topups).set({ status: "REJECTED" }).where(eq(topups.id, id));
+        const rejectResult = await db
+            .update(topups)
+            .set({ status: "REJECTED" })
+            .where(and(
+                eq(topups.id, id),
+                eq(topups.status, "PENDING"),
+            ));
+        if (getAffectedRows(rejectResult) !== 1) {
+            return NextResponse.json({ success: false, message: "Request already processed" }, { status: 400 });
+        }
         await auditFromRequest(request, {
             userId: authCheck.userId,
             action: AUDIT_ACTIONS.TOPUP_REJECT,

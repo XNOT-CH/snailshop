@@ -9,7 +9,7 @@ import { showSuccess, showError } from "@/lib/swal";
 import { normalizeCallbackUrl } from "@/lib/authRedirect";
 import { AuthFormShell } from "@/components/auth/AuthFormShell";
 import { TurnstileField } from "@/components/auth/TurnstileField";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, UserPlus } from "lucide-react";
 
 interface RegisterFormProps {
     logoUrl: string | null;
@@ -115,16 +115,16 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
     };
 
     return (
-        <AuthFormShell logoUrl={logoUrl} title="สมัครสมาชิก" subtitle="Register">
-                    <form onSubmit={handleSubmit} className="space-y-4">
+        <AuthFormShell logoUrl={logoUrl} title="สมัครสมาชิก" subtitle="Register" fullHeight={false} variant="separated">
+                    <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                         {/* Username */}
                         <div className="space-y-2">
-                            <label htmlFor="reg-username" className="text-sm text-muted-foreground">ชื่อผู้ใช้งาน</label>
+                            <label htmlFor="reg-username" className="text-sm text-[#5f6f82] dark:text-muted-foreground">ชื่อผู้ใช้งาน</label>
                             <Input
                                 id="reg-username"
                                 placeholder="username"
                                 autoComplete="username"
-                                className="h-12 bg-muted/50 border-border rounded-xl transition-colors"
+                                className="h-10 rounded-[4px] border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 transition-colors placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
                                 minLength={3}
                                 value={formData.username}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, username: e.target.value }))}
@@ -134,14 +134,14 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
 
                         {/* PIN (optional) */}
                         <div className="space-y-2">
-                            <label htmlFor="reg-pin" className="text-sm text-muted-foreground">
+                            <label htmlFor="reg-pin" className="text-sm text-[#5f6f82] dark:text-muted-foreground">
                                 PIN 6 หลัก <span className="text-muted-foreground/60">(ไม่บังคับ)</span>
                             </label>
                             <Input
                                 id="reg-pin"
                                 placeholder="PIN 6 หลัก"
                                 autoComplete="off"
-                                className="h-12 bg-muted/50 border-border rounded-xl"
+                                className="h-10 rounded-[4px] border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
                                 maxLength={6}
                                 pattern="[0-9]*"
                                 value={formData.pin}
@@ -151,14 +151,14 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
 
                         {/* Password */}
                         <div className="space-y-2">
-                            <label htmlFor="reg-password" className="text-sm text-muted-foreground">รหัสผ่าน</label>
+                            <label htmlFor="reg-password" className="text-sm text-[#5f6f82] dark:text-muted-foreground">รหัสผ่าน</label>
                             <div className="relative">
                                 <Input
                                     id="reg-password"
                                     type={showPassword ? "text" : "password"}
                                     placeholder="••••••••"
                                     autoComplete="new-password"
-                                    className="h-12 bg-muted/50 border-border rounded-xl pr-12 transition-colors"
+                                    className="h-10 rounded-[4px] border-[#cfd6df] bg-white pr-12 text-[#102033] shadow-inner shadow-slate-100 transition-colors placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
                                     minLength={6}
                                     value={formData.password}
                                     onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
@@ -177,13 +177,13 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
 
                         {/* Confirm Password */}
                         <div className="space-y-2">
-                            <label htmlFor="reg-confirm-password" className="text-sm text-muted-foreground">ยืนยันรหัสผ่าน</label>
+                            <label htmlFor="reg-confirm-password" className="text-sm text-[#5f6f82] dark:text-muted-foreground">ยืนยันรหัสผ่าน</label>
                             <Input
                                 id="reg-confirm-password"
                                 type="password"
                                 placeholder="ยืนยันรหัสผ่านอีกครั้ง"
                                 autoComplete="new-password"
-                                className="h-12 bg-muted/50 border-border rounded-xl"
+                                className="h-10 rounded-[4px] border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
                                 value={formData.confirmPassword}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
                                 required
@@ -191,13 +191,13 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="reg-email" className="text-sm text-muted-foreground">อีเมล</label>
+                            <label htmlFor="reg-email" className="text-sm text-[#5f6f82] dark:text-muted-foreground">อีเมล</label>
                             <Input
                                 id="reg-email"
                                 type="email"
                                 placeholder="you@example.com"
                                 autoComplete="email"
-                                className="h-12 bg-muted/50 border-border rounded-xl transition-colors"
+                                className="h-10 rounded-[4px] border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 transition-colors placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
                                 value={formData.email}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
                                 required
@@ -235,7 +235,7 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                         {/* Submit Button */}
                         <Button
                             type="submit"
-                            className="w-full h-12 rounded-xl bg-gradient-to-r from-purple-300 to-blue-300 hover:from-purple-400 hover:to-blue-400 text-primary font-medium shadow-lg shadow-purple-200/50 transition-all mt-6"
+                            className="w-full h-11 rounded-[4px] bg-[#1f8f55] text-white shadow-none hover:bg-[#187a49] font-semibold transition-colors mt-6"
                             disabled={
                                 isLoading
                                 || Boolean(formData.confirmPassword && !passwordsMatch)
@@ -248,7 +248,10 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                                     กำลังสมัคร...
                                 </>
                             ) : (
-                                "สมัครสมาชิก"
+                                <>
+                                    <UserPlus className="h-4 w-4" />
+                                    สมัครสมาชิก
+                                </>
                             )}
                         </Button>
 

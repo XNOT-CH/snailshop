@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requirePermission } from "@/lib/auth";
+import { requirePermissionWithCsrf } from "@/lib/auth";
 import { db, gachaCategories } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -7,7 +7,7 @@ import { PERMISSIONS } from "@/lib/permissions";
 type RouteParams = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: Request, { params }: RouteParams) {
-    const auth = await requirePermission(PERMISSIONS.GACHA_EDIT);
+    const auth = await requirePermissionWithCsrf(req, PERMISSIONS.GACHA_EDIT);
     if (!auth.success) return NextResponse.json({ success: false }, { status: 401 });
     const { id } = await params;
     const body = await req.json() as { name?: string; sortOrder?: number; isActive?: boolean };
@@ -21,7 +21,7 @@ export async function PATCH(req: Request, { params }: RouteParams) {
 }
 
 export async function DELETE(_req: Request, { params }: RouteParams) {
-    const auth = await requirePermission(PERMISSIONS.GACHA_EDIT);
+    const auth = await requirePermissionWithCsrf(_req, PERMISSIONS.GACHA_EDIT);
     if (!auth.success) return NextResponse.json({ success: false }, { status: 401 });
     const { id } = await params;
     await db.delete(gachaCategories).where(eq(gachaCategories.id, id));

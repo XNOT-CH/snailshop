@@ -3745,8 +3745,8 @@ test หลังทำ:
 เป้าหมาย:
 
 - แยก helper ที่เป็น pure logic ออกจาก `app/api/topup/route.ts`
-- ลดขนาด route โดยยังไม่เปลี่ยน flow, response shape, DB logic, หรือ EasySlip behavior
-- เตรียมฐานให้ Step 5.2 แยก EasySlip verification service ได้ง่ายขึ้น
+- ลดขนาด route โดยยังไม่เปลี่ยน flow, response shape, DB logic, หรือ legacy slip provider behavior
+- เตรียมฐานให้ Step 5.2 แยก legacy slip provider verification service ได้ง่ายขึ้น
 
 ไฟล์ที่จะสร้าง:
 
@@ -3774,25 +3774,25 @@ test หลังทำ:
 สิ่งที่แก้ใน Step 5.1:
 
 - สร้าง `lib/features/topup/slipHelpers.ts` สำหรับ helper ที่ไม่ผูกกับ route/DB/response
-- ย้าย topup helper ออกจาก `app/api/topup/route.ts` เช่น amount parsing, string field parsing, verify target/method, image extension, base64 size, public URL validation, EasySlip error mapping
+- ย้าย topup helper ออกจาก `app/api/topup/route.ts` เช่น amount parsing, string field parsing, verify target/method, image extension, base64 size, public URL validation, legacy slip provider error mapping
 - เพิ่ม `tests/lib/topupSlipHelpers.test.ts` เพื่อ lock behavior ของ helper ที่ย้ายออกมา
-- ไม่เปลี่ยน production flow, response shape, transaction, auth, PIN, หรือ EasySlip fetch logic
+- ไม่เปลี่ยน production flow, response shape, transaction, auth, PIN, หรือ legacy slip provider fetch logic
 - ไม่ stage ไฟล์ใด ๆ และไม่รวม `.obsidian/workspace.json`
 
-### Step 5.2: Topup EasySlip verification service
+### Step 5.2: Topup legacy slip provider verification service
 
 สถานะล่าสุด: เสร็จแล้ว 2026-05-07
 
 เป้าหมาย:
 
-- แยก EasySlip verification logic ออกจาก `app/api/topup/route.ts`
+- แยก legacy slip provider verification logic ออกจาก `app/api/topup/route.ts`
 - ให้ route ยังรับผิดชอบ auth, validation, fallback pending, DB transaction, และ response shape เหมือนเดิม
 - เตรียมให้ Step 5.3 แยก topup transaction service ได้ง่ายขึ้น
 
 ไฟล์ที่จะสร้าง:
 
-- `lib/features/topup/easySlipService.ts`
-- `tests/lib/topupEasySlipService.test.ts`
+- `lib/features/topup/legacy slip providerService.ts`
+- `tests/lib/topuplegacy slip providerService.test.ts`
 
 ไฟล์ที่จะแก้ในรอบนี้:
 
@@ -3801,23 +3801,23 @@ test หลังทำ:
 
 ข้อจำกัดของรอบนี้:
 
-- ไม่เปลี่ยน production behavior, response shape, fallback pending behavior, หรือ EasySlip request payload
+- ไม่เปลี่ยน production behavior, response shape, fallback pending behavior, หรือ legacy slip provider request payload
 - ไม่ย้าย DB transaction, PIN/auth, upload save, หรือ audit log ในรอบนี้
 - ไม่ stage หรือรวม `.obsidian/workspace.json`
 
 test หลังทำ:
 
-- focused unit test ของ `lib/features/topup/easySlipService.ts`: ผ่าน 8 tests
+- focused unit test ของ `lib/features/topup/legacy slip providerService.ts`: ผ่าน 8 tests
 - focused API test ของ `/api/topup`: ผ่าน 27 tests, skipped 5
 - `npm test`: ผ่าน 101 files / 1325 tests, skipped 6
 - `npm run lint`: ผ่าน
 
 สิ่งที่แก้ใน Step 5.2:
 
-- สร้าง `lib/features/topup/easySlipService.ts` สำหรับ EasySlip v1/v2 verification
-- ย้าย EasySlip endpoint constants, response types, v1/v2 request building, v2 bank/truewallet response mapping ออกจาก `app/api/topup/route.ts`
+- สร้าง `lib/features/topup/legacy slip providerService.ts` สำหรับ legacy slip provider v1/v2 verification
+- ย้าย legacy slip provider endpoint constants, response types, v1/v2 request building, v2 bank/truewallet response mapping ออกจาก `app/api/topup/route.ts`
 - ให้ `app/api/topup/route.ts` เรียก service ใหม่ แต่ยังคงจัดการ auth, validation, fallback pending, DB transaction, upload save, audit log, และ response shape เหมือนเดิม
-- เพิ่ม `tests/lib/topupEasySlipService.test.ts` เพื่อ lock behavior ของ EasySlip service
+- เพิ่ม `tests/lib/topuplegacy slip providerService.test.ts` เพื่อ lock behavior ของ legacy slip provider service
 - ไม่ stage ไฟล์ใด ๆ และไม่รวม `.obsidian/workspace.json`
 
 ### Step 5.3a: Topup data builders
@@ -3931,7 +3931,7 @@ test หลังทำ:
 ข้อจำกัดของรอบนี้:
 
 - ย้ายเฉพาะ approved DB transaction + balance update + audit execution
-- ไม่ย้าย duplicate transaction check, EasySlip verification, upload save, auth, PIN, หรือ response status/message
+- ไม่ย้าย duplicate transaction check, legacy slip provider verification, upload save, auth, PIN, หรือ response status/message
 - ไม่เปลี่ยน production behavior หรือ response shape
 - ไม่ stage หรือรวม `.obsidian/workspace.json`
 - GitNexus ยังใช้ไม่ได้ใน repo นี้เพราะยังไม่มี index จึงทำแบบ manual scoped refactor และยืนยันด้วย focused/full tests แทน
@@ -3945,7 +3945,7 @@ test หลังทำ:
 
 สิ่งที่แก้ใน Step 5.3b-2:
 
-- เพิ่ม `createApprovedTopup` ใน `lib/features/topup/topupService.ts`
+- เพิ่ม `createLegacyApprovedTopup` ใน `lib/features/topup/topupService.ts`
 - ย้ายเฉพาะ approved topup DB transaction, user balance update, และ audit execution ออกจาก `app/api/topup/route.ts`
 - ให้ `app/api/topup/route.ts` ยังตรวจ verified amount, duplicate transaction, upload save, auth, PIN และ return message/response shape เดิม
 - เพิ่ม unit test สำหรับ approved topup service รวมทั้งกรณีข้อมูล sender/bank/proof image เป็นค่าว่าง
@@ -3975,7 +3975,7 @@ test หลังทำ:
 ข้อจำกัดของรอบนี้:
 
 - ย้ายเฉพาะ duplicate transactionRef lookup
-- ไม่ย้าย user lookup, EasySlip verification, upload save, auth, PIN, หรือ response status/message
+- ไม่ย้าย user lookup, legacy slip provider verification, upload save, auth, PIN, หรือ response status/message
 - ไม่เปลี่ยน production behavior หรือ response shape
 - ไม่ stage หรือรวม `.obsidian/workspace.json`
 - GitNexus ยังใช้ไม่ได้ใน repo นี้เพราะยังไม่มี index จึงทำแบบ manual scoped refactor และยืนยันด้วย focused/full tests แทน
@@ -3989,7 +3989,7 @@ test หลังทำ:
 
 สิ่งที่แก้ใน Step 5.3b-3:
 
-- เพิ่ม `hasDuplicateTopupTransactionRef` ใน `lib/features/topup/topupService.ts`
+- เพิ่ม `hasLegacyDuplicateTopupTransactionRef` ใน `lib/features/topup/topupService.ts`
 - ย้าย duplicate transactionRef lookup ออกจาก `app/api/topup/route.ts`
 - ให้ route ยัง return error message/status เดิมเมื่อพบสลิปซ้ำ
 - เพิ่ม unit test สำหรับกรณี transactionRef ซ้ำและไม่ซ้ำ
@@ -4003,7 +4003,7 @@ test หลังทำ:
 
 - แยก form parsing และ validation ชั้นแรกของ topup request ออกจาก `app/api/topup/route.ts`
 - ให้ route ยังเป็นคน return `NextResponse` ด้วย message/status เดิม
-- ลด logic parsing ที่ซ้ำ/ยาวใน route โดยไม่แตะ EasySlip, upload, DB, auth หรือ PIN behavior
+- ลด logic parsing ที่ซ้ำ/ยาวใน route โดยไม่แตะ legacy slip provider, upload, DB, auth หรือ PIN behavior
 
 ไฟล์ที่จะสร้าง:
 
@@ -4018,7 +4018,7 @@ test หลังทำ:
 ข้อจำกัดของรอบนี้:
 
 - ย้ายเฉพาะ form parsing, provided method count, และ validation ชั้นแรก เช่น amount/method/truewallet payload
-- ไม่ย้าย file signature validation, base64 size validation, public URL validation, EasySlip verification, upload save, DB, auth, PIN, หรือ response shape
+- ไม่ย้าย file signature validation, base64 size validation, public URL validation, legacy slip provider verification, upload save, DB, auth, PIN, หรือ response shape
 - ไม่เปลี่ยน production behavior หรือ response message/status
 - ไม่ stage หรือรวม `.obsidian/workspace.json`
 - GitNexus ยังใช้ไม่ได้ใน repo นี้เพราะยังไม่มี index จึงทำแบบ manual scoped refactor และยืนยันด้วย focused/full tests แทน
@@ -4035,7 +4035,7 @@ test หลังทำ:
 - สร้าง `lib/features/topup/topupRequest.ts` สำหรับ parse form data, count proof methods, และ validate request ชั้นแรก
 - สร้าง `tests/lib/topupRequest.test.ts` เพื่อ lock message/status เดิมของ amount/method/truewallet payload validation
 - ปรับ `app/api/topup/route.ts` ให้ใช้ parser/validator ใหม่ แต่ยัง return `NextResponse` ด้วย response shape เดิม
-- ไม่ย้าย file signature validation, base64 size validation, public URL validation, EasySlip verification, upload save, DB, auth, PIN, หรือ response shape
+- ไม่ย้าย file signature validation, base64 size validation, public URL validation, legacy slip provider verification, upload save, DB, auth, PIN, หรือ response shape
 - ไม่ stage ไฟล์ใด ๆ และไม่รวม `.obsidian/workspace.json`
 
 ### Step 5.3d: Topup proof image validation helper
@@ -4046,7 +4046,7 @@ test หลังทำ:
 
 - แยก validation logic ของ proof image ออกจาก `app/api/topup/route.ts`
 - รวม rule ของ file signature, base64 size/format, และ public image URL ไว้ใน helper เดียว
-- ให้ route ยัง return `NextResponse` ด้วย message/status เดิม และยังทำ upload save/EasySlip flow ที่เดิม
+- ให้ route ยัง return `NextResponse` ด้วย message/status เดิม และยังทำ upload save/legacy slip provider flow ที่เดิม
 
 ไฟล์ที่จะสร้าง:
 
@@ -4061,7 +4061,7 @@ test หลังทำ:
 ข้อจำกัดของรอบนี้:
 
 - ย้ายเฉพาะ file/base64/image URL proof validation
-- ไม่ย้าย upload save, EasySlip verification, DB, auth, PIN, duplicate check, หรือ response shape
+- ไม่ย้าย upload save, legacy slip provider verification, DB, auth, PIN, duplicate check, หรือ response shape
 - ไม่เปลี่ยน production behavior หรือ response message/status
 - ไม่ stage หรือรวม `.obsidian/workspace.json`
 - GitNexus ยังใช้ไม่ได้ใน repo นี้เพราะยังไม่มี index จึงทำแบบ manual scoped refactor และยืนยันด้วย focused/full tests แทน
@@ -4079,7 +4079,7 @@ test หลังทำ:
 - ย้าย constants ของ slip validation เช่น allowed image types และ max slip bytes ไปใช้ร่วมจาก helper ใหม่
 - สร้าง `tests/lib/topupProofValidation.test.ts` เพื่อ lock message/status เดิมของ proof validation
 - ปรับ `app/api/topup/route.ts` ให้เรียก `validateTopupProofInput` แต่ยัง return `NextResponse` ด้วย response shape เดิม
-- ไม่ย้าย upload save, EasySlip verification, DB, auth, PIN, duplicate check, หรือ response shape
+- ไม่ย้าย upload save, legacy slip provider verification, DB, auth, PIN, duplicate check, หรือ response shape
 - ไม่ stage ไฟล์ใด ๆ และไม่รวม `.obsidian/workspace.json`
 
 ### Step 5.3e: Topup slip verification orchestrator
@@ -4088,14 +4088,14 @@ test หลังทำ:
 
 เป้าหมาย:
 
-- แยก logic เลือกวิธีตรวจสลิปด้วย EasySlip ออกจาก `app/api/topup/route.ts`
-- คง fallback pending behavior เดิมเมื่อ EasySlip config หายหรือ external verification error
-- ให้ route ยังเป็นคนจัดการ response เมื่อ EasySlip คืน status ไม่ใช่ 200, duplicate check, upload save, DB, auth, PIN และ response shape
+- แยก logic เลือกวิธีตรวจสลิปด้วย legacy slip provider ออกจาก `app/api/topup/route.ts`
+- คง fallback pending behavior เดิมเมื่อ legacy slip provider config หายหรือ external verification error
+- ให้ route ยังเป็นคนจัดการ response เมื่อ legacy slip provider คืน status ไม่ใช่ 200, duplicate check, upload save, DB, auth, PIN และ response shape
 
 ไฟล์ที่จะสร้าง:
 
-- `lib/features/topup/topupVerificationFlow.ts`
-- `tests/lib/topupVerificationFlow.test.ts`
+- `lib/features/topup/topupLegacyVerificationFlow.ts`
+- `tests/lib/topupLegacyVerificationFlow.test.ts`
 
 ไฟล์ที่จะแก้ในรอบนี้:
 
@@ -4105,7 +4105,7 @@ test หลังทำ:
 ข้อจำกัดของรอบนี้:
 
 - ย้ายเฉพาะ orchestration ของ payload/base64/url/file verification และ fallback pending flag
-- ไม่เปลี่ยน EasySlip request payload, endpoint, mapping, error message, upload save, DB, auth, PIN, duplicate check, หรือ response shape
+- ไม่เปลี่ยน legacy slip provider request payload, endpoint, mapping, error message, upload save, DB, auth, PIN, duplicate check, หรือ response shape
 - ไม่ stage หรือรวม `.obsidian/workspace.json`
 - GitNexus ยังใช้ไม่ได้ใน repo นี้เพราะยังไม่มี index จึงทำแบบ manual scoped refactor และยืนยันด้วย focused/full tests แทน
 
@@ -4118,11 +4118,11 @@ test หลังทำ:
 
 สิ่งที่แก้ใน Step 5.3e:
 
-- สร้าง `lib/features/topup/topupVerificationFlow.ts` สำหรับ orchestration ของ EasySlip v2/v1 และ fallback pending flag
+- สร้าง `lib/features/topup/topupLegacyVerificationFlow.ts` สำหรับ orchestration ของ legacy slip provider v2/v1 และ fallback pending flag
 - ย้าย logic เลือก payload/base64/url/file verification ออกจาก `app/api/topup/route.ts`
-- คง behavior เดิมของ file v2 fallback ไป EasySlip v1, config missing fallback pending, และ external error fallback pending พร้อม log `[TOPUP_EASYSLIP]`
-- สร้าง `tests/lib/topupVerificationFlow.test.ts` เพื่อ lock v2/v1/fallback/non-200 behavior
-- ไม่เปลี่ยน EasySlip request payload, endpoint, mapping, error message, upload save, DB, auth, PIN, duplicate check, หรือ response shape
+- คง behavior เดิมของ file v2 fallback ไป legacy slip provider v1, config missing fallback pending, และ external error fallback pending พร้อม log `[TOPUP_legacy slip provider]`
+- สร้าง `tests/lib/topupLegacyVerificationFlow.test.ts` เพื่อ lock v2/v1/fallback/non-200 behavior
+- ไม่เปลี่ยน legacy slip provider request payload, endpoint, mapping, error message, upload save, DB, auth, PIN, duplicate check, หรือ response shape
 - ไม่ stage ไฟล์ใด ๆ และไม่รวม `.obsidian/workspace.json`
 
 ### Step 5.3f: Topup proof image storage helper
@@ -4133,7 +4133,7 @@ test หลังทำ:
 
 - แยก logic save proof image และคำนวณ `proofImage` ออกจาก `app/api/topup/route.ts`
 - ใช้ constants validation เดิมร่วมกับ upload options เพื่อไม่ให้ rule ของ slip กระจาย
-- ให้ route ยังเป็นคนจัดการ EasySlip, DB, auth, PIN, duplicate check และ response shape เดิม
+- ให้ route ยังเป็นคนจัดการ legacy slip provider, DB, auth, PIN, duplicate check และ response shape เดิม
 
 ไฟล์ที่จะสร้าง:
 
@@ -4148,7 +4148,7 @@ test หลังทำ:
 ข้อจำกัดของรอบนี้:
 
 - ย้ายเฉพาะ saveOptimizedImageUpload options และ proof image URL fallback
-- ไม่ย้าย proof validation, EasySlip verification, DB, auth, PIN, duplicate check, หรือ response shape
+- ไม่ย้าย proof validation, legacy slip provider verification, DB, auth, PIN, duplicate check, หรือ response shape
 - ไม่เปลี่ยน production behavior หรือ upload options
 - ไม่ stage หรือรวม `.obsidian/workspace.json`
 - GitNexus ยังใช้ไม่ได้ใน repo นี้เพราะยังไม่มี index จึงทำแบบ manual scoped refactor และยืนยันด้วย focused/full tests แทน
@@ -4166,7 +4166,7 @@ test หลังทำ:
 - ย้าย `saveOptimizedImageUpload` options ออกจาก `app/api/topup/route.ts`
 - ให้ helper ใช้ `TOPUP_ALLOWED_IMAGE_TYPES`, `TOPUP_MAX_SLIP_BYTES`, `PRIVATE_SLIP_UPLOAD_DIR`, และ `PRIVATE_SLIP_PATH_PREFIX` เดิม
 - สร้าง `tests/lib/topupProofStorage.test.ts` เพื่อ lock upload options และ proof image URL fallback
-- ไม่ย้าย proof validation, EasySlip verification, DB, auth, PIN, duplicate check, หรือ response shape
+- ไม่ย้าย proof validation, legacy slip provider verification, DB, auth, PIN, duplicate check, หรือ response shape
 - ไม่ stage ไฟล์ใด ๆ และไม่รวม `.obsidian/workspace.json`
 
 ### Step 5.3g: Topup route cleanup and final audit
@@ -4191,7 +4191,7 @@ test หลังทำ:
 ข้อจำกัดของรอบนี้:
 
 - ไม่ย้าย logic เพิ่มถ้าไม่จำเป็น
-- ไม่เปลี่ยน production behavior, response shape, upload options, EasySlip flow, DB, auth, PIN, หรือ duplicate check
+- ไม่เปลี่ยน production behavior, response shape, upload options, legacy slip provider flow, DB, auth, PIN, หรือ duplicate check
 - ไม่ stage หรือรวม `.obsidian/workspace.json`
 - GitNexus ยังใช้ไม่ได้ใน repo นี้เพราะยังไม่มี index จึงทำแบบ manual scoped refactor และยืนยันด้วย focused/full tests แทน
 
@@ -4205,7 +4205,7 @@ test หลังทำ:
 
 - cleanup import formatting ใน `app/api/topup/route.ts`
 - เพิ่ม `shouldCreatePendingTopup` เพื่อให้ pending/approved branch อ่านชัดขึ้น โดยไม่เปลี่ยนเงื่อนไขเดิม
-- ไม่ย้าย logic เพิ่ม และไม่เปลี่ยน production behavior, response shape, upload options, EasySlip flow, DB, auth, PIN, หรือ duplicate check
+- ไม่ย้าย logic เพิ่ม และไม่เปลี่ยน production behavior, response shape, upload options, legacy slip provider flow, DB, auth, PIN, หรือ duplicate check
 - ปิด Topup refactor phase นี้ได้แล้ว: route เหลือหน้าที่ controller เป็นหลัก และ business logic ถูกแยกไป `lib/features/topup/*` พร้อม unit tests
 - ไม่ stage ไฟล์ใด ๆ และไม่รวม `.obsidian/workspace.json`
 
@@ -4586,7 +4586,7 @@ test หลังทำ:
 - เติม mock date export เช่น `toMySQLDatetime` ใน test ที่ import route ใหม่กว่าเดิม
 - ปรับ role route assertions ให้ตรงกับ behavior ปัจจุบันที่ใช้ `resolveUniqueRoleCode` แทนการ reject duplicate code
 - เติม gacha reward/machine fixture ให้ผ่าน eligibility และ probability summary โดยไม่แตะ production code
-- ปรับ slip/profile/public/topup fixtures ให้ตรงกับ shared upload, auth, EasySlip v2, และ route response shape ปัจจุบัน
+- ปรับ slip/profile/public/topup fixtures ให้ตรงกับ shared upload, auth, legacy slip provider v2, และ route response shape ปัจจุบัน
 - ไม่ stage ไฟล์ใด ๆ และไม่รวม `.obsidian/workspace.json`
 
 ## Checklist ก่อนลงมือ refactor

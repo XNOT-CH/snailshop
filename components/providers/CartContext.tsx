@@ -71,11 +71,12 @@ export function CartProvider({
     initialAuthenticated = false,
 }: Readonly<CartProviderProps>) {
     const router = useRouter();
-    const [items, setItems] = useState<CartItem[]>(() => initialAuthenticated ? readStoredCart() : []);
+    const [items, setItems] = useState<CartItem[]>([]);
     const itemsRef = React.useRef(items);
     const pendingAddIdsRef = React.useRef<Set<string>>(new Set());
     const [isLoading, setIsLoading] = useState(false);
     const [isAuthenticated, setIsAuthenticated] = useState(initialAuthenticated);
+    const [isCartHydrated, setIsCartHydrated] = useState(false);
     const [isCartOpen, setIsCartOpen] = useState(false);
 
     useEffect(() => {
@@ -87,10 +88,12 @@ export function CartProvider({
 
         if (initialAuthenticated) {
             setItems(readStoredCart());
+            setIsCartHydrated(true);
             return;
         }
 
         setItems([]);
+        setIsCartHydrated(true);
         try {
             localStorage.removeItem(CART_STORAGE_KEY);
         } catch (error) {
@@ -118,14 +121,14 @@ export function CartProvider({
 
     // Save cart to localStorage whenever items change
     useEffect(() => {
-        if (isAuthenticated) {
+        if (isAuthenticated && isCartHydrated) {
             try {
                 localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
             } catch (error) {
                 console.error("Failed to save cart to localStorage:", error);
             }
         }
-    }, [items, isAuthenticated]);
+    }, [items, isAuthenticated, isCartHydrated]);
 
     // Update item quantity
     const updateQuantity = useCallback((productId: string, quantity: number) => {
@@ -226,13 +229,15 @@ export function CartProvider({
 
     // Remove item from cart
     const removeFromCart = useCallback((productId: string) => {
-        setItems((prev) => {
-            const item = prev.find((i) => i.id === productId);
-            if (item) {
-                showInfo(`นำออกจากตะกร้าแล้ว: ${item.name}`);
-            }
-            return prev.filter((i) => i.id !== productId);
-        });
+        const item = itemsRef.current.find((i) => i.id === productId);
+        if (!item) {
+            return;
+        }
+
+        const nextItems = itemsRef.current.filter((i) => i.id !== productId);
+        itemsRef.current = nextItems;
+        setItems(nextItems);
+        showInfo(`นำออกจากตะกร้าแล้ว: ${item.name}`);
     }, []);
 
     const replaceCartItems = useCallback((nextItems: CartItem[]) => {

@@ -415,6 +415,8 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
           }>${escapeHtml(role.label)}</option>`
       )
       .join("");
+    const escapedUsername = escapeHtml(user.username);
+    const escapedPointCurrencyName = escapeHtml(pointCurrencyName);
 
     const bindNumericInput = (
       elementId: string,
@@ -459,7 +461,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
     };
 
     Swal.fire({
-      title: `แก้ไขข้อมูล: ${user.username}`,
+      title: `แก้ไขข้อมูล: ${escapedUsername}`,
       width: "min(96vw, 520px)",
       showCancelButton: true,
       confirmButtonText: "บันทึก",
@@ -480,7 +482,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
         bindNumericInput("swal-lifetime", sanitizeIntegerInput);
       },
       html: `
-        <p class="mb-4 text-sm text-gray-500">แก้ไขเครดิต ${pointCurrencyName} และบทบาทของสมาชิก</p>
+        <p class="mb-4 text-sm text-gray-500">แก้ไขเครดิต ${escapedPointCurrencyName} และบทบาทของสมาชิก</p>
         <div class="space-y-4 text-left">
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
@@ -498,11 +500,11 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
           </div>
           <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">${pointCurrencyName}คงเหลือ</label>
+              <label class="mb-1 block text-sm font-medium text-gray-700">${escapedPointCurrencyName}คงเหลือ</label>
               <input id="swal-point" type="text" inputmode="numeric" autocomplete="off" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${user.pointBalance}">
             </div>
             <div>
-              <label class="mb-1 block text-sm font-medium text-gray-700">${pointCurrencyName}สะสม</label>
+              <label class="mb-1 block text-sm font-medium text-gray-700">${escapedPointCurrencyName}สะสม</label>
               <input id="swal-lifetime" type="text" inputmode="numeric" autocomplete="off" class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" value="${user.lifetimePoints}">
             </div>
           </div>

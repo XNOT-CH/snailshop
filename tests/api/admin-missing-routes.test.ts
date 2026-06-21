@@ -47,7 +47,7 @@ vi.mock("@/lib/db", () => ({
       products: { findMany: vi.fn() },
     },
     insert: vi.fn().mockReturnValue({ values: vi.fn().mockResolvedValue({}) }),
-    update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue({}) }) }),
+    update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue({ affectedRows: 1 }) }) }),
     delete: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue({}) }),
     select: vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
@@ -63,7 +63,7 @@ vi.mock("@/lib/db", () => ({
       }),
     }),
     transaction: vi.fn(async (cb: any) => cb({
-      update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue({}) }) }),
+      update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue({ affectedRows: 1 }) }) }),
     })),
   },
   auditLogs: { userId: "userId", action: "action", resource: "resource", createdAt: "createdAt" },

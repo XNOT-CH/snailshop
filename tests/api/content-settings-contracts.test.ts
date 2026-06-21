@@ -7,7 +7,6 @@ const {
   getCurrencySettingsMock,
   insertValuesMock,
   requirePermissionMock,
-  requirePermissionWithCsrfMock,
   sanitizePublicFooterLinksMock,
   updateSetMock,
   validateBodyMock,
@@ -58,7 +57,6 @@ const {
     getCurrencySettingsMock: vi.fn(),
     insertValuesMock,
     requirePermissionMock: vi.fn(),
-    requirePermissionWithCsrfMock: vi.fn(),
     sanitizePublicFooterLinksMock: vi.fn((links) => links),
     updateSetMock,
     validateBodyMock: vi.fn(),
@@ -67,7 +65,7 @@ const {
 
 vi.mock("@/lib/auth", () => ({
   requirePermission: requirePermissionMock,
-  requirePermissionWithCsrf: requirePermissionWithCsrfMock,
+  requirePermissionWithCsrf: requirePermissionMock,
 }));
 
 vi.mock("@/lib/cache", () => ({
@@ -179,7 +177,6 @@ describe("content/settings API response contracts", () => {
     vi.clearAllMocks();
     vi.resetModules();
     requirePermissionMock.mockResolvedValue(ADMIN_OK);
-    requirePermissionWithCsrfMock.mockResolvedValue(ADMIN_OK);
   });
 
   it("preserves admin settings success and unauthorized wrapper shape", async () => {

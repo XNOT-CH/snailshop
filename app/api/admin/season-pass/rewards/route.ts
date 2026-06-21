@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requirePermission } from "@/lib/auth";
+import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { getAdminSeasonPassRewards, updateAdminSeasonPassRewards } from "@/lib/seasonPass";
 import { PERMISSIONS } from "@/lib/permissions";
 import { contentApiError } from "@/lib/features/content/apiResponse";
@@ -21,7 +21,7 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
-    const authCheck = await requirePermission(PERMISSIONS.SEASON_PASS_EDIT);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.SEASON_PASS_EDIT);
     if (!authCheck.success) {
         return contentApiError("Unauthorized", { status: 401 });
     }

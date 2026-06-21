@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requirePermission } from "@/lib/auth";
+import { requirePermissionWithCsrf } from "@/lib/auth";
 import { saveOptimizedImageUpload } from "@/lib/serverImageUpload";
 import { PERMISSIONS } from "@/lib/permissions";
 import { getRuntimeUploadDir } from "@/lib/runtimeUploads";
 
 export async function POST(request: NextRequest) {
-    const authCheck = await requirePermission(PERMISSIONS.GACHA_EDIT);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.GACHA_EDIT);
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }
