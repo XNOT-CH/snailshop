@@ -44,6 +44,10 @@ export async function PATCH(req: Request, { params }: RouteParams) {
             set[k] = String(normalizedCost.costAmount);
             continue;
         }
+        if (k === "fallbackCreditCap") {
+            set[k] = String(v);
+            continue;
+        }
         set[k] = v;
     }
 

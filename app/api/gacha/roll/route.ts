@@ -8,6 +8,7 @@ import { decrypt, encrypt } from "@/lib/encryption";
 import {
     acquireGachaExecutionLock,
     claimProductRewardOrThrow,
+    cryptoRandomFloat,
     deductUserBalanceOrThrow,
     fetchProductRewardForClaimOrThrow,
     GACHA_REDIS_REQUIRED_MESSAGE,
@@ -123,7 +124,7 @@ async function fetchTieredProducts(machineId: string | null) {
     return { allRewards, tieredProducts };
 }
 
-async function handleSpin1(userId: string, machineId: string | null, costType: string, costAmount: number, dailySpinLimit: number) {
+async function handleSpin1(userId: string, machineId: string | null, costType: string, costAmount: number, dailySpinLimit: number, fallbackCreditCap: number) {
     const userRes = await fetchGachaUserOrError(userId);
     if ("error" in userRes) {
         return userRes;
@@ -145,7 +146,7 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
         return { error: "ตู้กาชานี้ยังตั้งค่าอัตราสุ่มไม่ครบ 100% จึงยังไม่สามารถสุ่มได้", status: 400 };
     }
 
-    const chosenReward = pickWeightedCandidate(eligibleRewards);
+    const chosenReward = pickWeightedCandidate(eligibleRewards, cryptoRandomFloat());
     if (!chosenReward) {
         return { error: "ไม่พบรางวัลที่สามารถสุ่มได้", status: 400 };
     }
@@ -268,7 +269,11 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
                 throw error;
             }
 
-            const fallbackAmount = Math.max(0, Number(chosenProductReward?.rewardAmount ?? rewardMeta?.price ?? 0));
+            const rawFallbackAmount = Math.max(0, Number(chosenProductReward?.rewardAmount ?? rewardMeta?.price ?? 0));
+            // จำกัดเครดิตชดเชยตามเพดานที่แอดมินตั้ง (0 = ไม่จำกัด = จ่ายเต็มราคา)
+            const fallbackAmount = fallbackCreditCap > 0
+                ? Math.min(rawFallbackAmount, fallbackCreditCap)
+                : rawFallbackAmount;
 
             await finalizeCurrencyRewardRoll(
                 tx,
@@ -546,7 +551,7 @@ export async function POST(req: Request) {
     }
 
     try {
-        const { costAmount, costType, dailySpinLimit, isEnabled } = await getSpinGachaSettings(machineId);
+        const { costAmount, costType, dailySpinLimit, fallbackCreditCap, isEnabled } = await getSpinGachaSettings(machineId);
 
         if (!isEnabled) {
             return NextResponse.json({ success: false, message: "ระบบกาชาปิดอยู่ชั่วคราว" }, { status: 400 });
@@ -562,7 +567,7 @@ export async function POST(req: Request) {
         }
 
         if (spin === 1) {
-            const res = await handleSpin1(authCheck.userId, machineId, costType, costAmount, dailySpinLimit);
+            const res = await handleSpin1(authCheck.userId, machineId, costType, costAmount, dailySpinLimit, fallbackCreditCap);
             if ("error" in res) {
                 return NextResponse.json({ success: false, message: res.error }, { status: res.status || 400 });
             }

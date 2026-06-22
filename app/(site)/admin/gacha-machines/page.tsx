@@ -143,6 +143,7 @@ export default function GachaMachinesAdminPage() {
         costType: "FREE",
         costAmount: 0,
         dailySpinLimit: 0,
+        fallbackCreditCap: 0,
         sortOrder: 0,
     });
     const [savingMachine, setSavingMachine] = useState(false);
@@ -213,6 +214,7 @@ export default function GachaMachinesAdminPage() {
             costType: normalizedCost.costType,
             costAmount: normalizedCost.costAmount,
             dailySpinLimit: machineForm.dailySpinLimit,
+            fallbackCreditCap: machineForm.fallbackCreditCap,
             sortOrder: machineForm.sortOrder,
         };
         setSavingMachine(true);
@@ -225,7 +227,7 @@ export default function GachaMachinesAdminPage() {
             const json = await res.json() as { success: boolean; message?: string };
             if (json.success) {
                 showSuccess("เพิ่มตู้กาชาสำเร็จ");
-                setMachineForm({ name: "", description: "", imageUrl: "", gameType: "SPIN_X", categoryId: "", costType: "FREE", costAmount: 0, dailySpinLimit: 0, sortOrder: 0 });
+                setMachineForm({ name: "", description: "", imageUrl: "", gameType: "SPIN_X", categoryId: "", costType: "FREE", costAmount: 0, dailySpinLimit: 0, fallbackCreditCap: 0, sortOrder: 0 });
                 loadAll();
             } else showError(json.message ?? "เพิ่มตู้กาชาไม่สำเร็จ");
         } catch { showError("เกิดข้อผิดพลาด"); } finally { setSavingMachine(false); }

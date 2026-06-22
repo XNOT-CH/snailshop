@@ -60,6 +60,7 @@ export async function POST(req: Request) {
         costType: normalizedCost.costType,
         costAmount: String(normalizedCost.costAmount),
         dailySpinLimit: body.dailySpinLimit,
+        fallbackCreditCap: String(body.fallbackCreditCap),
         tierMode: body.tierMode,
         isActive: false,
         isEnabled: body.isEnabled,

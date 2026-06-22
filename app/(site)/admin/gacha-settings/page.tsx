@@ -60,6 +60,7 @@ interface GachaSettings {
     costType: string;
     costAmount: number;
     dailySpinLimit: number;
+    fallbackCreditCap: number;
     tierMode: string;
 }
 
@@ -161,6 +162,7 @@ export default function AdminGachaSettingsPage() {
         costType: "FREE",
         costAmount: 0,
         dailySpinLimit: 0,
+        fallbackCreditCap: 0,
         tierMode: "PRICE",
     });
 
@@ -179,6 +181,7 @@ export default function AdminGachaSettingsPage() {
                     costType: data.data.costType ?? "FREE",
                     costAmount: Number(data.data.costAmount) || 0,
                     dailySpinLimit: data.data.dailySpinLimit ?? 0,
+                    fallbackCreditCap: Number(data.data.fallbackCreditCap) || 0,
                     tierMode: data.data.tierMode ?? "PRICE",
                 });
             }
@@ -527,6 +530,40 @@ export default function AdminGachaSettingsPage() {
                             {settings.dailySpinLimit === 0
                                 ? "ผู้ใช้สามารถสุ่มได้ไม่จำกัดจำนวนครั้ง"
                                 : `ผู้ใช้สุ่มได้สูงสุด ${settings.dailySpinLimit} ครั้ง/วัน`}
+                        </p>
+                    </CardContent>
+                </Card>
+
+                {/* เพดานเครดิตชดเชย */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-base">
+                            <Coins className="h-5 w-5" />
+                            เพดานเครดิตชดเชย
+                        </CardTitle>
+                        <CardDescription>
+                            เมื่อสุ่มได้สินค้าแต่ของหมดสต็อกพอดี ระบบจะคืนเครดิตแทน จำกัดมูลค่าสูงสุดที่คืนได้ที่นี่
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        <Label>มูลค่าสูงสุด/ครั้ง (฿) (0 = ไม่จำกัด = คืนเต็มราคา)</Label>
+                        <Input
+                            type="number"
+                            min={0}
+                            value={settings.fallbackCreditCap}
+                            onChange={(e) =>
+                                setSettings((prev) => ({
+                                    ...prev,
+                                    fallbackCreditCap: Number(e.target.value) || 0,
+                                }))
+                            }
+                            placeholder="0"
+                            disabled={!canEditGacha}
+                        />
+                        <p className="text-sm text-muted-foreground">
+                            {settings.fallbackCreditCap === 0
+                                ? "คืนเครดิตเต็มราคาสินค้า (เสี่ยงขาดทุน/ถูกฟาร์มหากมีสินค้าราคาสูง)"
+                                : `คืนเครดิตได้สูงสุด ${settings.fallbackCreditCap.toLocaleString()} ฿/ครั้ง`}
                         </p>
                     </CardContent>
                 </Card>

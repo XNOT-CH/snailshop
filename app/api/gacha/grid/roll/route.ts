@@ -5,6 +5,7 @@ import { db, gachaRollLogs } from "@/lib/db";
 import {
     acquireGachaExecutionLock,
     claimProductRewardOrThrow,
+    cryptoRandomFloat,
     deductUserBalanceOrThrow,
     fetchProductRewardForClaimOrThrow,
     GACHA_REDIS_REQUIRED_MESSAGE,
@@ -140,7 +141,7 @@ async function handleGridRoll(
         return { error: "ตู้กาชานี้ยังตั้งค่าอัตราสุ่มไม่ครบ 100% จึงยังไม่สามารถสุ่มได้", status: 400 };
     }
 
-    const chosen = pickWeightedCandidate(eligible);
+    const chosen = pickWeightedCandidate(eligible, cryptoRandomFloat());
     if (!chosen) {
         return { error: "ไม่พบรางวัลที่สามารถสุ่มได้", status: 400 };
     }

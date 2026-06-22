@@ -18,6 +18,13 @@ export function isProductionGachaRedisMissing() {
     return process.env.NODE_ENV === "production" && (!isRedisAvailable() || !redis);
 }
 
+// ค่าสุ่ม uniform [0,1) จาก CSPRNG สำหรับใช้จับรางวัลกาชา แทน Math.random()
+// ซึ่งคาดเดาลำดับถัดไปได้ (V8 xorshift128+) — สำคัญเพราะเป็นเส้นทางที่มีมูลค่าเงินจริง
+export function cryptoRandomFloat() {
+    // crypto.randomInt กำหนดช่วงต้อง < 2^48 จึงใช้ 2^47 (47-bit) เพื่ออยู่ในขอบเขตอย่างปลอดภัย
+    return crypto.randomInt(0, 2 ** 47) / 2 ** 47;
+}
+
 function purgeExpiredExecutionLocks(now = Date.now()) {
     for (const [key, value] of executionMemoryLocks.entries()) {
         if (value.expiresAt <= now) {

@@ -6,9 +6,15 @@ type GachaSettingsRow = {
     costAmount?: string | number | null;
     costType?: string | null;
     dailySpinLimit?: number | null;
+    fallbackCreditCap?: string | number | null;
     isActive?: boolean | null;
     isEnabled?: boolean | null;
 };
+
+function normalizeFallbackCreditCap(value: string | number | null | undefined) {
+    const cap = Number(value ?? 0);
+    return Number.isFinite(cap) && cap > 0 ? cap : 0;
+}
 
 export type FindGachaMachineSettings = (machineId: string) => Promise<GachaSettingsRow | null | undefined>;
 export type FindGlobalGachaSettings = () => Promise<GachaSettingsRow | null | undefined>;
@@ -25,6 +31,7 @@ async function findMachineSettings(machineId: string) {
             costAmount: true,
             costType: true,
             dailySpinLimit: true,
+            fallbackCreditCap: true,
             isActive: true,
             isEnabled: true,
         },
@@ -56,6 +63,7 @@ export async function getSpinGachaSettings(machineId: string | null, deps: Gacha
         return {
             ...normalizeSettingsCost(machine),
             dailySpinLimit: machine.dailySpinLimit ?? 0,
+            fallbackCreditCap: normalizeFallbackCreditCap(machine.fallbackCreditCap),
             isEnabled: machine.isEnabled ?? true,
         };
     }
@@ -64,6 +72,7 @@ export async function getSpinGachaSettings(machineId: string | null, deps: Gacha
     return {
         ...normalizeSettingsCost(settings),
         dailySpinLimit: settings?.dailySpinLimit ?? 0,
+        fallbackCreditCap: normalizeFallbackCreditCap(settings?.fallbackCreditCap),
         isEnabled: settings?.isEnabled ?? true,
     };
 }
