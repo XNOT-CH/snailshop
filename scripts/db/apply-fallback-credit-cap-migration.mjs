@@ -20,7 +20,11 @@ const statements = sql
     .map((s) => s.replace(/^\s*--.*$/gm, "").trim())
     .filter((s) => s.length > 0);
 
-const conn = await mysql.createConnection(url);
+const isTiDB = url.includes("tidbcloud.com");
+const conn = await mysql.createConnection({
+    uri: url,
+    ssl: isTiDB ? { rejectUnauthorized: true } : undefined,
+});
 try {
     for (const stmt of statements) {
         await conn.query(stmt);
