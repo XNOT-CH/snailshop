@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const { auditFromRequestMock, dbMock, requireAnyPermissionWithCsrfMock } = vi.hoisted(() => ({
+const { auditFromRequestMock, dbMock, requireAnyPermissionWithCsrfMock, requirePermissionMock } = vi.hoisted(() => ({
     auditFromRequestMock: vi.fn(),
     requireAnyPermissionWithCsrfMock: vi.fn(),
+    requirePermissionMock: vi.fn(),
     dbMock: {
         query: {
             topups: { findFirst: vi.fn() },
@@ -15,6 +16,7 @@ const { auditFromRequestMock, dbMock, requireAnyPermissionWithCsrfMock } = vi.ho
 
 vi.mock("@/lib/auth", () => ({
     requireAnyPermissionWithCsrf: requireAnyPermissionWithCsrfMock,
+    requirePermission: requirePermissionMock,
 }));
 
 vi.mock("@/lib/auditLog", () => ({
@@ -69,6 +71,7 @@ describe("API: /api/admin/slips race guards", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         requireAnyPermissionWithCsrfMock.mockResolvedValue({ success: true, userId: "admin-1" });
+        requirePermissionMock.mockResolvedValue({ success: true });
         dbMock.query.topups.findFirst.mockResolvedValue({
             amount: "500",
             id: "topup-1",
