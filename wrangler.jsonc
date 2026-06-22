@@ -20,12 +20,6 @@
       "service": "my-game-store"
     }
   ],
-  "hyperdrive": [
-    {
-      "binding": "HYPERDRIVE",
-      "id": "replace-with-cloudflare-hyperdrive-id"
-    }
-  ],
   "r2_buckets": [
     {
       "binding": "UPLOADS_BUCKET",
@@ -39,12 +33,6 @@
         {
           "binding": "WORKER_SELF_REFERENCE",
           "service": "my-game-store-staging"
-        }
-      ],
-      "hyperdrive": [
-        {
-          "binding": "HYPERDRIVE",
-          "id": "replace-with-staging-hyperdrive-id"
         }
       ],
       "r2_buckets": [
