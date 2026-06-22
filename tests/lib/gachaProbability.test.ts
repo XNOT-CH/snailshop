@@ -9,6 +9,19 @@ describe("lib/gachaProbability", () => {
         expect(getNormalizedProbability("abc")).toBe(0);
     });
 
+    it("drops sub-0.005 probabilities to zero so they carry no hidden draw weight", () => {
+        expect(getNormalizedProbability(0.004)).toBe(0);
+        expect(getNormalizedProbability("0.004")).toBe(0);
+        expect(getNormalizedProbability(0.005)).toBe(0.01);
+
+        // a phantom "0%" reward must never be selected over a real 100% reward
+        const candidates = [
+            { id: "real", probability: 100 },
+            { id: "phantom", probability: 0.004 },
+        ];
+        expect(pickWeightedCandidate(candidates, 0.999999)?.id).toBe("real");
+    });
+
     it("picks by weight order using the provided random value", () => {
         const candidates = [
             { id: "common", probability: 70 },
