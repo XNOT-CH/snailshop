@@ -40,6 +40,11 @@ export const gachaMachinePatchSchema = z.object({
 });
 export type GachaMachinePatchInput = z.infer<typeof gachaMachinePatchSchema>;
 
+// Defense-in-depth cap on a single gacha currency reward (CREDIT/POINT/TICKET)
+// so an admin typo or a compromised admin account can't configure an unbounded
+// payout. Raise via env GACHA_MAX_REWARD_AMOUNT if a larger reward is ever needed.
+const MAX_GACHA_REWARD_AMOUNT = Number(process.env.GACHA_MAX_REWARD_AMOUNT) || 1_000_000;
+
 // ── Gacha Reward ─────────────────────────────────────────
 export const gachaRewardSchema = z.object({
     gachaMachineId: z.uuid({ error: "Invalid UUID" }).optional().nullable(),
@@ -48,7 +53,7 @@ export const gachaRewardSchema = z.object({
     probability: z.coerce.number().min(0).max(100).default(1),
     productId: z.uuid({ error: "Invalid UUID" }).optional().nullable(),
     rewardName: z.string().max(200).optional().or(z.literal("")),
-    rewardAmount: z.coerce.number().min(0).optional().nullable(),
+    rewardAmount: z.coerce.number().min(0).max(MAX_GACHA_REWARD_AMOUNT, `จำนวนรางวัลต้องไม่เกิน ${MAX_GACHA_REWARD_AMOUNT.toLocaleString()}`).optional().nullable(),
     rewardImageUrl: imageUrlSchema.optional().or(z.literal("")),
     isActive: z.boolean().default(true),
 });
@@ -61,7 +66,7 @@ export const gachaRewardPatchSchema = z.object({
     probability: z.coerce.number().min(0).max(100).optional(),
     productId: z.uuid({ error: "Invalid UUID" }).optional().nullable(),
     rewardName: z.string().max(200).optional().or(z.literal("")),
-    rewardAmount: z.coerce.number().min(0).optional().nullable(),
+    rewardAmount: z.coerce.number().min(0).max(MAX_GACHA_REWARD_AMOUNT, `จำนวนรางวัลต้องไม่เกิน ${MAX_GACHA_REWARD_AMOUNT.toLocaleString()}`).optional().nullable(),
     rewardImageUrl: imageUrlSchema.optional().or(z.literal("")),
     isActive: z.boolean().optional(),
 });

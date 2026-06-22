@@ -208,6 +208,10 @@ describe("gacha validations", () => {
     it("rejects probability over 100", () => {
       expect(gachaRewardSchema.safeParse({ rewardType: "CREDIT", probability: 150 }).success).toBe(false);
     });
+    it("rejects an out-of-range reward amount (sanity cap against typos/abuse)", () => {
+      expect(gachaRewardSchema.safeParse({ rewardType: "CREDIT", probability: 50, rewardName: "เครดิต", rewardAmount: 1_000_000_000 }).success).toBe(false);
+      expect(gachaRewardSchema.safeParse({ rewardType: "CREDIT", probability: 50, rewardName: "เครดิต", rewardAmount: 1000 }).success).toBe(true);
+    });
   });
 
   describe("gachaSettingsSchema", () => {
