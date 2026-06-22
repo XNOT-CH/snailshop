@@ -15,6 +15,7 @@ export const gachaMachineSchema = z.object({
     costType: z.enum(["FREE", "CREDIT", "POINT", "TICKET"]).default("FREE"),
     costAmount: z.coerce.number().min(0).default(0),
     dailySpinLimit: z.coerce.number().int().min(0).default(0),
+    fallbackCreditCap: z.coerce.number().min(0).default(0),
     tierMode: z.enum(["SINGLE", "MULTI"]).default("SINGLE"),
     isActive: z.boolean().default(false),
     isEnabled: z.boolean().default(true),
@@ -31,12 +32,18 @@ export const gachaMachinePatchSchema = z.object({
     costType: z.enum(["FREE", "CREDIT", "POINT", "TICKET"]).optional(),
     costAmount: z.coerce.number().min(0).optional(),
     dailySpinLimit: z.coerce.number().int().min(0).optional(),
+    fallbackCreditCap: z.coerce.number().min(0).optional(),
     tierMode: z.enum(["SINGLE", "MULTI"]).optional(),
     isActive: z.boolean().optional(),
     isEnabled: z.boolean().optional(),
     sortOrder: z.coerce.number().int().min(0).optional(),
 });
 export type GachaMachinePatchInput = z.infer<typeof gachaMachinePatchSchema>;
+
+// Defense-in-depth cap on a single gacha currency reward (CREDIT/POINT/TICKET)
+// so an admin typo or a compromised admin account can't configure an unbounded
+// payout. Raise via env GACHA_MAX_REWARD_AMOUNT if a larger reward is ever needed.
+const MAX_GACHA_REWARD_AMOUNT = Number(process.env.GACHA_MAX_REWARD_AMOUNT) || 1_000_000;
 
 // ── Gacha Reward ─────────────────────────────────────────
 export const gachaRewardSchema = z.object({
@@ -46,7 +53,7 @@ export const gachaRewardSchema = z.object({
     probability: z.coerce.number().min(0).max(100).default(1),
     productId: z.uuid({ error: "Invalid UUID" }).optional().nullable(),
     rewardName: z.string().max(200).optional().or(z.literal("")),
-    rewardAmount: z.coerce.number().min(0).optional().nullable(),
+    rewardAmount: z.coerce.number().min(0).max(MAX_GACHA_REWARD_AMOUNT, `จำนวนรางวัลต้องไม่เกิน ${MAX_GACHA_REWARD_AMOUNT.toLocaleString()}`).optional().nullable(),
     rewardImageUrl: imageUrlSchema.optional().or(z.literal("")),
     isActive: z.boolean().default(true),
 });
@@ -59,7 +66,7 @@ export const gachaRewardPatchSchema = z.object({
     probability: z.coerce.number().min(0).max(100).optional(),
     productId: z.uuid({ error: "Invalid UUID" }).optional().nullable(),
     rewardName: z.string().max(200).optional().or(z.literal("")),
-    rewardAmount: z.coerce.number().min(0).optional().nullable(),
+    rewardAmount: z.coerce.number().min(0).max(MAX_GACHA_REWARD_AMOUNT, `จำนวนรางวัลต้องไม่เกิน ${MAX_GACHA_REWARD_AMOUNT.toLocaleString()}`).optional().nullable(),
     rewardImageUrl: imageUrlSchema.optional().or(z.literal("")),
     isActive: z.boolean().optional(),
 });
@@ -71,6 +78,7 @@ export const gachaSettingsSchema = z.object({
     costType: z.enum(["FREE", "CREDIT", "POINT", "TICKET"]).default("FREE"),
     costAmount: z.coerce.number().min(0).default(0),
     dailySpinLimit: z.coerce.number().int().min(0).default(0),
+    fallbackCreditCap: z.coerce.number().min(0).default(0),
     tierMode: z.enum(["PRICE", "MANUAL"]).default("PRICE"),
 });
 export type GachaSettingsInput = z.infer<typeof gachaSettingsSchema>;

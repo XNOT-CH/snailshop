@@ -619,6 +619,8 @@ export const gachaMachines = mysqlTable("GachaMachine", {
     costType: varchar("costType", { length: 20 }).default("FREE").notNull(),
     costAmount: decimal("costAmount", { precision: 10, scale: 2 }).default("0").notNull(),
     dailySpinLimit: int("dailySpinLimit").default(0).notNull(),
+    // เพดานเครดิตชดเชยเมื่อสินค้ารางวัลหมดสต็อก (0 = ไม่จำกัด = จ่ายเต็มราคา)
+    fallbackCreditCap: decimal("fallbackCreditCap", { precision: 10, scale: 2 }).default("0").notNull(),
     tierMode: varchar("tierMode", { length: 20 }).default("PRICE").notNull(),
     isActive: boolean("isActive").default(true).notNull(),
     isEnabled: boolean("isEnabled").default(true).notNull(),
@@ -645,6 +647,8 @@ export const gachaSettings = mysqlTable("GachaSettings", {
     costType: varchar("costType", { length: 20 }).default("FREE").notNull(),
     costAmount: decimal("costAmount", { precision: 10, scale: 2 }).default("0").notNull(),
     dailySpinLimit: int("dailySpinLimit").default(0).notNull(),
+    // เพดานเครดิตชดเชยเมื่อสินค้ารางวัลหมดสต็อก (0 = ไม่จำกัด = จ่ายเต็มราคา)
+    fallbackCreditCap: decimal("fallbackCreditCap", { precision: 10, scale: 2 }).default("0").notNull(),
     tierMode: varchar("tierMode", { length: 20 }).default("PRICE").notNull(),
     updatedAt: updatedAt(),
 });

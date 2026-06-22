@@ -4,7 +4,7 @@ import { db, gachaDailySpinCounters, gachaRollLogs } from "@/lib/db";
 import { formatDateInTimeZone, toMySQLDatetime } from "@/lib/utils/date";
 
 type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
-type GachaDailySpinCounterDb = Pick<typeof db | DbTransaction, "insert">;
+type GachaDailySpinCounterDb = Pick<typeof db | DbTransaction, "insert" | "select">;
 
 export type GachaDailySpinWindow = {
     start: string;
@@ -85,8 +85,8 @@ async function countDailyGachaSpins(input: {
     userId: string;
     machineId: string | null;
     window: GachaDailySpinWindow;
-}) {
-    const [{ count: todayCount }] = await db
+}, dbClient: GachaDailySpinCounterDb = db) {
+    const [{ count: todayCount }] = await dbClient
         .select({ count: count() })
         .from(gachaRollLogs)
         .where(and(
@@ -140,7 +140,12 @@ export async function checkDailySpinLimit(input: {
     const window = getGachaDailySpinWindow(now);
     const spinDate = getGachaDailySpinDate(now);
     const machineScope = getGachaDailySpinMachineScope(input.machineId);
-    const todayCount = await (input.countDailySpins ?? countDailyGachaSpins)({
+    // ใช้ตัวจริงที่อ่านผ่าน dbClient (tx) เดียวกับการ consume เพื่อให้ pre-check
+    // อยู่ใน snapshot ของ transaction เดียวกัน ไม่ใช่อ่านนอก tx ผ่าน global db
+    const countDailySpins = input.countDailySpins
+        ?? ((countInput: { userId: string; machineId: string | null; window: GachaDailySpinWindow }) =>
+            countDailyGachaSpins(countInput, input.dbClient));
+    const todayCount = await countDailySpins({
         userId: input.userId,
         machineId: input.machineId,
         window,

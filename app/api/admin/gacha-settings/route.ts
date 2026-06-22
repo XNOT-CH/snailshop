@@ -13,7 +13,7 @@ export async function GET() {
     try {
         let settings = await db.query.gachaSettings.findFirst();
         if (!settings) {
-            await db.insert(gachaSettings).values({ id: "default", isEnabled: true, costType: "CREDIT", costAmount: "0", dailySpinLimit: 999, tierMode: "PRICE", updatedAt: mysqlNow() });
+            await db.insert(gachaSettings).values({ id: "default", isEnabled: true, costType: "CREDIT", costAmount: "0", dailySpinLimit: 999, fallbackCreditCap: "0", tierMode: "PRICE", updatedAt: mysqlNow() });
             settings = await db.query.gachaSettings.findFirst();
         }
         return gachaApiSuccess(settings);
@@ -36,6 +36,7 @@ export async function PUT(request: Request) {
             costType: body.costType,
             costAmount: String(body.costAmount),
             dailySpinLimit: body.dailySpinLimit,
+            fallbackCreditCap: String(body.fallbackCreditCap),
             tierMode: body.tierMode,
         };
         const existing = await db.query.gachaSettings.findFirst();

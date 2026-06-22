@@ -8,7 +8,12 @@ const REQUIRED_PROBABILITY_TOTAL = 100;
 
 export function getNormalizedProbability(value: string | number | null | undefined) {
     const numeric = Number(value ?? 0);
-    return Number.isFinite(numeric) && numeric > 0 ? numeric : 0;
+    if (!Number.isFinite(numeric) || numeric <= 0) {
+        return 0;
+    }
+    // ปัดเศษด้วยสเกลเดียวกับ sumProbability เพื่อไม่ให้รางวัลที่ปัดแล้วเป็น 0%
+    // (เช่น 0.004) ยังมีน้ำหนักแฝงในการสุ่ม ทั้งที่ไม่ถูกนับในเช็คอัตรารวม 100%
+    return Math.round(numeric * PROBABILITY_SCALE) / PROBABILITY_SCALE;
 }
 
 export function sumProbability<T extends Pick<WeightedCandidate, "probability">>(candidates: T[]) {

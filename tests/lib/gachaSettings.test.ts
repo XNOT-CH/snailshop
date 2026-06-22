@@ -8,6 +8,7 @@ describe("lib/features/gacha/settings", () => {
                 costType: "POINT",
                 costAmount: "25",
                 dailySpinLimit: 3,
+                fallbackCreditCap: "50",
                 isActive: true,
                 isEnabled: false,
             }),
@@ -15,6 +16,7 @@ describe("lib/features/gacha/settings", () => {
             costType: "POINT",
             costAmount: 25,
             dailySpinLimit: 3,
+            fallbackCreditCap: 50,
             isEnabled: false,
         });
     });
@@ -42,6 +44,7 @@ describe("lib/features/gacha/settings", () => {
             costType: "FREE",
             costAmount: 0,
             dailySpinLimit: 0,
+            fallbackCreditCap: 0,
             isEnabled: true,
         });
 
@@ -56,6 +59,7 @@ describe("lib/features/gacha/settings", () => {
             costType: "CREDIT",
             costAmount: 10,
             dailySpinLimit: 5,
+            fallbackCreditCap: 0,
             isEnabled: false,
         });
     });

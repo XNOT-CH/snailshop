@@ -25,7 +25,7 @@ import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { PERMISSIONS } from "@/lib/permissions";
 import Image from "next/image";
-import { hasExactProbabilityTotal } from "@/lib/gachaProbability";
+import { getNormalizedProbability, hasExactProbabilityTotal } from "@/lib/gachaProbability";
 import { isRewardEligibleForRoll } from "@/lib/gachaRewardEligibility";
 import {
     createAdminGachaReward,
@@ -688,7 +688,8 @@ export default function EditGachaMachinePage() {
         setSimulating(true);
         try {
             const rounds = SIMULATION_RUNS;
-            const weights = eligibleRewards.map((reward) => Math.max(0, Number(reward.probability ?? 0)));
+            // ใช้กฎปัดเศษเดียวกับเครื่องสุ่มจริง เพื่อให้พรีวิวตรงกับผลจริง (รวมการตัดอัตรา < 0.005%)
+            const weights = eligibleRewards.map((reward) => getNormalizedProbability(reward.probability));
             const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
 
             if (totalWeight <= 0) {
