@@ -65,26 +65,23 @@ export default async function InventoryPage() {
                 </Card>
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-1 min-[900px]:grid-cols-2 xl:grid-cols-3 items-start">
-                    {orderList.map(
-                        (order) =>
-                            order.product && (
-                                <PurchasedItem
-                                    key={order.id}
-                                    orderId={order.id}
-                                    title={order.product.name}
-                                    image={order.product.imageUrl || "/placeholder.jpg"}
-                                    date={new Date(order.purchasedAt).toLocaleDateString(
-                                        "th-TH",
-                                        {
-                                            year: "numeric",
-                                            month: "long",
-                                            day: "numeric",
-                                        }
-                                    )}
-                                    secretData={order.givenData ? decrypt(order.givenData) : "ไม่พบข้อมูล"}
-                                />
-                            )
-                    )}
+                    {orderList.map((order) => (
+                        <PurchasedItem
+                            key={order.id}
+                            orderId={order.id}
+                            title={order.productName ?? order.product?.name ?? "สินค้าที่ซื้อแล้ว"}
+                            image={order.productImage || order.product?.imageUrl || "/placeholder.jpg"}
+                            date={new Date(order.purchasedAt).toLocaleDateString(
+                                "th-TH",
+                                {
+                                    year: "numeric",
+                                    month: "long",
+                                    day: "numeric",
+                                }
+                            )}
+                            secretData={order.givenData ? decrypt(order.givenData) : "ไม่พบข้อมูล"}
+                        />
+                    ))}
                 </div>
             )}
         </div>

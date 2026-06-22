@@ -4,15 +4,14 @@ import { getSiteSettings } from "@/lib/getSiteSettings";
 import { db, footerLinks } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import {
-    Gamepad2, Home, ShoppingBag, HelpCircle, Mail, Shield, FileText, ChevronRight,
+    Gamepad2, ChevronRight, Phone, Mail, Facebook, Twitter, Instagram, MessageCircle,
 } from "lucide-react";
 import { resolveSiteName } from "@/lib/seo";
 import { sanitizePublicFooterLinks } from "@/lib/footerLinks";
 
-async function getFooterWidget() {
+async function getFooterData() {
     try {
         const settings = await db.query.footerWidgetSettings.findFirst();
-        if (!settings?.isActive) return { settings: null, links: [] };
         const links = await db.query.footerLinks.findMany({
             where: eq(footerLinks.isActive, true),
             orderBy: (t, { asc }) => asc(t.sortOrder),
@@ -23,116 +22,171 @@ async function getFooterWidget() {
     }
 }
 
+type PublicLink = { id: string; label: string; href: string; column: string; openInNewTab: boolean };
+
+function LinkList({ links }: Readonly<{ links: PublicLink[] }>) {
+    if (links.length === 0) {
+        return <p className="text-sm text-muted-foreground">ยังไม่มีลิงก์</p>;
+    }
+    return (
+        <ul className="space-y-2.5">
+            {links.map((link) => {
+                const className =
+                    "group flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary";
+                const inner = (
+                    <>
+                        <ChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-primary transition-transform duration-200 group-hover:translate-x-0.5" />
+                        {link.label}
+                    </>
+                );
+                return (
+                    <li key={link.id}>
+                        {link.openInNewTab ? (
+                            <a href={link.href} target="_blank" rel="noopener noreferrer" className={className}>
+                                {inner}
+                            </a>
+                        ) : (
+                            <Link href={link.href} prefetch={false} className={className}>
+                                {inner}
+                            </Link>
+                        )}
+                    </li>
+                );
+            })}
+        </ul>
+    );
+}
+
 export default async function Footer() {
     const siteSettings = await getSiteSettings();
-    const footerWidget = await getFooterWidget();
+    const { settings: widget, links } = await getFooterData();
     const currentYear = new Date().getFullYear();
     const siteName = resolveSiteName(siteSettings?.heroTitle);
-    const footerWidgetLinks = sanitizePublicFooterLinks(footerWidget.links);
-    const menuLinks = [
-        { href: "/home", label: "หน้าหลัก", icon: Home },
-        { href: "/shop", label: "สินค้าทั้งหมด", icon: ShoppingBag },
-        { href: "/help", label: "ศูนย์ช่วยเหลือ", icon: HelpCircle },
-    ];
-    const companyLinks = [
-        { href: "/terms", label: "ข้อตกลงการใช้งาน", icon: FileText },
-        { href: "/privacy", label: "นโยบายความเป็นส่วนตัว", icon: Shield },
-        { href: "/contact", label: "ติดต่อเรา", icon: Mail },
-    ];
+
+    const showLinkColumns = widget?.isActive ?? true;
+    const safeLinks = showLinkColumns ? (sanitizePublicFooterLinks(links) as PublicLink[]) : [];
+    const servicesLinks = safeLinks.filter((link) => link.column !== "cards");
+    const cardsLinks = safeLinks.filter((link) => link.column === "cards");
+
+    const servicesTitle = widget?.title || "บริการของเรา";
+    const cardsTitle = widget?.secondaryTitle || "บัตรเติมเกม";
+
+    const socials = [
+        { url: siteSettings?.facebookUrl, Icon: Facebook, label: "Facebook" },
+        { url: siteSettings?.twitterUrl, Icon: Twitter, label: "Twitter" },
+        { url: siteSettings?.instagramUrl, Icon: Instagram, label: "Instagram" },
+        { url: siteSettings?.lineUrl, Icon: MessageCircle, label: "LINE" },
+    ].filter((social): social is { url: string; Icon: typeof Facebook; label: string } =>
+        Boolean(social.url && social.url.trim() !== ""),
+    );
 
     return (
         <footer className="relative border-t border-border/60 bg-card/55 backdrop-blur-xl">
             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/20 via-primary to-primary/20" />
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="py-10 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
-                    <div className="lg:col-span-1">
-                        <Link href="/home" prefetch={false} className="inline-flex items-center gap-3 mb-4 group">
+            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <div className="grid grid-cols-1 gap-8 py-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
+                    {/* Brand + disclaimer + social */}
+                    <div className="sm:col-span-2 lg:col-span-1">
+                        <Link href="/home" prefetch={false} className="mb-4 inline-flex items-center gap-3">
                             {siteSettings?.logoUrl ? (
-                                <Image src={siteSettings.logoUrl} alt="Logo" width={48} height={48} className="h-12 w-12 rounded-xl object-contain shadow-lg ring-2 ring-primary/20 transition-all duration-300 group-hover:ring-primary/50" />
+                                <Image src={siteSettings.logoUrl} alt="Logo" width={48} height={48} className="h-12 w-12 rounded-xl object-contain" />
                             ) : (
-                                <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-lg">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70">
                                     <Gamepad2 className="h-6 w-6 text-primary-foreground" />
                                 </div>
                             )}
-                            <span className="font-bold text-xl text-foreground">{siteName}</span>
+                            <span className="text-xl font-bold text-foreground">{siteName}</span>
                         </Link>
-                        <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                            {siteSettings?.heroDescription || "แพลตฟอร์มซื้อขายสินค้าดิจิทัลที่น่าเชื่อถือ พร้อมระบบรักษาความปลอดภัยมาตรฐานสากล"}
+                        <p className="mb-5 text-sm leading-relaxed text-muted-foreground">
+                            {siteSettings?.footerDescription ||
+                                "แพลตฟอร์มซื้อขายสินค้าดิจิทัลที่น่าเชื่อถือ พร้อมระบบรักษาความปลอดภัยมาตรฐานสากล"}
                         </p>
-                        <div className="flex flex-wrap items-center gap-2.5">
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-border/70 bg-accent/80 px-3 py-1.5 text-xs font-semibold text-foreground shadow-sm">
-                                <Shield className="h-3.5 w-3.5" />ปลอดภัย 100%
-                            </span>
-                            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/25 bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary shadow-sm">
-                                <Gamepad2 className="h-3.5 w-3.5" />สินค้าคุณภาพ
-                            </span>
+                        {socials.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2.5">
+                                {socials.map(({ url, Icon, label }) => (
+                                    <a
+                                        key={label}
+                                        href={url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        aria-label={label}
+                                        className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+                                    >
+                                        <Icon className="h-[18px] w-[18px]" />
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Services column */}
+                    {showLinkColumns && (
+                        <div>
+                            <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-foreground">{servicesTitle}</h4>
+                            <LinkList links={servicesLinks} />
                         </div>
-                    </div>
+                    )}
+
+                    {/* Cards column */}
+                    {showLinkColumns && (
+                        <div>
+                            <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-foreground">{cardsTitle}</h4>
+                            <LinkList links={cardsLinks} />
+                        </div>
+                    )}
+
+                    {/* Contact column */}
                     <div>
-                        <h4 className="font-semibold text-foreground text-sm uppercase tracking-wider mb-4">เมนูหลัก</h4>
-                        <ul className="space-y-2.5">
-                            {menuLinks.map((link) => {
-                                const Icon = link.icon;
-                                return (
-                                    <li key={link.href}>
-                                        <Link href={link.href} prefetch={false} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group">
-                                            <ChevronRight className="h-3 w-3 text-primary opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
-                                            <Icon className="h-4 w-4" />{link.label}
-                                        </Link>
-                                    </li>
-                                );
-                            })}
-                        </ul>
-                    </div>
-                    <div>
-                        <h4 className="font-semibold text-foreground text-sm uppercase tracking-wider mb-4">
-                            {footerWidget.settings?.title || "ข้อมูลสำคัญ"}
-                        </h4>
-                        <ul className="space-y-2.5">
-                            {footerWidget.settings && footerWidgetLinks.length > 0 ? (
-                                footerWidgetLinks.map((link) => (
-                                    <li key={link.id}>
-                                        {link.openInNewTab ? (
-                                            <a href={link.href} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group">
-                                                <ChevronRight className="h-3 w-3 text-primary opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
-                                                <FileText className="h-4 w-4" />{link.label}
-                                            </a>
-                                        ) : (
-                                            <Link href={link.href} prefetch={false} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group">
-                                                <ChevronRight className="h-3 w-3 text-primary opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
-                                                <FileText className="h-4 w-4" />{link.label}
-                                            </Link>
-                                        )}
-                                    </li>
-                                ))
-                            ) : (
-                                companyLinks.map((link) => {
-                                    const Icon = link.icon;
-                                    return (
-                                        <li key={link.href}>
-                                            <Link href={link.href} prefetch={false} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors group">
-                                                <ChevronRight className="h-3 w-3 text-primary opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-200" />
-                                                <Icon className="h-4 w-4" />{link.label}
-                                            </Link>
-                                        </li>
-                                    );
-                                })
+                        <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-foreground">ติดต่อเรา</h4>
+                        <ul className="space-y-4">
+                            {siteSettings?.contactPhone && (
+                                <li className="flex items-center gap-3">
+                                    <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                        <Phone className="h-5 w-5" />
+                                    </span>
+                                    <div className="min-w-0">
+                                        <p className="text-xs text-muted-foreground">โทรศัพท์</p>
+                                        <a href={`tel:${siteSettings.contactPhone}`} className="font-semibold text-foreground hover:text-primary">
+                                            {siteSettings.contactPhone}
+                                        </a>
+                                    </div>
+                                </li>
+                            )}
+                            {siteSettings?.contactEmail && (
+                                <li className="flex items-center gap-3">
+                                    <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                                        <Mail className="h-5 w-5" />
+                                    </span>
+                                    <div className="min-w-0">
+                                        <p className="text-xs text-muted-foreground">อีเมล</p>
+                                        <a href={`mailto:${siteSettings.contactEmail}`} className="truncate font-semibold text-foreground hover:text-primary">
+                                            {siteSettings.contactEmail}
+                                        </a>
+                                    </div>
+                                </li>
+                            )}
+                            {!siteSettings?.contactPhone && !siteSettings?.contactEmail && (
+                                <li className="text-sm text-muted-foreground">ยังไม่ได้ตั้งค่าช่องทางติดต่อ</li>
                             )}
                         </ul>
                     </div>
                 </div>
-                <div className="py-5 border-t border-border">
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span>© {currentYear}</span>
-                            <span className="text-primary font-medium">{siteName}</span>
-                            <span>สงวนลิขสิทธิ์</span>
-                        </div>
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                            <span className="flex items-center gap-1.5" title="Server Status">
-                                <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                                <span>ระบบพร้อมให้บริการ</span>
-                            </span>
+            </div>
+
+            {/* Bottom bar */}
+            <div className="bg-gradient-to-r from-primary/90 via-primary to-blue-500 text-primary-foreground">
+                <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div className="flex flex-col items-center justify-between gap-3 py-4 text-sm md:flex-row">
+                        <p className="text-center text-primary-foreground/90">
+                            Copyright © {currentYear} {siteName} - All Rights Reserved.
+                        </p>
+                        <div className="flex items-center gap-5">
+                            <Link href="/privacy" prefetch={false} className="text-primary-foreground/85 transition-colors hover:text-primary-foreground">
+                                นโยบายความเป็นส่วนตัว
+                            </Link>
+                            <Link href="/terms" prefetch={false} className="text-primary-foreground/85 transition-colors hover:text-primary-foreground">
+                                ข้อกำหนดการใช้งาน
+                            </Link>
                         </div>
                     </div>
                 </div>

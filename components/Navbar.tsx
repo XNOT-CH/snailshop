@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ShopDropdown } from "@/components/ShopDropdown";
 import { NavigationDrawer } from "@/components/NavigationDrawer";
 import { NavbarInteractive } from "@/components/NavbarInteractive";
+import { NavLink } from "@/components/NavLink";
 import {
     Dices,
     Gamepad2,
@@ -162,15 +163,10 @@ export default async function Navbar() {
                         }
 
                         return (
-                            <Link
-                                key={link.href}
-                                href={link.href}
-                                prefetch={false}
-                                className="flex whitespace-nowrap items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent/80 hover:text-foreground"
-                            >
+                            <NavLink key={link.href} href={link.href}>
                                 <Icon className="h-4 w-4 flex-shrink-0" />
                                 {link.label}
-                            </Link>
+                            </NavLink>
                         );
                     })}
                 </nav>

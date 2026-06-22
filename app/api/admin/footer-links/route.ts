@@ -40,12 +40,12 @@ export async function POST(request: NextRequest) {
     try {
         const result = await validateBody(request, footerLinkSchema);
         if ("error" in result) return result.error;
-        const { label, href, openInNewTab } = result.data;
+        const { label, href, column, openInNewTab } = result.data;
 
         const [{ maxSort }] = await db.select({ maxSort: max(footerLinks.sortOrder) }).from(footerLinks);
         const nextSortOrder = (maxSort ?? -1) + 1;
         const newId = crypto.randomUUID();
-        await db.insert(footerLinks).values({ id: newId, label, href, openInNewTab: openInNewTab ?? false, sortOrder: nextSortOrder, createdAt: mysqlNow(), updatedAt: mysqlNow() });
+        await db.insert(footerLinks).values({ id: newId, label, href, column: column ?? "services", openInNewTab: openInNewTab ?? false, sortOrder: nextSortOrder, createdAt: mysqlNow(), updatedAt: mysqlNow() });
         const link = await db.query.footerLinks.findFirst({ where: (t, { eq }) => eq(t.id, newId) });
         return NextResponse.json(link, { status: 201 });
     } catch (error) {

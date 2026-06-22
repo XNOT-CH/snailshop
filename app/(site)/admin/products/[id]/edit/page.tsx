@@ -1,5 +1,7 @@
 "use client";
 
+import { SpinnerScreen } from "@/components/SpinnerScreen";
+
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -221,11 +223,7 @@ export default function EditProductPage() {
     };
 
     if (isFetching) {
-        return (
-            <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+        return <SpinnerScreen label="กำลังโหลดสินค้า..." />;
     }
 
     const isPointCurrency = formData.currency === "POINT";

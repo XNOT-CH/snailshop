@@ -1,5 +1,7 @@
 "use client";
 
+import { SpinnerScreen } from "@/components/SpinnerScreen";
+
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -449,11 +451,7 @@ export default function AdminSeasonPassEditPage() {
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center py-16">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+        return <SpinnerScreen label="กำลังโหลดซีซันพาส..." />;
     }
 
     return (

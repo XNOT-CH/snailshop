@@ -1,5 +1,7 @@
 "use client";
 
+import { SpinnerScreen } from "@/components/SpinnerScreen";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
@@ -155,11 +157,7 @@ export default function WelcomeStripAdminPage() {
     const canRemoveSlot = canEditSettings && images.length > WELCOME_STRIP_DEFAULT_SLOT_COUNT;
 
     if (isLoading) {
-        return (
-            <div className="flex min-h-[400px] items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+        return <SpinnerScreen label="กำลังโหลด..." />;
     }
 
     return (

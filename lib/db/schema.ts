@@ -213,6 +213,12 @@ export const orders = mysqlTable("Order", {
     id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
     userId: varchar("userId", { length: 36 }).notNull().references(() => users.id, { onDelete: "restrict" }),
     givenData: text("givenData"),
+    // Snapshot of the purchased product captured at order time. Plain columns (no FK)
+    // so the order keeps showing what was bought even after the product row is
+    // deleted or its single `Product.orderId` pointer is overwritten by a later sale.
+    productId: varchar("productId", { length: 36 }),
+    productName: varchar("productName", { length: 255 }),
+    productImage: varchar("productImage", { length: 500 }),
     totalPrice: decimal("totalPrice", { precision: 10, scale: 2 }).notNull(),
     status: varchar("status", { length: 20 }).default("COMPLETED").notNull(),
     purchasedAt: datetime("purchasedAt", { mode: "string" }).default(sql`now()`).notNull(),
@@ -341,6 +347,14 @@ export const siteSettings = mysqlTable("SiteSettings", {
     backgroundImage: text("backgroundImage"),
     backgroundBlur: boolean("backgroundBlur").default(true).notNull(),
     showAllProducts: boolean("showAllProducts").default(true).notNull(),
+    // Footer contact + social
+    footerDescription: text("footerDescription"),
+    contactPhone: varchar("contactPhone", { length: 50 }),
+    contactEmail: varchar("contactEmail", { length: 255 }),
+    facebookUrl: text("facebookUrl"),
+    twitterUrl: text("twitterUrl"),
+    instagramUrl: text("instagramUrl"),
+    lineUrl: text("lineUrl"),
     createdAt: now(),
     updatedAt: updatedAt(),
 });
@@ -439,6 +453,7 @@ export const footerWidgetSettings = mysqlTable("FooterWidgetSettings", {
     id: varchar("id", { length: 36 }).primaryKey().default("default"),
     isActive: boolean("isActive").default(true).notNull(),
     title: varchar("title", { length: 100 }).default("เมนูลัด").notNull(),
+    secondaryTitle: varchar("secondaryTitle", { length: 100 }).default("บัตรเติมเกม").notNull(),
     createdAt: now(),
     updatedAt: updatedAt(),
 });
@@ -450,6 +465,7 @@ export const footerLinks = mysqlTable("FooterLink", {
     id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
     label: varchar("label", { length: 100 }).notNull(),
     href: varchar("href", { length: 500 }).notNull(),
+    column: varchar("column", { length: 20 }).default("services").notNull(),
     openInNewTab: boolean("openInNewTab").default(false).notNull(),
     sortOrder: int("sortOrder").default(0).notNull(),
     isActive: boolean("isActive").default(true).notNull(),

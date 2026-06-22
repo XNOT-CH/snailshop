@@ -189,6 +189,8 @@ export async function grantCurrencyReward(
 
 type ClaimProductRewardInput = {
     productId: string;
+    productName: string;
+    productImage: string | null;
     userId: string;
     costAmount: number;
     isSold: boolean;
@@ -202,6 +204,8 @@ export async function fetchProductRewardForClaimOrThrow(tx: DbTransaction, produ
         where: eq(products.id, productId),
         columns: {
             id: true,
+            name: true,
+            imageUrl: true,
             isSold: true,
             orderId: true,
             secretData: true,
@@ -252,6 +256,9 @@ export async function claimProductRewardOrThrow(tx: DbTransaction, input: ClaimP
     await tx.insert(orders).values({
         givenData: encrypt(taken),
         id: nextOrderId,
+        productId: input.productId,
+        productName: input.productName,
+        productImage: input.productImage,
         status: "COMPLETED",
         totalPrice: String(input.costAmount),
         userId: input.userId,

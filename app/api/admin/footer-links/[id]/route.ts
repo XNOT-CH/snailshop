@@ -19,6 +19,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         const updateData: Record<string, unknown> = {};
         if (body.label !== undefined) updateData.label = body.label;
         if (body.href !== undefined) updateData.href = body.href;
+        if (body.column !== undefined) updateData.column = body.column;
         if (body.openInNewTab !== undefined) updateData.openInNewTab = body.openInNewTab;
         if (body.sortOrder !== undefined) updateData.sortOrder = body.sortOrder;
         await db.update(footerLinks).set(updateData).where(eq(footerLinks.id, id));

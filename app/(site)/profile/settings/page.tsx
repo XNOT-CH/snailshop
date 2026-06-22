@@ -1,5 +1,7 @@
 "use client";
 
+import { SpinnerScreen } from "@/components/SpinnerScreen";
+
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 
@@ -1005,11 +1007,7 @@ export default function ProfileSettingsPage() {
     );
 
     if (isFetching) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-            </div>
-        );
+        return <SpinnerScreen label="กำลังโหลดข้อมูล..." />;
     }
 
     if (!profile) {

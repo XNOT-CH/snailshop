@@ -1,5 +1,7 @@
 "use client";
 
+import { SpinnerScreen } from "@/components/SpinnerScreen";
+
 import { useState, useEffect, useCallback } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { fetchWithCsrf } from "@/lib/csrf-client";
@@ -209,11 +211,7 @@ export default function NavItemsAdminPage() {
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+        return <SpinnerScreen label="กำลังโหลดเมนู..." />;
     }
 
     return (

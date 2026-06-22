@@ -1,5 +1,7 @@
 "use client";
 
+import { SpinnerScreen } from "@/components/SpinnerScreen";
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,11 +87,7 @@ export default function CurrencySettingsPage() {
     };
 
     if (loading) {
-        return (
-            <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+        return <SpinnerScreen label="กำลังโหลดการตั้งค่า..." />;
     }
 
     return (

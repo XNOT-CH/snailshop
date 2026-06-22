@@ -36,7 +36,7 @@ async function findAvailablePort(startPort, host) {
 }
 
 const host = "127.0.0.1";
-const requestedPort = Number.parseInt(process.env.PORT || "3001", 10);
+const requestedPort = Number.parseInt(process.env.PORT || "3000", 10);
 const port = await findAvailablePort(requestedPort, host);
 
 if (port !== requestedPort) {

@@ -228,6 +228,8 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
                 isSold: product.isSold,
                 orderId: product.orderId,
                 productId: product.id,
+                productName: product.name,
+                productImage: product.imageUrl,
                 secretData: product.secretData,
                 stockSeparator: product.stockSeparator,
                 userId,

@@ -27,6 +27,8 @@ type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 interface ProductRewardRecord {
     id: string;
+    name: string;
+    imageUrl: string | null;
     isSold: boolean;
     orderId: string | null;
     secretData: string;
@@ -67,6 +69,8 @@ async function processProductReward(tx: DbTransaction, userId: string, costAmoun
         isSold: product.isSold,
         orderId: product.orderId,
         productId: product.id,
+        productName: product.name,
+        productImage: product.imageUrl,
         secretData: product.secretData,
         stockSeparator: product.stockSeparator,
         userId,
@@ -84,6 +88,8 @@ async function executeRollTransaction(ctx: RollTxContext) {
         const product = await fetchProductRewardForClaimOrThrow(tx, chosen.product.id);
         await processProductReward(tx, user.id, costAmount, {
             id: product.id,
+            name: product.name,
+            imageUrl: product.imageUrl,
             isSold: product.isSold,
             orderId: product.orderId,
             secretData: product.secretData,

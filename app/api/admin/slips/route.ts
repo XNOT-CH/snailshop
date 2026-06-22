@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq, sql } from "drizzle-orm";
 import { db, topups, users } from "@/lib/db";
-import { requireAnyPermissionWithCsrf } from "@/lib/auth";
+import { requireAnyPermissionWithCsrf, requirePermission } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -39,6 +39,9 @@ function assertSinglePendingTransition(result: unknown) {
 }
 
 export async function PATCH(request: NextRequest) {
+    // Authorize against any slip permission first, then re-check the
+    // permission that matches the requested action so a reject-only operator
+    // cannot approve (and credit balance) and vice versa.
     const authCheck = await requireAnyPermissionWithCsrf(request, [PERMISSIONS.SLIP_APPROVE, PERMISSIONS.SLIP_REJECT]);
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
@@ -52,6 +55,12 @@ export async function PATCH(request: NextRequest) {
 
         if (!["APPROVE", "REJECT"].includes(action)) {
             return NextResponse.json({ success: false, message: "Invalid action. Use APPROVE or REJECT" }, { status: 400 });
+        }
+
+        const requiredPermission = action === "APPROVE" ? PERMISSIONS.SLIP_APPROVE : PERMISSIONS.SLIP_REJECT;
+        const actionPermissionCheck = await requirePermission(requiredPermission);
+        if (!actionPermissionCheck.success) {
+            return NextResponse.json({ success: false, message: "ไม่มีสิทธิ์ดำเนินการนี้" }, { status: 403 });
         }
 
         const topup = await db.query.topups.findFirst({

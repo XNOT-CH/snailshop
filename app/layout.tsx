@@ -77,6 +77,11 @@ export async function generateMetadata(): Promise<Metadata> {
       index: true,
       follow: true,
     },
+    other: {
+      // App มี dark mode ของตัวเองอยู่แล้ว สั่งให้ Dark Reader ไม่แก้ DOM
+      // ป้องกัน hydration mismatch จาก --darkreader-inline-* ที่ extension เติมเข้ามา
+      "darkreader-lock": "",
+    },
   };
 }
 

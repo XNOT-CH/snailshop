@@ -7,6 +7,14 @@ type ToastIcon = "success" | "error" | "warning" | "info";
 const modalDefaults = {
     scrollbarPadding: false,
     heightAuto: false,
+    showClass: {
+        popup: "swal-pop-in",
+        backdrop: "swal-backdrop-in",
+    },
+    hideClass: {
+        popup: "swal-pop-out",
+        backdrop: "swal-backdrop-out",
+    },
 } as const;
 
 let swalPromise: Promise<SweetAlert> | null = null;

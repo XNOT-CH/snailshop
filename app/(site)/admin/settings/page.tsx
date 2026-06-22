@@ -1,5 +1,7 @@
 "use client";
 
+import { SpinnerScreen } from "@/components/SpinnerScreen";
+
 import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,7 +17,9 @@ import {
     Image as ImageIcon,
     LayoutGrid,
     Loader2,
+    Mail,
     Megaphone,
+    Phone,
     Plus,
     Save,
     Trash2,
@@ -55,6 +59,13 @@ interface SiteSettings {
     backgroundImage: string;
     backgroundBlur: boolean;
     showAllProducts: boolean;
+    footerDescription: string;
+    contactPhone: string;
+    contactEmail: string;
+    facebookUrl: string;
+    twitterUrl: string;
+    instagramUrl: string;
+    lineUrl: string;
 }
 
 export default function AdminSettingsPage() {
@@ -87,6 +98,13 @@ export default function AdminSettingsPage() {
         backgroundImage: "",
         backgroundBlur: true,
         showAllProducts: true,
+        footerDescription: "",
+        contactPhone: "",
+        contactEmail: "",
+        facebookUrl: "",
+        twitterUrl: "",
+        instagramUrl: "",
+        lineUrl: "",
     });
 
     // Fetch settings on mount
@@ -118,6 +136,13 @@ export default function AdminSettingsPage() {
                     backgroundImage: data.data.backgroundImage || "",
                     backgroundBlur: data.data.backgroundBlur ?? true,
                     showAllProducts: data.data.showAllProducts ?? true,
+                    footerDescription: data.data.footerDescription || "",
+                    contactPhone: data.data.contactPhone || "",
+                    contactEmail: data.data.contactEmail || "",
+                    facebookUrl: data.data.facebookUrl || "",
+                    twitterUrl: data.data.twitterUrl || "",
+                    instagramUrl: data.data.instagramUrl || "",
+                    lineUrl: data.data.lineUrl || "",
                 });
                 // Parse extra banners
                 try {
@@ -296,11 +321,7 @@ export default function AdminSettingsPage() {
     };
 
     if (isLoading) {
-        return (
-            <div className="flex items-center justify-center min-h-[400px]">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+        return <SpinnerScreen label="กำลังโหลดการตั้งค่า..." />;
     }
 
     return (
@@ -729,6 +750,105 @@ export default function AdminSettingsPage() {
                                     เพิ่มป้าย
                                 </Button>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Footer / Contact */}
+                    <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+                        <div className="border-b border-border px-5 py-4">
+                            <div className="flex items-center gap-2">
+                                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#eef4ff] text-[#145de7]">
+                                    <Phone className="h-4 w-4" />
+                                </span>
+                                <div>
+                                    <p className="font-semibold text-foreground">ส่วนท้าย & ช่องทางติดต่อ</p>
+                                    <p className="text-xs text-muted-foreground">ข้อความ เบอร์โทร อีเมล และลิงก์โซเชียลที่แสดงในส่วนท้ายเว็บไซต์</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="space-y-5 p-5">
+                            <div className="space-y-2">
+                                <Label htmlFor="footerDescription">ข้อความใต้โลโก้ (คำอธิบาย/ข้อจำกัดความรับผิด)</Label>
+                                <Textarea
+                                    id="footerDescription"
+                                    rows={3}
+                                    placeholder="เช่น เว็บไซต์ขึ้นเทพเป็นเพียงตัวแทนจำหน่าย..."
+                                    value={settings.footerDescription}
+                                    onChange={(e) => updateSetting("footerDescription", e.target.value)}
+                                    disabled={!canEditSettings}
+                                />
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="contactPhone" className="flex items-center gap-1.5">
+                                        <Phone className="h-3.5 w-3.5" /> เบอร์โทรศัพท์
+                                    </Label>
+                                    <Input
+                                        id="contactPhone"
+                                        placeholder="094-889-1954"
+                                        value={settings.contactPhone}
+                                        onChange={(e) => updateSetting("contactPhone", e.target.value)}
+                                        disabled={!canEditSettings}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="contactEmail" className="flex items-center gap-1.5">
+                                        <Mail className="h-3.5 w-3.5" /> อีเมล
+                                    </Label>
+                                    <Input
+                                        id="contactEmail"
+                                        placeholder="support@example.com"
+                                        value={settings.contactEmail}
+                                        onChange={(e) => updateSetting("contactEmail", e.target.value)}
+                                        disabled={!canEditSettings}
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid gap-4 sm:grid-cols-2">
+                                <div className="space-y-2">
+                                    <Label htmlFor="facebookUrl">Facebook URL</Label>
+                                    <Input
+                                        id="facebookUrl"
+                                        placeholder="https://facebook.com/yourpage"
+                                        value={settings.facebookUrl}
+                                        onChange={(e) => updateSetting("facebookUrl", e.target.value)}
+                                        disabled={!canEditSettings}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="twitterUrl">Twitter / X URL</Label>
+                                    <Input
+                                        id="twitterUrl"
+                                        placeholder="https://twitter.com/yourhandle"
+                                        value={settings.twitterUrl}
+                                        onChange={(e) => updateSetting("twitterUrl", e.target.value)}
+                                        disabled={!canEditSettings}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="instagramUrl">Instagram URL</Label>
+                                    <Input
+                                        id="instagramUrl"
+                                        placeholder="https://instagram.com/yourpage"
+                                        value={settings.instagramUrl}
+                                        onChange={(e) => updateSetting("instagramUrl", e.target.value)}
+                                        disabled={!canEditSettings}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="lineUrl">LINE URL</Label>
+                                    <Input
+                                        id="lineUrl"
+                                        placeholder="https://line.me/ti/p/~yourid"
+                                        value={settings.lineUrl}
+                                        onChange={(e) => updateSetting("lineUrl", e.target.value)}
+                                        disabled={!canEditSettings}
+                                    />
+                                </div>
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                เว้นว่างช่องไหนไว้ ไอคอนหรือข้อมูลนั้นจะไม่แสดงในส่วนท้ายเว็บไซต์
+                            </p>
                         </div>
                     </div>
 

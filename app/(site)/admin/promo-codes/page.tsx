@@ -1,5 +1,7 @@
 "use client";
 
+import { SpinnerScreen } from "@/components/SpinnerScreen";
+
 import { useState, useEffect, useCallback } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { fetchWithCsrf } from "@/lib/csrf-client";
@@ -284,11 +286,7 @@ export default function AdminPromoCodesPage() {
         codeType === "CREDIT" ? "โค้ดเติมเครดิต" : "โค้ดส่วนลด";
 
     if (isLoading) {
-        return (
-            <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+        return <SpinnerScreen label="กำลังโหลดโค้ดส่วนลด..." />;
     }
 
     return (

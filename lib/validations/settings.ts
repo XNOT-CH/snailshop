@@ -53,7 +53,13 @@ export const siteSettingsSchema = z.object({
     // Social
     lineUrl: z.url({ error: "URL ไม่ถูกต้อง" }).optional().or(z.literal("")),
     facebookUrl: z.url({ error: "URL ไม่ถูกต้อง" }).optional().or(z.literal("")),
+    twitterUrl: z.url({ error: "URL ไม่ถูกต้อง" }).optional().or(z.literal("")),
+    instagramUrl: z.url({ error: "URL ไม่ถูกต้อง" }).optional().or(z.literal("")),
     discordUrl: z.url({ error: "URL ไม่ถูกต้อง" }).optional().or(z.literal("")),
+    // Footer contact
+    footerDescription: z.string().max(1000).optional().or(z.literal("")),
+    contactPhone: z.string().max(50).optional().or(z.literal("")),
+    contactEmail: z.string().max(255).optional().or(z.literal("")),
     // Features
     maintenanceMode: z.boolean().default(false),
     allowRegistration: z.boolean().default(true),

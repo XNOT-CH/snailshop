@@ -176,6 +176,61 @@
   padding: 2rem !important;
 }
 
+/* Lightweight, GPU-friendly open/close animation (replaces default scale-from-0.7) */
+.swal2-popup.swal-pop-in {
+  will-change: transform, opacity;
+  animation: swalPopIn 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.swal2-popup.swal-pop-out {
+  will-change: transform, opacity;
+  animation: swalPopOut 0.2s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+@keyframes swalPopIn {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes swalPopOut {
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+}
+
+/* Smooth backdrop fade so the dark overlay eases in/out with the popup */
+.swal2-container.swal-backdrop-in {
+  animation: swalBackdropIn 0.32s ease-out;
+}
+.swal2-container.swal-backdrop-out {
+  animation: swalBackdropOut 0.2s ease-in forwards;
+}
+@keyframes swalBackdropIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes swalBackdropOut {
+  to {
+    opacity: 0;
+  }
+}
+
+/* While a SweetAlert modal is open, disable page backdrop-filters: re-blurring
+   the page every frame as the modal backdrop fades causes severe jank, and the
+   glass effect is hidden behind the dark backdrop anyway. */
+body.swal2-shown [class*="backdrop-blur"] {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
 @keyframes toast-progress {
   from {
     transform: scaleX(1);
@@ -257,6 +312,14 @@
   * {
 
     @apply border-border;
+
+  }
+
+
+
+  html {
+
+    scrollbar-gutter: stable;
 
   }
 
@@ -609,6 +672,16 @@ html.dark .storefront-header {
   box-shadow:
     0 16px 36px -28px rgba(0, 0, 0, 0.7),
     inset 0 1px 0 rgba(122, 163, 224, 0.045);
+}
+
+/* Desktop dark mode: ให้ navbar เป็นกระจกใสกลืนกับพื้นหลัง (อาศัย backdrop-blur)
+   แทนแผงทึบที่ลอยเป็นสี่เหลี่ยมตัดกับ background gradient */
+@media (min-width: 768px) {
+  html.dark .theme-header,
+  html.dark .storefront-header {
+    background: transparent;
+    box-shadow: none;
+  }
 }
 
 html.dark .theme-nav-pill,
@@ -2859,62 +2932,73 @@ html.dark .admin-console .admin-chat-page .admin-chat-conversation-active:active
   border-color: rgba(125, 170, 255, 0.52) !important;
 }
 
-html.dark .swal2-popup.admin-swal-modal {
+html.dark .swal2-popup:not(.swal2-toast) {
   background: linear-gradient(180deg, rgba(15, 25, 39, 0.98) 0%, rgba(11, 20, 32, 0.99) 100%) !important;
   color: #edf4ff !important;
   border: 1px solid rgba(45, 67, 98, 0.82) !important;
   box-shadow: 0 28px 70px -35px rgba(0, 0, 0, 0.82) !important;
 }
 
-html.dark .swal2-popup.admin-swal-modal .swal2-title {
+html.dark .swal2-popup:not(.swal2-toast) .swal2-title {
   color: #edf4ff !important;
 }
 
-html.dark .swal2-popup.admin-swal-modal .swal2-html-container {
+html.dark .swal2-popup:not(.swal2-toast) .swal2-html-container {
   color: #c9d8eb !important;
 }
 
-html.dark .swal2-popup.admin-swal-modal .border-blue-100,
-html.dark .swal2-popup.admin-swal-modal .border-blue-200,
-html.dark .swal2-popup.admin-swal-modal .border-gray-200,
-html.dark .swal2-popup.admin-swal-modal .border-gray-300,
-html.dark .swal2-popup.admin-swal-modal .border-slate-200,
-html.dark .swal2-popup.admin-swal-modal .border-gray-100 {
+html.dark .swal2-popup:not(.swal2-toast) .border-blue-100,
+html.dark .swal2-popup:not(.swal2-toast) .border-blue-200,
+html.dark .swal2-popup:not(.swal2-toast) .border-gray-200,
+html.dark .swal2-popup:not(.swal2-toast) .border-gray-300,
+html.dark .swal2-popup:not(.swal2-toast) .border-slate-200,
+html.dark .swal2-popup:not(.swal2-toast) .border-gray-100 {
   border-color: rgba(53, 80, 113, 0.9) !important;
 }
 
-html.dark .swal2-popup.admin-swal-modal .bg-white,
-html.dark .swal2-popup.admin-swal-modal .bg-white\/70,
-html.dark .swal2-popup.admin-swal-modal .bg-gray-50,
-html.dark .swal2-popup.admin-swal-modal .bg-gray-50\/60,
-html.dark .swal2-popup.admin-swal-modal .bg-gray-50\/70,
-html.dark .swal2-popup.admin-swal-modal .from-blue-50,
-html.dark .swal2-popup.admin-swal-modal .to-white {
+html.dark .swal2-popup:not(.swal2-toast) .bg-white,
+html.dark .swal2-popup:not(.swal2-toast) .bg-white\/70,
+html.dark .swal2-popup:not(.swal2-toast) .bg-gray-50,
+html.dark .swal2-popup:not(.swal2-toast) .bg-gray-50\/60,
+html.dark .swal2-popup:not(.swal2-toast) .bg-gray-50\/70,
+html.dark .swal2-popup:not(.swal2-toast) .from-blue-50,
+html.dark .swal2-popup:not(.swal2-toast) .to-white {
   background: rgba(19, 33, 51, 0.96) !important;
 }
 
-html.dark .swal2-popup.admin-swal-modal .text-gray-700,
-html.dark .swal2-popup.admin-swal-modal .text-slate-700 {
+html.dark .swal2-popup:not(.swal2-toast) .text-gray-700,
+html.dark .swal2-popup:not(.swal2-toast) .text-slate-700 {
   color: #d8e5f5 !important;
 }
 
-html.dark .swal2-popup.admin-swal-modal .text-gray-500,
-html.dark .swal2-popup.admin-swal-modal .text-gray-400,
-html.dark .swal2-popup.admin-swal-modal .text-slate-500 {
+html.dark .swal2-popup:not(.swal2-toast) .text-gray-500,
+html.dark .swal2-popup:not(.swal2-toast) .text-gray-400,
+html.dark .swal2-popup:not(.swal2-toast) .text-slate-500 {
   color: #93a9c6 !important;
 }
 
-html.dark .swal2-popup.admin-swal-modal .text-blue-700 {
+html.dark .swal2-popup:not(.swal2-toast) .text-blue-700 {
   color: #8dc9ff !important;
 }
 
-html.dark .swal2-popup.admin-swal-modal .hover\:bg-gray-100:hover,
-html.dark .swal2-popup.admin-swal-modal .hover\:bg-blue-50:hover {
+html.dark .swal2-popup:not(.swal2-toast) .hover\:bg-gray-100:hover,
+html.dark .swal2-popup:not(.swal2-toast) .hover\:bg-blue-50:hover {
   background: rgba(22, 37, 59, 0.98) !important;
 }
 
-html.dark .swal2-popup.admin-swal-modal .swal2-actions {
+html.dark .swal2-popup:not(.swal2-toast) .swal2-actions {
   border-color: rgba(45, 67, 98, 0.82) !important;
+}
+
+html.dark .swal2-popup:not(.swal2-toast) .text-gray-900,
+html.dark .swal2-popup:not(.swal2-toast) .text-gray-800,
+html.dark .swal2-popup:not(.swal2-toast) .text-slate-900,
+html.dark .swal2-popup:not(.swal2-toast) .text-slate-800 {
+  color: #edf4ff !important;
+}
+
+html.dark .swal2-popup:not(.swal2-toast) .bg-blue-50 {
+  background: rgba(37, 71, 122, 0.35) !important;
 }
 
 html.dark .admin-slips-page .admin-slips-summary-card {

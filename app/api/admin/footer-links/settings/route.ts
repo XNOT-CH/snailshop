@@ -35,12 +35,13 @@ export async function PUT(request: NextRequest) {
     if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const body = await request.json();
-        const { isActive, title } = body;
+        const { isActive, title, secondaryTitle } = body;
         const settings = await getFooterWidgetSettingsRecord();
         if (settings) {
             const set: Record<string, unknown> = {};
             if (isActive !== undefined) set.isActive = isActive;
             if (title !== undefined) set.title = title;
+            if (secondaryTitle !== undefined) set.secondaryTitle = secondaryTitle;
             await db.update(footerWidgetSettings).set(set).where(eq(footerWidgetSettings.id, settings.id));
         } else {
             await db.insert(footerWidgetSettings).values({ id: FOOTER_WIDGET_SETTINGS_SINGLETON_ID, isActive: isActive ?? true, title: title ?? "เมนูลัด", createdAt: mysqlNow(), updatedAt: mysqlNow() });

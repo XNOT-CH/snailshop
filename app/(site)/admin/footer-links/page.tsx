@@ -1,5 +1,7 @@
 "use client";
 
+import { SpinnerScreen } from "@/components/SpinnerScreen";
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { fetchWithCsrf } from "@/lib/csrf-client";
@@ -50,10 +52,18 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
 
+type FooterColumn = "services" | "cards";
+
+const COLUMN_LABELS: Record<FooterColumn, string> = {
+    services: "บริการของเรา",
+    cards: "บัตรเติมเกม",
+};
+
 interface FooterLink {
     id: string;
     label: string;
     href: string;
+    column: FooterColumn;
     openInNewTab: boolean;
     sortOrder: number;
     isActive: boolean;
@@ -63,6 +73,7 @@ interface FooterSettings {
     id: string;
     isActive: boolean;
     title: string;
+    secondaryTitle: string;
 }
 
 function getDomainLabel(href: string) {
@@ -111,7 +122,12 @@ function SortableRow({ link, canEditSettings, onEdit, onDelete }: SortableRowPro
             </TableCell>
             <TableCell>
                 <div className="space-y-1">
-                    <p className="font-semibold text-foreground">{link.label}</p>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-semibold text-foreground">{link.label}</p>
+                        <span className="inline-flex rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-medium text-indigo-700">
+                            {COLUMN_LABELS[link.column] ?? COLUMN_LABELS.services}
+                        </span>
+                    </div>
                     <p className="text-xs text-muted-foreground">{getDomainLabel(link.href)}</p>
                 </div>
             </TableCell>
@@ -213,6 +229,9 @@ function SortableCard({ link, canEditSettings, onEdit, onDelete }: SortableCardP
                 <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold text-foreground">{link.label}</p>
+                        <span className="inline-flex rounded-full bg-indigo-100 px-2 py-1 text-[11px] font-medium text-indigo-700">
+                            {COLUMN_LABELS[link.column] ?? COLUMN_LABELS.services}
+                        </span>
                         <span
                             className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${
                                 link.isActive
@@ -325,8 +344,12 @@ export default function FooterLinksAdminPage() {
 
     const [newLabel, setNewLabel] = useState("");
     const [newHref, setNewHref] = useState("");
+    const [newColumn, setNewColumn] = useState<FooterColumn>("services");
     const [newOpenInNewTab, setNewOpenInNewTab] = useState(false);
     const [activeLink, setActiveLink] = useState<FooterLink | null>(null);
+    const [titleDraft, setTitleDraft] = useState("");
+    const [secondaryTitleDraft, setSecondaryTitleDraft] = useState("");
+    const [savingTitles, setSavingTitles] = useState(false);
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -341,6 +364,8 @@ export default function FooterLinksAdminPage() {
                 links: FooterLink[];
             };
             setSettings(data.settings);
+            setTitleDraft(data.settings?.title ?? "");
+            setSecondaryTitleDraft(data.settings?.secondaryTitle ?? "");
             setLinks(data.links);
         } catch (error) {
             console.error("Error fetching data:", error);
@@ -421,6 +446,36 @@ export default function FooterLinksAdminPage() {
         }
     };
 
+    // ── Save column titles ────────────────────────────────────────────────────
+    const handleSaveTitles = async () => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขลิงก์ส่วนท้าย");
+            return;
+        }
+        setSavingTitles(true);
+        try {
+            const res = await fetchWithCsrf("/api/admin/footer-links/settings", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    title: titleDraft.trim() || "บริการของเรา",
+                    secondaryTitle: secondaryTitleDraft.trim() || "บัตรเติมเกม",
+                }),
+            });
+            if (res.ok) {
+                const updated = (await res.json()) as FooterSettings;
+                setSettings(updated);
+                showSuccess("บันทึกชื่อหัวคอลัมน์แล้ว");
+            } else {
+                showError("ไม่สามารถบันทึกได้");
+            }
+        } catch {
+            showError("เกิดข้อผิดพลาด");
+        } finally {
+            setSavingTitles(false);
+        }
+    };
+
     // ── Add link ──────────────────────────────────────────────────────────────
     const handleAddLink = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -441,6 +496,7 @@ export default function FooterLinksAdminPage() {
                 body: JSON.stringify({
                     label: newLabel.trim(),
                     href: newHref.trim(),
+                    column: newColumn,
                     openInNewTab: newOpenInNewTab,
                 }),
             });
@@ -450,6 +506,7 @@ export default function FooterLinksAdminPage() {
                 setLinks((prev) => [...prev, newLink]);
                 setNewLabel("");
                 setNewHref("");
+                setNewColumn("services");
                 setNewOpenInNewTab(false);
                 showSuccess("เพิ่มลิงก์เรียบร้อย");
             } else {
@@ -559,6 +616,16 @@ export default function FooterLinksAdminPage() {
                             <p class="mt-2 text-xs text-gray-500">ตรวจสอบปลายทางก่อนบันทึกได้ทันที</p>
                         </div>
                     </div>
+                    <div>
+                        <label class="mb-1.5 block text-sm font-medium text-gray-700">คอลัมน์</label>
+                        <select
+                            id="swal-column"
+                            class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                            <option value="services" ${link.column === "services" ? "selected" : ""}>บริการของเรา</option>
+                            <option value="cards" ${link.column === "cards" ? "selected" : ""}>บัตรเติมเกม</option>
+                        </select>
+                    </div>
                     <div class="grid grid-cols-2 gap-4">
                         <label class="flex items-center gap-3 rounded-2xl border border-gray-200 px-4 py-3">
                             <input id="swal-newtab" type="checkbox" class="h-4 w-4" ${
@@ -578,6 +645,7 @@ export default function FooterLinksAdminPage() {
             preConfirm: () => ({
                 label: (document.getElementById("swal-label") as HTMLInputElement)?.value?.trim(),
                 href: (document.getElementById("swal-href") as HTMLInputElement)?.value?.trim(),
+                column: (document.getElementById("swal-column") as HTMLSelectElement)?.value,
                 openInNewTab: (document.getElementById("swal-newtab") as HTMLInputElement)?.checked,
                 isActive: (document.getElementById("swal-active") as HTMLInputElement)?.checked,
             }),
@@ -611,11 +679,7 @@ export default function FooterLinksAdminPage() {
     };
 
     if (loading) {
-        return (
-            <div className="flex min-h-[400px] items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
+        return <SpinnerScreen label="กำลังโหลดลิงก์..." />;
     }
 
     return (
@@ -657,6 +721,45 @@ export default function FooterLinksAdminPage() {
                         onCheckedChange={handleToggleActive}
                         disabled={!canEditSettings}
                     />
+                </div>
+                <div className="border-t border-border px-5 py-4">
+                    <p className="mb-1 text-sm font-semibold text-foreground">ชื่อหัวคอลัมน์</p>
+                    <p className="mb-3 text-xs text-muted-foreground">
+                        ตั้งชื่อหัวข้อของทั้งสองคอลัมน์ลิงก์ในส่วนท้ายเว็บไซต์
+                    </p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                        <div className="space-y-1.5">
+                            <Label htmlFor="titleDraft">คอลัมน์ที่ 1</Label>
+                            <Input
+                                id="titleDraft"
+                                placeholder="บริการของเรา"
+                                value={titleDraft}
+                                onChange={(e) => setTitleDraft(e.target.value)}
+                                disabled={!canEditSettings}
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <Label htmlFor="secondaryTitleDraft">คอลัมน์ที่ 2</Label>
+                            <Input
+                                id="secondaryTitleDraft"
+                                placeholder="บัตรเติมเกม"
+                                value={secondaryTitleDraft}
+                                onChange={(e) => setSecondaryTitleDraft(e.target.value)}
+                                disabled={!canEditSettings}
+                            />
+                        </div>
+                    </div>
+                    <div className="mt-3 flex justify-end">
+                        <Button
+                            type="button"
+                            onClick={() => void handleSaveTitles()}
+                            disabled={savingTitles || !canEditSettings}
+                            className="rounded-xl bg-[#145de7] hover:bg-[#1048b8]"
+                        >
+                            {savingTitles ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                            บันทึกชื่อหัวคอลัมน์
+                        </Button>
+                    </div>
                 </div>
             </div>
 
@@ -709,6 +812,19 @@ export default function FooterLinksAdminPage() {
                                 เพิ่มลิงก์
                             </Button>
                         </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="newColumn">คอลัมน์ที่จะแสดง</Label>
+                        <select
+                            id="newColumn"
+                            value={newColumn}
+                            onChange={(e) => setNewColumn(e.target.value as FooterColumn)}
+                            disabled={!canEditSettings}
+                            className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:w-64"
+                        >
+                            <option value="services">บริการของเรา</option>
+                            <option value="cards">บัตรเติมเกม</option>
+                        </select>
                     </div>
                     <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-3">
                         <div className="flex items-center space-x-2">

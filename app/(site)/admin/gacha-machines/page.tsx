@@ -1,5 +1,7 @@
 ﻿"use client";
 
+import { SpinnerScreen } from "@/components/SpinnerScreen";
+
 import { useState, useEffect, useRef } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { useRouter } from "next/navigation";
@@ -276,11 +278,7 @@ export default function GachaMachinesAdminPage() {
     };
 
     if (loading) {
-        return (
-            <div className="flex justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-            </div>
-        );
+        return <SpinnerScreen label="กำลังโหลดตู้กาชา..." />;
     }
 
     const costAmountFieldCopy = getCostAmountFieldCopy(machineForm.costType, currencySettings);

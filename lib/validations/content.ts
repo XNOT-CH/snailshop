@@ -88,6 +88,7 @@ export type PopupInput = z.infer<typeof popupSchema>;
 export const footerLinkSchema = z.object({
   label: z.string().min(1, "กรุณากรอกชื่อลิงก์").max(100),
   href: safeRequiredUrl,
+  column: z.enum(["services", "cards"]).default("services"),
   openInNewTab: z.boolean().default(false),
   sortOrder: z.coerce.number().int().min(0).optional(),
 });

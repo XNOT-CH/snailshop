@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ShoppingBag, ChevronDown, Tag } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { themeClasses } from "@/lib/theme";
 
 interface ShopDropdownProps {
@@ -12,6 +14,8 @@ interface ShopDropdownProps {
 export function ShopDropdown({ categories }: Readonly<ShopDropdownProps>) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
+    const pathname = usePathname();
+    const isActive = pathname === "/shop" || pathname.startsWith("/shop/") || pathname.startsWith("/product");
 
     // Close on click outside
     useEffect(() => {
@@ -28,7 +32,12 @@ export function ShopDropdown({ categories }: Readonly<ShopDropdownProps>) {
         <div ref={ref} className="relative">
             <button
                 onClick={() => setOpen((v) => !v)}
-                className="flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition-all duration-200 hover:bg-accent/70 hover:text-foreground"
+                className={cn(
+                    "flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-all duration-200",
+                    isActive || open
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+                )}
                 aria-expanded={open}
                 aria-haspopup="true"
             >

@@ -109,7 +109,26 @@ const nextConfig: NextConfig = {
           },
           {
             key: "Content-Security-Policy",
-            value: "base-uri 'self'; form-action 'self'; object-src 'none'; frame-ancestors 'self'",
+            value: [
+              "default-src 'self'",
+              // 'unsafe-inline' is required for Next.js' inline bootstrap/hydration
+              // scripts. This still blocks loading scripts from untrusted external
+              // origins. Cloudflare Turnstile is the only external script source.
+              // 'unsafe-eval' is required ONLY in development for Next.js HMR /
+              // React Fast Refresh, which evaluate code via eval(). It is omitted
+              // in production to keep the CSP strict.
+              `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"} https://challenges.cloudflare.com`,
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob: https:",
+              "font-src 'self' data:",
+              "connect-src 'self' https://challenges.cloudflare.com",
+              "frame-src https://challenges.cloudflare.com",
+              "worker-src 'self' blob:",
+              "object-src 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'self'",
+            ].join("; "),
           },
           ...(isProduction
             ? [

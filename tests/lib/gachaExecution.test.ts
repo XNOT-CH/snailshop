@@ -63,6 +63,8 @@ function makeTx(affectedRows = 1) {
     });
     const findProductFirst = vi.fn().mockResolvedValue({
         id: "product-1",
+        name: "Product 1",
+        imageUrl: null,
         isSold: false,
         orderId: null,
         secretData: "encrypted-stock",
@@ -203,6 +205,8 @@ describe("lib/gachaExecution", () => {
 
             await expect(fetchProductRewardForClaimOrThrow(tx as never, "product-1")).resolves.toEqual({
                 id: "product-1",
+                name: "Product 1",
+                imageUrl: null,
                 isSold: false,
                 orderId: null,
                 secretData: "encrypted-stock",
@@ -213,6 +217,8 @@ describe("lib/gachaExecution", () => {
                 where: { kind: "eq", left: "id", right: "product-1" },
                 columns: {
                     id: true,
+                    name: true,
+                    imageUrl: true,
                     isSold: true,
                     orderId: true,
                     secretData: true,

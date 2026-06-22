@@ -35,6 +35,7 @@ export type PurchaseProductRow = {
     stockSeparator?: string | null;
     orderId?: string | null;
     autoDeleteAfterSale?: string | number | null;
+    imageUrl?: string | null;
 };
 
 export type PurchasePromoData = {
@@ -85,6 +86,7 @@ const PRODUCT_COLUMNS_SQL = [
     "stockSeparator",
     "orderId",
     "autoDeleteAfterSale",
+    "imageUrl",
 ].join(", ");
 
 export function getActivePrice(product: PurchaseProductRow) {
@@ -378,8 +380,8 @@ export async function executeSingleProductPurchaseTransaction(params: {
 
         const orderId = crypto.randomUUID();
         await conn.execute(
-            "INSERT INTO `Order` (id, userId, totalPrice, status, givenData) VALUES (?, ?, ?, 'COMPLETED', ?)",
-            [orderId, user.id, totalPrice, encrypt(givenJoined)],
+            "INSERT INTO `Order` (id, userId, totalPrice, status, givenData, productId, productName, productImage) VALUES (?, ?, ?, 'COMPLETED', ?, ?, ?, ?)",
+            [orderId, user.id, totalPrice, encrypt(givenJoined), product.id, product.name, product.imageUrl ?? null],
         );
 
         if (isPointCurrency) {
@@ -500,8 +502,8 @@ export async function executeCartPurchaseTransaction(params: {
                 : (getActivePrice(product) * item.quantity);
 
             await conn.execute(
-                "INSERT INTO `Order` (id, userId, totalPrice, status, givenData) VALUES (?, ?, ?, 'COMPLETED', ?)",
-                [orderId, userId, String(unitPrice), encrypt(givenJoined)],
+                "INSERT INTO `Order` (id, userId, totalPrice, status, givenData, productId, productName, productImage) VALUES (?, ?, ?, 'COMPLETED', ?, ?, ?, ?)",
+                [orderId, userId, String(unitPrice), encrypt(givenJoined), product.id, product.name, product.imageUrl ?? null],
             );
 
             await conn.execute(
