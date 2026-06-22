@@ -20,12 +20,6 @@
       "service": "my-game-store"
     }
   ],
-  "r2_buckets": [
-    {
-      "binding": "UPLOADS_BUCKET",
-      "bucket_name": "my-game-store-uploads"
-    }
-  ],
   "env": {
     "staging": {
       "name": "my-game-store-staging",
@@ -33,12 +27,6 @@
         {
           "binding": "WORKER_SELF_REFERENCE",
           "service": "my-game-store-staging"
-        }
-      ],
-      "r2_buckets": [
-        {
-          "binding": "UPLOADS_BUCKET",
-          "bucket_name": "my-game-store-uploads-staging"
         }
       ]
     }
