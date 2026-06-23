@@ -446,10 +446,11 @@ html.dark .bg-card:hover {
 .storefront-card,
 .luxury-panel {
   background: linear-gradient(180deg, var(--surface-1) 0%, var(--surface-2) 100%);
-  border: 1px solid var(--surface-stroke-strong);
+  border: 1px solid var(--surface-stroke);
   box-shadow:
-    0 18px 38px -28px var(--surface-shadow),
-    0 2px 6px rgba(255, 255, 255, 0.72);
+    0 12px 28px -10px var(--surface-shadow-soft),
+    0 4px 10px -6px var(--surface-shadow-soft),
+    inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 .theme-surface-media,
@@ -514,10 +515,11 @@ html.dark .bg-card:hover {
 
 .storefront-product-card {
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.98) 100%);
-  border: 1px solid rgba(201, 214, 232, 0.92);
+  border: 1px solid rgba(206, 218, 234, 0.7);
   box-shadow:
-    0 18px 34px -28px rgba(39, 71, 121, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92);
+    0 12px 28px -10px rgba(39, 71, 121, 0.16),
+    0 4px 10px -4px rgba(39, 71, 121, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .progressive-image-placeholder {
@@ -638,9 +640,10 @@ html.dark .storefront-shell {
 html.dark .theme-surface,
 html.dark .storefront-card,
 html.dark .luxury-panel {
-  border-color: rgba(40, 60, 89, 0.9);
+  border-color: rgba(40, 60, 89, 0.8);
   box-shadow:
-    0 18px 38px -28px rgba(0, 0, 0, 0.82),
+    0 14px 32px -14px rgba(0, 0, 0, 0.6),
+    0 4px 10px -6px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(122, 165, 228, 0.04);
 }
 
@@ -702,9 +705,10 @@ html.dark .storefront-mobile-nav {
 
 html.dark .storefront-product-card {
   background: linear-gradient(180deg, rgba(20, 32, 50, 0.98) 0%, rgba(16, 27, 42, 0.98) 100%);
-  border-color: rgba(40, 60, 89, 0.9);
+  border-color: rgba(40, 60, 89, 0.8);
   box-shadow:
-    0 18px 38px -28px rgba(0, 0, 0, 0.82),
+    0 14px 32px -12px rgba(0, 0, 0, 0.6),
+    0 4px 10px -6px rgba(0, 0, 0, 0.4),
     inset 0 1px 0 rgba(122, 165, 228, 0.04);
 }
 

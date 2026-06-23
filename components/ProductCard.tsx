@@ -47,7 +47,7 @@ export function ProductCard({
         >
             <div
                 className={`
-                    ${themeClasses.surface} storefront-product-card group relative flex flex-col overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_20px_38px_-28px_rgba(39,71,121,0.18)] dark:hover:shadow-[0_24px_48px_-32px_rgba(0,0,0,0.9)]
+                    ${themeClasses.surface} storefront-product-card group relative flex flex-col overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_20px_40px_-12px_rgba(39,71,121,0.22)] dark:hover:shadow-[0_24px_48px_-16px_rgba(0,0,0,0.7)]
                 `}
             >
                 <div className={`${themeClasses.surfaceMedia} relative aspect-square overflow-hidden border-b border-border/80`}>

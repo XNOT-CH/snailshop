@@ -57,7 +57,7 @@ export function FeaturedProducts({
         itemCount={products.length}
         intervalMs={5000}
         scrollLabel="เซกชันโปรโมชัน"
-        containerClassName="swipe-container scrollbar-hide -mt-2 flex snap-x snap-mandatory gap-4 overflow-x-auto px-1 pb-4 pt-2"
+        containerClassName="swipe-container scrollbar-hide -mt-3 flex snap-x snap-mandatory gap-4 overflow-x-auto px-3 pb-10 pt-3"
         header={(
           <div className="flex min-w-0 items-center gap-2">
             <h2 className="text-xl font-bold leading-tight text-foreground sm:text-2xl">สินค้าแนะนำ</h2>

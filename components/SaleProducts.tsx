@@ -51,7 +51,7 @@ export function SaleProducts({
                 itemCount={products.length}
                 intervalMs={6000}
                 scrollLabel="เซกชันสินค้าโปรโมชัน"
-                containerClassName="-mt-2 flex gap-4 overflow-x-auto scrollbar-hide pb-4 pt-2 px-1 snap-x snap-mandatory"
+                containerClassName="-mt-3 flex gap-4 overflow-x-auto scrollbar-hide pb-10 pt-3 px-3 snap-x snap-mandatory"
                 header={(
                     <div className="flex min-w-0 items-center gap-2">
                         <Tag className="h-6 w-6 text-primary" />
