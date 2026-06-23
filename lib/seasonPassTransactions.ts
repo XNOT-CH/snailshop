@@ -137,8 +137,12 @@ export async function purchaseSeasonPass(params: {
 
         await conn.commit();
 
-        const currentSubscription = await getCurrentSeasonPassSubscription(params.userId);
-        const endAt = latestSubscription ? nextEndAt : currentSubscription?.endAt ?? nextEndAt;
+        // Everything below runs after the commit, so it must not throw the
+        // request into the catch/rollback path: the charge + subscription are
+        // already durable. endAt is exactly the value we just persisted
+        // (initial: the inserted ACTIVE row; renewal: the queued row), so we use
+        // it directly instead of re-reading it back from the database.
+        const endAt = nextEndAt;
         const queued = Boolean(latestSubscription);
 
         await auditSeasonPassPurchase(params.request, {
