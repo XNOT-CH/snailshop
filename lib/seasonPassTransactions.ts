@@ -199,7 +199,10 @@ export async function claimSeasonPass(params: {
     role?: string | null;
     request: Request;
 }) {
-    const mockDate = params.role === "ADMIN"
+    // mockDate is a dev/test affordance for time-travelling the reward board.
+    // It must never grant real rewards in production, even for ADMIN accounts.
+    const allowMockDate = params.role === "ADMIN" && process.env.NODE_ENV !== "production";
+    const mockDate = allowMockDate
         ? parseMockDateKey(new URL(params.request.url).searchParams.get("mockDate"))
         : null;
     const now = mockDate ? buildThaiDateAtCurrentTime(mockDate) : new Date();

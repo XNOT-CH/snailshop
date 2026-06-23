@@ -109,7 +109,8 @@ export default async function SeasonPassPage(props: Readonly<{ searchParams?: Pr
     }
 
     const searchParams = await props.searchParams;
-    const mockDate = role === "ADMIN" ? parseMockDateKey(searchParams?.mockDate) : null;
+    const allowMockDate = role === "ADMIN" && process.env.NODE_ENV !== "production";
+    const mockDate = allowMockDate ? parseMockDateKey(searchParams?.mockDate) : null;
     const now = mockDate ? buildThaiDateAtCurrentTime(mockDate) : undefined;
     const state = await getSeasonPassDashboardState(userId, now);
 

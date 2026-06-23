@@ -57,6 +57,11 @@ export async function PUT(request: NextRequest) {
             if (!reward.label?.trim() || !reward.amount?.trim()) {
                 return contentApiError("Reward label and amount are required", { status: 400 });
             }
+
+            const numericAmount = Number(reward.amount);
+            if (!Number.isFinite(numericAmount) || numericAmount < 0) {
+                return contentApiError("Reward amount must be a non-negative number", { status: 400 });
+            }
         }
 
         const updatedRewards = await updateAdminSeasonPassRewards(
