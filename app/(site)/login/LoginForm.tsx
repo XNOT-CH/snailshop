@@ -117,7 +117,7 @@ export function LoginForm({ logoUrl, turnstileConfigError = null }: Readonly<Log
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {/* Username */}
                         <div className="space-y-2">
-                            <label htmlFor="username" className="text-sm text-muted-foreground">ชื่อผู้ใช้งาน หรืออีเมล</label>
+                            <label htmlFor="username" className="text-sm text-muted-foreground">ชื่อผู้ใช้งาน หรืออีเมล <span className="text-red-500" aria-hidden="true">*</span></label>
                             <Input
                                 id="username"
                                 placeholder="username หรืออีเมล"
@@ -131,7 +131,7 @@ export function LoginForm({ logoUrl, turnstileConfigError = null }: Readonly<Log
 
                         {/* Password */}
                         <div className="space-y-2">
-                            <label htmlFor="password" className="text-sm text-muted-foreground">รหัสผ่าน</label>
+                            <label htmlFor="password" className="text-sm text-muted-foreground">รหัสผ่าน <span className="text-red-500" aria-hidden="true">*</span></label>
                             <div className="relative">
                                 <Input
                                     id="password"
