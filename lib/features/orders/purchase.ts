@@ -536,7 +536,7 @@ export async function executeCartPurchaseTransaction(params: {
         if (totalPoints > 0) {
             await conn.execute(
                 "UPDATE User SET pointBalance = pointBalance - ? WHERE id = ?",
-                [totalPoints, userId],
+                [Math.round(totalPoints), userId],
             );
         }
 
