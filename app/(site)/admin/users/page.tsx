@@ -19,6 +19,7 @@ export default async function AdminUsersPage() {
             role: true, creditBalance: true, totalTopup: true,
             pointBalance: true, lifetimePoints: true, createdAt: true,
             pinHash: true, pinLockedUntil: true, pinUpdatedAt: true,
+            bannedAt: true,
         },
     });
 

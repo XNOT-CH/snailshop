@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { getPointCurrencyName, getPointCurrencySymbol } from "@/lib/currencySettings";
 import { formatBaht as formatCurrency } from "@/lib/formatters/currency";
-import { Coins, Crown, Gem, KeyRound, LockKeyhole, Pencil, Search, ShieldOff, Users, X } from "lucide-react";
+import { Ban, Coins, Crown, Gem, KeyRound, LockKeyhole, Pencil, Search, ShieldCheck, ShieldOff, Users, X } from "lucide-react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -44,6 +44,7 @@ interface User {
   hasPin: boolean;
   pinLockedUntil: string | null;
   pinUpdatedAt: string | null;
+  bannedAt: string | null;
 }
 
 interface Role {
@@ -282,6 +283,81 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
     } catch {
       hideLoading();
       showError("เกิดข้อผิดพลาดในการจัดการ PIN");
+    }
+  };
+
+  const handleBanToggle = async (user: User) => {
+    if (!canEditUsers) {
+      showError("คุณไม่มีสิทธิ์ระงับบัญชีผู้ใช้");
+      return;
+    }
+
+    const isBanned = Boolean(user.bannedAt);
+    let banReason: string | undefined;
+
+    if (isBanned) {
+      const confirmed = await Swal.fire({
+        title: "ยกเลิกการระงับ",
+        text: `ต้องการปลดการระงับบัญชี ${user.username} ใช่หรือไม่?`,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "ปลดการระงับ",
+        cancelButtonText: "ยกเลิก",
+        reverseButtons: true,
+        confirmButtonColor: "#2563eb",
+        cancelButtonColor: "#6b7280",
+      });
+      if (!confirmed.isConfirmed) {
+        return;
+      }
+    } else {
+      const result = await Swal.fire({
+        title: "ระงับบัญชี",
+        text: `บัญชี ${user.username} จะเข้าสู่ระบบและใช้งานไม่ได้จนกว่าจะปลดการระงับ`,
+        icon: "warning",
+        input: "text",
+        inputLabel: "เหตุผลการระงับ (ไม่บังคับ)",
+        inputPlaceholder: "เช่น ละเมิดกฎการใช้งาน",
+        inputAttributes: { maxlength: "255" },
+        showCancelButton: true,
+        confirmButtonText: "ระงับบัญชี",
+        cancelButtonText: "ยกเลิก",
+        reverseButtons: true,
+        confirmButtonColor: "#dc2626",
+        cancelButtonColor: "#6b7280",
+      });
+      if (!result.isConfirmed) {
+        return;
+      }
+      banReason = typeof result.value === "string" && result.value.trim().length > 0
+        ? result.value.trim()
+        : undefined;
+    }
+
+    showLoading(isBanned ? "กำลังปลดการระงับ..." : "กำลังระงับบัญชี...");
+    try {
+      const response = await fetchWithCsrf(`/api/admin/users/${user.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(isBanned ? { banned: false } : { banned: true, banReason }),
+      });
+      const data = await response.json();
+      hideLoading();
+
+      if (!response.ok) {
+        showError(data.error || "เกิดข้อผิดพลาด");
+        return;
+      }
+
+      setUsers((previous) =>
+        previous.map((item) =>
+          item.id === user.id ? { ...item, bannedAt: data.user?.bannedAt ?? null } : item
+        )
+      );
+      showSuccess(isBanned ? "ปลดการระงับบัญชีแล้ว" : "ระงับบัญชีเรียบร้อยแล้ว");
+    } catch {
+      hideLoading();
+      showError("เกิดข้อผิดพลาดในการระงับบัญชี");
     }
   };
 
@@ -696,11 +772,14 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                 const isPinLocked = Boolean(
                   user.pinLockedUntil && new Date(user.pinLockedUntil).getTime() > renderTimestamp
                 );
+                const isBanned = Boolean(user.bannedAt);
 
                 return (
                   <div
                     key={user.id}
-                    className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm"
+                    className={`rounded-2xl border bg-white p-4 shadow-sm ${
+                      isBanned ? "border-red-300 bg-red-50/40" : "border-slate-200"
+                    }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
@@ -750,6 +829,12 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                             {isPinLocked ? (
                               <Badge variant="outline" className="rounded-full border-red-200 text-red-600">
                                 PIN ถูกล็อก
+                              </Badge>
+                            ) : null}
+                            {isBanned ? (
+                              <Badge className="rounded-full bg-red-600 text-white hover:bg-red-600">
+                                <Ban className="mr-1 h-3 w-3" />
+                                ถูกระงับ
                               </Badge>
                             ) : null}
                           </div>
@@ -827,6 +912,30 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                             แก้ไข
                           </Button>
                         ) : null}
+                        {canEditUsers ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => void handleBanToggle(user)}
+                            className={
+                              isBanned
+                                ? "rounded-xl border border-emerald-200 px-3 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                                : "rounded-xl border border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            }
+                          >
+                            {isBanned ? (
+                              <>
+                                <ShieldCheck className="mr-1.5 h-4 w-4" />
+                                ปลดระงับ
+                              </>
+                            ) : (
+                              <>
+                                <Ban className="mr-1.5 h-4 w-4" />
+                                ระงับ
+                              </>
+                            )}
+                          </Button>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -862,11 +971,18 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                   const isPinLocked = Boolean(
                     user.pinLockedUntil && new Date(user.pinLockedUntil).getTime() > renderTimestamp
                   );
+                  const isBanned = Boolean(user.bannedAt);
 
                   return (
                     <TableRow
                       key={user.id}
-                      className={index % 2 === 0 ? "bg-white" : "bg-slate-50/35"}
+                      className={
+                        isBanned
+                          ? "bg-red-50/60"
+                          : index % 2 === 0
+                            ? "bg-white"
+                            : "bg-slate-50/35"
+                      }
                     >
                       <TableCell className="min-w-[260px]">
                         <div className="flex items-center gap-3">
@@ -963,12 +1079,20 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                       </TableCell>
 
                       <TableCell>
-                        <Badge
-                          variant="secondary"
-                          className={`rounded-full px-2.5 py-1 ${getRoleBadgeClassName(user.role)}`}
-                        >
-                          {getRoleDisplayName(user.role)}
-                        </Badge>
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Badge
+                            variant="secondary"
+                            className={`rounded-full px-2.5 py-1 ${getRoleBadgeClassName(user.role)}`}
+                          >
+                            {getRoleDisplayName(user.role)}
+                          </Badge>
+                          {isBanned ? (
+                            <Badge className="rounded-full bg-red-600 px-2.5 py-1 text-white hover:bg-red-600">
+                              <Ban className="mr-1 h-3 w-3" />
+                              ถูกระงับ
+                            </Badge>
+                          ) : null}
+                        </div>
                       </TableCell>
 
                       <TableCell className="text-sm text-muted-foreground">
@@ -1012,6 +1136,30 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                             >
                               <Pencil className="mr-1.5 h-4 w-4" />
                               แก้ไข
+                            </Button>
+                          ) : null}
+                          {canEditUsers ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => void handleBanToggle(user)}
+                              className={
+                                isBanned
+                                  ? "rounded-xl border border-emerald-200 px-3 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                                  : "rounded-xl border border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                              }
+                            >
+                              {isBanned ? (
+                                <>
+                                  <ShieldCheck className="mr-1.5 h-4 w-4" />
+                                  ปลดระงับ
+                                </>
+                              ) : (
+                                <>
+                                  <Ban className="mr-1.5 h-4 w-4" />
+                                  ระงับ
+                                </>
+                              )}
                             </Button>
                           ) : null}
                         </div>
