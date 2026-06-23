@@ -14,6 +14,13 @@ interface RateLimitEntry {
 // In-memory store (reset on server restart)
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
+// Largest window across all limiters below (register = 1h). Any entry whose
+// window started longer ago than this is dead for its own limiter, so it is safe
+// to evict once it is also no longer locked.
+const MAX_ENTRY_LIFETIME_MS = 60 * 60 * 1000;
+// How often the background sweeper evicts expired entries.
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+
 // Configuration
 const config = {
     // Login attempts
@@ -916,4 +923,36 @@ function getProgressiveDelayForKey(key: string): number {
  */
 export function sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Evict fully-expired entries from the in-memory fallback store.
+ *
+ * Without this the Map grows without bound: every unique IP/identifier ever seen
+ * leaves a dangling entry until the process restarts, since entries that are
+ * never touched again are never deleted. That is a slow memory-exhaustion vector
+ * an attacker can drive with a flood of unique identifiers. An entry is removed
+ * only when it is past the largest possible window AND not currently locked, so
+ * a live counter or an active lockout is never dropped early.
+ *
+ * Returns the number of entries removed (exposed for tests / observability).
+ */
+export function cleanupRateLimitStore(now: number = Date.now()): number {
+    let removed = 0;
+    for (const [key, entry] of rateLimitStore) {
+        const locked = entry.lockedUntil !== undefined && entry.lockedUntil > now;
+        const windowExpired = now - entry.firstAttempt > MAX_ENTRY_LIFETIME_MS;
+        if (!locked && windowExpired) {
+            rateLimitStore.delete(key);
+            removed++;
+        }
+    }
+    return removed;
+}
+
+// Run the sweeper periodically in long-lived server processes. Skipped under
+// test to avoid dangling timers, and unref'd so it never keeps the process alive.
+if (process.env.NODE_ENV !== "test" && typeof setInterval === "function") {
+    const cleanupTimer = setInterval(() => cleanupRateLimitStore(), CLEANUP_INTERVAL_MS);
+    cleanupTimer.unref?.();
 }

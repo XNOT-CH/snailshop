@@ -8,6 +8,7 @@ import {
   checkPasswordResetRequestRateLimit,
   checkPasswordResetAttemptRateLimit,
   checkChatMessageRateLimit,
+  cleanupRateLimitStore,
   getClientIp,
   getProgressiveDelay,
   sleep,
@@ -265,6 +266,26 @@ describe("rateLimit utilities", () => {
       await sleep(50);
       const elapsed = Date.now() - start;
       expect(elapsed).toBeGreaterThanOrEqual(40);
+    });
+  });
+
+  describe("cleanupRateLimitStore", () => {
+    it("evicts entries past their lifetime so the store cannot grow unbounded", () => {
+      recordFailedLogin(testId);
+      expect(checkLoginRateLimit(testId).remainingAttempts).toBe(4);
+
+      // Sweep with a clock past the largest window (1h) — the entry is dead.
+      const removed = cleanupRateLimitStore(Date.now() + 60 * 60 * 1000 + 1000);
+      expect(removed).toBeGreaterThanOrEqual(1);
+
+      // Counter is gone, so a subsequent check starts fresh.
+      expect(checkLoginRateLimit(testId).remainingAttempts).toBe(5);
+    });
+
+    it("keeps entries that are still within their window", () => {
+      recordFailedLogin(testId);
+      cleanupRateLimitStore(Date.now() + 1000);
+      expect(checkLoginRateLimit(testId).remainingAttempts).toBe(4);
     });
   });
 });
