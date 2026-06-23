@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, lte, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, lt, sql } from "drizzle-orm";
 import { getPointCurrencyName, type PublicCurrencySettings } from "@/lib/currencySettings";
 import { db, seasonPassClaims, seasonPassPlans, seasonPassRewards, seasonPassSubscriptions, users } from "@/lib/db";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
@@ -312,16 +312,18 @@ export async function activateQueuedSeasonPassSubscriptions(userId?: string) {
 }
 
 export async function getCurrentSeasonPassSubscription(userId: string) {
-    await expireSeasonPassSubscriptions(userId);
-    await activateQueuedSeasonPassSubscriptions(userId);
-
+    // Pure read: the start/end window decides whether a subscription is currently
+    // active, so we don't need to flip statuses (EXPIRED/ACTIVE) on every read.
+    // Including QUEUED covers a renewal whose window has already begun but whose
+    // status hasn't been promoted yet by a purchase/claim transaction or admin job.
+    // Status normalization still happens in those write paths.
     const rows = await db
         .select()
         .from(seasonPassSubscriptions)
         .where(
             and(
                 eq(seasonPassSubscriptions.userId, userId),
-                eq(seasonPassSubscriptions.status, "ACTIVE"),
+                inArray(seasonPassSubscriptions.status, ["ACTIVE", "QUEUED"]),
                 lte(seasonPassSubscriptions.startAt, mysqlNow()),
                 gte(seasonPassSubscriptions.endAt, mysqlNow()),
             ),

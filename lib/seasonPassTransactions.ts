@@ -137,8 +137,12 @@ export async function purchaseSeasonPass(params: {
 
         await conn.commit();
 
-        const currentSubscription = await getCurrentSeasonPassSubscription(params.userId);
-        const endAt = latestSubscription ? nextEndAt : currentSubscription?.endAt ?? nextEndAt;
+        // Everything below runs after the commit, so it must not throw the
+        // request into the catch/rollback path: the charge + subscription are
+        // already durable. endAt is exactly the value we just persisted
+        // (initial: the inserted ACTIVE row; renewal: the queued row), so we use
+        // it directly instead of re-reading it back from the database.
+        const endAt = nextEndAt;
         const queued = Boolean(latestSubscription);
 
         await auditSeasonPassPurchase(params.request, {
@@ -199,7 +203,10 @@ export async function claimSeasonPass(params: {
     role?: string | null;
     request: Request;
 }) {
-    const mockDate = params.role === "ADMIN"
+    // mockDate is a dev/test affordance for time-travelling the reward board.
+    // It must never grant real rewards in production, even for ADMIN accounts.
+    const allowMockDate = params.role === "ADMIN" && process.env.NODE_ENV !== "production";
+    const mockDate = allowMockDate
         ? parseMockDateKey(new URL(params.request.url).searchParams.get("mockDate"))
         : null;
     const now = mockDate ? buildThaiDateAtCurrentTime(mockDate) : new Date();
