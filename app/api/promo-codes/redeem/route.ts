@@ -81,9 +81,16 @@ export async function POST(request: NextRequest) {
         }
 
         const result = await db.transaction(async (tx) => {
-            const promo = await tx.query.promoCodes.findFirst({
-                where: eq(promoCodes.code, code),
-            });
+            // Lock the promo row FOR UPDATE so concurrent redeems of the same code
+            // are serialized. Without it, parallel requests all read the same
+            // usedCount / per-user usage snapshot and each grant credit, bypassing
+            // usageLimit and usagePerUser to mint unlimited free credit.
+            const lockedPromos = await tx
+                .select()
+                .from(promoCodes)
+                .where(eq(promoCodes.code, code))
+                .for("update");
+            const promo = lockedPromos[0];
 
             if (!promo) {
                 throw new Error("ไม่พบโค้ดนี้ในระบบ");
