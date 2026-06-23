@@ -119,7 +119,7 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                     <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                         {/* Username */}
                         <div className="space-y-2">
-                            <label htmlFor="reg-username" className="text-sm text-[#5f6f82] dark:text-muted-foreground">ชื่อผู้ใช้งาน</label>
+                            <label htmlFor="reg-username" className="text-sm text-[#5f6f82] dark:text-muted-foreground">ชื่อผู้ใช้งาน <span className="text-red-500" aria-hidden="true">*</span></label>
                             <Input
                                 id="reg-username"
                                 placeholder="username"
@@ -151,7 +151,7 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
 
                         {/* Password */}
                         <div className="space-y-2">
-                            <label htmlFor="reg-password" className="text-sm text-[#5f6f82] dark:text-muted-foreground">รหัสผ่าน</label>
+                            <label htmlFor="reg-password" className="text-sm text-[#5f6f82] dark:text-muted-foreground">รหัสผ่าน <span className="text-red-500" aria-hidden="true">*</span></label>
                             <div className="relative">
                                 <Input
                                     id="reg-password"
@@ -177,7 +177,7 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
 
                         {/* Confirm Password */}
                         <div className="space-y-2">
-                            <label htmlFor="reg-confirm-password" className="text-sm text-[#5f6f82] dark:text-muted-foreground">ยืนยันรหัสผ่าน</label>
+                            <label htmlFor="reg-confirm-password" className="text-sm text-[#5f6f82] dark:text-muted-foreground">ยืนยันรหัสผ่าน <span className="text-red-500" aria-hidden="true">*</span></label>
                             <Input
                                 id="reg-confirm-password"
                                 type="password"
@@ -191,7 +191,7 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                         </div>
 
                         <div className="space-y-2">
-                            <label htmlFor="reg-email" className="text-sm text-[#5f6f82] dark:text-muted-foreground">อีเมล</label>
+                            <label htmlFor="reg-email" className="text-sm text-[#5f6f82] dark:text-muted-foreground">อีเมล <span className="text-red-500" aria-hidden="true">*</span></label>
                             <Input
                                 id="reg-email"
                                 type="email"
