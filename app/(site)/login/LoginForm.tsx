@@ -117,10 +117,10 @@ export function LoginForm({ logoUrl, turnstileConfigError = null }: Readonly<Log
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {/* Username */}
                         <div className="space-y-2">
-                            <label htmlFor="username" className="text-sm text-muted-foreground">ชื่อผู้ใช้งาน</label>
+                            <label htmlFor="username" className="text-sm text-muted-foreground">ชื่อผู้ใช้งาน หรืออีเมล</label>
                             <Input
                                 id="username"
-                                placeholder="username"
+                                placeholder="username หรืออีเมล"
                                 autoComplete="username"
                                 className="h-12 bg-muted/50 border-border rounded-xl transition-colors"
                                 value={formData.username}
