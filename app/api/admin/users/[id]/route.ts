@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { mysqlNow } from "@/lib/utils/date";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { requireAnyPermissionWithCsrf, requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { getPointCurrencyName } from "@/lib/currencySettings";
@@ -18,6 +19,8 @@ function createAdminUserUpdateSchema(pointCurrencyName: string) {
         pointBalance: z.coerce.number().finite(`${pointCurrencyName}ต้องเป็นตัวเลข`).int(`${pointCurrencyName}ต้องเป็นจำนวนเต็ม`).min(0, `${pointCurrencyName}ต้องเป็นจำนวนเต็มที่ไม่ติดลบ`).max(MAX_INTEGER_BALANCE, `${pointCurrencyName}ต้องไม่เกิน 2,147,483,647`).optional(),
         lifetimePoints: z.coerce.number().finite(`${pointCurrencyName}สะสมต้องเป็นตัวเลข`).int(`${pointCurrencyName}สะสมต้องเป็นจำนวนเต็ม`).min(0, `${pointCurrencyName}สะสมต้องเป็นจำนวนเต็มที่ไม่ติดลบ`).max(MAX_INTEGER_BALANCE, `${pointCurrencyName}สะสมต้องไม่เกิน 2,147,483,647`).optional(),
         role: z.string().trim().min(1).optional(),
+        banned: z.boolean().optional(),
+        banReason: z.string().trim().max(255, "เหตุผลการระงับต้องไม่เกิน 255 ตัวอักษร").optional(),
     }).refine(
         (data) => Object.values(data).some((v) => v !== undefined),
         { message: "ต้องระบุข้อมูลที่ต้องการแก้ไขอย่างน้อย 1 ฟิลด์" }
@@ -57,13 +60,18 @@ export async function PATCH(
                 { status: 400 }
             );
         }
-        const { creditBalance, totalTopup, pointBalance, lifetimePoints, role } = parsed.data;
+        const { creditBalance, totalTopup, pointBalance, lifetimePoints, role, banned, banReason } = parsed.data;
 
         if (role !== undefined) {
             const rolePermissionCheck = await requirePermission(PERMISSIONS.USER_MANAGE_ROLE);
             if (!rolePermissionCheck.success) {
                 return NextResponse.json({ error: "ไม่มีสิทธิ์เปลี่ยนบทบาทผู้ใช้" }, { status: 403 });
             }
+        }
+
+        // Guard against an admin locking themselves out of their own account.
+        if (banned === true && id === authCheck.userId) {
+            return NextResponse.json({ error: "ไม่สามารถระงับบัญชีของตนเองได้" }, { status: 400 });
         }
 
         const existingUser = await db.query.users.findFirst({ where: eq(users.id, id) });
@@ -92,13 +100,24 @@ export async function PATCH(
             updateData.role = role.toUpperCase();
             changes.push({ field: "role", old: existingUser.role, new: role.toUpperCase() });
         }
+        if (banned !== undefined) {
+            updateData.bannedAt = banned ? mysqlNow() : null;
+            updateData.banReason = banned ? (banReason ?? null) : null;
+            changes.push({ field: "banned", old: String(Boolean(existingUser.bannedAt)), new: String(banned) });
+        }
 
         await db.update(users).set(updateData).where(eq(users.id, id));
 
+        const auditAction = banned === true
+            ? AUDIT_ACTIONS.USER_BAN
+            : banned === false
+                ? AUDIT_ACTIONS.USER_UNBAN
+                : AUDIT_ACTIONS.USER_UPDATE;
+
         await auditFromRequest(request, {
-            action: AUDIT_ACTIONS.USER_UPDATE, resource: "User", resourceId: id,
+            action: auditAction, resource: "User", resourceId: id,
             resourceName: existingUser.username,
-            details: { resourceName: existingUser.username, changes },
+            details: { resourceName: existingUser.username, changes, banReason: banned ? (banReason ?? null) : undefined },
         });
 
         // ✅ ใช้ข้อมูลที่มีอยู่แล้ว — ไม่ต้อง query ซ้ำ
@@ -112,6 +131,9 @@ export async function PATCH(
                 pointBalance: (updateData.pointBalance as number) ?? Number(existingUser.pointBalance),
                 lifetimePoints: (updateData.lifetimePoints as number) ?? Number(existingUser.lifetimePoints),
                 role: (updateData.role as string) ?? existingUser.role,
+                bannedAt: banned !== undefined
+                    ? (updateData.bannedAt as string | null)
+                    : existingUser.bannedAt,
             },
         });
     } catch (error) {

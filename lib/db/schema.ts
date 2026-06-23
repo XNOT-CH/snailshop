@@ -29,6 +29,8 @@ export const users = mysqlTable("User", {
     password: varchar("password", { length: 255 }).notNull(),
     image: text("image"),
     role: varchar("role", { length: 50 }).default("USER").notNull(),
+    bannedAt: datetime("bannedAt", { mode: "string" }),
+    banReason: varchar("banReason", { length: 255 }),
     phone: varchar("phone", { length: 20 }),
     phoneVerified: boolean("phoneVerified").default(false).notNull(),
     emailVerified: boolean("emailVerified").default(false).notNull(),

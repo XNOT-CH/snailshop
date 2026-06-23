@@ -24,5 +24,7 @@ declare module "next-auth/jwt" {
         role?: string;
         username?: string;
         permissions?: string[];
+        /** Epoch ms of the last time role/permissions were synced from the DB. */
+        permsRefreshedAt?: number;
     }
 }

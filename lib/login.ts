@@ -1,5 +1,5 @@
 import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { db, users, roles } from "@/lib/db";
 import { getUserPermissions } from "@/lib/permissions";
 import {
@@ -19,11 +19,21 @@ import { loginSchema } from "@/lib/validations";
 export const LEGACY_LOGIN_DEPRECATED_MESSAGE =
     "Legacy login endpoint is disabled. Use NextAuth credentials sign-in instead.";
 
+/**
+ * Constant bcrypt hash (cost 10, matching how real passwords are hashed) used to
+ * run a throwaway compare when the username does not exist. This keeps the
+ * response time of "user not found" close to "wrong password" so attackers
+ * cannot enumerate valid usernames via timing. Never matches any real password.
+ */
+const DUMMY_PASSWORD_HASH =
+    "$2b$10$t21sBHsUFjAcnuNjBX5xL.UxGT7uteSXNWBXV9Bho75MQUB4a9AzW";
+
 export type LoginFailureCode =
     | "INVALID_PAYLOAD"
     | "TURNSTILE_FAILED"
     | "RATE_LIMITED"
-    | "INVALID_CREDENTIALS";
+    | "INVALID_CREDENTIALS"
+    | "ACCOUNT_BANNED";
 
 type LoginPayload = {
     username?: unknown;
@@ -195,11 +205,22 @@ export async function authenticateLoginAttempt({
         await sleep(delay);
     }
 
+    // The form accepts a username OR an email (see loginSchema message). Emails
+    // are stored lower-cased at registration, so match the email column against
+    // the normalized value while leaving the username match to MySQL's
+    // case-insensitive collation.
     const user = await db.query.users.findFirst({
-        where: eq(users.username, username),
+        where: or(
+            eq(users.username, username),
+            eq(users.email, rateLimitUsername)
+        ),
     });
 
     if (!user) {
+        // Run a throwaway compare so the "user not found" path costs roughly the
+        // same time as the "wrong password" path below, preventing username
+        // enumeration via response timing.
+        await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
         await recordFailedLoginShared(userIdentifier);
         await recordFailedLoginIpShared(ipIdentifier);
         await writeAudit(onAudit, {
@@ -235,6 +256,26 @@ export async function authenticateLoginAttempt({
             status: 401,
             code: "INVALID_CREDENTIALS",
             message: "ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง",
+            ipAddress: clientIp,
+        };
+    }
+
+    // Credentials are valid — only now do we reveal a ban, so it cannot be used
+    // to probe which accounts exist. Banned accounts are denied a session.
+    if (user.bannedAt) {
+        await writeAudit(onAudit, {
+            action: "LOGIN_FAILED",
+            userId: user.id,
+            resourceName: username,
+            status: "FAILURE",
+            reason: "บัญชีถูกระงับการใช้งาน",
+            ipAddress: clientIp,
+        });
+        return {
+            success: false,
+            status: 403,
+            code: "ACCOUNT_BANNED",
+            message: "บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อผู้ดูแลระบบ",
             ipAddress: clientIp,
         };
     }

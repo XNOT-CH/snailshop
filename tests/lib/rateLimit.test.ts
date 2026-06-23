@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   checkLoginRateLimit,
   recordFailedLogin,
@@ -207,6 +207,41 @@ describe("rateLimit utilities", () => {
         headers: { "x-forwarded-for": "unknown", "x-real-ip": "198.51.100.20" },
       });
       expect(getClientIp(req)).toBe("198.51.100.20");
+    });
+
+    describe("in production", () => {
+      afterEach(() => {
+        vi.unstubAllEnvs();
+      });
+
+      it("trusts only cf-connecting-ip and ignores spoofable headers", () => {
+        vi.stubEnv("NODE_ENV", "production");
+        const req = new Request("http://localhost", {
+          headers: {
+            "cf-connecting-ip": "203.0.113.10",
+            "x-forwarded-for": "1.2.3.4",
+            "x-real-ip": "10.0.0.1",
+          },
+        });
+        expect(getClientIp(req)).toBe("203.0.113.10");
+      });
+
+      it("returns unknown when cf-connecting-ip is absent (no XFF fallback)", () => {
+        vi.stubEnv("NODE_ENV", "production");
+        const req = new Request("http://localhost", {
+          headers: { "x-forwarded-for": "1.2.3.4", "x-real-ip": "10.0.0.1" },
+        });
+        expect(getClientIp(req)).toBe("unknown");
+      });
+
+      it("honors an operator-pinned trusted header", () => {
+        vi.stubEnv("NODE_ENV", "production");
+        vi.stubEnv("TRUSTED_PROXY_IP_HEADER", "x-real-ip");
+        const req = new Request("http://localhost", {
+          headers: { "cf-connecting-ip": "203.0.113.10", "x-real-ip": "10.0.0.1" },
+        });
+        expect(getClientIp(req)).toBe("10.0.0.1");
+      });
     });
   });
 

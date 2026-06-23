@@ -854,6 +854,26 @@ function isUsableClientIp(value: string) {
 }
 
 export function getClientIp(request: Request): string {
+    // Operators can pin the single header their trusted proxy/CDN sets. Trusting
+    // exactly one header is the only way to make IP-based rate limiting
+    // spoof-resistant: any header the client can also set is forgeable.
+    const trustedHeader = process.env.TRUSTED_PROXY_IP_HEADER?.trim().toLowerCase();
+    if (trustedHeader) {
+        const value = getFirstHeaderValue(request.headers.get(trustedHeader));
+        return isUsableClientIp(value) ? value : "unknown";
+    }
+
+    if (process.env.NODE_ENV === "production") {
+        // In production all legitimate traffic arrives via Cloudflare, which
+        // overwrites cf-connecting-ip with the real client IP. x-forwarded-for /
+        // x-real-ip are client-controllable, so honoring them would let an
+        // attacker reaching the origin directly spoof a rotating IP and bypass
+        // the IP-based login throttle entirely.
+        const cfIp = getFirstHeaderValue(request.headers.get("cf-connecting-ip"));
+        return isUsableClientIp(cfIp) ? cfIp : "unknown";
+    }
+
+    // Non-production: accept the common proxy headers for local/dev convenience.
     const candidates = [
         getFirstHeaderValue(request.headers.get("cf-connecting-ip")),
         getFirstHeaderValue(request.headers.get("x-forwarded-for")),

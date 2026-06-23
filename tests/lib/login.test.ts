@@ -7,12 +7,13 @@ vi.mock("@/lib/db", () => ({
       roles: { findFirst: vi.fn() },
     },
   },
-  users: { username: "username" },
+  users: { username: "username", email: "email" },
   roles: { code: "code" },
 }));
 
 vi.mock("drizzle-orm", () => ({
-  eq: vi.fn(),
+  eq: vi.fn((column, value) => ({ column, value })),
+  or: vi.fn((...conditions) => ({ or: conditions })),
 }));
 
 vi.mock("bcryptjs", () => ({
@@ -93,6 +94,36 @@ describe("authenticateLoginAttempt", () => {
     expect(eq).toHaveBeenCalledWith("username", "DemoUser");
   });
 
+  it("looks up by username or normalized email", async () => {
+    await authenticateLoginAttempt({
+      payload: { username: "Demo@Example.com", password: "secret" },
+      onAudit: audit,
+    });
+
+    expect(eq).toHaveBeenCalledWith("username", "Demo@Example.com");
+    expect(eq).toHaveBeenCalledWith("email", "demo@example.com");
+  });
+
+  it("authenticates a user who signs in with their email", async () => {
+    vi.mocked(db.query.users.findFirst).mockResolvedValue({
+      id: "u1",
+      username: "demo",
+      password: "hashed",
+      role: "USER",
+      email: "demo@example.com",
+      image: null,
+      name: "Demo",
+    } as never);
+    vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
+
+    const result = await authenticateLoginAttempt({
+      payload: { username: "demo@example.com", password: "secret" },
+      onAudit: audit,
+    });
+
+    expect(result.success).toBe(true);
+  });
+
   it("skips turnstile failure when verifier passes without a token", async () => {
     await authenticateLoginAttempt({
       payload: { username: "demo", password: "secret" },
@@ -143,6 +174,33 @@ describe("authenticateLoginAttempt", () => {
     expect(result.user.username).toBe("demo");
     expect(clearLoginAttemptsShared).toHaveBeenCalledWith("user:demo");
     expect(audit).toHaveBeenCalled();
+  });
+
+  it("denies a banned user even with correct credentials", async () => {
+    vi.mocked(db.query.users.findFirst).mockResolvedValue({
+      id: "u1",
+      username: "demo",
+      password: "hashed",
+      role: "USER",
+      email: "demo@example.com",
+      image: null,
+      name: "Demo",
+      bannedAt: "2026-01-01 00:00:00",
+    } as never);
+    vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
+
+    const result = await authenticateLoginAttempt({
+      payload: { username: "demo", password: "secret" },
+      onAudit: audit,
+    });
+
+    expect(result.success).toBe(false);
+    if (result.success) {
+      throw new Error("Expected login failure");
+    }
+    expect(result.status).toBe(403);
+    expect(result.code).toBe("ACCOUNT_BANNED");
+    expect(clearLoginAttemptsShared).not.toHaveBeenCalled();
   });
 
   it("applies progressive delay when configured", async () => {

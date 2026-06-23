@@ -29,10 +29,11 @@ async function getAuthenticatedUserContext(): Promise<PermissionCheckResult> {
 
     const user = await db.query.users.findFirst({
         where: eq(users.id, session.user.id),
-        columns: { id: true, role: true },
+        columns: { id: true, role: true, bannedAt: true },
     });
 
     if (!user) return { success: false, error: "ไม่พบข้อมูลผู้ใช้งาน" };
+    if (user.bannedAt) return { success: false, error: "บัญชีถูกระงับการใช้งาน" };
 
     const roleRecord = await db.query.roles.findFirst({
         where: eq(roles.code, user.role),
@@ -134,6 +135,16 @@ export async function isAuthenticated(): Promise<AuthCheckResult> {
 
     if (!session?.user) return { success: false, error: "ไม่ได้เข้าสู่ระบบ" };
     if (!session.user.id) return { success: false, error: "ไม่พบข้อมูลผู้ใช้งาน" };
+
+    // A banned account keeps a valid session cookie for up to 30 days, so deny
+    // here too — otherwise a banned user could still hit purchase/chat routes
+    // that only require authentication, not a specific permission.
+    const user = await db.query.users.findFirst({
+        where: eq(users.id, session.user.id),
+        columns: { bannedAt: true },
+    });
+    if (!user) return { success: false, error: "ไม่พบข้อมูลผู้ใช้งาน" };
+    if (user.bannedAt) return { success: false, error: "บัญชีถูกระงับการใช้งาน" };
 
     return { success: true, userId: session.user.id };
 }
