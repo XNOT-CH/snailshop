@@ -1,13 +1,21 @@
+import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { AlertCircle, Clock3, FileCheck, ImageIcon, Wallet } from "lucide-react";
 import { SlipTable } from "@/components/admin/SlipTable";
 import { db, topups } from "@/lib/db";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 import { decryptTopupSensitiveFields } from "@/lib/sensitiveData";
 import { buildAdminSlipImageUrl } from "@/lib/slipStorage";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminSlipsPage() {
+    const access = await requirePermission(PERMISSIONS.SLIP_VIEW);
+    if (!access.success) {
+        redirect("/admin?error=คุณไม่มีสิทธิ์ตรวจสอบสลิป");
+    }
+
     const pendingSlips = await db.query.topups.findMany({
         where: eq(topups.status, "PENDING"),
         with: { user: true },

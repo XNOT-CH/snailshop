@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 
 export async function RecentTransactions() {
     const orderList = await db.query.orders.findMany({
+        where: (t, { isNull }) => isNull(t.deletedAt),
         limit: 5,
         orderBy: (t, { desc }) => desc(t.purchasedAt),
         with: {

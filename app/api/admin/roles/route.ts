@@ -6,7 +6,7 @@ import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
 import { roleSchema } from "@/lib/validations/content";
-import { PERMISSIONS } from "@/lib/permissions";
+import { PERMISSIONS, normalizePermissionSelection } from "@/lib/permissions";
 import { resolveUniqueRoleCode } from "@/lib/roleCode";
 import { contentApiError } from "@/lib/features/content/apiResponse";
 
@@ -29,6 +29,9 @@ export async function POST(request: Request) {
         const result = await validateBody(request, roleSchema);
         if ("error" in result) return result.error;
         const { name, description, permissions } = result.data;
+        // Pull in dependent permissions (e.g. SLIP_APPROVE implies SLIP_VIEW +
+        // ADMIN_PANEL) so a created role isn't left with unusable dangling perms.
+        const normalizedPermissions = normalizePermissionSelection(permissions);
 
         const newId = crypto.randomUUID();
         const roleCode = await resolveUniqueRoleCode({
@@ -42,7 +45,7 @@ export async function POST(request: Request) {
 
         await db.insert(roles).values({
             id: newId, name, code: roleCode, description: description || null,
-            permissions: permissions.length > 0 ? permissions : null,
+            permissions: normalizedPermissions.length > 0 ? normalizedPermissions : null,
             sortOrder: 0, isSystem: false,
             createdAt: mysqlNow(),
             updatedAt: mysqlNow(),

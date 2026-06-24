@@ -1,5 +1,3 @@
-"use server";
-
 import { NextResponse } from "next/server";
 import { db, roles } from "@/lib/db";
 import { eq } from "drizzle-orm";
@@ -36,22 +34,33 @@ export async function PUT(request: Request, { params }: RouteParams) {
         const existingRole = await db.query.roles.findFirst({ where: eq(roles.id, id) });
         if (!existingRole) return contentApiError("Role not found", { status: 404 });
 
-        const safeRoleCode = await resolveUniqueRoleCode({
-            name,
-            requestedCode: code,
-            currentCode: existingRole.code,
-            fallbackSeed: id,
-            isTaken: async (candidate) => {
-                const conflict = await db.query.roles.findFirst({ where: eq(roles.code, candidate) });
-                return Boolean(conflict && conflict.id !== existingRole.id);
-            },
-        });
+        // System roles keep their original code and permissions. Changing a system
+        // role's permissions would silently grant/revoke for every user of that base
+        // role (the DB permissions are merged on top of the hardcoded defaults), and
+        // renaming its code would break permission resolution. Only cosmetic fields
+        // (name/description/icon/sortOrder) may change. DELETE already blocks them.
+        const isSystemRole = existingRole.isSystem;
+
+        const safeRoleCode = isSystemRole
+            ? existingRole.code
+            : await resolveUniqueRoleCode({
+                name,
+                requestedCode: code,
+                currentCode: existingRole.code,
+                fallbackSeed: id,
+                isTaken: async (candidate) => {
+                    const conflict = await db.query.roles.findFirst({ where: eq(roles.code, candidate) });
+                    return Boolean(conflict && conflict.id !== existingRole.id);
+                },
+            });
 
         const normalizedPermissions = normalizePermissionSelection(permissions);
 
         const newData = {
             name, code: safeRoleCode, iconUrl: iconUrl || null, description: description || null,
-            permissions: normalizedPermissions.length > 0 ? normalizedPermissions : null,
+            permissions: isSystemRole
+                ? existingRole.permissions
+                : (normalizedPermissions.length > 0 ? normalizedPermissions : null),
             sortOrder: sortOrder === undefined ? existingRole.sortOrder : sortOrder,
         };
         await db.update(roles).set(newData).where(eq(roles.id, id));

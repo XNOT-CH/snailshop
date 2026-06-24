@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { eq, or } from "drizzle-orm";
 import { db, users, roles } from "@/lib/db";
 import { getUserPermissions } from "@/lib/permissions";
+import { mysqlNow } from "@/lib/utils/date";
 import {
     checkLoginIpRateLimitShared,
     checkLoginRateLimitShared,
@@ -281,6 +282,15 @@ export async function authenticateLoginAttempt({
     }
 
     await clearLoginAttemptsShared(userIdentifier);
+
+    // Stamp the login time for the "active users today" dashboard KPI.
+    // Non-critical: never block or fail a valid login if this write errors.
+    try {
+        await db.update(users).set({ lastLoginAt: mysqlNow() }).where(eq(users.id, user.id));
+    } catch {
+        // Ignore — analytics stamp only.
+    }
+
     await writeAudit(onAudit, {
         action: "LOGIN",
         userId: user.id,

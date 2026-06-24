@@ -62,10 +62,14 @@ export const users = mysqlTable("User", {
     ticketBalance: int("ticketBalance").default(0).notNull(),
     totalTopup: decimal("totalTopup", { precision: 10, scale: 2 }).default("0.00").notNull(),
     lifetimePoints: int("lifetimePoints").default(0).notNull(),
+    // Stamped on each successful credential login. Powers the dashboard
+    // "active users today" KPI. NULL = has not logged in since the column existed.
+    lastLoginAt: datetime("lastLoginAt", { mode: "string" }),
     createdAt: now(),
     updatedAt: updatedAt(),
 }, (t) => [
     index("idx_user_email").on(t.email),
+    index("idx_user_lastLoginAt").on(t.lastLoginAt),
 ]);
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -256,10 +260,14 @@ export const topups = mysqlTable("Topup", {
     rejectReason: varchar("rejectReason", { length: 500 }),
     receiverName: text("receiverName"),
     receiverBank: text("receiverBank"),
+    // Channel the top-up came through ("bank" | "truewallet"), captured from slip
+    // verification. Powers the dashboard top-up channel distribution. NULL = legacy.
+    paymentMethod: varchar("paymentMethod", { length: 20 }),
     createdAt: now(),
 }, (t) => [
     index("idx_topup_userId_createdAt").on(t.userId, t.createdAt),
     index("idx_topup_status_createdAt").on(t.status, t.createdAt),
+    index("idx_topup_status_paymentMethod").on(t.status, t.paymentMethod),
 ]);
 
 export const topupsRelations = relations(topups, ({ one }) => ({

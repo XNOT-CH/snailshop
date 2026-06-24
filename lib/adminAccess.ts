@@ -39,6 +39,7 @@ const ADMIN_PAGE_RULES: AdminAccessRule[] = [
 const ADMIN_API_RULES: AdminAccessRule[] = [
     { path: "/api/admin/auto-delete", permission: PERMISSIONS.PRODUCT_DELETE },
     { path: "/api/admin/chat", permission: PERMISSIONS.CHAT_VIEW },
+    { path: "/api/admin/dashboard", permission: PERMISSIONS.DASHBOARD_VIEW },
     { path: "/api/admin/export", permission: PERMISSIONS.EXPORT_DATA },
     { path: "/api/admin/news", permission: PERMISSIONS.CONTENT_VIEW },
     { path: "/api/admin/popups", permission: PERMISSIONS.CONTENT_VIEW },

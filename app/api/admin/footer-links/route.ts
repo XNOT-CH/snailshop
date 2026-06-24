@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, footerWidgetSettings, footerLinks } from "@/lib/db";
 import { max } from "drizzle-orm";
 import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
 import { footerLinkSchema } from "@/lib/validations/content";
 import { FOOTER_WIDGET_SETTINGS_SINGLETON_ID } from "@/lib/db/singletons";
@@ -47,6 +48,16 @@ export async function POST(request: NextRequest) {
         const newId = crypto.randomUUID();
         await db.insert(footerLinks).values({ id: newId, label, href, column: column ?? "services", openInNewTab: openInNewTab ?? false, sortOrder: nextSortOrder, createdAt: mysqlNow(), updatedAt: mysqlNow() });
         const link = await db.query.footerLinks.findFirst({ where: (t, { eq }) => eq(t.id, newId) });
+
+        await auditFromRequest(request, {
+            userId: authCheck.userId,
+            action: AUDIT_ACTIONS.SETTINGS_UPDATE,
+            resource: "FooterLink",
+            resourceId: newId,
+            resourceName: label,
+            details: { operation: "create", label, href, column: column ?? "services" },
+        });
+
         return NextResponse.json(link, { status: 201 });
     } catch (error) {
         console.error("Error creating footer link:", error);

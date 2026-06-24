@@ -29,6 +29,7 @@ export async function createPendingTopup(input: {
         userId: input.userId,
         requestedAmount: input.requestedAmount,
         proofImage: input.proofImage,
+        verifyTarget: input.verifyTarget,
         createdAt: mysqlNow(),
     })));
 

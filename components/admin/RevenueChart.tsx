@@ -1,57 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Loader2 } from "lucide-react";
 import { RevenueAreaChart } from "@/components/admin/RevenueAreaChart";
-
-// ─── Placeholder Data ───────────────────────────────────
-const dailyData = [
-    { date: "2026-02-06", revenue: 4200 },
-    { date: "2026-02-07", revenue: 5800 },
-    { date: "2026-02-08", revenue: 3900 },
-    { date: "2026-02-09", revenue: 6700 },
-    { date: "2026-02-10", revenue: 8200 },
-    { date: "2026-02-11", revenue: 9400 },
-    { date: "2026-02-12", revenue: 7100 },
-];
-
-const weeklyData = [
-    { date: "2026-01-19", revenue: 28000 },
-    { date: "2026-01-26", revenue: 35000 },
-    { date: "2026-02-02", revenue: 31000 },
-    { date: "2026-02-09", revenue: 42000 },
-];
-
-const monthlyData = [
-    { date: "2025-03-01", revenue: 48000 },
-    { date: "2025-04-01", revenue: 61000 },
-    { date: "2025-05-01", revenue: 55000 },
-    { date: "2025-06-01", revenue: 67000 },
-    { date: "2025-07-01", revenue: 72000 },
-    { date: "2025-08-01", revenue: 69000 },
-    { date: "2025-09-01", revenue: 78000 },
-    { date: "2025-10-01", revenue: 82000 },
-    { date: "2025-11-01", revenue: 91000 },
-    { date: "2025-12-01", revenue: 105000 },
-    { date: "2026-01-01", revenue: 98000 },
-    { date: "2026-02-01", revenue: 112000 },
-];
-
-const yearlyData = [
-    { date: "2022-01-01", revenue: 480000 },
-    { date: "2023-01-01", revenue: 650000 },
-    { date: "2024-01-01", revenue: 890000 },
-    { date: "2025-01-01", revenue: 1120000 },
-    { date: "2026-01-01", revenue: 1350000 },
-];
 
 type Granularity = "day" | "week" | "month" | "year";
 
-const dataMap: Record<Granularity, typeof dailyData> = {
-    day: dailyData,
-    week: weeklyData,
-    month: monthlyData,
-    year: yearlyData,
-};
+interface RevenuePoint {
+    date: string;
+    revenue: number;
+    [key: string]: string | number;
+}
 
 const granularityLabels: Record<Granularity, string> = {
     day: "วัน",
@@ -63,7 +22,38 @@ const granularityLabels: Record<Granularity, string> = {
 // ─── Component ──────────────────────────────────────────
 export function RevenueChart() {
     const [granularity, setGranularity] = useState<Granularity>("month");
-    const data = dataMap[granularity];
+    const [cache, setCache] = useState<Partial<Record<Granularity, RevenuePoint[]>>>({});
+
+    useEffect(() => {
+        if (cache[granularity]) {
+            return;
+        }
+
+        let cancelled = false;
+
+        fetch(`/api/admin/dashboard/revenue?granularity=${granularity}`, { cache: "no-store" })
+            .then((response) => response.json())
+            .then((json) => {
+                const points: RevenuePoint[] =
+                    json?.success && Array.isArray(json.data) ? json.data : [];
+                if (!cancelled) {
+                    setCache((prev) => ({ ...prev, [granularity]: points }));
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setCache((prev) => ({ ...prev, [granularity]: [] }));
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [granularity, cache]);
+
+    // No cache entry yet = still fetching this granularity for the first time.
+    const showLoader = !cache[granularity];
+    const data = cache[granularity] ?? [];
 
     return (
         <div>
@@ -94,7 +84,18 @@ export function RevenueChart() {
             </div>
 
             {/* Chart */}
-            <RevenueAreaChart data={data} granularity={granularity} />
+            {showLoader ? (
+                <div className="flex h-[350px] items-center justify-center text-sm text-muted-foreground">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    กำลังโหลดข้อมูลรายได้
+                </div>
+            ) : data.length === 0 ? (
+                <div className="flex h-[350px] items-center justify-center text-sm text-muted-foreground">
+                    ยังไม่มีข้อมูลรายได้ในช่วงเวลานี้
+                </div>
+            ) : (
+                <RevenueAreaChart data={data} granularity={granularity} />
+            )}
         </div>
     );
 }

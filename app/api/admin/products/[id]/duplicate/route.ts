@@ -3,6 +3,8 @@ import { db, products } from "@/lib/db";
 import { mysqlNow } from "@/lib/utils/date";
 import { eq } from "drizzle-orm";
 import { requirePermissionWithCsrf } from "@/lib/auth";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
+import { invalidateProductCaches } from "@/lib/cache";
 import { PERMISSIONS } from "@/lib/permissions";
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -23,6 +25,13 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             updatedAt: mysqlNow(),
         });
         const duplicate = await db.query.products.findFirst({ where: eq(products.id, newId) });
+
+        await auditFromRequest(request, {
+            action: AUDIT_ACTIONS.PRODUCT_CREATE, resource: "Product", resourceId: newId, resourceName: duplicate?.name,
+            details: { resourceName: duplicate?.name, duplicatedFrom: id },
+        });
+        await invalidateProductCaches();
+
         return NextResponse.json({ success: true, product: duplicate });
     } catch (error) {
         console.error("[PRODUCT_DUPLICATE]", error);

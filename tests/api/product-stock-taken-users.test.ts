@@ -1,15 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const { isAdminMock, requirePermissionMock } = vi.hoisted(() => ({
-  isAdminMock: vi.fn(),
+const { requirePermissionMock, requirePermissionWithCsrfMock } = vi.hoisted(() => ({
   requirePermissionMock: vi.fn(),
+  requirePermissionWithCsrfMock: vi.fn(),
 }));
 
 vi.mock("@/lib/auth", () => ({
-  isAdmin: isAdminMock,
-  isAdminWithCsrf: isAdminMock,
   requirePermission: requirePermissionMock,
+  requirePermissionWithCsrf: requirePermissionWithCsrfMock,
 }));
 
 vi.mock("@/lib/features/products/queries", () => ({
@@ -30,7 +29,7 @@ vi.mock("@/lib/encryption", () => ({
   }),
 }));
 
-import { isAdmin, requirePermission } from "@/lib/auth";
+import { requirePermission } from "@/lib/auth";
 import { listOtherProductsForTakenUsers, listProductsForStockCheck } from "@/lib/features/products/queries";
 
 const mkParams = (id: string) => ({ params: Promise.resolve({ id }) });
@@ -43,7 +42,7 @@ describe("API: product stock taken users", () => {
   });
 
   it("returns taken users for an existing product stock page", async () => {
-    (isAdmin as any).mockResolvedValue({ success: true });
+    (requirePermission as any).mockResolvedValue({ success: true });
     (listOtherProductsForTakenUsers as any).mockResolvedValue([
       {
         name: "Existing Game",
@@ -67,7 +66,7 @@ describe("API: product stock taken users", () => {
   });
 
   it("keeps the existing unauthorized shape for an existing product stock page", async () => {
-    (isAdmin as any).mockResolvedValue({ success: false, error: "Unauthorized" });
+    (requirePermission as any).mockResolvedValue({ success: false, error: "Unauthorized" });
 
     const { GET } = await import("@/app/api/products/[id]/stock/route");
     const res = await GET(new NextRequest("http://localhost/api/products/p1/stock"), mkParams("p1"));

@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, currencySettings } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
 import { currencySettingsSchema } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -40,6 +41,16 @@ export async function PUT(request: NextRequest) {
             await db.insert(currencySettings).values({ id: "default", name, symbol, code: "POINT", description: description || null, isActive, updatedAt: mysqlNow() });
         }
         const settings = await db.query.currencySettings.findFirst({ where: eq(currencySettings.id, "default") });
+
+        await auditFromRequest(request, {
+            userId: authCheck.userId,
+            action: AUDIT_ACTIONS.SETTINGS_UPDATE,
+            resource: "CurrencySettings",
+            resourceId: "default",
+            resourceName: name,
+            details: { operation: "update", name, symbol, isActive },
+        });
+
         return NextResponse.json(settings);
     } catch {
         return contentApiError("Failed to update currency settings", { status: 500 });

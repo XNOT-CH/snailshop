@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, navItems } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { requirePermissionWithCsrf } from "@/lib/auth";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
 import { navItemSchema } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -24,6 +25,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         if (body.sortOrder !== undefined) updateData.sortOrder = body.sortOrder;
         await db.update(navItems).set(updateData).where(eq(navItems.id, id));
         const item = await db.query.navItems.findFirst({ where: (t, { eq }) => eq(t.id, id) });
+
+        await auditFromRequest(request, {
+            userId: authCheck.userId,
+            action: AUDIT_ACTIONS.SETTINGS_UPDATE,
+            resource: "NavItem",
+            resourceId: id,
+            resourceName: item?.label,
+            details: { operation: "update", changed: Object.keys(updateData) },
+        });
+
         return NextResponse.json(item);
     } catch (error) {
         console.error("[NAV_ITEM_PUT]", error);
@@ -36,7 +47,18 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const { id } = await params;
+        const existing = await db.query.navItems.findFirst({ where: (t, { eq }) => eq(t.id, id) });
         await db.delete(navItems).where(eq(navItems.id, id));
+
+        await auditFromRequest(_req, {
+            userId: authCheck.userId,
+            action: AUDIT_ACTIONS.SETTINGS_UPDATE,
+            resource: "NavItem",
+            resourceId: id,
+            resourceName: existing?.label,
+            details: { operation: "delete", label: existing?.label, href: existing?.href },
+        });
+
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("[NAV_ITEM_DELETE]", error);

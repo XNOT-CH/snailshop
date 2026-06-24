@@ -2,6 +2,7 @@
 import { db, footerLinks } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { requirePermissionWithCsrf } from "@/lib/auth";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
 import { footerLinkSchema } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -24,6 +25,16 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         if (body.sortOrder !== undefined) updateData.sortOrder = body.sortOrder;
         await db.update(footerLinks).set(updateData).where(eq(footerLinks.id, id));
         const link = await db.query.footerLinks.findFirst({ where: (t, { eq }) => eq(t.id, id) });
+
+        await auditFromRequest(request, {
+            userId: authCheck.userId,
+            action: AUDIT_ACTIONS.SETTINGS_UPDATE,
+            resource: "FooterLink",
+            resourceId: id,
+            resourceName: link?.label,
+            details: { operation: "update", changed: Object.keys(updateData) },
+        });
+
         return NextResponse.json(link);
     } catch (error) {
         console.error("[FOOTER_LINK_PUT]", error);
@@ -36,7 +47,18 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const { id } = await params;
+        const existing = await db.query.footerLinks.findFirst({ where: (t, { eq }) => eq(t.id, id) });
         await db.delete(footerLinks).where(eq(footerLinks.id, id));
+
+        await auditFromRequest(_req, {
+            userId: authCheck.userId,
+            action: AUDIT_ACTIONS.SETTINGS_UPDATE,
+            resource: "FooterLink",
+            resourceId: id,
+            resourceName: existing?.label,
+            details: { operation: "delete", label: existing?.label, href: existing?.href },
+        });
+
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("[FOOTER_LINK_DELETE]", error);

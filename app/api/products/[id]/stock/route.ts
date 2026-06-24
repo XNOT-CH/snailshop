@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAdmin, isAdminWithCsrf } from "@/lib/auth";
+import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 import { updateProductStock } from "@/lib/features/products/mutations";
 import { findProductById, listOtherProductsForStockCheck, listOtherProductsForTakenUsers } from "@/lib/features/products/queries";
 import { buildProductStockTakenUsers, findProductStockUserConflict, productStockUserConflictResponseMessage } from "@/lib/features/products/stockValidation";
@@ -11,7 +12,7 @@ interface RouteParams { params: Promise<{ id: string }> }
  * Returns all usernames already taken by OTHER products (for real-time duplicate check in UI).
  */
 export async function GET(_request: NextRequest, { params }: RouteParams) {
-    const authCheck = await isAdmin();
+    const authCheck = await requirePermission(PERMISSIONS.PRODUCT_VIEW);
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
 
     try {
@@ -27,7 +28,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
 }
 
 export async function PUT(request: NextRequest, { params }: RouteParams) {
-    const authCheck = await isAdminWithCsrf(request);
+    const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.PRODUCT_EDIT);
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
 
     try {

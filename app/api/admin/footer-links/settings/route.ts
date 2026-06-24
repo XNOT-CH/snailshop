@@ -4,6 +4,7 @@ import { db, footerWidgetSettings } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { FOOTER_WIDGET_SETTINGS_SINGLETON_ID } from "@/lib/db/singletons";
 import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { PERMISSIONS } from "@/lib/permissions";
 import { contentApiError } from "@/lib/features/content/apiResponse";
 
@@ -47,6 +48,16 @@ export async function PUT(request: NextRequest) {
             await db.insert(footerWidgetSettings).values({ id: FOOTER_WIDGET_SETTINGS_SINGLETON_ID, isActive: isActive ?? true, title: title ?? "เมนูลัด", createdAt: mysqlNow(), updatedAt: mysqlNow() });
         }
         const updated = await getFooterWidgetSettingsRecord();
+
+        await auditFromRequest(request, {
+            userId: authCheck.userId,
+            action: AUDIT_ACTIONS.SETTINGS_UPDATE,
+            resource: "FooterWidgetSettings",
+            resourceId: updated?.id ?? FOOTER_WIDGET_SETTINGS_SINGLETON_ID,
+            resourceName: "Footer Widget Settings",
+            details: { operation: "update", isActive, title, secondaryTitle },
+        });
+
         return NextResponse.json(updated);
     } catch {
         return contentApiError("Failed to update footer settings", { status: 500 });

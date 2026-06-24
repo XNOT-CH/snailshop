@@ -48,6 +48,7 @@ export function buildPendingTopupInsert(input: {
     userId: string;
     requestedAmount: number;
     proofImage: string | null;
+    verifyTarget: TopupVerifyTarget;
     createdAt: string;
 }) {
     return {
@@ -56,6 +57,7 @@ export function buildPendingTopupInsert(input: {
         amount: String(input.requestedAmount),
         proofImage: input.proofImage,
         status: "PENDING",
+        paymentMethod: input.verifyTarget,
         createdAt: input.createdAt,
     };
 }
@@ -114,6 +116,7 @@ export function buildApprovedTopupInsert(input: {
         senderBank: getVerifiedTopupSenderBank(input.verifiedSlip),
         receiverName: getVerifiedTopupReceiverName(input.verifiedSlip),
         receiverBank: getVerifiedTopupReceiverBank(input.verifiedSlip),
+        paymentMethod: input.verifiedSlip.verifyTarget,
         createdAt: input.createdAt,
     };
 }

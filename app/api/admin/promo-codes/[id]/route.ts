@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { deletePromoCode, updatePromoCode } from "@/lib/features/promo/mutations";
 import { findPromoByCode, findPromoById } from "@/lib/features/promo/queries";
 import { serializePromo, type PromoUpdateInput } from "@/lib/features/promo/shared";
@@ -57,6 +58,15 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         const updated = await updatePromoCode(id, body);
 
+        await auditFromRequest(request, {
+            userId: authCheck.userId,
+            action: AUDIT_ACTIONS.PROMO_UPDATE,
+            resource: "PromoCode",
+            resourceId: id,
+            resourceName: updated?.code ?? existing.code,
+            details: { code: updated?.code ?? existing.code },
+        });
+
         return NextResponse.json({
             success: true,
             message: "Promo code updated successfully",
@@ -85,6 +95,16 @@ export async function DELETE(_request: NextRequest, { params }: RouteParams) {
         }
 
         await deletePromoCode(id);
+
+        await auditFromRequest(_request, {
+            userId: authCheck.userId,
+            action: AUDIT_ACTIONS.PROMO_DELETE,
+            resource: "PromoCode",
+            resourceId: id,
+            resourceName: existing.code,
+            details: { code: existing.code },
+        });
+
         return NextResponse.json({ success: true, message: "Promo code deleted successfully" });
     } catch (error) {
         return NextResponse.json({

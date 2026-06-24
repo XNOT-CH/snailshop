@@ -98,6 +98,7 @@ describe("topup builders", () => {
             userId: "u1",
             requestedAmount: 100,
             proofImage: "/private/slips/1.webp",
+            verifyTarget: "bank",
             createdAt: "2026-05-07 10:00:00",
         })).toEqual({
             id: "t1",
@@ -105,6 +106,7 @@ describe("topup builders", () => {
             amount: "100",
             proofImage: "/private/slips/1.webp",
             status: "PENDING",
+            paymentMethod: "bank",
             createdAt: "2026-05-07 10:00:00",
         });
     });
@@ -170,6 +172,7 @@ describe("topup builders", () => {
             senderBank: "กสิกรไทย",
             receiverName: "บริษัท ตัวอย่าง จำกัด",
             receiverBank: "ไทยพาณิชย์",
+            paymentMethod: "bank",
             createdAt: "2026-05-07 10:00:00",
         });
     });

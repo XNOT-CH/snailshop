@@ -172,6 +172,7 @@ describe("topup service", () => {
             amount: "1500",
             proofImage: "/private/slips/t1.webp",
             status: "PENDING",
+            paymentMethod: "bank",
             createdAt: "2026-05-07 10:00:00",
         });
         expect(valuesMock).toHaveBeenCalledWith({
@@ -180,6 +181,7 @@ describe("topup service", () => {
             amount: "1500",
             proofImage: "/private/slips/t1.webp",
             status: "PENDING",
+            paymentMethod: "bank",
             createdAt: "2026-05-07 10:00:00",
             encrypted: true,
         });
@@ -257,6 +259,7 @@ describe("topup service", () => {
             senderBank: "กสิกรไทย",
             receiverName: "บริษัท ตัวอย่าง จำกัด",
             receiverBank: "ไทยพาณิชย์",
+            paymentMethod: "bank",
             createdAt: "2026-05-07 10:00:00",
         });
         expect(txValuesMock).toHaveBeenCalledWith(expect.objectContaining({

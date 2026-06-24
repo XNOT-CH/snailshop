@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission } from "@/lib/auth";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { formatDateInTimeZone } from "@/lib/utils/date";
 import { PERMISSIONS } from "@/lib/permissions";
 import {
@@ -48,6 +49,18 @@ export async function GET(request: NextRequest) {
         }
 
         const { csv, filename } = await getAdminExportPayload({ table, from, to, dateTag });
+
+        // Record who exported what — exports pull whole tables (incl. PII), so the
+        // exfiltration path must be traceable.
+        await auditFromRequest(request, {
+            userId: authCheck.userId,
+            action: AUDIT_ACTIONS.DATA_EXPORT,
+            resource: "Export",
+            resourceId: table,
+            resourceName: filename,
+            details: { table, from, to },
+        });
+
         return csvResponse(csv, filename);
     } catch (error: unknown) {
         console.error("CSV export error:", error);

@@ -82,7 +82,7 @@ export function SlipTable({ slips }: Readonly<SlipTableProps>) {
 
     return (
         <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-            <Table className="min-w-[720px]">
+            <Table className="min-w-full md:min-w-[720px]">
                 <TableHeader>
                     <TableRow className="bg-slate-50/80 hover:bg-slate-50/80">
                         <TableHead className="font-semibold text-slate-600">User</TableHead>
@@ -95,7 +95,7 @@ export function SlipTable({ slips }: Readonly<SlipTableProps>) {
                 <TableBody>
                     {slips.map((slip, index) => (
                         <TableRow key={slip.id} className={index % 2 === 0 ? "bg-white" : "bg-slate-50/35"}>
-                            <TableCell className="font-medium text-slate-800">
+                            <TableCell className="font-medium text-slate-800 break-all">
                                 {slip.user.email || slip.user.username}
                             </TableCell>
                             <TableCell className="font-bold text-indigo-600">

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { db, orders, products, users } from "@/lib/db";
-import { sum, count } from "drizzle-orm";
+import { sum, count, isNull, gte } from "drizzle-orm";
+import { toMySQLDatetime } from "@/lib/utils/date";
 import { requirePermission } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
 import {
@@ -51,10 +52,17 @@ export default async function AdminDashboardPage() {
         }
     }
 
-    const [[{ totalRevenue: rawRevenue, salesCount: rawCount }], , [{ count: rawUsers }]] = await Promise.all([
-        db.select({ totalRevenue: sum(orders.totalPrice), salesCount: count() }).from(orders),
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayStartSql = toMySQLDatetime(todayStart);
+
+    const [[{ totalRevenue: rawRevenue, salesCount: rawCount }], , [{ count: rawUsers }], [{ count: rawActiveUsersToday }]] = await Promise.all([
+        // Exclude soft-deleted orders so revenue/sales KPIs match the rest of the app.
+        db.select({ totalRevenue: sum(orders.totalPrice), salesCount: count() }).from(orders).where(isNull(orders.deletedAt)),
         db.select({ count: count() }).from(products),
         db.select({ count: count() }).from(users),
+        // Active users today = distinct users whose last successful login is today.
+        db.select({ count: count() }).from(users).where(gte(users.lastLoginAt, todayStartSql)),
     ]);
 
     const totalRevenue = Number(rawRevenue || 0);
@@ -79,7 +87,7 @@ export default async function AdminDashboardPage() {
         },
         {
             title: "ผู้ใช้งานวันนี้",
-            value: Math.floor(Number(rawUsers) * 0.3).toLocaleString(),
+            value: Number(rawActiveUsersToday).toLocaleString(),
             icon: UserCheck,
             gradient: "from-emerald-500 to-teal-600",
             lightBg: "bg-emerald-50 dark:bg-emerald-950/30",
@@ -155,7 +163,7 @@ export default async function AdminDashboardPage() {
                                 <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
                                     <ShoppingCart className="h-3.5 w-3.5 text-white" />
                                 </div>
-                                <span className="font-bold">สัดส่วนการขาย</span>
+                                <span className="font-bold">สัดส่วนการเติมเงิน</span>
                             </div>
                             <div className="p-5">
                                 <SalesDistribution />

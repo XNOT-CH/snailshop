@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db, navItems } from "@/lib/db";
 import { max, count } from "drizzle-orm";
 import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
 import { navItemSchema } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -44,6 +45,16 @@ export async function POST(request: NextRequest) {
         const newId = crypto.randomUUID();
         await db.insert(navItems).values({ id: newId, label: body.label, href: body.href, icon: body.icon || null, sortOrder: nextSortOrder, createdAt: mysqlNow(), updatedAt: mysqlNow() });
         const item = await db.query.navItems.findFirst({ where: (t, { eq }) => eq(t.id, newId) });
+
+        await auditFromRequest(request, {
+            userId: authCheck.userId,
+            action: AUDIT_ACTIONS.SETTINGS_UPDATE,
+            resource: "NavItem",
+            resourceId: newId,
+            resourceName: body.label,
+            details: { operation: "create", label: body.label, href: body.href },
+        });
+
         return NextResponse.json(item, { status: 201 });
     } catch (error) {
         console.error("Error creating nav item:", error);

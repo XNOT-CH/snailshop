@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { createPromoCode } from "@/lib/features/promo/mutations";
 import { findPromoByCode, listPromoCodes } from "@/lib/features/promo/queries";
 import { serializePromo } from "@/lib/features/promo/shared";
@@ -43,6 +44,15 @@ export async function POST(request: NextRequest) {
         }
 
         const createdPromo = await createPromoCode(body);
+
+        await auditFromRequest(request, {
+            userId: authCheck.userId,
+            action: AUDIT_ACTIONS.PROMO_CREATE,
+            resource: "PromoCode",
+            resourceId: createdPromo.id,
+            resourceName: createdPromo.code,
+            details: { code: createdPromo.code, codeType: body.codeType, discountType: body.discountType, discountValue: body.discountValue },
+        });
 
         return NextResponse.json({
             success: true,
