@@ -58,14 +58,18 @@ interface PopupFormValue {
 }
 
 const DISMISS_OPTIONS = [
-    { value: "show_always", label: "แสดงทุกครั้งเมื่อเข้าเว็บไซต์" },
+    { value: "session", label: "แสดงครั้งเดียวต่อเซสชัน (จนปิดเบราว์เซอร์)" },
+    { value: "once", label: "แสดงครั้งเดียวถาวร (จนกว่าจะเปลี่ยนรูป)" },
     { value: "hide_1_hour", label: "ซ่อนชั่วคราว 1 ชั่วโมงหลังปิด" },
+    { value: "show_always", label: "แสดงทุกครั้งทุกหน้า (ไม่แนะนำ)" },
 ];
+
+const DEFAULT_DISMISS_OPTION = "session";
 
 function getDismissLabel(value: string) {
     return (
         DISMISS_OPTIONS.find((option) => option.value === value)?.label ||
-        "แสดงทุกครั้งเมื่อเข้าเว็บไซต์"
+        "แสดงทุกครั้งทุกหน้า"
     );
 }
 
@@ -325,7 +329,7 @@ export default function AdminPopupsPage() {
                             ${DISMISS_OPTIONS.map(
                                 (option) =>
                                     `<option value="${option.value}" ${
-                                        (popup?.dismissOption ?? "show_always") === option.value
+                                        (popup?.dismissOption ?? DEFAULT_DISMISS_OPTION) === option.value
                                             ? "selected"
                                             : ""
                                     }>${option.label}</option>`,
@@ -366,7 +370,7 @@ export default function AdminPopupsPage() {
                         "true",
                     dismissOption:
                         (document.getElementById("swal-dismissOption") as HTMLSelectElement)?.value ||
-                        "show_always",
+                        DEFAULT_DISMISS_OPTION,
                 };
             },
         }).then((result) => void handleDialogResult(result, popup));

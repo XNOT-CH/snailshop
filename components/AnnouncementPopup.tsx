@@ -5,8 +5,7 @@ import Image from "next/image";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    clearPopupDismissal,
-    savePopupDismissal,
+    markPopupSeen,
     shouldShowPopup,
 } from "@/lib/client/popupDismissal";
 import { toSafePublicHref } from "@/lib/sanitize";
@@ -82,16 +81,10 @@ export default function AnnouncementPopup({
 
     // Handle close with animation
     const handleClose = () => {
-        // Get dismiss option from the first popup (all popups share the same setting)
-        const dismissOption = popups[0]?.dismissOption || "show_always";
-
-        // If dismiss option is "hide_1_hour", save to localStorage
-        if (dismissOption === "hide_1_hour") {
-            savePopupDismissal(popups);
-        } else {
-            clearPopupDismissal();
-        }
-
+        // Persist the "seen" state per the popup's dismiss option (no-op for
+        // show_always). Marking also happens at display time in the wrapper, so
+        // this mainly covers the standalone-mount path.
+        markPopupSeen(popups);
         setIsVisible(false);
     };
 

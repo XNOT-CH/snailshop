@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { shouldShowPopup } from "@/lib/client/popupDismissal";
+import { markPopupSeen, shouldShowPopup } from "@/lib/client/popupDismissal";
 import type { PopupData } from "@/components/AnnouncementPopup";
 
 // Dynamic import with no SSR to ensure client-side only rendering
@@ -49,6 +49,9 @@ export function AnnouncementPopupWrapper({
 
                 const data = await response.json() as PopupData[];
                 if (!cancelled && Array.isArray(data) && shouldShowPopup(data)) {
+                    // Record as seen at display time so changing pages within the
+                    // same session/window doesn't pop it up again.
+                    markPopupSeen(data);
                     setVisiblePopupState({ pathname, popups: data });
                     return;
                 }
