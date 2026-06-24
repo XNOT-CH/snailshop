@@ -22,12 +22,14 @@ vi.mock("@/lib/db", () => ({
     query: {
       products: { findFirst: vi.fn() },
       users: { findFirst: vi.fn() },
+      roles: { findFirst: vi.fn() },
     },
     update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
     delete: vi.fn().mockReturnValue({ where: vi.fn() }),
   },
   products: { id: "id" },
   users: { id: "id" },
+  roles: { code: "code" },
 }));
 vi.mock("drizzle-orm", () => ({ eq: vi.fn() }));
 vi.mock("@/lib/encryption", () => ({
@@ -248,6 +250,7 @@ describe("API: /api/admin/users/[id] PATCH (comprehensive)", () => {
   it("PATCH updates role to uppercase", async () => {
     (isAdmin as any).mockResolvedValue({ success: true });
     (db.query.users.findFirst as any).mockResolvedValue(EXISTING_USER);
+    (db.query.roles.findFirst as any).mockResolvedValue({ code: "ADMIN" });
     const { PATCH } = await import("@/app/api/admin/users/[id]/route");
     const req = new NextRequest("http://localhost", {
       method: "PATCH", body: JSON.stringify({ role: "admin" }),
@@ -260,6 +263,7 @@ describe("API: /api/admin/users/[id] PATCH (comprehensive)", () => {
   it("PATCH updates all fields at once", async () => {
     (isAdmin as any).mockResolvedValue({ success: true });
     (db.query.users.findFirst as any).mockResolvedValue(EXISTING_USER);
+    (db.query.roles.findFirst as any).mockResolvedValue({ code: "ADMIN" });
     const { PATCH } = await import("@/app/api/admin/users/[id]/route");
     const req = new NextRequest("http://localhost", {
       method: "PATCH",

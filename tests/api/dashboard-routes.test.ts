@@ -27,7 +27,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("drizzle-orm", () => ({
-  eq: vi.fn(), and: vi.fn(), gte: vi.fn(), lte: vi.fn(), count: vi.fn(),
+  eq: vi.fn(), and: vi.fn(), gte: vi.fn(), lte: vi.fn(), count: vi.fn(), isNull: vi.fn(),
 }));
 
 vi.mock("@/lib/encryption", () => ({

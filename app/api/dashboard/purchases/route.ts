@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db, orders } from "@/lib/db";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, isNull } from "drizzle-orm";
 import { decrypt } from "@/lib/encryption";
 import { toMySQLDatetime } from "@/lib/utils/date";
 
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
         const dayEnd = new Date(targetDate); dayEnd.setHours(23, 59, 59, 999);
 
         const orderList = await db.query.orders.findMany({
-            where: and(eq(orders.userId, userId), gte(orders.purchasedAt, toMySQLDatetime(dayStart)), lte(orders.purchasedAt, toMySQLDatetime(dayEnd))),
+            where: and(eq(orders.userId, userId), isNull(orders.deletedAt), gte(orders.purchasedAt, toMySQLDatetime(dayStart)), lte(orders.purchasedAt, toMySQLDatetime(dayEnd))),
             with: { product: true },
             orderBy: (t, { desc }) => desc(t.purchasedAt),
             limit: 20,

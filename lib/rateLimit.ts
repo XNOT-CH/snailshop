@@ -834,16 +834,25 @@ async function checkDistributedWindowRateLimit(
     }
 }
 
-export function checkPurchaseRateLimit(identifier: string) {
-    return checkWindowRateLimit(`purchase:${identifier}`, config.purchase.maxAttempts, config.purchase.windowMs);
+// Money-affecting throttles (purchase/topup/gacha) prefer the Redis-backed
+// counter so the limit is shared across instances and survives restarts. They
+// fall back to the in-memory counter only when Redis is unavailable.
+export async function checkPurchaseRateLimit(identifier: string) {
+    const key = `purchase:${identifier}`;
+    const distributed = await checkDistributedWindowRateLimit(key, config.purchase.maxAttempts, config.purchase.windowMs);
+    return distributed ?? checkWindowRateLimit(key, config.purchase.maxAttempts, config.purchase.windowMs);
 }
 
-export function checkTopupRateLimit(identifier: string) {
-    return checkWindowRateLimit(`topup:${identifier}`, config.topup.maxAttempts, config.topup.windowMs);
+export async function checkTopupRateLimit(identifier: string) {
+    const key = `topup:${identifier}`;
+    const distributed = await checkDistributedWindowRateLimit(key, config.topup.maxAttempts, config.topup.windowMs);
+    return distributed ?? checkWindowRateLimit(key, config.topup.maxAttempts, config.topup.windowMs);
 }
 
-export function checkGachaRateLimit(identifier: string) {
-    return checkWindowRateLimit(`gacha:${identifier}`, config.gacha.maxAttempts, config.gacha.windowMs);
+export async function checkGachaRateLimit(identifier: string) {
+    const key = `gacha:${identifier}`;
+    const distributed = await checkDistributedWindowRateLimit(key, config.gacha.maxAttempts, config.gacha.windowMs);
+    return distributed ?? checkWindowRateLimit(key, config.gacha.maxAttempts, config.gacha.windowMs);
 }
 
 /**

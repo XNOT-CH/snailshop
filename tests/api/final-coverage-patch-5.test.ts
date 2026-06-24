@@ -173,6 +173,7 @@ describe("API: /api/admin/users/[id] (missing paths)", () => {
   it("PATCH returns 404 when user not found (with valid body)", async () => {
     (isAdmin as any).mockResolvedValue(ADMIN_OK);
     (db.query.users.findFirst as any).mockResolvedValue(null);
+    (db.query.roles.findFirst as any).mockResolvedValue({ code: "USER" });
     const { PATCH } = await import("@/app/api/admin/users/[id]/route");
     const res = await PATCH(
       new NextRequest("http://localhost", { method: "PATCH", body: JSON.stringify({ role: "USER" }) }),

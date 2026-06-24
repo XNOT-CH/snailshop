@@ -189,7 +189,7 @@ export async function POST(req: Request) {
     }
 
     const ip = getClientIp(req);
-    const rateLimit = checkGachaRateLimit(`${ip}:grid`);
+    const rateLimit = await checkGachaRateLimit(`${ip}:grid`);
     if (rateLimit.blocked) {
         return NextResponse.json(
             { success: false, message: "กดสุ่มถี่เกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง" },

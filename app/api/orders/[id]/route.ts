@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { auth } from "@/auth";
 import { isAuthenticatedWithCsrf } from "@/lib/auth";
 import { db, orders } from "@/lib/db";
 import { decrypt } from "@/lib/encryption";
+import { mysqlNow } from "@/lib/utils/date";
 import {
     findOwnedOrderById,
     findOwnedOrderWithProductById,
@@ -71,7 +72,11 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ success: false, message: "ไม่พบรายการสั่งซื้อ" }, { status: 404 });
         }
 
-        await db.delete(orders).where(and(eq(orders.id, id), eq(orders.userId, userId)));
+        // Soft-delete: hide from the user's inventory but keep the row so the sale
+        // stays in admin revenue/exports and still counts for new-user promo checks.
+        await db.update(orders)
+            .set({ deletedAt: mysqlNow() })
+            .where(and(eq(orders.id, id), eq(orders.userId, userId), isNull(orders.deletedAt)));
 
         return NextResponse.json({ success: true, message: "ลบรายการเรียบร้อยแล้ว" });
     } catch (error) {

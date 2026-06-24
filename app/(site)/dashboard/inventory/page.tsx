@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { db, users, orders } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { decrypt } from "@/lib/encryption";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ export default async function InventoryPage() {
     if (!user) redirect("/login");
 
     const orderList = await db.query.orders.findMany({
-        where: eq(orders.userId, user.id),
+        where: and(eq(orders.userId, user.id), isNull(orders.deletedAt)),
         with: { product: true },
         orderBy: (t, { desc }) => desc(t.purchasedAt),
     });

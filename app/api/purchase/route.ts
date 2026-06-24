@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
     }
 
     const ip = getClientIp(request);
-    const rateLimit = checkPurchaseRateLimit(ip);
+    const rateLimit = await checkPurchaseRateLimit(ip);
     if (rateLimit.blocked) {
         return NextResponse.json(
             { success: false, message: "คำขอซื้อถี่เกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง" },
@@ -120,6 +120,11 @@ export async function POST(request: NextRequest) {
         const qty = typeof quantity === "number" ? quantity : 1;
         if (!Number.isFinite(qty) || qty < 1 || !Number.isInteger(qty)) {
             return NextResponse.json({ success: false, message: "Quantity must be a positive integer" }, { status: 400 });
+        }
+        // Cap a single purchase at 50 units to match the cart checkout limit and
+        // reject absurd quantities before they reach the stock/transaction layer.
+        if (qty > 50) {
+            return NextResponse.json({ success: false, message: "ไม่สามารถซื้อสินค้ามากกว่า 50 รายการในครั้งเดียว" }, { status: 400 });
         }
 
         const authRes = await getAuthUser(csrfAuth.userId);

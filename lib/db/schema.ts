@@ -224,11 +224,16 @@ export const orders = mysqlTable("Order", {
     totalPrice: decimal("totalPrice", { precision: 10, scale: 2 }).notNull(),
     status: varchar("status", { length: 20 }).default("COMPLETED").notNull(),
     purchasedAt: datetime("purchasedAt", { mode: "string" }).default(sql`now()`).notNull(),
+    // Soft-delete marker. A user hiding an order from their inventory sets this
+    // instead of deleting the row, so the sale stays in admin revenue/exports and
+    // still counts toward new-user promo eligibility (which reads order rows).
+    deletedAt: datetime("deletedAt", { mode: "string" }),
 }, (t) => [
     index("idx_order_userId_purchasedAt").on(t.userId, t.purchasedAt),
     index("idx_order_user_status").on(t.userId, t.status),
     index("idx_order_status").on(t.status),
     index("idx_order_purchasedAt").on(t.purchasedAt),
+    index("idx_order_userId_deletedAt").on(t.userId, t.deletedAt),
 ]);
 
 export const ordersRelations = relations(orders, ({ one }) => ({

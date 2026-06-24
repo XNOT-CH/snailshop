@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     const ip = getClientIp(request);
-    const rateLimit = checkPurchaseRateLimit(`${ip}:cart`);
+    const rateLimit = await checkPurchaseRateLimit(`${ip}:cart`);
     if (rateLimit.blocked) {
         return NextResponse.json(
             { success: false, message: "คำขอสั่งซื้อถี่เกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง" },

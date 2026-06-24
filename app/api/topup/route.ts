@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     }
 
     const ip = getClientIp(request);
-    const rateLimit = checkTopupRateLimit(ip);
+    const rateLimit = await checkTopupRateLimit(ip);
     if (rateLimit.blocked) {
         return NextResponse.json(
             { success: false, message: "ส่งคำขอเติมเงินถี่เกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง" },
@@ -240,6 +240,16 @@ export async function POST(request: NextRequest) {
         }
 
         const transactionRef = getVerifiedTopupTransactionRef(verifiedSlip);
+        // The Topup.transactionRef unique index is the last line of defense against
+        // double-crediting the same slip, but MySQL allows multiple NULL/empty values
+        // in a unique index. If the slip yields no usable reference we cannot dedupe
+        // it at the DB level, so reject rather than risk crediting it twice.
+        if (typeof transactionRef !== "string" || transactionRef.trim() === "") {
+            return NextResponse.json(
+                { success: false, message: "ไม่สามารถอ่านเลขอ้างอิงรายการจากสลิปได้ กรุณาลองใหม่หรือติดต่อแอดมิน" },
+                { status: 400 },
+            );
+        }
         if (await hasDuplicateTopupTransactionRef(transactionRef)) {
             return NextResponse.json(
                 { success: false, message: "สลิปนี้เคยใช้เติมเงินแล้ว" },

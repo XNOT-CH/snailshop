@@ -504,7 +504,7 @@ export async function POST(req: Request) {
     }
 
     const ip = getClientIp(req);
-    const rateLimit = checkGachaRateLimit(ip);
+    const rateLimit = await checkGachaRateLimit(ip);
     if (rateLimit.blocked) {
         return NextResponse.json(
             { success: false, message: "กดสุ่มถี่เกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง" },

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db, users, orders, topups } from "@/lib/db";
-import { eq, and, gte, lte, sum, count } from "drizzle-orm";
+import { eq, and, gte, lte, sum, count, isNull } from "drizzle-orm";
 import { toMySQLDatetime } from "@/lib/utils/date";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
         const start = toMySQLDatetime(dayStart);
         const end = toMySQLDatetime(dayEnd);
 
-        const orderFilter = and(eq(orders.userId, user.id), gte(orders.purchasedAt, start), lte(orders.purchasedAt, end));
+        const orderFilter = and(eq(orders.userId, user.id), isNull(orders.deletedAt), gte(orders.purchasedAt, start), lte(orders.purchasedAt, end));
 
         // ✅ รวม 2 queries เป็น 1 + เรียก parallel กับ topup query
         const [[orderStats], [topupRow]] = await Promise.all([

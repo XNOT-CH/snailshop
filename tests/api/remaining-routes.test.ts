@@ -31,7 +31,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("drizzle-orm", () => ({
-  eq: vi.fn(), and: vi.fn(), gte: vi.fn(), lte: vi.fn(), sum: vi.fn(), count: vi.fn(), sql: vi.fn(),
+  eq: vi.fn(), and: vi.fn(), gte: vi.fn(), lte: vi.fn(), sum: vi.fn(), count: vi.fn(), sql: vi.fn(), isNull: vi.fn(),
 }));
 
 const { isAdminMock } = vi.hoisted(() => ({

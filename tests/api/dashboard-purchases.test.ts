@@ -21,7 +21,7 @@ vi.mock("@/lib/db", () => ({
   orders: { userId: "userId", purchasedAt: "purchasedAt", status: "status" },
 }));
 
-vi.mock("drizzle-orm", () => ({ eq: vi.fn(), and: vi.fn(), gte: vi.fn(), lte: vi.fn() }));
+vi.mock("drizzle-orm", () => ({ eq: vi.fn(), and: vi.fn(), gte: vi.fn(), lte: vi.fn(), isNull: vi.fn() }));
 
 import { auth } from "@/auth";
 import { db } from "@/lib/db";

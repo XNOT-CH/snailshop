@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db, users } from "@/lib/db";
+import { db, roles, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { mysqlNow } from "@/lib/utils/date";
@@ -66,6 +66,16 @@ export async function PATCH(
             const rolePermissionCheck = await requirePermission(PERMISSIONS.USER_MANAGE_ROLE);
             if (!rolePermissionCheck.success) {
                 return NextResponse.json({ error: "ไม่มีสิทธิ์เปลี่ยนบทบาทผู้ใช้" }, { status: 403 });
+            }
+
+            // Reject role codes that don't exist — an unknown code would leave the
+            // user with no resolvable permissions and could silently lock them out.
+            const roleExists = await db.query.roles.findFirst({
+                where: eq(roles.code, role.toUpperCase()),
+                columns: { code: true },
+            });
+            if (!roleExists) {
+                return NextResponse.json({ error: "ไม่พบบทบาทนี้ในระบบ" }, { status: 400 });
             }
         }
 

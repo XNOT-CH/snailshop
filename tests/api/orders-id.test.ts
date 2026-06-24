@@ -13,10 +13,11 @@ vi.mock("@/lib/auth", () => ({
     isAuthenticatedWithCsrf: vi.fn(),
 }));
 
-const { whereMock, deleteMock } = vi.hoisted(() => {
+const { whereMock, updateMock, setMock } = vi.hoisted(() => {
     const where = vi.fn();
-    const del = vi.fn(() => ({ where }));
-    return { whereMock: where, deleteMock: del };
+    const set = vi.fn(() => ({ where }));
+    const update = vi.fn(() => ({ set }));
+    return { whereMock: where, updateMock: update, setMock: set };
 });
 
 vi.mock("@/lib/db", () => ({
@@ -26,17 +27,23 @@ vi.mock("@/lib/db", () => ({
                 findFirst: vi.fn(),
             },
         },
-        delete: deleteMock,
+        update: updateMock,
     },
     orders: {
         id: "id",
         userId: "userId",
+        deletedAt: "deletedAt",
     },
+}));
+
+vi.mock("@/lib/utils/date", () => ({
+    mysqlNow: vi.fn(() => "2026-06-24 00:00:00"),
 }));
 
 vi.mock("drizzle-orm", () => ({
     and: vi.fn(),
     eq: vi.fn(),
+    isNull: vi.fn(),
 }));
 
 import { auth } from "@/auth";
@@ -102,7 +109,7 @@ describe("API: /api/orders/[id]", () => {
         const res = await DELETE(mkReq(), mkParams("o-foreign"));
 
         expect(res.status).toBe(404);
-        expect(deleteMock).not.toHaveBeenCalled();
+        expect(updateMock).not.toHaveBeenCalled();
     });
 
     it("DELETE returns 401 when CSRF-backed authentication fails", async () => {
@@ -114,10 +121,10 @@ describe("API: /api/orders/[id]", () => {
 
         expect(res.status).toBe(401);
         expect(body).toEqual({ success: false, message: "Invalid CSRF token" });
-        expect(deleteMock).not.toHaveBeenCalled();
+        expect(updateMock).not.toHaveBeenCalled();
     });
 
-    it("DELETE removes an order for its owner", async () => {
+    it("DELETE soft-deletes an order for its owner", async () => {
         vi.mocked(isAuthenticatedWithCsrf).mockResolvedValue({ success: true, userId: "u1" } as never);
         vi.mocked(db.query.orders.findFirst).mockResolvedValue({
             id: "o1",
@@ -130,7 +137,8 @@ describe("API: /api/orders/[id]", () => {
 
         expect(res.status).toBe(200);
         expect(body.success).toBe(true);
-        expect(deleteMock).toHaveBeenCalled();
+        expect(updateMock).toHaveBeenCalled();
+        expect(setMock).toHaveBeenCalledWith({ deletedAt: "2026-06-24 00:00:00" });
         expect(whereMock).toHaveBeenCalled();
     });
 });
