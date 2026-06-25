@@ -56,10 +56,15 @@ function normalizeDbUrl(rawUrl: string) {
 
 const dbUrl = normalizeDbUrl(process.env.DATABASE_URL ?? "");
 const isTiDB = dbUrl.includes("tidbcloud.com");
+// Pool size cap per Node process. Default raised from 5 -> 20 for prod to avoid
+// starving concurrent DB-touching requests. Tunable via DB_CONNECTION_LIMIT.
+// NOTE: when scaling to N replicas, keep N * limit under MySQL max_connections.
+const connectionLimit =
+    Number(process.env.DB_CONNECTION_LIMIT) || (isProduction ? 20 : 10);
 const poolOptions = (isProduction ? getHyperdrivePoolOptions() : null) ?? {
     uri: dbUrl,
     waitForConnections: true,
-    connectionLimit: isProduction ? 5 : 10,
+    connectionLimit,
     charset: "utf8mb4",
     timezone: "+00:00",
     connectTimeout: 10000,

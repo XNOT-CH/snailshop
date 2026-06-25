@@ -9,6 +9,10 @@ export const CACHE_KEYS = {
     HELP_ARTICLES: "help_articles",
     PRODUCTS_LIST: "products_list",
     ANNOUNCEMENT_POPUPS: "announcement_popups",
+    NAV_ITEMS: "nav_items",
+    FOOTER_LINKS: "footer_links",
+    FOOTER_WIDGET: "footer_widget",
+    PRODUCT_CATEGORIES: "product_categories",
 } as const;
 
 // Default TTL values (in seconds)

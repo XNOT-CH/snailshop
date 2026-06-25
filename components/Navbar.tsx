@@ -5,6 +5,7 @@ import { db, users, navItems, products } from "@/lib/db";
 import { asc, eq } from "drizzle-orm";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getSiteSettings } from "@/lib/getSiteSettings";
+import { cacheOrFetch, CACHE_KEYS } from "@/lib/cache";
 import { Button } from "@/components/ui/button";
 import { ShopDropdown } from "@/components/ShopDropdown";
 import { NavigationDrawer } from "@/components/NavigationDrawer";
@@ -43,15 +44,27 @@ export default async function Navbar() {
               })
             : Promise.resolve(null),
         getSiteSettings(),
-        db.query.navItems.findMany({
-            where: eq(navItems.isActive, true),
-            orderBy: (table, { asc }) => asc(table.sortOrder),
-        }),
-        db.select({ category: products.category })
-            .from(products)
-            .where(eq(products.isSold, false))
-            .groupBy(products.category)
-            .orderBy(asc(products.category)),
+        // Global, identical for every visitor and rarely changed: cache across
+        // requests (short TTL) so the shared navbar doesn't hit MySQL each load.
+        cacheOrFetch(
+            CACHE_KEYS.NAV_ITEMS,
+            async () =>
+                db.query.navItems.findMany({
+                    where: eq(navItems.isActive, true),
+                    orderBy: (table, { asc }) => asc(table.sortOrder),
+                }),
+            60,
+        ),
+        cacheOrFetch(
+            CACHE_KEYS.PRODUCT_CATEGORIES,
+            async () =>
+                db.select({ category: products.category })
+                    .from(products)
+                    .where(eq(products.isSold, false))
+                    .groupBy(products.category)
+                    .orderBy(asc(products.category)),
+            60,
+        ),
         getCurrencySettings(),
     ]);
     const siteName = resolveSiteName(siteSettings?.heroTitle);

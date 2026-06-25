@@ -7,6 +7,7 @@ import { mysqlNow } from "@/lib/utils/date";
 import { validateBody } from "@/lib/validations/validate";
 import { siteSettingsSchema } from "@/lib/validations/settings";
 import { SITE_SETTINGS_SINGLETON_ID } from "@/lib/db/singletons";
+import { invalidateSettingsCaches } from "@/lib/cache";
 import { PERMISSIONS } from "@/lib/permissions";
 import { SITE_NAME } from "@/lib/seo";
 
@@ -91,6 +92,10 @@ export async function PUT(request: Request) {
             };
             await db.insert(siteSettings).values(newRecord as typeof siteSettings.$inferInsert);
         }
+
+        // Settings changed: drop the cross-request Redis cache so getSiteSettings()
+        // (used by the shared site layout) reflects the update on the next request.
+        await invalidateSettingsCaches();
 
         const updated = await getSiteSettingsRecord();
         await auditFromRequest(request, {

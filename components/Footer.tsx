@@ -8,14 +8,28 @@ import {
 } from "lucide-react";
 import { resolveSiteName } from "@/lib/seo";
 import { sanitizePublicFooterLinks } from "@/lib/footerLinks";
+import { cacheOrFetch, CACHE_KEYS } from "@/lib/cache";
 
 async function getFooterData() {
     try {
-        const settings = await db.query.footerWidgetSettings.findFirst();
-        const links = await db.query.footerLinks.findMany({
-            where: eq(footerLinks.isActive, true),
-            orderBy: (t, { asc }) => asc(t.sortOrder),
-        });
+        // Footer is global and rarely edited; cache across requests (short TTL)
+        // so it doesn't hit MySQL on every page load via the shared layout.
+        const [settings, links] = await Promise.all([
+            cacheOrFetch(
+                CACHE_KEYS.FOOTER_WIDGET,
+                async () => (await db.query.footerWidgetSettings.findFirst()) ?? null,
+                60,
+            ),
+            cacheOrFetch(
+                CACHE_KEYS.FOOTER_LINKS,
+                async () =>
+                    db.query.footerLinks.findMany({
+                        where: eq(footerLinks.isActive, true),
+                        orderBy: (t, { asc }) => asc(t.sortOrder),
+                    }),
+                60,
+            ),
+        ]);
         return { settings, links };
     } catch {
         return { settings: null, links: [] };
