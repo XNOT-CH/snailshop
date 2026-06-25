@@ -124,7 +124,7 @@ function SortableRow({ link, canEditSettings, onEdit, onDelete }: SortableRowPro
                 <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold text-foreground">{link.label}</p>
-                        <span className="inline-flex rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-medium text-indigo-700">
+                        <span className="inline-flex rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
                             {COLUMN_LABELS[link.column] ?? COLUMN_LABELS.services}
                         </span>
                     </div>
@@ -229,7 +229,7 @@ function SortableCard({ link, canEditSettings, onEdit, onDelete }: SortableCardP
                 <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold text-foreground">{link.label}</p>
-                        <span className="inline-flex rounded-full bg-indigo-100 px-2 py-1 text-[11px] font-medium text-indigo-700">
+                        <span className="inline-flex rounded-full bg-indigo-100 px-2 py-1 text-[11px] font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
                             {COLUMN_LABELS[link.column] ?? COLUMN_LABELS.services}
                         </span>
                         <span

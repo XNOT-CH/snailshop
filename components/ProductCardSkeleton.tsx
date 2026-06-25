@@ -67,9 +67,9 @@ export function DashboardCardSkeleton() {
     return (
         <Card className="overflow-hidden rounded-2xl glow-border p-6 animate-fade-in-up opacity-0">
             <div className="space-y-3">
-                <div className="h-4 w-1/3 animate-skeleton bg-slate-200 rounded-lg" />
-                <div className="h-10 w-1/2 animate-skeleton bg-slate-200 rounded-lg" />
-                <div className="h-3 w-2/3 animate-skeleton bg-slate-200 rounded-lg" />
+                <div className="h-4 w-1/3 animate-skeleton bg-slate-200 dark:bg-slate-700/60 rounded-lg" />
+                <div className="h-10 w-1/2 animate-skeleton bg-slate-200 dark:bg-slate-700/60 rounded-lg" />
+                <div className="h-3 w-2/3 animate-skeleton bg-slate-200 dark:bg-slate-700/60 rounded-lg" />
             </div>
         </Card>
     );
@@ -80,10 +80,10 @@ export function TableSkeleton({ rows = 5 }: Readonly<{ rows?: number }>) {
         <div className="rounded-2xl glow-border overflow-hidden animate-fade-in-up">
             {/* Header */}
             <div className="bg-slate-50 p-4 flex gap-4">
-                <div className="h-5 w-20 animate-skeleton bg-slate-200 rounded" />
-                <div className="h-5 flex-1 animate-skeleton bg-slate-200 rounded" />
-                <div className="h-5 w-24 animate-skeleton bg-slate-200 rounded" />
-                <div className="h-5 w-16 animate-skeleton bg-slate-200 rounded" />
+                <div className="h-5 w-20 animate-skeleton bg-slate-200 dark:bg-slate-700/60 rounded" />
+                <div className="h-5 flex-1 animate-skeleton bg-slate-200 dark:bg-slate-700/60 rounded" />
+                <div className="h-5 w-24 animate-skeleton bg-slate-200 dark:bg-slate-700/60 rounded" />
+                <div className="h-5 w-16 animate-skeleton bg-slate-200 dark:bg-slate-700/60 rounded" />
             </div>
             {/* Rows */}
             {Array.from({ length: rows }).map((_, i) => (

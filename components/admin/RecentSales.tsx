@@ -19,7 +19,7 @@ export async function RecentSales() {
                 return (
                     <div key={order.id} className="flex items-center">
                         <Avatar className="h-9 w-9">
-                            <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm font-medium">{initials}</AvatarFallback>
+                            <AvatarFallback className="bg-indigo-100 text-indigo-600 text-sm font-medium dark:bg-indigo-500/20 dark:text-indigo-300">{initials}</AvatarFallback>
                         </Avatar>
                         <div className="ml-4 space-y-1">
                             <p className="text-sm font-medium leading-none">{order.user.username}</p>

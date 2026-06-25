@@ -559,7 +559,7 @@ export default function TopupPage() {
                                 <Button
                                     type="button"
                                     onClick={handleGiftRedeem}
-                                    className="mt-3 h-10 w-full rounded-xl bg-violet-100 text-sm font-bold text-violet-700 hover:bg-violet-200 sm:mt-4 sm:h-11 sm:rounded-2xl"
+                                    className="mt-3 h-10 w-full rounded-xl bg-violet-100 text-sm font-bold text-violet-700 hover:bg-violet-200 dark:bg-violet-500/15 dark:text-violet-200 dark:hover:bg-violet-500/25 sm:mt-4 sm:h-11 sm:rounded-2xl"
                                 >
                                     <Gift className="mr-2 h-4 w-4" />
                                     เติมเงิน
@@ -598,7 +598,7 @@ export default function TopupPage() {
                                 </div>
 
                                 <div className="mt-3 flex justify-center sm:mt-3">
-                                    <span className="rounded-full border border-violet-300 bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
+                                    <span className="rounded-full border border-violet-300 bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700 dark:border-violet-500/35 dark:bg-violet-500/15 dark:text-violet-200">
                                         พิเศษ
                                     </span>
                                 </div>
@@ -622,7 +622,7 @@ export default function TopupPage() {
                                     type="button"
                                     onClick={handleVoucherRedeem}
                                     disabled={isRedeemingVoucher}
-                                    className="mt-3 h-10 w-full rounded-xl bg-violet-100 text-sm font-bold text-violet-700 hover:bg-violet-200 disabled:cursor-not-allowed disabled:opacity-70 sm:mt-4 sm:h-11 sm:rounded-2xl sm:text-sm"
+                                    className="mt-3 h-10 w-full rounded-xl bg-violet-100 text-sm font-bold text-violet-700 hover:bg-violet-200 dark:bg-violet-500/15 dark:text-violet-200 dark:hover:bg-violet-500/25 disabled:cursor-not-allowed disabled:opacity-70 sm:mt-4 sm:h-11 sm:rounded-2xl sm:text-sm"
                                 >
                                     {isRedeemingVoucher ? (
                                         <>

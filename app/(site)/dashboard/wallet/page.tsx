@@ -107,7 +107,7 @@ export default async function DashboardWalletPage() {
                         <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
                             <Card className={`${themeClasses.surfaceSoft} overflow-hidden rounded-[30px] border border-border/70 shadow-sm`}>
                                 <div className="relative h-[280px] overflow-hidden border-b border-border/60 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.14),transparent_35%),linear-gradient(180deg,#fffdfa_0%,#f8fafc_100%)]">
-                                    <div className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm">
+                                    <div className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm dark:bg-emerald-500/15 dark:text-emerald-200 dark:shadow-none">
                                         <span className="h-2 w-2 rounded-full bg-emerald-500" />
                                         พร้อมใช้งาน
                                     </div>
@@ -134,7 +134,7 @@ export default async function DashboardWalletPage() {
                                     </div>
 
                                     <div className="flex flex-wrap gap-2">
-                                        <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                                        <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-500/15 dark:text-blue-200">
                                             จำนวนคงเหลือ {ticketBalance.toLocaleString()}
                                         </span>
                                         <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">

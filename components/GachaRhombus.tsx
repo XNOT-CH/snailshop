@@ -622,7 +622,7 @@ export function GachaRhombus({
       </div>
 
       <div className="flex w-full flex-col gap-4">
-        {maintenance?.enabled && <div className="w-full rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-center shadow-sm"><p className="text-sm font-semibold text-amber-900">ระบบกาชากำลังปิดปรับปรุงชั่วคราว</p><p className="mt-1 text-xs text-amber-800/90">{maintenance.message}</p></div>}
+        {maintenance?.enabled && <div className="w-full rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-center shadow-sm dark:border-amber-400/30 dark:bg-amber-500/12 dark:shadow-none"><p className="text-sm font-semibold text-amber-900 dark:text-amber-100">ระบบกาชากำลังปิดปรับปรุงชั่วคราว</p><p className="mt-1 text-xs text-amber-800/90 dark:text-amber-200/90">{maintenance.message}</p></div>}
 
         <div className="rounded-[1.75rem] bg-white p-4 sm:p-5">
           <div className="flex flex-col gap-5">

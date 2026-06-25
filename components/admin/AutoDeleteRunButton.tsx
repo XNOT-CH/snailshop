@@ -47,7 +47,7 @@ export function AutoDeleteRunButton() {
             size="sm"
             onClick={handleRun}
             disabled={isRunning || !canDeleteProducts}
-            className="gap-2 border-orange-300 text-orange-600 hover:bg-orange-50"
+            className="gap-2 border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-500/35 dark:text-orange-300 dark:hover:bg-orange-500/10"
         >
             {isRunning ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

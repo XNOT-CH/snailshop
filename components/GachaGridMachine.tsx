@@ -157,7 +157,7 @@ function EmptyRewardSlot() {
         <div className={`${themeClasses.surfaceSoft} relative overflow-hidden rounded-[1.35rem] border-dashed p-3`}>
             <div className="flex aspect-square flex-col items-center justify-center rounded-[1rem] bg-slate-50/70 text-center">
                 <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-slate-300 bg-white">
-                    <Gift className="h-6 w-6 text-slate-300" />
+                    <Gift className="h-6 w-6 text-slate-300 dark:text-slate-600" />
                 </div>
                 <p className="text-[11px] font-semibold text-slate-500">ยังไม่เปิดรางวัล</p>
                 <p className="mt-1 text-[10px] text-slate-400">เพิ่มรางวัลในแอดมินได้</p>
@@ -401,7 +401,7 @@ export function GachaGridMachine({
 
                 {!loading && actualRewards.length === 0 && (
                     <div className={`${themeClasses.surfaceSoft} flex h-56 flex-col items-center justify-center rounded-[1.5rem] border-dashed text-center`}>
-                        <Gift className="h-10 w-10 text-slate-300" />
+                        <Gift className="h-10 w-10 text-slate-300 dark:text-slate-600" />
                         <p className="mt-3 text-sm font-semibold text-slate-600">ยังไม่มีรางวัลในตู้</p>
                         <p className="mt-1 text-xs text-slate-400">เพิ่มรางวัลจากหน้าแอดมินก่อนเปิดให้สุ่ม</p>
                     </div>

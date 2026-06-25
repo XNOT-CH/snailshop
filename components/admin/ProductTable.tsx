@@ -149,7 +149,7 @@ function getFeaturedButtonClass(isFeatured: boolean, isMobile: boolean) {
 function getFeaturedIconClass(isFeatured: boolean, isDesktop: boolean) {
   return cn(
     isDesktop ? "mx-auto h-4 w-4" : "h-4 w-4",
-    isFeatured ? "fill-current text-amber-500" : "text-slate-300",
+    isFeatured ? "fill-current text-amber-500" : "text-slate-300 dark:text-slate-600",
   );
 }
 

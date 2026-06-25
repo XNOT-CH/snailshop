@@ -73,7 +73,7 @@ export default async function AdminProductsPage() {
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                     <Link href="/admin/products/trash">
-                        <Button variant="outline" size="sm" className="gap-2 border-orange-300 text-orange-600 hover:bg-orange-50">
+                        <Button variant="outline" size="sm" className="gap-2 border-orange-300 text-orange-600 hover:bg-orange-50 dark:border-orange-500/35 dark:text-orange-300 dark:hover:bg-orange-500/10">
                             <Trash2 className="h-4 w-4" />
                             ถังขยะสินค้า
                         </Button>

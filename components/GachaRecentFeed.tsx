@@ -93,7 +93,7 @@ export function GachaRecentFeed({ refreshKey }: Readonly<{ refreshKey: number }>
                                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
                                 className="relative flex w-[140px] flex-shrink-0 cursor-pointer flex-col items-center gap-2 px-2 group"
                             >
-                                <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-border bg-zinc-50 shadow-sm transition-transform group-hover:scale-105">
+                                <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full border border-border bg-zinc-50 shadow-sm transition-transform group-hover:scale-105 dark:bg-zinc-800 dark:shadow-none">
                                     {log.rewardImageUrl ? (
                                         <Image
                                             src={log.rewardImageUrl}

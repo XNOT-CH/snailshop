@@ -98,7 +98,7 @@ const statusConfig = {
     locked: {
         label: "รอวันถัดไป",
         card: "border-border/70 bg-white/70 dark:border-slate-700/80 dark:bg-slate-900/55",
-        badge: "bg-slate-200 text-slate-600",
+        badge: "bg-slate-200 text-slate-600 dark:bg-slate-700/70 dark:text-slate-300",
         icon: Lock,
         iconClass: "text-slate-400",
     },

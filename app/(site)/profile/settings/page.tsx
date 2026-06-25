@@ -805,7 +805,7 @@ export default function ProfileSettingsPage() {
                         aria-disabled={!hasSavedOptions}
                         className={`flex min-h-16 items-start gap-3 rounded-2xl border p-4 text-left transition ${
                             mode === "saved"
-                                ? "border-blue-300 bg-blue-50 text-blue-950 shadow-[0_14px_30px_-24px_rgba(37,99,235,0.75)]"
+                                ? "border-blue-300 bg-blue-50 text-blue-950 shadow-[0_14px_30px_-24px_rgba(37,99,235,0.75)] dark:border-blue-400/45 dark:bg-blue-500/15 dark:text-blue-100 dark:shadow-none"
                                 : "border-slate-200 bg-white text-foreground hover:border-blue-200 hover:bg-blue-50/40"
                         } ${!hasSavedOptions ? "cursor-not-allowed opacity-60" : ""}`}
                         onClick={() => {
@@ -838,7 +838,7 @@ export default function ProfileSettingsPage() {
                         tabIndex={0}
                         className={`flex min-h-16 items-start gap-3 rounded-2xl border p-4 text-left transition ${
                             mode === "new"
-                                ? "border-blue-300 bg-blue-50 text-blue-950 shadow-[0_14px_30px_-24px_rgba(37,99,235,0.75)]"
+                                ? "border-blue-300 bg-blue-50 text-blue-950 shadow-[0_14px_30px_-24px_rgba(37,99,235,0.75)] dark:border-blue-400/45 dark:bg-blue-500/15 dark:text-blue-100 dark:shadow-none"
                                 : "border-slate-200 bg-white text-foreground hover:border-blue-200 hover:bg-blue-50/40"
                         }`}
                         onClick={() => startNewAddress(setAddr, setMode, setSelectedId, setLabel, fallbackLabel)}
@@ -880,7 +880,7 @@ export default function ProfileSettingsPage() {
                             </Select>
                         </div>
                     ) : (
-                        <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                        <p className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-400/30 dark:bg-amber-500/12 dark:text-amber-100">
                             ยังไม่มีข้อมูลเดิมให้เลือก กรุณากรอกข้อมูลใหม่ก่อน
                         </p>
                     )

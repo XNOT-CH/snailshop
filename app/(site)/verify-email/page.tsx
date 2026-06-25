@@ -23,7 +23,7 @@ export default async function VerifyEmailPage({ searchParams }: VerifyEmailPageP
             <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-lg items-center">
                 <Card className="w-full border-slate-200 bg-white shadow-[0_20px_60px_-35px_rgba(15,23,42,0.45)]">
                     <CardHeader className="space-y-4 text-center">
-                        <div className={`mx-auto rounded-2xl p-3 ${isSuccess ? "bg-emerald-50" : "bg-red-50"}`}>
+                        <div className={`mx-auto rounded-2xl p-3 ${isSuccess ? "bg-emerald-50 dark:bg-emerald-500/15" : "bg-red-50 dark:bg-red-500/15"}`}>
                             <Icon className={`h-9 w-9 ${isSuccess ? "text-emerald-600" : "text-red-600"}`} />
                         </div>
                         <div>

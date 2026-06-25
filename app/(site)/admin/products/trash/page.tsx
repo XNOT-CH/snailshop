@@ -247,7 +247,7 @@ export default async function ProductTrashPage() {
                             {pendingProducts.map((product) => (
                                 <div
                                     key={product.id}
-                                    className="flex items-center gap-3 rounded-lg border border-orange-100 bg-orange-50 p-3"
+                                    className="flex items-center gap-3 rounded-lg border border-orange-100 bg-orange-50 p-3 dark:border-orange-500/30 dark:bg-orange-500/12"
                                 >
                                     <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-muted">
                                         {product.imageUrl ? (
