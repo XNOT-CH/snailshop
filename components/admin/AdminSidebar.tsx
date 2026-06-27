@@ -29,6 +29,7 @@ import {
     Megaphone,
     Menu,
     MessagesSquare,
+    Navigation,
     Newspaper,
     Package,
     Settings,
@@ -104,6 +105,7 @@ const navigationSections: NavSection[] = [
             { href: "/admin/help", label: "จัดการศูนย์ช่วยเหลือ", icon: HelpCircle, requiredPermission: PERMISSIONS.CONTENT_VIEW },
             { href: "/admin/welcome-strip", label: "รูปแถบ Welcome", icon: Images, requiredPermission: PERMISSIONS.SETTINGS_VIEW },
             { href: "/admin/footer-links", label: "ลิงก์ท้ายเว็บ", icon: LinkIcon, requiredPermission: PERMISSIONS.SETTINGS_VIEW },
+            { href: "/admin/nav-items", label: "เมนูนำทาง", icon: Navigation, requiredPermission: PERMISSIONS.SETTINGS_VIEW },
         ],
     },
     {

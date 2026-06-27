@@ -47,11 +47,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             priority: 0.8,
         },
         {
-            url: absoluteUrl("/gacha"),
-            changeFrequency: "daily",
-            priority: 0.7,
-        },
-        {
             url: absoluteUrl("/gacha-grid"),
             changeFrequency: "daily",
             priority: 0.7,

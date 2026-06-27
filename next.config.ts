@@ -74,6 +74,18 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      // หน้า /gacha เดิม (กระดานสุ่มตัวเดี่ยวแบบ machine-less) ถูกเลิกใช้แล้ว
+      // ทางเข้ากาชาปัจจุบันคือ /gachapons. ใช้ 308 ที่ routing layer เพื่อปิด URL เก่า
+      // และส่งค่า SEO ต่อ. source เป็น "/gacha" แบบ exact จึงไม่กระทบ /gacha/:id
+      {
+        source: "/gacha",
+        destination: "/gachapons",
+        permanent: true,
+      },
+    ];
+  },
   async headers() {
     const accessControlOrigin = isProduction
       ? normalizeOrigin(configuredOrigin)
