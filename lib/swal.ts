@@ -10,6 +10,11 @@ const modalDefaults = {
     showClass: {
         popup: "swal-pop-in",
         backdrop: "swal-backdrop-in",
+        // Keep SweetAlert2's default icon animation class. Omitting it overrides
+        // the library default and leaves the success checkmark's "tip" stroke
+        // unrendered, so the icon shows only the long diagonal stroke (looks like
+        // a slash/sword instead of a ✓).
+        icon: "swal2-icon-show",
     },
     hideClass: {
         popup: "swal-pop-out",
