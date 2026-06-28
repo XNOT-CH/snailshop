@@ -98,6 +98,14 @@ export default async function RootLayout({
       className={prompt.variable}
     >
       <body className="font-sans antialiased min-h-screen bg-background flex flex-col">
+        {/* Disable the browser's automatic scroll restoration on reload. It was
+            restoring the previous scroll position (with an overshoot while the
+            layout was still settling), making the page visibly jump/scroll on
+            refresh. Must run before the browser restores scroll, so it is an
+            inline script rather than a useEffect. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: 'window.history.scrollRestoration = "manual";' }}
+        />
         {children}
       </body>
     </html>

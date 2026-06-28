@@ -177,7 +177,7 @@ export const showPurchaseConfirm = async (params: {
                     </svg>
                 </div>
 
-                <div class="max-w-sm mx-auto bg-gray-50 border border-gray-200 rounded-xl p-5 shadow-sm">
+                <div class="max-w-sm mx-auto bg-gray-100 border border-gray-300 rounded-xl p-5 shadow-md">
                     <p class="text-sm text-gray-500 mb-1">รายการสั่งซื้อ</p>
                     ${escapedProductName ? `<p class="font-bold text-gray-900 text-base">${escapedProductName}</p>` : ""}
                     <div class="font-semibold text-blue-500 text-xl mt-2">
@@ -200,9 +200,9 @@ export const showPurchaseConfirm = async (params: {
             title: "hidden",
             htmlContainer: "!my-0",
             popup: "rounded-3xl !px-6 sm:!px-8 !py-8",
-            actions: "grid grid-cols-2 gap-4 w-full mt-4",
-            confirmButton: "!rounded-xl !py-2.5 !px-6 font-semibold text-white shadow-md hover:bg-blue-600 transition-all",
-            cancelButton: "!rounded-xl !py-2.5 !px-6 font-semibold !text-gray-600 hover:bg-gray-300 transition-all",
+            actions: "!grid grid-cols-2 gap-3 w-full mt-4",
+            confirmButton: "!rounded-xl !py-2.5 !px-3 w-full !m-0 font-semibold text-white shadow-md whitespace-nowrap hover:bg-blue-600 transition-all",
+            cancelButton: "!rounded-xl !py-2.5 !px-3 w-full !m-0 font-semibold !text-gray-600 hover:bg-gray-300 whitespace-nowrap transition-all",
         },
     });
 

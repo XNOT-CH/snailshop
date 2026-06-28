@@ -176,6 +176,35 @@
   padding: 2rem !important;
 }
 
+/* Defined edge + soft diffuse shadow so the white popup lifts off bright pages */
+.swal2-popup:not(.swal2-toast) {
+  border: 1px solid #e5e7eb !important;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12), 0 4px 12px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* Compact modals on small screens so they don't dominate the viewport */
+@media (max-width: 480px) {
+  .swal2-popup {
+    padding: 1.4rem !important;
+  }
+  /* Scale the whole icon via SweetAlert2's zoom var so the success ring and
+     check-mark lines (positioned in em against the 5em icon) stay aligned.
+     Overriding width/height alone shrinks the box but leaves the lines at
+     their full-size coordinates, breaking the check-mark on small screens. */
+  .swal2-popup .swal2-icon {
+    --swal2-icon-zoom: 0.75;
+    margin: 1em auto 0.6em;
+  }
+  .swal2-popup .swal2-title {
+    font-size: 1.5em;
+    padding: 0.4em 0 0;
+  }
+  .swal2-popup .swal2-html-container {
+    font-size: 1rem;
+    margin: 0.6em 0 0;
+  }
+}
+
 /* Lightweight, GPU-friendly open/close animation (replaces default scale-from-0.7) */
 .swal2-popup.swal-pop-in {
   will-change: transform, opacity;
@@ -2963,6 +2992,7 @@ html.dark .swal2-popup:not(.swal2-toast) .border-gray-100 {
 html.dark .swal2-popup:not(.swal2-toast) .bg-white,
 html.dark .swal2-popup:not(.swal2-toast) .bg-white\/70,
 html.dark .swal2-popup:not(.swal2-toast) .bg-gray-50,
+html.dark .swal2-popup:not(.swal2-toast) .bg-gray-100,
 html.dark .swal2-popup:not(.swal2-toast) .bg-gray-50\/60,
 html.dark .swal2-popup:not(.swal2-toast) .bg-gray-50\/70,
 html.dark .swal2-popup:not(.swal2-toast) .from-blue-50,

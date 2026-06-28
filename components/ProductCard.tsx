@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ProductCardActions } from "@/components/ProductCardActions";
+import { RevealOnScroll } from "@/components/RevealOnScroll";
 import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
 import { themeClasses } from "@/lib/theme";
 import type { MaintenanceEntry } from "@/hooks/useMaintenanceStatus";
@@ -41,10 +42,7 @@ export function ProductCard({
     const isUnavailable = isSold || stockCount === 0;
 
     return (
-        <div
-            className="animate-product-card"
-            style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}
-        >
+        <RevealOnScroll index={index}>
             <div
                 className={`
                     ${themeClasses.surface} storefront-product-card group relative flex flex-col overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_20px_40px_-12px_rgba(39,71,121,0.22)] dark:hover:shadow-[0_24px_48px_-16px_rgba(0,0,0,0.7)]
@@ -111,6 +109,6 @@ export function ProductCard({
                     />
                 </div>
             </div>
-        </div>
+        </RevealOnScroll>
     );
 }

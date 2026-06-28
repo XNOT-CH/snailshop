@@ -34,11 +34,13 @@ export default async function WelcomePage({ searchParams }: WelcomePageProps) {
     "แหล่งรวมไอดีเกมและกาชาพรีเมียม ที่ SnailShop",
     "เราเน้นระบบที่ใช้งานง่ายและปลอดภัย เพื่อให้คุณช้อปได้รวดเร็วและมั่นใจ 100%",
   ];
-  const welcomeStripImages = normalizeWelcomeStripImages(settings?.welcomeStripImagesJson);
+  const welcomeStripImages = normalizeWelcomeStripImages(settings?.welcomeStripImagesJson).filter(
+    (imageUrl) => imageUrl !== "",
+  );
 
   return (
     <section className="snail-welcome-page relative isolate flex min-h-screen w-full items-center justify-center overflow-hidden text-white">
-      <WelcomeSeenMarker />
+      {!isPreview && <WelcomeSeenMarker />}
       <div className="snail-welcome-bg absolute inset-0" aria-hidden="true" />
       <div className="snail-welcome-glow absolute inset-0" aria-hidden="true" />
       <div className="snail-welcome-stripe snail-welcome-stripe-left" aria-hidden="true" />
@@ -75,22 +77,22 @@ export default async function WelcomePage({ searchParams }: WelcomePageProps) {
         </div>
       </div>
 
+      {welcomeStripImages.length > 0 ? (
       <div className="snail-welcome-frame-band absolute inset-x-0 z-10" aria-hidden="true">
         <div className="snail-welcome-frame-track">
           {[0, 1].map((set) => (
             <div key={set} className="snail-welcome-frame-set">
               {welcomeStripImages.map((imageUrl, frame) => (
                 <div key={`${set}-${frame}`} className="snail-welcome-frame">
-                  {imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={imageUrl} alt="" className="snail-welcome-frame-image" />
-                  ) : null}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={imageUrl} alt="" className="snail-welcome-frame-image" />
                 </div>
               ))}
             </div>
           ))}
         </div>
       </div>
+      ) : null}
     </section>
   );
 }

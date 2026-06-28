@@ -53,6 +53,10 @@ next-env.d.ts
 .agent/
 .cline/
 .gemini/
+.claude/
+
+# cloudflare wrangler local state
+.wrangler/
 
 /lib/generated/prisma
 
