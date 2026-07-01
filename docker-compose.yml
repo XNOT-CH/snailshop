@@ -51,6 +51,7 @@ services:
   sonarqube:
     image: sonarqube:community
     restart: always
+    profiles: ["tooling"]
     ports:
       - "9000:9000"
     volumes:
@@ -68,6 +69,7 @@ services:
   db:
     image: postgres:15
     restart: always
+    profiles: ["tooling"]
     environment:
       - POSTGRES_USER=sonar
       - POSTGRES_PASSWORD=sonar
@@ -82,6 +84,13 @@ services:
     image: mysql:8.0
     container_name: my_game_store_db
     restart: always
+    # Memory tuning for a small shop: default MySQL 8.0 reserves ~390MB.
+    # Turning off performance_schema and trimming the buffer pool / connections
+    # brings steady-state RAM down to ~150-200MB with no impact on this workload.
+    command:
+      - --performance-schema=OFF
+      - --innodb-buffer-pool-size=64M
+      - --max-connections=50
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: my_game_store
@@ -98,6 +107,13 @@ services:
     image: mysql:8.0
     container_name: my_game_store_db_dev
     restart: always
+    # Dev-only DB — kept out of the default set so it does not run 24/7 on the
+    # prod host. Start explicitly with: docker compose --profile dev up -d app_db_dev
+    profiles: ["dev"]
+    command:
+      - --performance-schema=OFF
+      - --innodb-buffer-pool-size=64M
+      - --max-connections=50
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_DEV_ROOT_PASSWORD:-dev_rootpassword_change_me}
       MYSQL_DATABASE: my_game_store_dev
