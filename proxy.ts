@@ -9,7 +9,7 @@ import {
 
 const { auth } = NextAuth(authConfig);
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     // Allow local/container healthchecks to probe plain HTTP without redirect loops.
