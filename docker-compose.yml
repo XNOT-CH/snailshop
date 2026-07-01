@@ -53,14 +53,17 @@ services:
     restart: always
     profiles: ["tooling"]
     ports:
-      - "9000:9000"
+      # Bind to loopback only — SonarQube ships with default creds and must not
+      # be reachable from the internet even when the tooling profile is running.
+      # Reach it via an SSH tunnel if you need the UI from another machine.
+      - "127.0.0.1:9000:9000"
     volumes:
       - sonarqube_data:/opt/sonarqube/data
     environment:
       # We must use Postgres for SonarQube DB
       - SONAR_JDBC_URL=jdbc:postgresql://db:5432/sonar
       - SONAR_JDBC_USERNAME=sonar
-      - SONAR_JDBC_PASSWORD=sonar
+      - SONAR_JDBC_PASSWORD=${SONAR_DB_PASSWORD:-sonar}
     networks:
       - sonarqube-network
     depends_on:
@@ -72,7 +75,7 @@ services:
     profiles: ["tooling"]
     environment:
       - POSTGRES_USER=sonar
-      - POSTGRES_PASSWORD=sonar
+      - POSTGRES_PASSWORD=${SONAR_DB_PASSWORD:-sonar}
       - POSTGRES_DB=sonar
     volumes:
       - postgresql_data:/var/lib/postgresql/data

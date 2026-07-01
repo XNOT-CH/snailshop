@@ -1,0 +1,24 @@
+#!/bin/sh
+# Secret-scanning guardrail. Blocks a commit if gitleaks finds a secret in the
+# staged changes. If gitleaks is not installed the hook warns and lets the
+# commit through rather than bricking the workflow — install it to arm the net.
+#
+# Activate (once per clone):  git config core.hooksPath .githooks
+# Install gitleaks:
+#   Windows : winget install gitleaks   (or: scoop install gitleaks)
+#   macOS   : brew install gitleaks
+#   Linux   : see https://github.com/gitleaks/gitleaks#installing
+
+if ! command -v gitleaks >/dev/null 2>&1; then
+    echo "⚠️  gitleaks not installed — skipping secret scan for this commit."
+    echo "    Install it to enable pre-commit secret scanning (see .githooks/pre-commit)."
+    exit 0
+fi
+
+if ! gitleaks protect --staged --redact --no-banner; then
+    echo ""
+    echo "❌ gitleaks found a potential secret in your staged changes (see above)."
+    echo "   Remove/rotate it, or if it is a false positive add a gitleaks:allow"
+    echo "   comment or a rule to .gitleaks.toml, then commit again."
+    exit 1
+fi
