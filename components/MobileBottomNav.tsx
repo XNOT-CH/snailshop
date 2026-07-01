@@ -2,24 +2,25 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, Dices, Gift, HelpCircle, Home, Package, Settings, ShoppingBag, User, Wallet } from "lucide-react";
+import { ArrowLeft, CreditCard, Dices, Gift, Home, Package, Settings, ShoppingBag, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { themeClasses } from "@/lib/theme";
-
-const OPEN_CHAT_EVENT = "open-customer-chat";
+import { PRIMARY_NAV, isNavActive } from "@/lib/navigation";
 
 const DEFAULT_NAV_ITEMS = [
-    { href: "/home", label: "หน้าแรก", icon: Home, match: (pathname: string) => pathname === "/home" },
-    { href: "/shop", label: "ร้านค้า", icon: ShoppingBag, match: (pathname: string) => pathname === "/shop" || pathname.startsWith("/product") },
-    { href: "/gachapons", label: "กาชา", icon: Dices, match: (pathname: string) => pathname === "/gachapons" || pathname.startsWith("/gacha") },
-    { href: "/help", label: "ติดต่อร้าน", icon: HelpCircle, match: (pathname: string) => pathname === "/help", action: "chat" as const },
-    { href: "/dashboard", label: "บัญชี", icon: User, match: (pathname: string) => pathname.startsWith("/dashboard") || pathname.startsWith("/profile") },
+    { href: PRIMARY_NAV.home.href, label: PRIMARY_NAV.home.shortLabel, icon: Home, match: (pathname: string) => isNavActive(PRIMARY_NAV.home.href, pathname) },
+    { href: PRIMARY_NAV.shop.href, label: PRIMARY_NAV.shop.shortLabel, icon: ShoppingBag, match: (pathname: string) => isNavActive(PRIMARY_NAV.shop.href, pathname) },
+    { href: PRIMARY_NAV.gacha.href, label: PRIMARY_NAV.gacha.shortLabel, icon: Dices, match: (pathname: string) => isNavActive(PRIMARY_NAV.gacha.href, pathname) },
+    { href: PRIMARY_NAV.seasonPass.href, label: PRIMARY_NAV.seasonPass.shortLabel, icon: Gift, match: (pathname: string) => isNavActive(PRIMARY_NAV.seasonPass.href, pathname) },
+    { href: PRIMARY_NAV.dashboard.href, label: PRIMARY_NAV.dashboard.shortLabel, icon: User, match: (pathname: string) => isNavActive(PRIMARY_NAV.dashboard.href, pathname) },
 ] as const;
 
+// Account-mode bar is capped at 5 items so labels stay legible on small
+// phones. Season Pass takes a slot here (over the wallet) because it is a
+// headline feature users come back to check on.
 const ACCOUNT_NAV_ITEMS = [
-    { href: "/dashboard/topup", label: "เติมเงิน", icon: Wallet, match: (pathname: string) => pathname === "/dashboard/topup" },
+    { href: "/dashboard/topup", label: "เติมเงิน", icon: CreditCard, match: (pathname: string) => pathname === "/dashboard/topup" },
     { href: "/dashboard/season-pass", label: "Pass", icon: Gift, match: (pathname: string) => pathname.startsWith("/dashboard/season-pass") },
-    { href: "/dashboard/wallet", label: "กระเป๋า", icon: ShoppingBag, match: (pathname: string) => pathname.startsWith("/dashboard/wallet") },
     { href: "/dashboard/inventory", label: "คลัง", icon: Package, match: (pathname: string) => pathname.startsWith("/dashboard/inventory") },
     { href: "/dashboard/settings", label: "ตั้งค่า", icon: Settings, match: (pathname: string) => pathname.startsWith("/dashboard/settings") || pathname.startsWith("/profile") },
     { href: "/home", label: "หน้าร้าน", icon: ArrowLeft, match: () => false },
@@ -62,29 +63,6 @@ export function MobileBottomNav() {
                         "relative z-10 line-clamp-2 min-h-[1.35rem] text-center leading-[0.95rem] break-words transition-[opacity,transform] duration-300 ease-out",
                         isActive ? "translate-y-0 opacity-100" : "translate-y-0.5 opacity-85 group-hover:translate-y-0 group-hover:opacity-100"
                     );
-
-                    if ("action" in item && item.action === "chat") {
-                        return (
-                            <button
-                                key={item.href}
-                                type="button"
-                                onClick={() => globalThis.dispatchEvent(new CustomEvent(OPEN_CHAT_EVENT))}
-                                className={itemClassName}
-                            >
-                                <span
-                                    aria-hidden="true"
-                                    className={cn(
-                                        "absolute inset-x-2 bottom-1 top-1 rounded-2xl bg-primary/8 opacity-0 transition-[opacity,transform] duration-300 ease-out",
-                                        isActive ? "scale-100 opacity-100" : "scale-75 group-hover:scale-95 group-hover:opacity-50"
-                                    )}
-                                />
-                                <div className={iconWrapperClassName}>
-                                    <Icon className="h-[18px] w-[18px]" />
-                                </div>
-                                <span className={labelClassName}>{item.label}</span>
-                            </button>
-                        );
-                    }
 
                     return (
                         <Link

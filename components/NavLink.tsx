@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { isNavActive } from "@/lib/navigation";
 
 interface NavLinkProps {
     readonly href: string;
@@ -11,7 +12,7 @@ interface NavLinkProps {
 
 export function NavLink({ href, children }: Readonly<NavLinkProps>) {
     const pathname = usePathname();
-    const isActive = pathname === href || pathname.startsWith(`${href}/`);
+    const isActive = isNavActive(href, pathname);
 
     return (
         <Link

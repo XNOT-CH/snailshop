@@ -203,14 +203,14 @@ export default async function ProductDetailPage({
                     />
 
                     <div className="mt-2 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)] xl:gap-8">
-                        <div className={`${themeClasses.panelSoft} w-full rounded-[24px] px-4 py-6 sm:px-6`}>
+                        <div className={`${themeClasses.panelSoft} w-full rounded-3xl px-4 py-6 sm:px-6`}>
                             <ProductGallery images={productImages} />
                             <div className="mt-5 border-t border-border/60 pt-4">
                                 <ShareButtons title={product.name} />
                             </div>
                         </div>
 
-                        <div className={`${themeClasses.panel} min-w-0 rounded-[24px] px-4 py-6 sm:px-6`}>
+                        <div className={`${themeClasses.panel} min-w-0 rounded-3xl px-4 py-6 sm:px-6`}>
                             <div className="border-b border-border/60 pb-5">
                                 <h1 className="text-2xl font-bold leading-snug text-foreground">
                                     {product.name}
@@ -233,19 +233,7 @@ export default async function ProductDetailPage({
                                 </div>
                             </div>
 
-                            {product.description && (
-                                <div className="mt-5 space-y-2">
-                                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                                        <Info className="h-3.5 w-3.5" />
-                                        รายละเอียดสินค้า
-                                    </p>
-                                    <div className={`${themeClasses.surface} min-h-[60px] w-full rounded-2xl px-4 py-4 text-sm leading-relaxed text-foreground whitespace-pre-line`}>
-                                        {product.description}
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="mt-5 border-t border-border/60 pt-5">
+                            <div className="mt-5">
                                 <ProductActions
                                     product={{
                                         id: product.id,
@@ -261,6 +249,18 @@ export default async function ProductDetailPage({
                                     currencySettings={currencySettings}
                                 />
                             </div>
+
+                            {product.description && (
+                                <div className="mt-5 space-y-2 border-t border-border/60 pt-5">
+                                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
+                                        <Info className="h-3.5 w-3.5" />
+                                        รายละเอียดสินค้า
+                                    </p>
+                                    <div className={`${themeClasses.surfaceSoft} min-h-[60px] w-full rounded-3xl px-6 py-5 text-sm leading-loose text-foreground whitespace-pre-line`}>
+                                        {product.description}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

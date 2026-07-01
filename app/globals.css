@@ -97,7 +97,7 @@
 
 
 
-  --background: #eef4fb;
+  --background: #f6f7f9;
   --foreground: #102033;
   --card: #ffffff;
   --card-foreground: #102033;
@@ -105,15 +105,15 @@
   --popover-foreground: #102033;
   --primary: #2f7df6;
   --primary-foreground: #ffffff;
-  --secondary: #dfe9f5;
+  --secondary: #edeef1;
   --secondary-foreground: #1d3552;
-  --muted: #e7eef7;
-  --muted-foreground: #5f7694;
-  --accent: #dbe8f7;
+  --muted: #eef0f2;
+  --muted-foreground: #66707d;
+  --accent: #e8eaee;
   --accent-foreground: #1b3655;
   --destructive: #e45d72;
-  --border: #c7d5e6;
-  --input: #d3dfed;
+  --border: #dde0e6;
+  --input: #d8dce2;
   --ring: #77b7ff;
   --chart-1: #2f7df6;
   --chart-2: #53b8ff;
@@ -126,13 +126,13 @@
   --chart-area-label: #3e8dff;
   --chart-area-gradient-from: #8bc5ff;
   --chart-dot-fill: #2f7df6;
-  --sidebar: #e8f0fa;
+  --sidebar: #f1f2f4;
   --sidebar-foreground: #18314c;
   --sidebar-primary: #2f7df6;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #d5e3f4;
+  --sidebar-accent: #e7e9ed;
   --sidebar-accent-foreground: #1b3655;
-  --sidebar-border: #c7d5e6;
+  --sidebar-border: #dde0e6;
   --sidebar-ring: #77b7ff;
   --surface-1: rgba(255, 255, 255, 0.99);
   --surface-2: rgba(248, 250, 255, 1);
@@ -1473,6 +1473,25 @@ body {
   @apply outline-none ring-2 ring-primary ring-offset-2 ring-offset-background;
 
   transition: box-shadow 0.2s ease;
+
+}
+
+/* The command palette (navbar search) provides its own focus affordances —
+   a live input cursor and a highlighted result row — and its input sits
+   flush against the dialog's clipped top edge (p-0 + overflow-hidden). The
+   global ring above would get sliced into a half-box there, so opt the
+   whole palette out of the ring. Higher specificity + unlayered to beat the
+   rule above. */
+
+[data-slot="command"]:focus-visible,
+
+[data-slot="command"] :focus-visible {
+
+  box-shadow: none;
+
+  --tw-ring-shadow: 0 0 #0000;
+
+  --tw-ring-offset-shadow: 0 0 #0000;
 
 }
 

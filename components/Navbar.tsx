@@ -11,22 +11,13 @@ import { ShopDropdown } from "@/components/ShopDropdown";
 import { NavigationDrawer } from "@/components/NavigationDrawer";
 import { NavbarInteractive } from "@/components/NavbarInteractive";
 import { NavLink } from "@/components/NavLink";
-import {
-    Dices,
-    Gamepad2,
-    Gift,
-    HelpCircle,
-    Home,
-    LayoutDashboard,
-    Settings,
-    ShoppingBag,
-    User,
-    Wallet,
-} from "lucide-react";
+import { Gamepad2, Wallet } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { resolveSiteName } from "@/lib/seo";
 import { MobileAutoHideHeader } from "@/components/MobileAutoHideHeader";
 import { themeClasses } from "@/lib/theme";
+import { PRIMARY_NAV, navIconByHref, navIconByName } from "@/lib/navigation";
+import { NavbarSearch } from "@/components/NavbarSearch";
 
 function normalizeNavHref(href: string) {
     return href === "/" ? "/home" : href;
@@ -76,73 +67,34 @@ export default async function Navbar() {
         .filter(Boolean)
         .sort((left, right) => left.localeCompare(right));
 
-    const iconMap: Record<string, typeof Home> = {
-        home: Home,
-        shop: ShoppingBag,
-        dashboard: LayoutDashboard,
-        help: HelpCircle,
-        wallet: Wallet,
-        user: User,
-        settings: Settings,
-        dices: Dices,
-        gacha: Dices,
-        gift: Gift,
-        season: Gift,
-        "season-pass": Gift,
-    };
-
-    const baseNavLinks =
+    // When an admin has configured nav items in the DB, respect that list
+    // exactly. Only the default (unconfigured) menu ships the full set
+    // including the gacha hub and Season Pass — admins manage those via
+    // /admin/nav-items instead of having them force-injected here.
+    const navLinks =
         dbNavItems.length > 0
             ? dbNavItems.map((item) => ({
                   href: normalizeNavHref(item.href),
                   label: item.label,
-                  icon: iconMap[item.icon?.toLowerCase() ?? ""] ?? Home,
+                  icon: navIconByName(item.icon),
               }))
             : [
-                  { href: "/home", label: "หน้าแรก", icon: Home },
-                  { href: "/shop", label: "ร้านค้า", icon: ShoppingBag },
-                  { href: "/dashboard", label: "แดชบอร์ด", icon: LayoutDashboard },
-                  { href: "/help", label: "ช่วยเหลือ", icon: HelpCircle },
-              ];
-
-    const navLinks = (() => {
-        const nextLinks = [...baseNavLinks];
-
-        if (!nextLinks.some((link) => link.href === "/gachapons")) {
-            const shopIndex = nextLinks.findIndex((link) => link.href === "/shop");
-            const hubItem = {
-                href: "/gachapons",
-                label: "หมวดหมู่กาชา",
-                icon: Dices,
-            };
-
-            if (shopIndex >= 0) {
-                nextLinks.splice(shopIndex + 1, 0, hubItem);
-            } else {
-                nextLinks.push(hubItem);
-            }
-        }
-
-        if (!nextLinks.some((link) => link.href === "/season-pass")) {
-            const gachaIndex = nextLinks.findIndex((link) => link.href === "/gachapons");
-            const shopIndex = nextLinks.findIndex((link) => link.href === "/shop");
-            const seasonPassItem = {
-                href: "/season-pass",
-                label: "Season Pass",
-                icon: Gift,
-            };
-            const insertIndex = gachaIndex >= 0 ? gachaIndex + 1 : shopIndex >= 0 ? shopIndex + 1 : nextLinks.length;
-
-            nextLinks.splice(insertIndex, 0, seasonPassItem);
-        }
-
-        return nextLinks;
-    })();
+                  PRIMARY_NAV.home,
+                  PRIMARY_NAV.shop,
+                  PRIMARY_NAV.gacha,
+                  PRIMARY_NAV.seasonPass,
+                  PRIMARY_NAV.dashboard,
+                  PRIMARY_NAV.help,
+              ].map((item) => ({
+                  href: item.href,
+                  label: item.label,
+                  icon: navIconByHref(item.href),
+              }));
 
     return (
         <MobileAutoHideHeader>
         <header id="main-navbar" className={`${themeClasses.header} w-full md:backdrop-blur-xl`}>
-            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 lg:px-6 xl:grid xl:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] xl:gap-4 xl:px-8">
+            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-4 lg:px-6 xl:px-8">
                 <Link
                     href="/home"
                     prefetch={false}
@@ -167,7 +119,7 @@ export default async function Navbar() {
                     </span>
                 </Link>
 
-                <nav className="hidden translate-x-8 items-center justify-center gap-1 xl:flex">
+                <nav className="hidden items-center justify-center gap-1 lg:flex xl:-translate-x-12">
                     {navLinks.map((link) => {
                         const Icon = link.icon;
 
@@ -184,7 +136,8 @@ export default async function Navbar() {
                     })}
                 </nav>
 
-                <div className="flex shrink-0 items-center gap-1.5 xl:justify-self-end">
+                <div className="flex shrink-0 items-center gap-1.5 lg:justify-self-end">
+                    <NavbarSearch currencySettings={currencySettings} />
                     <ThemeToggle />
                     <NavbarInteractive
                         user={user ? {

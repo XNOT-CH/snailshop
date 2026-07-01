@@ -37,7 +37,7 @@ export function ProductGallery({ images }: Readonly<ProductGalleryProps>) {
                 <DialogTrigger asChild>
                     <button
                         type="button"
-                        className={`${themeClasses.surface} group relative aspect-square w-full cursor-zoom-in overflow-hidden rounded-[1.75rem] text-left`}
+                        className={`${themeClasses.surface} group relative aspect-square w-full cursor-zoom-in overflow-hidden rounded-3xl text-left`}
                     >
                         <Image
                             src={galleryImages[selectedImage].url}
@@ -56,7 +56,7 @@ export function ProductGallery({ images }: Readonly<ProductGalleryProps>) {
                 </DialogTrigger>
                 <DialogContent className="max-w-5xl border-0 bg-transparent p-0 shadow-none">
                     <DialogTitle className="sr-only">Product Image View</DialogTitle>
-                    <div className={`${themeClasses.surface} space-y-4 rounded-[1.75rem] p-4 backdrop-blur-md`}>
+                    <div className={`${themeClasses.surface} space-y-4 rounded-[28px] p-4 backdrop-blur-md`}>
                         <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-border/40 bg-background">
                             <Image
                                 src={galleryImages[selectedImage].url}
@@ -121,7 +121,7 @@ export function ProductGallery({ images }: Readonly<ProductGalleryProps>) {
                     <button
                         key={image.id}
                         onClick={() => setSelectedImage(index)}
-                        className={`relative aspect-square w-16 overflow-hidden rounded-lg transition-all border-2 ${selectedImage === index
+                        className={`relative aspect-square w-16 overflow-hidden rounded-xl transition-all border-2 ${selectedImage === index
                             ? "border-primary shadow-[0_0_0_1px_rgba(88,166,255,0.28)]"
                             : "border-border/40 opacity-60 hover:border-primary/35 hover:opacity-100"
                             }`}

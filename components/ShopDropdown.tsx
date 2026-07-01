@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { ShoppingBag, ChevronDown, Tag } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { themeClasses } from "@/lib/theme";
+import { isNavActive } from "@/lib/navigation";
 
 interface ShopDropdownProps {
     readonly categories: readonly string[];
@@ -15,7 +16,7 @@ export function ShopDropdown({ categories }: Readonly<ShopDropdownProps>) {
     const [open, setOpen] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
-    const isActive = pathname === "/shop" || pathname.startsWith("/shop/") || pathname.startsWith("/product");
+    const isActive = isNavActive("/shop", pathname);
 
     // Close on click outside
     useEffect(() => {
@@ -27,6 +28,16 @@ export function ShopDropdown({ categories }: Readonly<ShopDropdownProps>) {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    // Close on Escape for keyboard users.
+    useEffect(() => {
+        if (!open) return;
+        function handleKeyDown(e: KeyboardEvent) {
+            if (e.key === "Escape") setOpen(false);
+        }
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [open]);
 
     return (
         <div ref={ref} className="relative">

@@ -44,14 +44,14 @@ export function FloatingChatButtonWrapper() {
     return (
         <button
             type="button"
-            className={`fixed right-4 z-50 hidden h-[76px] w-[76px] items-center justify-center rounded-[24px] bg-transparent shadow-none ring-0 transition hover:scale-105 md:flex ${MOBILE_BOTTOM_NAV_OFFSET} sm:bottom-6 sm:right-6 sm:h-[84px] sm:w-[84px]`}
+            className={`fixed right-4 z-50 flex h-[60px] w-[60px] items-center justify-center rounded-[20px] bg-transparent shadow-none ring-0 transition hover:scale-105 ${MOBILE_BOTTOM_NAV_OFFSET} md:bottom-6 md:right-6 md:h-16 md:w-16`}
             aria-label="เปิดแชทลูกค้า"
             onClick={() => {
                 setOpenOnLoad(true);
                 setShouldLoadChat(true);
             }}
         >
-            <ChatBrandLogo className="h-full w-full rounded-[24px] shadow-none" />
+            <ChatBrandLogo className="h-full w-full rounded-[20px] shadow-none" />
         </button>
     );
 }

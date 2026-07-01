@@ -93,7 +93,8 @@ export function HeroBannerCarousel({ banners }: Readonly<HeroBannerCarouselProps
                                         src={banner.image}
                                         alt={banner.title}
                                         fill
-                                        sizes="100vw"
+                                        sizes="(max-width: 1024px) 100vw, 1200px"
+                                        quality={65}
                                         className="object-cover [backface-visibility:hidden] [transform:translateZ(0)]"
                                         priority={index === 0}
                                         fetchPriority={index === 0 ? "high" : "low"}

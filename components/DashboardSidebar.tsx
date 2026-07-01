@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, Gift, Package, Settings, ShoppingBag, Wallet } from "lucide-react";
+import { ArrowLeft, CreditCard, Gift, Package, Settings, Wallet } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -25,9 +25,9 @@ interface DashboardSidebarProps {
 }
 
 const sidebarLinks = [
-    { href: "/dashboard/topup", label: "เติมเงิน", icon: Wallet },
+    { href: "/dashboard/topup", label: "เติมเงิน", icon: CreditCard },
     { href: "/dashboard/season-pass", label: "Season Pass", icon: Gift },
-    { href: "/dashboard/wallet", label: "กระเป๋าเงิน", icon: ShoppingBag },
+    { href: "/dashboard/wallet", label: "กระเป๋าเงิน", icon: Wallet },
     { href: "/dashboard/inventory", label: "คลังสินค้าของฉัน", icon: Package },
     { href: "/dashboard/settings", label: "ตั้งค่า", icon: Settings },
 ];
@@ -95,7 +95,7 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
 
                 <div className="p-3">
                     <Link
-                        href="/"
+                        href="/home"
                         className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                     >
                         <ArrowLeft className="h-5 w-5" />

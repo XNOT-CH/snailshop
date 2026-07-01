@@ -194,14 +194,14 @@ export function ProductActions({
     return (
         <div className="space-y-4">
             {maintenance?.enabled && (
-                <div className={`${themeClasses.alert} rounded-2xl px-4 py-3 text-sm`}>
+                <div className={`${themeClasses.alert} rounded-3xl px-4 py-3 text-sm`}>
                     <p className="font-semibold">ระบบสั่งซื้อกำลังปิดปรับปรุงชั่วคราว</p>
                     <p className="mt-1 text-xs text-amber-800/90">{maintenance.message}</p>
                 </div>
             )}
             {inCart ? (
                 <div className="space-y-3">
-                    <div className="rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3 text-left text-sm shadow-sm">
+                    <div className="rounded-3xl border border-primary/25 bg-primary/5 px-4 py-3 text-left text-sm shadow-sm">
                         <div className="flex gap-3">
                             <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                                 <CheckCircle2 className="h-4 w-4" />
@@ -217,7 +217,7 @@ export function ProductActions({
                     <Button
                         type="button"
                         size="lg"
-                        className="w-full gap-2 rounded-full bg-primary text-base font-semibold text-primary-foreground shadow-[0_18px_36px_-24px_rgba(88,166,255,0.7)] hover:bg-primary/90"
+                        className="w-full gap-2 rounded-xl bg-primary text-base font-semibold text-primary-foreground shadow-[0_18px_36px_-24px_rgba(88,166,255,0.7)] hover:bg-primary/90"
                         disabled={cartLoading}
                         onClick={openCart}
                     >
@@ -246,7 +246,7 @@ export function ProductActions({
                     {!isPointCurrency && (
                         <div>
                             <p className="text-sm text-muted-foreground mb-1.5">ส่วนลด</p>
-                            <div className="flex flex-col gap-2 sm:flex-row">
+                            <div className="flex">
                                 <Input
                                     placeholder="กรอกส่วนลดของท่าน"
                                     value={promoCode}
@@ -255,12 +255,12 @@ export function ProductActions({
                                         setAppliedPromo(null);
                                     }}
                                     onKeyDown={(e) => e.key === "Enter" && handleCheckPromo()}
-                                    className={`flex-1 rounded-full border-border/80 bg-background/90 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/35 ${appliedPromo ? "border-primary" : ""}`}
+                                    className={`flex-1 rounded-l-xl rounded-r-none border-r-0 border-border/80 bg-background/90 text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/35 ${appliedPromo ? "border-primary" : ""}`}
                                     disabled={isProcessing}
                                 />
                                 <Button
                                     variant="outline"
-                                    className={`${themeClasses.actionMuted} shrink-0 rounded-full gap-1.5 px-4 hover:text-primary`}
+                                    className="shrink-0 rounded-l-none rounded-r-xl gap-1.5 px-4 border border-primary/45 bg-primary/10 font-medium text-primary hover:bg-primary/20 hover:text-primary"
                                     onClick={handleCheckPromo}
                                     disabled={isCheckingPromo || !promoCode.trim()}
                                 >
@@ -289,9 +289,9 @@ export function ProductActions({
                     {/* 3. Buy Now */}
                     <Button
                         size="lg"
-                        className={`w-full gap-2 text-base rounded-full font-semibold ${disabled
+                        className={`w-full gap-2 h-12 text-base rounded-xl font-bold ${disabled
                             ? "cursor-not-allowed border border-border/70 bg-accent/40 text-muted-foreground hover:bg-accent/40"
-                            : "bg-primary text-primary-foreground shadow-[0_18px_36px_-24px_rgba(88,166,255,0.7)] hover:bg-primary/90"
+                            : "bg-primary text-primary-foreground hover:bg-primary/90"
                             }`}
                         disabled={disabled || isBuying || maintenance?.enabled}
                         onClick={handlePurchase}
@@ -318,7 +318,7 @@ export function ProductActions({
                     <Button
                         variant="outline"
                         size="lg"
-                        className="w-full gap-2 rounded-full border-primary/45 bg-transparent text-base text-primary hover:bg-primary/10 hover:text-primary"
+                        className="w-full gap-2 h-10 rounded-xl border-border/60 bg-transparent text-sm font-medium text-muted-foreground shadow-none hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
                         disabled={disabled || isAdding || cartLoading}
                         onClick={handleAddToCart}
                     >

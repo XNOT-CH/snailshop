@@ -1,14 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
-    X, Home, ShoppingBag, LayoutDashboard, HelpCircle,
-    Dices, Wallet, User, ChevronRight, Gamepad2,
-    Lock, UserPlus, Menu, LogOut, CircleDollarSign, Gift,
+    X, Home, Wallet, User, ChevronRight, Gamepad2,
+    Lock, UserPlus, Menu, LogOut, CircleDollarSign,
 } from "lucide-react";
 import { useLogout } from "@/components/useLogout";
 import { withImageVersion } from "@/lib/imageUrl";
@@ -16,6 +15,7 @@ import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currenc
 import { SITE_NAME } from "@/lib/seo";
 import { themeClasses } from "@/lib/theme";
 import { toSafePublicHref } from "@/lib/sanitize";
+import { NAV_ICON_BY_HREF, PRIMARY_NAV, TOPUP_LABEL, isNavActive } from "@/lib/navigation";
 
 interface SerializableNavLink { href: string; label: string; }
 
@@ -31,28 +31,16 @@ interface NavigationDrawerProps {
 }
 
 const DEFAULT_NAV: SerializableNavLink[] = [
-    { href: "/home",      label: "หน้าแรก" },
-    { href: "/shop",      label: "ร้านค้า" },
-    { href: "/gachapons", label: "หมวดหมู่กาชา" },
-    { href: "/season-pass", label: "Season Pass" },
-    { href: "/dashboard", label: "แดชบอร์ด" },
-    { href: "/help",      label: "ช่วยเหลือ" },
-];
-
-const ICON_MAP: Record<string, React.ElementType> = {
-    "/home":             Home,
-    "/shop":             ShoppingBag,
-    "/gachapons":        Dices,
-    "/season-pass":      Gift,
-    "/dashboard":        LayoutDashboard,
-    "/dashboard/topup":  Wallet,
-    "/help":             HelpCircle,
-    "/profile":          User,
-    "/profile/settings": User,
-};
+    PRIMARY_NAV.home,
+    PRIMARY_NAV.shop,
+    PRIMARY_NAV.gacha,
+    PRIMARY_NAV.seasonPass,
+    PRIMARY_NAV.dashboard,
+    PRIMARY_NAV.help,
+].map(({ href, label }) => ({ href, label }));
 
 function NavIcon({ href }: { href: string }) {
-    const Icon = ICON_MAP[href] ?? Home;
+    const Icon = NAV_ICON_BY_HREF[href] ?? Home;
     return <Icon className="h-[19px] w-[19px] flex-shrink-0" />;
 }
 
@@ -66,6 +54,7 @@ export function NavigationDrawer({
     const [logoutPending, setLogoutPending] = useState(false);
     const pathname = usePathname();
     const logout = useLogout();
+    const panelRef = useRef<HTMLElement>(null);
     const links = (navLinks && navLinks.length > 0 ? navLinks : DEFAULT_NAV).flatMap((link) => {
         const safeHref = toSafePublicHref(link.href, "");
         return safeHref ? [{ ...link, href: safeHref }] : [];
@@ -99,8 +88,42 @@ export function NavigationDrawer({
         return () => { document.body.style.overflow = ""; };
     }, [isOpen]);
 
-    const isActive = (href: string) =>
-        href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
+    // Esc to close + keep keyboard focus inside the drawer while open.
+    useEffect(() => {
+        if (!isOpen) return;
+        const focusable = () => {
+            const panel = panelRef.current;
+            if (!panel) return [] as HTMLElement[];
+            return Array.from(
+                panel.querySelectorAll<HTMLElement>(
+                    'a[href], button:not([disabled]), input, [tabindex]:not([tabindex="-1"])',
+                ),
+            ).filter((el) => el.offsetParent !== null);
+        };
+        focusable()[0]?.focus();
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                setIsOpen(false);
+                return;
+            }
+            if (e.key !== "Tab") return;
+            const items = focusable();
+            if (items.length === 0) return;
+            const first = items[0];
+            const last = items[items.length - 1];
+            if (e.shiftKey && document.activeElement === first) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        };
+        document.addEventListener("keydown", onKeyDown);
+        return () => document.removeEventListener("keydown", onKeyDown);
+    }, [isOpen]);
+
+    const isActive = (href: string) => isNavActive(href, pathname);
 
     const openDrawer = () => {
         setHasOpened(true);
@@ -120,6 +143,10 @@ export function NavigationDrawer({
 
             {/* Drawer */}
             <aside
+                ref={panelRef}
+                role="dialog"
+                aria-modal="true"
+                aria-label="เมนูนำทาง"
                 className="fixed top-0 left-0 z-[9999] flex h-svh flex-col transition-transform duration-300 ease-in-out"
                 style={{
                     width: "min(290px, 85vw)",
@@ -203,7 +230,7 @@ export function NavigationDrawer({
                                 ) : (
                                     <Wallet className="h-4 w-4" />
                                 )}
-                                เติมเครดิต
+                                {TOPUP_LABEL}
                             </Link>
                         </div>
                     ) : (

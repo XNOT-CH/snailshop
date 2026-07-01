@@ -267,11 +267,11 @@ export function FloatingChatButton({
             <SheetTrigger asChild>
                 <button
                     type="button"
-                    className={`fixed right-4 z-50 hidden h-[76px] w-[76px] items-center justify-center rounded-[24px] bg-transparent shadow-none ring-0 transition hover:scale-105 md:flex ${MOBILE_BOTTOM_NAV_OFFSET} sm:bottom-6 sm:right-6 sm:h-[84px] sm:w-[84px]`}
+                    className={`fixed right-4 z-50 flex h-[60px] w-[60px] items-center justify-center rounded-[20px] bg-transparent shadow-none ring-0 transition hover:scale-105 ${MOBILE_BOTTOM_NAV_OFFSET} md:bottom-6 md:right-6 md:h-16 md:w-16`}
                     aria-label="เปิดแชทลูกค้า"
                 >
                     <ChatBrandLogo
-                        className="h-full w-full rounded-[24px] shadow-none"
+                        className="h-full w-full rounded-[20px] shadow-none"
                     />
                 </button>
             </SheetTrigger>
@@ -378,37 +378,34 @@ export function FloatingChatButton({
                                     onKeyDown={handleComposerKeyDown}
                                     placeholder="พิมพ์ข้อความของคุณ"
                                     maxLength={CHAT_MAX_MESSAGE_LENGTH}
-                                    className="min-h-20 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 sm:min-h-24"
+                                    className="min-h-16 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 sm:min-h-20"
                                 />
-                                <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                                    <div className="space-y-2">
-                                        <p className="text-xs text-muted-foreground">
-                                            ทีมงานจะตอบกลับทันทีเมื่อมีแอดมินออนไลน์
-                                        </p>
-                                        <p className="text-[11px] text-muted-foreground">
-                                            รูปจะหายอัตโนมัติหลังส่งครบ 5 นาที
-                                        </p>
-                                    </div>
+                                <div className="mt-2.5 flex items-center justify-between gap-2">
+                                    <p className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+                                        ทีมงานตอบเมื่อมีแอดมินออนไลน์ · รูปหายใน 5 นาที
+                                    </p>
 
-                                    <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                                    <div className="flex shrink-0 items-center gap-2">
                                         <Button
                                             type="button"
                                             variant="outline"
+                                            size="icon-lg"
                                             onClick={() => fileInputRef.current?.click()}
                                             disabled={isUploading || isSending}
-                                            className="w-full rounded-full sm:w-auto"
+                                            className="shrink-0 rounded-full"
+                                            aria-label="ส่งรูป"
+                                            title="ส่งรูป"
                                         >
                                             {isUploading ? (
-                                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                <Loader2 className="h-4 w-4 animate-spin" />
                                             ) : (
-                                                <ImagePlus className="mr-2 h-4 w-4" />
+                                                <ImagePlus className="h-4 w-4" />
                                             )}
-                                            ส่งรูป
                                         </Button>
                                         <Button
                                             onClick={handleSendMessage}
                                             disabled={isSending || isUploading || !draft.trim()}
-                                            className="w-full rounded-full px-5 sm:w-auto"
+                                            className="h-10 rounded-full px-5"
                                         >
                                             {isSending ? (
                                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
