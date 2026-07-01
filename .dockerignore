@@ -1,5 +1,12 @@
 .git
 .next
+# Secrets: never copy real env files into the build context. Next.js standalone
+# bakes any .env it finds into the image, so excluding them here keeps secrets
+# out of the shipped image. Runtime config comes from compose (environment/
+# env_file), not from a baked file.
+.env
+.env.*
+!.env.example
 coverage
 docker-data
 docs

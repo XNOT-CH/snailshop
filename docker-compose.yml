@@ -4,12 +4,16 @@ services:
       context: .
       dockerfile: Dockerfile
       args:
-        DATABASE_URL: mysql://${MYSQL_APP_USER:-app_user}:${MYSQL_APP_PASSWORD}@host.docker.internal:3307/my_game_store
         AUTH_URL: https://www.snailshop.app
         NEXT_PUBLIC_SITE_URL: https://www.snailshop.app
         ALLOWED_ORIGIN: https://www.snailshop.app
         NEXT_PUBLIC_CUBEJS_API_URL: ${NEXT_PUBLIC_CUBEJS_API_URL}
         NEXT_PUBLIC_CUBEJS_API_TOKEN: ${NEXT_PUBLIC_CUBEJS_API_TOKEN}
+      # DATABASE_URL is fed to the build as a secret, not an arg, so the app-DB
+      # password never lands in an image layer or the build cache. Sourced from
+      # BUILD_DATABASE_URL in your .env (reaches the host DB on :3307 at build).
+      secrets:
+        - database_url
     container_name: my_game_store_web
     restart: always
     env_file:
@@ -126,6 +130,13 @@ services:
       - mysql_dev_data:/var/lib/mysql
     networks:
       - sonarqube-network
+
+secrets:
+  # Build-time only, sourced from BUILD_DATABASE_URL in your .env. Required:
+  # `next build` prerenders DB-backed pages, so the DB must be reachable during
+  # the build. Delivered via secret mount so the password stays out of the image.
+  database_url:
+    environment: BUILD_DATABASE_URL
 
 networks:
   sonarqube-network:
