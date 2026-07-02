@@ -79,6 +79,18 @@ export default function AnnouncementPopup({
         };
     }, [initialPopups]);
 
+    // Lock background scroll while the popup is open (matches NavigationDrawer)
+    useEffect(() => {
+        if (!isVisible) {
+            return;
+        }
+        const previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = "hidden";
+        return () => {
+            document.body.style.overflow = previousOverflow;
+        };
+    }, [isVisible]);
+
     // Handle close with animation
     const handleClose = () => {
         // Persist the "seen" state per the popup's dismiss option (no-op for
