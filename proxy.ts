@@ -17,6 +17,15 @@ export async function proxy(request: NextRequest) {
         return;
     }
 
+    // The homepage moved from /home to /. Redirecting here (not in the page)
+    // returns a real HTTP 308 — a page-level redirect gets swallowed by
+    // streaming (the layout shell commits a 200 first, leaving only a meta
+    // refresh), which is a weaker signal for crawlers and old links.
+    if (pathname === "/home") {
+        const homeUrl = new URL(`/${request.nextUrl.search}`, request.nextUrl.origin);
+        return Response.redirect(homeUrl, 308);
+    }
+
     if (process.env.NODE_ENV === "production") {
         const proto = request.headers.get("x-forwarded-proto");
         const host = request.headers.get("host");
