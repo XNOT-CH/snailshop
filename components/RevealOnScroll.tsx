@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import { useEffect, useState, type ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 
 interface RevealOnScrollProps {
     children: ReactNode;
@@ -9,15 +9,14 @@ interface RevealOnScrollProps {
     className?: string;
 }
 
+const emptySubscribe = () => () => {};
+
 export function RevealOnScroll({ children, index = 0, className }: Readonly<RevealOnScrollProps>) {
     const prefersReduced = useReducedMotion();
-    const [hydrated, setHydrated] = useState(false);
 
     // Only honor the reduced-motion preference after hydration so the first
     // client render matches the server (useReducedMotion is false during SSR).
-    useEffect(() => {
-        setHydrated(true);
-    }, []);
+    const hydrated = useSyncExternalStore(emptySubscribe, () => true, () => false);
 
     const reduce = hydrated && prefersReduced;
 
