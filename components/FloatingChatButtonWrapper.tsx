@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ChatBrandLogo } from "@/components/chat/ChatBrandLogo";
+import { Headset } from "lucide-react";
 
 const FloatingChatButton = dynamic(
     () => import("@/components/FloatingChatButton").then((mod) => mod.FloatingChatButton),
@@ -44,14 +44,14 @@ export function FloatingChatButtonWrapper() {
     return (
         <button
             type="button"
-            className={`fixed right-4 z-50 flex h-[60px] w-[60px] items-center justify-center rounded-[20px] bg-transparent shadow-none ring-0 transition hover:scale-105 ${MOBILE_BOTTOM_NAV_OFFSET} md:bottom-6 md:right-6 md:h-16 md:w-16`}
+            className={`fixed right-4 z-50 flex h-[60px] w-[60px] items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/35 ring-0 transition hover:scale-105 hover:bg-emerald-600 ${MOBILE_BOTTOM_NAV_OFFSET} md:bottom-6 md:right-6 md:h-16 md:w-16`}
             aria-label="เปิดแชทลูกค้า"
             onClick={() => {
                 setOpenOnLoad(true);
                 setShouldLoadChat(true);
             }}
         >
-            <ChatBrandLogo className="h-full w-full rounded-[20px] shadow-none" />
+            <Headset className="h-7 w-7 md:h-8 md:w-8" />
         </button>
     );
 }
