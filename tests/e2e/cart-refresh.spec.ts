@@ -96,14 +96,19 @@ async function ensureTestProduct(connection: Connection) {
 
 async function loginAsCartTestUser(page: Page) {
     for (let attempt = 0; attempt < 2; attempt += 1) {
-        await page.goto(`/login?callbackUrl=${encodeURIComponent("/home")}`);
+        await page.goto(`/login?callbackUrl=${encodeURIComponent("/")}`);
+        // Mark the welcome splash as seen so the homepage doesn't client-redirect
+        // this fresh browser context to /welcome (which has no navbar/cart).
+        await page.evaluate(() => {
+            document.cookie = "snail_welcome_seen=1; Path=/; SameSite=Lax";
+        });
         await usernameField(page).fill(TEST_USERNAME);
         await passwordField(page).fill(TEST_PASSWORD);
         await submitButton(page).click();
 
         try {
-            await page.waitForURL(/\/home/, { timeout: 10_000, waitUntil: "domcontentloaded" });
-            await expect(page).toHaveURL(/\/home/);
+            await page.waitForURL((url) => url.pathname === "/", { timeout: 10_000, waitUntil: "domcontentloaded" });
+            await expect(page).toHaveURL(/\/$/);
             await expect(page.getByRole("button", { name: /ตะกร้าสินค้า/ })).toBeVisible();
             return;
         } catch (error) {

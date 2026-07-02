@@ -10,7 +10,7 @@ import { PERMISSIONS } from "@/lib/permissions";
 import { contentApiError } from "@/lib/features/content/apiResponse";
 
 const DEFAULT_NAV_ITEMS = [
-    { label: "หน้าแรก", href: "/home", icon: "home", sortOrder: 0 },
+    { label: "หน้าแรก", href: "/", icon: "home", sortOrder: 0 },
     { label: "ร้านค้า", href: "/shop", icon: "shop", sortOrder: 1 },
     { label: "แดชบอร์ด", href: "/dashboard", icon: "dashboard", sortOrder: 2 },
     { label: "ช่วยเหลือ", href: "/help", icon: "help", sortOrder: 3 },

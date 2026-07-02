@@ -95,7 +95,7 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
 
                 <div className="p-3">
                     <Link
-                        href="/home"
+                        href="/"
                         className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                     >
                         <ArrowLeft className="h-5 w-5" />

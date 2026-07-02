@@ -160,7 +160,7 @@ export function NavigationDrawer({
                     style={drawerStyles.header}
                 >
                     <Link
-                        href="/home"
+                        href="/"
                         prefetch={false}
                         onClick={() => setIsOpen(false)}
                         className="flex items-center gap-2.5"

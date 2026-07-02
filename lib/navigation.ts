@@ -37,6 +37,7 @@ export const NAV_ICON_BY_NAME: Record<string, LucideIcon> = {
 
 /** Map a known href → lucide icon (for hardcoded surfaces like the drawer). */
 export const NAV_ICON_BY_HREF: Record<string, LucideIcon> = {
+    "/": Home,
     "/home": Home,
     "/shop": ShoppingBag,
     "/gachapons": Dices,
@@ -61,6 +62,9 @@ export function navIconByHref(href: string): LucideIcon {
 // and any /gacha* page lights up the gacha entry — identically on
 // every surface.
 const NAV_MATCHERS: Record<string, (pathname: string) => boolean> = {
+    // The homepage lives at "/" — "/home" survives as a redirect and in
+    // admin-managed nav items stored in the database, so both must match.
+    "/": (p) => p === "/" || p === "/home",
     "/home": (p) => p === "/home" || p === "/",
     "/shop": (p) => p === "/shop" || p.startsWith("/shop/") || p.startsWith("/product"),
     "/gachapons": (p) => p.startsWith("/gacha"),
@@ -88,7 +92,7 @@ export interface PrimaryNavEntry {
 }
 
 export const PRIMARY_NAV = {
-    home: { href: "/home", label: "หน้าแรก", shortLabel: "หน้าแรก" },
+    home: { href: "/", label: "หน้าแรก", shortLabel: "หน้าแรก" },
     shop: { href: "/shop", label: "ร้านค้า", shortLabel: "ร้านค้า" },
     gacha: { href: "/gachapons", label: "หมวดหมู่กาชา", shortLabel: "กาชา" },
     seasonPass: { href: "/season-pass", label: "Season Pass", shortLabel: "Pass" },

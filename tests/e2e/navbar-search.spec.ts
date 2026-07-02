@@ -5,11 +5,17 @@ import { expect, test, type Page } from "@playwright/test";
 // the e2e DB may hold zero products, so we assert on the dialog behaviour, not
 // on specific results.
 //
-// We navigate to /home directly rather than / — the root path redirects
-// first-time visitors (no welcome cookie) to the immersive /welcome page,
-// which has no navbar. The Navbar lives in the (site) layout that wraps /home.
+// The homepage lives at "/" with the navbar, but first-time visitors (no
+// welcome cookie) get client-redirected to the immersive /welcome page, which
+// has no navbar — so mark the welcome splash as already seen before each test.
 
 const SEARCH_PLACEHOLDER = "ค้นหาสินค้าตามชื่อหรือหมวดหมู่...";
+
+test.beforeEach(async ({ page, baseURL }) => {
+  await page.context().addCookies([
+    { name: "snail_welcome_seen", value: "1", url: baseURL ?? "http://127.0.0.1:3201" },
+  ]);
+});
 
 function searchTrigger(page: Page) {
   return page.getByRole("button", { name: "ค้นหาสินค้า" });
@@ -20,7 +26,7 @@ function searchInput(page: Page) {
 }
 
 test("navbar search opens from the trigger button and can be dismissed", async ({ page }) => {
-  await page.goto("/home");
+  await page.goto("/");
 
   await searchTrigger(page).click();
   await expect(searchInput(page)).toBeVisible();
@@ -31,7 +37,7 @@ test("navbar search opens from the trigger button and can be dismissed", async (
 });
 
 test("Ctrl+K toggles the search dialog", async ({ page }) => {
-  await page.goto("/home");
+  await page.goto("/");
 
   // Wait for the trigger to render before firing the shortcut — the ⌘K/Ctrl+K
   // key listener is only attached once NavbarSearch has hydrated. Move focus
@@ -48,7 +54,7 @@ test("Ctrl+K toggles the search dialog", async ({ page }) => {
 });
 
 test("typing a nonsense query surfaces the empty-result state", async ({ page }) => {
-  await page.goto("/home");
+  await page.goto("/");
 
   await searchTrigger(page).click();
   await searchInput(page).fill("zzz-no-such-product-xyz");

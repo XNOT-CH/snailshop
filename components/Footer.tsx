@@ -101,7 +101,7 @@ export default async function Footer() {
                 <div className="grid grid-cols-1 gap-8 py-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
                     {/* Brand + disclaimer + social */}
                     <div className="sm:col-span-2 lg:col-span-1">
-                        <Link href="/home" prefetch={false} className="mb-4 inline-flex items-center gap-3">
+                        <Link href="/" prefetch={false} className="mb-4 inline-flex items-center gap-3">
                             {siteSettings?.logoUrl ? (
                                 <Image src={siteSettings.logoUrl} alt="Logo" width={48} height={48} className="h-12 w-12 rounded-xl object-contain" />
                             ) : (

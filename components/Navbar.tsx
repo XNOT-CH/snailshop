@@ -20,7 +20,9 @@ import { PRIMARY_NAV, navIconByHref, navIconByName } from "@/lib/navigation";
 import { NavbarSearch } from "@/components/NavbarSearch";
 
 function normalizeNavHref(href: string) {
-    return href === "/" ? "/home" : href;
+    // Admin-managed nav items in the database may still say "/home";
+    // the homepage now lives at "/".
+    return href === "/home" ? "/" : href;
 }
 
 export default async function Navbar() {
@@ -96,7 +98,7 @@ export default async function Navbar() {
         <header id="main-navbar" className={`${themeClasses.header} w-full md:backdrop-blur-xl`}>
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-4 lg:px-6 xl:px-8">
                 <Link
-                    href="/home"
+                    href="/"
                     prefetch={false}
                     className="flex shrink-0 items-center gap-3.5 text-lg font-semibold text-primary xl:min-w-0"
                 >

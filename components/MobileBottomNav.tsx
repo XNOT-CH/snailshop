@@ -23,7 +23,7 @@ const ACCOUNT_NAV_ITEMS = [
     { href: "/dashboard/season-pass", label: "Pass", icon: Gift, match: (pathname: string) => pathname.startsWith("/dashboard/season-pass") },
     { href: "/dashboard/inventory", label: "คลัง", icon: Package, match: (pathname: string) => pathname.startsWith("/dashboard/inventory") },
     { href: "/dashboard/settings", label: "ตั้งค่า", icon: Settings, match: (pathname: string) => pathname.startsWith("/dashboard/settings") || pathname.startsWith("/profile") },
-    { href: "/home", label: "หน้าร้าน", icon: ArrowLeft, match: () => false },
+    { href: "/", label: "หน้าร้าน", icon: ArrowLeft, match: () => false },
 ] as const;
 
 const HIDDEN_PREFIXES = ["/admin", "/login", "/register"];

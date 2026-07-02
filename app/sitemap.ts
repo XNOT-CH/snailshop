@@ -1,11 +1,14 @@
 import type { MetadataRoute } from "next";
 import { and, eq } from "drizzle-orm";
-import { db, gachaMachines, helpArticles } from "@/lib/db";
+import { db, gachaMachines, helpArticles, products } from "@/lib/db";
 import { absoluteUrl } from "@/lib/seo";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const [productPages, helpDocs, machines] = await Promise.all([
+        // Sold products are excluded: they get auto-deleted after sale, so their
+        // URLs would turn into dead sitemap entries pointing at soft-404 pages.
         db.query.products.findMany({
+            where: eq(products.isSold, false),
             columns: { id: true, updatedAt: true },
         }),
         db.query.helpArticles.findMany({

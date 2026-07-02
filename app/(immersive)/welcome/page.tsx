@@ -11,6 +11,17 @@ import { normalizeWelcomeStripImages } from "@/lib/welcomeStrip";
 export const metadata: Metadata = {
   title: "Welcome",
   description: "หน้าแนะนำร้านแบบเต็มหน้าจอ",
+  // Override the layout-wide default canonical ("/") — this splash must not
+  // present itself as the homepage.
+  alternates: {
+    canonical: "/welcome",
+  },
+  // A first-visit splash must never be indexed — before this, Google indexed
+  // it as the homepage because "/" used to redirect cookie-less visitors here.
+  robots: {
+    index: false,
+    follow: true,
+  },
 };
 
 type WelcomePageProps = {
@@ -25,7 +36,7 @@ export default async function WelcomePage({ searchParams }: WelcomePageProps) {
   const isPreview = params?.preview === "1";
 
   if (!isPreview && cookieStore.has(WELCOME_SEEN_COOKIE)) {
-    redirect("/home");
+    redirect("/");
   }
 
   const settings = await getSiteSettings();
@@ -68,7 +79,7 @@ export default async function WelcomePage({ searchParams }: WelcomePageProps) {
 
           <div className="snail-welcome-cta-row">
             <Link
-              href="/home"
+              href="/"
               className="snail-welcome-cta inline-flex items-center justify-center rounded-full bg-[#ffd21f] font-black text-[#0c2877] shadow-[0_20px_45px_rgba(8,34,95,0.3)] transition-transform duration-200 hover:-translate-y-0.5 hover:bg-[#ffdd47] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-white/35"
             >
               เข้าสู่หน้าแรก
