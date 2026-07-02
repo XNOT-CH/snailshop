@@ -134,7 +134,8 @@ export function NavbarSearch({ currencySettings }: NavbarSearchProps) {
                             placeholder="ค้นหาสินค้าตามชื่อหรือหมวดหมู่..."
                             className="focus-visible:ring-0 focus-visible:ring-offset-0"
                         />
-                        <CommandList>
+                        {/* Default max-h-[300px] cuts the 8 suggestions mid-row; size to content, capped so the dialog never overflows short screens. */}
+                        <CommandList className="max-h-[min(60vh,490px)] overscroll-contain">
                             {loading ? (
                                 <p className="py-6 text-center text-sm text-muted-foreground">กำลังโหลด...</p>
                             ) : error ? (
