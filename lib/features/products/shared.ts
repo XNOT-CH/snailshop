@@ -41,6 +41,27 @@ export function parseProductPrice(price: string | number) {
     return { value: priceNumber };
 }
 
+/**
+ * POINT prices must be whole numbers: pointBalance is an INT column and the
+ * purchase path deducts Math.round(totalPrice), so a fractional point price
+ * would charge a different amount than the product page displays.
+ */
+export function validatePointCurrencyPricing(
+    currency: string | null | undefined,
+    priceNumber: number,
+    discountPriceNumber: number | null,
+) {
+    if (currency !== "POINT") {
+        return null;
+    }
+
+    if (!Number.isInteger(priceNumber) || (discountPriceNumber !== null && !Number.isInteger(discountPriceNumber))) {
+        return { error: "ราคาสินค้าสกุลพอยต์ต้องเป็นจำนวนเต็ม" as const };
+    }
+
+    return null;
+}
+
 export function validateDiscountPrice(discountPrice: string | number | null | undefined, priceNumber: number) {
     if (discountPrice !== undefined && discountPrice !== "" && discountPrice !== null) {
         const value = Number(discountPrice);

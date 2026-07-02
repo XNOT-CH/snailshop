@@ -25,7 +25,11 @@ export const users = mysqlTable("User", {
     id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
     name: varchar("name", { length: 255 }),
     username: varchar("username", { length: 255 }).unique().notNull(),
-    email: varchar("email", { length: 255 }),
+    // Unique so concurrent registrations can't create duplicate-email accounts;
+    // password reset and email verification look users up by email with findFirst,
+    // so a duplicate would shadow one of the accounts. NULL stays allowed (MySQL
+    // permits multiple NULLs in a unique index).
+    email: varchar("email", { length: 255 }).unique(),
     password: varchar("password", { length: 255 }).notNull(),
     image: text("image"),
     role: varchar("role", { length: 50 }).default("USER").notNull(),

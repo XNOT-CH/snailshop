@@ -414,7 +414,7 @@ export async function executeSingleProductPurchaseTransaction(params: {
                 [promoData.id],
             );
             await conn.execute(
-                "INSERT INTO PromoUsage (id, promoCodeId, userId, orderId, promoCode, discountAmount, status, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, 'COMPLETED', NOW(), NOW())",
+                "INSERT INTO PromoUsage (id, promoCodeId, userId, orderId, promoCode, discountAmount, status, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, 'COMPLETED', UTC_TIMESTAMP(), UTC_TIMESTAMP())",
                 [
                     crypto.randomUUID(),
                     promoData.id,
@@ -546,7 +546,7 @@ export async function executeCartPurchaseTransaction(params: {
                 [appliedPromo.id],
             );
             await conn.execute(
-                "INSERT INTO PromoUsage (id, promoCodeId, userId, orderId, promoCode, discountAmount, status, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, 'COMPLETED', NOW(), NOW())",
+                "INSERT INTO PromoUsage (id, promoCodeId, userId, orderId, promoCode, discountAmount, status, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, 'COMPLETED', UTC_TIMESTAMP(), UTC_TIMESTAMP())",
                 [
                     crypto.randomUUID(),
                     appliedPromo.id,

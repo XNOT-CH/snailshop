@@ -4,7 +4,7 @@ import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { invalidateProductCaches } from "@/lib/cache";
 import { createProduct } from "@/lib/features/products/mutations";
 import { listProductsForStockCheck } from "@/lib/features/products/queries";
-import { parseProductPrice, validateDiscountPrice, type ProductPayloadInput } from "@/lib/features/products/shared";
+import { parseProductPrice, validateDiscountPrice, validatePointCurrencyPricing, type ProductPayloadInput } from "@/lib/features/products/shared";
 import { findProductStockUserConflict, productStockUserConflictResponseMessage } from "@/lib/features/products/stockValidation";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -33,6 +33,11 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: discountValidation.error }, { status: 400 });
         }
         const discountPriceNumber = discountValidation.value;
+
+        const pointPricingError = validatePointCurrencyPricing(currency, priceNumber, discountPriceNumber);
+        if (pointPricingError) {
+            return NextResponse.json({ success: false, message: pointPricingError.error }, { status: 400 });
+        }
 
         const stockConflict = await findProductStockUserConflict(
             secretData || "",

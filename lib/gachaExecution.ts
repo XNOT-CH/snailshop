@@ -239,7 +239,10 @@ export async function claimProductRewardOrThrow(tx: DbTransaction, input: ClaimP
 
     const isLastStock = !remainingData || remainingData.trim().length === 0;
     const remainingCount = getStockCount(remainingData, input.stockSeparator || "newline");
-    const nextSecretData = isLastStock ? encrypt(taken) : encrypt(remainingData);
+    // Only the remaining (undelivered) stock stays on the product — same as the
+    // purchase path. The delivered item lives solely in the order's givenData;
+    // keeping it here would let an admin duplicate/restore resell a used code.
+    const nextSecretData = encrypt(remainingData);
     const nextOrderId = crypto.randomUUID();
 
     const updateResult = await tx

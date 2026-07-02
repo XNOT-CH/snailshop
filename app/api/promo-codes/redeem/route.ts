@@ -113,6 +113,12 @@ export async function POST(request: NextRequest) {
                 );
 
             const usageCount = Number(usageRows[0]?.count ?? 0);
+            // usagePerUser is NULL for every code created via the admin UI (it always
+            // sends 0, which is stored as NULL). For CREDIT codes NULL deliberately
+            // defaults to 1 redeem per user — treating it as unlimited would let a
+            // single user drain the code's entire usageLimit as free credit. This is
+            // intentionally stricter than the DISCOUNT purchase path, where NULL
+            // means no per-user limit.
             const usagePerUserLimit = promo.usagePerUser ?? 1;
 
             if (usageCount >= usagePerUserLimit) {

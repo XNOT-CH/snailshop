@@ -4,7 +4,7 @@ import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { invalidateProductCaches } from "@/lib/cache";
 import { clearProductOrder, deleteProduct, updateProduct } from "@/lib/features/products/mutations";
 import { findProductById, listOtherProductsForStockCheck } from "@/lib/features/products/queries";
-import { decryptProductSecret, parseProductPrice, validateDiscountPrice, type ProductPayloadInput } from "@/lib/features/products/shared";
+import { decryptProductSecret, parseProductPrice, validateDiscountPrice, validatePointCurrencyPricing, type ProductPayloadInput } from "@/lib/features/products/shared";
 import { findProductStockUserConflict, productStockUserConflictResponseMessage } from "@/lib/features/products/stockValidation";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -45,6 +45,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         const discountValidation = validateDiscountPrice(discountPrice, priceNumber);
         if ("error" in discountValidation) return NextResponse.json({ success: false, message: discountValidation.error }, { status: 400 });
         const discountPriceNumber = discountValidation.value;
+
+        const pointPricingError = validatePointCurrencyPricing(currency, priceNumber, discountPriceNumber);
+        if (pointPricingError) return NextResponse.json({ success: false, message: pointPricingError.error }, { status: 400 });
 
         const stockConflict = await findProductStockUserConflict(
             secretData || "",

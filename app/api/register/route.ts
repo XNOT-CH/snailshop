@@ -66,19 +66,36 @@ export async function POST(request: NextRequest) {
 
         // Create user
         const newId = crypto.randomUUID();
-        await db.insert(users).values({
-            id: newId,
-            username,
-            email,
-            password: hashedPassword,
-            pinHash: pin ? await bcrypt.hash(pin, 12) : null,
-            pinEnabledAt: pin ? mysqlNow() : null,
-            pinUpdatedAt: pin ? mysqlNow() : null,
-            role: "USER",
-            creditBalance: "0",
-            createdAt: mysqlNow(),
-            updatedAt: mysqlNow(),
-        });
+        try {
+            await db.insert(users).values({
+                id: newId,
+                username,
+                email,
+                password: hashedPassword,
+                pinHash: pin ? await bcrypt.hash(pin, 12) : null,
+                pinEnabledAt: pin ? mysqlNow() : null,
+                pinUpdatedAt: pin ? mysqlNow() : null,
+                role: "USER",
+                creditBalance: "0",
+                createdAt: mysqlNow(),
+                updatedAt: mysqlNow(),
+            });
+        } catch (insertError) {
+            // The findFirst check above can't stop two concurrent sign-ups with the
+            // same username/email — the unique indexes are the real guard, so map
+            // their violation back to the same friendly duplicate message.
+            const message = insertError instanceof Error ? insertError.message : "";
+            if (message.includes("Duplicate entry")) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        message: message.includes("email") ? "อีเมลนี้ถูกใช้งานแล้ว" : "ชื่อผู้ใช้นี้ถูกใช้งานแล้ว",
+                    },
+                    { status: 400 }
+                );
+            }
+            throw insertError;
+        }
         const user = { id: newId, username };
 
         // Audit log for registration

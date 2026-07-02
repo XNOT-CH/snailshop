@@ -144,6 +144,9 @@ export function getPromoValidationMessage(
         }
     }
 
+    // NULL usagePerUser = no per-user limit for DISCOUNT codes. The CREDIT redeem
+    // route treats NULL as 1 per user instead (see /api/promo-codes/redeem) —
+    // credit codes hand out real balance, so they default to the safe side.
     if (promo.usagePerUser !== null && promo.usagePerUser !== undefined) {
         if (!isAuthenticated) {
             return "กรุณาเข้าสู่ระบบเพื่อใช้โค้ดนี้";
