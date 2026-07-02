@@ -45,7 +45,10 @@ vi.mock("@/lib/auditLog", () => ({
     SETTINGS_UPDATE: "SETTINGS_UPDATE",
   },
 }));
-vi.mock("@/lib/cache", () => ({ invalidateProductCaches: vi.fn() }));
+vi.mock("@/lib/cache", () => ({
+  invalidateProductCaches: vi.fn(),
+  invalidateSettingsCaches: vi.fn(),
+}));
 vi.mock("@/lib/encryption", () => ({
   encrypt: vi.fn((v: string) => `enc:${v}`),
   decrypt: vi.fn((v: string) => v?.replace?.("enc:", "") ?? ""),

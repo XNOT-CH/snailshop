@@ -32,7 +32,7 @@ describe("lib/encryption", () => {
 
   it("throws in production without ENCRYPTION_KEY", async () => {
     vi.stubEnv("NODE_ENV", "production");
-    delete process.env.ENCRYPTION_KEY;
+    vi.stubEnv("ENCRYPTION_KEY", undefined);
 
     const { encrypt } = await import("@/lib/encryption");
     expect(() => encrypt("test")).toThrow(/ENCRYPTION_KEY environment variable is required in production/);
@@ -48,7 +48,7 @@ describe("lib/encryption", () => {
   });
 
   it("falls back to DEV_FALLBACK_KEY if no key provided in non-production", async () => {
-    delete process.env.ENCRYPTION_KEY;
+    vi.stubEnv("ENCRYPTION_KEY", undefined);
     const { encrypt, decrypt } = await import("@/lib/encryption");
     
     const encrypted = encrypt("test");

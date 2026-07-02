@@ -60,7 +60,7 @@ describe("lib/actions/addressProfiles", () => {
   });
 
   it("requires authentication before listing address profiles", async () => {
-    vi.mocked(auth).mockResolvedValue(null);
+    vi.mocked(auth).mockResolvedValue(null as never);
 
     const { getUserAddressProfiles } = await import("@/lib/actions/addressProfiles");
     const result = await getUserAddressProfiles();

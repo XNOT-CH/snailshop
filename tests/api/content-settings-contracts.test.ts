@@ -1,4 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
+import { NextRequest } from "next/server";
 
 const {
   cacheOrFetchMock,
@@ -394,7 +395,7 @@ describe("content/settings API response contracts", () => {
     requirePermissionMock.mockResolvedValue(UNAUTHORIZED);
     const { PUT: putUnauthorized } = await import("@/app/api/admin/nav-items/[id]/route");
     const unauthorizedResponse = await putUnauthorized(
-      new Request("http://localhost/api/admin/nav-items/nav-1", { method: "PUT" }),
+      new NextRequest("http://localhost/api/admin/nav-items/nav-1", { method: "PUT" }),
       routeParams("nav-1"),
     );
 
@@ -407,7 +408,7 @@ describe("content/settings API response contracts", () => {
     requirePermissionMock.mockResolvedValue(ADMIN_OK);
     const { DELETE } = await import("@/app/api/admin/nav-items/[id]/route");
     const deleteResponse = await DELETE(
-      new Request("http://localhost/api/admin/nav-items/nav-1", { method: "DELETE" }),
+      new NextRequest("http://localhost/api/admin/nav-items/nav-1", { method: "DELETE" }),
       routeParams("nav-1"),
     );
 
@@ -419,7 +420,7 @@ describe("content/settings API response contracts", () => {
     deleteWhereMock.mockRejectedValueOnce(new Error("nav delete offline"));
     const { DELETE: deleteWithError } = await import("@/app/api/admin/nav-items/[id]/route");
     const deleteErrorResponse = await deleteWithError(
-      new Request("http://localhost/api/admin/nav-items/nav-1", { method: "DELETE" }),
+      new NextRequest("http://localhost/api/admin/nav-items/nav-1", { method: "DELETE" }),
       routeParams("nav-1"),
     );
 

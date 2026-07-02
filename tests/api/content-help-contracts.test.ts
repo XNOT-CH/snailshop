@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { NextRequest } from "next/server";
 
 const {
     auditFromRequestMock,
@@ -106,7 +107,7 @@ const ADMIN_OK = { success: true, userId: "admin-1" };
 const UNAUTHORIZED = { success: false, error: "Unauthorized" };
 
 const routeParams = (id: string) => ({ params: Promise.resolve({ id }) });
-const request = (url: string, method = "GET") => new Request(url, { method });
+const request = (url: string, method = "GET") => new NextRequest(url, { method });
 
 describe("admin help/help-videos API response contracts", () => {
     beforeEach(() => {

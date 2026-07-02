@@ -50,7 +50,6 @@ import {
     isProductionGachaRedisMissing,
 } from "@/lib/gachaExecution";
 
-const originalNodeEnv = process.env.NODE_ENV;
 
 function makeTx(affectedRows = 1) {
     const where = vi.fn().mockResolvedValue({ affectedRows });
@@ -90,7 +89,7 @@ function makeTx(affectedRows = 1) {
 
 describe("lib/gachaExecution", () => {
     afterEach(() => {
-        process.env.NODE_ENV = originalNodeEnv;
+        vi.unstubAllEnvs();
         redisState.available = false;
         redisState.client.eval.mockReset();
         redisState.client.set.mockReset();
@@ -98,7 +97,7 @@ describe("lib/gachaExecution", () => {
 
     describe("acquireGachaExecutionLock", () => {
         it("rejects production gacha execution when Redis is unavailable", async () => {
-            process.env.NODE_ENV = "production";
+            vi.stubEnv("NODE_ENV", "production");
             redisState.available = false;
 
             expect(isProductionGachaRedisMissing()).toBe(true);
@@ -107,7 +106,7 @@ describe("lib/gachaExecution", () => {
         });
 
         it("keeps the memory lock fallback outside production", async () => {
-            process.env.NODE_ENV = "test";
+            vi.stubEnv("NODE_ENV", "test");
             redisState.available = false;
 
             const firstLock = await acquireGachaExecutionLock("user-test", "machine-1");
@@ -123,7 +122,7 @@ describe("lib/gachaExecution", () => {
         });
 
         it("uses Redis locks in production when Redis is available", async () => {
-            process.env.NODE_ENV = "production";
+            vi.stubEnv("NODE_ENV", "production");
             redisState.available = true;
             redisState.client.set.mockResolvedValueOnce("OK");
             redisState.client.eval.mockResolvedValueOnce(1);

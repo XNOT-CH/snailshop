@@ -153,6 +153,9 @@ describe("CartSheet checkout refresh", () => {
             items: [
                 {
                     ...staleItem,
+                    discountPrice: staleItem.discountPrice ?? null,
+                    currency: staleItem.currency ?? null,
+                    stock: staleItem.stock ?? 0,
                     price: 150,
                     requestedQuantity: 1,
                     availableQuantity: 1,

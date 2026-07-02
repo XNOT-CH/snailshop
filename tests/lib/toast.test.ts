@@ -29,7 +29,7 @@ describe("lib/toast", () => {
         expect(emitToast("success", "Saved")).toBe(true);
         unsubscribe();
 
-        await new Promise((resolve) => queueMicrotask(resolve));
+        await new Promise<void>((resolve) => queueMicrotask(() => resolve()));
         expect(listener).not.toHaveBeenCalled();
     });
 

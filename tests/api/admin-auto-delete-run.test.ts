@@ -34,18 +34,17 @@ function request(url = "http://localhost/api/admin/auto-delete/run", method = "G
 
 describe("API: /api/admin/auto-delete/run", () => {
     const originalCronSecret = process.env.CRON_SECRET;
-    const originalNodeEnv = process.env.NODE_ENV;
 
     beforeEach(() => {
         vi.clearAllMocks();
         process.env.CRON_SECRET = "cron-secret";
-        process.env.NODE_ENV = "test";
+        vi.stubEnv("NODE_ENV", "test");
         runAutoDeleteMock.mockResolvedValue({ deleted: 0, names: [], deletedItems: [] });
     });
 
     afterEach(() => {
         process.env.CRON_SECRET = originalCronSecret;
-        process.env.NODE_ENV = originalNodeEnv;
+        vi.unstubAllEnvs();
     });
 
     it("rejects GET requests without the cron secret and does not use admin session fallback", async () => {

@@ -73,11 +73,11 @@ describe("AnnouncementPopup timing dismissal", () => {
     const dismissState = localStorage.getItem("popup_dismissed_until");
     expect(dismissState).not.toBeNull();
     const parsedDismissState = JSON.parse(dismissState ?? "{}") as {
-      dismissUntil?: number;
-      popupIds?: string[];
+      ids?: string[];
+      expiresAt?: number | null;
     };
-    expect(parsedDismissState.dismissUntil).toBe(Date.now() + 60 * 60 * 1000);
-    expect(parsedDismissState.popupIds).toEqual(["popup-1"]);
+    expect(parsedDismissState.expiresAt).toBe(Date.now() + 60 * 60 * 1000);
+    expect(parsedDismissState.ids).toEqual(["popup-1"]);
 
     firstRender.unmount();
     vi.clearAllMocks();

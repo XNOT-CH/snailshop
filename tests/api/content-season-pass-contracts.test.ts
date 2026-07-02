@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { NextRequest } from "next/server";
 
 const {
     dbMock,
@@ -72,7 +73,7 @@ const reward = {
 };
 
 const request = (url: string, method = "GET", body?: unknown) =>
-    new Request(url, {
+    new NextRequest(url, {
         method,
         body: body === undefined ? undefined : JSON.stringify(body),
     });

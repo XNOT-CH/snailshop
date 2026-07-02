@@ -216,7 +216,7 @@ describe("EasySlip API v2 service", () => {
     });
 
     it("requires EASYSLIP_API_KEY server-side before making requests", async () => {
-        delete process.env.EASYSLIP_API_KEY;
+        vi.stubEnv("EASYSLIP_API_KEY", undefined);
 
         await expect(verifyBankSlipWithEasySlipV2({
             payload: "QR_PAYLOAD",
