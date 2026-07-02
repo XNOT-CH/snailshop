@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { Headset } from "lucide-react";
+import { ChatHeadsetIcon } from "@/components/chat/ChatHeadsetIcon";
 
 const FloatingChatButton = dynamic(
     () => import("@/components/FloatingChatButton").then((mod) => mod.FloatingChatButton),
@@ -51,7 +51,7 @@ export function FloatingChatButtonWrapper() {
                 setShouldLoadChat(true);
             }}
         >
-            <Headset className="h-7 w-7 md:h-8 md:w-8" />
+            <ChatHeadsetIcon className="h-7 w-7 md:h-8 md:w-8" />
         </button>
     );
 }

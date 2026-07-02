@@ -4,7 +4,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { ChangeEvent, KeyboardEvent, useEffect, useRef, useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
-import { Headset, ImagePlus, Loader2, LockKeyhole, Send } from "lucide-react";
+import { ImagePlus, Loader2, LockKeyhole, Send } from "lucide-react";
+import { ChatHeadsetIcon } from "@/components/chat/ChatHeadsetIcon";
 import { Button } from "@/components/ui/button";
 import { ChatBrandLogo } from "@/components/chat/ChatBrandLogo";
 import { ChatMessageContent } from "@/components/chat/ChatMessageContent";
@@ -270,7 +271,7 @@ export function FloatingChatButton({
                     className={`fixed right-4 z-50 flex h-[60px] w-[60px] items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/35 ring-0 transition hover:scale-105 hover:bg-emerald-600 ${MOBILE_BOTTOM_NAV_OFFSET} md:bottom-6 md:right-6 md:h-16 md:w-16`}
                     aria-label="เปิดแชทลูกค้า"
                 >
-                    <Headset className="h-7 w-7 md:h-8 md:w-8" />
+                    <ChatHeadsetIcon className="h-7 w-7 md:h-8 md:w-8" />
                 </button>
             </SheetTrigger>
 
