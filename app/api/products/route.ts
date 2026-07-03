@@ -4,7 +4,7 @@ import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { invalidateProductCaches } from "@/lib/cache";
 import { createProduct } from "@/lib/features/products/mutations";
 import { listProductsForStockCheck } from "@/lib/features/products/queries";
-import { parseProductPrice, validateDiscountPrice, validatePointCurrencyPricing, type ProductPayloadInput } from "@/lib/features/products/shared";
+import { parseProductPrice, validateCurrency, validateDiscountPrice, validatePointCurrencyPricing, type ProductPayloadInput } from "@/lib/features/products/shared";
 import { findProductStockUserConflict, productStockUserConflictResponseMessage } from "@/lib/features/products/stockValidation";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -20,6 +20,11 @@ export async function POST(request: NextRequest) {
 
         if (!title || !price || !category) {
             return NextResponse.json({ success: false, message: "Missing required fields: title, price, category" }, { status: 400 });
+        }
+
+        const currencyError = validateCurrency(currency);
+        if (currencyError) {
+            return NextResponse.json({ success: false, message: currencyError.error }, { status: 400 });
         }
 
         const parsedPrice = parseProductPrice(price);

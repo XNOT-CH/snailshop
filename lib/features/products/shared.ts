@@ -41,6 +41,23 @@ export function parseProductPrice(price: string | number) {
     return { value: priceNumber };
 }
 
+// Only THB and POINT are real currencies in the purchase paths. An unknown
+// currency slips past the cart total (which only sums THB/POINT) and would be
+// handed out without deducting any balance, so reject it at write time.
+export const SUPPORTED_CURRENCIES = ["THB", "POINT"] as const;
+
+export function validateCurrency(currency: string | null | undefined) {
+    if (currency === null || currency === undefined || currency === "") {
+        return null; // falls back to THB when stored
+    }
+
+    if (!SUPPORTED_CURRENCIES.includes(currency as (typeof SUPPORTED_CURRENCIES)[number])) {
+        return { error: "สกุลเงินไม่ถูกต้อง (รองรับเฉพาะ THB และ POINT)" as const };
+    }
+
+    return null;
+}
+
 /**
  * POINT prices must be whole numbers: pointBalance is an INT column and the
  * purchase path deducts Math.round(totalPrice), so a fractional point price
@@ -65,7 +82,7 @@ export function validatePointCurrencyPricing(
 export function validateDiscountPrice(discountPrice: string | number | null | undefined, priceNumber: number) {
     if (discountPrice !== undefined && discountPrice !== "" && discountPrice !== null) {
         const value = Number(discountPrice);
-        if (Number.isNaN(value) || value < 0) {
+        if (Number.isNaN(value) || value <= 0) {
             return { error: "Discount price must be a positive number" as const };
         }
         if (value >= priceNumber) {

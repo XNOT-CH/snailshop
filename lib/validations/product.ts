@@ -10,7 +10,9 @@ export const createProductSchema = z.object({
     imageUrl: z.url({ error: "URL รูปภาพไม่ถูกต้อง" }).optional().or(z.literal("")),
     description: z.string().max(2000).optional().or(z.literal("")),
     secretData: z.string().optional().or(z.literal("")),
-    stockSeparator: z.enum(["newline", "comma", "tab"]).default("newline"),
+    // Only "newline" is actually supported by lib/stock (getDelimiter falls back
+    // to "\n" for anything else), so keep the schema in step with reality.
+    stockSeparator: z.enum(["newline"]).default("newline"),
     isFeatured: z.boolean().default(false),
     isSaleItem: z.boolean().default(false),
 });

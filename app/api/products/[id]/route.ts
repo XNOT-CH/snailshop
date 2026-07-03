@@ -4,7 +4,7 @@ import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { invalidateProductCaches } from "@/lib/cache";
 import { clearProductOrder, deleteProduct, updateProduct } from "@/lib/features/products/mutations";
 import { findProductById, listOtherProductsForStockCheck } from "@/lib/features/products/queries";
-import { decryptProductSecret, parseProductPrice, validateDiscountPrice, validatePointCurrencyPricing, type ProductPayloadInput } from "@/lib/features/products/shared";
+import { decryptProductSecret, parseProductPrice, validateCurrency, validateDiscountPrice, validatePointCurrencyPricing, type ProductPayloadInput } from "@/lib/features/products/shared";
 import { findProductStockUserConflict, productStockUserConflictResponseMessage } from "@/lib/features/products/stockValidation";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -37,6 +37,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
         const existingProduct = await findProductById(id);
         if (!existingProduct) return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
+
+        const currencyError = validateCurrency(currency);
+        if (currencyError) return NextResponse.json({ success: false, message: currencyError.error }, { status: 400 });
 
         const parsedPrice = parseProductPrice(price ?? "");
         if ("error" in parsedPrice) return NextResponse.json({ success: false, message: parsedPrice.error }, { status: 400 });
