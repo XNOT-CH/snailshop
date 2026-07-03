@@ -3514,24 +3514,19 @@ svg {
 }
 
 .snail-welcome-frame-track {
-  position: relative;
-  height: clamp(3.1rem, 6vw, 4.45rem);
-}
-
-.snail-welcome-frame-set {
-  position: absolute;
-  left: 0;
-  top: 0;
   display: flex;
-  gap: clamp(0.55rem, 1.5vw, 1rem);
   width: max-content;
-  padding-inline: clamp(0.75rem, 3vw, 2.5rem);
-  animation: snailWelcomeFrameMarquee 35s linear infinite;
+  height: clamp(3.1rem, 6vw, 4.45rem);
+  animation: snailWelcomeFrameMarquee 40s linear infinite;
   will-change: transform;
 }
 
-.snail-welcome-frame-set:nth-child(2) {
-  animation-delay: -17.5s;
+.snail-welcome-frame-set {
+  display: flex;
+  gap: clamp(0.55rem, 1.5vw, 1rem);
+  width: max-content;
+  /* Trailing space must equal the in-set gap so the -50% loop is seamless. */
+  padding-right: clamp(0.55rem, 1.5vw, 1rem);
 }
 
 .snail-welcome-frame {
@@ -3712,11 +3707,7 @@ svg {
 
   .snail-welcome-frame-set {
     gap: 0.55rem;
-    animation-duration: 24s;
-  }
-
-  .snail-welcome-frame-set:nth-child(2) {
-    animation-delay: -12s;
+    padding-right: 0.55rem;
   }
 
   .snail-welcome-frame {
@@ -3803,10 +3794,10 @@ svg {
 
 @keyframes snailWelcomeFrameMarquee {
   from {
-    transform: translateX(100vw);
+    transform: translateX(0);
   }
 
   to {
-    transform: translateX(-100%);
+    transform: translateX(-50%);
   }
 }

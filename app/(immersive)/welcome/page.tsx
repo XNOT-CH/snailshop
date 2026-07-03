@@ -48,6 +48,16 @@ export default async function WelcomePage({ searchParams }: WelcomePageProps) {
   const welcomeStripImages = normalizeWelcomeStripImages(settings?.welcomeStripImagesJson).filter(
     (imageUrl) => imageUrl !== "",
   );
+  // The marquee loops by shifting the track exactly one set width, so each set
+  // must be wider than any viewport or a blank seam shows on wide screens.
+  const marqueeMinIconsPerSet = 32;
+  const marqueeImages =
+    welcomeStripImages.length > 0
+      ? Array.from(
+          { length: Math.ceil(marqueeMinIconsPerSet / welcomeStripImages.length) },
+          () => welcomeStripImages,
+        ).flat()
+      : [];
 
   return (
     <section className="snail-welcome-page relative isolate flex min-h-screen w-full items-center justify-center overflow-hidden text-white">
@@ -93,7 +103,7 @@ export default async function WelcomePage({ searchParams }: WelcomePageProps) {
         <div className="snail-welcome-frame-track">
           {[0, 1].map((set) => (
             <div key={set} className="snail-welcome-frame-set">
-              {welcomeStripImages.map((imageUrl, frame) => (
+              {marqueeImages.map((imageUrl, frame) => (
                 <div key={`${set}-${frame}`} className="snail-welcome-frame">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={imageUrl} alt="" className="snail-welcome-frame-image" />
