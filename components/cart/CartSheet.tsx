@@ -50,7 +50,7 @@ import {
 import {
     buildAppliedPromoFromValidation,
     buildPromoValidationPayload,
-    getCartPromoProductCategory,
+    getCartPromoLineItems,
     validatePromoCode,
 } from "@/lib/client/promoCodeClient";
 import {
@@ -218,7 +218,7 @@ function CartSheetContent() {
                 buildPromoValidationPayload({
                     code: promoCode,
                     totalPrice: thbTotal,
-                    productCategory: getCartPromoProductCategory(items),
+                    items: getCartPromoLineItems(items),
                 }),
             );
 

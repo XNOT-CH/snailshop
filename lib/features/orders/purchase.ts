@@ -4,6 +4,8 @@ import { splitStock, getDelimiter } from "@/lib/stock";
 import {
     calculatePromoDiscountAmount,
     getPromoValidationMessage,
+    summarizePromoEligibleItems,
+    type PromoLineItem,
     type PromoRecord,
 } from "@/lib/promo";
 import {
@@ -45,7 +47,10 @@ export type PurchasePromoData = {
     discountValue: number;
     maxDiscount: number | null;
     discountAmount: number;
+    eligibleProductIds: string[];
 };
+
+export type PromoCartLineItem = PromoLineItem & { productId: string };
 
 type RawConnection = {
     beginTransaction: () => Promise<void>;
@@ -121,25 +126,11 @@ export function getAutoDeleteTimestamp(delayMinutes?: string | number | null) {
     return deleteAt.toISOString().slice(0, 19).replace("T", " ");
 }
 
-function normalizeCartPromoCategory(productList: PurchaseProductRow[]) {
-    const categories = Array.from(
-        new Set(
-            productList
-                .filter((product) => product.currency === "THB" || !product.currency)
-                .map((product) => product.category?.trim())
-                .filter(Boolean),
-        ),
-    );
-
-    return categories.length === 1 ? categories[0] ?? null : null;
-}
-
-export function buildDiscountedThbPriceMap(
+export function buildCartThbPromoItems(
     productList: PurchaseProductRow[],
     items: CheckoutItemInput[],
-    discountAmount: number,
-) {
-    const thbProducts = items
+): PromoCartLineItem[] {
+    return items
         .map((item) => {
             const product = productList.find((candidate) => candidate.id === item.productId);
             if (!product || (product.currency !== "THB" && product.currency)) {
@@ -148,31 +139,47 @@ export function buildDiscountedThbPriceMap(
 
             return {
                 productId: item.productId,
+                category: product.category,
                 subtotal: getActivePrice(product) * item.quantity,
             };
         })
-        .filter(Boolean) as Array<{ productId: string; subtotal: number }>;
-    const totalThbCents = thbProducts.reduce((sum, product) => sum + Math.round(product.subtotal * 100), 0);
-    const totalDiscountCents = Math.min(Math.round(discountAmount * 100), totalThbCents);
-    const priceMap = new Map<string, number>();
+        .filter(Boolean) as PromoCartLineItem[];
+}
 
-    if (thbProducts.length === 0 || totalDiscountCents <= 0 || totalThbCents <= 0) {
-        thbProducts.forEach((product) => {
-            priceMap.set(product.productId, product.subtotal);
-        });
+// The promo discount is distributed only across the promo-eligible lines;
+// ineligible THB lines keep their full subtotal. eligibleProductIds = null
+// means no promo restriction (or no promo at all).
+export function buildDiscountedThbPriceMap(
+    thbItems: PromoCartLineItem[],
+    discountAmount: number,
+    eligibleProductIds: readonly string[] | null = null,
+) {
+    const priceMap = new Map<string, number>();
+    thbItems.forEach((item) => {
+        priceMap.set(item.productId, item.subtotal);
+    });
+
+    const eligibleSet = eligibleProductIds === null ? null : new Set(eligibleProductIds);
+    const eligibleItems = eligibleSet === null
+        ? thbItems
+        : thbItems.filter((item) => eligibleSet.has(item.productId));
+    const totalEligibleCents = eligibleItems.reduce((sum, item) => sum + Math.round(item.subtotal * 100), 0);
+    const totalDiscountCents = Math.min(Math.round(discountAmount * 100), totalEligibleCents);
+
+    if (eligibleItems.length === 0 || totalDiscountCents <= 0 || totalEligibleCents <= 0) {
         return priceMap;
     }
 
     let distributedDiscountCents = 0;
 
-    thbProducts.forEach((product, index) => {
-        const baseCents = Math.round(product.subtotal * 100);
-        const discountCents = index === thbProducts.length - 1
-            ? totalDiscountCents - distributedDiscountCents
-            : Math.min(baseCents, Math.floor((totalDiscountCents * baseCents) / totalThbCents));
+    eligibleItems.forEach((item, index) => {
+        const baseCents = Math.round(item.subtotal * 100);
+        const discountCents = index === eligibleItems.length - 1
+            ? Math.min(baseCents, totalDiscountCents - distributedDiscountCents)
+            : Math.min(baseCents, Math.floor((totalDiscountCents * baseCents) / totalEligibleCents));
 
         distributedDiscountCents += discountCents;
-        priceMap.set(product.productId, Math.max(0, baseCents - discountCents) / 100);
+        priceMap.set(item.productId, Math.max(0, baseCents - discountCents) / 100);
     });
 
     return priceMap;
@@ -200,14 +207,8 @@ export function validateAndSummarizeCartProducts(
         throw err;
     }
 
-    const totalTHB = productList.reduce((sum, product) => {
-        const item = items.find((candidate) => candidate.productId === product.id);
-        if (!item || (product.currency !== "THB" && product.currency)) {
-            return sum;
-        }
-
-        return sum + (getActivePrice(product) * item.quantity);
-    }, 0);
+    const thbItems = buildCartThbPromoItems(productList, items);
+    const totalTHB = thbItems.reduce((sum, item) => sum + item.subtotal, 0);
 
     const totalPoints = productList.reduce((sum, product) => {
         const item = items.find((candidate) => candidate.productId === product.id);
@@ -233,7 +234,7 @@ export function validateAndSummarizeCartProducts(
     return {
         totalTHB,
         totalPoints,
-        productCategory: normalizeCartPromoCategory(productList),
+        thbItems,
     };
 }
 
@@ -249,8 +250,7 @@ export async function validatePromoInTransaction(
     conn: RawConnection,
     promoCode: string,
     userId: string,
-    totalPrice: number,
-    productCategory: string | null | undefined,
+    thbItems: PromoCartLineItem[],
 ): Promise<PurchasePromoData> {
     const [promoRows] = await conn.execute(
         `SELECT ${PROMO_COLUMNS_SQL} FROM PromoCode WHERE code = ? FOR UPDATE`,
@@ -260,6 +260,11 @@ export async function validatePromoInTransaction(
 
     if (!promo) {
         throw new Error("โค้ดส่วนลดไม่ถูกต้อง");
+    }
+
+    const { eligibleItems, eligibleTotal, categoryError } = summarizePromoEligibleItems(promo, thbItems);
+    if (categoryError) {
+        throw new Error(categoryError);
     }
 
     let completedOrderExists = false;
@@ -280,9 +285,13 @@ export async function validatePromoInTransaction(
         userPromoUsageCount = Number((usageRows as Array<{ count: number | string }>)[0]?.count ?? 0);
     }
 
+    // minPurchase and the discount itself are measured against the eligible
+    // lines only — ineligible lines can't help reach the minimum or inflate
+    // the discount. The category passed here comes from an eligible line, so
+    // the category checks inside are satisfied by construction.
     const errorMessage = getPromoValidationMessage(promo, {
-        totalPrice,
-        productCategory,
+        totalPrice: eligibleTotal,
+        productCategory: eligibleItems[0]?.category,
         isAuthenticated: true,
         hasCompletedOrder: completedOrderExists,
         userPromoUsageCount,
@@ -292,7 +301,7 @@ export async function validatePromoInTransaction(
         throw new Error(errorMessage);
     }
 
-    const { discountAmount } = calculatePromoDiscountAmount(promo, totalPrice);
+    const { discountAmount } = calculatePromoDiscountAmount(promo, eligibleTotal);
 
     return {
         id: promo.id,
@@ -301,6 +310,7 @@ export async function validatePromoInTransaction(
         discountValue: Number(promo.discountValue),
         maxDiscount: promo.maxDiscount ? Number(promo.maxDiscount) : null,
         discountAmount: discountAmount ?? 0,
+        eligibleProductIds: eligibleItems.map((item) => item.productId),
     };
 }
 
@@ -349,7 +359,9 @@ export async function executeSingleProductPurchaseTransaction(params: {
         }
 
         const promoData = !isPointCurrency && promoCode
-            ? await validatePromoInTransaction(conn, promoCode, user.id, baseTotalPrice, product.category)
+            ? await validatePromoInTransaction(conn, promoCode, user.id, [
+                { productId: product.id, category: product.category, subtotal: baseTotalPrice },
+            ])
             : null;
         const totalPrice = Math.max(
             0,
@@ -463,7 +475,7 @@ export async function executeCartPurchaseTransaction(params: {
         );
         const productList = rows as PurchaseProductRow[];
         const lockedUser = await lockPurchaseUserForUpdate(conn, userId);
-        const { totalTHB, totalPoints, productCategory } = validateAndSummarizeCartProducts(
+        const { totalTHB, totalPoints, thbItems } = validateAndSummarizeCartProducts(
             productList,
             items,
             lockedUser,
@@ -471,9 +483,13 @@ export async function executeCartPurchaseTransaction(params: {
             { checkThbBalance: false },
         );
         const appliedPromo = promoCode && totalTHB > 0
-            ? await validatePromoInTransaction(conn, promoCode, userId, totalTHB, productCategory)
+            ? await validatePromoInTransaction(conn, promoCode, userId, thbItems)
             : null;
-        const discountedPriceMap = buildDiscountedThbPriceMap(productList, items, appliedPromo?.discountAmount ?? 0);
+        const discountedPriceMap = buildDiscountedThbPriceMap(
+            thbItems,
+            appliedPromo?.discountAmount ?? 0,
+            appliedPromo ? appliedPromo.eligibleProductIds : null,
+        );
         const finalTotalTHB = items.reduce((sum, item) => sum + (discountedPriceMap.get(item.productId) ?? 0), 0);
 
         if (finalTotalTHB > 0 && Number(lockedUser.creditBalance) < finalTotalTHB) {

@@ -131,7 +131,7 @@ vi.mock("@/lib/client/cartCheckoutClient", () => ({
 vi.mock("@/lib/client/promoCodeClient", () => ({
     buildAppliedPromoFromValidation: vi.fn(),
     buildPromoValidationPayload: vi.fn(),
-    getCartPromoProductCategory: vi.fn(),
+    getCartPromoLineItems: vi.fn(() => []),
     validatePromoCode: vi.fn(),
 }));
 

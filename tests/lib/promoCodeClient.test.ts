@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
     buildAppliedPromoFromValidation,
     buildPromoValidationPayload,
-    getCartPromoProductCategory,
+    getCartPromoLineItems,
     parsePromoValidationResponse,
     validatePromoCode,
 } from "@/lib/client/promoCodeClient";
@@ -40,30 +40,42 @@ describe("lib/client/promoCodeClient", () => {
         });
     });
 
-    it("selects a single cart category only from non-point items", () => {
+    it("includes per-line items in the payload when provided", () => {
         expect(
-            getCartPromoProductCategory([
-                { currency: "POINT", category: "points" },
-                { currency: "THB", category: "games" },
-                { currency: null, category: "games" },
-            ]),
-        ).toBe("games");
+            buildPromoValidationPayload({
+                code: "SAVE10",
+                totalPrice: 500,
+                items: [{ category: "games", subtotal: 500 }],
+            }),
+        ).toEqual({
+            code: "SAVE10",
+            totalPrice: 500,
+            productCategory: null,
+            items: [{ category: "games", subtotal: 500 }],
+        });
     });
 
-    it("returns null for mixed or missing cart categories", () => {
+    it("builds promo line items from non-point cart items using the active price", () => {
         expect(
-            getCartPromoProductCategory([
-                { currency: "THB", category: "games" },
-                { currency: "THB", category: "software" },
+            getCartPromoLineItems([
+                { currency: "POINT", category: "points", price: 50, quantity: 2 },
+                { currency: "THB", category: "games", price: 100, discountPrice: 80, quantity: 2 },
+                { currency: null, category: "software", price: 300 },
             ]),
-        ).toBeNull();
+        ).toEqual([
+            { category: "games", subtotal: 160 },
+            { category: "software", subtotal: 300 },
+        ]);
+    });
 
+    it("keeps null categories and defaults quantity to 1 for promo line items", () => {
         expect(
-            getCartPromoProductCategory([
-                { currency: "POINT", category: "points" },
-                { currency: "THB", category: "" },
+            getCartPromoLineItems([
+                { currency: "THB", category: "", price: 100, discountPrice: null, quantity: 0 },
             ]),
-        ).toBeNull();
+        ).toEqual([
+            { category: "", subtotal: 100 },
+        ]);
     });
 
     it("maps applied promo values with the existing uppercase and numeric fallback rules", () => {

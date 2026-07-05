@@ -65,7 +65,7 @@ const mkReq = (body: object) =>
 const MOCK_USER = { id: "u1", creditBalance: "2000", pointBalance: "500" };
 
 const mkProducts = (overrides: Partial<{
-  id: string; name: string; price: string; discountPrice: string | null;
+  id: string; name: string; price: string; discountPrice: string | null; category: string | null;
   currency: string | null; isSold: boolean; secretData: string | null; stockSeparator: string | null;
 }>[] = [{}]) =>
   overrides.map((o, i) => ({
@@ -309,6 +309,91 @@ describe("API: /api/cart/checkout (POST)", () => {
     const body = await res.json();
     expect(body.success).toBe(true);
     expect(body.totalTHB).toBe(90);
+  });
+
+  const mkPromo = (overrides: object = {}) => ({
+    id: "promo1",
+    code: "SAVE50",
+    codeType: "DISCOUNT",
+    discountType: "PERCENTAGE",
+    discountValue: "50",
+    minPurchase: null,
+    maxDiscount: null,
+    usageLimit: null,
+    usagePerUser: null,
+    usedCount: 0,
+    startsAt: new Date(Date.now() - 1000),
+    expiresAt: null,
+    applicableCategories: null,
+    excludedCategories: null,
+    isNewUserOnly: false,
+    isActive: true,
+    ...overrides,
+  });
+
+  it("rejects promo when every cart item is in an excluded category", async () => {
+    (auth as any).mockResolvedValue({ user: { id: "u1", email: null, name: "Test" } });
+    (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
+    mockCheckoutConnection(
+      mkProducts([{ price: "100", category: "games" }]),
+      mkPromo({ excludedCategories: ["games"] }),
+    );
+    const { POST } = await import("@/app/api/cart/checkout/route");
+    const res = await POST(mkReq({ productIds: ["p1"], promoCode: "SAVE50" }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).message).toBe("โค้ดนี้ไม่สามารถใช้กับหมวดสินค้านี้ได้");
+  });
+
+  it("does not let mixing categories unlock an excluded-category promo for the excluded item", async () => {
+    (auth as any).mockResolvedValue({ user: { id: "u1", email: null, name: "Test" } });
+    (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
+    mockCheckoutConnection(
+      mkProducts([
+        { price: "100", category: "games" },
+        { id: "p2", price: "100", category: "software" },
+      ]),
+      mkPromo({ excludedCategories: ["games"] }),
+    );
+    const { POST } = await import("@/app/api/cart/checkout/route");
+    const res = await POST(mkReq({ productIds: ["p1", "p2"], promoCode: "SAVE50" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    // 50% only off the eligible software item: 100 + (100 - 50) = 150
+    expect(body.totalTHB).toBe(150);
+  });
+
+  it("applies an applicable-categories promo to the matching items of a mixed cart", async () => {
+    (auth as any).mockResolvedValue({ user: { id: "u1", email: null, name: "Test" } });
+    (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
+    mockCheckoutConnection(
+      mkProducts([
+        { price: "100", category: "games" },
+        { id: "p2", price: "100", category: "software" },
+      ]),
+      mkPromo({ applicableCategories: ["games"] }),
+    );
+    const { POST } = await import("@/app/api/cart/checkout/route");
+    const res = await POST(mkReq({ productIds: ["p1", "p2"], promoCode: "SAVE50" }));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    // 50% only off the applicable games item: (100 - 50) + 100 = 150
+    expect(body.totalTHB).toBe(150);
+  });
+
+  it("measures minPurchase against eligible items only", async () => {
+    (auth as any).mockResolvedValue({ user: { id: "u1", email: null, name: "Test" } });
+    (db.query.users.findFirst as any).mockResolvedValue(MOCK_USER);
+    mockCheckoutConnection(
+      mkProducts([
+        { price: "100", category: "games" },
+        { id: "p2", price: "100", category: "software" },
+      ]),
+      mkPromo({ applicableCategories: ["games"], minPurchase: "150" }),
+    );
+    const { POST } = await import("@/app/api/cart/checkout/route");
+    const res = await POST(mkReq({ productIds: ["p1", "p2"], promoCode: "SAVE50" }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).message).toContain("ยอดซื้อไม่ถึงขั้นต่ำ");
   });
 
   it("rejects new-user-only promo when the user already has a completed order", async () => {

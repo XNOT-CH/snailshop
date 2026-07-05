@@ -1,9 +1,15 @@
 import { API_ROUTES } from "@/lib/constants/apiRoutes";
 
+export interface PromoValidationLineItem {
+    category: string | null;
+    subtotal: number;
+}
+
 export interface PromoValidationPayload {
     code: string;
     totalPrice: number;
     productCategory: string | null;
+    items?: PromoValidationLineItem[];
 }
 
 export type PromoValidationResponse = PromoValidationSuccessResponse | PromoValidationFailureResponse;
@@ -33,9 +39,12 @@ export interface AppliedPromoFromValidation {
     finalPrice: number;
 }
 
-export interface CartPromoCategoryItem {
+export interface CartPromoLineItemInput {
     currency?: string | null;
     category?: string | null;
+    price: number;
+    discountPrice?: number | null;
+    quantity?: number | null;
 }
 
 type PromoValidationRequestTarget = RequestInfo | URL;
@@ -48,6 +57,7 @@ interface BuildPromoValidationPayloadOptions {
     code: string;
     totalPrice: number;
     productCategory?: string | null;
+    items?: PromoValidationLineItem[];
 }
 
 interface BuildAppliedPromoOptions {
@@ -66,25 +76,25 @@ export function buildPromoValidationPayload({
     code,
     totalPrice,
     productCategory = null,
+    items,
 }: BuildPromoValidationPayloadOptions): PromoValidationPayload {
     return {
         code,
         totalPrice,
         productCategory,
+        ...(items ? { items } : {}),
     };
 }
 
-export function getCartPromoProductCategory(items: CartPromoCategoryItem[]): string | null {
-    const categories = Array.from(
-        new Set(
-            items
-                .filter((item) => (item.currency ?? "THB") !== "POINT")
-                .map((item) => item.category)
-                .filter((category): category is string => Boolean(category)),
-        ),
-    );
-
-    return categories.length === 1 ? categories[0] : null;
+// Per-line payload for the validate endpoint so the preview applies the
+// promo's category rules per item, exactly like the purchase transaction.
+export function getCartPromoLineItems(items: CartPromoLineItemInput[]): PromoValidationLineItem[] {
+    return items
+        .filter((item) => (item.currency ?? "THB") !== "POINT")
+        .map((item) => ({
+            category: item.category ?? null,
+            subtotal: (item.discountPrice ?? item.price) * (item.quantity || 1),
+        }));
 }
 
 export function buildAppliedPromoFromValidation({

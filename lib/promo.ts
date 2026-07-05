@@ -48,6 +48,12 @@ export interface PromoValidationFailure {
 
 export type PromoValidationResult = PromoValidationSuccess | PromoValidationFailure;
 
+export interface PromoLineItem {
+    productId?: string;
+    category?: string | null;
+    subtotal: number;
+}
+
 function normalizeCategory(value: string | null | undefined) {
     return value?.trim().toUpperCase() || null;
 }
@@ -77,6 +83,42 @@ function normalizeOptionalAmount(value: string | number | null | undefined) {
     }
 
     return parsed;
+}
+
+export function getPromoCategoryError(promo: PromoRecord, productCategory: string | null | undefined) {
+    const normalizedCategory = normalizeCategory(productCategory);
+    const excludedCategories = normalizeCategoryList(promo.excludedCategories);
+    if (normalizedCategory && excludedCategories.includes(normalizedCategory)) {
+        return "โค้ดนี้ไม่สามารถใช้กับหมวดสินค้านี้ได้";
+    }
+
+    const applicableCategories = normalizeCategoryList(promo.applicableCategories);
+    if (applicableCategories.length > 0) {
+        if (!normalizedCategory) {
+            return "โค้ดนี้ต้องใช้กับสินค้าที่รองรับเท่านั้น";
+        }
+
+        if (!applicableCategories.includes(normalizedCategory)) {
+            return "โค้ดนี้ใช้ได้เฉพาะบางหมวดสินค้าที่กำหนด";
+        }
+    }
+
+    return null;
+}
+
+/**
+ * Applies the promo's category rules to each line item separately. Mixing an
+ * excluded-category product with other categories must never unlock the code
+ * for it, so the discount base is only the eligible lines' subtotal.
+ */
+export function summarizePromoEligibleItems<T extends PromoLineItem>(promo: PromoRecord, items: T[]) {
+    const eligibleItems = items.filter((item) => getPromoCategoryError(promo, item.category) === null);
+    const eligibleTotal = eligibleItems.reduce((sum, item) => sum + item.subtotal, 0);
+    const categoryError = items.length > 0 && eligibleItems.length === 0
+        ? getPromoCategoryError(promo, items[0]?.category) ?? "โค้ดนี้ไม่สามารถใช้กับสินค้าในตะกร้าได้"
+        : null;
+
+    return { eligibleItems, eligibleTotal, categoryError };
 }
 
 export function getPromoValidationMessage(
@@ -117,21 +159,9 @@ export function getPromoValidationMessage(
         return `ยอดซื้อไม่ถึงขั้นต่ำ ${minPurchase.toLocaleString()} บาท`;
     }
 
-    const normalizedCategory = normalizeCategory(productCategory);
-    const excludedCategories = normalizeCategoryList(promo.excludedCategories);
-    if (normalizedCategory && excludedCategories.includes(normalizedCategory)) {
-        return "โค้ดนี้ไม่สามารถใช้กับหมวดสินค้านี้ได้";
-    }
-
-    const applicableCategories = normalizeCategoryList(promo.applicableCategories);
-    if (applicableCategories.length > 0) {
-        if (!normalizedCategory) {
-            return "โค้ดนี้ต้องใช้กับสินค้าที่รองรับเท่านั้น";
-        }
-
-        if (!applicableCategories.includes(normalizedCategory)) {
-            return "โค้ดนี้ใช้ได้เฉพาะบางหมวดสินค้าที่กำหนด";
-        }
+    const categoryError = getPromoCategoryError(promo, productCategory);
+    if (categoryError) {
+        return categoryError;
     }
 
     if (promo.isNewUserOnly) {
@@ -218,17 +248,34 @@ export async function validatePromoCode({
     totalPrice,
     productCategory,
     userId,
+    items,
 }: {
     code: string;
     totalPrice?: number | null;
     productCategory?: string | null;
     userId?: string | null;
+    items?: PromoLineItem[] | null;
 }): Promise<PromoValidationResult> {
     const promo = await findPromoByCode(code);
 
     if (!promo) {
         return { valid: false, message: "โค้ดส่วนลดไม่ถูกต้อง" };
     }
+
+    // When per-item data is available, category rules and the discount base
+    // come from the eligible lines only — same rules as the purchase
+    // transaction, so the preview matches what checkout will charge.
+    const itemSummary = Array.isArray(items) && items.length > 0
+        ? summarizePromoEligibleItems(promo, items)
+        : null;
+    if (itemSummary?.categoryError) {
+        return { valid: false, message: itemSummary.categoryError };
+    }
+
+    const effectiveTotalPrice = itemSummary ? itemSummary.eligibleTotal : totalPrice;
+    const effectiveCategory = itemSummary
+        ? itemSummary.eligibleItems[0]?.category ?? null
+        : productCategory;
 
     const isAuthenticated = Boolean(userId);
     const needsOrderCheck = Boolean(promo.isNewUserOnly && userId);
@@ -240,8 +287,8 @@ export async function validatePromoCode({
     ]);
 
     const errorMessage = getPromoValidationMessage(promo, {
-        totalPrice,
-        productCategory,
+        totalPrice: effectiveTotalPrice,
+        productCategory: effectiveCategory,
         isAuthenticated,
         hasCompletedOrder: completedOrderExists,
         userPromoUsageCount: usageCount,
@@ -251,7 +298,7 @@ export async function validatePromoCode({
         return { valid: false, message: errorMessage };
     }
 
-    const { minPurchase, discountAmount } = calculatePromoDiscountAmount(promo, totalPrice);
+    const { minPurchase, discountAmount } = calculatePromoDiscountAmount(promo, effectiveTotalPrice);
 
     return {
         valid: true,

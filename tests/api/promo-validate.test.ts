@@ -210,4 +210,91 @@ describe("API: /api/promo-codes/validate (POST)", () => {
     expect(body.valid).toBe(true);
     expect(body.minPurchase).toBeNull();
   });
+
+  // ── per-line items payload (matches purchase transaction rules) ──────────
+  it("computes the discount from eligible lines only when items are provided", async () => {
+    (db.query.promoCodes.findFirst as any).mockResolvedValue(
+      mkPromo({ discountValue: "50", excludedCategories: ["games"] })
+    );
+    const { POST } = await import("@/app/api/promo-codes/validate/route");
+    const res = await POST(mkReq({
+      code: "SAVE10",
+      totalPrice: 200,
+      items: [
+        { category: "games", subtotal: 100 },
+        { category: "software", subtotal: 100 },
+      ],
+    }));
+    const body = await res.json();
+    expect(body.valid).toBe(true);
+    expect(body.discountAmount).toBe(50); // 50% of the eligible 100 only
+    expect(body.finalPrice).toBe(150);
+  });
+
+  it("rejects when every provided line is in an excluded category", async () => {
+    (db.query.promoCodes.findFirst as any).mockResolvedValue(
+      mkPromo({ excludedCategories: ["games"] })
+    );
+    const { POST } = await import("@/app/api/promo-codes/validate/route");
+    const res = await POST(mkReq({
+      code: "SAVE10",
+      totalPrice: 100,
+      items: [{ category: "games", subtotal: 100 }],
+    }));
+    const body = await res.json();
+    expect(body.valid).toBe(false);
+    expect(body.message).toContain("ไม่สามารถใช้กับหมวดสินค้านี้");
+  });
+
+  it("accepts a mixed cart for an applicable-categories promo and discounts matching lines", async () => {
+    (db.query.promoCodes.findFirst as any).mockResolvedValue(
+      mkPromo({ discountValue: "50", applicableCategories: ["games"] })
+    );
+    const { POST } = await import("@/app/api/promo-codes/validate/route");
+    const res = await POST(mkReq({
+      code: "SAVE10",
+      totalPrice: 200,
+      items: [
+        { category: "games", subtotal: 100 },
+        { category: "software", subtotal: 100 },
+      ],
+    }));
+    const body = await res.json();
+    expect(body.valid).toBe(true);
+    expect(body.discountAmount).toBe(50);
+    expect(body.finalPrice).toBe(150);
+  });
+
+  it("checks minPurchase against the eligible subtotal when items are provided", async () => {
+    (db.query.promoCodes.findFirst as any).mockResolvedValue(
+      mkPromo({ applicableCategories: ["games"], minPurchase: "150" })
+    );
+    const { POST } = await import("@/app/api/promo-codes/validate/route");
+    const res = await POST(mkReq({
+      code: "SAVE10",
+      totalPrice: 200,
+      items: [
+        { category: "games", subtotal: 100 },
+        { category: "software", subtotal: 100 },
+      ],
+    }));
+    const body = await res.json();
+    expect(body.valid).toBe(false);
+    expect(body.message).toContain("ขั้นต่ำ");
+  });
+
+  it("ignores malformed items and falls back to the legacy payload fields", async () => {
+    (db.query.promoCodes.findFirst as any).mockResolvedValue(
+      mkPromo({ discountValue: "20" })
+    );
+    const { POST } = await import("@/app/api/promo-codes/validate/route");
+    const res = await POST(mkReq({
+      code: "SAVE10",
+      totalPrice: 500,
+      items: [{ category: "games" }, "junk", { subtotal: "abc" }],
+    }));
+    const body = await res.json();
+    expect(body.valid).toBe(true);
+    expect(body.discountAmount).toBe(100); // 20% of totalPrice 500
+  });
 });
