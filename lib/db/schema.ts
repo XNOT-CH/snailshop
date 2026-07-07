@@ -516,7 +516,7 @@ export const navItems = mysqlTable("NavItem", {
 export const currencySettings = mysqlTable("CurrencySettings", {
     id: varchar("id", { length: 36 }).primaryKey().default("default"),
     name: varchar("name", { length: 50 }).default("พอยท์").notNull(),
-    symbol: varchar("symbol", { length: 10 }).default("💎").notNull(),
+    symbol: varchar("symbol", { length: 10 }).default("").notNull(),
     code: varchar("code", { length: 20 }).default("POINT").notNull(),
     description: text("description"),
     isActive: boolean("isActive").default(true).notNull(),

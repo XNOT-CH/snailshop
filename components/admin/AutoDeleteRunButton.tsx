@@ -26,10 +26,10 @@ export function AutoDeleteRunButton() {
             const data = await res.json();
             if (data.success) {
                 if (data.deleted > 0) {
-                    showSuccess(`🗑️ ลบสินค้าครบกำหนดแล้ว ${data.deleted} รายการ`);
+                    showSuccess(`ลบสินค้าครบกำหนดแล้ว ${data.deleted} รายการ`);
                     router.refresh();
                 } else {
-                    showSuccess("✅ ไม่มีสินค้าที่ต้องลบในขณะนี้");
+                    showSuccess("ไม่มีสินค้าที่ต้องลบในขณะนี้");
                 }
             } else {
                 showError(data.message || "เกิดข้อผิดพลาด");

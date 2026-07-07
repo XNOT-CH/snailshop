@@ -12,7 +12,8 @@ export interface PublicCurrencySettings {
 export const DEFAULT_CURRENCY_SETTINGS: PublicCurrencySettings = {
   id: "default",
   name: "พอยท์",
-  symbol: "💎",
+  // Optional prefix shown before point amounts; empty = amount + name only.
+  symbol: "",
   code: "POINT",
   description: null,
   isActive: true,
@@ -44,7 +45,7 @@ export function normalizeCurrencySettings(
   return {
     id: settings?.id || DEFAULT_CURRENCY_SETTINGS.id,
     name: settings?.name?.trim() || DEFAULT_CURRENCY_SETTINGS.name,
-    symbol: settings?.symbol?.trim() || DEFAULT_CURRENCY_SETTINGS.symbol,
+    symbol: settings?.symbol?.trim() ?? DEFAULT_CURRENCY_SETTINGS.symbol,
     code: "POINT",
     description: settings?.description?.trim() || null,
     isActive: settings?.isActive ?? DEFAULT_CURRENCY_SETTINGS.isActive,
@@ -95,7 +96,7 @@ export function formatCurrencyAmount(
 
   const segments: string[] = [];
 
-  if (withSymbol) {
+  if (withSymbol && normalizedSettings.symbol) {
     segments.push(normalizedSettings.symbol);
   }
 

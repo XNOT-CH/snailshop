@@ -43,7 +43,7 @@ export type NavItemInput = z.infer<typeof navItemSchema>;
 // Currency settings
 export const currencySettingsSchema = z.object({
   name: z.string().min(1, "กรุณากรอกชื่อสกุลเงิน").max(100),
-  symbol: z.string().min(1, "กรุณากรอก Symbol").max(10),
+  symbol: z.string().max(10).default(""),
   description: z.string().max(300).optional().or(z.literal("")),
   isActive: z.boolean().default(true),
 });

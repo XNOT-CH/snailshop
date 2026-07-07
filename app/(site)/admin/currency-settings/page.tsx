@@ -23,8 +23,6 @@ interface CurrencySettings {
     isActive: boolean;
 }
 
-const SYMBOL_OPTIONS = ["💎", "🪙", "⭐", "💰", "🎮", "🔮", "⚡", "🏆"];
-
 export default function CurrencySettingsPage() {
     const permissions = useAdminPermissions();
     const [loading, setLoading] = useState(true);
@@ -32,7 +30,7 @@ export default function CurrencySettingsPage() {
     const [settings, setSettings] = useState<CurrencySettings>({
         id: "default",
         name: "พอยท์",
-        symbol: "💎",
+        symbol: "",
         code: "POINT",
         description: null,
         isActive: true,
@@ -66,8 +64,8 @@ export default function CurrencySettingsPage() {
             return;
         }
 
-        if (!settings.name.trim() || !settings.symbol.trim()) {
-            showError("กรุณากรอกชื่อและสัญลักษณ์");
+        if (!settings.name.trim()) {
+            showError("กรุณากรอกชื่อสกุลเงิน");
             return;
         }
         setSaving(true);
@@ -77,7 +75,7 @@ export default function CurrencySettingsPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(settings),
             });
-            if (res.ok) showSuccess("บันทึกการตั้งค่าเรียบร้อย 🎉");
+            if (res.ok) showSuccess("บันทึกการตั้งค่าเรียบร้อย");
             else showError("ไม่สามารถบันทึกได้");
         } catch {
             showError("เกิดข้อผิดพลาด");
@@ -129,51 +127,18 @@ export default function CurrencySettingsPage() {
                     </div>
 
                     {/* Symbol */}
-                    <div className="space-y-3">
-                        <Label>สัญลักษณ์ *</Label>
-                        <div className="grid grid-cols-4 gap-2 sm:grid-cols-6 lg:grid-cols-8">
-                            {SYMBOL_OPTIONS.map((symbol) => {
-                                const isSelected = settings.symbol === symbol;
-                                return (
-                                    <button
-                                        key={symbol}
-                                        type="button"
-                                        onClick={() => updateSettings({ symbol })}
-                                        disabled={!canEditSettings}
-                                        className={`
-                                            relative flex items-center justify-center h-12 w-full rounded-xl text-2xl
-                                            transition-all duration-150 select-none
-                                            ${isSelected
-                                                ? "ring-2 ring-[#1a56db] ring-offset-2 bg-blue-50 dark:bg-blue-950/40 shadow-md scale-105"
-                                                : "bg-gray-50 dark:bg-zinc-800 border border-border hover:border-[#1a56db] hover:bg-blue-50/50 dark:hover:bg-blue-950/20 hover:scale-105 shadow-sm"
-                                            }
-                                        `}
-                                    >
-                                        {symbol}
-                                        {isSelected && (
-                                            <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#1a56db] rounded-full flex items-center justify-center">
-                                                <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 12 12">
-                                                    <path d="M10.28 2.28L5 7.56 1.72 4.28 0.28 5.72l4.72 4.72 6.72-6.72z" />
-                                                </svg>
-                                            </span>
-                                        )}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        <div className="flex items-center gap-3 pt-1">
-                            <Label htmlFor="custom-symbol" className="text-sm shrink-0 text-muted-foreground">หรือพิมพ์เอง:</Label>
-                            <Input
-                                id="custom-symbol"
-                                value={settings.symbol}
-                                onChange={(e) => updateSettings({ symbol: e.target.value })}
-                                className="w-20 text-center text-xl font-bold"
-                                maxLength={2}
-                                disabled={!canEditSettings}
-                            />
-                        </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="custom-symbol">สัญลักษณ์ (ไม่บังคับ)</Label>
+                        <Input
+                            id="custom-symbol"
+                            value={settings.symbol}
+                            onChange={(e) => updateSettings({ symbol: e.target.value })}
+                            className="w-24 text-center text-lg font-bold"
+                            maxLength={2}
+                            disabled={!canEditSettings}
+                        />
+                        <p className="text-xs text-muted-foreground">ตัวอักษรนำหน้าราคา เช่น P — เว้นว่างเพื่อแสดงเฉพาะจำนวนกับชื่อสกุลเงิน</p>
                     </div>
-
 
                     {/* Preview */}
                     <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-xl p-4">
@@ -181,7 +146,7 @@ export default function CurrencySettingsPage() {
                         <div className="flex items-center gap-4">
                             <div className="bg-white dark:bg-zinc-900 rounded-lg px-4 py-2.5 border border-border shadow-sm">
                                 <span className="text-lg font-semibold">
-                                    {settings.symbol} 500 {settings.name}
+                                    {[settings.symbol, "500", settings.name].filter(Boolean).join(" ")}
                                 </span>
                             </div>
                             <span className="text-sm text-muted-foreground">→ ราคาสินค้า</span>

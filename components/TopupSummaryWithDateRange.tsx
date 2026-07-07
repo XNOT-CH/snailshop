@@ -28,7 +28,7 @@ export function TopupSummaryWithDateRange() {
             <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
                     <h2 className="text-lg font-semibold text-foreground">
-                        💰 สรุปเติมเงิน
+                        สรุปเติมเงิน
                     </h2>
                     <p className="text-sm text-muted-foreground">
                         {rangeLabel}

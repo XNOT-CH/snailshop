@@ -9,7 +9,7 @@ import { currencySettingsSchema } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
 import { contentApiError } from "@/lib/features/content/apiResponse";
 
-const DEFAULT_SETTINGS = { id: "default", name: "พอยท์", symbol: "💎", code: "POINT", description: null, isActive: true, updatedAt: "" };
+const DEFAULT_SETTINGS = { id: "default", name: "พอยท์", symbol: "", code: "POINT", description: null, isActive: true, updatedAt: "" };
 
 export async function GET() {
     const authCheck = await requirePermission(PERMISSIONS.SETTINGS_VIEW);

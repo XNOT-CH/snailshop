@@ -32,7 +32,7 @@ export function TrashRunButton({ count }: TrashRunButtonProps) {
             const res = await fetchWithCsrf("/api/admin/auto-delete/run", { method: "POST" });
             const data = await res.json();
             if (data.success) {
-                showSuccess(`🗑️ ลบสำเร็จ ${data.deleted} รายการ`);
+                showSuccess(`ลบสำเร็จ ${data.deleted} รายการ`);
                 router.refresh();
             } else {
                 showError(data.message || "เกิดข้อผิดพลาด");

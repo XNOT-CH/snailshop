@@ -116,7 +116,7 @@ const GAME_TYPES = [
         value: "SPIN_X",
         label: "สุ่มตัว X",
         desc: "มินิเกมสุ่มตัวอักษร X แบบคลาสสิก",
-        icon: "🎰",
+        icon: "X",
     },
     {
         value: "GRID_3X3",

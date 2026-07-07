@@ -308,7 +308,7 @@ export function ProductActions({
                                 {maintenance?.enabled
                                     ? "ปิดปรับปรุงชั่วคราว"
                                     : disabled
-                                        ? "สินค้าหมด 🚫"
+                                        ? "สินค้าหมด"
                                         : `ซื้อทันที - ${formatCurrencyAmount(finalPrice, normalizedCurrency, currencySettings)}`}
                             </>
                         )}

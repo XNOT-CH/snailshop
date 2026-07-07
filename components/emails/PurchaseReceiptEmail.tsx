@@ -37,7 +37,7 @@ export const PurchaseReceiptEmail = ({
     items = [],
 }: Readonly<PurchaseReceiptEmailProps>) => {
     return (
-        <EmailLayout preview={`ขอบคุณสำหรับการสั่งซื้อจาก ${siteName} 🎉`}>
+        <EmailLayout preview={`ขอบคุณสำหรับการสั่งซื้อจาก ${siteName}`}>
             <Heading style={emailReceiptHeading}>{`ใบเสร็จรับเงิน / ${siteName}`}</Heading>
             <Text style={emailReceiptText}>สวัสดีคุณ {userName},</Text>
             <Text style={emailReceiptText}>

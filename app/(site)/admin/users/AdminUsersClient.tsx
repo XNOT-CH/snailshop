@@ -1058,7 +1058,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                       <TableCell className="text-right">
                         <div className="space-y-0.5">
                           <p className="text-lg font-bold text-violet-600">
-                            <span className="mr-1">{pointCurrencySymbol}</span>
+                            {pointCurrencySymbol ? <span className="mr-1">{pointCurrencySymbol}</span> : null}
                             {user.pointBalance.toLocaleString()}
                           </p>
                           <p className="text-xs text-muted-foreground">พร้อมใช้งาน</p>

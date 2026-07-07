@@ -396,7 +396,6 @@ export default function EditProductPage() {
 
                                             <div className="admin-product-edit-discount-card rounded-2xl border border-rose-200 bg-rose-50/70 p-4 dark:border-rose-500/30 dark:bg-rose-500/10">
                                                 <div className="mb-2 flex items-center gap-2 text-sm font-medium text-rose-700">
-                                                    <span className="text-base">🎁</span>
                                                     <span>ส่วนลด</span>
                                                 </div>
                                                 <div className="admin-product-edit-discount-inner space-y-2 rounded-2xl border border-rose-200/70 bg-white/70 p-3 dark:border-rose-500/25 dark:bg-[#132133]/90">

@@ -611,7 +611,7 @@ export default function AdminSettingsPage() {
                                         />
                                         <div className={`absolute inset-0 transition-all duration-300 ${settings.backgroundBlur ? "bg-white/40" : "bg-white/10"}`} />
                                         <span className="absolute bottom-2 right-2 text-xs bg-black/50 text-white px-2 py-0.5 rounded-full backdrop-blur-sm">
-                                            {settings.backgroundBlur ? "🌫️ เบลอ" : "🖼️ สีชัด"}
+                                            {settings.backgroundBlur ? "เบลอ" : "สีชัด"}
                                         </span>
                                     </div>
                                   ) : (

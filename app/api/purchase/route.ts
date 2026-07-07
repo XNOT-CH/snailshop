@@ -175,7 +175,7 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            message: "ซื้อสำเร็จ! 🎉",
+            message: "ซื้อสำเร็จ!",
             orderId: result.order.id,
             productName: result.product.name,
         });

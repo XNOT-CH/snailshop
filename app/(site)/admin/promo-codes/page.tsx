@@ -294,7 +294,7 @@ export default function AdminPromoCodesPage() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
                     <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground sm:text-3xl">
-                        โค้ดโปรโมชั่น <span className="text-2xl sm:text-3xl">🎟️</span>
+                        โค้ดโปรโมชั่น
                     </h1>
                     <p className="max-w-2xl text-sm text-muted-foreground sm:text-base">
                         จัดการทั้งโค้ดส่วนลดและโค้ดเติมเครดิต พร้อมเปิดปิดการใช้งานได้จากหน้านี้

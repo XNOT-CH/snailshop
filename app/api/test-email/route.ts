@@ -31,7 +31,7 @@ export async function GET(request: Request) {
 
         const { success, error, data } = await sendEmail({
             to,
-            subject: `ทดสอบระบบอีเมลจาก ${siteName} 🐌`,
+            subject: `ทดสอบระบบอีเมลจาก ${siteName}`,
             react: NotificationEmail({
                 title: `ยินดีต้อนรับสู่ ${siteName}`,
                 message: "นี่คืออีเมลทดสอบระบบการส่งแจ้งเตือนผ่าน Resend หากคุณได้รับอีเมลฉบับนี้ แปลว่าระบบทำงานได้สมบูรณ์ครับ!",

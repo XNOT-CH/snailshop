@@ -347,7 +347,6 @@ export default function AddProductPage() {
 
                                 <div className="space-y-2">
                                     <Label htmlFor="discountPrice" className="flex items-center gap-2">
-                                        <span className="text-red-500">🎁</span>
                                         ส่วนลด
                                     </Label>
                                     <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50/75 p-3 dark:border-[#355071] dark:bg-[#162334]">
