@@ -105,7 +105,7 @@ export function ResetPasswordForm({ logoUrl }: Readonly<ResetPasswordFormProps>)
     };
 
     return (
-        <AuthFormShell logoUrl={logoUrl} title="ตั้งรหัสผ่านใหม่" subtitle="Reset Password">
+        <AuthFormShell logoUrl={logoUrl} title="ตั้งรหัสผ่านใหม่" subtitle="ตั้งรหัสผ่านใหม่สำหรับบัญชีของคุณ">
                     {isCheckingToken ? (
                         <div className="flex min-h-40 items-center justify-center text-muted-foreground">
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />

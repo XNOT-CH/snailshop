@@ -67,7 +67,7 @@ export function ForgotPasswordForm({ logoUrl }: Readonly<ForgotPasswordFormProps
     };
 
     return (
-        <AuthFormShell logoUrl={logoUrl} title="ลืมรหัสผ่าน" subtitle="Password Reset">
+        <AuthFormShell logoUrl={logoUrl} title="ลืมรหัสผ่าน" subtitle="กรอกอีเมลที่ใช้สมัคร เราจะส่งลิงก์รีเซ็ตรหัสผ่านให้">
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="space-y-2">
                             <label htmlFor="identifier" className="text-sm text-muted-foreground">
@@ -100,7 +100,7 @@ export function ForgotPasswordForm({ logoUrl }: Readonly<ForgotPasswordFormProps
 
                         <Button
                             type="submit"
-                            className="w-full h-12 rounded-xl bg-gradient-to-r from-purple-300 to-blue-300 hover:from-purple-400 hover:to-blue-400 text-primary font-medium shadow-lg shadow-purple-200/50 transition-all"
+                            className="w-full h-12 rounded-xl font-semibold shadow-none transition-colors"
                             disabled={isLoading || (hasTurnstile && !turnstileToken)}
                         >
                             {isLoading ? (

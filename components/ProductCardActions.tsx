@@ -1,8 +1,7 @@
 "use client";
 
 import { memo, useCallback, useMemo } from "react";
-import Link from "next/link";
-import { Eye, Loader2, ShoppingCart } from "lucide-react";
+import { Loader2, ShoppingCart } from "lucide-react";
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { useCart } from "@/components/providers/CartContext";
 import { Button } from "@/components/ui/button";
@@ -109,16 +108,16 @@ export const ProductCardActions = memo(function ProductCardActions({
     ]);
 
     return (
-        <div className="grid grid-cols-2 gap-2 mt-3">
+        <div className="mt-3 flex gap-2">
             {isUnavailable ? (
-                <Button variant="outline" className="col-span-2 w-full border-border/80 bg-accent/40 text-foreground" disabled>
+                <Button variant="outline" className="w-full border-border/80 bg-accent/40 text-foreground" disabled>
                     <ShoppingCart className="h-4 w-4 mr-2" />
                     {isSold ? "ขายแล้ว" : "สินค้าหมด"}
                 </Button>
             ) : (
                 <>
                     <Button
-                        className="col-span-2 h-9 w-full rounded-xl text-[13px] font-semibold sm:h-10 sm:text-sm"
+                        className="h-9 flex-1 rounded-xl text-sm font-semibold sm:h-10 sm:text-sm"
                         onClick={() => void handleBuy()}
                         disabled={isLoading || maintenance?.enabled}
                     >
@@ -138,17 +137,12 @@ export const ProductCardActions = memo(function ProductCardActions({
                     </Button>
                     <AddToCartButton
                         product={cartProduct}
-                        className={`${themeClasses.actionMuted} storefront-product-action w-full`}
+                        className={`${themeClasses.actionMuted} storefront-product-action h-9 w-9 shrink-0 sm:h-10 sm:w-10`}
                         showText={false}
                         size="icon"
                     />
                 </>
             )}
-            <Link href={`/product/${id}`} prefetch={false} className="block">
-                <Button variant="outline" size="icon" className={`${themeClasses.actionMuted} storefront-product-action w-full`} aria-label={`ดูรายละเอียด ${title}`}>
-                    <Eye className="h-4 w-4" />
-                </Button>
-            </Link>
         </div>
     );
 });

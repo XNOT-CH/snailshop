@@ -115,14 +115,14 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
     };
 
     return (
-        <AuthFormShell logoUrl={logoUrl} title="สมัครสมาชิก" subtitle="Register" fullHeight={false} variant="separated">
+        <AuthFormShell logoUrl={logoUrl} title="สมัครสมาชิก" subtitle="สร้างบัญชีใหม่ ใช้เวลาไม่ถึงนาที" fullHeight={false} variant="separated">
                     <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                         {/* Username */}
                         <div className="space-y-2">
                             <label htmlFor="reg-username" className="text-sm text-[#5f6f82] dark:text-muted-foreground">ชื่อผู้ใช้งาน <span className="text-red-500" aria-hidden="true">*</span></label>
                             <Input
                                 id="reg-username"
-                                placeholder="username"
+                                placeholder="ตั้งชื่อผู้ใช้งาน (อย่างน้อย 3 ตัวอักษร)"
                                 autoComplete="username"
                                 className="h-10 rounded-[4px] border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 transition-colors placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
                                 minLength={3}
@@ -132,20 +132,18 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                             />
                         </div>
 
-                        {/* PIN (optional) */}
+                        {/* Email */}
                         <div className="space-y-2">
-                            <label htmlFor="reg-pin" className="text-sm text-[#5f6f82] dark:text-muted-foreground">
-                                PIN 6 หลัก <span className="text-muted-foreground/60">(ไม่บังคับ)</span>
-                            </label>
+                            <label htmlFor="reg-email" className="text-sm text-[#5f6f82] dark:text-muted-foreground">อีเมล <span className="text-red-500" aria-hidden="true">*</span></label>
                             <Input
-                                id="reg-pin"
-                                placeholder="PIN 6 หลัก"
-                                autoComplete="off"
-                                className="h-10 rounded-[4px] border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
-                                maxLength={6}
-                                pattern="[0-9]*"
-                                value={formData.pin}
-                                onChange={(e) => setFormData((prev) => ({ ...prev, pin: e.target.value.replaceAll(/\D/g, "") }))}
+                                id="reg-email"
+                                type="email"
+                                placeholder="กรอกอีเมลของคุณ"
+                                autoComplete="email"
+                                className="h-10 rounded-[4px] border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 transition-colors placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
+                                value={formData.email}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                                required
                             />
                         </div>
 
@@ -175,40 +173,11 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                             </div>
                         </div>
 
-                        {/* Confirm Password */}
-                        <div className="space-y-2">
-                            <label htmlFor="reg-confirm-password" className="text-sm text-[#5f6f82] dark:text-muted-foreground">ยืนยันรหัสผ่าน <span className="text-red-500" aria-hidden="true">*</span></label>
-                            <Input
-                                id="reg-confirm-password"
-                                type="password"
-                                placeholder="ยืนยันรหัสผ่านอีกครั้ง"
-                                autoComplete="new-password"
-                                className="h-10 rounded-[4px] border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
-                                value={formData.confirmPassword}
-                                onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                                required
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <label htmlFor="reg-email" className="text-sm text-[#5f6f82] dark:text-muted-foreground">อีเมล <span className="text-red-500" aria-hidden="true">*</span></label>
-                            <Input
-                                id="reg-email"
-                                type="email"
-                                placeholder="you@example.com"
-                                autoComplete="email"
-                                className="h-10 rounded-[4px] border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 transition-colors placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
-                                value={formData.email}
-                                onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-                                required
-                            />
-                        </div>
-
                         {/* Password Strength Indicator */}
                         {formData.password && (
                             <div className="space-y-2">
                                 <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                    <span>ความปลอดภัยของรหัสผ่าน / Password strength</span>
+                                    <span>ความปลอดภัยของรหัสผ่าน</span>
                                 </div>
                                 <div className="flex gap-1 items-center">
                                     {[1, 2, 3, 4, 5].map((level) => (
@@ -225,6 +194,39 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                             </div>
                         )}
 
+                        {/* Confirm Password */}
+                        <div className="space-y-2">
+                            <label htmlFor="reg-confirm-password" className="text-sm text-[#5f6f82] dark:text-muted-foreground">ยืนยันรหัสผ่าน <span className="text-red-500" aria-hidden="true">*</span></label>
+                            <Input
+                                id="reg-confirm-password"
+                                type="password"
+                                placeholder="ยืนยันรหัสผ่านอีกครั้ง"
+                                autoComplete="new-password"
+                                className="h-10 rounded-[4px] border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
+                                value={formData.confirmPassword}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                                required
+                            />
+                        </div>
+
+                        {/* PIN (optional) */}
+                        <div className="space-y-2">
+                            <label htmlFor="reg-pin" className="text-sm text-[#5f6f82] dark:text-muted-foreground">
+                                PIN 6 หลัก <span className="text-muted-foreground/60">(ไม่บังคับ ตั้งภายหลังได้)</span>
+                            </label>
+                            <Input
+                                id="reg-pin"
+                                placeholder="ตัวเลข 6 หลัก"
+                                autoComplete="off"
+                                inputMode="numeric"
+                                className="h-10 rounded-[4px] border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
+                                maxLength={6}
+                                pattern="[0-9]*"
+                                value={formData.pin}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, pin: e.target.value.replaceAll(/\D/g, "") }))}
+                            />
+                        </div>
+
                         <TurnstileField
                             enabled={hasTurnstile}
                             onTokenChange={handleTurnstileChange}
@@ -235,7 +237,7 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                         {/* Submit Button */}
                         <Button
                             type="submit"
-                            className="w-full h-11 rounded-[4px] bg-[#1f8f55] text-white shadow-none hover:bg-[#187a49] font-semibold transition-colors mt-6"
+                            className="w-full h-11 rounded-[4px] font-semibold shadow-none transition-colors mt-6"
                             disabled={
                                 isLoading
                                 || Boolean(formData.confirmPassword && !passwordsMatch)

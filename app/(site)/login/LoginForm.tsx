@@ -113,14 +113,14 @@ export function LoginForm({ logoUrl, turnstileConfigError = null }: Readonly<Log
     };
 
     return (
-        <AuthFormShell logoUrl={logoUrl} title="เข้าสู่ระบบ" subtitle="Login">
+        <AuthFormShell logoUrl={logoUrl} title="เข้าสู่ระบบ" subtitle="ยินดีต้อนรับกลับ เข้าสู่ระบบเพื่อใช้งานบัญชีของคุณ">
                     <form onSubmit={handleSubmit} className="space-y-5">
                         {/* Username */}
                         <div className="space-y-2">
                             <label htmlFor="username" className="text-sm text-muted-foreground">ชื่อผู้ใช้งาน หรืออีเมล <span className="text-red-500" aria-hidden="true">*</span></label>
                             <Input
                                 id="username"
-                                placeholder="username หรืออีเมล"
+                                placeholder="ชื่อผู้ใช้งาน หรืออีเมล"
                                 autoComplete="username"
                                 className="h-12 bg-muted/50 border-border rounded-xl transition-colors"
                                 value={formData.username}
@@ -176,7 +176,7 @@ export function LoginForm({ logoUrl, turnstileConfigError = null }: Readonly<Log
                         {/* Submit Button */}
                         <Button
                             type="submit"
-                            className="w-full h-12 rounded-[4px] bg-[#1f8f55] text-white shadow-none hover:bg-[#187a49] font-semibold transition-colors"
+                            className="w-full h-12 rounded-xl font-semibold shadow-none transition-colors"
                             disabled={isLoading || Boolean(turnstileConfigError)}
                         >
                             {isLoading ? (

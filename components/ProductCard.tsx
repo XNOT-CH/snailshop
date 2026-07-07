@@ -81,7 +81,9 @@ export function ProductCard({
                 </div>
                 <div className="p-3 text-center sm:p-4">
                     <h3 className="mb-1 truncate text-center text-[14px] font-semibold leading-tight text-foreground sm:text-base">
-                        {title}
+                        <Link href={`/product/${id}`} prefetch={false} className="transition-colors hover:text-primary">
+                            {title}
+                        </Link>
                     </h3>
                     <div className="text-center">
                         {hasDiscount && (
