@@ -22,6 +22,16 @@ function getDatePartsInTimeZone(date: Date, timeZone: string = TH_TIME_ZONE) {
     return { year, month, day };
 }
 
+/**
+ * Start of the Thai calendar day containing `date`, as a UTC instant.
+ * Thailand is fixed UTC+7 (no DST), so Thai midnight is 17:00 UTC of the
+ * previous UTC day.
+ */
+export function getThaiDayStartUtc(date: Date = new Date()): Date {
+    const { year, month, day } = getDatePartsInTimeZone(date);
+    return new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)) - 7 * 60 * 60 * 1000);
+}
+
 export function formatDateInTimeZone(date: Date, timeZone: string = TH_TIME_ZONE): string {
     const { year, month, day } = getDatePartsInTimeZone(date, timeZone);
     return `${year}-${month}-${day}`;

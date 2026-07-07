@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { db, orders, products, users } from "@/lib/db";
+import { db, orders, users } from "@/lib/db";
 import { sum, count, isNull, gte } from "drizzle-orm";
-import { toMySQLDatetime } from "@/lib/utils/date";
+import { getThaiDayStartUtc, toMySQLDatetime } from "@/lib/utils/date";
 import { requirePermission } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
 import {
@@ -52,14 +52,12 @@ export default async function AdminDashboardPage() {
         }
     }
 
-    const todayStart = new Date();
-    todayStart.setHours(0, 0, 0, 0);
-    const todayStartSql = toMySQLDatetime(todayStart);
+    // "Today" starts at Thai midnight; lastLoginAt is stored in UTC.
+    const todayStartSql = toMySQLDatetime(getThaiDayStartUtc());
 
-    const [[{ totalRevenue: rawRevenue, salesCount: rawCount }], , [{ count: rawUsers }], [{ count: rawActiveUsersToday }]] = await Promise.all([
+    const [[{ totalRevenue: rawRevenue, salesCount: rawCount }], [{ count: rawUsers }], [{ count: rawActiveUsersToday }]] = await Promise.all([
         // Exclude soft-deleted orders so revenue/sales KPIs match the rest of the app.
         db.select({ totalRevenue: sum(orders.totalPrice), salesCount: count() }).from(orders).where(isNull(orders.deletedAt)),
-        db.select({ count: count() }).from(products),
         db.select({ count: count() }).from(users),
         // Active users today = distinct users whose last successful login is today.
         db.select({ count: count() }).from(users).where(gte(users.lastLoginAt, todayStartSql)),

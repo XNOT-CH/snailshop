@@ -49,15 +49,35 @@ function formatXAxis(dateStr: string, granularity: Granularity): string {
     }
 }
 
+function formatTooltipLabel(dateStr: string, granularity: Granularity): string {
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return dateStr;
+
+    switch (granularity) {
+        case "day":
+            return d.toLocaleDateString("th-TH", { day: "2-digit", month: "short", year: "2-digit" });
+        case "week":
+            return `สัปดาห์ที่เริ่ม ${d.toLocaleDateString("th-TH", { day: "2-digit", month: "short", year: "2-digit" })}`;
+        case "month":
+            return d.toLocaleDateString("th-TH", { month: "long", year: "2-digit" });
+        case "year":
+            return `ปี ${d.getFullYear() + 543}`;
+        default:
+            return dateStr;
+    }
+}
+
 // ─── Custom Tooltip ─────────────────────────────────────
 function CustomTooltip({
     active,
     payload,
     label,
+    granularity,
 }: Readonly<{
     active?: boolean;
     payload?: Array<{ value: number; name: string }>;
     label?: string;
+    granularity: Granularity;
 }>) {
     if (!active || !payload?.length) return null;
 
@@ -67,7 +87,7 @@ function CustomTooltip({
             style={{ minWidth: 160 }}
         >
             <p className="text-xs font-medium text-muted-foreground mb-1.5">
-                {label}
+                {label ? formatTooltipLabel(label, granularity) : label}
             </p>
             {payload.map((entry) => (
                 <div key={entry.name} className="flex items-center justify-between gap-6">
@@ -159,7 +179,7 @@ export function RevenueAreaChart({ data, granularity }: Readonly<RevenueAreaChar
 
                 {/* Tooltip */}
                 <Tooltip
-                    content={<CustomTooltip />}
+                    content={<CustomTooltip granularity={granularity} />}
                     cursor={{
                         stroke: "var(--color-primary)",
                         strokeWidth: 1,
