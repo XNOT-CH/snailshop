@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PERMISSIONS, type Permission } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
+import { ChatUnreadBadge, ChatUnreadEffects } from "@/components/admin/chat/ChatUnreadIndicator";
 import {
     Sheet,
     SheetContent,
@@ -71,7 +72,7 @@ const navigationSections: NavSection[] = [
         hint: "เมนูที่แอดมินเปิดบ่อยที่สุด",
         items: [
             { href: "/admin", label: "แดชบอร์ด", icon: LayoutDashboard, badge: "หลัก", requiredPermission: PERMISSIONS.DASHBOARD_VIEW },
-            { href: "/admin/chat", label: "แชทลูกค้า", icon: MessagesSquare, badge: "สด", requiredPermission: PERMISSIONS.CHAT_VIEW },
+            { href: "/admin/chat", label: "แชทลูกค้า", icon: MessagesSquare, requiredPermission: PERMISSIONS.CHAT_VIEW },
             { href: "/admin/slips", label: "ตรวจสอบสลิป", icon: FileCheck, requiredPermission: PERMISSIONS.SLIP_VIEW },
         ],
     },
@@ -155,7 +156,7 @@ function NavLink({
             onClick={onClick}
             className={[
                 "group relative flex items-center gap-3 overflow-hidden rounded-xl border px-3 py-2.5 text-sm font-medium transition-all duration-150",
-                sub ? "py-2 text-[13px]" : "",
+                sub ? "py-2 text-sm" : "",
                 active
                     ? "border-transparent bg-[#eef4ff] text-[#145de7] dark:bg-[#173154] dark:text-[#77b6ff]"
                     : "border-transparent text-slate-500 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-[#16253b] dark:hover:text-slate-100",
@@ -175,6 +176,7 @@ function NavLink({
                 ].join(" ")}
             />
             <span className="relative z-10 flex-1 truncate">{label}</span>
+            {href === "/admin/chat" ? <ChatUnreadBadge active={active} /> : null}
             {badge ? (
                 <span
                     className={[
@@ -349,13 +351,14 @@ export function AdminSidebar({ permissions }: Readonly<{ permissions: string[] }
 
     return (
         <>
+            <ChatUnreadEffects />
             <aside className="fixed left-0 top-0 z-40 hidden h-screen w-72 flex-col border-r border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-[#121e30] dark:shadow-[0_20px_50px_-30px_rgba(0,0,0,0.75)] md:flex">
                 <div className="flex h-16 items-center gap-3 border-b border-slate-200 px-5 dark:border-slate-800">
                     <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#145de7] shadow-sm">
                         <Gamepad2 className="h-4 w-4 text-white" />
                     </div>
                     <div className="min-w-0">
-                        <p className="truncate text-[15px] font-bold tracking-tight text-slate-900 dark:text-slate-50">แผงควบคุม</p>
+                        <p className="truncate text-base font-bold tracking-tight text-slate-900 dark:text-slate-50">แผงควบคุม</p>
                         <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">จัดการร้านและระบบหลังบ้าน</p>
                     </div>
                 </div>
@@ -389,7 +392,7 @@ export function AdminSidebar({ permissions }: Readonly<{ permissions: string[] }
                                 <Gamepad2 className="h-4 w-4 text-white" />
                             </div>
                             <div className="min-w-0 text-left">
-                                <SheetTitle className="truncate text-[15px] font-bold text-slate-900 dark:text-slate-50">
+                                <SheetTitle className="truncate text-base font-bold text-slate-900 dark:text-slate-50">
                                     แผงควบคุม
                                 </SheetTitle>
                                 <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">จัดการร้านและระบบหลังบ้าน</p>

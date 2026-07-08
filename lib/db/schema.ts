@@ -530,6 +530,8 @@ export const chatConversations = mysqlTable("ChatConversation", {
     subject: varchar("subject", { length: 255 }),
     isPinned: boolean("isPinned").default(false).notNull(),
     tags: json("tags").$type<string[]>().notNull(),
+    // Admin currently responsible for this conversation. NULL = unassigned.
+    assigneeId: varchar("assigneeId", { length: 36 }).references(() => users.id, { onDelete: "set null" }),
     customerLastReadAt: datetime("customerLastReadAt", { mode: "string" }),
     adminLastReadAt: datetime("adminLastReadAt", { mode: "string" }),
     lastMessageAt: datetime("lastMessageAt", { mode: "string" }).default(sql`now()`).notNull(),
@@ -540,10 +542,12 @@ export const chatConversations = mysqlTable("ChatConversation", {
     index("idx_chat_conversation_user_last_message").on(t.userId, t.lastMessageAt),
     index("idx_chat_conversation_status_last_message").on(t.status, t.lastMessageAt),
     index("idx_chat_conversation_pinned_last_message").on(t.isPinned, t.lastMessageAt),
+    index("idx_chat_conversation_assignee").on(t.assigneeId, t.lastMessageAt),
 ]);
 
 export const chatConversationsRelations = relations(chatConversations, ({ one, many }) => ({
     user: one(users, { fields: [chatConversations.userId], references: [users.id] }),
+    assignee: one(users, { fields: [chatConversations.assigneeId], references: [users.id] }),
     messages: many(chatMessages),
 }));
 

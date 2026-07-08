@@ -24,9 +24,14 @@ vi.mock("@/lib/chat", () => ({
     listAdminConversations: vi.fn(),
     getAdminConversation: vi.fn(),
     updateConversationStatus: vi.fn(),
+    updateConversationAdminMeta: vi.fn(),
+    updateConversationAssignee: vi.fn(),
     deleteConversation: vi.fn(),
     getConversationMessage: vi.fn(),
     cleanupExpiredChatImages: vi.fn(),
+    countAdminUnread: vi.fn(),
+    listChatAgents: vi.fn(),
+    getConversationCustomerContext: vi.fn(),
 }));
 
 vi.mock("@/lib/chatMedia", () => ({
@@ -52,18 +57,22 @@ vi.mock("@/lib/auditLog", () => ({
         CHAT_ADMIN_MESSAGE: "CHAT_ADMIN_MESSAGE",
         CHAT_STATUS_UPDATE: "CHAT_STATUS_UPDATE",
         CHAT_DELETE: "CHAT_DELETE",
+        CHAT_NOTE_CREATE: "CHAT_NOTE_CREATE",
+        CHAT_ASSIGNEE_UPDATE: "CHAT_ASSIGNEE_UPDATE",
     },
 }));
 
 import { isAdmin, isAdminWithCsrf, isAuthenticated, isAuthenticatedWithCsrf } from "@/lib/auth";
 import {
     cleanupExpiredChatImages,
+    countAdminUnread,
     getAdminConversation,
     deleteConversation,
     getUserConversation,
     listAdminConversations,
     markConversationRead,
     sendConversationMessage,
+    updateConversationAssignee,
     updateConversationStatus,
 } from "@/lib/chat";
 import { saveChatImageFile } from "@/lib/chatMedia";
@@ -210,16 +219,35 @@ describe("API: admin chat routes", () => {
     it("GET /api/admin/chat/conversations returns 401 when not admin", async () => {
         (isAdmin as any).mockResolvedValue({ success: false, error: "Unauthorized" });
         const { GET } = await import("@/app/api/admin/chat/conversations/route");
-        const response = await GET();
+        const response = await GET(new NextRequest("http://localhost/api/admin/chat/conversations"));
         expect(response.status).toBe(401);
     });
 
     it("GET /api/admin/chat/conversations returns conversation list", async () => {
         (isAdmin as any).mockResolvedValue({ success: true, userId: "admin-1" });
-        (listAdminConversations as any).mockResolvedValue([{ id: "c1" }]);
+        (listAdminConversations as any).mockResolvedValue({ conversations: [{ id: "c1" }], nextCursor: null });
         const { GET } = await import("@/app/api/admin/chat/conversations/route");
-        const response = await GET();
+        const response = await GET(new NextRequest("http://localhost/api/admin/chat/conversations"));
+        const data = await response.json();
         expect(response.status).toBe(200);
+        expect(data.conversations).toEqual([{ id: "c1" }]);
+    });
+
+    it("GET /api/admin/chat/conversations forwards search and pagination params", async () => {
+        (isAdmin as any).mockResolvedValue({ success: true, userId: "admin-1" });
+        (listAdminConversations as any).mockResolvedValue({ conversations: [], nextCursor: "cursor-2" });
+        const { GET } = await import("@/app/api/admin/chat/conversations/route");
+        const response = await GET(
+            new NextRequest("http://localhost/api/admin/chat/conversations?q=hello&cursor=cursor-1&limit=10")
+        );
+        const data = await response.json();
+        expect(response.status).toBe(200);
+        expect(data.nextCursor).toBe("cursor-2");
+        expect(listAdminConversations).toHaveBeenCalledWith({
+            q: "hello",
+            cursor: "cursor-1",
+            limit: 10,
+        });
     });
 
     it("PATCH /api/admin/chat/conversations/[id] updates conversation status", async () => {
@@ -357,6 +385,74 @@ describe("API: admin chat routes", () => {
         const response = await DELETE(request, { params: Promise.resolve({ id: "c1" }) });
         expect(response.status).toBe(200);
         expect(deleteConversation).toHaveBeenCalledWith("c1");
+    });
+
+    it("POST /api/admin/chat/conversations/[id]/messages with isNote stores an internal NOTE", async () => {
+        (isAdminWithCsrf as any).mockResolvedValue({ success: true, userId: "admin-1" });
+        (getAdminConversation as any)
+            .mockResolvedValueOnce({ id: "c1", user: { id: "u1" } })
+            .mockResolvedValueOnce({ id: "c1", user: { id: "u1" }, messages: [] });
+        const { POST } = await import("@/app/api/admin/chat/conversations/[id]/messages/route");
+        const request = new NextRequest("http://localhost/api/admin/chat/conversations/c1/messages", {
+            method: "POST",
+            body: JSON.stringify({ message: "internal note", isNote: true }),
+        });
+        const response = await POST(request, { params: Promise.resolve({ id: "c1" }) });
+        expect(response.status).toBe(201);
+        expect(sendConversationMessage).toHaveBeenCalledWith({
+            conversationId: "c1",
+            userId: "admin-1",
+            senderType: "NOTE",
+            body: "internal note",
+        });
+    });
+
+    it("PATCH /api/admin/chat/conversations/[id] updates the assignee", async () => {
+        (isAdminWithCsrf as any).mockResolvedValue({ success: true, userId: "admin-1" });
+        (getAdminConversation as any)
+            .mockResolvedValueOnce({
+                id: "c1",
+                status: "OPEN",
+                isPinned: false,
+                tags: [],
+                assigneeId: null,
+                user: { id: "u1" },
+            })
+            .mockResolvedValueOnce({
+                id: "c1",
+                status: "OPEN",
+                isPinned: false,
+                tags: [],
+                assigneeId: "admin-2",
+                user: { id: "u1" },
+            });
+        const { PATCH } = await import("@/app/api/admin/chat/conversations/[id]/route");
+        const request = new NextRequest("http://localhost/api/admin/chat/conversations/c1", {
+            method: "PATCH",
+            body: JSON.stringify({ assigneeId: "admin-2" }),
+        });
+        const response = await PATCH(request, { params: Promise.resolve({ id: "c1" }) });
+        expect(response.status).toBe(200);
+        expect(updateConversationAssignee).toHaveBeenCalledWith("c1", "admin-2");
+        expect(updateConversationStatus).not.toHaveBeenCalled();
+    });
+
+    it("GET /api/admin/chat/unread-count returns unread totals", async () => {
+        (isAdmin as any).mockResolvedValue({ success: true, userId: "admin-1" });
+        (countAdminUnread as any).mockResolvedValue({ totalUnread: 7, unreadConversations: 3 });
+        const { GET } = await import("@/app/api/admin/chat/unread-count/route");
+        const response = await GET();
+        const data = await response.json();
+        expect(response.status).toBe(200);
+        expect(data.totalUnread).toBe(7);
+        expect(data.unreadConversations).toBe(3);
+    });
+
+    it("GET /api/admin/chat/unread-count returns 401 when not permitted", async () => {
+        (isAdmin as any).mockResolvedValue({ success: false, error: "Unauthorized" });
+        const { GET } = await import("@/app/api/admin/chat/unread-count/route");
+        const response = await GET();
+        expect(response.status).toBe(401);
     });
 
     it("GET /api/admin/chat/cleanup-expired-images/run cleans up expired chat images", async () => {

@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
-import { deleteConversation, getAdminConversation, updateConversationAdminMeta, updateConversationStatus } from "@/lib/chat";
+import {
+    deleteConversation,
+    getAdminConversation,
+    updateConversationAdminMeta,
+    updateConversationAssignee,
+    updateConversationStatus,
+} from "@/lib/chat";
 import { sanitizeChatTags } from "@/lib/chatAdmin";
 import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -9,7 +15,7 @@ interface RouteContext {
     params: Promise<{ id: string }>;
 }
 
-export async function GET(_request: NextRequest, context: RouteContext) {
+export async function GET(request: NextRequest, context: RouteContext) {
     const authCheck = await requirePermission(PERMISSIONS.CHAT_VIEW);
 
     if (!authCheck.success) {
@@ -19,7 +25,12 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     const { id } = await context.params;
 
     try {
-        const conversation = await getAdminConversation(id);
+        const searchParams = request?.nextUrl?.searchParams;
+        const limitParam = Number(searchParams?.get("limit") ?? "");
+        const conversation = await getAdminConversation(id, {
+            beforeMessageId: searchParams?.get("before"),
+            limit: Number.isFinite(limitParam) && limitParam > 0 ? Math.min(limitParam, 200) : null,
+        });
 
         if (!conversation) {
             return NextResponse.json({ success: false, message: "Conversation not found" }, { status: 404 });
@@ -102,12 +113,34 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
             });
         }
 
+        const hasAssigneePatch = Object.hasOwn(body ?? {}, "assigneeId");
+        const nextAssigneeId = hasAssigneePatch
+            ? (typeof body.assigneeId === "string" && body.assigneeId ? body.assigneeId : null)
+            : existingConversation.assigneeId;
+
+        if (hasAssigneePatch && nextAssigneeId !== existingConversation.assigneeId) {
+            await updateConversationAssignee(id, nextAssigneeId);
+            await auditFromRequest(request, {
+                userId: authCheck.userId,
+                action: AUDIT_ACTIONS.CHAT_ASSIGNEE_UPDATE,
+                resource: "ChatConversation",
+                resourceId: id,
+                details: {
+                    previousAssigneeId: existingConversation.assigneeId,
+                    newAssigneeId: nextAssigneeId,
+                },
+            });
+        }
+
         const conversation = await getAdminConversation(id);
 
         return NextResponse.json({ success: true, conversation });
     } catch (error) {
         console.error("Failed to update conversation status:", error);
-        return NextResponse.json({ success: false, message: "Failed to update conversation" }, { status: 400 });
+        return NextResponse.json(
+            { success: false, message: error instanceof Error ? error.message : "Failed to update conversation" },
+            { status: 400 }
+        );
     }
 }
 

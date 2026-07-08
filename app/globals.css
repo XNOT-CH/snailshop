@@ -2969,21 +2969,6 @@ html.dark .admin-console [class*="ring-offset-2"] {
   --tw-ring-offset-color: rgba(9, 17, 28, 1) !important;
 }
 
-html.dark .admin-console .admin-chat-page .admin-chat-conversation-active {
-  background: rgba(30, 41, 59, 0.96) !important;
-  border-color: rgba(96, 165, 250, 0.4) !important;
-  box-shadow:
-    inset 0 1px 0 rgba(125, 170, 255, 0.08),
-    0 12px 28px -22px rgba(0, 0, 0, 0.7) !important;
-}
-
-html.dark .admin-console .admin-chat-page .admin-chat-conversation-active:hover,
-html.dark .admin-console .admin-chat-page .admin-chat-conversation-active:focus-visible,
-html.dark .admin-console .admin-chat-page .admin-chat-conversation-active:active {
-  background: rgba(30, 41, 59, 0.98) !important;
-  border-color: rgba(125, 170, 255, 0.52) !important;
-}
-
 html.dark .swal2-popup:not(.swal2-toast) {
   background: linear-gradient(180deg, rgba(15, 25, 39, 0.98) 0%, rgba(11, 20, 32, 0.99) 100%) !important;
   color: #edf4ff !important;

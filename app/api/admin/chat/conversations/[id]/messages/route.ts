@@ -44,17 +44,18 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
         const body = await request.json();
         const message = parseChatMessagePayload(body);
+        const isNote = body?.isNote === true;
 
         await sendConversationMessage({
             conversationId: id,
             userId: authCheck.userId,
-            senderType: "ADMIN",
+            senderType: isNote ? "NOTE" : "ADMIN",
             body: message,
         });
 
         await auditFromRequest(request, {
             userId: authCheck.userId,
-            action: AUDIT_ACTIONS.CHAT_ADMIN_MESSAGE,
+            action: isNote ? AUDIT_ACTIONS.CHAT_NOTE_CREATE : AUDIT_ACTIONS.CHAT_ADMIN_MESSAGE,
             resource: "ChatConversation",
             resourceId: id,
             details: {
