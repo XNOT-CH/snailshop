@@ -298,7 +298,7 @@ export default async function ShopPage(props: ShopPageProps) {
             {sellableProductCount === 0 ? (
                 <EmptyState />
             ) : (
-                <div className="grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                <div className="grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                     {visibleProducts.map((product, index) => (
                         <ProductCard
                             key={product.id}
