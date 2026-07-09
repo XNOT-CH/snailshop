@@ -14,7 +14,11 @@ export interface AdminChatUnreadState {
 const POLL_INTERVAL_MS = 15_000;
 const NOTIFY_PREF_STORAGE_KEY = "admin-chat-notify";
 
-let state: AdminChatUnreadState = { totalUnread: 0, unreadConversations: 0, loaded: false };
+// Stable reference: React compares consecutive getServerSnapshot results with
+// Object.is during hydration, so it must be the same object every call.
+const INITIAL_STATE: AdminChatUnreadState = { totalUnread: 0, unreadConversations: 0, loaded: false };
+
+let state: AdminChatUnreadState = INITIAL_STATE;
 const listeners = new Set<() => void>();
 let subscriberCount = 0;
 let pollTimer: number | null = null;
@@ -99,7 +103,7 @@ export function getAdminChatUnreadSnapshot() {
 }
 
 export function getAdminChatUnreadServerSnapshot(): AdminChatUnreadState {
-    return { totalUnread: 0, unreadConversations: 0, loaded: false };
+    return INITIAL_STATE;
 }
 
 export function refreshAdminChatUnreadNow() {
