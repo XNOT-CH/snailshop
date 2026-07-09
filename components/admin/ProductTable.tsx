@@ -26,6 +26,9 @@ import { showConfirm, showError, showSuccess } from "@/lib/swal";
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import { cn } from "@/lib/utils";
 import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
   ChevronLeft,
   ChevronRight,
   Copy,
@@ -66,12 +69,28 @@ interface ProductTableProps {
 
 const ITEMS_PER_PAGE_OPTIONS = [10, 20, 50] as const;
 
+const LOW_STOCK_THRESHOLD = 5;
+
+type SortKey = "default" | "name" | "price" | "stock";
+type SortDir = "asc" | "desc";
+type StockTone = "ok" | "low" | "out";
+
+const MOBILE_SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: "default", label: "ใหม่ล่าสุด" },
+  { value: "price-asc", label: "ราคาต่ำ → สูง" },
+  { value: "price-desc", label: "ราคาสูง → ต่ำ" },
+  { value: "stock-asc", label: "สต็อกน้อย → มาก" },
+  { value: "stock-desc", label: "สต็อกมาก → น้อย" },
+  { value: "name-asc", label: "ชื่อ ก → ฮ" },
+];
+
 interface ProductCardData {
   activePrice: number;
   autoDeleteLabel: string | null;
   displayStockCount: number;
   hasDiscount: boolean;
   isPointProduct: boolean;
+  stockTone: StockTone;
 }
 
 function formatAutoDelete(minutes?: number | null) {
@@ -94,18 +113,48 @@ function formatAutoDelete(minutes?: number | null) {
   return `${minutes} นาที`;
 }
 
-function getProductCardData(product: Product): ProductCardData {
-  const hasDiscount =
+function hasDiscountPrice(product: Product) {
+  return (
     product.discountPrice !== null &&
     product.discountPrice !== undefined &&
-    product.discountPrice < product.price;
+    product.discountPrice < product.price
+  );
+}
+
+function getActivePrice(product: Product) {
+  return hasDiscountPrice(product) ? (product.discountPrice ?? product.price) : product.price;
+}
+
+function getDisplayStockCount(product: Product) {
+  return product.stockCount ?? (product.isSold ? 0 : 1);
+}
+
+function getStockTone(stock: number, isSold: boolean): StockTone {
+  if (isSold) {
+    return "ok";
+  }
+
+  if (stock <= 0) {
+    return "out";
+  }
+
+  if (stock <= LOW_STOCK_THRESHOLD) {
+    return "low";
+  }
+
+  return "ok";
+}
+
+function getProductCardData(product: Product): ProductCardData {
+  const displayStockCount = getDisplayStockCount(product);
 
   return {
-    activePrice: hasDiscount ? (product.discountPrice ?? product.price) : product.price,
+    activePrice: getActivePrice(product),
     autoDeleteLabel: formatAutoDelete(product.autoDeleteAfterSale),
-    displayStockCount: product.stockCount ?? (product.isSold ? 0 : 1),
-    hasDiscount,
+    displayStockCount,
+    hasDiscount: hasDiscountPrice(product),
     isPointProduct: product.currency === "POINT",
+    stockTone: getStockTone(displayStockCount, product.isSold),
   };
 }
 
@@ -127,12 +176,36 @@ function getOriginalPriceText(
 
 function getAvailabilityBadgeClass(isSold: boolean) {
   return isSold
-    ? "bg-rose-100 text-rose-700 hover:bg-rose-100"
-    : "bg-emerald-100 text-emerald-700 hover:bg-emerald-100";
+    ? "bg-rose-100 text-rose-700 hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/15"
+    : "bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/15";
 }
 
 function getAvailabilityLabel(isSold: boolean) {
   return isSold ? "ขายแล้ว" : "พร้อมขาย";
+}
+
+function getStockBadgeClass(tone: StockTone) {
+  if (tone === "out") {
+    return "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300";
+  }
+
+  if (tone === "low") {
+    return "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300";
+  }
+
+  return "border-border bg-muted text-foreground";
+}
+
+function getStockToneLabel(tone: StockTone) {
+  if (tone === "out") {
+    return "หมดสต็อก";
+  }
+
+  if (tone === "low") {
+    return "ใกล้หมด";
+  }
+
+  return null;
 }
 
 function getFeaturedButtonClass(isFeatured: boolean, isMobile: boolean) {
@@ -141,27 +214,27 @@ function getFeaturedButtonClass(isFeatured: boolean, isMobile: boolean) {
   return cn(
     `${sizeClass} rounded-full border transition`,
     isFeatured
-      ? "border-amber-200 bg-amber-50 text-amber-500 hover:bg-amber-100"
-      : "border-transparent text-slate-400 hover:border-slate-200 hover:bg-slate-100 hover:text-slate-600",
+      ? "border-amber-200 bg-amber-50 text-amber-500 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:hover:bg-amber-500/20"
+      : "border-transparent text-muted-foreground/60 hover:border-border hover:bg-muted hover:text-foreground",
   );
 }
 
 function getFeaturedIconClass(isFeatured: boolean, isDesktop: boolean) {
   return cn(
     isDesktop ? "mx-auto h-4 w-4" : "h-4 w-4",
-    isFeatured ? "fill-current text-amber-500" : "text-slate-300 dark:text-slate-600",
+    isFeatured ? "fill-current text-amber-500" : "text-muted-foreground/40",
   );
 }
 
 function EmptyProductState() {
   return (
     <div className="mx-auto flex max-w-sm flex-col items-center gap-3">
-      <div className="rounded-full bg-slate-100 p-3 text-slate-400">
+      <div className="rounded-full bg-muted p-3 text-muted-foreground">
         <Package className="h-6 w-6" />
       </div>
       <div>
-        <p className="text-base font-semibold text-slate-700">ไม่พบสินค้าที่ตรงเงื่อนไข</p>
-        <p className="mt-1 text-sm text-slate-500">ลองค้นหาด้วยชื่ออื่นหรือเปลี่ยนหมวดหมู่ที่เลือก</p>
+        <p className="text-base font-semibold text-foreground">ไม่พบสินค้าที่ตรงเงื่อนไข</p>
+        <p className="mt-1 text-sm text-muted-foreground">ลองค้นหาด้วยชื่ออื่นหรือเปลี่ยนหมวดหมู่ที่เลือก</p>
       </div>
     </div>
   );
@@ -193,7 +266,8 @@ function ProductActionsMenu({
           type="button"
           variant="ghost"
           size="icon"
-          className="rounded-full border border-transparent text-slate-500 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-700"
+          aria-label={`เมนูจัดการสินค้า ${product.name}`}
+          className="rounded-full border border-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
         >
           <MoreHorizontal className="h-4 w-4" />
         </Button>
@@ -228,7 +302,7 @@ function ProductActionsMenu({
           <DropdownMenuItem
             onClick={() => onDelete(product.id, product.name)}
             disabled={loadingId === product.id}
-            className="flex items-center gap-2 text-rose-600 focus:text-rose-600"
+            className="flex items-center gap-2 text-rose-600 focus:text-rose-600 dark:text-rose-400 dark:focus:text-rose-400"
           >
             <Trash2 className="h-4 w-4" />
             ลบสินค้า
@@ -262,6 +336,8 @@ function FeaturedToggle({
         size="icon"
         disabled={isLoading}
         onClick={onToggle}
+        aria-label={isFeatured ? "นำออกจากสินค้าแนะนำ" : "ตั้งเป็นสินค้าแนะนำ"}
+        aria-pressed={isFeatured}
         className={getFeaturedButtonClass(isFeatured, isMobile)}
       >
         <Star className={cn("h-4 w-4", isFeatured ? "fill-current" : "")} />
@@ -288,15 +364,16 @@ function MobileProductCard({
   onToggleFeatured,
   product,
 }: Readonly<MobileProductCardProps>) {
-  const { activePrice, autoDeleteLabel, displayStockCount, hasDiscount, isPointProduct } =
+  const { activePrice, autoDeleteLabel, displayStockCount, hasDiscount, isPointProduct, stockTone } =
     getProductCardData(product);
+  const stockToneLabel = getStockToneLabel(stockTone);
 
   return (
-    <div key={product.id} className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-sm">
+    <div key={product.id} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
       <div className="flex items-start gap-3">
-        <Avatar className="h-14 w-14 rounded-2xl border border-slate-200 shadow-sm">
+        <Avatar className="h-14 w-14 rounded-2xl border border-border shadow-sm">
           <AvatarImage src={product.imageUrl || undefined} alt={product.name} className="object-cover" />
-          <AvatarFallback className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 text-xs font-semibold text-blue-700">
+          <AvatarFallback className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-100 text-xs font-semibold text-blue-700 dark:from-blue-500/20 dark:to-indigo-500/20 dark:text-blue-300">
             {product.name.slice(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
@@ -304,8 +381,8 @@ function MobileProductCard({
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
-              <p className="truncate font-semibold text-slate-900">{product.name}</p>
-              <p className="mt-1 line-clamp-2 text-sm text-slate-500">
+              <p className="truncate font-semibold text-foreground">{product.name}</p>
+              <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
                 {product.description || "ไม่มีรายละเอียดเพิ่มเติม"}
               </p>
             </div>
@@ -322,7 +399,7 @@ function MobileProductCard({
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2">
-            <Badge variant="secondary" className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
+            <Badge variant="secondary" className="rounded-full bg-muted px-2.5 py-1 text-foreground">
               {product.category || "ทั่วไป"}
             </Badge>
             <Badge
@@ -336,7 +413,7 @@ function MobileProductCard({
             {autoDeleteLabel ? (
               <Badge
                 variant="outline"
-                className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700"
+                className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
               >
                 <Timer className="mr-1 h-3 w-3" />
                 {autoDeleteLabel}
@@ -347,30 +424,49 @@ function MobileProductCard({
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3">
-        <div className="rounded-xl bg-slate-50 p-3">
-          <p className="text-xs text-slate-500">ราคา</p>
-          <div className="mt-1 flex items-center gap-1.5 text-base font-semibold text-slate-900">
+        <div className="rounded-xl bg-muted/60 p-3">
+          <p className="text-xs text-muted-foreground">ราคา</p>
+          <div className="mt-1 flex items-center gap-1.5 text-base font-semibold text-foreground">
             {isPointProduct ? <Gem className="h-4 w-4 text-violet-500" /> : null}
             <span>{getPriceText(activePrice, isPointProduct)}</span>
           </div>
           {hasDiscount ? (
-            <p className="mt-1 text-xs text-slate-400 line-through">
+            <p className="mt-1 text-xs text-muted-foreground/70 line-through">
               {getOriginalPriceText(product, isPointProduct, currencySettings)}
             </p>
           ) : null}
         </div>
 
-        <div className="rounded-xl bg-slate-50 p-3">
-          <p className="text-xs text-slate-500">สต็อก</p>
-          <div className="mt-1 flex items-center gap-1 text-base font-semibold text-slate-900">
-            <Package className="h-4 w-4 text-slate-400" />
+        <div className="rounded-xl bg-muted/60 p-3">
+          <p className="text-xs text-muted-foreground">สต็อก</p>
+          <div
+            className={cn(
+              "mt-1 flex items-center gap-1 text-base font-semibold",
+              stockTone === "out" && "text-rose-600 dark:text-rose-400",
+              stockTone === "low" && "text-amber-600 dark:text-amber-400",
+              stockTone === "ok" && "text-foreground",
+            )}
+          >
+            <Package className="h-4 w-4 opacity-60" />
             {displayStockCount}
           </div>
+          {stockToneLabel ? (
+            <p
+              className={cn(
+                "mt-1 text-xs font-medium",
+                stockTone === "out"
+                  ? "text-rose-600 dark:text-rose-400"
+                  : "text-amber-600 dark:text-amber-400",
+              )}
+            >
+              {stockToneLabel}
+            </p>
+          ) : null}
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5">
-        <div className="text-sm font-medium text-slate-600">แนะนำ</div>
+      <div className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/60 px-3 py-2.5">
+        <div className="text-sm font-medium text-muted-foreground">แนะนำ</div>
         <FeaturedToggle
           canEdit={canEdit}
           isLoading={loadingId === product.id}
@@ -399,21 +495,22 @@ function DesktopProductRow({
   onToggleFeatured,
   product,
 }: Readonly<DesktopProductRowProps>) {
-  const { activePrice, autoDeleteLabel, displayStockCount, hasDiscount, isPointProduct } =
+  const { activePrice, autoDeleteLabel, displayStockCount, hasDiscount, isPointProduct, stockTone } =
     getProductCardData(product);
+  const stockToneLabel = getStockToneLabel(stockTone);
 
   return (
     <TableRow
       key={product.id}
       className={cn(
-        "border-slate-200 transition hover:bg-blue-50/40",
-        index % 2 === 0 ? "bg-white" : "bg-slate-50/35",
+        "border-border transition hover:bg-blue-50/40 dark:hover:bg-blue-500/10",
+        index % 2 === 0 ? "bg-card" : "bg-muted/40",
       )}
     >
       <TableCell>
-        <Avatar className="h-11 w-11 rounded-xl border border-slate-200 shadow-sm">
+        <Avatar className="h-11 w-11 rounded-xl border border-border shadow-sm">
           <AvatarImage src={product.imageUrl || undefined} alt={product.name} className="object-cover" />
-          <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 text-xs font-semibold text-blue-700">
+          <AvatarFallback className="rounded-xl bg-gradient-to-br from-blue-50 to-indigo-100 text-xs font-semibold text-blue-700 dark:from-blue-500/20 dark:to-indigo-500/20 dark:text-blue-300">
             {product.name.slice(0, 2).toUpperCase()}
           </AvatarFallback>
         </Avatar>
@@ -421,31 +518,31 @@ function DesktopProductRow({
 
       <TableCell>
         <div className="space-y-1">
-          <p className="font-semibold text-slate-900">{product.name}</p>
-          <p className="line-clamp-1 max-w-[280px] text-sm text-slate-500">
+          <p className="font-semibold text-foreground">{product.name}</p>
+          <p className="line-clamp-1 max-w-[280px] text-sm text-muted-foreground">
             {product.description || "ไม่มีรายละเอียดเพิ่มเติม"}
           </p>
         </div>
       </TableCell>
 
       <TableCell>
-        <Badge variant="secondary" className="rounded-full bg-slate-100 px-2.5 py-1 text-slate-700">
+        <Badge variant="secondary" className="rounded-full bg-muted px-2.5 py-1 text-foreground">
           {product.category || "ทั่วไป"}
         </Badge>
       </TableCell>
 
       <TableCell className="text-center">
         <div className="flex flex-col items-center gap-1">
-          <div className="flex items-center gap-1.5 text-base font-semibold text-slate-900">
+          <div className="flex items-center gap-1.5 text-base font-semibold text-foreground">
             {isPointProduct ? <Gem className="h-4 w-4 text-violet-500" /> : null}
             <span>{getPriceText(activePrice, isPointProduct)}</span>
           </div>
           {hasDiscount ? (
             <>
-              <p className="text-xs text-slate-400 line-through">
+              <p className="text-xs text-muted-foreground/70 line-through">
                 {getOriginalPriceText(product, isPointProduct, currencySettings)}
               </p>
-              <Badge className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-50">
+              <Badge className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/10">
                 ลดราคา
               </Badge>
             </>
@@ -454,13 +551,30 @@ function DesktopProductRow({
       </TableCell>
 
       <TableCell className="text-center">
-        <Badge
-          variant="outline"
-          className="inline-flex items-center gap-1 rounded-full border-slate-200 bg-slate-50 px-2.5 py-1 text-slate-700"
-        >
-          <Package className="h-3.5 w-3.5 text-slate-400" />
-          {displayStockCount}
-        </Badge>
+        <div className="flex flex-col items-center gap-1">
+          <Badge
+            variant="outline"
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full px-2.5 py-1",
+              getStockBadgeClass(stockTone),
+            )}
+          >
+            <Package className="h-3.5 w-3.5 opacity-60" />
+            {displayStockCount}
+          </Badge>
+          {stockToneLabel ? (
+            <span
+              className={cn(
+                "text-[11px] font-medium",
+                stockTone === "out"
+                  ? "text-rose-600 dark:text-rose-400"
+                  : "text-amber-600 dark:text-amber-400",
+              )}
+            >
+              {stockToneLabel}
+            </span>
+          ) : null}
+        </div>
       </TableCell>
 
       <TableCell className="text-center">
@@ -476,7 +590,7 @@ function DesktopProductRow({
           {autoDeleteLabel ? (
             <Badge
               variant="outline"
-              className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700"
+              className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
             >
               <Timer className="mr-1 h-3 w-3" />
               {autoDeleteLabel}
@@ -509,6 +623,44 @@ function DesktopProductRow({
   );
 }
 
+interface SortableHeadButtonProps {
+  activeKey: SortKey;
+  dir: SortDir;
+  label: string;
+  sortKey: Exclude<SortKey, "default">;
+  onSort: (key: Exclude<SortKey, "default">) => void;
+}
+
+function SortableHeadButton({
+  activeKey,
+  dir,
+  label,
+  sortKey,
+  onSort,
+}: Readonly<SortableHeadButtonProps>) {
+  const isActive = activeKey === sortKey;
+
+  let icon = <ArrowUpDown className="h-3.5 w-3.5 opacity-40" />;
+  if (isActive) {
+    icon = dir === "asc" ? <ArrowUp className="h-3.5 w-3.5" /> : <ArrowDown className="h-3.5 w-3.5" />;
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(sortKey)}
+      aria-label={`เรียงตาม${label}`}
+      className={cn(
+        "inline-flex items-center gap-1 uppercase tracking-[0.12em] transition hover:text-foreground",
+        isActive ? "text-foreground" : "text-muted-foreground",
+      )}
+    >
+      {label}
+      {icon}
+    </button>
+  );
+}
+
 export default function ProductTable({
   products,
   canCreate = true,
@@ -522,6 +674,9 @@ export default function ProductTable({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState<number>(10);
   const [loadingId, setLoadingId] = useState<string | number | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("default");
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [featuredOverrides, setFeaturedOverrides] = useState<Record<string, boolean>>({});
 
   const categories = useMemo(() => {
     const uniqueCategories = Array.from(
@@ -532,8 +687,14 @@ export default function ProductTable({
   }, [products]);
 
   const filteredProducts = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+
     return products.filter((product) => {
-      const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch =
+        !query ||
+        product.name.toLowerCase().includes(query) ||
+        (product.category ?? "").toLowerCase().includes(query) ||
+        (product.description ?? "").toLowerCase().includes(query);
       const matchesCategory =
         selectedCategory === "ทั้งหมด" || product.category === selectedCategory;
 
@@ -541,12 +702,68 @@ export default function ProductTable({
     });
   }, [products, searchTerm, selectedCategory]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredProducts.length / itemsPerPage));
+  const sortedProducts = useMemo(() => {
+    if (sortKey === "default") {
+      return filteredProducts;
+    }
+
+    const items = [...filteredProducts];
+
+    items.sort((a, b) => {
+      let comparison = 0;
+
+      if (sortKey === "name") {
+        comparison = a.name.localeCompare(b.name, "th");
+      } else if (sortKey === "price") {
+        comparison = getActivePrice(a) - getActivePrice(b);
+      } else {
+        comparison = getDisplayStockCount(a) - getDisplayStockCount(b);
+      }
+
+      return sortDir === "asc" ? comparison : -comparison;
+    });
+
+    return items;
+  }, [filteredProducts, sortKey, sortDir]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedProducts.length / itemsPerPage));
   const safeCurrentPage = Math.min(currentPage, totalPages);
   const startIndex = (safeCurrentPage - 1) * itemsPerPage;
-  const paginatedProducts = filteredProducts.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedProducts = sortedProducts
+    .slice(startIndex, startIndex + itemsPerPage)
+    .map((product) => ({
+      ...product,
+      isFeatured: featuredOverrides[String(product.id)] ?? product.isFeatured,
+    }));
+
+  const handleSort = (key: Exclude<SortKey, "default">) => {
+    if (sortKey === key) {
+      setSortDir((dir) => (dir === "asc" ? "desc" : "asc"));
+    } else {
+      setSortKey(key);
+      setSortDir("asc");
+    }
+    setCurrentPage(1);
+  };
+
+  const handleMobileSortChange = (value: string) => {
+    if (value === "default") {
+      setSortKey("default");
+      setSortDir("asc");
+    } else {
+      const [key, dir] = value.split("-") as [Exclude<SortKey, "default">, SortDir];
+      setSortKey(key);
+      setSortDir(dir);
+    }
+    setCurrentPage(1);
+  };
+
+  const mobileSortValue = sortKey === "default" ? "default" : `${sortKey}-${sortDir}`;
 
   const handleToggleFeatured = async (productId: string | number, currentFeatured: boolean) => {
+    const nextFeatured = !currentFeatured;
+
+    setFeaturedOverrides((prev) => ({ ...prev, [String(productId)]: nextFeatured }));
     setLoadingId(productId);
 
     try {
@@ -555,7 +772,7 @@ export default function ProductTable({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ isFeatured: !currentFeatured }),
+        body: JSON.stringify({ isFeatured: nextFeatured }),
       });
 
       if (!response.ok) {
@@ -568,6 +785,7 @@ export default function ProductTable({
       router.refresh();
     } catch (error) {
       console.error(error);
+      setFeaturedOverrides((prev) => ({ ...prev, [String(productId)]: currentFeatured }));
       showError("ไม่สามารถอัปเดตสินค้าแนะนำได้");
     } finally {
       setLoadingId(null);
@@ -631,10 +849,10 @@ export default function ProductTable({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 rounded-2xl border border-slate-200/80 bg-white/90 p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card/90 p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
         <div className="flex flex-1 flex-col gap-3 lg:flex-row lg:items-center">
-          <div className="flex items-center gap-2 text-sm font-semibold text-slate-600">
-            <LayoutGrid className="h-4 w-4 text-slate-400" />
+          <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+            <LayoutGrid className="h-4 w-4 opacity-70" />
             <span>หมวดหมู่</span>
           </div>
 
@@ -658,11 +876,11 @@ export default function ProductTable({
                     "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition",
                     isActive
                       ? "border-blue-600 bg-blue-600 text-white shadow-sm"
-                      : "border-slate-200 bg-slate-50 text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                      : "border-border bg-muted text-muted-foreground hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
                   )}
                 >
                   <span>{category}</span>
-                  <span className={cn("text-xs", isActive ? "text-blue-100" : "text-slate-400")}>
+                  <span className={cn("text-xs", isActive ? "text-blue-100" : "text-muted-foreground/70")}>
                     ({count})
                   </span>
                 </button>
@@ -673,20 +891,36 @@ export default function ProductTable({
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative w-full flex-1 sm:min-w-0">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
             <input
               type="text"
-              placeholder="ค้นหาชื่อสินค้า..."
+              placeholder="ค้นหาชื่อ หมวดหมู่ หรือรายละเอียด..."
               value={searchTerm}
               onChange={(event) => {
                 setSearchTerm(event.target.value);
                 setCurrentPage(1);
               }}
-              className="h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 pl-10 pr-4 text-sm text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100"
+              className="h-11 w-full rounded-2xl border border-border bg-muted pl-10 pr-4 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:border-blue-500 focus:bg-card focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-500/20"
             />
           </div>
 
-          <div className="flex items-center justify-end gap-2 text-sm text-slate-500">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground md:hidden">
+            <span>เรียงตาม</span>
+            <select
+              value={mobileSortValue}
+              onChange={(event) => handleMobileSortChange(event.target.value)}
+              aria-label="เรียงลำดับสินค้า"
+              className="h-10 flex-1 rounded-xl border border-border bg-card px-3 text-sm font-medium text-foreground outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-500/20"
+            >
+              {MOBILE_SORT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center justify-end gap-2 text-sm text-muted-foreground">
             <span>แสดง</span>
             <select
               value={itemsPerPage}
@@ -694,7 +928,8 @@ export default function ProductTable({
                 setItemsPerPage(Number(event.target.value));
                 setCurrentPage(1);
               }}
-              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
+              aria-label="จำนวนรายการต่อหน้า"
+              className="h-10 rounded-xl border border-border bg-card px-3 text-sm font-medium text-foreground outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-500/20"
             >
               {ITEMS_PER_PAGE_OPTIONS.map((option) => (
                 <option key={option} value={option}>
@@ -709,7 +944,7 @@ export default function ProductTable({
 
       <div className="space-y-3 md:hidden">
         {paginatedProducts.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200/80 bg-white px-4 py-16 text-center text-slate-500 shadow-sm">
+          <div className="rounded-2xl border border-border bg-card px-4 py-16 text-center text-muted-foreground shadow-sm">
             <EmptyProductState />
           </div>
         ) : (
@@ -732,32 +967,50 @@ export default function ProductTable({
         )}
       </div>
 
-      <div className="hidden overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm md:block">
+      <div className="hidden overflow-hidden rounded-2xl border border-border bg-card shadow-sm md:block">
         <Table>
           <TableHeader>
-            <TableRow className="border-slate-200 bg-slate-50/80 hover:bg-slate-50/80">
-              <TableHead className="w-20 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+            <TableRow className="border-border bg-muted/50 hover:bg-muted/50">
+              <TableHead className="w-20 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 รูป
               </TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                ชื่อสินค้า
+              <TableHead className="text-xs font-semibold">
+                <SortableHeadButton
+                  activeKey={sortKey}
+                  dir={sortDir}
+                  label="ชื่อสินค้า"
+                  sortKey="name"
+                  onSort={handleSort}
+                />
               </TableHead>
-              <TableHead className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <TableHead className="text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 หมวดหมู่
               </TableHead>
-              <TableHead className="text-center text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                ราคา
+              <TableHead className="text-center text-xs font-semibold">
+                <SortableHeadButton
+                  activeKey={sortKey}
+                  dir={sortDir}
+                  label="ราคา"
+                  sortKey="price"
+                  onSort={handleSort}
+                />
               </TableHead>
-              <TableHead className="text-center text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                สต็อก
+              <TableHead className="text-center text-xs font-semibold">
+                <SortableHeadButton
+                  activeKey={sortKey}
+                  dir={sortDir}
+                  label="สต็อก"
+                  sortKey="stock"
+                  onSort={handleSort}
+                />
               </TableHead>
-              <TableHead className="text-center text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <TableHead className="text-center text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 สถานะ
               </TableHead>
-              <TableHead className="text-center text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <TableHead className="text-center text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 แนะนำ
               </TableHead>
-              <TableHead className="text-right text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+              <TableHead className="text-right text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
                 จัดการ
               </TableHead>
             </TableRow>
@@ -766,7 +1019,7 @@ export default function ProductTable({
           <TableBody>
             {paginatedProducts.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="py-16 text-center text-slate-500">
+                <TableCell colSpan={8} className="py-16 text-center text-muted-foreground">
                   <EmptyProductState />
                 </TableCell>
               </TableRow>
@@ -791,56 +1044,58 @@ export default function ProductTable({
             )}
           </TableBody>
         </Table>
+      </div>
 
-        <div className="flex flex-col gap-3 border-t border-slate-200 bg-slate-50/60 px-4 py-3 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            แสดง {filteredProducts.length === 0 ? 0 : startIndex + 1} ถึง {Math.min(startIndex + itemsPerPage, filteredProducts.length)} จาก {filteredProducts.length} รายการ
-          </p>
+      <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <p>
+          แสดง {sortedProducts.length === 0 ? 0 : startIndex + 1} ถึง {Math.min(startIndex + itemsPerPage, sortedProducts.length)} จาก {sortedProducts.length} รายการ
+        </p>
 
-          <div className="flex items-center justify-end gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
-              disabled={safeCurrentPage === 1}
-              className="h-9 w-9 rounded-xl border-slate-200 bg-white disabled:opacity-50"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
+        <div className="flex items-center justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+            disabled={safeCurrentPage === 1}
+            aria-label="หน้าก่อนหน้า"
+            className="h-9 w-9 rounded-xl border-border bg-card disabled:opacity-50"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
 
-            <div className="flex items-center gap-1.5">
-              {Array.from({ length: totalPages }, (_, index) => index + 1)
-                .slice(Math.max(0, safeCurrentPage - 2), Math.max(3, safeCurrentPage + 1))
-                .map((pageNumber) => (
-                  <Button
-                    key={pageNumber}
-                    type="button"
-                    variant={pageNumber === safeCurrentPage ? "default" : "outline"}
-                    onClick={() => setCurrentPage(pageNumber)}
-                    className={cn(
-                      "h-9 min-w-9 rounded-xl px-3",
-                      pageNumber === safeCurrentPage
-                        ? "bg-blue-600 text-white hover:bg-blue-700"
-                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                    )}
-                  >
-                    {pageNumber}
-                  </Button>
-                ))}
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
-              disabled={safeCurrentPage === totalPages}
-              className="h-9 w-9 rounded-xl border-slate-200 bg-white disabled:opacity-50"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
+          <div className="flex items-center gap-1.5">
+            {Array.from({ length: totalPages }, (_, index) => index + 1)
+              .slice(Math.max(0, safeCurrentPage - 2), Math.max(3, safeCurrentPage + 1))
+              .map((pageNumber) => (
+                <Button
+                  key={pageNumber}
+                  type="button"
+                  variant={pageNumber === safeCurrentPage ? "default" : "outline"}
+                  onClick={() => setCurrentPage(pageNumber)}
+                  className={cn(
+                    "h-9 min-w-9 rounded-xl px-3",
+                    pageNumber === safeCurrentPage
+                      ? "bg-blue-600 text-white hover:bg-blue-700"
+                      : "border-border bg-card text-muted-foreground hover:bg-muted"
+                  )}
+                >
+                  {pageNumber}
+                </Button>
+              ))}
           </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+            disabled={safeCurrentPage === totalPages}
+            aria-label="หน้าถัดไป"
+            className="h-9 w-9 rounded-xl border-border bg-card disabled:opacity-50"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
       </div>
     </div>

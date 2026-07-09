@@ -27,8 +27,10 @@ export default async function AdminProductsPage() {
         columns: {
             id: true,
             name: true,
+            description: true,
             price: true,
             discountPrice: true,
+            currency: true,
             imageUrl: true,
             category: true,
             secretData: true,
@@ -116,8 +118,10 @@ export default async function AdminProductsPage() {
                             products={productsWithStock.map((p) => ({
                                 id: p.id,
                                 name: p.name,
+                                description: p.description,
                                 price: Number(p.price),
                                 discountPrice: p.discountPrice ? Number(p.discountPrice) : null,
+                                currency: p.currency === "POINT" ? "POINT" as const : "THB" as const,
                                 imageUrl: p.imageUrl,
                                 category: p.category,
                                 isSold: p.isSold,
