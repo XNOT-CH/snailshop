@@ -16,11 +16,13 @@ const DEFAULT_NAV_ITEMS = [
 ] as const;
 
 // Account-mode bar is capped at 5 items so labels stay legible on small
-// phones. Season Pass takes a slot here (over the wallet) because it is a
-// headline feature users come back to check on.
+// phones. "หน้าร้าน" must keep a slot: the top navbar and the dashboard
+// sidebar are both hidden on mobile dashboard routes, so it is the only way
+// back to the store. "/dashboard" itself always redirects to inventory, and
+// the wallet page lights up เติมเงิน (its nearest money-related tab).
 const ACCOUNT_NAV_ITEMS = [
-    { href: "/dashboard/topup", label: "เติมเงิน", icon: CreditCard, match: (pathname: string) => pathname === "/dashboard/topup" },
-    { href: "/dashboard/season-pass", label: "Pass", icon: Gift, match: (pathname: string) => pathname.startsWith("/dashboard/season-pass") },
+    { href: "/dashboard/topup", label: "เติมเงิน", icon: CreditCard, match: (pathname: string) => pathname.startsWith("/dashboard/topup") || pathname.startsWith("/dashboard/wallet") },
+    { href: "/dashboard/season-pass", label: "พาส", icon: Gift, match: (pathname: string) => pathname.startsWith("/dashboard/season-pass") },
     { href: "/dashboard/inventory", label: "คลัง", icon: Package, match: (pathname: string) => pathname.startsWith("/dashboard/inventory") },
     { href: "/dashboard/settings", label: "ตั้งค่า", icon: Settings, match: (pathname: string) => pathname.startsWith("/dashboard/settings") || pathname.startsWith("/profile") },
     { href: "/", label: "หน้าร้าน", icon: ArrowLeft, match: () => false },
@@ -70,6 +72,7 @@ export function MobileBottomNav() {
                             href={item.href}
                             prefetch={false}
                             className={itemClassName}
+                            aria-current={isActive ? "page" : undefined}
                         >
                             <span
                                 aria-hidden="true"

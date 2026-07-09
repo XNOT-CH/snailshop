@@ -23,10 +23,10 @@ type SeasonPassLinkButtonProps = {
 };
 
 export const seasonPassButtonShellClass =
-    "group relative h-[58px] w-fit overflow-hidden rounded-full border border-[#d7b96f] bg-transparent px-[5px] py-[5px] text-sm font-semibold text-white shadow-[0_18px_36px_-22px_rgba(15,23,42,0.42)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_44px_-22px_rgba(37,99,235,0.4)] disabled:border-slate-200 disabled:bg-transparent disabled:text-slate-400 disabled:shadow-none";
+    "group relative h-[58px] w-fit overflow-hidden rounded-full border border-[#d7b96f] bg-transparent px-[5px] py-[5px] text-sm font-semibold text-white shadow-[0_18px_36px_-22px_rgba(15,23,42,0.42)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_44px_-22px_rgba(15,23,42,0.18)] disabled:border-slate-200 disabled:bg-transparent disabled:text-slate-400 disabled:shadow-none";
 
 export const seasonPassButtonTextClass =
-    "relative z-10 flex h-full items-center justify-center gap-2 px-7 pt-[4px] text-center text-[15px] font-semibold tracking-[0.01em] text-white drop-shadow-[0_2px_8px_rgba(15,23,42,0.25)]";
+    "relative z-10 flex h-full items-center justify-center gap-2 px-7 pt-[4px] text-center text-base font-semibold tracking-[0.01em] text-white drop-shadow-[0_2px_8px_rgba(15,23,42,0.25)]";
 
 function SeasonPassButtonFrame() {
     return (

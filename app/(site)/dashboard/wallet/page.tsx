@@ -61,7 +61,7 @@ export default async function DashboardWalletPage() {
                 ]}
             />
 
-            <section className={`${themeClasses.surface} rounded-[28px] px-5 py-6 shadow-sm sm:px-6`}>
+            <section className={`${themeClasses.surface} rounded-3xl px-5 py-6 shadow-sm sm:px-6`}>
                 <div className="space-y-2">
                     <h1 className="text-2xl font-semibold tracking-tight text-foreground">กระเป๋าของฉัน</h1>
                     <p className="text-sm leading-6 text-muted-foreground">
@@ -72,7 +72,7 @@ export default async function DashboardWalletPage() {
                 <div className="mt-6 grid gap-4 md:grid-cols-2">
                     {balances.map((item) => {
                         return (
-                            <Card key={item.title} className={`${themeClasses.surfaceSoft} rounded-[24px] border border-border/70 shadow-none`}>
+                            <Card key={item.title} className={`${themeClasses.surfaceSoft} rounded-3xl border border-border/70 shadow-none`}>
                                 <CardContent className="p-5">
                                     <div className="relative h-16 w-16 overflow-hidden rounded-2xl border border-border/70 bg-background/70 shadow-sm">
                                         <Image
@@ -105,7 +105,7 @@ export default async function DashboardWalletPage() {
                         </div>
 
                         <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
-                            <Card className={`${themeClasses.surfaceSoft} overflow-hidden rounded-[30px] border border-border/70 shadow-sm`}>
+                            <Card className={`${themeClasses.surfaceSoft} overflow-hidden rounded-3xl border border-border/70 shadow-sm`}>
                                 <div className="relative h-[280px] overflow-hidden border-b border-border/60 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.14),transparent_35%),linear-gradient(180deg,#fffdfa_0%,#f8fafc_100%)]">
                                     <div className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm dark:bg-emerald-500/15 dark:text-emerald-200 dark:shadow-none">
                                         <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -142,7 +142,7 @@ export default async function DashboardWalletPage() {
                                         </span>
                                     </div>
 
-                                    <div className="rounded-full bg-primary px-4 py-3 text-center text-sm font-semibold text-primary-foreground shadow-[0_18px_30px_-18px_rgba(37,99,235,0.8)]">
+                                    <div className="rounded-full bg-primary px-4 py-3 text-center text-sm font-semibold text-primary-foreground shadow-[0_18px_30px_-18px_rgba(15,23,42,0.28)]">
                                         <span className="inline-flex items-center gap-2">
                                             <Eye className="h-4 w-4" />
                                             ตั๋วพร้อมใช้งาน

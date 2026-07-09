@@ -56,7 +56,7 @@ export function ProductGallery({ images }: Readonly<ProductGalleryProps>) {
                 </DialogTrigger>
                 <DialogContent className="max-w-5xl border-0 bg-transparent p-0 shadow-none">
                     <DialogTitle className="sr-only">Product Image View</DialogTitle>
-                    <div className={`${themeClasses.surface} space-y-4 rounded-[28px] p-4 backdrop-blur-md`}>
+                    <div className={`${themeClasses.surface} space-y-4 rounded-3xl p-4 backdrop-blur-md`}>
                         <div className="relative aspect-square w-full overflow-hidden rounded-xl border border-border/40 bg-background">
                             <Image
                                 src={galleryImages[selectedImage].url}

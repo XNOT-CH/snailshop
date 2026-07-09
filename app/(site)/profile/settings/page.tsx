@@ -248,7 +248,7 @@ export default function ProfileSettingsPage() {
     const addressCardClass =
         "border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/80 shadow-[0_18px_45px_-32px_rgba(15,23,42,0.22)]";
     const saveButtonClass =
-        "h-11 w-full gap-2 rounded-2xl bg-blue-600 px-6 text-white shadow-[0_16px_30px_-18px_rgba(37,99,235,0.75)] transition hover:bg-blue-700 hover:shadow-[0_18px_36px_-18px_rgba(29,78,216,0.75)] sm:w-auto sm:min-w-[148px]";
+        "h-11 w-full gap-2 rounded-2xl bg-blue-600 px-6 text-white shadow-[0_16px_30px_-18px_rgba(15,23,42,0.28)] transition hover:bg-blue-700 hover:shadow-[0_18px_36px_-18px_rgba(15,23,42,0.28)] sm:w-auto sm:min-w-[148px]";
     const emailChanged = (formData.email || "").trim().toLowerCase() !== (profile?.email || "").trim().toLowerCase();
     const isEmailVerified = Boolean(profile?.emailVerified) && !emailChanged;
     const shouldLockVerifiedEmail = isEmailVerified && !isEditingVerifiedEmail;
@@ -805,7 +805,7 @@ export default function ProfileSettingsPage() {
                         aria-disabled={!hasSavedOptions}
                         className={`flex min-h-16 items-start gap-3 rounded-2xl border p-4 text-left transition ${
                             mode === "saved"
-                                ? "border-blue-300 bg-blue-50 text-blue-950 shadow-[0_14px_30px_-24px_rgba(37,99,235,0.75)] dark:border-blue-400/45 dark:bg-blue-500/15 dark:text-blue-100 dark:shadow-none"
+                                ? "border-blue-300 bg-blue-50 text-blue-950 shadow-[0_14px_30px_-24px_rgba(15,23,42,0.28)] dark:border-blue-400/45 dark:bg-blue-500/15 dark:text-blue-100 dark:shadow-none"
                                 : "border-slate-200 bg-white text-foreground hover:border-blue-200 hover:bg-blue-50/40"
                         } ${!hasSavedOptions ? "cursor-not-allowed opacity-60" : ""}`}
                         onClick={() => {
@@ -838,7 +838,7 @@ export default function ProfileSettingsPage() {
                         tabIndex={0}
                         className={`flex min-h-16 items-start gap-3 rounded-2xl border p-4 text-left transition ${
                             mode === "new"
-                                ? "border-blue-300 bg-blue-50 text-blue-950 shadow-[0_14px_30px_-24px_rgba(37,99,235,0.75)] dark:border-blue-400/45 dark:bg-blue-500/15 dark:text-blue-100 dark:shadow-none"
+                                ? "border-blue-300 bg-blue-50 text-blue-950 shadow-[0_14px_30px_-24px_rgba(15,23,42,0.28)] dark:border-blue-400/45 dark:bg-blue-500/15 dark:text-blue-100 dark:shadow-none"
                                 : "border-slate-200 bg-white text-foreground hover:border-blue-200 hover:bg-blue-50/40"
                         }`}
                         onClick={() => startNewAddress(setAddr, setMode, setSelectedId, setLabel, fallbackLabel)}
@@ -1360,11 +1360,11 @@ export default function ProfileSettingsPage() {
                                                             <img
                                                                 src={formData.image}
                                                                 alt="Profile preview"
-                                                                className="h-20 w-20 rounded-full border-4 border-white object-cover shadow-[0_16px_30px_-18px_rgba(15,23,42,0.45)] transition group-hover:scale-[1.02] group-hover:shadow-[0_18px_34px_-18px_rgba(37,99,235,0.55)]"
+                                                                className="h-20 w-20 rounded-full border-4 border-white object-cover shadow-[0_16px_30px_-18px_rgba(15,23,42,0.45)] transition group-hover:scale-[1.02] group-hover:shadow-[0_18px_34px_-18px_rgba(15,23,42,0.22)]"
                                                                 onError={handleProfileImagePreviewError}
                                                             />
                                                         ) : (
-                                                            <div className="flex h-20 w-20 items-center justify-center rounded-full border border-dashed border-blue-200 bg-white text-2xl font-semibold text-primary shadow-[0_12px_24px_-16px_rgba(37,99,235,0.4)] transition group-hover:scale-[1.02] group-hover:border-blue-300 group-hover:shadow-[0_18px_34px_-18px_rgba(37,99,235,0.45)]">
+                                                            <div className="flex h-20 w-20 items-center justify-center rounded-full border border-dashed border-blue-200 bg-white text-2xl font-semibold text-primary shadow-[0_12px_24px_-16px_rgba(15,23,42,0.18)] transition group-hover:scale-[1.02] group-hover:border-blue-300 group-hover:shadow-[0_18px_34px_-18px_rgba(15,23,42,0.22)]">
                                                                 {profileInitial}
                                                             </div>
                                                         )}

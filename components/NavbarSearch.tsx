@@ -75,7 +75,9 @@ export function NavbarSearch({ currencySettings }: NavbarSearchProps) {
     // ⌘K / Ctrl+K to open from anywhere.
     React.useEffect(() => {
         const onKeyDown = (e: KeyboardEvent) => {
-            if (e.key.toLowerCase() === "k" && (e.metaKey || e.ctrlKey)) {
+            // e.key can be undefined on synthetic keydown events (autofill,
+            // password-manager extensions), so guard before lowercasing.
+            if ((e.metaKey || e.ctrlKey) && e.key?.toLowerCase() === "k") {
                 e.preventDefault();
                 setOpen((v) => !v);
             }

@@ -124,7 +124,7 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                                 id="reg-username"
                                 placeholder="ตั้งชื่อผู้ใช้งาน (อย่างน้อย 3 ตัวอักษร)"
                                 autoComplete="username"
-                                className="h-10 rounded-[4px] border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 transition-colors placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
+                                className="h-12 rounded-xl border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 transition-colors placeholder:text-[#7a8796] focus-visible:ring-[#145de7] dark:border-border dark:bg-muted/50 dark:text-foreground"
                                 minLength={3}
                                 value={formData.username}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, username: e.target.value }))}
@@ -140,7 +140,7 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                                 type="email"
                                 placeholder="กรอกอีเมลของคุณ"
                                 autoComplete="email"
-                                className="h-10 rounded-[4px] border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 transition-colors placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
+                                className="h-12 rounded-xl border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 transition-colors placeholder:text-[#7a8796] focus-visible:ring-[#145de7] dark:border-border dark:bg-muted/50 dark:text-foreground"
                                 value={formData.email}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
                                 required
@@ -156,7 +156,7 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                                     type={showPassword ? "text" : "password"}
                                     placeholder="••••••••"
                                     autoComplete="new-password"
-                                    className="h-10 rounded-[4px] border-[#cfd6df] bg-white pr-12 text-[#102033] shadow-inner shadow-slate-100 transition-colors placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
+                                    className="h-12 rounded-xl border-[#cfd6df] bg-white pr-12 text-[#102033] shadow-inner shadow-slate-100 transition-colors placeholder:text-[#7a8796] focus-visible:ring-[#145de7] dark:border-border dark:bg-muted/50 dark:text-foreground"
                                     minLength={6}
                                     value={formData.password}
                                     onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
@@ -202,7 +202,7 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                                 type="password"
                                 placeholder="ยืนยันรหัสผ่านอีกครั้ง"
                                 autoComplete="new-password"
-                                className="h-10 rounded-[4px] border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
+                                className="h-12 rounded-xl border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 placeholder:text-[#7a8796] focus-visible:ring-[#145de7] dark:border-border dark:bg-muted/50 dark:text-foreground"
                                 value={formData.confirmPassword}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
                                 required
@@ -219,7 +219,7 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                                 placeholder="ตัวเลข 6 หลัก"
                                 autoComplete="off"
                                 inputMode="numeric"
-                                className="h-10 rounded-[4px] border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 placeholder:text-[#7a8796] focus-visible:ring-[#2f7df6] dark:border-border dark:bg-muted/50 dark:text-foreground"
+                                className="h-12 rounded-xl border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 placeholder:text-[#7a8796] focus-visible:ring-[#145de7] dark:border-border dark:bg-muted/50 dark:text-foreground"
                                 maxLength={6}
                                 pattern="[0-9]*"
                                 value={formData.pin}
@@ -237,7 +237,7 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                         {/* Submit Button */}
                         <Button
                             type="submit"
-                            className="w-full h-11 rounded-[4px] font-semibold shadow-none transition-colors mt-6"
+                            className="w-full h-12 rounded-xl font-semibold shadow-none transition-colors mt-6"
                             disabled={
                                 isLoading
                                 || Boolean(formData.confirmPassword && !passwordsMatch)

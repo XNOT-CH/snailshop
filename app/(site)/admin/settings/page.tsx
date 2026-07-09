@@ -249,7 +249,7 @@ export default function AdminSettingsPage() {
 
         setIsUploadingLogo(true);
         try {
-            const compressed = await compressImage(file);
+            const compressed = await compressImage(file, 2 * 1024 * 1024);
             const data = await uploadFileToApi(compressed);
             if (data.success) {
                 updateSetting("logoUrl", data.url);
@@ -277,8 +277,8 @@ export default function AdminSettingsPage() {
 
         setIsUploadingBg(true);
         try {
-            const compressed = await compressImage(file);
-            const data = await uploadFileToApi(compressed);
+            const compressed = await compressImage(file, 4 * 1024 * 1024);
+            const data = await uploadFileToApi(compressed, { extraFields: { preset: "banner" } });
             if (data.success) {
                 updateSetting("backgroundImage", data.url);
                 showSuccess("อัพโหลดรูปพื้นหลังสำเร็จ!");
@@ -304,8 +304,8 @@ export default function AdminSettingsPage() {
 
         setIsUploadingOg(true);
         try {
-            const compressed = await compressImage(file);
-            const data = await uploadFileToApi(compressed);
+            const compressed = await compressImage(file, 2 * 1024 * 1024);
+            const data = await uploadFileToApi(compressed, { extraFields: { preset: "banner" } });
             if (data.success) {
                 updateSetting("ogImageUrl", data.url);
                 showSuccess("อัพโหลดรูปแชร์ลิงก์สำเร็จ!");
@@ -349,7 +349,7 @@ export default function AdminSettingsPage() {
                     {/* Homepage Section Toggles */}
                     <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
                         <div className="border-b border-border py-3 px-5 flex items-center gap-2">
-                            <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                            <div className="w-6 h-6 bg-[#145de7] rounded flex items-center justify-center">
                                 <LayoutGrid className="h-3.5 w-3.5 text-white" />
                             </div>
                             <span className="font-bold">ส่วนแสดงผลหน้าแรก</span>
@@ -380,7 +380,7 @@ export default function AdminSettingsPage() {
                     {/* General Settings */}
                     <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
                         <div className="border-b border-border py-3 px-5 flex items-center gap-2">
-                            <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                            <div className="w-6 h-6 bg-[#145de7] rounded flex items-center justify-center">
                                 <Type className="h-3.5 w-3.5 text-white" />
                             </div>
                             <span className="font-bold">ข้อความทั่วไป</span>
@@ -928,8 +928,8 @@ function BannerCard({
 
         setIsUploading(true);
         try {
-            const compressed = await compressImage(file);
-            const data = await uploadFileToApi(compressed);
+            const compressed = await compressImage(file, 4 * 1024 * 1024);
+            const data = await uploadFileToApi(compressed, { extraFields: { preset: "banner" } });
             if (data.success) {
                 onImageChange(data.url);
                 showSuccess("อัพโหลดรูป Banner สำเร็จ!");
@@ -947,7 +947,7 @@ function BannerCard({
     return (
         <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
             <div className="border-b border-border py-2.5 px-4 flex items-center justify-between gap-2">
-                <Badge variant="secondary" className="bg-blue-100 text-[#1a56db] font-semibold">Banner {number}</Badge>
+                <Badge variant="secondary" className="bg-blue-100 text-[#145de7] font-semibold">Banner {number}</Badge>
                 {onRemove && (
                     <Button
                         type="button"

@@ -58,7 +58,7 @@ export default async function GachaGridIndexPage() {
                         backgroundSize: "60px 52px",
                     }}
                 />
-                <h1 className="relative z-10 mb-1.5 text-2xl font-bold text-white sm:text-[2rem]">สุ่มกงล้อ</h1>
+                <h1 className="relative z-10 mb-1.5 text-2xl font-bold text-white sm:text-3xl">สุ่มกงล้อ</h1>
                 <div className="relative z-10 md:hidden">
                     <Link
                         href="/gachapons"
@@ -78,7 +78,7 @@ export default async function GachaGridIndexPage() {
             </div>
 
             <div className="mx-auto w-full max-w-none px-2 pb-6 pt-2 sm:max-w-lg sm:px-4 sm:py-8">
-                <div className="bg-card p-2 sm:rounded-[1.75rem] sm:border sm:border-border/70 sm:shadow-[0_18px_42px_-34px_rgba(15,23,42,0.22)] sm:p-4">
+                <div className="bg-card p-2 sm:rounded-3xl sm:border sm:border-border/70 sm:shadow-[0_18px_42px_-34px_rgba(15,23,42,0.22)] sm:p-4">
                     <GachaGridMachine
                         machineName="สุ่มกงล้อ"
                         costType={costType}

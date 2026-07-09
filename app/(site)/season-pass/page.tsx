@@ -54,7 +54,7 @@ export default async function SeasonPassPurchasePage() {
     return (
         <div className="animate-page-enter">
             <div className="relative left-1/2 w-screen -translate-x-1/2 space-y-6 border-y border-border/50 bg-card/90 px-3 py-5 shadow-xl shadow-primary/10 backdrop-blur-sm dark:border-slate-700/70 dark:bg-slate-950/70 dark:shadow-black/25 sm:left-auto sm:w-auto sm:translate-x-0 sm:border sm:bg-card/90 sm:px-5 sm:py-6 sm:backdrop-blur-sm lg:px-6">
-                <section className="relative overflow-hidden rounded-[30px] border border-border/70 bg-card px-5 py-8 shadow-[0_28px_70px_-44px_rgba(37,99,235,0.28)] dark:border-slate-700/80 dark:bg-slate-900/90 dark:shadow-[0_28px_70px_-44px_rgba(0,0,0,0.8)] sm:px-7 sm:py-10">
+                <section className="relative overflow-hidden rounded-3xl border border-border/70 bg-card px-5 py-8 shadow-[0_28px_70px_-44px_rgba(15,23,42,0.18)] dark:border-slate-700/80 dark:bg-slate-900/90 dark:shadow-[0_28px_70px_-44px_rgba(0,0,0,0.8)] sm:px-7 sm:py-10">
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(26,86,219,0.14),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.99),rgba(248,250,252,0.96))] dark:bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.24),transparent_32%),linear-gradient(180deg,rgba(15,23,42,0.98),rgba(2,6,23,0.96))]" />
                     <div className="relative grid gap-6 xl:grid-cols-[1.1fr_0.9fr] xl:items-center">
                         <div className="space-y-5">
@@ -112,13 +112,13 @@ export default async function SeasonPassPurchasePage() {
                             ) : null}
                         </div>
 
-                        <div className="rounded-[28px] border border-slate-200 bg-white/92 p-5 shadow-sm backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/82 dark:shadow-[0_18px_48px_-34px_rgba(0,0,0,0.9)]">
+                        <div className="rounded-3xl border border-slate-200 bg-white/92 p-5 shadow-sm backdrop-blur dark:border-slate-700/80 dark:bg-slate-900/82 dark:shadow-[0_18px_48px_-34px_rgba(0,0,0,0.9)]">
                             <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-xs uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Plan Summary</p>
                                     <p className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-50">฿{price.toLocaleString()}</p>
                                 </div>
-                                <div className="flex h-16 w-16 items-center justify-center rounded-[24px] bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-200">
+                                <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-200">
                                     <Gift className="h-8 w-8" />
                                 </div>
                             </div>
@@ -172,13 +172,13 @@ export default async function SeasonPassPurchasePage() {
                 </section>
 
                 <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-                    <section className="rounded-[30px] border border-border/70 bg-card p-5 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/78 dark:shadow-none sm:p-6">
+                    <section className="rounded-3xl border border-border/70 bg-card p-5 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/78 dark:shadow-none sm:p-6">
                         <div className="flex items-center gap-2 text-slate-900 dark:text-slate-50">
                             <Gift className="h-5 w-5 text-blue-600" />
                             <h2 className="text-2xl font-semibold tracking-tight">ตัวอย่างรางวัล 6 วันแรก</h2>
                         </div>
 
-                        <div className="mt-5 rounded-[28px] border border-[#eadfce] bg-[linear-gradient(180deg,#fffdfa_0%,#f9f6ef_100%)] p-4 dark:border-slate-700/80 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(2,6,23,0.9))]">
+                        <div className="mt-5 rounded-3xl border border-[#eadfce] bg-[linear-gradient(180deg,#fffdfa_0%,#f9f6ef_100%)] p-4 dark:border-slate-700/80 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.94),rgba(2,6,23,0.9))]">
                             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
                                 {rewardsPreview.map((reward) => {
                                     const tone =
@@ -195,7 +195,7 @@ export default async function SeasonPassPurchasePage() {
                                               : Ticket;
 
                                     return (
-                                        <div key={reward.day} className="rounded-[22px] border border-border/70 bg-white/85 p-3 shadow-sm dark:border-slate-700/80 dark:bg-slate-950/60 dark:shadow-none">
+                                        <div key={reward.day} className="rounded-2xl border border-border/70 bg-white/85 p-3 shadow-sm dark:border-slate-700/80 dark:bg-slate-950/60 dark:shadow-none">
                                             <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
                                                 Day {String(reward.day).padStart(2, "0")}
                                             </span>
@@ -211,7 +211,7 @@ export default async function SeasonPassPurchasePage() {
                         </div>
                     </section>
 
-                    <section className="rounded-[30px] border border-border/70 bg-card p-5 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/78 dark:shadow-none sm:p-6">
+                    <section className="rounded-3xl border border-border/70 bg-card p-5 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/78 dark:shadow-none sm:p-6">
                         <div className="flex items-center gap-2 text-slate-900 dark:text-slate-50">
                             <Clock3 className="h-5 w-5 text-blue-600" />
                             <h2 className="text-2xl font-semibold tracking-tight">ขั้นตอนการรับรางวัล</h2>

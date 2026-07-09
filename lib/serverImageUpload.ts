@@ -140,19 +140,50 @@ export async function optimizeImageUpload(
     };
 }
 
-export async function saveOptimizedImageUpload(file: File, options: SaveOptimizedUploadOptions) {
-    const { uploadDir, publicPath, ...optimizeOptions } = options;
-    const optimized = await optimizeImageUpload(file, optimizeOptions);
-    const url = `${publicPath}/${optimized.filename}`;
-    const storageKey = storageKeyFromPublicUrl(url);
+// Small variant saved alongside the full image so cards/tiles can skip the
+// full-size download. Bypassing the Next image optimizer for /uploads makes
+// this the only downsizing step, so 640px keeps retina cards sharp.
+const THUMB_DIMENSION = 640;
+const THUMB_QUALITY = 80;
+const THUMB_SUFFIX = ".thumb.webp";
 
-    const savedToR2 = await putUploadObject(storageKey, optimized.buffer, optimized.mimeType);
+export function getThumbFilename(filename: string) {
+    return filename.endsWith(".webp") && !filename.endsWith(THUMB_SUFFIX)
+        ? filename.replace(/\.webp$/, THUMB_SUFFIX)
+        : null;
+}
+
+async function saveUploadBuffer(buffer: Buffer, mimeType: SupportedMimeType, uploadDir: string, url: string) {
+    const storageKey = storageKeyFromPublicUrl(url);
+    const savedToR2 = await putUploadObject(storageKey, buffer, mimeType);
     if (!savedToR2) {
         if (!existsSync(uploadDir)) {
             await mkdir(uploadDir, { recursive: true });
         }
 
-        await writeFile(path.join(uploadDir, optimized.filename), optimized.buffer);
+        await writeFile(path.join(uploadDir, path.basename(url)), buffer);
+    }
+}
+
+export async function saveOptimizedImageUpload(file: File, options: SaveOptimizedUploadOptions) {
+    const { uploadDir, publicPath, ...optimizeOptions } = options;
+    const optimized = await optimizeImageUpload(file, optimizeOptions);
+    const url = `${publicPath}/${optimized.filename}`;
+
+    await saveUploadBuffer(optimized.buffer, optimized.mimeType, uploadDir, url);
+
+    const thumbFilename = getThumbFilename(optimized.filename);
+    if (thumbFilename) {
+        const thumbBuffer = await sharp(optimized.buffer)
+            .resize({
+                width: THUMB_DIMENSION,
+                height: THUMB_DIMENSION,
+                fit: "inside",
+                withoutEnlargement: true,
+            })
+            .webp({ quality: THUMB_QUALITY })
+            .toBuffer();
+        await saveUploadBuffer(thumbBuffer, "image/webp", uploadDir, `${publicPath}/${thumbFilename}`);
     }
 
     return {
@@ -214,21 +245,28 @@ export async function deleteManagedUpload(
         return false;
     }
 
-    const filePaths = resolveManagedUploadPaths(fileUrl, uploadDir, publicPath, fallbackUploadDirs);
+    const thumbFilename = getThumbFilename(path.basename(fileUrl));
+    const targetUrls = thumbFilename
+        ? [fileUrl, `${path.dirname(fileUrl).replaceAll("\\", "/")}/${thumbFilename}`]
+        : [fileUrl];
     let deleted = false;
-    const storageKey = storageKeyFromPublicUrl(fileUrl);
 
-    if (await deleteUploadObject(storageKey)) {
-        deleted = true;
-    }
+    for (const targetUrl of targetUrls) {
+        const filePaths = resolveManagedUploadPaths(targetUrl, uploadDir, publicPath, fallbackUploadDirs);
+        const storageKey = storageKeyFromPublicUrl(targetUrl);
 
-    for (const filePath of filePaths) {
-        if (!existsSync(filePath)) {
-            continue;
+        if (await deleteUploadObject(storageKey)) {
+            deleted = true;
         }
 
-        await unlink(filePath);
-        deleted = true;
+        for (const filePath of filePaths) {
+            if (!existsSync(filePath)) {
+                continue;
+            }
+
+            await unlink(filePath);
+            deleted = true;
+        }
     }
 
     return deleted;

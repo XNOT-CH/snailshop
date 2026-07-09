@@ -11,7 +11,7 @@ export function ChatBrandLogo({
     return (
         <span
             className={cn(
-                "inline-flex items-center justify-center overflow-hidden rounded-[18px]",
+                "inline-flex items-center justify-center overflow-hidden rounded-2xl",
                 className
             )}
             aria-hidden="true"

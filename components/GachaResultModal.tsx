@@ -69,7 +69,7 @@ export function GachaResultModal({ product, onClose, onSpinAgain }: Readonly<Gac
                 />
 
                 <motion.div
-                    className="relative z-10 w-full max-w-md overflow-hidden rounded-[30px] border bg-[#18171c]"
+                    className="relative z-10 w-full max-w-md overflow-hidden rounded-3xl border bg-[#18171c]"
                     style={{
                         borderColor: "rgba(255,255,255,0.22)",
                         boxShadow: `0 28px 80px -34px rgba(0,0,0,0.82), 0 16px 40px -28px ${tier.glow}, inset 0 1px 0 rgba(255,255,255,0.05)`,
@@ -92,7 +92,7 @@ export function GachaResultModal({ product, onClose, onSpinAgain }: Readonly<Gac
                         <X className="h-4 w-4" />
                     </button>
 
-                    <div className="px-8 pt-7 pb-1">
+                    <div className="px-6 sm:px-8 pt-7 pb-1">
                         <div className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-[#222127] px-3 py-1.5">
                             <span className={`inline-block h-2 w-2 rounded-full ${tier.dot}`} />
                             <span className="text-[10px] font-semibold tracking-[0.22em] text-zinc-300/85">
@@ -101,9 +101,9 @@ export function GachaResultModal({ product, onClose, onSpinAgain }: Readonly<Gac
                         </div>
                     </div>
 
-                    <div className="flex justify-center px-8 pt-4 pb-6">
+                    <div className="flex justify-center px-6 sm:px-8 pt-4 pb-6">
                         <motion.div
-                            className="relative flex h-44 w-44 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[#222127]"
+                            className="relative flex h-36 w-36 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-[#222127] sm:h-44 sm:w-44"
                             style={{
                                 boxShadow: `inset 0 1px 0 rgba(255,255,255,0.06), 0 0 0 8px rgba(255,255,255,0.012), 0 18px 35px -22px ${tier.glow}`,
                             }}
@@ -148,13 +148,13 @@ export function GachaResultModal({ product, onClose, onSpinAgain }: Readonly<Gac
                     </div>
 
                     <motion.div
-                        className="space-y-5 px-8 pb-8 text-center"
+                        className="space-y-5 px-6 sm:px-8 pb-8 text-center"
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.22 }}
                     >
                         <div className="space-y-2.5">
-                            <p className="text-[1.84rem] font-bold leading-[1.05] text-zinc-50">{product.name}</p>
+                            <p className="text-2xl font-bold leading-[1.05] text-zinc-50 sm:text-3xl">{product.name}</p>
                             <p className="text-[11px] font-medium tracking-[0.14em] text-zinc-500">รางวัลที่ได้รับ</p>
                         </div>
                         {product.price > 0 && (
@@ -168,7 +168,7 @@ export function GachaResultModal({ product, onClose, onSpinAgain }: Readonly<Gac
                     </motion.div>
 
                     <motion.div
-                        className="flex gap-3 px-8 pb-8"
+                        className="flex gap-3 px-6 sm:px-8 pb-8"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.32 }}

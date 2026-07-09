@@ -197,7 +197,7 @@ export default function AdminNewsPage() {
                 return null;
             }
 
-            const compressed = await compressImage(file);
+            const compressed = await compressImage(file, 2 * 1024 * 1024);
             const data = await uploadFileToApi(compressed);
 
             if (data.success && data.url) {
@@ -258,12 +258,12 @@ export default function AdminNewsPage() {
             showCancelButton: true,
             confirmButtonText: article ? "บันทึก" : "เพิ่มข่าวสาร",
             cancelButtonText: "ยกเลิก",
-            confirmButtonColor: "#1d4ed8",
+            confirmButtonColor: "#145de7",
             cancelButtonColor: "#6b7280",
             reverseButtons: true,
             focusConfirm: false,
             customClass: {
-                popup: "admin-swal-modal overflow-hidden rounded-[28px] text-left",
+                popup: "admin-swal-modal overflow-hidden rounded-3xl text-left",
                 confirmButton: "rounded-xl px-6 py-2.5",
                 cancelButton: "rounded-xl px-6 py-2.5",
                 actions: "mt-6 border-t border-gray-100 px-0 pt-4",

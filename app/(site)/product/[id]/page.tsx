@@ -191,7 +191,7 @@ export default async function ProductDetailPage({
             <StructuredData data={structuredData} />
 
             <div
-                className={`${themeClasses.shell} relative mx-auto max-w-screen-2xl overflow-hidden rounded-[28px] backdrop-blur-xl`}
+                className={`${themeClasses.shell} relative mx-auto max-w-screen-2xl overflow-hidden rounded-3xl backdrop-blur-xl`}
             >
                 <div className="border-b border-border/60 bg-gradient-to-r from-card/92 via-card to-card/92 p-6 sm:p-8">
                     <PageBreadcrumb
@@ -267,7 +267,7 @@ export default async function ProductDetailPage({
             </div>
 
             {relatedProducts.length > 0 && (
-                <div className={`${themeClasses.shell} mx-auto mt-10 mb-2 max-w-screen-2xl rounded-[28px] p-4 sm:mt-16 sm:mb-8 sm:p-6`}>
+                <div className={`${themeClasses.shell} mx-auto mt-10 mb-2 max-w-screen-2xl rounded-3xl p-4 sm:mt-16 sm:mb-8 sm:p-6`}>
                     <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
                         รายการสินค้าอื่น ๆ
                     </h2>

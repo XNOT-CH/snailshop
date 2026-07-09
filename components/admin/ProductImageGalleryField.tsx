@@ -66,7 +66,7 @@ export function ProductImageGalleryField({
             const uploadedUrls: string[] = [];
 
             for (const file of files) {
-                const compressed = await compressImage(file);
+                const compressed = await compressImage(file, 2 * 1024 * 1024);
                 const data = await uploadFileToApi(compressed);
 
                 if (!data.success || !data.url) {

@@ -3,15 +3,15 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { motion, AnimatePresence } from "framer-motion";
-import { Dices, Loader2, Gamepad2 } from "lucide-react";
-import Image from "next/image";
+import { Dices, Loader2, Gamepad2, Info } from "lucide-react";
+import { ThumbImage } from "@/components/ThumbImage";
 import { useRouter } from "next/navigation";
 import { showError, showSuccess } from "@/lib/swal";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
-import { shouldBypassImageOptimization } from "@/lib/imageUrl";
 import { EMPTY_USER_BALANCES, getBalanceByCostType, type UserBalances } from "@/lib/userBalances";
 import { getGachaCostLabel, normalizeGachaCost } from "@/lib/gachaCost";
+import { themeClasses } from "@/lib/theme";
 import { STORAGE_KEYS } from "@/lib/constants/storageKeys";
 import { fetchUserBalances } from "@/lib/client/userBalanceClient";
 import {
@@ -130,14 +130,13 @@ function TileImage({ imageUrl, name, fallback }: Readonly<{ imageUrl: string; na
   if (err) return <>{fallback}</>;
   return (
     <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded-full bg-transparent">
-      <Image
+      <ThumbImage
         src={imageUrl}
         alt={name}
         fill
         sizes="64px"
         className="object-cover object-center"
-        unoptimized={shouldBypassImageOptimization(imageUrl)}
-        onError={() => setErr(true)}
+        onFinalError={() => setErr(true)}
       />
     </div>
   );
@@ -552,10 +551,10 @@ export function GachaRhombus({
   }, [gridWidth]);
 
   return (
-    <div className="flex w-full max-w-[640px] flex-col items-center gap-8">
+    <div className="flex w-full max-w-[640px] flex-col items-center gap-4 sm:gap-8">
       <div ref={cardRef} className="relative flex w-full justify-center overflow-hidden rounded-2xl border border-border/60 bg-card p-4 shadow-[0_12px_30px_-26px_rgba(15,23,42,0.24)] sm:p-8 md:p-10">
         <button onClick={() => setShowDropRate(true)} className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full border border-border/60 bg-background/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground shadow-sm transition-all hover:bg-background hover:text-[#145de7]">
-          ℹ อัตราดรอป
+          <Info className="h-3.5 w-3.5" /> อัตราดรอป
         </button>
         <div
           style={{
@@ -613,7 +612,7 @@ export function GachaRhombus({
                     {isItem && (tile.product?.imageUrl ? <TileImage imageUrl={tile.product.imageUrl} name={tile.product.name} fallback={<div className={`flex h-full w-full items-center justify-center ${tierBg[tile.type]}`}><span className={`h-2 w-2 rounded-full ${tierDot[tile.type] ?? "bg-zinc-500"}`} /></div>} /> : <div className={`flex h-full w-full items-center justify-center ${tierBg[tile.type]}`}>{tile.product ? <span className={`h-2 w-2 rounded-full ${tierDot[tile.type] ?? "bg-zinc-500"}`} /> : <span className="text-[10px] text-zinc-600">-</span>}</div>)}
                     {isHL && <motion.div className="absolute inset-0 rounded-full border border-white/60" animate={{ scale: [1, 1.35, 1], opacity: [0.7, 0, 0.7] }} transition={{ duration: 0.65, repeat: Infinity }} />}
                   </div>
-                  {isItem && tile.product && <div className="pointer-events-none absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100"><span className="text-[9px] text-zinc-500">{tile.product.name.substring(0, 14)}</span></div>}
+                  {isItem && tile.product && <div className="pointer-events-none absolute -bottom-5 left-1/2 -translate-x-1/2 whitespace-nowrap opacity-0 group-hover:opacity-100"><span className="text-[10px] text-zinc-500">{tile.product.name.substring(0, 14)}</span></div>}
                 </motion.div>
               );
             })}
@@ -624,38 +623,42 @@ export function GachaRhombus({
       <div className="flex w-full flex-col gap-4">
         {maintenance?.enabled && <div className="w-full rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-center shadow-sm dark:border-amber-400/30 dark:bg-amber-500/12 dark:shadow-none"><p className="text-sm font-semibold text-amber-900 dark:text-amber-100">ระบบกาชากำลังปิดปรับปรุงชั่วคราว</p><p className="mt-1 text-xs text-amber-800/90 dark:text-amber-200/90">{maintenance.message}</p></div>}
 
-        <div className="rounded-[1.75rem] bg-white p-4 sm:p-5">
-          <div className="flex flex-col gap-5">
+        <div className={`${themeClasses.surface} rounded-3xl p-4 sm:p-5`}>
+          <div className="flex flex-col gap-3 sm:gap-5">
             <div className="space-y-1 text-center">
-              <h2 className="text-[18px] font-bold text-[#145de7] md:text-[22px]">สุ่มรางวัลครั้งละ {normalizedCost.costAmount.toLocaleString()} {currencyWord}</h2>
-              <p className="text-[12px] font-medium text-slate-700">กดสุ่มแล้วไม่สามารถขอคืน{currencyWord}ได้</p>
+              <h2 className="text-lg font-bold text-[#145de7] md:text-2xl">สุ่มรางวัลครั้งละ {normalizedCost.costAmount.toLocaleString()} {currencyWord}</h2>
+              {normalizedCost.costType !== "FREE" && (
+                <p className="text-xs font-medium text-slate-600 dark:text-slate-300">กดสุ่มแล้วไม่สามารถขอคืน{currencyWord}ได้</p>
+              )}
             </div>
 
-            <div className="w-full rounded-[1.1rem] border border-[#b7d0ff] bg-[#cfe1ff]/75 px-4 py-3 text-center text-[#145de7]">
-              <p className="text-sm font-bold">ยอด{currencyWord}คงเหลือ: {displayedBalance.toLocaleString()} {currencyWord} <span className="font-normal text-[#145de7]/85">(ตรวจยอดล่าสุดก่อนกดสุ่มได้)</span></p>
-            </div>
+            {normalizedCost.costType !== "FREE" && (
+              <div className="w-full rounded-2xl border border-[#b7d0ff] bg-[#cfe1ff]/75 px-4 py-3 text-center text-[#145de7]">
+                <p className="text-sm font-bold">ยอด{currencyWord}คงเหลือ: {displayedBalance.toLocaleString()} {currencyWord}</p>
+              </div>
+            )}
 
-            <label className="flex w-fit cursor-pointer items-center gap-3 rounded-full border border-[#bfe5ce] bg-[#f8fffb] px-4 py-2 text-sm font-medium text-[#2f8d57]">
+            <label className="flex w-fit cursor-pointer items-center gap-3 rounded-full border border-[#bfe5ce] bg-[#f8fffb] px-4 py-2 text-sm font-medium text-[#1c9751]">
               <input
                 type="checkbox"
                 checked={skipAnimationEnabled}
                 onChange={(event) => handleSkipToggle(event.target.checked)}
-                className="h-4 w-4 rounded border-[#158e4d]/40 text-[#158e4d] focus:ring-[#158e4d]"
+                className="h-4 w-4 rounded border-[#1c9751]/40 text-[#1c9751] focus:ring-[#1c9751]"
               />
               ข้ามอนิเมชั่นอัตโนมัติ
             </label>
 
             <div className="pt-1">
-              {phase === "idle" && <button onClick={() => { handleFirstSpin().catch(() => undefined); }} disabled={isBlocked} className="flex w-full items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751] py-4 text-[16px] font-bold text-white shadow-[0_22px_40px_-24px_rgba(28,151,81,0.95)] transition-all active:scale-[0.985] hover:bg-[#167c42] disabled:cursor-not-allowed disabled:opacity-50 md:text-base"><Gamepad2 className="h-5 w-5" /> {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : "สุ่ม"}</button>}
-              {(phase === "rolling1" || phase === "rolling2" || phase === "revealing") && <button disabled className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751]/60 py-4 text-[16px] font-bold text-white/85 md:text-base"><Loader2 className="h-5 w-5 animate-spin" /> {getRollingButtonLabel(phase)}</button>}
-              {phase === "waitSpin2" && <button onClick={() => { handleSecondSpin().catch(() => undefined); }} disabled={isBlocked} className="flex w-full items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751] py-4 text-[16px] font-bold text-white shadow-[0_22px_40px_-24px_rgba(28,151,81,0.95)] transition-all active:scale-[0.985] hover:bg-[#167c42] disabled:cursor-not-allowed disabled:opacity-50 md:text-base"><Gamepad2 className="h-5 w-5" /> สุ่มครั้งที่ 2</button>}
+              {phase === "idle" && <button onClick={() => { handleFirstSpin().catch(() => undefined); }} disabled={isBlocked} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1c9751] h-12 text-base font-bold text-white shadow-[0_14px_28px_-20px_rgba(15,23,42,0.28)] transition-all active:scale-[0.985] hover:bg-[#167c42] disabled:cursor-not-allowed disabled:opacity-50 sm:h-14"><Gamepad2 className="h-5 w-5" /> {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : "สุ่ม"}</button>}
+              {(phase === "rolling1" || phase === "rolling2" || phase === "revealing") && <button disabled className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl bg-[#1c9751]/60 h-12 text-base font-bold text-white/85 sm:h-14"><Loader2 className="h-5 w-5 animate-spin" /> {getRollingButtonLabel(phase)}</button>}
+              {phase === "waitSpin2" && <button onClick={() => { handleSecondSpin().catch(() => undefined); }} disabled={isBlocked} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1c9751] h-12 text-base font-bold text-white shadow-[0_14px_28px_-20px_rgba(15,23,42,0.28)] transition-all active:scale-[0.985] hover:bg-[#167c42] disabled:cursor-not-allowed disabled:opacity-50 sm:h-14"><Gamepad2 className="h-5 w-5" /> สุ่มครั้งที่ 2</button>}
             </div>
 
             <div className="min-h-[20px]">
               <AnimatePresence mode="wait">
-                {phase === "waitSpin2" && selectedLLabel && <motion.p key="wait2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-xs text-slate-500">เลือกแล้ว <span className="font-semibold text-violet-500">{selectedLLabel}</span>{" - กดสุ่มครั้งที่ 2 เพื่อเลือกแถวขวา"}</motion.p>}
-                {phase === "revealing" && selectedLLabel && selectedRLabel && <motion.p key="reveal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-xs text-slate-500"><span className="font-semibold text-violet-500">{selectedLLabel}</span>{" × "}<span className="font-semibold text-emerald-500">{selectedRLabel}</span>{" -> "}<span className="font-semibold text-slate-900">จุดตัด</span></motion.p>}
-                {phase === "result" && resultProduct && <motion.p key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-sm font-semibold text-slate-700">ได้รางวัล <span className="text-[#145de7]">{resultProduct.name}</span></motion.p>}
+                {phase === "waitSpin2" && selectedLLabel && <motion.p key="wait2" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-xs text-muted-foreground">เลือกแล้ว <span className="font-semibold text-violet-500">{selectedLLabel}</span>{" - กดสุ่มครั้งที่ 2 เพื่อเลือกแถวขวา"}</motion.p>}
+                {phase === "revealing" && selectedLLabel && selectedRLabel && <motion.p key="reveal" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-xs text-muted-foreground"><span className="font-semibold text-violet-500">{selectedLLabel}</span>{" × "}<span className="font-semibold text-emerald-500">{selectedRLabel}</span>{" -> "}<span className="font-semibold text-foreground">จุดตัด</span></motion.p>}
+                {phase === "result" && resultProduct && <motion.p key="result" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-center text-sm font-semibold text-foreground">ได้รางวัล <span className="text-[#145de7]">{resultProduct.name}</span></motion.p>}
               </AnimatePresence>
             </div>
           </div>

@@ -80,7 +80,7 @@ export function PinSettingsCard({
 
     const cardClass = "border border-slate-200/80 bg-white/95 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.28)]";
     const saveButtonClass =
-        "h-11 w-full gap-2 rounded-2xl bg-blue-600 px-6 text-white shadow-[0_16px_30px_-18px_rgba(37,99,235,0.75)] transition hover:bg-blue-700 hover:shadow-[0_18px_36px_-18px_rgba(29,78,216,0.75)] sm:w-auto sm:min-w-[148px]";
+        "h-11 w-full gap-2 rounded-2xl bg-blue-600 px-6 text-white shadow-[0_16px_30px_-18px_rgba(15,23,42,0.28)] transition hover:bg-blue-700 hover:shadow-[0_18px_36px_-18px_rgba(15,23,42,0.28)] sm:w-auto sm:min-w-[148px]";
 
     const resetForm = () => {
         setFormData({

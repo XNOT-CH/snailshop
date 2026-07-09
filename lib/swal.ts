@@ -90,7 +90,7 @@ export const showConfirm = async (
         icon: "warning",
         width: "min(92vw, 32rem)",
         showCancelButton: true,
-        confirmButtonColor: "#3b82f6",
+        confirmButtonColor: "#145de7",
         cancelButtonColor: "#6b7280",
         confirmButtonText: confirmText,
         cancelButtonText: cancelText,
@@ -142,7 +142,7 @@ export const showSuccessAlert = async (title: string, text?: string) => {
         title,
         text,
         width: "min(92vw, 32rem)",
-        confirmButtonColor: "#3b82f6",
+        confirmButtonColor: "#145de7",
         confirmButtonText: "ตกลง",
         customClass: {
             popup: "rounded-3xl !p-6 sm:!p-8",
@@ -190,7 +190,7 @@ export const showPurchaseConfirm = async (params: {
         `,
         showConfirmButton: true,
         showCancelButton: true,
-        confirmButtonColor: params.confirmButtonColor || "#3b82f6", // blue-500
+        confirmButtonColor: params.confirmButtonColor || "#145de7", // blue-500
         cancelButtonColor: "#e5e7eb", // gray-200
         confirmButtonText: params.confirmText || "ยืนยันการสั่งซื้อ",
         cancelButtonText: params.cancelText || "ยกเลิก",
@@ -232,7 +232,7 @@ export const showPurchaseSuccessModal = async (params: {
                 : undefined),
         width: "min(92vw, 36rem)",
         showCancelButton: params.showCancelButton ?? false,
-        confirmButtonColor: "#3b82f6",
+        confirmButtonColor: "#145de7",
         confirmButtonText: params.confirmText || "ตกลง",
         cancelButtonText: params.cancelText || "อยู่หน้านี้",
         reverseButtons: true,
@@ -274,7 +274,7 @@ export const showErrorAlert = async (title: string, text?: string) => {
         title,
         text,
         width: "min(92vw, 32rem)",
-        confirmButtonColor: "#3b82f6",
+        confirmButtonColor: "#145de7",
         confirmButtonText: "ตกลง",
         customClass: {
             popup: "rounded-3xl !p-6 sm:!p-8",

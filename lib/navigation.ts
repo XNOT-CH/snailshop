@@ -95,7 +95,7 @@ export const PRIMARY_NAV = {
     home: { href: "/", label: "หน้าแรก", shortLabel: "หน้าแรก" },
     shop: { href: "/shop", label: "ร้านค้า", shortLabel: "ร้านค้า" },
     gacha: { href: "/gachapons", label: "หมวดหมู่กาชา", shortLabel: "กาชา" },
-    seasonPass: { href: "/season-pass", label: "Season Pass", shortLabel: "Pass" },
+    seasonPass: { href: "/season-pass", label: "Season Pass", shortLabel: "พาส" },
     dashboard: { href: "/dashboard", label: "บัญชี", shortLabel: "บัญชี" },
     help: { href: "/help", label: "ช่วยเหลือ", shortLabel: "ช่วยเหลือ" },
 } as const satisfies Record<string, PrimaryNavEntry>;

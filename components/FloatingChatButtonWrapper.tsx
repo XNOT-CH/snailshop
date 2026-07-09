@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ChatHeadsetIcon } from "@/components/chat/ChatHeadsetIcon";
+import { ChatFabTrigger } from "@/components/chat/ChatFabTrigger";
 
 const FloatingChatButton = dynamic(
     () => import("@/components/FloatingChatButton").then((mod) => mod.FloatingChatButton),
@@ -11,7 +11,6 @@ const FloatingChatButton = dynamic(
 );
 
 const HIDDEN_PATH_PREFIXES = ["/login", "/register", "/admin"];
-const MOBILE_BOTTOM_NAV_OFFSET = "bottom-[calc(env(safe-area-inset-bottom)+5.5rem)]";
 const OPEN_CHAT_EVENT = "open-customer-chat";
 
 export function FloatingChatButtonWrapper() {
@@ -42,16 +41,11 @@ export function FloatingChatButtonWrapper() {
     }
 
     return (
-        <button
-            type="button"
-            className={`fixed right-4 z-50 flex h-[60px] w-[60px] items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/35 ring-0 transition hover:scale-105 hover:bg-emerald-600 ${MOBILE_BOTTOM_NAV_OFFSET} md:bottom-6 md:right-6 md:h-16 md:w-16`}
-            aria-label="เปิดแชทลูกค้า"
+        <ChatFabTrigger
             onClick={() => {
                 setOpenOnLoad(true);
                 setShouldLoadChat(true);
             }}
-        >
-            <ChatHeadsetIcon className="h-7 w-7 md:h-8 md:w-8" />
-        </button>
+        />
     );
 }

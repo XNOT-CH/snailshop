@@ -29,20 +29,22 @@ function HubImage({ src, alt }: { src: string; alt: string }) {
 
     if (err) {
         return (
-            <div className="flex h-full w-full items-center justify-center">
+            <div className="flex aspect-[4/1] w-full items-center justify-center">
                 <LayoutGrid className="h-10 w-10 text-muted-foreground/20" />
             </div>
         );
     }
 
+    // Renders at the image's own aspect ratio so the whole banner is visible;
+    // max-h keeps an extreme portrait upload from blowing up the card.
     return (
         <Image
             src={src}
             alt={alt}
-            width={2000}
-            height={500}
+            width={1920}
+            height={960}
             sizes="(max-width: 640px) 100vw, 800px"
-            className="h-full w-full object-cover"
+            className="h-auto max-h-[560px] w-full object-contain"
             unoptimized={shouldBypassImageOptimization(src)}
             onError={() => setErr(true)}
         />
@@ -65,7 +67,7 @@ function getMachineCostCopy(
 
     return {
         text: `( เล่นครั้งละ ${normalizedCost.costAmount.toLocaleString()} ${getGachaCostLabel(normalizedCost.costType, currencySettings)} )`,
-        className: "text-sm font-semibold text-[#1a56db]",
+        className: "text-sm font-semibold text-[#145de7]",
     };
 }
 
@@ -92,10 +94,10 @@ export function GachaHubClient({ machines }: Readonly<GachaHubClientProps>) {
         : machines;
 
     return (
-        <div className="overflow-hidden rounded-[1.6rem] border border-slate-200 bg-card shadow-[0_24px_70px_-42px_rgba(15,23,42,0.45)] backdrop-blur-sm">
-            <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 bg-muted/30 px-5 py-3">
+        <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-[0_24px_70px_-42px_rgba(15,23,42,0.45)] backdrop-blur-sm">
+            <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/30 px-5 py-3">
                 <div className="mr-2 flex items-center gap-2 font-bold text-foreground">
-                    <div className="flex h-6 w-6 items-center justify-center rounded bg-[#1a56db]">
+                    <div className="flex h-6 w-6 items-center justify-center rounded bg-[#145de7]">
                         <LayoutGrid className="h-3.5 w-3.5 text-white" />
                     </div>
                     หมวดหมู่กาชา
@@ -105,8 +107,8 @@ export function GachaHubClient({ machines }: Readonly<GachaHubClientProps>) {
                     onClick={() => setSelectedCatId(null)}
                     className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
                         selectedCatId === null
-                            ? "border-[#1a56db] bg-[#1a56db] text-white"
-                            : "border-border bg-background/50 text-foreground hover:border-[#1a56db] hover:bg-accent/70 hover:text-[#1a56db]"
+                            ? "border-[#145de7] bg-[#145de7] text-white"
+                            : "border-border bg-background/50 text-foreground hover:border-[#145de7] hover:bg-accent/70 hover:text-[#145de7]"
                     }`}
                 >
                     ทั้งหมด
@@ -118,8 +120,8 @@ export function GachaHubClient({ machines }: Readonly<GachaHubClientProps>) {
                         onClick={() => setSelectedCatId(category.id)}
                         className={`rounded-full border px-3 py-1 text-sm font-medium transition-colors ${
                             selectedCatId === category.id
-                                ? "border-[#1a56db] bg-[#1a56db] text-white"
-                                : "border-border bg-background/50 text-foreground hover:border-[#1a56db] hover:bg-accent/70 hover:text-[#1a56db]"
+                                ? "border-[#145de7] bg-[#145de7] text-white"
+                                : "border-border bg-background/50 text-foreground hover:border-[#145de7] hover:bg-accent/70 hover:text-[#145de7]"
                         }`}
                     >
                         {category.name}
@@ -143,13 +145,13 @@ export function GachaHubClient({ machines }: Readonly<GachaHubClientProps>) {
                                 key={machine.id}
                                 href={machine.gameType === "GRID_3X3" ? `/gacha-grid/${machine.id}` : `/gacha/${machine.id}`}
                                 prefetch={false}
-                                className="group flex flex-col overflow-hidden rounded-2xl border border-slate-200 bg-card/90 transition-all duration-200 hover:border-blue-400/60 hover:shadow-[0_22px_48px_-28px_rgba(37,99,235,0.45)]"
+                                className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card/90 transition-all duration-200 hover:border-blue-400/60 hover:shadow-[0_22px_48px_-28px_rgba(15,23,42,0.22)]"
                             >
-                                <div className="w-full overflow-hidden bg-muted/60" style={{ aspectRatio: "2000/500" }}>
+                                <div className="w-full overflow-hidden bg-muted/60">
                                     {machine.imageUrl && (machine.imageUrl.startsWith("/") || machine.imageUrl.startsWith("http")) ? (
                                         <HubImage src={machine.imageUrl} alt={machine.name} />
                                     ) : (
-                                        <div className="flex h-full w-full items-center justify-center">
+                                        <div className="flex aspect-[4/1] w-full items-center justify-center">
                                             <LayoutGrid className="h-10 w-10 text-muted-foreground/20" />
                                         </div>
                                     )}

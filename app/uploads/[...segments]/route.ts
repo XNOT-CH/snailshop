@@ -82,6 +82,40 @@ function resolveUploadFilePath(segments: string[]) {
     return null;
 }
 
+async function serveUploadFile(segments: string[], filename: string, cacheControl: string) {
+    const storageKey = storageKeyFromSegments("uploads", ...segments);
+    const r2Object = await readUploadObject(storageKey);
+    if (r2Object) {
+        return new NextResponse(r2Object.body, {
+            status: 200,
+            headers: {
+                "Cache-Control": cacheControl,
+                "Content-Length": String(r2Object.size),
+                "Content-Type": r2Object.contentType,
+                ...getUploadSecurityHeaders(r2Object.contentType, filename),
+            },
+        });
+    }
+
+    const filePath = resolveUploadFilePath(segments);
+    if (!filePath) {
+        return null;
+    }
+
+    const fileBuffer = await readFile(filePath);
+    const contentType = getContentTypeFromFilename(filePath);
+
+    return new NextResponse(new Uint8Array(fileBuffer), {
+        status: 200,
+        headers: {
+            "Cache-Control": cacheControl,
+            "Content-Length": String(fileBuffer.byteLength),
+            "Content-Type": contentType,
+            ...getUploadSecurityHeaders(contentType, filename),
+        },
+    });
+}
+
 export async function GET(_request: NextRequest, { params }: RouteParams) {
     try {
         const { segments } = await params;
@@ -91,43 +125,29 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
             return NextResponse.json({ success: false, message: "File not found" }, { status: 404 });
         }
 
-        const storageKey = storageKeyFromSegments("uploads", ...segments);
-        const r2Object = await readUploadObject(storageKey);
-        if (r2Object) {
-            return new NextResponse(r2Object.body, {
-                status: 200,
-                headers: {
-                    "Cache-Control": "public, max-age=31536000, immutable",
-                    "Content-Length": String(r2Object.size),
-                    "Content-Type": r2Object.contentType,
-                    ...getUploadSecurityHeaders(r2Object.contentType, filename),
-                },
-            });
+        const served = await serveUploadFile(segments, filename, "public, max-age=31536000, immutable");
+        if (served) {
+            return served;
         }
 
-        const filePath = resolveUploadFilePath(segments);
-
-        if (!filePath) {
-            const fallback = missingUploadImageResponse(filename);
-            if (fallback) {
-                return fallback;
+        // Uploads that predate thumbnails only have the full-size file, so a
+        // missing `.thumb.webp` falls back to the original. Cached briefly
+        // (not immutable) in case a thumb is backfilled later.
+        if (filename.endsWith(".thumb.webp")) {
+            const baseFilename = filename.replace(/\.thumb\.webp$/, ".webp");
+            const baseSegments = [...segments.slice(0, -1), baseFilename];
+            const servedBase = await serveUploadFile(baseSegments, baseFilename, "public, max-age=3600");
+            if (servedBase) {
+                return servedBase;
             }
-
-            return NextResponse.json({ success: false, message: "File not found" }, { status: 404 });
         }
 
-        const fileBuffer = await readFile(filePath);
-        const contentType = getContentTypeFromFilename(filePath);
+        const fallback = missingUploadImageResponse(filename);
+        if (fallback) {
+            return fallback;
+        }
 
-        return new NextResponse(new Uint8Array(fileBuffer), {
-            status: 200,
-            headers: {
-                "Cache-Control": "public, max-age=31536000, immutable",
-                "Content-Length": String(fileBuffer.byteLength),
-                "Content-Type": contentType,
-                ...getUploadSecurityHeaders(contentType, filename),
-            },
-        });
+        return NextResponse.json({ success: false, message: "File not found" }, { status: 404 });
     } catch (error) {
         console.error("[UPLOADS_GET]", error);
         return NextResponse.json({ success: false, message: "Failed to read file" }, { status: 500 });

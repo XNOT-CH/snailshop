@@ -262,7 +262,7 @@ export default function AddProductPage() {
                 <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
                     <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#2d4362] dark:bg-[#0f1927]">
                         <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3.5 dark:border-[#2d4362]">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1a56db] text-white">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#145de7] text-white">
                                 <Shield className="h-4 w-4" />
                             </div>
                             <span className="font-bold text-foreground">ข้อมูลสินค้า</span>
@@ -505,7 +505,7 @@ export default function AddProductPage() {
 
                                 <Button
                                     type="button"
-                                    className="w-full gap-2 rounded-xl bg-[#1a56db] text-white hover:bg-[#1e40af]"
+                                    className="w-full gap-2 rounded-xl bg-[#145de7] text-white hover:bg-[#114fc4]"
                                     onClick={handleAddSingleStock}
                                     disabled={!canCreateProduct}
                                 >
@@ -522,7 +522,7 @@ export default function AddProductPage() {
                         {stockItems.length > 0 && (
                             <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#2d4362] dark:bg-[#0f1927]">
                                 <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3.5 dark:border-[#2d4362]">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#1a56db] text-white">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#145de7] text-white">
                                         <Eye className="h-4 w-4" />
                                     </div>
                                     <span className="font-bold text-foreground">รายการสต๊อก</span>
@@ -573,7 +573,7 @@ export default function AddProductPage() {
                         </div>
                         <Button
                             type="submit"
-                            className="min-w-[150px] rounded-xl bg-[#1a56db] text-white hover:bg-[#1e40af]"
+                            className="min-w-[150px] rounded-xl bg-[#145de7] text-white hover:bg-[#114fc4]"
                             size="lg"
                             disabled={!canCreateProduct || isLoading}
                         >

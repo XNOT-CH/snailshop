@@ -128,7 +128,7 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
 
     return (
         <div className="relative left-1/2 min-h-screen w-screen -translate-x-1/2 bg-background sm:left-auto sm:w-auto sm:translate-x-0">
-            <div className="relative overflow-hidden bg-gradient-to-br from-[#1a56db] via-[#1f4fc2] to-[#10284d] px-5 py-6 text-center sm:px-6 sm:py-8">
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#145de7] via-[#1f4fc2] to-[#10284d] px-5 py-6 text-center sm:px-6 sm:py-8">
                 <div
                     className="absolute inset-0 opacity-[0.06]"
                     style={{
@@ -136,7 +136,7 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
                         backgroundSize: "60px 52px",
                     }}
                 />
-                <h1 className="relative z-10 mb-1.5 text-2xl font-bold tracking-wide text-white sm:text-[2rem]">{machine.name}</h1>
+                <h1 className="relative z-10 mb-1.5 text-2xl font-bold tracking-wide text-white sm:text-3xl">{machine.name}</h1>
                 <div className="relative z-10 md:hidden">
                     <Link
                         href="/gachapons"
@@ -156,7 +156,7 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
             </div>
 
             <div className="mx-auto max-w-4xl px-4 pb-8 pt-3 sm:py-8">
-                <div className="overflow-x-hidden bg-card/90 px-4 pb-6 pt-2 backdrop-blur-sm sm:rounded-[1.75rem] sm:border sm:border-border/80 sm:bg-card/95 sm:shadow-[0_28px_70px_-40px_rgba(15,23,42,0.45)] sm:backdrop-blur-sm sm:px-6 sm:py-6 md:px-10">
+                <div className="overflow-x-hidden bg-card/90 px-4 pb-6 pt-2 backdrop-blur-sm sm:rounded-3xl sm:border sm:border-border/80 sm:bg-card/95 sm:shadow-[0_28px_70px_-40px_rgba(15,23,42,0.45)] sm:backdrop-blur-sm sm:px-6 sm:py-6 md:px-10">
                     <div className="flex flex-col items-center gap-6">
                         {settings.dailySpinLimit > 0 && (
                             <div className="flex w-full justify-end">

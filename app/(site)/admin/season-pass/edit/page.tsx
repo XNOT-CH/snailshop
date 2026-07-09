@@ -464,7 +464,7 @@ export default function AdminSeasonPassEditPage() {
                 </Button>
                 <div>
                     <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
-                        <Ticket className="h-6 w-6 text-[#1a56db]" />
+                        <Ticket className="h-6 w-6 text-[#145de7]" />
                         แก้ไขแพ็กเกจ Season Pass
                     </h1>
                     <p className="mt-1 text-sm text-muted-foreground">
@@ -475,7 +475,7 @@ export default function AdminSeasonPassEditPage() {
 
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                 <div className="border-b border-border px-6 py-4">
-                    <p className="text-sm font-semibold text-[#1a56db]">Package Settings</p>
+                    <p className="text-sm font-semibold text-[#145de7]">Package Settings</p>
                 </div>
 
                 <div className="space-y-6 p-6">
@@ -577,7 +577,7 @@ export default function AdminSeasonPassEditPage() {
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                 <div className="flex flex-col gap-2 border-b border-border px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
-                        <p className="flex items-center gap-2 text-sm font-semibold text-[#1a56db]">
+                        <p className="flex items-center gap-2 text-sm font-semibold text-[#145de7]">
                             <Sparkles className="h-4 w-4" />
                             Reward Board 30 วัน
                         </p>

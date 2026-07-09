@@ -217,7 +217,7 @@ export function ProductActions({
                     <Button
                         type="button"
                         size="lg"
-                        className="w-full gap-2 rounded-xl bg-primary text-base font-semibold text-primary-foreground shadow-[0_18px_36px_-24px_rgba(88,166,255,0.7)] hover:bg-primary/90"
+                        className="w-full gap-2 rounded-xl bg-primary text-base font-semibold text-primary-foreground shadow-[0_18px_36px_-24px_rgba(15,23,42,0.28)] hover:bg-primary/90"
                         disabled={cartLoading}
                         onClick={openCart}
                     >

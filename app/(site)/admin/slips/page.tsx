@@ -35,7 +35,7 @@ export default async function AdminSlipsPage() {
         <div className="admin-slips-page space-y-6">
             <div>
                 <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
-                    <FileCheck className="h-6 w-6 text-[#1a56db]" />
+                    <FileCheck className="h-6 w-6 text-[#145de7]" />
                     ตรวจสอบสลิป
                 </h1>
                 <p className="mt-1 text-muted-foreground">ตรวจสอบและอนุมัติคำขอเติมเงิน</p>
@@ -83,7 +83,7 @@ export default async function AdminSlipsPage() {
 
             <div className="overflow-hidden rounded-xl border border-border bg-white shadow-sm dark:bg-zinc-900">
                 <div className="flex items-center gap-2 border-b border-border px-5 py-3">
-                    <div className="flex h-6 w-6 items-center justify-center rounded bg-[#1a56db]">
+                    <div className="flex h-6 w-6 items-center justify-center rounded bg-[#145de7]">
                         <FileCheck className="h-3.5 w-3.5 text-white" />
                     </div>
                     <span className="font-bold text-foreground">รายการรออนุมัติ ({decryptedPendingSlips.length})</span>

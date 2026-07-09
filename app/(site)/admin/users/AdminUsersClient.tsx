@@ -196,7 +196,7 @@ function getStrongEmphasisCardClassName(emphasis: "soft" | "strong") {
 }
 
 function getStatValueClassName(emphasis: "soft" | "strong") {
-  return emphasis === "strong" ? "text-[2rem] leading-none" : "text-3xl leading-none";
+  return emphasis === "strong" ? "text-3xl leading-none" : "text-3xl leading-none";
 }
 
 function getSearchResultsLabel(searchActive: boolean, filteredUsersLength: number, usersLength: number) {
@@ -304,7 +304,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
         confirmButtonText: "ปลดการระงับ",
         cancelButtonText: "ยกเลิก",
         reverseButtons: true,
-        confirmButtonColor: "#2563eb",
+        confirmButtonColor: "#145de7",
         cancelButtonColor: "#6b7280",
       });
       if (!confirmed.isConfirmed) {
@@ -542,7 +542,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
       showCancelButton: true,
       confirmButtonText: "บันทึก",
       cancelButtonText: "ยกเลิก",
-      confirmButtonColor: "#1a56db",
+      confirmButtonColor: "#145de7",
       cancelButtonColor: "#6b7280",
       reverseButtons: true,
       focusConfirm: false,
@@ -638,7 +638,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
       value: users.length.toLocaleString(),
       icon: Users,
       iconBg: "bg-blue-100",
-      iconColor: "text-[#1a56db]",
+      iconColor: "text-[#145de7]",
       emphasis: "soft",
     },
     {
@@ -671,7 +671,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
     <div className="space-y-6">
       <div>
         <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
-          <Users className="h-6 w-6 text-[#1a56db]" />
+          <Users className="h-6 w-6 text-[#145de7]" />
           ระบบบริหารจัดการสมาชิก
         </h1>
         <p className="mt-1 text-muted-foreground">ดูข้อมูลสมาชิก เครดิต และ{pointCurrencyName}ทั้งหมด</p>
@@ -740,7 +740,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#1a56db]">
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#145de7]">
             <Users className="h-3.5 w-3.5 text-white" />
           </div>
           <span className="font-bold text-foreground">
@@ -793,7 +793,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                             className={`font-semibold ${
                               hasGoldBorder
                                 ? "bg-gradient-to-br from-amber-200 to-amber-400 text-amber-900"
-                                : "bg-blue-100 text-[#1a56db]"
+                                : "bg-blue-100 text-[#145de7]"
                             }`}
                           >
                             {initials}
@@ -906,7 +906,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                             variant="ghost"
                             size="sm"
                             onClick={() => openEditDialog(user)}
-                            className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#1a56db]"
+                            className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#145de7]"
                           >
                             <Pencil className="mr-1.5 h-4 w-4" />
                             แก้ไข
@@ -996,7 +996,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                               className={`font-semibold ${
                                 hasGoldBorder
                                   ? "bg-gradient-to-br from-amber-200 to-amber-400 text-amber-900"
-                                  : "bg-blue-100 text-[#1a56db]"
+                                  : "bg-blue-100 text-[#145de7]"
                               }`}
                             >
                               {initials}
@@ -1132,7 +1132,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                               variant="ghost"
                               size="sm"
                               onClick={() => openEditDialog(user)}
-                              className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#1a56db]"
+                              className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#145de7]"
                             >
                               <Pencil className="mr-1.5 h-4 w-4" />
                               แก้ไข

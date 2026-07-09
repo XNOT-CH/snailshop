@@ -5,7 +5,7 @@ import Image from "next/image";
 import { ChangeEvent, KeyboardEvent, useEffect, useRef, useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
 import { ImagePlus, Loader2, LockKeyhole, Send } from "lucide-react";
-import { ChatHeadsetIcon } from "@/components/chat/ChatHeadsetIcon";
+import { ChatFabTrigger } from "@/components/chat/ChatFabTrigger";
 import { Button } from "@/components/ui/button";
 import { ChatBrandLogo } from "@/components/chat/ChatBrandLogo";
 import { ChatMessageContent } from "@/components/chat/ChatMessageContent";
@@ -49,7 +49,6 @@ interface ChatConversation {
 }
 
 const HIDDEN_PATH_PREFIXES = ["/login", "/register", "/admin"];
-const MOBILE_BOTTOM_NAV_OFFSET = "bottom-[calc(env(safe-area-inset-bottom)+5.5rem)]";
 const OPEN_CHAT_EVENT = "open-customer-chat";
 
 interface FloatingChatButtonProps {
@@ -76,7 +75,7 @@ function ChatBubble({
     return (
         <div className={`flex ${isCustomer ? "justify-end" : "justify-start"}`}>
             <div
-                className={`max-w-[90%] rounded-[24px] px-3.5 py-3 text-sm shadow-sm sm:max-w-[85%] sm:rounded-[28px] sm:px-4 ${
+                className={`max-w-[90%] rounded-3xl px-3.5 py-3 text-sm shadow-sm sm:max-w-[85%] sm:px-4 ${
                     isCustomer
                         ? "bg-primary text-primary-foreground"
                         : "border border-border bg-card text-foreground"
@@ -266,24 +265,18 @@ export function FloatingChatButton({
     return (
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
-                <button
-                    type="button"
-                    className={`fixed right-4 z-50 flex h-[60px] w-[60px] items-center justify-center rounded-full bg-emerald-500 text-white shadow-lg shadow-emerald-500/35 ring-0 transition hover:scale-105 hover:bg-emerald-600 ${MOBILE_BOTTOM_NAV_OFFSET} md:bottom-6 md:right-6 md:h-16 md:w-16`}
-                    aria-label="เปิดแชทลูกค้า"
-                >
-                    <ChatHeadsetIcon className="h-7 w-7 md:h-8 md:w-8" />
-                </button>
+                <ChatFabTrigger />
             </SheetTrigger>
 
             <SheetContent
                 side="right"
-                className="h-[100dvh] w-full gap-0 overflow-hidden border-l-0 bg-background p-0 sm:inset-y-4 sm:right-4 sm:h-auto sm:w-[min(420px,calc(100vw-2rem))] sm:max-w-none sm:rounded-[32px] sm:border sm:border-border"
+                className="h-[100dvh] w-full gap-0 overflow-hidden border-l-0 bg-background p-0 sm:inset-y-4 sm:right-4 sm:h-auto sm:w-[min(420px,calc(100vw-2rem))] sm:max-w-none sm:border sm:border-border"
             >
                 <SheetHeader className="shrink-0 border-b border-border bg-card px-4 py-4 pr-12 text-left sm:px-5 sm:pr-14">
                     <div className="flex items-center gap-3.5">
-                        <ChatBrandLogo className="h-14 w-14 rounded-[1.35rem] sm:h-[3.75rem] sm:w-[3.75rem]" />
+                        <ChatBrandLogo className="h-14 w-14 rounded-2xl sm:h-[3.75rem] sm:w-[3.75rem]" />
                         <div className="min-w-0 flex-1 py-0.5">
-                            <SheetTitle className="truncate pb-0.5 text-lg font-black leading-[1.15] text-foreground">คุยกับทีมร้าน</SheetTitle>
+                            <SheetTitle className="truncate pb-0.5 text-lg font-bold leading-[1.15] text-foreground">คุยกับทีมร้าน</SheetTitle>
                             <SheetDescription className="mt-1 text-xs text-muted-foreground">
                                 ถามเรื่องสินค้า ออเดอร์ หรือปัญหาการใช้งานได้เลย
                             </SheetDescription>
@@ -354,7 +347,7 @@ export function FloatingChatButton({
                                         );
                                     })
                                 ) : (
-                                    <div className="flex min-h-[280px] items-center justify-center rounded-[28px] border border-dashed border-border bg-card px-4 text-center text-sm text-muted-foreground">
+                                    <div className="flex min-h-[280px] items-center justify-center rounded-3xl border border-dashed border-border bg-card px-4 text-center text-sm text-muted-foreground">
                                         เริ่มพิมพ์ข้อความแรกเพื่อคุยกับทีมร้านได้เลย
                                     </div>
                                 )}
@@ -363,7 +356,7 @@ export function FloatingChatButton({
                         </ScrollArea>
 
                         <div className="shrink-0 border-t border-border bg-card p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-4 sm:pb-[max(1rem,env(safe-area-inset-bottom))]">
-                            <div className="rounded-[24px] border border-border bg-accent/55 p-2.5 sm:rounded-[28px] sm:p-3">
+                            <div className="rounded-3xl border border-border bg-accent/55 p-2.5 sm:p-3">
                                 <input
                                     ref={fileInputRef}
                                     type="file"

@@ -187,7 +187,7 @@ export default function AnnouncementPopup({
 
                         {/* Image Container */}
                         {currentPopupLinkUrl ? (
-                            <div className="relative w-full aspect-square overflow-hidden rounded-[1.75rem] border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)]">
+                            <div className="relative w-full aspect-square overflow-hidden rounded-3xl border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)]">
                                 <button
                                     type="button"
                                     className="absolute inset-0 z-0 cursor-pointer"
@@ -249,7 +249,7 @@ export default function AnnouncementPopup({
                                 )}
                             </div>
                         ) : (
-                            <div className="relative w-full aspect-square overflow-hidden rounded-[1.75rem] border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)]">
+                            <div className="relative w-full aspect-square overflow-hidden rounded-3xl border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)]">
                                 <Image
                                     src={currentPopup.imageUrl}
                                     alt={currentPopup.title || "ประชาสัมพันธ์"}

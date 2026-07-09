@@ -227,7 +227,7 @@ function ExportCard({
         }
     }
 
-    let btnClass = "bg-[#1a56db] hover:bg-[#1448c0]";
+    let btnClass = "bg-[#145de7] hover:bg-[#1448c0]";
     if (state === "done") btnClass = "bg-emerald-600 hover:bg-emerald-700";
     else if (state === "error") btnClass = "bg-red-600 hover:bg-red-700";
 
@@ -337,7 +337,7 @@ export default function AdminExportPage() {
     return (
         <div className="space-y-6">
             <div className="flex items-start gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1a56db]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#145de7]">
                     <FileSpreadsheet className="h-5 w-5 text-white" />
                 </div>
                 <div>

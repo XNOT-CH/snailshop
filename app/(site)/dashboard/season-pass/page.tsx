@@ -30,7 +30,7 @@ function LockedSeasonPassPage(props: Readonly<{ latestEndAtText: string | null; 
                 ]}
             />
 
-            <section className={`${themeClasses.shell} relative overflow-hidden rounded-[30px] px-5 py-8 sm:px-7 sm:py-10`}>
+            <section className={`${themeClasses.shell} relative overflow-hidden rounded-3xl px-5 py-8 sm:px-7 sm:py-10`}>
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(26,86,219,0.12),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.96))]" />
                 <div className="relative grid gap-8 xl:grid-cols-[1.08fr_0.92fr] xl:items-center">
                     <div className="space-y-6 xl:max-w-[540px] xl:pl-2">
@@ -65,8 +65,8 @@ function LockedSeasonPassPage(props: Readonly<{ latestEndAtText: string | null; 
                         ) : null}
                     </div>
 
-                    <div className={`${themeClasses.surface} rounded-[28px] p-4 backdrop-blur sm:p-5`}>
-                        <div className="rounded-[24px] border border-[#eadfce] bg-[linear-gradient(180deg,#fffdfa_0%,#f9f6ef_100%)] p-4 sm:p-5">
+                    <div className={`${themeClasses.surface} rounded-3xl p-4 backdrop-blur sm:p-5`}>
+                        <div className="rounded-3xl border border-[#eadfce] bg-[linear-gradient(180deg,#fffdfa_0%,#f9f6ef_100%)] p-4 sm:p-5">
                             <div className="mb-4 flex items-center justify-between">
                                 <p className="text-sm font-semibold tracking-[0.18em] text-slate-700">LOCKED REWARD BOARD</p>
                                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
@@ -76,7 +76,7 @@ function LockedSeasonPassPage(props: Readonly<{ latestEndAtText: string | null; 
 
                             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
                                 {[1, 2, 3, 4, 5, 6].map((day) => (
-                                    <div key={day} className="rounded-[20px] border border-border/70 bg-white/80 p-3 opacity-80">
+                                    <div key={day} className="rounded-2xl border border-border/70 bg-white/80 p-3 opacity-80">
                                         <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-500">
                                             Day {String(day).padStart(2, "0")}
                                         </span>

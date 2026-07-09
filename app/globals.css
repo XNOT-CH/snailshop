@@ -14,7 +14,7 @@
 
   --color-foreground: var(--foreground);
 
-  --font-sans: var(--font-prompt), "Noto Sans Thai", "Leelawadee UI", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-sans: var(--font-kanit), "Noto Sans Thai", "Leelawadee UI", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 
   --font-mono: var(--font-geist-mono);
 
@@ -82,7 +82,12 @@
 
   --radius-lg: var(--radius);
 
-  --radius-xl: calc(var(--radius) + 4px);
+  /* Design scale: 12px (lg/xl) / 20px (2xl) / 28px (3xl) — keep new corners on these three steps. */
+  --radius-xl: var(--radius);
+
+  --radius-2xl: 1.25rem;
+
+  --radius-3xl: 1.75rem;
 
 }
 
@@ -103,7 +108,7 @@
   --card-foreground: #102033;
   --popover: #ffffff;
   --popover-foreground: #102033;
-  --primary: #2f7df6;
+  --primary: #145de7;
   --primary-foreground: #ffffff;
   --secondary: #edeef1;
   --secondary-foreground: #1d3552;
@@ -115,20 +120,20 @@
   --border: #dde0e6;
   --input: #d8dce2;
   --ring: #77b7ff;
-  --chart-1: #2f7df6;
+  --chart-1: #145de7;
   --chart-2: #53b8ff;
   --chart-3: #6a9dff;
   --chart-4: #39b7a0;
   --chart-5: #f0b25a;
-  --chart-bar-fill: #2f7df6;
+  --chart-bar-fill: #145de7;
   --chart-bar-label: #3e8dff;
-  --chart-area-stroke: #2f7df6;
+  --chart-area-stroke: #145de7;
   --chart-area-label: #3e8dff;
   --chart-area-gradient-from: #8bc5ff;
-  --chart-dot-fill: #2f7df6;
+  --chart-dot-fill: #145de7;
   --sidebar: #f1f2f4;
   --sidebar-foreground: #18314c;
-  --sidebar-primary: #2f7df6;
+  --sidebar-primary: #145de7;
   --sidebar-primary-foreground: #ffffff;
   --sidebar-accent: #e7e9ed;
   --sidebar-accent-foreground: #1b3655;
@@ -434,10 +439,10 @@ html.dark .bg-card:hover {
 }
 
 .luxury-badge {
-  background: rgba(47, 125, 246, 0.12);
-  border: 1px solid rgba(47, 125, 246, 0.16);
-  color: #2265d8;
-  box-shadow: 0 10px 24px -22px rgba(47, 125, 246, 0.4);
+  background: rgba(20, 93, 231, 0.12);
+  border: 1px solid rgba(20, 93, 231, 0.16);
+  color: #145de7;
+  box-shadow: 0 10px 24px -22px rgba(15, 23, 42, 0.18);
 }
 
 .luxury-alert {
@@ -447,11 +452,11 @@ html.dark .bg-card:hover {
 }
 
 .luxury-link {
-  color: #2f7df6;
+  color: #145de7;
 }
 
 .luxury-link:hover {
-  color: #1f67d3;
+  color: #114fc4;
 }
 
 .theme-shell,
@@ -589,11 +594,11 @@ html.dark .progressive-image-placeholder {
 }
 
 .storefront-product-category {
-  background: linear-gradient(180deg, #5a9af8 0%, #3b7ef0 100%);
-  border: 1px solid #3473dc;
+  background: linear-gradient(180deg, #3f80f0 0%, #145de7 100%);
+  border: 1px solid #114fc4;
   color: #ffffff;
   box-shadow:
-    0 10px 20px -18px rgba(59, 126, 240, 0.42),
+    0 10px 20px -18px rgba(15, 23, 42, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.24);
 }
 
@@ -988,6 +993,18 @@ html.dark select {
 
   color: #edf4ff;
 
+}
+
+/* The command-palette search field is a transparent input with only the
+   wrapper's bottom divider (same as light mode) — exempt it from the generic
+   dark-mode input box/glow above, which otherwise draws a second frame that
+   pokes out of the dialog's rounded corners. */
+html.dark [cmdk-input] {
+  background-color: transparent;
+}
+
+html.dark [cmdk-input]:focus {
+  box-shadow: none;
 }
 
 html.dark table {
@@ -3381,14 +3398,17 @@ svg {
   max-width: 100%;
 }
 
-@media (max-width: 639px) {
-  #main-footer {
-    margin-top: calc(-1 * var(--mobile-bottom-nav-height) - 0.75rem);
+/* While the fixed bottom nav is on screen (< md, and not on routes where
+   MobileBottomNav returns null), reserve space under the footer so its last
+   row is never covered by the bar. */
+@media (max-width: 767px) {
+  body:has(#main-mobile-nav) #main-footer {
+    padding-bottom: var(--mobile-bottom-nav-height);
   }
 }
 
 .snail-welcome-page {
-  font-family: var(--font-prompt), "Noto Sans Thai", "Leelawadee UI", sans-serif;
+  font-family: var(--font-kanit), "Noto Sans Thai", "Leelawadee UI", sans-serif;
   padding: clamp(1.5rem, 4vw, 3rem) clamp(1.5rem, 4vw, 3rem) clamp(7.25rem, 13vh, 8.75rem);
 }
 

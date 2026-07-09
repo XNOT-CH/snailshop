@@ -90,7 +90,7 @@ const statusConfig = {
     },
     today: {
         label: "รับวันนี้",
-        card: "border-blue-300 bg-blue-50/90 shadow-[0_16px_30px_-22px_rgba(37,99,235,0.55)] dark:border-sky-400/45 dark:bg-sky-500/10 dark:shadow-[0_18px_34px_-24px_rgba(56,189,248,0.28)]",
+        card: "border-blue-300 bg-blue-50/90 shadow-[0_16px_30px_-22px_rgba(15,23,42,0.22)] dark:border-sky-400/45 dark:bg-sky-500/10 dark:shadow-[0_18px_34px_-24px_rgba(15,23,42,0.18)]",
         badge: "bg-blue-600 text-white dark:bg-sky-500/90 dark:text-slate-950",
         icon: Gift,
         iconClass: "text-blue-600 dark:text-sky-300",
@@ -133,7 +133,7 @@ function RewardTile({
     const iconWrapClass = isClaimed
         ? "bg-slate-100 text-slate-500 dark:bg-slate-700/80 dark:text-slate-300"
         : rewardInfo.iconWrap;
-    const tileClassName = `relative block min-h-36 w-full rounded-[22px] border p-3 text-left transition-transform duration-200 hover:-translate-y-0.5 ${stateInfo.card} ${
+    const tileClassName = `relative block min-h-36 w-full rounded-2xl border p-3 text-left transition-transform duration-200 hover:-translate-y-0.5 ${stateInfo.card} ${
         reward.highlight ? "ring-1 ring-amber-200/80 dark:ring-amber-300/55" : ""
     } ${canClaim ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-wait" : ""}`;
     const content = (
@@ -310,7 +310,7 @@ export function SeasonPassDashboardContent({
 
     return (
         <>
-            <section className={`${themeClasses.shell} relative overflow-hidden rounded-[30px] px-5 py-6 sm:px-7 sm:py-8`}>
+            <section className={`${themeClasses.shell} relative overflow-hidden rounded-3xl px-5 py-6 sm:px-7 sm:py-8`}>
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(26,86,219,0.12),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.96))]" />
                 <div className="relative space-y-6">
                     <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -325,7 +325,7 @@ export function SeasonPassDashboardContent({
                             </div>
                         </div>
 
-                        <div className={`${themeClasses.surface} w-full max-w-xl rounded-[26px] p-4 backdrop-blur`}>
+                        <div className={`${themeClasses.surface} w-full max-w-xl rounded-3xl p-4 backdrop-blur`}>
                             <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-xs uppercase tracking-[0.22em] text-slate-400">Progress</p>
@@ -338,7 +338,7 @@ export function SeasonPassDashboardContent({
                                 </Badge>
                             </div>
                             <div className="mt-4 h-3 overflow-hidden rounded-full bg-muted">
-                                <div className="h-full rounded-full bg-[linear-gradient(90deg,#1a56db_0%,#60a5fa_100%)]" style={{ width: `${Math.min((currentDay / durationDays) * 100, 100)}%` }} />
+                                <div className="h-full rounded-full bg-[linear-gradient(90deg,#145de7_0%,#60a5fa_100%)]" style={{ width: `${Math.min((currentDay / durationDays) * 100, 100)}%` }} />
                             </div>
                             <p className="mt-2 text-xs text-slate-500">Season Pass นี้จะหมดอายุในอีก {packageWindowText}</p>
                         </div>
@@ -357,7 +357,7 @@ export function SeasonPassDashboardContent({
             </section>
 
             <div className="grid gap-6 xl:grid-cols-[1.55fr_0.8fr]">
-                <section className={`${themeClasses.surface} rounded-[30px] p-4 sm:p-6`}>
+                <section className={`${themeClasses.surface} rounded-3xl p-4 sm:p-6`}>
                     <div className="flex flex-col gap-4 border-b border-border/60 pb-5 sm:flex-row sm:items-end sm:justify-between">
                         <div className="space-y-2">
                             <div className="flex items-center gap-2 text-slate-900">
@@ -378,7 +378,7 @@ export function SeasonPassDashboardContent({
                         </div>
                     </div>
 
-                    <div className="mt-5 rounded-[28px] border border-[#eadfce] bg-[linear-gradient(180deg,#fffdfa_0%,#f9f6ef_100%)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] dark:border-slate-700/80 dark:bg-[linear-gradient(180deg,rgba(20,31,49,0.98)_0%,rgba(12,21,34,0.98)_100%)] dark:shadow-none sm:p-5">
+                    <div className="mt-5 rounded-3xl border border-[#eadfce] bg-[linear-gradient(180deg,#fffdfa_0%,#f9f6ef_100%)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] dark:border-slate-700/80 dark:bg-[linear-gradient(180deg,rgba(20,31,49,0.98)_0%,rgba(12,21,34,0.98)_100%)] dark:shadow-none sm:p-5">
                         <div className="mx-auto mb-5 flex w-fit items-center gap-3 rounded-full border border-[#e4d7c2] bg-white/90 px-4 py-2 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/90 dark:shadow-none">
                             <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
                             <p className="text-sm font-semibold tracking-[0.18em] text-slate-700 dark:text-slate-200">MONTHLY REWARD BOARD</p>
@@ -399,13 +399,13 @@ export function SeasonPassDashboardContent({
                 </section>
 
                 <aside className="space-y-6">
-                    <section className={`${themeClasses.surface} rounded-[30px] p-5 sm:p-6`}>
+                    <section className={`${themeClasses.surface} rounded-3xl p-5 sm:p-6`}>
                         <div className="flex items-center gap-2 text-slate-900">
                             <Gift className="h-5 w-5 text-blue-600" />
                             <h2 className="text-xl font-semibold">ของวันนี้</h2>
                         </div>
 
-                        <div className={`${themeClasses.surfaceSoft} mt-5 rounded-[26px] p-5`}>
+                        <div className={`${themeClasses.surfaceSoft} mt-5 rounded-3xl p-5`}>
                             <div className="flex items-center justify-between gap-3">
                                 <div>
                                     <p className="text-xs uppercase tracking-[0.18em] text-blue-500">Today Reward</p>
@@ -414,7 +414,7 @@ export function SeasonPassDashboardContent({
                                         Day {String(currentReward.day).padStart(2, "0")} ของรอบนี้
                                     </p>
                                 </div>
-                                <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-[22px] bg-white shadow-sm dark:bg-slate-900 dark:shadow-none">
+                                <div className="relative flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl bg-white shadow-sm dark:bg-slate-900 dark:shadow-none">
                                     {currentReward.imageUrl ? (
                                         <Image src={currentReward.imageUrl} alt={currentReward.label} fill sizes="64px" className="object-contain p-2.5" />
                                     ) : (
@@ -449,7 +449,7 @@ export function SeasonPassDashboardContent({
                         </div>
                     </section>
 
-                    <section className={`${themeClasses.surface} rounded-[30px] p-5 sm:p-6`}>
+                    <section className={`${themeClasses.surface} rounded-3xl p-5 sm:p-6`}>
                         <div className="flex items-center gap-2 text-slate-900">
                             <Clock3 className="h-5 w-5 text-blue-600" />
                             <h2 className="text-xl font-semibold">ประวัติการรับล่าสุด</h2>
@@ -474,7 +474,7 @@ export function SeasonPassDashboardContent({
                         </div>
                     </section>
 
-                    <section className={`${themeClasses.surface} rounded-[30px] p-5 sm:p-6`}>
+                    <section className={`${themeClasses.surface} rounded-3xl p-5 sm:p-6`}>
                         <div className="flex items-center gap-2 text-slate-900">
                             <Sparkles className="h-5 w-5 text-blue-600" />
                             <h2 className="text-xl font-semibold">ชนิดของรางวัล</h2>

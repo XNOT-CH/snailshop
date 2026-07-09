@@ -262,11 +262,11 @@ export function RewardImageCropDialog({
 
     return (
         <Dialog open={open} onOpenChange={(nextOpen) => (!nextOpen ? onClose() : null)}>
-            <DialogContent className="max-w-5xl rounded-[28px] border-slate-200 bg-white p-0 shadow-[0_28px_80px_-36px_rgba(15,23,42,0.4)] sm:max-w-5xl">
-                <div className="overflow-hidden rounded-[28px]">
+            <DialogContent className="max-w-5xl rounded-3xl border-slate-200 bg-white p-0 shadow-[0_28px_80px_-36px_rgba(15,23,42,0.4)] sm:max-w-5xl">
+                <div className="overflow-hidden rounded-3xl">
                     <DialogHeader className="border-b border-slate-200 bg-gradient-to-r from-blue-50 via-white to-sky-50 px-6 py-5 text-left">
                         <div className="flex items-start gap-3">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_16px_30px_-18px_rgba(37,99,235,0.8)]">
+                            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-[0_16px_30px_-18px_rgba(15,23,42,0.28)]">
                                 <Crop className="h-5 w-5" />
                             </div>
                             <div className="space-y-1">
@@ -281,8 +281,8 @@ export function RewardImageCropDialog({
                     </DialogHeader>
 
                     <div className="grid gap-5 px-6 py-6 lg:grid-cols-[minmax(0,1fr)_240px]">
-                        <div className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-3">
-                            <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-[20px] bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_55%),linear-gradient(180deg,_rgba(15,23,42,0.04),_rgba(15,23,42,0.08))] p-3">
+                        <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-3">
+                            <div className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-2xl bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_55%),linear-gradient(180deg,_rgba(15,23,42,0.04),_rgba(15,23,42,0.08))] p-3">
                                 {imageSrc ? (
                                     <div className="relative inline-block">
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -334,12 +334,12 @@ export function RewardImageCropDialog({
                         </div>
 
                         <div className="flex flex-col gap-4">
-                            <div className="rounded-[24px] border border-slate-200 bg-slate-50/90 p-4">
+                            <div className="rounded-3xl border border-slate-200 bg-slate-50/90 p-4">
                                 <p className="text-sm font-semibold text-slate-900">ตัวอย่างวงกลมรางวัล</p>
                                 <p className="mt-1 text-xs text-slate-500">ภาพที่ครอปแล้วจะถูกแสดงแบบเต็มวงคล้ายหน้าเล่นจริง</p>
                                 <div className="mt-4 flex justify-center">
                                     <div
-                                        className="relative h-28 w-28 overflow-hidden rounded-full border-4 border-amber-400 bg-white shadow-[0_12px_32px_-18px_rgba(251,191,36,0.9)]"
+                                        className="relative h-28 w-28 overflow-hidden rounded-full border-4 border-amber-400 bg-white shadow-[0_12px_32px_-18px_rgba(15,23,42,0.28)]"
                                     >
                                         {previewSrc ? (
                                             <>
@@ -356,7 +356,7 @@ export function RewardImageCropDialog({
                                 </div>
                             </div>
 
-                            <div className="rounded-[24px] border border-slate-200 bg-slate-50/90 p-4 text-sm text-slate-600">
+                            <div className="rounded-3xl border border-slate-200 bg-slate-50/90 p-4 text-sm text-slate-600">
                                 <p className="font-medium text-slate-900">วิธีใช้งาน</p>
                                 <p className="mt-2">ลากวงกลมเพื่อย้ายจุดโฟกัส และลากมุมทั้ง 4 เพื่อขยายหรือย่อพื้นที่ให้พอดีกับหน้ารางวัล</p>
                                 <Button

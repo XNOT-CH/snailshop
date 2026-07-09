@@ -2,12 +2,11 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import dynamic from "next/dynamic";
-import { Gamepad2, Gift, Loader2, RotateCcw, Sparkles, X } from "lucide-react";
-import Image from "next/image";
+import { Gamepad2, Gift, Loader2, Sparkles } from "lucide-react";
+import { ThumbImage } from "@/components/ThumbImage";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
 import { showError } from "@/lib/swal";
-import { shouldBypassImageOptimization } from "@/lib/imageUrl";
 import { EMPTY_USER_BALANCES, getBalanceByCostType, type UserBalances } from "@/lib/userBalances";
 import { getGachaCostLabel, normalizeGachaCost } from "@/lib/gachaCost";
 import { useRouter } from "next/navigation";
@@ -94,31 +93,30 @@ function RewardCard({
     return (
         <div
             className={[
-                `${themeClasses.surface} group relative overflow-hidden rounded-[1.35rem] p-3 transition-all duration-200`,
-                isHighlighted ? "border-[#1ca36b]/40 bg-[#f4fff9] -translate-y-0.5" : "",
-                isWinner ? "border-[#145de7]/30 bg-[#f8fbff]" : "",
+                `${themeClasses.surface} group relative overflow-hidden rounded-2xl p-2 transition-all duration-200 sm:p-3`,
+                isHighlighted ? "border-[#1c9751]/40 bg-[#f4fff9] dark:border-emerald-400/40 dark:bg-emerald-500/10 -translate-y-0.5" : "",
+                isWinner ? "border-[#145de7]/30 bg-[#f8fbff] dark:border-blue-400/30 dark:bg-blue-500/10" : "",
                 isSpinning && !isHighlighted ? "opacity-35 scale-[0.97]" : "",
             ].join(" ")}
         >
-            <div className="relative mx-auto flex aspect-square w-full items-center justify-center rounded-[1rem] bg-gradient-to-b from-white to-slate-50">
+            <div className="relative mx-auto flex aspect-square w-full items-center justify-center rounded-lg bg-gradient-to-b from-white to-slate-50">
                 <div
                     className={[
-                        "relative h-[84%] w-[84%] overflow-hidden rounded-full transition-all duration-200",
+                        "relative h-[94%] w-[94%] overflow-hidden rounded-xl transition-all duration-200",
                         ring,
-                        isHighlighted && !isWinner ? "scale-110 brightness-110" : "",
-                        isWinner ? "scale-110 brightness-110" : "",
+                        isHighlighted && !isWinner ? "scale-105 brightness-110" : "",
+                        isWinner ? "scale-105 brightness-110" : "",
                     ].join(" ")}
                 >
                     {hasValidImg ? (
                         <div className="absolute inset-0 bg-background">
-                            <Image
+                            <ThumbImage
                                 src={reward.imageUrl!}
                                 alt={reward.rewardName}
                                 fill
                                 sizes="160px"
                                 className="object-contain"
-                                unoptimized={shouldBypassImageOptimization(reward.imageUrl)}
-                                onError={() => setImgErr(true)}
+                                onFinalError={() => setImgErr(true)}
                             />
                         </div>
                     ) : (
@@ -128,7 +126,7 @@ function RewardCard({
                     )}
 
                     {isHighlighted && (
-                        <div className="pointer-events-none absolute inset-0 rounded-full border border-white/70 animate-ping opacity-70" />
+                        <div className="pointer-events-none absolute inset-0 rounded-xl border border-white/70 animate-ping opacity-70" />
                     )}
                 </div>
 
@@ -140,11 +138,11 @@ function RewardCard({
                 )}
             </div>
 
-            <div className="mt-2 text-center">
-                <p className="line-clamp-2 min-h-[2.5rem] text-[12px] font-bold leading-5 text-slate-900">
+            <div className="mt-1.5 text-center sm:mt-2">
+                <p className="line-clamp-2 min-h-[2.1rem] text-[11px] font-bold leading-[1.05rem] text-slate-900 dark:text-slate-100 sm:min-h-[2.5rem] sm:text-xs sm:leading-5">
                     {formatRewardLabel(reward)}
                 </p>
-                <p className="mt-1 text-[10px] font-medium text-slate-500">
+                <p className="mt-0.5 text-[10px] font-medium text-slate-500 dark:text-slate-400 sm:mt-1">
                     {TIER_LABEL[reward.tier] ?? TIER_LABEL.common}
                 </p>
             </div>
@@ -154,8 +152,8 @@ function RewardCard({
 
 function EmptyRewardSlot() {
     return (
-        <div className={`${themeClasses.surfaceSoft} relative overflow-hidden rounded-[1.35rem] border-dashed p-3`}>
-            <div className="flex aspect-square flex-col items-center justify-center rounded-[1rem] bg-slate-50/70 text-center">
+        <div className={`${themeClasses.surfaceSoft} relative overflow-hidden rounded-2xl border-dashed p-3`}>
+            <div className="flex aspect-square flex-col items-center justify-center rounded-lg bg-slate-50/70 text-center">
                 <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-slate-300 bg-white">
                     <Gift className="h-6 w-6 text-slate-300 dark:text-slate-600" />
                 </div>
@@ -173,17 +171,17 @@ function getSpinButtonLabel(isMaintenanceEnabled: boolean | undefined) {
 function getStatusMessage(spinning: boolean, wonReward: GridReward | null) {
     if (wonReward) {
         return (
-            <p className="text-sm font-semibold text-slate-700">
+            <p className="text-sm font-semibold text-foreground">
                 ได้รางวัล <span className="text-[#145de7]">{formatRewardLabel(wonReward)}</span>
             </p>
         );
     }
 
     if (spinning) {
-        return <p className="text-xs text-slate-500">กำลังสุ่มและเตรียมเปิดผลลัพธ์</p>;
+        return <p className="text-xs text-muted-foreground">กำลังสุ่มและเตรียมเปิดผลลัพธ์</p>;
     }
 
-    return <p className="text-xs text-slate-400" />;
+    return <p className="text-xs text-muted-foreground" />;
 }
 
 export function GachaGridMachine({
@@ -381,26 +379,26 @@ export function GachaGridMachine({
 
     return (
         <div className="flex w-full max-w-[640px] flex-col gap-0.5 sm:gap-1">
-            <div className={`${themeClasses.surface} overflow-hidden rounded-[2rem] px-4 py-5 sm:px-6 sm:py-6`}>
+            <div className={`${themeClasses.surface} overflow-hidden rounded-3xl px-4 py-5 sm:px-6 sm:py-6`}>
                 <div className="mb-4 flex items-start justify-between gap-3">
                     <div>
-                        <p className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#145de7]/70">Lucky Board</p>
-                        <h2 className="mt-1 text-[22px] font-black leading-none text-[#145de7]">{machineName}</h2>
+                        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#145de7]/70">Lucky Board</p>
+                        <h2 className="mt-1 text-2xl font-bold leading-none text-[#145de7]">{machineName}</h2>
                     </div>
                     <div className="rounded-full border border-primary/15 bg-primary/10 px-3 py-1.5 text-right text-[11px] font-semibold text-primary">
                         <p className="opacity-70">รางวัลพร้อมสุ่ม</p>
-                        <p className="text-[14px] font-black">{actualRewards.length}/9</p>
+                        <p className="text-sm font-black">{actualRewards.length}/9</p>
                     </div>
                 </div>
 
                 {loading && (
-                    <div className={`${themeClasses.surfaceSoft} flex h-56 items-center justify-center rounded-[1.5rem]`}>
+                    <div className={`${themeClasses.surfaceSoft} flex h-56 items-center justify-center rounded-3xl`}>
                         <Loader2 className="h-10 w-10 animate-spin text-[#145de7]/60" />
                     </div>
                 )}
 
                 {!loading && actualRewards.length === 0 && (
-                    <div className={`${themeClasses.surfaceSoft} flex h-56 flex-col items-center justify-center rounded-[1.5rem] border-dashed text-center`}>
+                    <div className={`${themeClasses.surfaceSoft} flex h-56 flex-col items-center justify-center rounded-3xl border-dashed text-center`}>
                         <Gift className="h-10 w-10 text-slate-300 dark:text-slate-600" />
                         <p className="mt-3 text-sm font-semibold text-slate-600">ยังไม่มีรางวัลในตู้</p>
                         <p className="mt-1 text-xs text-slate-400">เพิ่มรางวัลจากหน้าแอดมินก่อนเปิดให้สุ่ม</p>
@@ -408,8 +406,8 @@ export function GachaGridMachine({
                 )}
 
                 {!loading && actualRewards.length > 0 && (
-                    <div className={`${themeClasses.surfaceSoft} rounded-[1.5rem] p-3 sm:p-4`}>
-                        <div className="grid grid-cols-3 gap-3 sm:gap-4">
+                    <div className={`${themeClasses.surfaceSoft} rounded-3xl p-3 sm:p-4`}>
+                        <div className="grid grid-cols-3 gap-2 sm:gap-4">
                             {rewards.map((reward, idx) => (
                                 reward ? (
                                     <RewardCard
@@ -435,57 +433,40 @@ export function GachaGridMachine({
                 </div>
             )}
 
-            <div className={`${themeClasses.surface} -mt-2 rounded-[1.75rem] px-4 pb-4 pt-0 sm:-mt-3 sm:px-5 sm:pb-5 sm:pt-0`}>
-                <div className="flex flex-col gap-5">
+            <div className={`${themeClasses.surface} -mt-2 rounded-3xl px-4 pb-4 pt-0 sm:-mt-3 sm:px-5 sm:pb-5 sm:pt-0`}>
+                <div className="flex flex-col gap-3 sm:gap-5">
                     <div className="space-y-1 text-center">
-                        <p className="text-[24px] font-black tracking-tight text-[#145de7]">
+                        <p className="text-xl font-bold tracking-tight text-[#145de7] sm:text-2xl">
                             สุ่มรางวัลครั้งละ {normalizedCost.costAmount.toLocaleString()} {currencyWord}
                         </p>
                         {normalizedCost.costType !== "FREE" && (
-                            <p className="text-[12px] font-medium text-slate-700">กดสุ่มแล้วไม่สามารถขอคืน{currencyWord}ได้</p>
+                            <p className="text-xs font-medium text-slate-600 dark:text-slate-300">กดสุ่มแล้วไม่สามารถขอคืน{currencyWord}ได้</p>
                         )}
                     </div>
 
                     {normalizedCost.costType !== "FREE" && (
-                        <div className="w-full rounded-[1.1rem] border border-[#b7d0ff] bg-[#cfe1ff]/75 px-4 py-3 text-center text-[#145de7]">
+                        <div className="w-full rounded-2xl border border-[#b7d0ff] bg-[#cfe1ff]/75 px-4 py-3 text-center text-[#145de7]">
                             <p className="text-sm font-bold">
-                                ยอด{currencyWord}คงเหลือ: {balance.toLocaleString()} {currencyWord} <span className="font-normal text-[#145de7]/85">(ตรวจยอดล่าสุดก่อนกดสุ่มได้)</span>
+                                ยอด{currencyWord}คงเหลือ: {balance.toLocaleString()} {currencyWord}
                             </p>
                         </div>
                     )}
 
-                    <label className="flex w-fit cursor-pointer items-center gap-3 rounded-full border border-[#bfe5ce] bg-[#f8fffb] px-4 py-2 text-sm font-medium text-[#2f8d57]">
+                    <label className="flex w-fit cursor-pointer items-center gap-3 rounded-full border border-[#bfe5ce] bg-[#f8fffb] px-4 py-2 text-sm font-medium text-[#1c9751]">
                         <input
                             type="checkbox"
                             checked={skipAnimationEnabled}
                             onChange={(event) => handleSkipToggle(event.target.checked)}
-                            className="h-4 w-4 rounded border-[#158e4d]/40 text-[#158e4d] focus:ring-[#158e4d]"
+                            className="h-4 w-4 rounded border-[#1c9751]/40 text-[#1c9751] focus:ring-[#1c9751]"
                         />
                         ข้ามอนิเมชั่นอัตโนมัติ
                     </label>
 
                     <div className="pt-1">
-                        {wonReward ? (
-                            <div className="grid grid-cols-2 gap-3">
-                                <button
-                                    onClick={handlePlayAgain}
-                                    className="flex items-center justify-center gap-2 rounded-2xl bg-[#158e4d] px-4 py-4 text-[15px] font-black text-white shadow-[0_16px_30px_-18px_rgba(21,142,77,0.85)] transition-all hover:bg-[#117640] active:scale-[0.985]"
-                                >
-                                    <RotateCcw className="h-4 w-4" />
-                                    เล่นอีกครั้ง
-                                </button>
-                                <button
-                                    onClick={() => setWonReward(null)}
-                                    className="flex items-center justify-center gap-2 rounded-2xl border-2 border-[#158e4d] bg-white px-4 py-4 text-[15px] font-black text-[#158e4d] transition-all hover:bg-[#f7fffa] active:scale-[0.985]"
-                                >
-                                    <X className="h-4 w-4" />
-                                    ปิดผลลัพธ์
-                                </button>
-                            </div>
-                        ) : spinning ? (
+                        {spinning ? (
                             <button
                                 disabled
-                                className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751]/60 px-4 py-4 text-[16px] font-black text-white/85"
+                                className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl bg-[#1c9751]/60 h-12 px-4 text-base font-bold text-white/85 sm:h-14"
                             >
                                 <Loader2 className="h-5 w-5 animate-spin" />
                                 กำลังสุ่ม...
@@ -494,7 +475,7 @@ export function GachaGridMachine({
                             <button
                                 onClick={() => { handleSpin().catch(() => undefined); }}
                                 disabled={loading || isBlocked || actualRewards.length === 0}
-                                className="flex w-full items-center justify-center gap-2 rounded-[1.1rem] bg-[#1c9751] px-4 py-4 text-[16px] font-black text-white shadow-[0_22px_40px_-24px_rgba(28,151,81,0.95)] transition-all hover:bg-[#167c42] active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1c9751] h-12 px-4 text-base font-bold text-white shadow-[0_14px_28px_-20px_rgba(15,23,42,0.28)] transition-all hover:bg-[#167c42] active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-50 sm:h-14"
                             >
                                 <Gamepad2 className="h-5 w-5" />
                                 {getSpinButtonLabel(maintenance?.enabled)}

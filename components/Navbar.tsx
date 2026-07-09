@@ -96,7 +96,10 @@ export default async function Navbar() {
     return (
         <MobileAutoHideHeader>
         <header id="main-navbar" className={`${themeClasses.header} w-full md:backdrop-blur-xl`}>
-            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 lg:grid lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] lg:gap-4 lg:px-6 xl:px-8">
+            {/* auto|1fr|auto: side columns size to content so the right cluster
+                (search + wallet) never outgrows a forced symmetric half and
+                overlaps the last nav item. */}
+            <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-3 px-3 sm:px-4 lg:grid lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:gap-4 lg:px-6 xl:px-8">
                 <Link
                     href="/"
                     prefetch={false}
@@ -116,12 +119,12 @@ export default async function Navbar() {
                             <Gamepad2 className="h-6 w-6 text-white sm:h-7 sm:w-7" />
                         </div>
                     )}
-                    <span className="hidden whitespace-nowrap pr-1 font-bold leading-none tracking-tight text-foreground sm:inline sm:text-[1.15rem] lg:text-[1.22rem]">
+                    <span className="hidden whitespace-nowrap pr-1 font-bold leading-none tracking-tight text-foreground sm:inline sm:text-lg lg:text-xl">
                         {siteName}
                     </span>
                 </Link>
 
-                <nav className="hidden items-center justify-center gap-1 lg:flex xl:-translate-x-12">
+                <nav className="hidden min-w-0 items-center justify-center gap-1 lg:flex">
                     {navLinks.map((link) => {
                         const Icon = link.icon;
 

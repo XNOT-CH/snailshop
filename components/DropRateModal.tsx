@@ -82,7 +82,7 @@ export function DropRateModal({ open, onClose, machineId }: Readonly<DropRateMod
                                 </div>
                             )}
                             {!loading && tiers.length === 0 && (
-                                <p className="text-[12px] text-muted-foreground text-center py-4">
+                                <p className="text-xs text-muted-foreground text-center py-4">
                                     ยังไม่มีข้อมูลอัตราการดรอป
                                 </p>
                             )}

@@ -498,7 +498,7 @@ export default function EditProductPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="admin-product-edit-autodelete-card overflow-hidden border-amber-200/80 shadow-[0_18px_50px_-42px_rgba(245,158,11,0.6)]">
+                <Card className="admin-product-edit-autodelete-card overflow-hidden border-amber-200/80 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.22)]">
                     <CardHeader className="admin-product-edit-autodelete-header border-b border-amber-100 bg-[linear-gradient(135deg,rgba(255,251,235,1),rgba(255,247,237,0.95))] px-6 py-5">
                         <CardTitle className="flex items-center gap-3 text-xl text-amber-950">
                             <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/80 text-amber-500 ring-1 ring-amber-200">
@@ -581,7 +581,7 @@ export default function EditProductPage() {
 
                 <Button
                     type="submit"
-                    className="h-12 w-full rounded-2xl bg-[#1a56db] text-white shadow-[0_20px_45px_-25px_rgba(37,99,235,0.7)] hover:bg-[#1e40af]"
+                    className="h-12 w-full rounded-2xl bg-[#145de7] text-white shadow-[0_20px_45px_-25px_rgba(15,23,42,0.28)] hover:bg-[#114fc4]"
                     size="lg"
                     disabled={!canEditProduct || isLoading}
                 >

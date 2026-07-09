@@ -58,7 +58,7 @@ interface GachaReward {
 }
 
 const inputCls = "w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-[#145de7]/30 focus:border-[#145de7] transition disabled:opacity-40";
-const labelCls = "block text-[13px] font-semibold text-[#145de7] mb-1.5";
+const labelCls = "block text-sm font-semibold text-[#145de7] mb-1.5";
 
 function validImageUrl(url: string | null | undefined): boolean {
     return url != null && (url.startsWith("/") || url.startsWith("http"));
@@ -297,7 +297,7 @@ function AddRewardForm({ form, setForm, products, productSearch, setProductSearc
 
             <div className="mt-4">
                 <label htmlFor="addRewardImageFile" className={labelCls}>รูปภาพรางวัล</label>
-                <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF ระบบจะครอปตรงกลางและย่ออัตโนมัติให้พอดีกับวงกลมรางวัลก่อนอัปโหลด • {IMAGE_UPLOAD_RECOMMENDATIONS.rewardSquare}</p>
+                <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะครอปตรงกลางและย่ออัตโนมัติให้พอดีกับวงกลมรางวัลก่อนอัปโหลด • {IMAGE_UPLOAD_RECOMMENDATIONS.rewardSquare}</p>
                 <input id="addRewardImageFile" ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" disabled={!canEdit} onChange={e => { const file = e.target.files?.[0]; if (file) { void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); } e.target.value = ""; }} />
                 <div className="flex items-center gap-2">
                     <button type="button" onClick={() => fileInputRef.current?.click()} disabled={!canEdit} className={`w-12 h-12 rounded-full border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors ${canEdit ? "cursor-pointer" : "cursor-not-allowed opacity-50"} ${isDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/20"}`} onDragOver={(e) => { if (!canEdit) return; e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={(e) => { if (!canEdit) return; e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); }}>
@@ -369,7 +369,7 @@ function EditRewardForm({ form, setForm, products, productSearch, setProductSear
                 <div><label htmlFor="editRewardTier" className={labelCls}>ระดับรางวัล *</label><select id="editRewardTier" value={form.tier} onChange={e => setForm((f: any) => ({ ...f, tier: e.target.value }))} className={inputCls} disabled={!canEdit}>{TIER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
                 <div className="md:col-span-2 mt-4">
                     <label htmlFor="editRewardImageFile" className={labelCls}>รูปภาพรางวัล</label>
-                    <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF ระบบจะครอปตรงกลางและย่ออัตโนมัติให้พอดีกับวงกลมรางวัลก่อนอัปโหลด • {IMAGE_UPLOAD_RECOMMENDATIONS.rewardSquare}</p>
+                    <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL — รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะครอปตรงกลางและย่ออัตโนมัติให้พอดีกับวงกลมรางวัลก่อนอัปโหลด • {IMAGE_UPLOAD_RECOMMENDATIONS.rewardSquare}</p>
                     <input id="editRewardImageFile" ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" disabled={!canEdit} onChange={e => { const file = e.target.files?.[0]; if (file) { void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); } e.target.value = ""; }} />
                     <div className="flex items-center gap-2">
                         <button type="button" onClick={() => fileInputRef.current?.click()} disabled={!canEdit} className={`w-12 h-12 rounded-full border-2 border-dashed flex items-center justify-center flex-shrink-0 overflow-hidden transition-colors ${canEdit ? "cursor-pointer" : "cursor-not-allowed opacity-50"} ${isDragging ? "border-[#145de7] bg-[#145de7]/10" : "border-border bg-muted/20"}`} onDragOver={(e) => { if (!canEdit) return; e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)} onDrop={(e) => { if (!canEdit) return; e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) void onImageUpload(file, (url) => setForm((f: any) => ({ ...f, rewardImageUrl: url })), setUploadingImage); }}>
@@ -863,7 +863,7 @@ export default function EditGachaMachinePage() {
                                                 <span className="text-right">จำนวน</span>
                                             </div>
                                             {simulationResults.map((row) => (
-                                                <div key={row.id} className="grid grid-cols-[minmax(0,1.5fr)_90px_90px_90px] gap-2 border-b border-border/60 px-3 py-2 text-[12px] last:border-b-0">
+                                                <div key={row.id} className="grid grid-cols-[minmax(0,1.5fr)_90px_90px_90px] gap-2 border-b border-border/60 px-3 py-2 text-xs last:border-b-0">
                                                     <span className="truncate font-medium text-foreground">{row.name}</span>
                                                     <span className="text-right text-muted-foreground">{row.configuredProbability}%</span>
                                                     <span className="text-right font-semibold text-[#145de7]">{row.simulatedRate}%</span>

@@ -67,7 +67,7 @@ export function AuthFormShell({
                     </div>
 
                     {children}
-                    {isSeparated ? <div className="absolute inset-x-0 bottom-0 h-[3px] bg-[#2f7df6]" aria-hidden="true" /> : null}
+                    {isSeparated ? <div className="absolute inset-x-0 bottom-0 h-[3px] bg-[#145de7]" aria-hidden="true" /> : null}
                 </div>
             </div>
         </div>

@@ -80,7 +80,7 @@ function getFormFieldString(formData: FormData | null, key: string, fallback: st
 const inputCls =
     "w-full border border-border rounded-lg px-3 py-2.5 text-sm bg-background text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-[#145de7]/30 focus:border-[#145de7] transition";
 
-const labelCls = "block text-[13px] font-semibold text-[#145de7] mb-1.5";
+const labelCls = "block text-sm font-semibold text-[#145de7] mb-1.5";
 
 function getCostAmountFieldCopy(
     costType: string,
@@ -391,7 +391,7 @@ export default function GachaMachinesAdminPage() {
                 {/* รูปภาพ */}
                 <div className="mt-4">
                     <label htmlFor="addMachineImageFile" className={labelCls}>รูปภาพตู้กาชา</label>
-                    <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL รูปภาพ — รองรับ JPG, PNG, WebP, GIF ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนอัปโหลด • {IMAGE_UPLOAD_RECOMMENDATIONS.gachaMachineBanner}</p>
+                    <p className="text-xs text-muted-foreground mb-2">อัปโหลดรูป หรือวาง URL รูปภาพ — รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะย่อ บีบอัด และแปลงไฟล์ให้อัตโนมัติก่อนอัปโหลด • {IMAGE_UPLOAD_RECOMMENDATIONS.gachaMachineBanner}</p>
 
                     {/* Preview + upload zone */}
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start">

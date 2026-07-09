@@ -44,7 +44,7 @@ export function ChatMessageContent({
                     key={imageKey}
                     src={message.imageUrl ?? undefined}
                     alt="รูปภาพในแชท"
-                    className="max-h-72 w-full rounded-[20px] object-cover"
+                    className="max-h-72 w-full rounded-2xl object-cover"
                     loading="lazy"
                     onError={() => setFailedImageKey(imageKey)}
                 />
@@ -53,7 +53,7 @@ export function ChatMessageContent({
             {message.kind === "IMAGE" && !canShowImage ? (
                 <div
                     className={cn(
-                        "flex items-center gap-2 rounded-[20px] border px-3 py-2 text-xs",
+                        "flex items-center gap-2 rounded-2xl border px-3 py-2 text-xs",
                         tone === "primary"
                             ? "border-white/20 bg-white/10 text-blue-50"
                             : "border-slate-200 bg-slate-50 text-slate-500"

@@ -434,7 +434,7 @@ export default function TopupPage() {
     };
 
     return (
-        <div className="dashboard-topup-page rounded-[2rem] bg-[radial-gradient(circle_at_top,rgba(255,247,237,0.95),rgba(255,255,255,0.98)_42%,rgba(248,250,252,1)_100%)] px-4 py-6 shadow-[0_30px_80px_rgba(15,23,42,0.08)] sm:px-6 sm:py-8">
+        <div className="dashboard-topup-page rounded-3xl bg-[radial-gradient(circle_at_top,rgba(255,247,237,0.95),rgba(255,255,255,0.98)_42%,rgba(248,250,252,1)_100%)] px-4 py-6 shadow-[0_30px_80px_rgba(15,23,42,0.08)] sm:px-6 sm:py-8">
             <PageBreadcrumb
                 items={[
                     { label: "แดชบอร์ด", href: "/dashboard" },
@@ -447,7 +447,7 @@ export default function TopupPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-700 sm:text-sm sm:tracking-[0.32em]">
                     ช่องทางการชำระเงิน
                 </p>
-                <h1 className="mt-2 text-2xl font-black text-slate-900 sm:text-3xl">เติมเงิน</h1>
+                <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">เติมเงิน</h1>
                 <p className="mt-2 text-xs text-slate-500 sm:text-sm">
                     เลือกช่องทางที่ต้องการ แล้วดำเนินการชำระเงินตามรูปแบบของแต่ละวิธีได้ทันที
                 </p>
@@ -464,13 +464,13 @@ export default function TopupPage() {
                             type="button"
                             onClick={() => handleSelectChannel(channel.value)}
                             className={[
-                                "group flex min-h-[240px] flex-col items-center justify-center rounded-[1.6rem] border bg-white px-5 py-6 text-center shadow-[0_18px_38px_rgba(15,23,42,0.05)] transition duration-200 sm:min-h-[290px] sm:px-6 sm:py-7",
+                                "group flex min-h-[240px] flex-col items-center justify-center rounded-3xl border bg-white px-5 py-6 text-center shadow-[0_18px_38px_rgba(15,23,42,0.05)] transition duration-200 sm:min-h-[290px] sm:px-6 sm:py-7",
                                 active
                                     ? "border-blue-400 ring-2 ring-blue-100"
                                     : "border-slate-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_48px_rgba(15,23,42,0.09)]",
                             ].join(" ")}
                         >
-                            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[1.2rem] bg-gradient-to-br from-slate-50 to-slate-100 text-slate-700 sm:h-20 sm:w-20 sm:rounded-[1.5rem]">
+                            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 text-slate-700 sm:h-20 sm:w-20 sm:rounded-3xl">
                                 {channel.imageSrc ? (
                                     <Image
                                         src={channel.imageSrc}
@@ -483,7 +483,7 @@ export default function TopupPage() {
                                     <Icon className="h-8 w-8 sm:h-10 sm:w-10" />
                                 )}
                             </div>
-                            <p className="mt-4 text-lg font-extrabold text-slate-900 sm:mt-5 sm:text-xl">{channel.title}</p>
+                            <p className="mt-4 text-lg font-bold text-slate-900 sm:mt-5 sm:text-xl">{channel.title}</p>
                             <p className="mt-1 text-base text-slate-500 sm:text-lg">{channel.subtitle}</p>
                             <p className="mt-4 text-xs text-slate-400">{channel.description}</p>
                         </button>
@@ -510,14 +510,14 @@ export default function TopupPage() {
                         )}
 
                         {isGiftChannel ? (
-                            <div className="mx-auto w-full min-w-0 max-w-none overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)] sm:rounded-[1.5rem] sm:p-4">
+                            <div className="mx-auto w-full min-w-0 max-w-none overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)] sm:rounded-3xl sm:p-4">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex items-start gap-3">
                                         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 sm:h-10 sm:w-10">
                                             <Gift className="h-4 w-4 text-slate-700 sm:h-5 sm:w-5" />
                                         </div>
                                         <div>
-                                            <p className="text-lg font-black text-blue-700 sm:text-xl">ซองอั่งเปา</p>
+                                            <p className="text-lg font-bold text-blue-700 sm:text-xl">ซองอั่งเปา</p>
                                             <p className="text-xs text-slate-500 sm:text-sm">True Money Wallet</p>
                                         </div>
                                     </div>
@@ -531,8 +531,8 @@ export default function TopupPage() {
                                     </button>
                                 </div>
 
-                                <div className="mt-3 rounded-[1rem] border-[3px] border-[#5b4a1e] bg-[linear-gradient(180deg,#fff8d8_0%,#d3c083_100%)] p-1.5 shadow-inner sm:mt-4 sm:rounded-[1.2rem] sm:p-2">
-                                    <div className="rounded-[0.75rem] bg-[#8b7441]/15 p-1.5 sm:rounded-[0.9rem] sm:p-2">
+                                <div className="mt-3 rounded-lg border-[3px] border-[#5b4a1e] bg-[linear-gradient(180deg,#fff8d8_0%,#d3c083_100%)] p-1.5 shadow-inner sm:mt-4 sm:rounded-2xl sm:p-2">
+                                    <div className="rounded-lg bg-[#8b7441]/15 p-1.5 sm:rounded-lg sm:p-2">
                                         <div className="flex justify-center">
                                             <Image
                                                 src="/TU1.png"
@@ -566,14 +566,14 @@ export default function TopupPage() {
                                 </Button>
                             </div>
                         ) : isVoucherChannel ? (
-                            <div className="mx-auto w-full min-w-0 max-w-none overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)] sm:max-w-md sm:rounded-[1.5rem] sm:p-4">
+                            <div className="mx-auto w-full min-w-0 max-w-none overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)] sm:max-w-md sm:rounded-3xl sm:p-4">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex items-start gap-3">
                                         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 sm:h-10 sm:w-10">
                                             <TicketPercent className="h-4 w-4 text-slate-700 sm:h-5 sm:w-5" />
                                         </div>
                                         <div>
-                                            <p className="text-lg font-black text-blue-700 sm:text-xl">โค้ด</p>
+                                            <p className="text-lg font-bold text-blue-700 sm:text-xl">โค้ด</p>
                                             <p className="text-xs text-slate-500 sm:text-sm">Code</p>
                                         </div>
                                     </div>
@@ -638,14 +638,14 @@ export default function TopupPage() {
                                 </Button>
                             </div>
                         ) : isBankSlipChannel ? (
-                            <div className="mx-auto w-full min-w-0 max-w-none overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)] sm:max-w-[30rem] sm:rounded-[1.4rem] sm:p-3.5">
+                            <div className="mx-auto w-full min-w-0 max-w-none overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)] sm:max-w-[30rem] sm:p-3.5">
                                 <div className="flex items-start justify-between gap-4">
                                     <div className="flex items-start gap-3">
                                         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 sm:h-9 sm:w-9">
                                             <Wallet className="h-4 w-4 text-slate-700 sm:h-4 sm:w-4" />
                                         </div>
                                         <div>
-                                            <p className="text-lg font-black text-blue-700 sm:text-lg">แนบสลิป</p>
+                                            <p className="text-lg font-bold text-blue-700 sm:text-lg">แนบสลิป</p>
                                             <p className="text-xs text-slate-500 sm:text-sm">Mobile Banking</p>
                                         </div>
                                     </div>
@@ -671,13 +671,13 @@ export default function TopupPage() {
                                 <div className="mt-3 grid gap-2 text-center sm:mt-4 sm:grid-cols-2">
                                     <div>
                                         <p className="text-xs text-slate-400">ชื่อบัญชี</p>
-                                        <p className="mt-1 text-[13px] font-black leading-tight text-blue-700 sm:mt-1.5 sm:text-[1.05rem]">
+                                        <p className="mt-1 text-sm font-bold leading-tight text-blue-700 sm:mt-1.5 sm:text-base">
                                             {BANK_INFO.accountName}
                                         </p>
                                     </div>
                                     <div>
                                         <p className="text-xs text-slate-400">ธนาคาร</p>
-                                        <p className="mt-1 text-[13px] font-black leading-tight text-blue-700 sm:mt-1.5 sm:text-[1.05rem]">
+                                        <p className="mt-1 text-sm font-bold leading-tight text-blue-700 sm:mt-1.5 sm:text-base">
                                             {BANK_INFO.bankName}
                                         </p>
                                     </div>
@@ -686,7 +686,7 @@ export default function TopupPage() {
                                 <div className="mt-3 text-center sm:mt-3.5">
                                     <p className="text-xs text-slate-400">เลขบัญชี</p>
                                     <div className="mt-1.5 flex flex-wrap items-center justify-center gap-2">
-                                        <span className="break-all text-[0.9rem] font-black leading-none text-blue-700 sm:text-[2rem]">
+                                        <span className="break-all text-sm font-black leading-none text-blue-700 sm:text-3xl">
                                             {BANK_INFO.accountNumber.replaceAll("-", "")}
                                         </span>
                                         <button
@@ -711,7 +711,7 @@ export default function TopupPage() {
                                     />
 
                                     {slipPreview ? (
-                                        <div className="relative rounded-[1.2rem] border border-slate-200 p-2">
+                                        <div className="relative rounded-2xl border border-slate-200 p-2">
                                             <button
                                                 type="button"
                                                 onClick={removeSlip}
@@ -723,7 +723,7 @@ export default function TopupPage() {
                                             <img
                                                 src={slipPreview}
                                                 alt="สลิปการโอนเงิน"
-                                                className="max-h-28 w-full rounded-[1rem] object-contain sm:max-h-56"
+                                                className="max-h-28 w-full rounded-lg object-contain sm:max-h-56"
                                             />
                                             <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-500">
                                                 <span className="truncate">{slipFile?.name}</span>
@@ -744,12 +744,12 @@ export default function TopupPage() {
                                                 }
                                             }}
                                             className={[
-                                                "w-full rounded-[0.95rem] border-2 border-dashed border-slate-400 px-3 py-3 text-center transition-all duration-200 sm:rounded-[1.2rem] sm:px-5 sm:py-5",
+                                                "w-full rounded-lg border-2 border-dashed border-slate-400 px-3 py-3 text-center transition-all duration-200 sm:rounded-2xl sm:px-5 sm:py-5",
                                                 isDragging ? "bg-slate-50" : "hover:bg-slate-50/80",
                                             ].join(" ")}
                                         >
                                             <Upload className="mx-auto mb-1 h-6 w-6 text-slate-500 sm:mb-2.5 sm:h-9 sm:w-9" />
-                                            <p className="text-[0.82rem] font-black leading-tight text-slate-600 sm:text-[1.8rem] sm:leading-none">ลาก & วาง เพื่ออัปโหลด</p>
+                                            <p className="text-sm font-bold leading-tight text-slate-600 sm:text-3xl sm:leading-none">ลาก & วาง เพื่ออัปโหลด</p>
                                             <p className="mt-1 text-[10px] text-slate-500 sm:mt-2 sm:text-base">หรือ</p>
                                             <span className="mt-2 inline-flex rounded-lg bg-slate-600 px-4 py-1.5 text-xs font-bold text-white sm:mt-3 sm:rounded-xl sm:px-5 sm:py-3 sm:text-sm">
                                                 อัปโหลดไฟล์
@@ -802,7 +802,7 @@ export default function TopupPage() {
                         ) : (
                         <>
                         <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-                            <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50/80 p-5">
+                            <div className="rounded-3xl border border-slate-200 bg-slate-50/80 p-5">
                                 <div className="flex items-center gap-3">
                                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white">
                                         <ShieldCheck className="h-6 w-6" />
@@ -815,7 +815,7 @@ export default function TopupPage() {
                                     </div>
                                 </div>
 
-                                <div className="mt-5 rounded-[1.4rem] border border-white bg-white p-5 shadow-sm">
+                                <div className="mt-5 rounded-2xl border border-white bg-white p-5 shadow-sm">
                                     <div className="grid gap-4 text-center sm:grid-cols-2">
                                         <div>
                                             <div className="mb-1 flex items-center justify-center gap-1 text-xs text-slate-400">
@@ -833,7 +833,7 @@ export default function TopupPage() {
                                         </div>
                                     </div>
 
-                                    <div className="mt-5 rounded-[1.2rem] border border-slate-200 bg-slate-50 px-4 py-4 text-center">
+                                    <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-center">
                                         <div className="mb-1 flex items-center justify-center gap-1 text-xs text-slate-400">
                                             <CreditCard className="h-3 w-3" />
                                             เลขบัญชี
@@ -866,7 +866,7 @@ export default function TopupPage() {
                                 </div>
                             </div>
 
-                            <div className="rounded-[1.5rem] border border-slate-200 bg-[linear-gradient(180deg,#faf5ff_0%,#ffffff_45%,#fff7ed_100%)] p-5">
+                            <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,#faf5ff_0%,#ffffff_45%,#fff7ed_100%)] p-5">
                                 <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-700">
                                     วิธีตรวจสลิป
                                 </p>
@@ -881,7 +881,7 @@ export default function TopupPage() {
                                                 type="button"
                                                 onClick={() => setVerifyMethod(option.value)}
                                                 className={[
-                                                    "rounded-[1.2rem] border p-4 text-left transition",
+                                                    "rounded-2xl border p-4 text-left transition",
                                                     active
                                                         ? "border-blue-400 bg-white shadow-sm"
                                                         : "border-white/70 bg-white/70 hover:border-blue-200",
@@ -936,7 +936,7 @@ export default function TopupPage() {
                                         />
 
                                         {slipPreview ? (
-                                            <div className="relative rounded-[1.5rem] border border-slate-200 p-2">
+                                            <div className="relative rounded-3xl border border-slate-200 p-2">
                                                 <button
                                                     type="button"
                                                     onClick={removeSlip}
@@ -948,7 +948,7 @@ export default function TopupPage() {
                                                 <img
                                                     src={slipPreview}
                                                     alt="สลิปการโอนเงิน"
-                                                    className="max-h-80 w-full rounded-[1.2rem] object-contain"
+                                                    className="max-h-80 w-full rounded-2xl object-contain"
                                                 />
                                                 <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-500">
                                                     <span className="truncate">{slipFile?.name}</span>
@@ -969,7 +969,7 @@ export default function TopupPage() {
                                                     }
                                                 }}
                                                 className={[
-                                                    "w-full rounded-[1.6rem] border-2 border-dashed p-5 text-center transition-all duration-200 sm:p-8",
+                                                    "w-full rounded-3xl border-2 border-dashed p-5 text-center transition-all duration-200 sm:p-8",
                                                     isDragging
                                                         ? "border-blue-500 bg-blue-50"
                                                         : "border-slate-200 bg-slate-50 hover:border-blue-300 hover:bg-blue-50/50",
@@ -1013,7 +1013,7 @@ export default function TopupPage() {
                                             value={base64Value}
                                             onChange={(e) => setBase64Value(e.target.value)}
                                             placeholder="วาง Base64 ของรูปสลิปที่นี่"
-                                            className="min-h-40 w-full rounded-[1.2rem] border border-input bg-background px-4 py-3 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                            className="min-h-40 w-full rounded-2xl border border-input bg-background px-4 py-3 text-sm outline-none ring-offset-background placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                                         />
                                         <p className="text-xs text-slate-500">
                                             รองรับทั้งแบบมีและไม่มี data URI prefix
@@ -1053,7 +1053,7 @@ export default function TopupPage() {
                             </div>
 
                             <div className="space-y-4">
-                                <div className="rounded-[1.5rem] border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
+                                <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
                                     <div className="flex items-start gap-3">
                                         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                                         <div className="space-y-1">
@@ -1068,11 +1068,11 @@ export default function TopupPage() {
                                     </div>
                                 </div>
 
-                                <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5">
+                                <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
                                     <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-400">
                                         ช่องทางที่เลือก
                                     </p>
-                                    <p className="mt-3 text-2xl font-black text-slate-900">
+                                    <p className="mt-3 text-2xl font-bold text-slate-900">
                                         {selectedChannelConfig?.title}
                                     </p>
                                     <p className="mt-1 text-sm text-slate-500">
@@ -1090,7 +1090,7 @@ export default function TopupPage() {
 
                                 <Button
                                     onClick={handleSubmit}
-                                    className="h-14 w-full rounded-[1.2rem] bg-blue-600 text-base font-bold hover:bg-blue-700"
+                                    className="h-14 w-full rounded-2xl bg-blue-600 text-base font-bold hover:bg-blue-700"
                                     disabled={!canSubmit}
                                 >
                                     {isSubmitting ? (

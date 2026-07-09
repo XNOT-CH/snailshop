@@ -37,7 +37,7 @@ export default async function AdminSeasonPassPage() {
 
     return (
         <div className="admin-season-pass-page space-y-6">
-            <section className="admin-season-pass-hero flex flex-col gap-4 rounded-[28px] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(239,246,255,0.88))] px-5 py-6 shadow-[0_24px_60px_-42px_rgba(37,99,235,0.32)] dark:border-[#2d4362] dark:bg-[linear-gradient(180deg,rgba(15,25,39,0.98),rgba(20,32,49,0.94))] dark:shadow-[0_24px_60px_-42px_rgba(0,0,0,0.7)] sm:px-7 sm:py-8 lg:flex-row lg:items-end lg:justify-between">
+            <section className="admin-season-pass-hero flex flex-col gap-4 rounded-3xl border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(239,246,255,0.88))] px-5 py-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.18)] dark:border-[#2d4362] dark:bg-[linear-gradient(180deg,rgba(15,25,39,0.98),rgba(20,32,49,0.94))] dark:shadow-[0_24px_60px_-42px_rgba(0,0,0,0.7)] sm:px-7 sm:py-8 lg:flex-row lg:items-end lg:justify-between">
                 <div className="max-w-2xl space-y-3">
                     <Badge className="w-fit rounded-full border border-blue-100 bg-white px-3 py-1 text-xs font-medium text-blue-700 dark:border-[#4d6f98] dark:bg-[#132133] dark:text-[#8cc4ff]">
                         Admin • Season Pass รายเดือน
@@ -67,7 +67,7 @@ export default async function AdminSeasonPassPage() {
                 {kpis.map((card) => {
                     const Icon = card.icon;
                     return (
-                        <div key={card.label} className="rounded-[24px] border border-border/70 bg-card p-5 shadow-sm">
+                        <div key={card.label} className="rounded-3xl border border-border/70 bg-card p-5 shadow-sm">
                             <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${card.tone}`}>
                                 <Icon className="h-5 w-5" />
                             </div>
@@ -80,7 +80,7 @@ export default async function AdminSeasonPassPage() {
 
             <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
                 <section className="space-y-6">
-                    <div className="rounded-[26px] border border-border/70 bg-card p-5 shadow-sm sm:p-6">
+                    <div className="rounded-3xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
                         <div className="flex items-center gap-2">
                             <Gift className="h-5 w-5 text-blue-600" />
                             <h2 className="text-xl font-semibold text-slate-900">ตั้งค่าแพ็กเกจ</h2>
@@ -102,7 +102,7 @@ export default async function AdminSeasonPassPage() {
                         </div>
                     </div>
 
-                    <div className="rounded-[26px] border border-border/70 bg-card p-5 shadow-sm sm:p-6">
+                    <div className="rounded-3xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
                         <div className="flex items-center gap-2">
                             <Sparkles className="h-5 w-5 text-blue-600" />
                             <h2 className="text-xl font-semibold text-slate-900">Reward Pool</h2>
@@ -131,7 +131,7 @@ export default async function AdminSeasonPassPage() {
                 </section>
 
                 <section className="space-y-6">
-                    <div className="rounded-[26px] border border-border/70 bg-card p-5 shadow-sm sm:p-6">
+                    <div className="rounded-3xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
                         <div className="flex items-center gap-2">
                             <Users className="h-5 w-5 text-blue-600" />
                             <h2 className="text-xl font-semibold text-slate-900">สมาชิกที่ต้องติดตาม</h2>
@@ -164,7 +164,7 @@ export default async function AdminSeasonPassPage() {
                         </div>
                     </div>
 
-                    <div className="rounded-[26px] border border-border/70 bg-card p-5 shadow-sm sm:p-6">
+                    <div className="rounded-3xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
                         <div className="flex items-center gap-2">
                             <ShieldCheck className="h-5 w-5 text-blue-600" />
                             <h2 className="text-xl font-semibold text-slate-900">สถานะระบบที่ล็อกไว้แล้ว</h2>
@@ -184,7 +184,7 @@ export default async function AdminSeasonPassPage() {
                         </div>
                     </div>
 
-                    <div className="rounded-[26px] border border-blue-100 bg-blue-50/70 p-5 shadow-sm sm:p-6">
+                    <div className="rounded-3xl border border-blue-100 bg-blue-50/70 p-5 shadow-sm sm:p-6">
                         <div className="flex items-start gap-3">
                             <CalendarDays className="mt-0.5 h-5 w-5 text-blue-600" />
                             <div>

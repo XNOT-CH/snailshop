@@ -318,7 +318,7 @@ export default function AdminRolesPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
-            <Shield className="h-6 w-6 text-[#1a56db]" />
+            <Shield className="h-6 w-6 text-[#145de7]" />
             จัดการยศแอดมิน
           </h1>
           <p className="mt-1 text-muted-foreground">เพิ่ม แก้ไข หรือลบยศของผู้ดูแลระบบ</p>
@@ -327,7 +327,7 @@ export default function AdminRolesPage() {
         <Button
           onClick={() => openPanel()}
           disabled={!canManageRoles}
-          className="w-full bg-[#1a56db] hover:bg-[#1e40af] sm:w-auto"
+          className="w-full bg-[#145de7] hover:bg-[#114fc4] sm:w-auto"
         >
           <Plus className="mr-2 h-4 w-4" />
           เพิ่มยศ
@@ -336,7 +336,7 @@ export default function AdminRolesPage() {
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
         <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3">
-          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#1a56db]">
+          <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#145de7]">
             <Shield className="h-3.5 w-3.5 text-white" />
           </div>
           <span className="font-bold text-foreground">รายการยศ</span>
@@ -415,7 +415,7 @@ export default function AdminRolesPage() {
                           disabled={!canManageRoles}
                           title={`แก้ไข ${role.name}`}
                           aria-label={`แก้ไขยศ ${role.name}`}
-                          className="rounded-xl border border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-[#1a56db]"
+                          className="rounded-xl border border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-[#145de7]"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -450,7 +450,7 @@ export default function AdminRolesPage() {
           />
 
           <div className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-border bg-gradient-to-r from-[#1a56db] to-[#1e40af] px-6 py-4">
+            <div className="flex items-center justify-between border-b border-border bg-gradient-to-r from-[#145de7] to-[#114fc4] px-6 py-4">
               <div className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-white" />
                 <div>
@@ -608,7 +608,7 @@ export default function AdminRolesPage() {
               <Button
                 onClick={handleSave}
                 disabled={!canManageRoles || saving}
-                className="flex-1 bg-[#1a56db] hover:bg-[#1e40af]"
+                className="flex-1 bg-[#145de7] hover:bg-[#114fc4]"
               >
                 {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {selectedRole ? "บันทึก" : "เพิ่มยศ"}

@@ -16,6 +16,9 @@ export async function POST(request: NextRequest) {
     try {
         const formData = await request.formData();
         const file = formData.get("file") as File | null;
+        // "banner" preset keeps hero/background images sharp on large screens;
+        // everything else (products, news, popups) renders well below 1080px.
+        const isBanner = formData.get("preset") === "banner";
 
         if (!file) {
             return NextResponse.json(
@@ -28,7 +31,7 @@ export async function POST(request: NextRequest) {
         const savedFile = await saveOptimizedImageUpload(file, {
             allowedTypes: ["image/jpeg", "image/png", "image/webp", "image/gif"],
             maxInputBytes: 5 * 1024 * 1024,
-            maxDimension: 1080,
+            maxDimension: isBanner ? 1920 : 1080,
             outputQuality: 82,
             uploadDir,
             publicPath: "/uploads/products",

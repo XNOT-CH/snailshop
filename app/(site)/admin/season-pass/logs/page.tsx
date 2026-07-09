@@ -46,7 +46,7 @@ export default async function AdminSeasonPassLogsPage() {
 
     return (
         <div className="space-y-6">
-            <section className="flex flex-col gap-4 rounded-[28px] border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(239,246,255,0.88))] px-5 py-6 shadow-[0_24px_60px_-42px_rgba(37,99,235,0.32)] sm:px-7 sm:py-8 lg:flex-row lg:items-end lg:justify-between">
+            <section className="flex flex-col gap-4 rounded-3xl border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,1),rgba(239,246,255,0.88))] px-5 py-6 shadow-[0_24px_60px_-42px_rgba(15,23,42,0.18)] sm:px-7 sm:py-8 lg:flex-row lg:items-end lg:justify-between">
                 <div className="space-y-3">
                     <div className="flex items-center gap-3">
                         <Button asChild variant="outline" size="icon" className="h-10 w-10 rounded-full">
@@ -87,7 +87,7 @@ export default async function AdminSeasonPassLogsPage() {
                 </div>
             </section>
 
-            <section className="rounded-[26px] border border-border/70 bg-card p-5 shadow-sm sm:p-6">
+            <section className="rounded-3xl border border-border/70 bg-card p-5 shadow-sm sm:p-6">
                 <div className="flex flex-col gap-3 border-b border-border pb-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h2 className="text-xl font-semibold text-slate-900">ประวัติการรับกล่อง</h2>

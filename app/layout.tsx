@@ -1,6 +1,6 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
-import { Prompt } from "next/font/google";
+import { Kanit } from "next/font/google";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import {
   DEFAULT_SITE_DESCRIPTION,
@@ -12,11 +12,11 @@ import {
   toAbsoluteAssetUrl,
 } from "@/lib/seo";
 
-const prompt = Prompt({
+const kanit = Kanit({
   subsets: ["latin", "thai"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
-  variable: "--font-prompt",
+  variable: "--font-kanit",
 });
 
 export const viewport: Viewport = {
@@ -95,7 +95,7 @@ export default async function RootLayout({
       lang="th"
       suppressHydrationWarning
       data-scroll-behavior="smooth"
-      className={prompt.variable}
+      className={kanit.variable}
     >
       <body className="font-sans antialiased min-h-screen bg-background flex flex-col">
         {/* Disable the browser's automatic scroll restoration on reload. It was

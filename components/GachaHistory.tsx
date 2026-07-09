@@ -119,7 +119,7 @@ export function GachaHistory({ refreshKey }: Readonly<{ refreshKey: number }>) {
                             </div>
                             {/* name + tier */}
                             <div className="flex-1 min-w-0 flex flex-col items-start gap-1">
-                                <p className="text-sm sm:text-[15px] font-semibold text-foreground truncate w-full">{log.rewardName}</p>
+                                <p className="text-sm sm:text-base font-semibold text-foreground truncate w-full">{log.rewardName}</p>
                                 <span className={`inline-flex items-center gap-1 text-[11px] font-bold tracking-wide px-2 py-0.5 rounded-full border shadow-sm ${tier.color}`}>
                                     {tier.emoji} {tier.label}
                                 </span>

@@ -48,7 +48,7 @@ export default async function GachaHubPage() {
             <StructuredData data={structuredData} />
             <div className="relative left-1/2 w-screen -translate-x-1/2 border-y border-border/50 bg-card/90 px-3 pb-8 pt-4 shadow-xl shadow-primary/10 backdrop-blur-sm sm:left-auto sm:w-auto sm:translate-x-0 sm:border sm:bg-card/90 sm:px-5 sm:py-7 sm:backdrop-blur-sm lg:px-6">
                 <div className="relative left-1/2 mb-4 w-screen -translate-x-1/2 sm:left-auto sm:mb-6 sm:w-auto sm:translate-x-0">
-                    <div className="relative overflow-hidden bg-gradient-to-br from-[#1a56db] via-[#1f4fc2] to-[#10284d] px-5 py-6 text-center sm:px-6 sm:py-8">
+                    <div className="relative overflow-hidden bg-gradient-to-br from-[#145de7] via-[#1f4fc2] to-[#10284d] px-5 py-6 text-center sm:px-6 sm:py-8">
                         <div
                             className="absolute inset-0 opacity-10"
                             style={{
@@ -56,7 +56,7 @@ export default async function GachaHubPage() {
                                 backgroundSize: "60px 52px",
                             }}
                         />
-                        <h1 className="relative z-10 mb-1.5 text-2xl font-bold tracking-wide text-white sm:text-[2rem]">หมวดหมู่กาชา</h1>
+                        <h1 className="relative z-10 mb-1.5 text-2xl font-bold tracking-wide text-white sm:text-3xl">หมวดหมู่กาชา</h1>
                         <p className="relative z-10 flex flex-wrap items-center justify-center gap-1 text-xs font-medium text-blue-200 sm:gap-1.5 sm:text-sm">
                             <Link href="/" prefetch={false} className="transition-colors hover:text-white">หน้าหลัก</Link>
                             <span className="opacity-60">&gt;</span>

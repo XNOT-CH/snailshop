@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowLeft, CreditCard, Gift, Package, Settings, Wallet } from "lucide-react";
+import { ArrowLeft, CreditCard, Dices, Gift, Package, Settings, Wallet } from "lucide-react";
+import { PRIMARY_NAV } from "@/lib/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,6 +27,7 @@ interface DashboardSidebarProps {
 
 const sidebarLinks = [
     { href: "/dashboard/topup", label: "เติมเงิน", icon: CreditCard },
+    { href: PRIMARY_NAV.gacha.href, label: PRIMARY_NAV.gacha.label, icon: Dices },
     { href: "/dashboard/season-pass", label: "Season Pass", icon: Gift },
     { href: "/dashboard/wallet", label: "กระเป๋าเงิน", icon: Wallet },
     { href: "/dashboard/inventory", label: "คลังสินค้าของฉัน", icon: Package },

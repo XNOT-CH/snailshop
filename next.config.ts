@@ -131,7 +131,8 @@ const nextConfig: NextConfig = {
               // in production to keep the CSP strict.
               `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"} https://challenges.cloudflare.com`,
               "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https:",
+              // Dev serves managed uploads from the sidecar on :3001.
+              `img-src 'self' data: blob: https:${isProduction ? "" : " http://localhost:3001"}`,
               "font-src 'self' data:",
               "connect-src 'self' https://challenges.cloudflare.com",
               "frame-src https://challenges.cloudflare.com",

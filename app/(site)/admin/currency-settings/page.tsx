@@ -93,7 +93,7 @@ export default function CurrencySettingsPage() {
             {/* Header */}
             <div>
                 <h1 className="text-2xl font-bold flex items-center gap-2">
-                    <Gem className="h-6 w-6 text-[#1a56db]" />
+                    <Gem className="h-6 w-6 text-[#145de7]" />
                     ตั้งค่าสกุลเงินพิเศษ
                 </h1>
                 <p className="text-muted-foreground mt-1">
@@ -105,7 +105,7 @@ export default function CurrencySettingsPage() {
             <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
                 {/* Card Header */}
                 <div className="border-b border-border py-3 px-5 flex items-center gap-2">
-                    <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                    <div className="w-6 h-6 bg-[#145de7] rounded flex items-center justify-center">
                         <Gem className="h-3.5 w-3.5 text-white" />
                     </div>
                     <span className="font-bold text-foreground">การตั้งค่าทั่วไป</span>
@@ -142,7 +142,7 @@ export default function CurrencySettingsPage() {
 
                     {/* Preview */}
                     <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 rounded-xl p-4">
-                        <p className="text-xs font-semibold text-[#1a56db] uppercase tracking-wide mb-2">ตัวอย่างการแสดงผล</p>
+                        <p className="text-xs font-semibold text-[#145de7] uppercase tracking-wide mb-2">ตัวอย่างการแสดงผล</p>
                         <div className="flex items-center gap-4">
                             <div className="bg-white dark:bg-zinc-900 rounded-lg px-4 py-2.5 border border-border shadow-sm">
                                 <span className="text-lg font-semibold">
@@ -185,7 +185,7 @@ export default function CurrencySettingsPage() {
                     <Button
                         onClick={handleSave}
                         disabled={saving || !canEditSettings}
-                        className="w-full bg-[#1a56db] hover:bg-[#1e40af]"
+                        className="w-full bg-[#145de7] hover:bg-[#114fc4]"
                         size="lg"
                     >
                         {saving ? (

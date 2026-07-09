@@ -71,9 +71,9 @@ export default async function AdminDashboardPage() {
             title: "รายได้ทั้งหมด",
             value: `฿${totalRevenue.toLocaleString()}`,
             icon: DollarSign,
-            gradient: "from-[#1a56db] to-[#1e40af]",
+            gradient: "from-[#145de7] to-[#114fc4]",
             lightBg: "bg-blue-50 dark:bg-blue-950/30",
-            iconColor: "text-[#1a56db] dark:text-blue-400",
+            iconColor: "text-[#145de7] dark:text-blue-400",
         },
         {
             title: "ผู้ใช้งานทั้งหมด",
@@ -117,7 +117,7 @@ export default async function AdminDashboardPage() {
                                 return (
                                     <div
                                         key={kpi.title}
-                                        className="relative overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)] transition-shadow duration-300 hover:shadow-[0_24px_50px_-28px_rgba(37,99,235,0.25)]"
+                                        className="relative overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)] transition-shadow duration-300 hover:shadow-[0_24px_50px_-28px_rgba(15,23,42,0.18)]"
                                     >
                                         {/* Top gradient bar */}
                                         <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${kpi.gradient}`} />
@@ -140,7 +140,7 @@ export default async function AdminDashboardPage() {
                         {/* Revenue Chart */}
                         <div className="overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)]">
                             <div className="border-b border-border py-3 px-5 flex items-center gap-2">
-                                <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                                <div className="w-6 h-6 bg-[#145de7] rounded flex items-center justify-center">
                                     <DollarSign className="h-3.5 w-3.5 text-white" />
                                 </div>
                                 <span className="font-bold">แนวโน้มรายได้</span>
@@ -158,7 +158,7 @@ export default async function AdminDashboardPage() {
                         {/* Sales Distribution */}
                         <div className="lg:col-span-2 overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)]">
                             <div className="border-b border-border py-3 px-5 flex items-center gap-2">
-                                <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                                <div className="w-6 h-6 bg-[#145de7] rounded flex items-center justify-center">
                                     <ShoppingCart className="h-3.5 w-3.5 text-white" />
                                 </div>
                                 <span className="font-bold">สัดส่วนการเติมเงิน</span>
@@ -171,7 +171,7 @@ export default async function AdminDashboardPage() {
                         {/* Recent Transactions */}
                         <div className="lg:col-span-3 overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)]">
                             <div className="border-b border-border py-3 px-5 flex items-center gap-2">
-                                <div className="w-6 h-6 bg-[#1a56db] rounded flex items-center justify-center">
+                                <div className="w-6 h-6 bg-[#145de7] rounded flex items-center justify-center">
                                     <Users className="h-3.5 w-3.5 text-white" />
                                 </div>
                                 <span className="font-bold">รายการล่าสุด</span>

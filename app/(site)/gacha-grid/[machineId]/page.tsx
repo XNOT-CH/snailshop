@@ -77,7 +77,7 @@ export default async function GachaGridPage({
 
     return (
         <div className="relative left-1/2 min-h-screen w-screen -translate-x-1/2 bg-background sm:left-auto sm:w-auto sm:translate-x-0">
-            <div className="relative overflow-hidden bg-gradient-to-br from-[#1a56db] via-[#1f4fc2] to-[#10284d] px-5 py-6 text-center sm:px-6 sm:py-8">
+            <div className="relative overflow-hidden bg-gradient-to-br from-[#145de7] via-[#1f4fc2] to-[#10284d] px-5 py-6 text-center sm:px-6 sm:py-8">
                 <div
                     className="absolute inset-0 opacity-[0.06]"
                     style={{
@@ -85,7 +85,7 @@ export default async function GachaGridPage({
                         backgroundSize: "60px 52px",
                     }}
                 />
-                <h1 className="relative z-10 mb-1.5 text-2xl font-bold text-white sm:text-[2rem]">{machine.name}</h1>
+                <h1 className="relative z-10 mb-1.5 text-2xl font-bold text-white sm:text-3xl">{machine.name}</h1>
                 <div className="relative z-10 md:hidden">
                     <Link
                         href="/gachapons"
@@ -105,7 +105,7 @@ export default async function GachaGridPage({
             </div>
 
             <div className="mx-auto w-full max-w-none px-2 pb-6 pt-2 sm:max-w-lg sm:px-4 sm:py-8">
-                <div className="bg-card p-2 sm:rounded-[1.75rem] sm:border sm:border-border/70 sm:shadow-[0_18px_42px_-34px_rgba(15,23,42,0.22)] sm:p-4">
+                <div className="bg-card p-2 sm:rounded-3xl sm:border sm:border-border/70 sm:shadow-[0_18px_42px_-34px_rgba(15,23,42,0.22)] sm:p-4">
                     <GachaGridMachine
                         machineId={machineId}
                         machineName={machine.name}

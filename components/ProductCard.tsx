@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { ThumbImage } from "@/components/ThumbImage";
 import { ProductCardActions } from "@/components/ProductCardActions";
 import { RevealOnScroll } from "@/components/RevealOnScroll";
 import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
@@ -68,7 +68,7 @@ export function ProductCard({
                             </span>
                         </Link>
                     )}
-                    <Image
+                    <ThumbImage
                         src={image || "/placeholder.jpg"}
                         alt={title}
                         fill
@@ -80,7 +80,7 @@ export function ProductCard({
                     />
                 </div>
                 <div className="p-3 text-center sm:p-4">
-                    <h3 className="mb-1 truncate text-center text-[14px] font-semibold leading-tight text-foreground sm:text-base">
+                    <h3 className="mb-1 truncate text-center text-sm font-semibold leading-tight text-foreground sm:text-base">
                         <Link href={`/product/${id}`} prefetch={false} className="transition-colors hover:text-primary">
                             {title}
                         </Link>
@@ -91,7 +91,7 @@ export function ProductCard({
                                 {formatCurrencyAmount(price, currency, currencySettings)}
                             </p>
                         )}
-                        <p className={`text-[16px] font-bold leading-tight sm:text-lg ${hasDiscount ? "text-red-500 dark:text-red-400" : "text-primary"}`}>
+                        <p className={`text-base font-bold leading-tight sm:text-lg ${hasDiscount ? "text-red-500 dark:text-red-400" : "text-primary"}`}>
                             {formatCurrencyAmount(activePrice, currency, currencySettings)}
                         </p>
                     </div>

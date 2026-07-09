@@ -30,6 +30,7 @@ import {
     WELCOME_STRIP_SLOT_COUNT,
 } from "@/lib/welcomeStrip";
 import { showError, showSuccess } from "@/lib/swal";
+import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 
 export default function WelcomeStripAdminPage() {
     const permissions = useAdminPermissions();
@@ -197,7 +198,7 @@ export default function WelcomeStripAdminPage() {
                             รูปที่แสดงในแถบด้านล่าง
                         </h2>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            แนะนำรูปสี่เหลี่ยมจัตุรัส เช่น 512 x 512px เพื่อให้เข้ากับกรอบบนหน้า Welcome
+                            รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB • {IMAGE_UPLOAD_RECOMMENDATIONS.logoSquare} (รูปสี่เหลี่ยมจัตุรัส) เพื่อให้เข้ากับกรอบบนหน้า Welcome
                         </p>
                     </div>
                     <Badge className="w-fit border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-50">
@@ -213,7 +214,7 @@ export default function WelcomeStripAdminPage() {
                         return (
                             <div key={inputId} className="rounded-xl border border-border bg-slate-50/70 p-4 dark:bg-zinc-800/70">
                                 <div className="mb-3 flex items-center justify-between gap-2">
-                                    <Badge variant="secondary" className="bg-blue-100 text-[#1a56db]">
+                                    <Badge variant="secondary" className="bg-blue-100 text-[#145de7]">
                                         ช่อง {index + 1}
                                     </Badge>
                                     {image ? (
