@@ -3070,20 +3070,6 @@ html.dark .admin-slips-page .admin-slips-summary-card .text-slate-400 {
   color: #97aecb !important;
 }
 
-html.dark .admin-season-pass-page .admin-season-pass-hero {
-  background: linear-gradient(180deg, rgba(15, 25, 39, 0.98) 0%, rgba(20, 32, 49, 0.94) 100%) !important;
-  border-color: rgba(45, 67, 98, 0.9) !important;
-  box-shadow: 0 24px 60px -42px rgba(0, 0, 0, 0.72) !important;
-}
-
-html.dark .admin-season-pass-page .admin-season-pass-hero .text-slate-900 {
-  color: #f2f7ff !important;
-}
-
-html.dark .admin-season-pass-page .admin-season-pass-hero .text-slate-600 {
-  color: #b8cbe3 !important;
-}
-
 html.dark .admin-product-new-page .admin-product-stock-summary {
   background: linear-gradient(135deg, rgba(15, 25, 39, 0.98) 0%, rgba(20, 32, 49, 0.94) 100%) !important;
   border-color: rgba(45, 67, 98, 0.9) !important;
