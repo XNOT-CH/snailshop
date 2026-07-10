@@ -318,7 +318,7 @@ export default function AdminRolesPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
-            <Shield className="h-6 w-6 text-[#145de7]" />
+            <Shield className="h-6 w-6 text-[#145de7] dark:text-blue-400" />
             จัดการยศแอดมิน
           </h1>
           <p className="mt-1 text-muted-foreground">เพิ่ม แก้ไข หรือลบยศของผู้ดูแลระบบ</p>
@@ -334,8 +334,8 @@ export default function AdminRolesPage() {
         </Button>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3">
+      <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm dark:bg-zinc-900">
+        <div className="flex items-center gap-2 border-b border-border px-5 py-3">
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#145de7]">
             <Shield className="h-3.5 w-3.5 text-white" />
           </div>
@@ -362,7 +362,7 @@ export default function AdminRolesPage() {
           <div className="overflow-x-auto">
             <Table className="min-w-[720px]">
               <TableHeader>
-                <TableRow className="bg-slate-50/70 hover:bg-slate-50/70">
+                <TableRow className="bg-slate-50/70 hover:bg-slate-50/70 dark:bg-zinc-800/50 dark:hover:bg-zinc-800/50">
                   <TableHead className="w-16">ไอคอน</TableHead>
                   <TableHead>ชื่อยศ</TableHead>
                   <TableHead className="hidden md:table-cell">คำอธิบาย</TableHead>
@@ -373,7 +373,11 @@ export default function AdminRolesPage() {
                 {roles.map((role, index) => (
                   <TableRow
                     key={role.id}
-                    className={index % 2 === 0 ? "bg-white" : "bg-slate-50/35"}
+                    className={
+                      index % 2 === 0
+                        ? "bg-white dark:bg-zinc-900"
+                        : "bg-slate-50/35 dark:bg-zinc-800/40"
+                    }
                   >
                     <TableCell>
                       <div className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-muted">
@@ -393,9 +397,9 @@ export default function AdminRolesPage() {
 
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-slate-900">{role.name}</span>
+                        <span className="font-semibold text-foreground">{role.name}</span>
                         {role.isSystem ? (
-                          <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">
+                          <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
                             ระบบ
                           </span>
                         ) : null}
@@ -415,7 +419,7 @@ export default function AdminRolesPage() {
                           disabled={!canManageRoles}
                           title={`แก้ไข ${role.name}`}
                           aria-label={`แก้ไขยศ ${role.name}`}
-                          className="rounded-xl border border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-[#145de7]"
+                          className="rounded-xl border border-transparent text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-[#145de7] dark:text-slate-300 dark:hover:border-slate-600 dark:hover:bg-zinc-800 dark:hover:text-blue-400"
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
@@ -426,7 +430,7 @@ export default function AdminRolesPage() {
                           disabled={!canManageRoles || role.isSystem}
                           title={role.isSystem ? "ยศระบบลบไม่ได้" : `ลบ ${role.name}`}
                           aria-label={`ลบยศ ${role.name}`}
-                          className="rounded-xl border border-transparent text-rose-500 hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-40"
+                          className="rounded-xl border border-transparent text-rose-500 hover:border-rose-100 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-40 dark:text-rose-400 dark:hover:border-rose-500/30 dark:hover:bg-rose-500/10 dark:hover:text-rose-300"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -449,7 +453,7 @@ export default function AdminRolesPage() {
             aria-label="ปิดหน้าต่าง"
           />
 
-          <div className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div className="relative flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white shadow-2xl dark:bg-zinc-900">
             <div className="flex items-center justify-between border-b border-border bg-gradient-to-r from-[#145de7] to-[#114fc4] px-6 py-4">
               <div className="flex items-center gap-2">
                 <Shield className="h-5 w-5 text-white" />
@@ -530,7 +534,7 @@ export default function AdminRolesPage() {
                         key={groupName}
                         className={index > 0 ? "border-t border-border" : ""}
                       >
-                        <div className="flex items-center justify-between gap-3 bg-slate-50 px-4 py-2.5">
+                        <div className="flex items-center justify-between gap-3 bg-slate-50 px-4 py-2.5 dark:bg-zinc-800/70">
                           <div>
                             <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                               {groupName}
@@ -545,7 +549,7 @@ export default function AdminRolesPage() {
                             size="sm"
                             onClick={() => togglePermissionGroup(permissions)}
                             disabled={!canManageRoles}
-                            className="h-8 rounded-full px-3 text-xs text-slate-600 hover:bg-white"
+                            className="h-8 rounded-full px-3 text-xs text-slate-600 hover:bg-white dark:text-slate-300 dark:hover:bg-zinc-700"
                           >
                             {groupAllSelected ? "ล้างทั้งหมวด" : "เลือกทั้งหมวด"}
                           </Button>
@@ -596,7 +600,7 @@ export default function AdminRolesPage() {
               </div>
             </div>
 
-            <div className="sticky bottom-0 flex gap-3 border-t border-border bg-slate-50 px-6 py-4">
+            <div className="sticky bottom-0 flex gap-3 border-t border-border bg-slate-50 px-6 py-4 dark:bg-zinc-800/70">
               <Button
                 variant="outline"
                 onClick={closePanel}
