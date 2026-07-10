@@ -307,7 +307,7 @@ export function NavigationDrawer({
                                 className="flex items-center gap-3.5 px-5 py-3.5 text-sm font-medium transition-colors"
                                 style={pathname.startsWith("/profile") ? drawerStyles.active : drawerStyles.inactive}>
                                 <User className="h-[19px] w-[19px] flex-shrink-0" />
-                                <span className="flex-1">โปรไฟล์</span>
+                                <span className="flex-1">ตั้งค่าบัญชี</span>
                             </Link>
                         </>
                     )}

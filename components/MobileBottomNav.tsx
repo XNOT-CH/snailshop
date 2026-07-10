@@ -24,7 +24,7 @@ const ACCOUNT_NAV_ITEMS = [
     { href: "/dashboard/topup", label: "เติมเงิน", icon: CreditCard, match: (pathname: string) => pathname.startsWith("/dashboard/topup") || pathname.startsWith("/dashboard/wallet") },
     { href: "/dashboard/season-pass", label: "พาส", icon: Gift, match: (pathname: string) => pathname.startsWith("/dashboard/season-pass") },
     { href: "/dashboard/inventory", label: "คลัง", icon: Package, match: (pathname: string) => pathname.startsWith("/dashboard/inventory") },
-    { href: "/dashboard/settings", label: "ตั้งค่า", icon: Settings, match: (pathname: string) => pathname.startsWith("/dashboard/settings") || pathname.startsWith("/profile") },
+    { href: "/dashboard/settings", label: "บัญชี", icon: Settings, match: (pathname: string) => pathname.startsWith("/dashboard/settings") || pathname.startsWith("/profile") },
     { href: "/", label: "หน้าร้าน", icon: ArrowLeft, match: () => false },
 ] as const;
 

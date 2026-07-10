@@ -1030,7 +1030,7 @@ export default function ProfileSettingsPage() {
                 <PageBreadcrumb
                     items={[
                         { label: "แดชบอร์ด", href: "/dashboard" },
-                        { label: "ข้อมูลผู้ใช้" },
+                        { label: "ตั้งค่าบัญชี" },
                     ]}
                     className="px-3 sm:px-0"
                 />
@@ -1041,7 +1041,7 @@ export default function ProfileSettingsPage() {
                         <User className="h-8 w-8 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground">ข้อมูลผู้ใช้</h1>
+                        <h1 className="text-2xl font-bold text-foreground">ตั้งค่าบัญชี</h1>
                         <p className="text-muted-foreground">จัดการข้อมูลส่วนตัวและการตั้งค่าบัญชีของคุณ</p>
                     </div>
                 </div>
