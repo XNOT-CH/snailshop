@@ -204,6 +204,7 @@ export default function ProfileSettingsPage() {
     const [isSendingVerification, setIsSendingVerification] = useState(false);
     const [isSavingAddressProfile, setIsSavingAddressProfile] = useState(false);
     const [isEditingVerifiedEmail, setIsEditingVerifiedEmail] = useState(false);
+    const [loadError, setLoadError] = useState(false);
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [addressProfiles, setAddressProfiles] = useState<AddressProfileData[]>([]);
     const profileImageInputRef = useRef<HTMLInputElement>(null);
@@ -298,6 +299,9 @@ export default function ProfileSettingsPage() {
 
     const refreshProfile = useCallback(async () => {
         const res = await fetch("/api/profile");
+        // 401 = not logged in — handled by the !profile alert below
+        if (res.status === 401) return;
+        if (!res.ok) throw new Error(`โหลดข้อมูลไม่สำเร็จ (${res.status})`);
         const data = await res.json();
         if (!data.success || !data.data) return;
 
@@ -430,19 +434,22 @@ export default function ProfileSettingsPage() {
         return true;
     };
 
-    // Fetch current profile on mount
-    useEffect(() => {
-        async function fetchProfile() {
-            setIsFetching(true);
-            try {
-                await refreshProfile();
-            } catch (error) {
-                console.error("Failed to fetch profile:", error);
-            }
-            setIsFetching(false);
+    // Fetch current profile on mount (retryable from the error state)
+    const loadProfile = useCallback(async () => {
+        setIsFetching(true);
+        setLoadError(false);
+        try {
+            await refreshProfile();
+        } catch (error) {
+            console.error("Failed to fetch profile:", error);
+            setLoadError(true);
         }
-        fetchProfile();
+        setIsFetching(false);
     }, [refreshProfile]);
+
+    useEffect(() => {
+        void loadProfile();
+    }, [loadProfile]);
 
     useEffect(() => {
         return () => {
@@ -1008,6 +1015,22 @@ export default function ProfileSettingsPage() {
 
     if (isFetching) {
         return <SpinnerScreen label="กำลังโหลดข้อมูล..." />;
+    }
+
+    if (!profile && loadError) {
+        return (
+            <div className="flex min-h-[400px] flex-col items-center justify-center gap-4">
+                <Alert className="max-w-md border-amber-500/25 bg-amber-500/10 text-foreground">
+                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    <AlertDescription className="text-amber-700 dark:text-amber-300">
+                        โหลดข้อมูลไม่สำเร็จ กรุณาลองใหม่อีกครั้ง
+                    </AlertDescription>
+                </Alert>
+                <Button onClick={() => void loadProfile()} className="rounded-2xl px-6">
+                    ลองใหม่
+                </Button>
+            </div>
+        );
     }
 
     if (!profile) {

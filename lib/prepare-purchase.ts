@@ -9,7 +9,7 @@ import {
     type PublicCurrencySettings,
 } from "@/lib/currencySettings";
 import { requestProfile } from "@/lib/client/accountClient";
-import { showWarning } from "@/lib/swal";
+import { showPurchaseFailedModal } from "@/lib/swal";
 
 type PurchaseProfile = {
     creditBalance?: string | number | null;
@@ -52,7 +52,10 @@ export async function preparePurchase({
         });
 
         if (!response.ok || !data.success || !data.data) {
-            showWarning(data.message || "ไม่สามารถตรวจสอบข้อมูลบัญชีได้");
+            await showPurchaseFailedModal({
+                message: data.message || "ไม่สามารถตรวจสอบข้อมูลบัญชีได้",
+                showTopupButton: false,
+            });
             return { allowed: false, pin: null } as const;
         }
 
@@ -62,7 +65,13 @@ export async function preparePurchase({
             const currentAmount = formatCurrencyAmount(availableBalance, normalizedCurrency, currencySettings ?? null);
             const balanceLabel = normalizedCurrency === "POINT" ? "พอยท์" : "ยอดเงิน";
 
-            showWarning(`${balanceLabel}ไม่เพียงพอ (ต้องการ ${requiredAmount} แต่มี ${currentAmount})`);
+            const { goTopup } = await showPurchaseFailedModal({
+                message: `${balanceLabel}ไม่เพียงพอ (ต้องการ ${requiredAmount} แต่มี ${currentAmount})`,
+                showTopupButton: normalizedCurrency !== "POINT",
+            });
+            if (goTopup) {
+                router.push("/dashboard/topup");
+            }
             return { allowed: false, pin: null } as const;
         }
 
@@ -73,7 +82,10 @@ export async function preparePurchase({
 
         return { allowed: true, pin: pinCheck.pin ?? undefined } as const;
     } catch {
-        showWarning("ไม่สามารถตรวจสอบยอดคงเหลือได้ กรุณาลองใหม่");
+        await showPurchaseFailedModal({
+            message: "ไม่สามารถตรวจสอบยอดคงเหลือได้ กรุณาลองใหม่",
+            showTopupButton: false,
+        });
         return { allowed: false, pin: null } as const;
     }
 }

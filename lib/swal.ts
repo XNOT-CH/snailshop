@@ -265,6 +265,37 @@ export const showPurchaseSuccess = async (title: string, text?: string) => {
     });
 };
 
+// Purchase failure modal — a full modal (not a toast) so the reason is not missed.
+// Shows an "ไปเติมเงิน" action when the failure is an insufficient-credit message;
+// pass showTopupButton explicitly to override the auto-detection.
+export const showPurchaseFailedModal = async (params: {
+    message: string;
+    showTopupButton?: boolean;
+}): Promise<{ goTopup: boolean }> => {
+    const Swal = await loadSwal();
+    const showTopup =
+        params.showTopupButton ?? /(?:เครดิต|ยอดเงิน)ไม่เพียงพอ/.test(params.message);
+    const result = await Swal.fire({
+        ...modalDefaults,
+        icon: "error",
+        title: "ไม่สามารถซื้อได้",
+        text: params.message,
+        width: "min(92vw, 32rem)",
+        showCancelButton: showTopup,
+        confirmButtonColor: "#145de7",
+        confirmButtonText: showTopup ? "ไปเติมเงิน" : "ตกลง",
+        cancelButtonText: "ปิด",
+        reverseButtons: true,
+        customClass: {
+            popup: "rounded-3xl !p-6 sm:!p-8",
+            actions: "flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-center",
+            confirmButton: "w-full sm:w-auto rounded-xl px-8 py-2",
+            cancelButton: "w-full sm:w-auto rounded-xl px-6 py-2",
+        },
+    });
+    return { goTopup: showTopup && result.isConfirmed };
+};
+
 // Error alert
 export const showErrorAlert = async (title: string, text?: string) => {
     const Swal = await loadSwal();
