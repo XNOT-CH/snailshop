@@ -165,18 +165,18 @@ function buildRoleOptions(roles: Role[]): RoleOption[] {
 
 function getRoleBadgeClassName(role: string) {
   if (role === "ADMIN") {
-    return "bg-blue-100 text-blue-700";
+    return "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300";
   }
 
   if (role === "MODERATOR") {
-    return "bg-violet-100 text-violet-700";
+    return "bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300";
   }
 
   if (role === "SELLER") {
-    return "bg-emerald-100 text-emerald-700";
+    return "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300";
   }
 
-  return "bg-slate-100 text-slate-700";
+  return "bg-slate-100 text-slate-700 dark:bg-zinc-800 dark:text-slate-300";
 }
 
 function getPinActionText(action: "RESET_PIN" | "UNLOCK_PIN") {
@@ -192,7 +192,9 @@ function getPinActionConfirmMessage(action: "RESET_PIN" | "UNLOCK_PIN", username
 }
 
 function getStrongEmphasisCardClassName(emphasis: "soft" | "strong") {
-  return emphasis === "strong" ? "border-slate-200 bg-white" : "border-slate-200/90 bg-white/90";
+  return emphasis === "strong"
+    ? "border-border bg-white dark:bg-zinc-900"
+    : "border-border bg-white/90 dark:bg-zinc-900/90";
 }
 
 function getStatValueClassName(emphasis: "soft" | "strong") {
@@ -637,32 +639,32 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
       label: "สมาชิกทั้งหมด",
       value: users.length.toLocaleString(),
       icon: Users,
-      iconBg: "bg-blue-100",
-      iconColor: "text-[#145de7]",
+      iconBg: "bg-blue-100 dark:bg-blue-500/15",
+      iconColor: "text-[#145de7] dark:text-blue-400",
       emphasis: "soft",
     },
     {
       label: "สมาชิก VIP",
       value: vipCount.toLocaleString(),
       icon: Crown,
-      iconBg: "bg-amber-100",
-      iconColor: "text-amber-600",
+      iconBg: "bg-amber-100 dark:bg-amber-500/15",
+      iconColor: "text-amber-600 dark:text-amber-400",
       emphasis: "soft",
     },
     {
       label: "เครดิตรวมทั้งระบบ",
       value: formatCurrency(totalCredits),
       icon: Coins,
-      iconBg: "bg-emerald-100",
-      iconColor: "text-emerald-600",
+      iconBg: "bg-emerald-100 dark:bg-emerald-500/15",
+      iconColor: "text-emerald-600 dark:text-emerald-400",
       emphasis: "strong",
     },
     {
       label: `${pointCurrencyName}รวมทั้งระบบ`,
       value: totalPoints.toLocaleString(),
       icon: Gem,
-      iconBg: "bg-violet-100",
-      iconColor: "text-violet-600",
+      iconBg: "bg-violet-100 dark:bg-violet-500/15",
+      iconColor: "text-violet-600 dark:text-violet-400",
       emphasis: "strong",
     },
   ] as const;
@@ -671,7 +673,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
     <div className="space-y-6">
       <div>
         <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
-          <Users className="h-6 w-6 text-[#145de7]" />
+          <Users className="h-6 w-6 text-[#145de7] dark:text-blue-400" />
           ระบบบริหารจัดการสมาชิก
         </h1>
         <p className="mt-1 text-muted-foreground">ดูข้อมูลสมาชิก เครดิต และ{pointCurrencyName}ทั้งหมด</p>
@@ -700,21 +702,21 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
         ))}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm">
+      <div className="rounded-2xl border border-border bg-white px-4 py-3 shadow-sm dark:bg-zinc-900">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="ค้นหาด้วยชื่อผู้ใช้ ชื่อ หรืออีเมล..."
+              placeholder="ค้นหาด้วยชื่อผู้ใช้ ชื่อ อีเมล หรือเบอร์โทร..."
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
-              className="h-11 rounded-2xl border-slate-200 pl-10 pr-10"
+              className="h-11 rounded-2xl border-border pl-10 pr-10"
             />
             {searchActive ? (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground transition hover:bg-slate-100 hover:text-slate-700"
+                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-1 text-muted-foreground transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-zinc-800 dark:hover:text-slate-200"
                 aria-label="ล้างคำค้น"
               >
                 <X className="h-4 w-4" />
@@ -725,7 +727,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
           <div className="flex flex-wrap items-center gap-2">
             <Badge
               variant="outline"
-              className="rounded-full border-slate-200 bg-slate-50 px-3 py-1 text-slate-600"
+              className="rounded-full border-border bg-slate-50 px-3 py-1 text-slate-600 dark:bg-zinc-800 dark:text-slate-300"
             >
               {getSearchResultsLabel(searchActive, filteredUsers.length, users.length)}
             </Badge>
@@ -738,8 +740,8 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3">
+      <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm dark:bg-zinc-900">
+        <div className="flex items-center gap-2 border-b border-border px-5 py-3">
           <div className="flex h-6 w-6 items-center justify-center rounded-md bg-[#145de7]">
             <Users className="h-3.5 w-3.5 text-white" />
           </div>
@@ -777,15 +779,17 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                 return (
                   <div
                     key={user.id}
-                    className={`rounded-2xl border bg-white p-4 shadow-sm ${
-                      isBanned ? "border-red-300 bg-red-50/40" : "border-slate-200"
+                    className={`rounded-2xl border p-4 shadow-sm ${
+                      isBanned
+                        ? "border-red-300 bg-red-50/40 dark:border-red-500/40 dark:bg-red-500/10"
+                        : "border-border bg-white dark:bg-zinc-900"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
                         <Avatar
                           className={`h-11 w-11 ${
-                            hasGoldBorder ? "ring-2 ring-amber-400 ring-offset-2" : ""
+                            hasGoldBorder ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-background" : ""
                           }`}
                         >
                           {user.image ? <AvatarImage src={user.image} alt={user.username} /> : null}
@@ -793,7 +797,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                             className={`font-semibold ${
                               hasGoldBorder
                                 ? "bg-gradient-to-br from-amber-200 to-amber-400 text-amber-900"
-                                : "bg-blue-100 text-[#145de7]"
+                                : "bg-blue-100 text-[#145de7] dark:bg-blue-500/20 dark:text-blue-300"
                             }`}
                           >
                             {initials}
@@ -802,7 +806,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
 
                         <div className="min-w-0 space-y-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <p className="truncate font-semibold text-slate-900">{user.username}</p>
+                            <p className="truncate font-semibold text-foreground">{user.username}</p>
                             <Badge
                               variant="secondary"
                               className={`rounded-full px-2.5 py-1 ${getRoleBadgeClassName(user.role)}`}
@@ -827,7 +831,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                               {user.hasPin ? "ตั้ง PIN แล้ว" : "ยังไม่มี PIN"}
                             </Badge>
                             {isPinLocked ? (
-                              <Badge variant="outline" className="rounded-full border-red-200 text-red-600">
+                              <Badge variant="outline" className="rounded-full border-red-200 text-red-600 dark:border-red-500/40 dark:text-red-400">
                                 PIN ถูกล็อก
                               </Badge>
                             ) : null}
@@ -843,27 +847,27 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                     </div>
 
                     <div className="mt-4 grid grid-cols-2 gap-3">
-                      <div className="rounded-2xl bg-emerald-50 px-3 py-2">
-                        <p className="text-xs text-emerald-700/80">เครดิตคงเหลือ</p>
-                        <p className="mt-1 text-base font-semibold text-emerald-700">
+                      <div className="rounded-2xl bg-emerald-50 px-3 py-2 dark:bg-emerald-500/10">
+                        <p className="text-xs text-emerald-700/80 dark:text-emerald-300/80">เครดิตคงเหลือ</p>
+                        <p className="mt-1 text-base font-semibold text-emerald-700 dark:text-emerald-300">
                           {formatCurrency(creditBalance)}
                         </p>
                       </div>
-                      <div className="rounded-2xl bg-amber-50 px-3 py-2">
-                        <p className="text-xs text-amber-700/80">ยอดเติมสะสม</p>
-                        <p className="mt-1 text-base font-semibold text-amber-700">
+                      <div className="rounded-2xl bg-amber-50 px-3 py-2 dark:bg-amber-500/10">
+                        <p className="text-xs text-amber-700/80 dark:text-amber-300/80">ยอดเติมสะสม</p>
+                        <p className="mt-1 text-base font-semibold text-amber-700 dark:text-amber-300">
                           {formatCurrency(totalTopup)}
                         </p>
                       </div>
-                      <div className="rounded-2xl bg-violet-50 px-3 py-2">
-                        <p className="text-xs text-violet-700/80">{pointCurrencyName}คงเหลือ</p>
-                        <p className="mt-1 text-base font-semibold text-violet-700">
+                      <div className="rounded-2xl bg-violet-50 px-3 py-2 dark:bg-violet-500/10">
+                        <p className="text-xs text-violet-700/80 dark:text-violet-300/80">{pointCurrencyName}คงเหลือ</p>
+                        <p className="mt-1 text-base font-semibold text-violet-700 dark:text-violet-300">
                           {user.pointBalance.toLocaleString()}
                         </p>
                       </div>
-                      <div className="rounded-2xl bg-slate-50 px-3 py-2">
-                        <p className="text-xs text-slate-500">{pointCurrencyName}สะสม</p>
-                        <p className="mt-1 text-base font-semibold text-slate-900">
+                      <div className="rounded-2xl bg-slate-50 px-3 py-2 dark:bg-zinc-800/70">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{pointCurrencyName}สะสม</p>
+                        <p className="mt-1 text-base font-semibold text-slate-900 dark:text-slate-100">
                           {user.lifetimePoints.toLocaleString()}
                         </p>
                       </div>
@@ -884,7 +888,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                             variant="ghost"
                             size="sm"
                             onClick={() => void handlePinAdminAction(user, "UNLOCK_PIN")}
-                            className="rounded-xl border border-blue-200 px-3 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                            className="rounded-xl border border-blue-200 px-3 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-500/40 dark:text-blue-400 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
                           >
                             <ShieldOff className="mr-1.5 h-4 w-4" />
                             ปลดล็อก PIN
@@ -895,7 +899,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                             variant="ghost"
                             size="sm"
                             onClick={() => void handlePinAdminAction(user, "RESET_PIN")}
-                            className="rounded-xl border border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            className="rounded-xl border border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/10 dark:hover:text-red-300"
                           >
                             <KeyRound className="mr-1.5 h-4 w-4" />
                             รีเซ็ต PIN
@@ -906,7 +910,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                             variant="ghost"
                             size="sm"
                             onClick={() => openEditDialog(user)}
-                            className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#145de7]"
+                            className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#145de7] dark:border-slate-600 dark:text-slate-300 dark:hover:bg-zinc-800 dark:hover:text-blue-400"
                           >
                             <Pencil className="mr-1.5 h-4 w-4" />
                             แก้ไข
@@ -919,8 +923,8 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                             onClick={() => void handleBanToggle(user)}
                             className={
                               isBanned
-                                ? "rounded-xl border border-emerald-200 px-3 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
-                                : "rounded-xl border border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                ? "rounded-xl border border-emerald-200 px-3 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-400 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300"
+                                : "rounded-xl border border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/10 dark:hover:text-red-300"
                             }
                           >
                             {isBanned ? (
@@ -946,7 +950,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
             <div className="hidden overflow-x-auto md:block">
               <Table className="min-w-[980px]">
               <TableHeader>
-                <TableRow className="bg-slate-50/70 hover:bg-slate-50/70">
+                <TableRow className="bg-slate-50/70 hover:bg-slate-50/70 dark:bg-zinc-800/50 dark:hover:bg-zinc-800/50">
                   <TableHead>ข้อมูลสมาชิก</TableHead>
                   <TableHead className="text-right">เครดิตคงเหลือ</TableHead>
                   <TableHead className="text-right">ยอดเติมสะสม</TableHead>
@@ -954,7 +958,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                   <TableHead className="text-right">{pointCurrencyName}สะสม</TableHead>
                   <TableHead>สถานะ</TableHead>
                   <TableHead>วันที่สมัคร</TableHead>
-                  <TableHead className="text-center">จัดการ</TableHead>
+                  <TableHead className="text-right">จัดการ</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -978,17 +982,17 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                       key={user.id}
                       className={
                         isBanned
-                          ? "bg-red-50/60"
+                          ? "bg-red-50/60 dark:bg-red-500/10"
                           : index % 2 === 0
-                            ? "bg-white"
-                            : "bg-slate-50/35"
+                            ? "bg-white dark:bg-zinc-900"
+                            : "bg-slate-50/35 dark:bg-zinc-800/40"
                       }
                     >
                       <TableCell className="min-w-[260px]">
                         <div className="flex items-center gap-3">
                           <Avatar
                             className={`h-10 w-10 ${
-                              hasGoldBorder ? "ring-2 ring-amber-400 ring-offset-2" : ""
+                              hasGoldBorder ? "ring-2 ring-amber-400 ring-offset-2 ring-offset-background" : ""
                             }`}
                           >
                             {user.image ? <AvatarImage src={user.image} alt={user.username} /> : null}
@@ -996,7 +1000,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                               className={`font-semibold ${
                                 hasGoldBorder
                                   ? "bg-gradient-to-br from-amber-200 to-amber-400 text-amber-900"
-                                  : "bg-blue-100 text-[#145de7]"
+                                  : "bg-blue-100 text-[#145de7] dark:bg-blue-500/20 dark:text-blue-300"
                               }`}
                             >
                               {initials}
@@ -1005,7 +1009,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
 
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
-                              <span className="truncate font-semibold text-slate-900">
+                              <span className="truncate font-semibold text-foreground">
                                 {user.username}
                               </span>
                               {isVIP ? (
@@ -1016,15 +1020,18 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                               ) : null}
                             </div>
                             <p className="truncate text-sm text-muted-foreground">
-                              {user.email || user.name || "-"}
+                              {user.name || user.email || "-"}
                             </p>
+                            {user.email && user.name ? (
+                              <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+                            ) : null}
                             <div className="mt-1 flex flex-wrap items-center gap-2">
                               <Badge variant="outline" className="rounded-full">
                                 <LockKeyhole className="mr-1 h-3 w-3" />
                                 {user.hasPin ? "มี PIN" : "ไม่มี PIN"}
                               </Badge>
                               {isPinLocked ? (
-                                <Badge variant="outline" className="rounded-full border-red-200 text-red-600">
+                                <Badge variant="outline" className="rounded-full border-red-200 text-red-600 dark:border-red-500/40 dark:text-red-400">
                                   ถูกล็อก
                                 </Badge>
                               ) : null}
@@ -1035,7 +1042,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
 
                       <TableCell className="text-right">
                         <div className="space-y-0.5">
-                          <p className="text-lg font-bold text-emerald-600">
+                          <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">
                             {formatCurrency(creditBalance)}
                           </p>
                           <p className="text-xs text-muted-foreground">ยอดคงเหลือ</p>
@@ -1046,7 +1053,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                         <div className="space-y-0.5">
                           <p
                             className={`text-base font-semibold ${
-                              isVIP ? "text-amber-600" : "text-slate-700"
+                              isVIP ? "text-amber-600 dark:text-amber-400" : "text-slate-700 dark:text-slate-300"
                             }`}
                           >
                             {formatCurrency(totalTopup)}
@@ -1057,7 +1064,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
 
                       <TableCell className="text-right">
                         <div className="space-y-0.5">
-                          <p className="text-lg font-bold text-violet-600">
+                          <p className="text-lg font-bold text-violet-600 dark:text-violet-400">
                             {pointCurrencySymbol ? <span className="mr-1">{pointCurrencySymbol}</span> : null}
                             {user.pointBalance.toLocaleString()}
                           </p>
@@ -1069,7 +1076,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                         <div className="space-y-0.5">
                           <p
                             className={`text-base font-semibold ${
-                              hasGoldBorder ? "text-amber-600" : "text-slate-700"
+                              hasGoldBorder ? "text-amber-600 dark:text-amber-400" : "text-slate-700 dark:text-slate-300"
                             }`}
                           >
                             {user.lifetimePoints.toLocaleString()}
@@ -1110,7 +1117,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                               variant="ghost"
                               size="sm"
                               onClick={() => void handlePinAdminAction(user, "UNLOCK_PIN")}
-                              className="rounded-xl border border-blue-200 px-3 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                              className="rounded-xl border border-blue-200 px-3 text-blue-600 hover:bg-blue-50 hover:text-blue-700 dark:border-blue-500/40 dark:text-blue-400 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
                             >
                               <ShieldOff className="mr-1.5 h-4 w-4" />
                               ปลดล็อก PIN
@@ -1121,7 +1128,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                               variant="ghost"
                               size="sm"
                               onClick={() => void handlePinAdminAction(user, "RESET_PIN")}
-                              className="rounded-xl border border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                              className="rounded-xl border border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/10 dark:hover:text-red-300"
                             >
                               <KeyRound className="mr-1.5 h-4 w-4" />
                               รีเซ็ต PIN
@@ -1132,7 +1139,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                               variant="ghost"
                               size="sm"
                               onClick={() => openEditDialog(user)}
-                              className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#145de7]"
+                              className="rounded-xl border border-slate-200 px-3 text-slate-600 hover:bg-slate-50 hover:text-[#145de7] dark:border-slate-600 dark:text-slate-300 dark:hover:bg-zinc-800 dark:hover:text-blue-400"
                             >
                               <Pencil className="mr-1.5 h-4 w-4" />
                               แก้ไข
@@ -1145,8 +1152,8 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
                               onClick={() => void handleBanToggle(user)}
                               className={
                                 isBanned
-                                  ? "rounded-xl border border-emerald-200 px-3 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
-                                  : "rounded-xl border border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                  ? "rounded-xl border border-emerald-200 px-3 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 dark:border-emerald-500/40 dark:text-emerald-400 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300"
+                                  : "rounded-xl border border-red-200 px-3 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-500/40 dark:text-red-400 dark:hover:bg-red-500/10 dark:hover:text-red-300"
                               }
                             >
                               {isBanned ? (
@@ -1174,7 +1181,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
         )}
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
+      <div className="rounded-2xl border border-border bg-white px-5 py-4 shadow-sm dark:bg-zinc-900">
         <h3 className="mb-3 text-sm font-semibold text-foreground">คำอธิบายสัญลักษณ์</h3>
         <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
           <div className="flex items-center gap-2">
@@ -1185,7 +1192,7 @@ export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersCl
             <span>= ยอดเติมสะสมมากกว่า 10,000 บาท</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-full bg-blue-100 ring-2 ring-amber-400 ring-offset-1" />
+            <div className="h-6 w-6 rounded-full bg-blue-100 ring-2 ring-amber-400 ring-offset-1 ring-offset-background dark:bg-blue-500/20" />
             <span>= {pointCurrencyName}สะสมมากกว่า 5,000 แต้ม</span>
           </div>
         </div>
