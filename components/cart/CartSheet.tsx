@@ -25,7 +25,7 @@ import { useCart, type CartItem as CartContextItem } from "@/components/provider
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { CartItem } from "./CartItem";
 import { CartIcon } from "./CartIcon";
-import { showPurchaseSuccessModal, showPurchaseConfirm, showError, showWarning } from "@/lib/swal";
+import { showPurchaseSuccessModal, showPurchaseConfirm, showPurchaseFailedModal, showError, showWarning } from "@/lib/swal";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import {
@@ -371,14 +371,22 @@ function CartSheetContent() {
                     router.push("/dashboard/inventory");
                 }
             } else {
-                showError(`ไม่สามารถซื้อได้: ${data.message}`);
                 if (data.soldProductIds && Array.isArray(data.soldProductIds)) {
                     data.soldProductIds.forEach((id: string) => removeFromCart(id));
+                }
+                const { goTopup } = await showPurchaseFailedModal({
+                    message: data.message || "ไม่สามารถซื้อได้ กรุณาลองใหม่อีกครั้ง",
+                });
+                if (goTopup) {
+                    router.push("/dashboard/topup");
                 }
             }
         } catch (error) {
             console.error("Checkout error:", error);
-            showError("เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง");
+            await showPurchaseFailedModal({
+                message: "เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง",
+                showTopupButton: false,
+            });
         } finally {
             setIsCheckingOut(false);
         }

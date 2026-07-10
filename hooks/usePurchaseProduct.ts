@@ -8,8 +8,8 @@ import type { PublicCurrencySettings } from "@/lib/currencySettings";
 import { preparePurchase } from "@/lib/prepare-purchase";
 import {
     showPurchaseConfirm,
+    showPurchaseFailedModal,
     showPurchaseSuccessModal,
-    showWarning,
 } from "@/lib/swal";
 
 export interface PurchaseProductResponse {
@@ -112,7 +112,12 @@ export function usePurchaseProduct() {
                 return true;
             }
 
-            showWarning(data.message ?? "ไม่สามารถสั่งซื้อได้");
+            const { goTopup } = await showPurchaseFailedModal({
+                message: data.message ?? "ไม่สามารถสั่งซื้อได้",
+            });
+            if (goTopup) {
+                router.push("/dashboard/topup");
+            }
             return false;
         } catch (error) {
             await onError?.(error);
