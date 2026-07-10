@@ -1105,17 +1105,17 @@ html.dark tbody tr:hover {
 
 
 
-/* Navbar glass effect */
+/* Navbar glass effect — header เท่านั้น ห้ามใส่ backdrop-filter ที่ nav ซึ่งเป็นลูก
+   ของ header: มันจะเบลอพื้นหลังซ้อนอีกชั้นเฉพาะกรอบสี่เหลี่ยมของ nav เอง
+   ทำให้เห็นเป็นแถบสี่เหลี่ยมเฉดต่างลอยอยู่กลางแถบเมนูใน dark mode */
 
 @media (min-width: 768px) {
-  html.dark nav,
   html.dark header {
     backdrop-filter: blur(10px);
   }
 }
 
 @media (max-width: 767px) {
-  html.dark nav,
   html.dark header {
     backdrop-filter: none;
   }
