@@ -25,7 +25,7 @@ import { useCart, type CartItem as CartContextItem } from "@/components/provider
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { CartItem } from "./CartItem";
 import { CartIcon } from "./CartIcon";
-import { showPurchaseSuccessModal, showPurchaseConfirm, showPurchaseFailedModal, showError, showWarning } from "@/lib/swal";
+import { showPurchaseSuccessModal, showPurchaseConfirm, showPurchaseFailedModal, showConfirm, showError, showSuccess, showWarning } from "@/lib/swal";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import {
@@ -228,7 +228,7 @@ function CartSheetContent() {
                     data,
                     fallbackFinalPrice: thbTotal,
                 }));
-                showWarning(data.message);
+                showSuccess(data.message);
                 return;
             }
 
@@ -240,6 +240,23 @@ function CartSheetContent() {
         } finally {
             setIsCheckingPromo(false);
         }
+    };
+
+    const handleClearCart = async () => {
+        // Close the sheet first — its overlay sits above the confirm dialog
+        closeCart();
+        await new Promise((resolve) => setTimeout(resolve, 300));
+        const confirmed = await showConfirm(
+            "ล้างตะกร้า?",
+            `สินค้าทั้งหมด ${itemCount} รายการจะถูกนำออกจากตะกร้า`,
+            "ล้างตะกร้า"
+        );
+        if (!confirmed) {
+            openCart();
+            return;
+        }
+        clearCart();
+        openCart();
     };
 
     const handleCheckout = async () => {
@@ -735,7 +752,7 @@ function CartSheetContent() {
                             {/* Clear cart */}
                             <button
                                 className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground transition-colors hover:text-destructive"
-                                onClick={clearCart}
+                                onClick={handleClearCart}
                                 disabled={isCheckingOut}
                             >
                                 <Trash2 className="h-3.5 w-3.5" />

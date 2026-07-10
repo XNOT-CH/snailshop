@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { CheckCircle2, ShoppingCart, Loader2, Plus, Search, Tag } from "lucide-react";
 import { QuantitySelector } from "@/components/QuantitySelector";
 import { useCart } from "@/components/providers/CartContext";
-import { showWarning, showErrorAlert } from "@/lib/swal";
+import { showSuccess, showWarning, showErrorAlert } from "@/lib/swal";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 import { formatCurrencyAmount, normalizeCurrencyCode, type PublicCurrencySettings } from "@/lib/currencySettings";
 import { escapeHtml } from "@/lib/sanitize";
@@ -101,7 +101,7 @@ export function ProductActions({
                     finalPrice: appliedPromoData.finalPrice,
                 });
                 if (!silent) {
-                    showWarning(data.message);
+                    showSuccess(data.message);
                 }
             } else {
                 setAppliedPromo(null);
