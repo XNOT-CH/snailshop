@@ -31,7 +31,7 @@ const sidebarLinks = [
     { href: "/dashboard/season-pass", label: "Season Pass", icon: Gift },
     { href: "/dashboard/wallet", label: "กระเป๋าเงิน", icon: Wallet },
     { href: "/dashboard/inventory", label: "คลังสินค้าของฉัน", icon: Package },
-    { href: "/dashboard/settings", label: "ตั้งค่า", icon: Settings },
+    { href: "/dashboard/settings", label: "ตั้งค่าบัญชี", icon: Settings },
 ];
 
 export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {

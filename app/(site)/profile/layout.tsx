@@ -3,7 +3,7 @@ import { buildPageMetadata } from "@/lib/seo";
 import { HideMainLayout } from "@/components/HideMainLayout";
 
 export const metadata: Metadata = buildPageMetadata({
-    title: "ตั้งค่าโปรไฟล์",
+    title: "ตั้งค่าบัญชี",
     path: "/profile/settings",
     noIndex: true,
 });

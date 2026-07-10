@@ -129,7 +129,7 @@ export function NavbarUserMenu({
                 <DropdownMenuItem asChild>
                     <Link href="/dashboard/settings" className="flex cursor-pointer items-center gap-2 text-foreground">
                         <Settings className="h-4 w-4" />
-                        {"\u0E15\u0E31\u0E49\u0E07\u0E04\u0E48\u0E32"}
+                        {"\u0E15\u0E31\u0E49\u0E07\u0E04\u0E48\u0E32\u0E1A\u0E31\u0E0D\u0E0A\u0E35"}
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
