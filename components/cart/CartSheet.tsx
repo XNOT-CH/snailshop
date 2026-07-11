@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
     Sheet,
@@ -25,16 +25,17 @@ import { useCart, type CartItem as CartContextItem } from "@/components/provider
 import { AddToCartButton } from "@/components/cart/AddToCartButton";
 import { CartItem } from "./CartItem";
 import { CartIcon } from "./CartIcon";
-import { showPurchaseSuccessModal, showPurchaseConfirm, showPurchaseFailedModal, showConfirm, showError, showSuccess, showWarning } from "@/lib/swal";
+import { showPurchaseSuccessModal, showPurchaseFailedModal, showConfirm, showError, showSuccess, showWarning } from "@/lib/swal";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 import {
     buildCurrencyBreakdownLabel,
     formatCurrencyAmount,
+    getPointCurrencyName,
     normalizeCurrencyCode,
     type ProductCurrencyCode,
 } from "@/lib/currencySettings";
-import { escapeHtml } from "@/lib/sanitize";
+import { requestProfile } from "@/lib/client/accountClient";
 import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
 import { requirePinForAction } from "@/lib/require-pin-for-action";
 import {
@@ -99,19 +100,6 @@ function hasCheckoutRelevantChange(currentItem: CartContextItem, syncedItem: Car
         || (currentItem.quantity || 1) !== (syncedItem.quantity || 1);
 }
 
-function getCartTotalsByCurrency(cartItems: CartContextItem[]) {
-    return cartItems.reduce<Record<ProductCurrencyCode, number>>((accumulator, item) => {
-        const currency = normalizeCurrencyCode(item.currency);
-        const price = item.discountPrice ?? item.price;
-        accumulator[currency] += price * (item.quantity || 1);
-        return accumulator;
-    }, { THB: 0, POINT: 0 });
-}
-
-function getCartItemCount(cartItems: CartContextItem[]) {
-    return cartItems.reduce((count, item) => count + (item.quantity || 1), 0);
-}
-
 function CartSheetContent() {
     const router = useRouter();
     const maintenance = useMaintenanceStatus().purchase;
@@ -122,7 +110,6 @@ function CartSheetContent() {
         replaceCartItems,
         updateQuantity,
         clearCart,
-        total,
         itemCount,
         totalsByCurrency,
         isCartOpen,
@@ -142,10 +129,78 @@ function CartSheetContent() {
     } | null>(null);
     const thbTotal = totalsByCurrency.THB ?? 0;
     const pointTotal = totalsByCurrency.POINT ?? 0;
+    const [balances, setBalances] = useState<{ credit: number; point: number } | null>(null);
 
+    // Load balances when the cart opens so the summary can warn before paying
     useEffect(() => {
-        setAppliedPromo(null);
-    }, [items, total, pointTotal]);
+        if (!isCartOpen) return;
+
+        let active = true;
+        requestProfile<{ creditBalance?: string | number | null; pointBalance?: number | string | null }>({
+            init: { cache: "no-store" },
+        })
+            .then(({ response, data }) => {
+                if (!active) return;
+                if (response.ok && data.success && data.data) {
+                    setBalances({
+                        credit: Number(data.data.creditBalance ?? 0),
+                        point: Number(data.data.pointBalance ?? 0),
+                    });
+                }
+            })
+            .catch(() => { });
+
+        return () => {
+            active = false;
+        };
+    }, [isCartOpen]);
+
+    const appliedPromoRef = useRef(appliedPromo);
+    useEffect(() => {
+        appliedPromoRef.current = appliedPromo;
+    }, [appliedPromo]);
+
+    // Re-validate an applied promo when the cart changes instead of silently dropping it
+    useEffect(() => {
+        const currentPromo = appliedPromoRef.current;
+        if (!currentPromo) return;
+
+        if (items.length === 0 || thbTotal <= 0) {
+            setAppliedPromo(null);
+            return;
+        }
+
+        let active = true;
+        (async () => {
+            try {
+                const data = await validatePromoCode(
+                    buildPromoValidationPayload({
+                        code: currentPromo.code,
+                        totalPrice: thbTotal,
+                        items: getCartPromoLineItems(items),
+                    }),
+                );
+                if (!active) return;
+
+                if (data.valid) {
+                    setAppliedPromo(buildAppliedPromoFromValidation({
+                        code: currentPromo.code,
+                        data,
+                        fallbackFinalPrice: thbTotal,
+                    }));
+                } else {
+                    setAppliedPromo(null);
+                    showWarning(data.message || "โค้ดส่วนลดใช้กับยอดใหม่ไม่ได้แล้ว");
+                }
+            } catch {
+                if (active) setAppliedPromo(null);
+            }
+        })();
+
+        return () => {
+            active = false;
+        };
+    }, [items, thbTotal]);
 
     useEffect(() => {
         let isActive = true;
@@ -180,6 +235,9 @@ function CartSheetContent() {
         THB: finalThbTotal,
         POINT: pointTotal,
     };
+    const pointLabel = getPointCurrencyName(currencySettings);
+    const creditShortfall = balances ? Math.max(0, finalThbTotal - balances.credit) : 0;
+    const pointShortfall = balances ? Math.max(0, pointTotal - balances.point) : 0;
     const originalTotals = items.reduce<Record<ProductCurrencyCode, number>>((accumulator, item) => {
         const currency = normalizeCurrencyCode(item.currency);
         accumulator[currency] += item.price * (item.quantity || 1);
@@ -328,29 +386,10 @@ function CartSheetContent() {
                 return;
             }
 
-            const checkoutTotalsByCurrency = getCartTotalsByCurrency(syncedItems);
-            const checkoutItemCount = getCartItemCount(syncedItems);
-            const checkoutFinalTotals = {
-                THB: appliedPromo?.finalPrice ?? checkoutTotalsByCurrency.THB,
-                POINT: checkoutTotalsByCurrency.POINT,
-            };
-
+            // The in-sheet order summary is the review step; close the sheet
+            // so the PIN / result dialogs are clickable above its overlay.
             closeCart();
             await new Promise((r) => setTimeout(r, 300));
-
-            const confirmed = await showPurchaseConfirm({
-                productName: checkoutItemCount > 1 ? `${checkoutItemCount} รายการ` : syncedItems[0]?.name,
-                priceText: buildCurrencyBreakdownLabel(checkoutFinalTotals, currencySettings),
-                extraHtml: appliedPromo
-                    ? `<small>โค้ดส่วนลด: <strong>${escapeHtml(appliedPromo.code)}</strong> ลด ฿${escapeHtml(appliedPromo.discountAmount.toLocaleString())}</small>`
-                    : undefined,
-                confirmText: "ยืนยันการสั่งซื้อ",
-                cancelText: "ยกเลิก",
-            });
-            if (!confirmed) {
-                openCart();
-                return;
-            }
 
             const pinCheck = await requirePinForAction("ยืนยัน PIN เพื่อชำระเงิน");
             if (!pinCheck.allowed) {
@@ -396,6 +435,8 @@ function CartSheetContent() {
                 });
                 if (goTopup) {
                     router.push("/dashboard/topup");
+                } else {
+                    openCart();
                 }
             }
         } catch (error) {
@@ -620,9 +661,9 @@ function CartSheetContent() {
                                             <button
                                                 type="button"
                                                 className="shrink-0 rounded-xl bg-primary px-4 py-3 text-center text-primary-foreground shadow-sm transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-                                                onClick={handleCheckout}
+                                                onClick={() => setIsOrderSummaryOpen(true)}
                                                 disabled={isCheckingOut || maintenance?.enabled}
-                                                aria-label={`ชำระเงิน ${itemCount} รายการ`}
+                                                aria-label={`ดูสรุปและชำระเงิน ${itemCount} รายการ`}
                                             >
                                                 <p className="text-lg font-bold leading-none">
                                                     {isCheckingOut ? "กำลังดำเนินการ..." : `ชำระเงิน (${itemCount})`}
@@ -692,17 +733,75 @@ function CartSheetContent() {
                                                     {buildCurrencyBreakdownLabel(finalTotals, currencySettings)}
                                                 </span>
                                             </div>
+                                            {balances ? (
+                                                <>
+                                                    <div className="flex justify-between border-t border-dashed border-border/80 pt-2">
+                                                        <span className="text-muted-foreground">เครดิตของคุณ</span>
+                                                        <span
+                                                            className={`font-semibold ${
+                                                                creditShortfall > 0
+                                                                    ? "text-red-500 dark:text-red-400"
+                                                                    : "text-emerald-600 dark:text-emerald-400"
+                                                            }`}
+                                                        >
+                                                            {formatCurrencyAmount(balances.credit, "THB", currencySettings)}
+                                                        </span>
+                                                    </div>
+                                                    {pointTotal > 0 ? (
+                                                        <div className="flex justify-between">
+                                                            <span className="text-muted-foreground">{pointLabel}ของคุณ</span>
+                                                            <span
+                                                                className={`font-semibold ${
+                                                                    pointShortfall > 0
+                                                                        ? "text-red-500 dark:text-red-400"
+                                                                        : "text-emerald-600 dark:text-emerald-400"
+                                                                }`}
+                                                            >
+                                                                {formatCurrencyAmount(balances.point, "POINT", currencySettings)}
+                                                            </span>
+                                                        </div>
+                                                    ) : null}
+                                                    {creditShortfall > 0 ? (
+                                                        <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
+                                                            เครดิตไม่พอ ขาดอีก {formatCurrencyAmount(creditShortfall, "THB", currencySettings)}
+                                                        </p>
+                                                    ) : null}
+                                                    {pointShortfall > 0 ? (
+                                                        <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
+                                                            {pointLabel}ไม่พอ ขาดอีก {formatCurrencyAmount(pointShortfall, "POINT", currencySettings)}
+                                                        </p>
+                                                    ) : null}
+                                                </>
+                                            ) : null}
                                         </div>
 
-                                        <button
-                                            type="button"
-                                            className="w-full rounded-xl bg-primary px-4 py-3 text-center text-base font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
-                                            onClick={handleCheckout}
-                                            disabled={isCheckingOut || maintenance?.enabled}
-                                            aria-label={`ชำระเงิน ${itemCount} รายการ`}
-                                        >
-                                            {isCheckingOut ? "กำลังดำเนินการ..." : `ชำระเงิน (${itemCount})`}
-                                        </button>
+                                        {creditShortfall > 0 ? (
+                                            <button
+                                                type="button"
+                                                className="w-full rounded-xl bg-amber-500 px-4 py-3 text-center text-base font-semibold text-white shadow-sm transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                                                onClick={() => {
+                                                    closeCart();
+                                                    router.push("/dashboard/topup");
+                                                }}
+                                                disabled={isCheckingOut}
+                                            >
+                                                เติมเงินก่อนชำระ (ขาด {formatCurrencyAmount(creditShortfall, "THB", currencySettings)})
+                                            </button>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                className="w-full rounded-xl bg-primary px-4 py-3 text-center text-base font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
+                                                onClick={handleCheckout}
+                                                disabled={isCheckingOut || maintenance?.enabled || pointShortfall > 0}
+                                                aria-label={`ชำระเงิน ${itemCount} รายการ`}
+                                            >
+                                                {pointShortfall > 0
+                                                    ? `${pointLabel}ไม่เพียงพอ`
+                                                    : isCheckingOut
+                                                        ? "กำลังดำเนินการ..."
+                                                        : `ชำระเงิน (${itemCount})`}
+                                            </button>
+                                        )}
                                     </CollapsibleContent>
                                 </Collapsible>
                                 {thbTotal > 0 ? (
