@@ -3,19 +3,10 @@ import { and, count, eq, gte, isNull, lt, sql, type SQL } from "drizzle-orm";
 import { db, orders, topups } from "@/lib/db";
 import { requirePermission } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
-import { getThaiDayStartUtc, toMySQLDatetime } from "@/lib/utils/date";
+import { toMySQLDatetime } from "@/lib/utils/date";
+import { KPI_RANGES, getKpiPeriodBounds, type KpiRange } from "@/lib/features/dashboard/kpiPeriods";
 
 export const dynamic = "force-dynamic";
-
-type Range = "today" | "7d" | "30d" | "all";
-
-const RANGES: Range[] = ["today", "7d", "30d", "all"];
-
-const RANGE_DAYS: Record<Exclude<Range, "all">, number> = {
-    today: 1,
-    "7d": 7,
-    "30d": 30,
-};
 
 type PeriodMetrics = {
     revenue: number;
@@ -24,22 +15,6 @@ type PeriodMetrics = {
     topup: number;
     netInflow: number;
 };
-
-/**
- * Current period = the last N Thai calendar days including today (today is
- * partial). Previous period = the N full days immediately before, so the
- * delta compares equal-length windows.
- */
-function getPeriodBounds(range: Exclude<Range, "all">) {
-    const days = RANGE_DAYS[range];
-    const todayStart = getThaiDayStartUtc();
-    const DAY_MS = 24 * 60 * 60 * 1000;
-
-    const currentStart = new Date(todayStart.getTime() - (days - 1) * DAY_MS);
-    const previousStart = new Date(currentStart.getTime() - days * DAY_MS);
-
-    return { currentStart, previousStart, currentEnd: null, previousEnd: currentStart };
-}
 
 async function loadPeriodMetrics(start: Date | null, end: Date | null): Promise<PeriodMetrics> {
     const orderConditions: SQL[] = [isNull(orders.deletedAt)];
@@ -85,7 +60,7 @@ export async function GET(request: NextRequest) {
     }
 
     const requested = request.nextUrl.searchParams.get("range");
-    const range: Range = RANGES.includes(requested as Range) ? (requested as Range) : "7d";
+    const range: KpiRange = KPI_RANGES.includes(requested as KpiRange) ? (requested as KpiRange) : "7d";
 
     try {
         if (range === "all") {
@@ -93,7 +68,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ success: true, range, current, previous: null });
         }
 
-        const { currentStart, currentEnd, previousStart, previousEnd } = getPeriodBounds(range);
+        const { currentStart, currentEnd, previousStart, previousEnd } = getKpiPeriodBounds(range);
         const [current, previous] = await Promise.all([
             loadPeriodMetrics(currentStart, currentEnd),
             loadPeriodMetrics(previousStart, previousEnd),
