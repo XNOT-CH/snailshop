@@ -54,6 +54,7 @@ Local notes:
 - `npm run check:purchase-locking` writes a temporary product row during the lock handoff check and removes it at the end.
 - `npm run cf:check`, `npm run cf:preview`, and `npm run cf:deploy` use `scripts/deploy/run-opennext-cloudflare.mjs`; on Windows, prefer these wrappers over calling OpenNext directly.
 - `npm run ops:reconcile-commerce` runs in read-only mode by default; use `node scripts/ops/reconcile-commerce.mjs --hours <n>` for a longer lookback window.
+- `npm run storage:migrate-r2` is a dry run by default; provide a bucket with `-- --bucket <name>` or `CLOUDFLARE_R2_UPLOADS_BUCKET`, then add `--apply` only to upload files.
 - For isolated dev DB work on Windows, prefer `scripts/windows/start-dev-db.bat`, `scripts/windows/db-push-dev.bat`, and `scripts/windows/db-studio-dev.bat`.
 - Windows helper scripts live in `scripts/windows/`.
 
