@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { differenceInCalendarDays, format, subDays, subYears } from "date-fns";
+import { differenceInCalendarDays, format, startOfMonth, subDays, subYears } from "date-fns";
 import { th } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 import {
     ArrowDownRight,
-    ArrowLeftRight,
     ArrowUpRight,
     ChartLine,
     ChartNoAxesColumn,
@@ -83,16 +82,56 @@ function seriesValues(points: PeriodData["points"], metric: MetricKey, cumulativ
     });
 }
 
-function rangeToParams(range: DateRange): { start: string; end: string } | null {
-    if (!range.from || !range.to) return null;
+function rangeToParams(range: DateRange | undefined): { start: string; end: string } | null {
+    if (!range?.from || !range.to) return null;
     return { start: format(range.from, "yyyy-MM-dd"), end: format(range.to, "yyyy-MM-dd") };
 }
 
-function rangeLabel(range: DateRange): string {
-    if (!range.from || !range.to) return "";
-    const fromStr = format(range.from, "d MMM", { locale: th });
+function rangeLabel(range: DateRange | undefined): string {
+    if (!range?.from || !range.to) return "ยังไม่เลือก";
+    const fromStr = format(range.from, "d MMM yy", { locale: th });
     if (range.from.toDateString() === range.to.toDateString()) return fromStr;
-    return `${fromStr} – ${format(range.to, "d MMM", { locale: th })}`;
+    return `${format(range.from, "d MMM", { locale: th })} – ${format(range.to, "d MMM yy", { locale: th })}`;
+}
+
+type BasePreset = "today" | "7d" | "30d" | "month" | "custom";
+type CompareMode = "previous" | "yearAgo" | "custom";
+
+const BASE_PRESETS: Array<{ key: BasePreset; label: string }> = [
+    { key: "today", label: "วันนี้" },
+    { key: "7d", label: "7 วัน" },
+    { key: "30d", label: "30 วัน" },
+    { key: "month", label: "เดือนนี้" },
+    { key: "custom", label: "กำหนดเอง" },
+];
+
+const COMPARE_MODES: Array<{ key: CompareMode; label: string }> = [
+    { key: "previous", label: "ช่วงก่อนหน้า" },
+    { key: "yearAgo", label: "ปีที่แล้ว" },
+    { key: "custom", label: "กำหนดเอง" },
+];
+
+function presetRange(preset: Exclude<BasePreset, "custom">, today: Date): DateRange {
+    switch (preset) {
+        case "today":
+            return { from: today, to: today };
+        case "7d":
+            return { from: subDays(today, 6), to: today };
+        case "30d":
+            return { from: subDays(today, 29), to: today };
+        case "month":
+            return { from: startOfMonth(today), to: today };
+    }
+}
+
+/** The comparison window derived from the selected one: adjacent-previous or same-window-last-year. */
+function derivedCompareRange(base: DateRange | undefined, mode: Exclude<CompareMode, "custom">): DateRange | undefined {
+    if (!base?.from || !base.to) return undefined;
+    if (mode === "yearAgo") {
+        return { from: subYears(base.from, 1), to: subYears(base.to, 1) };
+    }
+    const days = differenceInCalendarDays(base.to, base.from) + 1;
+    return { from: subDays(base.from, days), to: subDays(base.from, 1) };
 }
 
 function DeltaBadge({ current, baseline }: Readonly<{ current: number; baseline: number }>) {
@@ -170,10 +209,10 @@ function CompareTooltip({
 function buildCsv(data: CompareData): string {
     const header = [
         "ลำดับ",
-        "วันที่ A",
-        ...METRICS.map((m) => `${m.label} A`),
-        "วันที่ B",
-        ...METRICS.map((m) => `${m.label} B`),
+        "วันที่ (ช่วงที่เลือก)",
+        ...METRICS.map((m) => `${m.label} (ช่วงที่เลือก)`),
+        "วันที่ (ช่วงเทียบ)",
+        ...METRICS.map((m) => `${m.label} (ช่วงเทียบ)`),
     ];
     const rowCount = Math.max(data.a.points.length, data.b.points.length);
     const rows = Array.from({ length: rowCount }, (_, i) => {
@@ -193,14 +232,27 @@ function buildCsv(data: CompareData): string {
 
 export function ComparisonSection() {
     const today = useMemo(() => new Date(), []);
-    const [rangeA, setRangeA] = useState<DateRange>({ from: subDays(today, 6), to: today });
-    const [rangeB, setRangeB] = useState<DateRange>({ from: subDays(today, 13), to: subDays(today, 7) });
+    const [basePreset, setBasePreset] = useState<BasePreset>("7d");
+    const [customBase, setCustomBase] = useState<DateRange | undefined>();
+    const [compareMode, setCompareMode] = useState<CompareMode>("previous");
+    const [customCompare, setCustomCompare] = useState<DateRange | undefined>();
     const [metric, setMetric] = useState<MetricKey>("revenue");
     const [chartType, setChartType] = useState<ChartType>("line");
     const [cumulative, setCumulative] = useState(false);
     const [showTable, setShowTable] = useState(false);
     const [cache, setCache] = useState<Record<string, CompareData>>({});
     const [failed, setFailed] = useState(false);
+
+    // The selected window and its comparison window, derived from the two
+    // segmented controls; custom pickers only participate in "custom" mode.
+    const rangeA = useMemo(
+        () => (basePreset === "custom" ? customBase : presetRange(basePreset, today)),
+        [basePreset, customBase, today],
+    );
+    const rangeB = useMemo(
+        () => (compareMode === "custom" ? customCompare : derivedCompareRange(rangeA, compareMode)),
+        [compareMode, customCompare, rangeA],
+    );
 
     const paramsA = rangeToParams(rangeA);
     const paramsB = rangeToParams(rangeB);
@@ -238,8 +290,8 @@ export function ComparisonSection() {
 
     const data = cacheKey ? cache[cacheKey] : undefined;
     const activeMetric = METRICS.find((m) => m.key === metric) ?? METRICS[0];
-    const labelA = `ช่วง A (${rangeLabel(rangeA)})`;
-    const labelB = `ช่วง B (${rangeLabel(rangeB)})`;
+    const labelA = `ช่วงที่เลือก (${rangeLabel(rangeA)})`;
+    const labelB = `ช่วงเทียบ (${rangeLabel(rangeB)})`;
 
     const chartRows: ChartRow[] | undefined = useMemo(() => {
         if (!data) return undefined;
@@ -263,24 +315,6 @@ export function ComparisonSection() {
             };
         });
     }, [data, metric, cumulative]);
-
-    const swapPeriods = () => {
-        setRangeA(rangeB);
-        setRangeB(rangeA);
-    };
-
-    // One-click B presets relative to A: the adjacent window of the same
-    // length before A, or the same calendar window one year earlier.
-    const setPreviousPeriod = () => {
-        if (!rangeA.from || !rangeA.to) return;
-        const days = differenceInCalendarDays(rangeA.to, rangeA.from) + 1;
-        setRangeB({ from: subDays(rangeA.from, days), to: subDays(rangeA.from, 1) });
-    };
-
-    const setYearAgoPeriod = () => {
-        if (!rangeA.from || !rangeA.to) return;
-        setRangeB({ from: subYears(rangeA.from, 1), to: subYears(rangeA.to, 1) });
-    };
 
     const exportCsv = () => {
         if (!data || !paramsA || !paramsB) return;
@@ -308,37 +342,59 @@ export function ComparisonSection() {
             </div>
 
             <div className="p-5 space-y-4">
-                {/* Period + display controls */}
-                <div className="flex flex-wrap items-center gap-2">
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-muted-foreground">ช่วง A</span>
-                        <DateRangePicker value={rangeA} onChange={(range) => range && setRangeA(range)} />
-                    </div>
-                    <Button variant="ghost" size="sm" className="h-9 px-2" onClick={swapPeriods} title="สลับช่วง A ↔ B">
-                        <ArrowLeftRight className="h-4 w-4" />
-                    </Button>
-                    <div className="flex items-center gap-2">
-                        <span className="text-xs font-semibold text-muted-foreground">ช่วง B</span>
-                        <DateRangePicker value={rangeB} onChange={(range) => range && setRangeB(range)} />
-                        <div className="flex items-center gap-1">
-                            <button
-                                onClick={setPreviousPeriod}
-                                title="ตั้งช่วง B เป็นช่วงยาวเท่ากันที่อยู่ติดกันก่อนหน้าช่วง A"
-                                className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground"
-                            >
-                                ก่อนหน้า
-                            </button>
-                            <button
-                                onClick={setYearAgoPeriod}
-                                title="ตั้งช่วง B เป็นช่วงเดียวกันของปีที่แล้ว"
-                                className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground"
-                            >
-                                ปีที่แล้ว
-                            </button>
+                {/* Step 1: which window to look at; Step 2: what to compare it with */}
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="w-16 text-xs font-semibold text-muted-foreground">ช่วงเวลา</span>
+                            <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+                                {BASE_PRESETS.map((preset) => (
+                                    <button
+                                        key={preset.key}
+                                        onClick={() => setBasePreset(preset.key)}
+                                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
+                                            basePreset === preset.key
+                                                ? "bg-primary text-primary-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        }`}
+                                    >
+                                        {preset.label}
+                                    </button>
+                                ))}
+                            </div>
+                            {basePreset === "custom" && (
+                                <DateRangePicker value={customBase} onChange={setCustomBase} placeholder="เลือกช่วงวันที่" />
+                            )}
                         </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <span className="w-16 text-xs font-semibold text-muted-foreground">เทียบกับ</span>
+                            <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
+                                {COMPARE_MODES.map((mode) => (
+                                    <button
+                                        key={mode.key}
+                                        onClick={() => setCompareMode(mode.key)}
+                                        className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
+                                            compareMode === mode.key
+                                                ? "bg-primary text-primary-foreground shadow-sm"
+                                                : "text-muted-foreground hover:text-foreground"
+                                        }`}
+                                    >
+                                        {mode.label}
+                                    </button>
+                                ))}
+                            </div>
+                            {compareMode === "custom" && (
+                                <DateRangePicker value={customCompare} onChange={setCustomCompare} placeholder="เลือกช่วงวันที่" />
+                            )}
+                        </div>
+                        {/* Resolved dates, so the selection is never a mystery */}
+                        <p className="text-xs text-muted-foreground">
+                            <span className="font-medium text-foreground">{rangeLabel(rangeA)}</span> เทียบกับ{" "}
+                            <span className="font-medium text-foreground">{rangeLabel(rangeB)}</span>
+                        </p>
                     </div>
 
-                    <div className="ml-auto flex items-center gap-2">
+                    <div className="flex items-center gap-2">
                         <div className="flex items-center gap-1 rounded-lg bg-muted p-1">
                             <button
                                 onClick={() => setChartType("line")}
@@ -419,8 +475,13 @@ export function ComparisonSection() {
                     })}
                 </div>
 
-                {failed && <p className="py-10 text-center text-sm text-muted-foreground">โหลดข้อมูลไม่สำเร็จ ลองเปลี่ยนช่วงเวลาแล้วลองใหม่</p>}
-                {!failed && !data && <p className="py-10 text-center text-sm text-muted-foreground">กำลังโหลด…</p>}
+                {!cacheKey && (
+                    <p className="py-10 text-center text-sm text-muted-foreground">เลือกช่วงวันที่จากปฏิทินให้ครบก่อน แล้วข้อมูลจะแสดงที่นี่</p>
+                )}
+                {cacheKey && failed && (
+                    <p className="py-10 text-center text-sm text-muted-foreground">โหลดข้อมูลไม่สำเร็จ ลองเปลี่ยนช่วงเวลาแล้วลองใหม่</p>
+                )}
+                {cacheKey && !failed && !data && <p className="py-10 text-center text-sm text-muted-foreground">กำลังโหลด…</p>}
 
                 {data && chartRows && (
                     <div className="space-y-2">
@@ -553,10 +614,10 @@ export function ComparisonSection() {
                                 <table className="w-full text-sm">
                                     <thead className="sticky top-0 bg-card">
                                         <tr className="border-b border-border/60 bg-muted/40 text-left text-xs text-muted-foreground">
-                                            <th className="px-3 py-2 font-medium">{data.granularity === "hour" ? "ชั่วโมง A" : "วันที่ A"}</th>
-                                            <th className="px-3 py-2 text-right font-medium">ช่วง A</th>
-                                            <th className="px-3 py-2 font-medium">{data.granularity === "hour" ? "ชั่วโมง B" : "วันที่ B"}</th>
-                                            <th className="px-3 py-2 text-right font-medium">ช่วง B</th>
+                                            <th className="px-3 py-2 font-medium">{data.granularity === "hour" ? "ชั่วโมง" : "วันที่"}</th>
+                                            <th className="px-3 py-2 text-right font-medium">ช่วงที่เลือก</th>
+                                            <th className="px-3 py-2 font-medium">{data.granularity === "hour" ? "ชั่วโมง" : "วันที่"}</th>
+                                            <th className="px-3 py-2 text-right font-medium">ช่วงเทียบ</th>
                                             <th className="px-3 py-2 text-right font-medium">เปลี่ยนแปลง</th>
                                         </tr>
                                     </thead>
