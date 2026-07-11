@@ -12,6 +12,7 @@ import {
 } from "recharts";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { formatCompactBaht } from "@/lib/formatters/currency";
+import { formatBucketLabel } from "@/lib/features/dashboard/bucketLabels";
 
 type ComparableRange = "today" | "7d" | "30d";
 type MetricKey = "revenue" | "orders" | "aov" | "topup" | "netInflow";
@@ -50,19 +51,6 @@ const rangeTitles: Record<ComparableRange, string> = {
     "7d": "รายวัน · 7 วันล่าสุด",
     "30d": "รายวัน · 30 วันล่าสุด",
 };
-
-/** "2026-07-11" → "11 ก.ค." ; "2026-07-11T09" → "09:00" (chart axis / table rows). */
-function formatBucketLabel(key: string, granularity: "hour" | "day", withYear = false): string {
-    if (granularity === "hour") {
-        return `${key.slice(11, 13)}:00`;
-    }
-    return new Date(`${key}T00:00:00Z`).toLocaleDateString("th-TH", {
-        day: "2-digit",
-        month: "short",
-        ...(withYear ? { year: "2-digit" } : {}),
-        timeZone: "UTC",
-    });
-}
 
 function ComparisonTooltip({
     active,

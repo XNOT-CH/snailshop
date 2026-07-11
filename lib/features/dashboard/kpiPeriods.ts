@@ -12,6 +12,27 @@ export const KPI_RANGE_DAYS: Record<ComparableKpiRange, number> = {
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const THAI_UTC_OFFSET_MS = 7 * 60 * 60 * 1000;
+
+/**
+ * Bucket key for the Thai-local bucket starting at UTC instant `t`: the ISO
+ * date ("2026-07-11") for daily buckets or date-hour ("2026-07-11T09") for
+ * hourly ones. Matches the DATE_FORMAT patterns in kpiBucketMetrics.ts.
+ */
+export const bucketKey = (t: number, hourly: boolean) =>
+    new Date(t + THAI_UTC_OFFSET_MS).toISOString().slice(0, hourly ? 13 : 10);
+
+/**
+ * Parse a "YYYY-MM-DD" query param as a Thai calendar date and return the UTC
+ * instant of that Thai midnight; null for missing, malformed, or rolled-over
+ * dates (e.g. 2026-02-31).
+ */
+export function parseThaiDateParam(value: string | null): Date | null {
+    if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+    const utcMidnight = new Date(`${value}T00:00:00Z`);
+    if (Number.isNaN(utcMidnight.getTime()) || utcMidnight.toISOString().slice(0, 10) !== value) return null;
+    return new Date(utcMidnight.getTime() - THAI_UTC_OFFSET_MS);
+}
 
 /**
  * Current period = the last N Thai calendar days including today, cut at the
