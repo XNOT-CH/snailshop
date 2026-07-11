@@ -135,7 +135,8 @@ const nextConfig: NextConfig = {
               `img-src 'self' data: blob: https:${isProduction ? "" : " http://localhost:3001"}`,
               "font-src 'self' data:",
               "connect-src 'self' https://challenges.cloudflare.com",
-              "frame-src https://challenges.cloudflare.com",
+              // youtube-nocookie hosts the embedded help-center videos.
+              "frame-src https://challenges.cloudflare.com https://www.youtube-nocookie.com",
               "worker-src 'self' blob:",
               "object-src 'none'",
               "base-uri 'self'",
