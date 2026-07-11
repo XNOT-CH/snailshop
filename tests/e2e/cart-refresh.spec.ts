@@ -45,12 +45,13 @@ async function ensureTestUser(connection: Connection) {
     await connection.execute(
         `
             INSERT INTO \`User\` (id, username, email, password, role, name, emailVerified, creditBalance, createdAt, updatedAt)
-            VALUES (?, ?, ?, ?, 'USER', ?, true, '0.00', NOW(), NOW())
+            VALUES (?, ?, ?, ?, 'USER', ?, true, '999.00', NOW(), NOW())
             ON DUPLICATE KEY UPDATE
                 password = VALUES(password),
                 role = VALUES(role),
                 name = VALUES(name),
                 emailVerified = true,
+                creditBalance = VALUES(creditBalance),
                 updatedAt = NOW()
         `,
         [
@@ -180,7 +181,11 @@ test("cart checkout refreshes stale local item data before showing PIN prompt", 
     await expect(cartDialog.getByText("Cart Refresh E2E Product")).toBeVisible();
     await expect(cartDialog).toContainText("฿100");
 
-    const checkoutButton = cartDialog.getByRole("button", { name: "ชำระเงิน 1 รายการ" });
+    const summaryButton = cartDialog.getByRole("button", { name: "ดูสรุปและชำระเงิน 1 รายการ" });
+    await expect(summaryButton).toBeVisible();
+    await summaryButton.click();
+
+    const checkoutButton = cartDialog.getByRole("button", { name: "ชำระเงิน 1 รายการ", exact: true });
     await expect(checkoutButton).toBeVisible();
     await expect(checkoutButton).toBeEnabled();
     const sessionResponsePromise = page.waitForResponse(
