@@ -27,7 +27,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("drizzle-orm", () => ({
-  eq: vi.fn(), and: vi.fn(), gte: vi.fn(), lte: vi.fn(), count: vi.fn(), isNull: vi.fn(),
+  eq: vi.fn(), and: vi.fn(), gte: vi.fn(), lt: vi.fn(), lte: vi.fn(), count: vi.fn(), isNull: vi.fn(),
 }));
 
 vi.mock("@/lib/encryption", () => ({
@@ -132,14 +132,17 @@ describe("API: /api/dashboard/members-summary (GET)", () => {
     expect(res.status).toBe(403);
   });
 
-  it("returns members summary for ADMIN", async () => {
+  it("returns members summary with vs-previous counts for ADMIN", async () => {
     (auth as any).mockResolvedValue(ADMIN_SESSION);
 
-    // Mock db.select for count queries (4 count queries)
+    // Call order: today, yesterday, week, prev week, month, prev month, total, trend users.
     (db.select as any) = vi.fn()
       .mockReturnValueOnce(mockCountSelect(3))  // today
+      .mockReturnValueOnce(mockCountSelect(2))  // yesterday
       .mockReturnValueOnce(mockCountSelect(10)) // week
-      .mockReturnValueOnce(mockCountSelect(25)) // month
+      .mockReturnValueOnce(mockCountSelect(8))  // previous week
+      .mockReturnValueOnce(mockCountSelect(25)) // month-to-date
+      .mockReturnValueOnce(mockCountSelect(20)) // same slice of previous month
       .mockReturnValueOnce({ from: vi.fn().mockResolvedValue([{ count: 100 }]) }) // total (no where)
       .mockReturnValueOnce({ from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([{ createdAt: "2026-03-14 10:00:00" }]) }) }); // trend users
 
@@ -155,6 +158,7 @@ describe("API: /api/dashboard/members-summary (GET)", () => {
     expect(body.success).toBe(true);
     expect(body.data.totalCount).toBe(100);
     expect(body.data.todayCount).toBe(3);
+    expect(body.data.previous).toEqual({ todayCount: 2, weekCount: 8, monthCount: 20 });
     expect(Array.isArray(body.data.dailyTrend)).toBe(true);
     expect(Array.isArray(body.data.recentMembers)).toBe(true);
   });
@@ -163,8 +167,11 @@ describe("API: /api/dashboard/members-summary (GET)", () => {
     (auth as any).mockResolvedValue(ADMIN_SESSION);
     (db.select as any) = vi.fn()
       .mockReturnValueOnce(mockCountSelect(1))
+      .mockReturnValueOnce(mockCountSelect(0))
       .mockReturnValueOnce(mockCountSelect(5))
+      .mockReturnValueOnce(mockCountSelect(4))
       .mockReturnValueOnce(mockCountSelect(15))
+      .mockReturnValueOnce(mockCountSelect(12))
       .mockReturnValueOnce({ from: vi.fn().mockResolvedValue([{ count: 50 }]) })
       .mockReturnValueOnce({ from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }) });
 

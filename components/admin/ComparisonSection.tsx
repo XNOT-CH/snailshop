@@ -4,15 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { differenceInCalendarDays, format, startOfMonth, subDays, subYears } from "date-fns";
 import { th } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
-import {
-    ArrowDownRight,
-    ArrowUpRight,
-    ChartLine,
-    ChartNoAxesColumn,
-    Download,
-    Scale,
-    Table as TableIcon,
-} from "lucide-react";
+import { ChartLine, ChartNoAxesColumn, Download, Scale, Table as TableIcon } from "lucide-react";
 import {
     Bar,
     BarChart,
@@ -26,6 +18,7 @@ import {
 } from "recharts";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { Button } from "@/components/ui/button";
+import { DeltaBadge } from "@/components/admin/DeltaBadge";
 import { formatCompactBaht } from "@/lib/formatters/currency";
 import { formatBucketLabel, type BucketGranularity } from "@/lib/features/dashboard/bucketLabels";
 
@@ -132,25 +125,6 @@ function derivedCompareRange(base: DateRange | undefined, mode: Exclude<CompareM
     }
     const days = differenceInCalendarDays(base.to, base.from) + 1;
     return { from: subDays(base.from, days), to: subDays(base.from, 1) };
-}
-
-function DeltaBadge({ current, baseline }: Readonly<{ current: number; baseline: number }>) {
-    if (baseline === 0) {
-        return <span className="text-xs text-muted-foreground">—</span>;
-    }
-    const pct = ((current - baseline) / Math.abs(baseline)) * 100;
-    const isUp = pct >= 0;
-    const Arrow = isUp ? ArrowUpRight : ArrowDownRight;
-    return (
-        <span
-            className={`inline-flex items-center gap-0.5 text-xs font-semibold ${
-                isUp ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
-            }`}
-        >
-            <Arrow className="h-3.5 w-3.5" />
-            {Math.abs(pct).toLocaleString("th-TH", { maximumFractionDigits: 1 })}%
-        </span>
-    );
 }
 
 interface ChartRow {

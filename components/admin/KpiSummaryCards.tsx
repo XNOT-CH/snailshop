@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowDownRight, ArrowUpRight, DollarSign, Receipt, ShoppingCart, Wallet, type LucideIcon } from "lucide-react";
+import { DollarSign, Receipt, ShoppingCart, Wallet, type LucideIcon } from "lucide-react";
 import { KpiDrilldownDialog } from "@/components/admin/KpiDrilldownDialog";
+import { DeltaBadge } from "@/components/admin/DeltaBadge";
 
 type Range = "today" | "7d" | "30d" | "all";
 
@@ -91,25 +92,10 @@ const CARDS: CardDef[] = [
     },
 ];
 
-function DeltaBadge({ current, previous, compareLabel }: Readonly<{ current: number; previous: number; compareLabel: string }>) {
-    if (previous === 0) {
-        return <p className="text-xs text-muted-foreground">{compareLabel}: —</p>;
-    }
-
-    const pct = ((current - previous) / Math.abs(previous)) * 100;
-    const isUp = pct >= 0;
-    const Arrow = isUp ? ArrowUpRight : ArrowDownRight;
-
+function DeltaLine({ current, previous, compareLabel }: Readonly<{ current: number; previous: number; compareLabel: string }>) {
     return (
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
-            <span
-                className={`inline-flex items-center gap-0.5 font-semibold ${
-                    isUp ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"
-                }`}
-            >
-                <Arrow className="h-3.5 w-3.5" />
-                {Math.abs(pct).toLocaleString("th-TH", { maximumFractionDigits: 1 })}%
-            </span>
+            <DeltaBadge current={current} baseline={previous} />
             {compareLabel}
         </p>
     );
@@ -192,7 +178,7 @@ export function KpiSummaryCards() {
                                             {summary ? card.format(summary.current[card.key]) : "…"}
                                         </p>
                                         {summary && range !== "all" && summary.previous && (
-                                            <DeltaBadge
+                                            <DeltaLine
                                                 current={summary.current[card.key]}
                                                 previous={summary.previous[card.key]}
                                                 compareLabel={compareLabels[range]}
