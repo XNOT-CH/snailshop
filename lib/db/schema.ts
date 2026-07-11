@@ -6,6 +6,7 @@ import {
     int,
     decimal,
     datetime,
+    date,
     index,
     json,
     uniqueIndex,
@@ -219,6 +220,21 @@ export const productsRelations = relations(products, ({ one, many }) => ({
 // ─────────────────────────────────────────────
 // Order
 // ─────────────────────────────────────────────
+// Daily product-page view counts (Thai calendar day), one row per product per
+// day. Feeds the "viewed a lot but not selling" dashboard insight; rows follow
+// the product on delete.
+export const productViewsDaily = mysqlTable("ProductViewDaily", {
+    id: int("id").autoincrement().primaryKey(),
+    productId: varchar("productId", { length: 36 })
+        .notNull()
+        .references(() => products.id, { onDelete: "cascade" }),
+    viewDate: date("viewDate", { mode: "string" }).notNull(),
+    views: int("views").default(0).notNull(),
+}, (t) => [
+    uniqueIndex("uq_product_view_daily").on(t.productId, t.viewDate),
+    index("idx_product_view_daily_date").on(t.viewDate),
+]);
+
 export const orders = mysqlTable("Order", {
     id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
     userId: varchar("userId", { length: 36 }).notNull().references(() => users.id, { onDelete: "restrict" }),
