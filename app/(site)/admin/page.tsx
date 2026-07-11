@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { db, orders, users } from "@/lib/db";
-import { sum, count, isNull, gte } from "drizzle-orm";
+import { sum, count, countDistinct, isNull, gte } from "drizzle-orm";
 import { getThaiDayStartUtc, toMySQLDatetime } from "@/lib/utils/date";
 import { requirePermission } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -9,10 +9,16 @@ import {
     Users,
     UserCheck,
     ShoppingCart,
+    ShoppingBag,
+    Wallet,
 } from "lucide-react";
 import { RevenueChart } from "@/components/admin/RevenueChart";
 import { SalesDistribution } from "@/components/admin/SalesDistribution";
 import { RecentTransactions } from "@/components/admin/RecentTransactions";
+import { KpiSummaryCards } from "@/components/admin/KpiSummaryCards";
+import { ActionCenter } from "@/components/admin/ActionCenter";
+import { BestSellers } from "@/components/admin/BestSellers";
+import { SalesHeatmap } from "@/components/admin/SalesHeatmap";
 import { TopupSummaryWithDateRange } from "@/components/TopupSummaryWithDateRange";
 import { MembersSummary } from "@/components/MembersSummary";
 import { DashboardTabs } from "@/components/DashboardTabs";
@@ -55,29 +61,35 @@ export default async function AdminDashboardPage() {
     // "Today" starts at Thai midnight; lastLoginAt is stored in UTC.
     const todayStartSql = toMySQLDatetime(getThaiDayStartUtc());
 
-    const [[{ totalRevenue: rawRevenue, salesCount: rawCount }], [{ count: rawUsers }], [{ count: rawActiveUsersToday }]] = await Promise.all([
-        // Exclude soft-deleted orders so revenue/sales KPIs match the rest of the app.
-        db.select({ totalRevenue: sum(orders.totalPrice), salesCount: count() }).from(orders).where(isNull(orders.deletedAt)),
-        db.select({ count: count() }).from(users),
+    // Range-scoped revenue/orders KPIs moved to <KpiSummaryCards /> (client, via
+    // /api/admin/dashboard/kpi-summary). This row keeps the system-wide numbers.
+    const [[{ creditOutstanding: rawCredit, count: rawUsers }], [{ count: rawActiveUsersToday }], [{ buyers: rawBuyers }]] = await Promise.all([
+        db.select({ creditOutstanding: sum(users.creditBalance), count: count() }).from(users),
         // Active users today = distinct users whose last successful login is today.
         db.select({ count: count() }).from(users).where(gte(users.lastLoginAt, todayStartSql)),
+        // Exclude soft-deleted orders so buyer counts match the rest of the app.
+        db.select({ buyers: countDistinct(orders.userId) }).from(orders).where(isNull(orders.deletedAt)),
     ]);
 
-    const totalRevenue = Number(rawRevenue || 0);
-    const salesCount = Number(rawCount);
+    const creditOutstanding = Number(rawCredit || 0);
+    const totalUsers = Number(rawUsers);
+    const buyers = Number(rawBuyers);
+    const buyerRate = totalUsers > 0 ? Math.round((buyers / totalUsers) * 100) : 0;
 
     const kpiCards = [
         {
-            title: "รายได้ทั้งหมด",
-            value: `฿${totalRevenue.toLocaleString()}`,
-            icon: DollarSign,
+            title: "เครดิตค้างในระบบ",
+            value: `฿${creditOutstanding.toLocaleString()}`,
+            sub: "ยอดรวมกระเป๋าเงินลูกค้าทุกคน",
+            icon: Wallet,
             gradient: "from-[#145de7] to-[#114fc4]",
             lightBg: "bg-blue-50 dark:bg-blue-950/30",
             iconColor: "text-[#145de7] dark:text-blue-400",
         },
         {
             title: "ผู้ใช้งานทั้งหมด",
-            value: Number(rawUsers).toLocaleString(),
+            value: totalUsers.toLocaleString(),
+            sub: undefined as string | undefined,
             icon: Users,
             gradient: "from-violet-500 to-purple-600",
             lightBg: "bg-violet-50 dark:bg-violet-950/30",
@@ -86,15 +98,17 @@ export default async function AdminDashboardPage() {
         {
             title: "ผู้ใช้งานวันนี้",
             value: Number(rawActiveUsersToday).toLocaleString(),
+            sub: undefined as string | undefined,
             icon: UserCheck,
             gradient: "from-emerald-500 to-teal-600",
             lightBg: "bg-emerald-50 dark:bg-emerald-950/30",
             iconColor: "text-emerald-600 dark:text-emerald-400",
         },
         {
-            title: "คำสั่งซื้อทั้งหมด",
-            value: salesCount.toLocaleString(),
-            icon: ShoppingCart,
+            title: "ลูกค้าที่เคยซื้อ",
+            value: buyers.toLocaleString(),
+            sub: `${buyerRate}% ของผู้ใช้ทั้งหมด`,
+            icon: ShoppingBag,
             gradient: "from-amber-500 to-orange-500",
             lightBg: "bg-amber-50 dark:bg-amber-950/30",
             iconColor: "text-amber-600 dark:text-amber-400",
@@ -110,7 +124,13 @@ export default async function AdminDashboardPage() {
             <DashboardTabs
                 overviewContent={
                     <div className="space-y-6">
-                        {/* KPI Cards */}
+                        {/* Actionable work queue (pending slips / unread chat / low stock) */}
+                        <ActionCenter permissions={access.permissions} />
+
+                        {/* Range-scoped KPIs with vs-previous-period deltas */}
+                        <KpiSummaryCards />
+
+                        {/* System-wide KPI Cards */}
                         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                             {kpiCards.map((kpi) => {
                                 const Icon = kpi.icon;
@@ -126,6 +146,7 @@ export default async function AdminDashboardPage() {
                                                 <div className="space-y-1">
                                                     <p className="text-sm font-medium text-muted-foreground">{kpi.title}</p>
                                                     <p className="text-2xl font-bold tracking-tight">{kpi.value}</p>
+                                                    {kpi.sub && <p className="text-xs text-muted-foreground">{kpi.sub}</p>}
                                                 </div>
                                                 <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${kpi.lightBg}`}>
                                                     <Icon className={`h-5 w-5 ${kpi.iconColor}`} />
@@ -147,6 +168,20 @@ export default async function AdminDashboardPage() {
                             </div>
                             <div className="p-5">
                                 <RevenueChart />
+                            </div>
+                        </div>
+
+                        {/* Best Sellers + Peak Hours */}
+                        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+                            <div className="overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)]">
+                                <div className="p-5">
+                                    <BestSellers />
+                                </div>
+                            </div>
+                            <div className="overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)]">
+                                <div className="p-5">
+                                    <SalesHeatmap />
+                                </div>
                             </div>
                         </div>
                     </div>
