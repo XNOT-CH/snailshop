@@ -1,10 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { format, subDays } from "date-fns";
+import { differenceInCalendarDays, format, subDays, subYears } from "date-fns";
 import { th } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
-import { ArrowDownRight, ArrowLeftRight, ArrowUpRight, ChartLine, ChartNoAxesColumn, Download, Scale } from "lucide-react";
+import {
+    ArrowDownRight,
+    ArrowLeftRight,
+    ArrowUpRight,
+    ChartLine,
+    ChartNoAxesColumn,
+    Download,
+    Scale,
+    Table as TableIcon,
+} from "lucide-react";
 import {
     Bar,
     BarChart,
@@ -189,6 +198,7 @@ export function ComparisonSection() {
     const [metric, setMetric] = useState<MetricKey>("revenue");
     const [chartType, setChartType] = useState<ChartType>("line");
     const [cumulative, setCumulative] = useState(false);
+    const [showTable, setShowTable] = useState(false);
     const [cache, setCache] = useState<Record<string, CompareData>>({});
     const [failed, setFailed] = useState(false);
 
@@ -259,6 +269,19 @@ export function ComparisonSection() {
         setRangeB(rangeA);
     };
 
+    // One-click B presets relative to A: the adjacent window of the same
+    // length before A, or the same calendar window one year earlier.
+    const setPreviousPeriod = () => {
+        if (!rangeA.from || !rangeA.to) return;
+        const days = differenceInCalendarDays(rangeA.to, rangeA.from) + 1;
+        setRangeB({ from: subDays(rangeA.from, days), to: subDays(rangeA.from, 1) });
+    };
+
+    const setYearAgoPeriod = () => {
+        if (!rangeA.from || !rangeA.to) return;
+        setRangeB({ from: subYears(rangeA.from, 1), to: subYears(rangeA.to, 1) });
+    };
+
     const exportCsv = () => {
         if (!data || !paramsA || !paramsB) return;
         // BOM so Excel opens Thai text as UTF-8.
@@ -297,6 +320,22 @@ export function ComparisonSection() {
                     <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-muted-foreground">ช่วง B</span>
                         <DateRangePicker value={rangeB} onChange={(range) => range && setRangeB(range)} />
+                        <div className="flex items-center gap-1">
+                            <button
+                                onClick={setPreviousPeriod}
+                                title="ตั้งช่วง B เป็นช่วงยาวเท่ากันที่อยู่ติดกันก่อนหน้าช่วง A"
+                                className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground"
+                            >
+                                ก่อนหน้า
+                            </button>
+                            <button
+                                onClick={setYearAgoPeriod}
+                                title="ตั้งช่วง B เป็นช่วงเดียวกันของปีที่แล้ว"
+                                className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground transition-all hover:bg-accent hover:text-accent-foreground"
+                            >
+                                ปีที่แล้ว
+                            </button>
+                        </div>
                     </div>
 
                     <div className="ml-auto flex items-center gap-2">
@@ -333,6 +372,17 @@ export function ComparisonSection() {
                             }`}
                         >
                             ยอดสะสม
+                        </button>
+                        <button
+                            onClick={() => setShowTable((prev) => !prev)}
+                            className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-200 ${
+                                showTable
+                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                    : "bg-muted text-muted-foreground hover:text-foreground"
+                            }`}
+                        >
+                            <TableIcon className="h-3.5 w-3.5" />
+                            ตาราง
                         </button>
                         <Button variant="outline" size="sm" className="h-8 gap-1" onClick={exportCsv} disabled={!data}>
                             <Download className="h-3.5 w-3.5" />
@@ -497,6 +547,59 @@ export function ComparisonSection() {
                                 </BarChart>
                             )}
                         </ResponsiveContainer>
+
+                        {showTable && (
+                            <div className="max-h-96 overflow-y-auto overflow-x-auto rounded-xl border border-border/60">
+                                <table className="w-full text-sm">
+                                    <thead className="sticky top-0 bg-card">
+                                        <tr className="border-b border-border/60 bg-muted/40 text-left text-xs text-muted-foreground">
+                                            <th className="px-3 py-2 font-medium">{data.granularity === "hour" ? "ชั่วโมง A" : "วันที่ A"}</th>
+                                            <th className="px-3 py-2 text-right font-medium">ช่วง A</th>
+                                            <th className="px-3 py-2 font-medium">{data.granularity === "hour" ? "ชั่วโมง B" : "วันที่ B"}</th>
+                                            <th className="px-3 py-2 text-right font-medium">ช่วง B</th>
+                                            <th className="px-3 py-2 text-right font-medium">เปลี่ยนแปลง</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {chartRows.map((row) => {
+                                            const pct =
+                                                row.a !== null && row.b !== null && row.b !== 0
+                                                    ? ((row.a - row.b) / Math.abs(row.b)) * 100
+                                                    : null;
+                                            return (
+                                                <tr key={row.index} className="border-b border-border/40 last:border-0">
+                                                    <td className="px-3 py-1.5 text-muted-foreground">
+                                                        {row.aDate ? formatBucketLabel(row.aDate, data.granularity, true) : "—"}
+                                                    </td>
+                                                    <td className="px-3 py-1.5 text-right font-medium tabular-nums">
+                                                        {row.a === null ? "—" : activeMetric.format(row.a)}
+                                                    </td>
+                                                    <td className="px-3 py-1.5 text-muted-foreground">
+                                                        {row.bDate ? formatBucketLabel(row.bDate, data.granularity, true) : "—"}
+                                                    </td>
+                                                    <td className="px-3 py-1.5 text-right tabular-nums text-muted-foreground">
+                                                        {row.b === null ? "—" : activeMetric.format(row.b)}
+                                                    </td>
+                                                    <td
+                                                        className={`px-3 py-1.5 text-right tabular-nums ${
+                                                            pct === null
+                                                                ? "text-muted-foreground"
+                                                                : pct >= 0
+                                                                  ? "text-emerald-600 dark:text-emerald-400"
+                                                                  : "text-red-600 dark:text-red-400"
+                                                        }`}
+                                                    >
+                                                        {pct === null
+                                                            ? "—"
+                                                            : `${pct >= 0 ? "+" : ""}${pct.toLocaleString("th-TH", { maximumFractionDigits: 1 })}%`}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
