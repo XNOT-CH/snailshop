@@ -1,13 +1,14 @@
 "use client";
 
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { BarChart3, Wallet, Package, Users } from "lucide-react";
+import { BarChart3, Dices, Wallet, Package, Users } from "lucide-react";
 
 interface DashboardTabsProps {
     overviewContent: React.ReactNode;
     topupContent: React.ReactNode;
     purchasesContent: React.ReactNode;
     membersContent?: React.ReactNode;
+    gachaContent?: React.ReactNode;
 }
 
 export function DashboardTabs({
@@ -15,9 +16,14 @@ export function DashboardTabs({
     topupContent,
     purchasesContent,
     membersContent,
+    gachaContent,
 }: Readonly<DashboardTabsProps>) {
     const hasMembersTab = Boolean(membersContent);
-    const tabGridClass = hasMembersTab ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3";
+    const hasGachaTab = Boolean(gachaContent);
+    const tabCount = 3 + (hasMembersTab ? 1 : 0) + (hasGachaTab ? 1 : 0);
+    const tabGridClass = { 3: "grid-cols-2 sm:grid-cols-3", 4: "grid-cols-2 sm:grid-cols-4", 5: "grid-cols-3 sm:grid-cols-5" }[
+        tabCount
+    ] as string;
 
     return (
         <Tabs defaultValue="overview" className="w-full">
@@ -59,6 +65,15 @@ export function DashboardTabs({
                     <span className="hidden sm:inline">สินค้าล่าสุด</span>
                     <span className="sm:hidden">สินค้า</span>
                 </TabsTrigger>
+                {hasGachaTab && (
+                    <TabsTrigger
+                        value="gacha"
+                        className="min-h-10 gap-1.5 rounded-lg px-2 py-2 text-xs whitespace-normal sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-lg data-[state=active]:shadow-primary/25 transition-all duration-200"
+                    >
+                        <Dices className="h-4 w-4" />
+                        <span>กาชา</span>
+                    </TabsTrigger>
+                )}
                 </TabsList>
             </div>
 
@@ -76,6 +91,11 @@ export function DashboardTabs({
             <TabsContent value="purchases" className="animate-page-enter">
                 {purchasesContent}
             </TabsContent>
+            {hasGachaTab && (
+                <TabsContent value="gacha" className="animate-page-enter">
+                    {gachaContent}
+                </TabsContent>
+            )}
         </Tabs>
     );
 }

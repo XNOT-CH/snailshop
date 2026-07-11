@@ -217,6 +217,8 @@ export async function fetchProductRewardForClaimOrThrow(tx: DbTransaction, produ
             orderId: true,
             secretData: true,
             stockSeparator: true,
+            price: true,
+            discountPrice: true,
         },
     });
 

@@ -17,6 +17,7 @@ import { SalesDistribution } from "@/components/admin/SalesDistribution";
 import { RecentTransactions } from "@/components/admin/RecentTransactions";
 import { KpiSummaryCards } from "@/components/admin/KpiSummaryCards";
 import { ComparisonSection } from "@/components/admin/ComparisonSection";
+import { GachaSummary } from "@/components/admin/GachaSummary";
 import { ActionCenter } from "@/components/admin/ActionCenter";
 import { BestSellers } from "@/components/admin/BestSellers";
 import { SalesHeatmap } from "@/components/admin/SalesHeatmap";
@@ -192,6 +193,7 @@ export default async function AdminDashboardPage() {
                 }
                 topupContent={<TopupSummaryWithDateRange />}
                 membersContent={<MembersSummary />}
+                gachaContent={<GachaSummary />}
                 purchasesContent={
                     <div className="grid gap-4 grid-cols-1 lg:grid-cols-5">
                         {/* Sales Distribution */}

@@ -222,6 +222,9 @@ describe("lib/gachaExecution", () => {
                     orderId: true,
                     secretData: true,
                     stockSeparator: true,
+                    // Snapshotted into GachaRollLog.rewardValue at roll time.
+                    price: true,
+                    discountPrice: true,
                 },
             });
         });

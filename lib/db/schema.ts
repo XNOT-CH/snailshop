@@ -730,6 +730,10 @@ export const gachaRollLogs = mysqlTable("GachaRollLog", {
     selectorLabel: varchar("selectorLabel", { length: 10 }),
     costType: varchar("costType", { length: 20 }).notNull(),
     costAmount: decimal("costAmount", { precision: 10, scale: 2 }).default("0").notNull(),
+    // Baht value of the reward snapshotted at roll time (product sale price or
+    // currency amount). Null on rows from before 2026-07-11; RTP math falls
+    // back to the product's current price for those.
+    rewardValue: decimal("rewardValue", { precision: 10, scale: 2 }),
     gachaMachineId: varchar("gachaMachineId", { length: 36 }).references(() => gachaMachines.id, { onDelete: "set null" }),
     createdAt: now(),
 }, (t) => [
