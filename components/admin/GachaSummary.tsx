@@ -7,6 +7,7 @@ import { Dices, Loader2, Trophy, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DeltaBadge } from "@/components/admin/DeltaBadge";
+import { DonutChart } from "@/components/admin/DonutChart";
 import { formatBucketLabel } from "@/lib/features/dashboard/bucketLabels";
 
 type RangeDays = 7 | 30 | 90;
@@ -296,6 +297,46 @@ export function GachaSummary() {
                     </ResponsiveContainer>
                 </CardContent>
             </Card>
+
+            {/* Roll-type + machine revenue donuts */}
+            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                <Card className="border-border/50">
+                    <CardContent className="p-6">
+                        <h4 className="mb-1 text-base font-semibold text-foreground">สัดส่วนการสุ่ม: เสียเงิน vs ฟรี</h4>
+                        <p className="mb-4 text-xs text-muted-foreground">ในช่วง {days} วันล่าสุด</p>
+                        <DonutChart
+                            data={[
+                                { name: "เสียเงิน", value: kpis.paidRolls },
+                                { name: "ฟรี", value: kpis.freeRolls },
+                            ]}
+                            format={(v) => `${v.toLocaleString("th-TH")} ตา`}
+                            centerCaption="การสุ่มทั้งหมด"
+                            emptyText="ยังไม่มีการสุ่มในช่วงนี้"
+                        />
+                    </CardContent>
+                </Card>
+                <Card className="border-border/50">
+                    <CardContent className="p-6">
+                        <h4 className="mb-1 text-base font-semibold text-foreground">สัดส่วนรายได้รายตู้</h4>
+                        <p className="mb-4 text-xs text-muted-foreground">เฉพาะตู้ที่มีรายได้ในช่วง {days} วันล่าสุด</p>
+                        {!machines ? (
+                            <div className="flex h-[260px] items-center justify-center text-sm text-muted-foreground">
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                กำลังโหลด…
+                            </div>
+                        ) : (
+                            <DonutChart
+                                data={[...machineList]
+                                    .sort((a, b) => b.revenue - a.revenue)
+                                    .map((machine) => ({ name: machine.name, value: machine.revenue }))}
+                                format={baht}
+                                centerCaption="รายได้รวม"
+                                emptyText="ยังไม่มีรายได้ในช่วงนี้"
+                            />
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* Top players + distribution */}
             <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

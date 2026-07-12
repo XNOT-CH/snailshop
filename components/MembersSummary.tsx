@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DeltaBadge } from "@/components/admin/DeltaBadge";
+import { DonutChart } from "@/components/admin/DonutChart";
 import {
     BarChart,
     Bar,
@@ -305,6 +306,40 @@ export function MembersSummary() {
                             </Card>
                         );
                     })}
+                </div>
+            )}
+
+            {/* ── Member composition donuts ── */}
+            {insights && insights.totalMembers > 0 && (
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                    <Card className="border-border/50">
+                        <CardContent className="p-6">
+                            <h4 className="mb-1 text-base font-semibold text-foreground">สัดส่วนสมาชิกที่เคยซื้อ</h4>
+                            <p className="mb-4 text-xs text-muted-foreground">จากสมาชิกทั้งหมดในระบบ</p>
+                            <DonutChart
+                                data={[
+                                    { name: "เคยซื้อ", value: insights.buyers },
+                                    { name: "ยังไม่เคยซื้อ", value: insights.totalMembers - insights.buyers, muted: true },
+                                ]}
+                                format={(v) => `${v.toLocaleString("th-TH")} คน`}
+                                centerCaption="สมาชิกทั้งหมด"
+                            />
+                        </CardContent>
+                    </Card>
+                    <Card className="border-border/50">
+                        <CardContent className="p-6">
+                            <h4 className="mb-1 text-base font-semibold text-foreground">สัดส่วนการใช้งานใน 7 วัน</h4>
+                            <p className="mb-4 text-xs text-muted-foreground">จากการเข้าสู่ระบบล่าสุดของสมาชิกทั้งหมด</p>
+                            <DonutChart
+                                data={[
+                                    { name: "ใช้งานใน 7 วัน", value: insights.active7d },
+                                    { name: "ไม่ได้ใช้งาน", value: insights.totalMembers - insights.active7d, muted: true },
+                                ]}
+                                format={(v) => `${v.toLocaleString("th-TH")} คน`}
+                                centerCaption="สมาชิกทั้งหมด"
+                            />
+                        </CardContent>
+                    </Card>
                 </div>
             )}
 

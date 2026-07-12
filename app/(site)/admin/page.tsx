@@ -18,6 +18,7 @@ import { RecentTransactions } from "@/components/admin/RecentTransactions";
 import { KpiSummaryCards } from "@/components/admin/KpiSummaryCards";
 import { ComparisonSection } from "@/components/admin/ComparisonSection";
 import { GachaSummary } from "@/components/admin/GachaSummary";
+import { CategoryDistribution } from "@/components/admin/CategoryDistribution";
 import { ActionCenter } from "@/components/admin/ActionCenter";
 import { BestSellers } from "@/components/admin/BestSellers";
 import { SalesHeatmap } from "@/components/admin/SalesHeatmap";
@@ -172,6 +173,9 @@ export default async function AdminDashboardPage() {
                                 <RevenueChart />
                             </div>
                         </div>
+
+                        {/* Revenue/order share by product category */}
+                        <CategoryDistribution />
 
                         {/* Period-vs-period comparison (pick two ranges, any metric) */}
                         <ComparisonSection />
