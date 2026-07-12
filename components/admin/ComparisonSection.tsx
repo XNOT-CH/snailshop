@@ -597,10 +597,7 @@ export function ComparisonSection() {
                                     </thead>
                                     <tbody>
                                         {chartRows.map((row) => {
-                                            const pct =
-                                                row.a !== null && row.b !== null && row.b !== 0
-                                                    ? ((row.a - row.b) / Math.abs(row.b)) * 100
-                                                    : null;
+                                            const diff = row.a !== null && row.b !== null ? row.a - row.b : null;
                                             return (
                                                 <tr key={row.index} className="border-b border-border/40 last:border-0">
                                                     <td className="px-3 py-1.5 text-muted-foreground">
@@ -617,16 +614,16 @@ export function ComparisonSection() {
                                                     </td>
                                                     <td
                                                         className={`px-3 py-1.5 text-right tabular-nums ${
-                                                            pct === null
+                                                            diff === null || diff === 0
                                                                 ? "text-muted-foreground"
-                                                                : pct >= 0
+                                                                : diff > 0
                                                                   ? "text-emerald-600 dark:text-emerald-400"
                                                                   : "text-red-600 dark:text-red-400"
                                                         }`}
                                                     >
-                                                        {pct === null
+                                                        {diff === null
                                                             ? "—"
-                                                            : `${pct >= 0 ? "+" : ""}${pct.toLocaleString("th-TH", { maximumFractionDigits: 1 })}%`}
+                                                            : `${diff > 0 ? "+" : diff < 0 ? "−" : ""}${activeMetric.format(Math.abs(diff))}`}
                                                     </td>
                                                 </tr>
                                             );

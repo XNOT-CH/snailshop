@@ -224,7 +224,6 @@ export function MembersSummary() {
     const insights = insightsCache[spenderRange] ?? insightsCache[spenderRange === "30d" ? "all" : "30d"];
     const trend = trendCache[trendDays] ?? [];
     const trendLoading = !trendCache[trendDays] && !trendFailed;
-    const buyerRate = insights && insights.totalMembers > 0 ? Math.round((insights.buyers / insights.totalMembers) * 100) : 0;
     const revenueSplit = insights ? insights.newVsReturning.newRevenue + insights.newVsReturning.returningRevenue : 0;
     const newPct = revenueSplit > 0 && insights ? (insights.newVsReturning.newRevenue / revenueSplit) * 100 : 0;
 
@@ -234,7 +233,12 @@ export function MembersSummary() {
         ? [
               { label: "ใช้งานวันนี้", value: insights.activeToday.toLocaleString("th-TH"), sub: "จากการเข้าสู่ระบบล่าสุด", icon: UserCheck },
               { label: "ใช้งานใน 7 วัน", value: insights.active7d.toLocaleString("th-TH"), sub: null, icon: Clock },
-              { label: "ลูกค้าที่เคยซื้อ", value: insights.buyers.toLocaleString("th-TH"), sub: `${buyerRate}% ของสมาชิกทั้งหมด`, icon: ShoppingBag },
+              {
+                  label: "ลูกค้าที่เคยซื้อ",
+                  value: insights.buyers.toLocaleString("th-TH"),
+                  sub: `จากสมาชิกทั้งหมด ${insights.totalMembers.toLocaleString("th-TH")} คน`,
+                  icon: ShoppingBag,
+              },
               {
                   label: "เครดิตค้างในมือสมาชิก",
                   value: baht(insights.creditOutstanding),
@@ -561,17 +565,11 @@ export function MembersSummary() {
                                 <span className="inline-block h-2.5 w-2.5 rounded-full bg-[var(--chart-1)]" />
                                 สมาชิกใหม่{" "}
                                 <span className="font-bold tabular-nums">{baht(insights.newVsReturning.newRevenue)}</span>
-                                <span className="text-xs text-muted-foreground">
-                                    ({newPct.toLocaleString("th-TH", { maximumFractionDigits: 1 })}%)
-                                </span>
                             </span>
                             <span className="flex items-center gap-1.5">
                                 <span className="inline-block h-2.5 w-2.5 rounded-full bg-[var(--chart-4)]" />
                                 สมาชิกเก่า{" "}
                                 <span className="font-bold tabular-nums">{baht(insights.newVsReturning.returningRevenue)}</span>
-                                <span className="text-xs text-muted-foreground">
-                                    ({(100 - newPct).toLocaleString("th-TH", { maximumFractionDigits: 1 })}%)
-                                </span>
                             </span>
                         </div>
                     </CardContent>

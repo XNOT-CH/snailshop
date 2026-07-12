@@ -92,10 +92,15 @@ const CARDS: CardDef[] = [
     },
 ];
 
-function DeltaLine({ current, previous, compareLabel }: Readonly<{ current: number; previous: number; compareLabel: string }>) {
+function DeltaLine({
+    current,
+    previous,
+    compareLabel,
+    format,
+}: Readonly<{ current: number; previous: number; compareLabel: string; format: (value: number) => string }>) {
     return (
         <p className="flex items-center gap-1 text-xs text-muted-foreground">
-            <DeltaBadge current={current} baseline={previous} />
+            <DeltaBadge current={current} baseline={previous} format={format} />
             {compareLabel}
         </p>
     );
@@ -182,6 +187,7 @@ export function KpiSummaryCards() {
                                                 current={summary.current[card.key]}
                                                 previous={summary.previous[card.key]}
                                                 compareLabel={compareLabels[range]}
+                                                format={card.format}
                                             />
                                         )}
                                         {card.subtitle && <p className="text-xs text-muted-foreground">{card.subtitle}</p>}

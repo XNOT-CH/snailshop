@@ -77,9 +77,10 @@ const RANGE_OPTIONS: RangeDays[] = [7, 30, 90];
 
 const baht = (value: number) => `฿${value.toLocaleString("th-TH", { maximumFractionDigits: 0 })}`;
 
-function rtpBadgeClass(rtp: number): string {
-    if (rtp > 100) return "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300";
-    if (rtp >= 85) return "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300";
+function profitBadgeClass(profit: number, revenue: number): string {
+    if (profit < 0) return "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-300";
+    // Thin margin (payout ate 85%+ of revenue) — worth a closer look.
+    if (revenue > 0 && profit <= revenue * 0.15) return "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300";
     return "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300";
 }
 
@@ -408,7 +409,7 @@ export function GachaSummary() {
                 <CardContent className="p-6">
                     <h4 className="mb-1 text-base font-semibold text-foreground">รายตู้</h4>
                     <p className="mb-4 text-xs text-muted-foreground">
-                        RTP = มูลค่ารางวัลที่จ่ายออก ÷ รายได้ (โดยประมาณ — ใช้ราคาปัจจุบันกับการสุ่มก่อน 11 ก.ค. 69) · เกิน 100% = ตู้จ่ายมากกว่าที่เก็บ
+                        กำไร = รายได้ − มูลค่ารางวัลที่จ่ายออก (โดยประมาณ — ใช้ราคาปัจจุบันกับการสุ่มก่อน 11 ก.ค. 69) · ติดลบ = ตู้จ่ายมากกว่าที่เก็บ
                     </p>
                     {!machines ? (
                         <div className="flex h-24 items-center justify-center text-sm text-muted-foreground">
@@ -427,7 +428,7 @@ export function GachaSummary() {
                                         <th className="px-3 py-2 text-right font-medium">ผู้เล่น</th>
                                         <th className="px-3 py-2 text-right font-medium">รายได้</th>
                                         <th className="px-3 py-2 text-right font-medium">จ่ายออก</th>
-                                        <th className="px-3 py-2 text-right font-medium">RTP</th>
+                                        <th className="px-3 py-2 text-right font-medium">กำไร</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -449,8 +450,11 @@ export function GachaSummary() {
                                                 {machine.rtp === null ? (
                                                     <span className="text-xs text-muted-foreground">ฟรีล้วน</span>
                                                 ) : (
-                                                    <span className={`rounded px-1.5 py-0.5 text-xs font-semibold tabular-nums ${rtpBadgeClass(machine.rtp)}`}>
-                                                        {machine.rtp.toLocaleString("th-TH", { maximumFractionDigits: 1 })}%
+                                                    <span
+                                                        className={`rounded px-1.5 py-0.5 text-xs font-semibold tabular-nums ${profitBadgeClass(machine.revenue - machine.payout, machine.revenue)}`}
+                                                    >
+                                                        {machine.revenue - machine.payout < 0 ? "−" : ""}
+                                                        {baht(Math.abs(machine.revenue - machine.payout))}
                                                     </span>
                                                 )}
                                             </td>
@@ -492,6 +496,8 @@ export function GachaSummary() {
                             <div className="space-y-2">
                                 {tierMachine.tiers.map((tier) => {
                                     const over = tier.expectedPct !== null && tier.actualPct > tier.expectedPct * 1.25 && tier.expectedPct < 50;
+                                    const expectedCount =
+                                        tier.expectedPct !== null ? (tier.expectedPct / 100) * tierMachine.rolls : null;
                                     return (
                                         <div key={tier.tier} className="flex items-center gap-3 text-sm">
                                             <span className="w-24 shrink-0 truncate font-medium capitalize">{tier.tier}</span>
@@ -501,10 +507,10 @@ export function GachaSummary() {
                                                     style={{ width: `${Math.min(100, tier.actualPct)}%` }}
                                                 />
                                             </div>
-                                            <span className={`w-40 shrink-0 text-right text-xs tabular-nums ${over ? "font-semibold text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
-                                                ออกจริง {tier.actualPct.toLocaleString("th-TH", { maximumFractionDigits: 1 })}%
-                                                {tier.expectedPct !== null
-                                                    ? ` (ตั้งไว้ ${tier.expectedPct.toLocaleString("th-TH", { maximumFractionDigits: 1 })}%)`
+                                            <span className={`w-44 shrink-0 text-right text-xs tabular-nums ${over ? "font-semibold text-red-600 dark:text-red-400" : "text-muted-foreground"}`}>
+                                                ออก {tier.count.toLocaleString("th-TH")} ครั้ง
+                                                {expectedCount !== null
+                                                    ? ` (คาดไว้ ~${expectedCount.toLocaleString("th-TH", { maximumFractionDigits: 1 })} ครั้ง)`
                                                     : ""}
                                             </span>
                                         </div>

@@ -225,7 +225,7 @@ export function KpiDrilldownDialog({
                                     {breakdown.points.map((point) => {
                                         const current = point.current[metric];
                                         const previous = point.previous[metric];
-                                        const pct = previous !== 0 ? ((current - previous) / Math.abs(previous)) * 100 : null;
+                                        const diff = current - previous;
                                         return (
                                             <tr key={point.date} className="border-b border-border/40 last:border-0">
                                                 <td className="px-3 py-1.5 text-muted-foreground">
@@ -235,16 +235,14 @@ export function KpiDrilldownDialog({
                                                 <td className="px-3 py-1.5 text-right font-medium tabular-nums">{format(current)}</td>
                                                 <td
                                                     className={`px-3 py-1.5 text-right tabular-nums ${
-                                                        pct === null
+                                                        diff === 0
                                                             ? "text-muted-foreground"
-                                                            : pct >= 0
+                                                            : diff > 0
                                                               ? "text-emerald-600 dark:text-emerald-400"
                                                               : "text-red-600 dark:text-red-400"
                                                     }`}
                                                 >
-                                                    {pct === null
-                                                        ? "—"
-                                                        : `${pct >= 0 ? "+" : ""}${pct.toLocaleString("th-TH", { maximumFractionDigits: 1 })}%`}
+                                                    {diff === 0 ? "—" : `${diff > 0 ? "+" : "−"}${format(Math.abs(diff))}`}
                                                 </td>
                                             </tr>
                                         );

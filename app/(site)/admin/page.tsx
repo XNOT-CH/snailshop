@@ -77,7 +77,6 @@ export default async function AdminDashboardPage() {
     const creditOutstanding = Number(rawCredit || 0);
     const totalUsers = Number(rawUsers);
     const buyers = Number(rawBuyers);
-    const buyerRate = totalUsers > 0 ? Math.round((buyers / totalUsers) * 100) : 0;
 
     const kpiCards = [
         {
@@ -110,7 +109,7 @@ export default async function AdminDashboardPage() {
         {
             title: "ลูกค้าที่เคยซื้อ",
             value: buyers.toLocaleString(),
-            sub: `${buyerRate}% ของผู้ใช้ทั้งหมด`,
+            sub: `จากผู้ใช้ทั้งหมด ${totalUsers.toLocaleString()} คน`,
             icon: ShoppingBag,
             gradient: "from-amber-500 to-orange-500",
             lightBg: "bg-amber-50 dark:bg-amber-950/30",

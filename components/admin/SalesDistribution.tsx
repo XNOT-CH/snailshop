@@ -37,8 +37,6 @@ export function SalesDistribution() {
         };
     }, []);
 
-    const total = (data ?? []).reduce((sum, item) => sum + item.value, 0);
-
     return (
         <div>
             <div className="mb-4">
@@ -112,7 +110,7 @@ export function SalesDistribution() {
                                     {item.name}
                                 </span>
                                 <span className="ml-auto font-medium tabular-nums">
-                                    {total > 0 ? ((item.value / total) * 100).toFixed(0) : 0}%
+                                    ฿{item.value.toLocaleString("th-TH", { maximumFractionDigits: 0 })}
                                 </span>
                             </div>
                         ))}
