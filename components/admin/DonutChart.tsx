@@ -11,8 +11,11 @@ export interface DonutSlice {
 
 // Fixed hue order per slice position; validated for CVD separation and the
 // per-mode lightness band against the card surface (light #fff / dark #142033).
-const SLICE_HUES = ["var(--pie-1)", "var(--pie-2)", "var(--pie-3)", "var(--pie-4)"];
-const OTHER_COLOR = "var(--pie-other)";
+// Exported so companion tables/legends can color-match their donut's slices.
+export const DONUT_SLICE_HUES = ["var(--pie-1)", "var(--pie-2)", "var(--pie-3)", "var(--pie-4)"];
+export const DONUT_OTHER_COLOR = "var(--pie-other)";
+const SLICE_HUES = DONUT_SLICE_HUES;
+const OTHER_COLOR = DONUT_OTHER_COLOR;
 const MAX_HUE_SLICES = SLICE_HUES.length;
 
 interface DonutChartProps {
