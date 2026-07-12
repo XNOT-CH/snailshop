@@ -125,12 +125,7 @@ export function DonutChart({
                     <div key={`${slice.hueIndex}-${slice.name}`} className="flex items-center gap-2.5 text-sm">
                         <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: colorFor(slice) }} />
                         <span className="min-w-0 truncate text-muted-foreground">{slice.name}</span>
-                        <span className="ml-auto shrink-0 font-medium tabular-nums">
-                            {format(slice.value)}
-                            <span className="ml-1.5 text-xs font-normal text-muted-foreground">
-                                ({((slice.value / total) * 100).toLocaleString("th-TH", { maximumFractionDigits: 1 })}%)
-                            </span>
-                        </span>
+                        <span className="ml-auto shrink-0 font-medium tabular-nums">{format(slice.value)}</span>
                     </div>
                 ))}
             </div>

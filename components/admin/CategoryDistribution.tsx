@@ -27,8 +27,6 @@ type PresetDays = 7 | 30 | 90;
 const PRESET_OPTIONS: PresetDays[] = [7, 30, 90];
 
 const baht = (value: number) => `฿${value.toLocaleString("th-TH", { maximumFractionDigits: 0 })}`;
-const pct = (value: number, total: number) =>
-    total > 0 ? `${((value / total) * 100).toLocaleString("th-TH", { maximumFractionDigits: 1 })}%` : "0%";
 
 /**
  * Overview donut pair + drill-down table: revenue/order share by product
@@ -81,14 +79,6 @@ export function CategoryDistribution() {
         }
         return `${preset} วันล่าสุด`;
     }, [isCustom, customRange, preset]);
-
-    const totals = useMemo(
-        () => ({
-            revenue: (categories ?? []).reduce((sum, c) => sum + c.revenue, 0),
-            orders: (categories ?? []).reduce((sum, c) => sum + c.orders, 0),
-        }),
-        [categories]
-    );
 
     // Search matches category names OR product names; a product-only match keeps
     // just the matching products so you can see exactly what was counted.
@@ -226,9 +216,7 @@ export function CategoryDistribution() {
                                                 <tr className="border-b border-border/60 bg-muted/40 text-left text-xs text-muted-foreground">
                                                     <th className="px-3 py-2 font-medium">หมวดหมู่ / สินค้า</th>
                                                     <th className="px-3 py-2 text-right font-medium">รายได้</th>
-                                                    <th className="px-3 py-2 text-right font-medium">% รายได้</th>
                                                     <th className="px-3 py-2 text-right font-medium">ออเดอร์</th>
-                                                    <th className="px-3 py-2 text-right font-medium">% ออเดอร์</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -240,7 +228,6 @@ export function CategoryDistribution() {
                                                             category={category}
                                                             isOpen={isOpen}
                                                             color={colorOf(category.name)}
-                                                            totals={totals}
                                                             onToggle={() => toggleExpanded(category.name)}
                                                         />
                                                     );
@@ -262,13 +249,11 @@ function FragmentRows({
     category,
     isOpen,
     color,
-    totals,
     onToggle,
 }: Readonly<{
     category: CategoryRow;
     isOpen: boolean;
     color: string;
-    totals: { revenue: number; orders: number };
     onToggle: () => void;
 }>) {
     return (
@@ -290,18 +275,14 @@ function FragmentRows({
                     </span>
                 </td>
                 <td className="px-3 py-2.5 text-right font-medium tabular-nums">{baht(category.revenue)}</td>
-                <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{pct(category.revenue, totals.revenue)}</td>
                 <td className="px-3 py-2.5 text-right font-medium tabular-nums">{category.orders.toLocaleString("th-TH")}</td>
-                <td className="px-3 py-2.5 text-right tabular-nums text-muted-foreground">{pct(category.orders, totals.orders)}</td>
             </tr>
             {isOpen &&
                 category.products.map((product, index) => (
                     <tr key={`${index}-${product.name}`} className="border-b border-border/30 bg-muted/20 text-xs last:border-0">
                         <td className="py-2 pl-12 pr-3 text-muted-foreground">{product.name}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{baht(product.revenue)}</td>
-                        <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{pct(product.revenue, category.revenue)}</td>
                         <td className="px-3 py-2 text-right tabular-nums">{product.orders.toLocaleString("th-TH")}</td>
-                        <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">{pct(product.orders, category.orders)}</td>
                     </tr>
                 ))}
         </>
