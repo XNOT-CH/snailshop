@@ -96,6 +96,11 @@ services:
     # Turning off performance_schema and trimming the buffer pool / connections
     # brings steady-state RAM down to ~150-200MB with no impact on this workload.
     command:
+      # Pin UTC: app code stores/reads all datetimes in UTC (mysqlNow(),
+      # mysqlDateTimeToIso), and column defaults use MySQL now(). Pinning the
+      # server tz to UTC keeps now() and app writes in the same frame so date
+      # filtering / exports stay correct regardless of host or TZ env.
+      - --default-time-zone=+00:00
       - --performance-schema=OFF
       - --innodb-buffer-pool-size=64M
       - --max-connections=50
@@ -119,6 +124,7 @@ services:
     # prod host. Start explicitly with: docker compose --profile dev up -d app_db_dev
     profiles: ["dev"]
     command:
+      - --default-time-zone=+00:00
       - --performance-schema=OFF
       - --innodb-buffer-pool-size=64M
       - --max-connections=50

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { AUDIT_ACTIONS, auditFromRequest, getAuditLogs } from "@/lib/auditLog";
+import { AUDIT_ACTIONS, auditFromRequest, buildAuditLogConditions, getAuditLogs } from "@/lib/auditLog";
 import { db, auditLogs } from "@/lib/db";
-import { and, count, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, count, eq, inArray } from "drizzle-orm";
 import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -24,24 +24,22 @@ export async function GET(request: Request) {
         const userId = searchParams.get("userId") || undefined;
         const action = searchParams.get("action") || undefined;
         const resource = searchParams.get("resource") || undefined;
+        const status = searchParams.get("status") || undefined;
+        const search = searchParams.get("search") || undefined;
         const startDate = parseDateParam(searchParams.get("startDate"), "startDate") ?? undefined;
         const endDate = parseDateParam(searchParams.get("endDate"), "endDate") ?? undefined;
-        const limit = Math.min(Number.parseInt(searchParams.get("limit") || "50"), 200);
+        const limit = Math.min(Math.max(Number.parseInt(searchParams.get("limit") || "50") || 50, 1), 200);
         const offset = Math.max(Number.parseInt(searchParams.get("offset") || "0"), 0);
 
-        const logs = await getAuditLogs({
-            userId, action,
-            resource, startDate, endDate, limit, offset,
-        });
+        const queryOptions = {
+            userId, action, resource, status, search,
+            startDate, endDate, limit, offset,
+        };
 
-        // Build where conditions for count
-        const conditions = [];
-        if (userId) conditions.push(eq(auditLogs.userId, userId));
-        if (action) conditions.push(eq(auditLogs.action, action));
-        if (resource) conditions.push(eq(auditLogs.resource, resource));
-        if (startDate) conditions.push(gte(auditLogs.createdAt, startDate.toISOString().slice(0, 19).replace("T", " ")));
-        if (endDate) conditions.push(lte(auditLogs.createdAt, endDate.toISOString().slice(0, 19).replace("T", " ")));
+        const logs = await getAuditLogs(queryOptions);
 
+        // Reuse the same conditions as the row query so the total matches the rows.
+        const conditions = buildAuditLogConditions(queryOptions);
         const [{ count: total }] = await db.select({ count: count() }).from(auditLogs)
             .where(conditions.length > 0 ? and(...conditions) : undefined);
 

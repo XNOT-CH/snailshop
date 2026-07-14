@@ -1,6 +1,7 @@
 import { mysqlNow } from "@/lib/utils/date";
-import { db, auditLogs } from "@/lib/db";
-import { eq, lt, and, gte, lte } from "drizzle-orm";
+import { escapeLikePattern } from "@/lib/utils/sql";
+import { db, auditLogs, users } from "@/lib/db";
+import { eq, lt, and, or, gte, lte, like, inArray } from "drizzle-orm";
 import { getClientIp } from "@/lib/rateLimit";
 
 // Audit action types
@@ -146,21 +147,53 @@ export async function auditUpdate<T extends Record<string, unknown>>(
     });
 }
 
-export async function getAuditLogs(options: {
+export interface AuditLogQueryOptions {
     userId?: string;
     action?: string;
     resource?: string;
+    status?: string;
+    search?: string;
     startDate?: Date;
     endDate?: Date;
     limit?: number;
     offset?: number;
-}) {
+}
+
+const toMysqlDate = (date: Date) => date.toISOString().slice(0, 19).replace("T", " ");
+
+/**
+ * Shared WHERE conditions for the audit log list. Used by both the row query
+ * and the count query so pagination totals always match the rows returned.
+ */
+export function buildAuditLogConditions(options: AuditLogQueryOptions) {
     const conditions = [];
     if (options.userId) conditions.push(eq(auditLogs.userId, options.userId));
     if (options.action) conditions.push(eq(auditLogs.action, options.action));
     if (options.resource) conditions.push(eq(auditLogs.resource, options.resource));
-    if (options.startDate) conditions.push(gte(auditLogs.createdAt, options.startDate.toISOString().slice(0, 19).replace("T", " ")));
-    if (options.endDate) conditions.push(lte(auditLogs.createdAt, options.endDate.toISOString().slice(0, 19).replace("T", " ")));
+    if (options.status) conditions.push(eq(auditLogs.status, options.status));
+    if (options.startDate) conditions.push(gte(auditLogs.createdAt, toMysqlDate(options.startDate)));
+    if (options.endDate) conditions.push(lte(auditLogs.createdAt, toMysqlDate(options.endDate)));
+
+    const search = options.search?.trim();
+    if (search) {
+        const term = `%${escapeLikePattern(search)}%`;
+        const usersMatchingName = db.select({ id: users.id }).from(users).where(like(users.username, term));
+        const searchCondition = or(
+            like(auditLogs.action, term),
+            like(auditLogs.resource, term),
+            like(auditLogs.resourceId, term),
+            like(auditLogs.ipAddress, term),
+            like(auditLogs.details, term),
+            inArray(auditLogs.userId, usersMatchingName),
+        );
+        if (searchCondition) conditions.push(searchCondition);
+    }
+
+    return conditions;
+}
+
+export async function getAuditLogs(options: AuditLogQueryOptions) {
+    const conditions = buildAuditLogConditions(options);
 
     return db.query.auditLogs.findMany({
         where: conditions.length > 0 ? and(...conditions) : undefined,
