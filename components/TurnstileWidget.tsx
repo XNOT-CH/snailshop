@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
+import { useTheme } from "next-themes";
 import Script from "next/script";
 
 declare global {
@@ -33,6 +34,11 @@ export function TurnstileWidget({
     resetSignal = 0,
 }: Readonly<TurnstileWidgetProps>) {
     const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
+    // Match the widget chrome to the app theme (class-based, not OS): "auto"
+    // would follow prefers-color-scheme and mismatch our toggle, so resolve it
+    // ourselves and re-render the widget when the user flips the theme.
+    const { resolvedTheme } = useTheme();
+    const widgetTheme = resolvedTheme === "dark" ? "dark" : "light";
     const containerId = useId().replaceAll(":", "");
     const widgetIdRef = useRef<string | null>(null);
     const lastResetSignalRef = useRef(resetSignal);
@@ -45,7 +51,7 @@ export function TurnstileWidget({
 
         widgetIdRef.current = globalThis.window.turnstile.render(`#${containerId}`, {
             sitekey: siteKey,
-            theme: "light",
+            theme: widgetTheme,
             size: "flexible",
             callback: (token) => onTokenChange(token),
             "expired-callback": () => onTokenChange(null),
@@ -58,7 +64,7 @@ export function TurnstileWidget({
                 widgetIdRef.current = null;
             }
         };
-    }, [containerId, onTokenChange, scriptReady, siteKey]);
+    }, [containerId, onTokenChange, scriptReady, siteKey, widgetTheme]);
 
     useEffect(() => {
         if (!widgetIdRef.current || !globalThis.window?.turnstile) return;
