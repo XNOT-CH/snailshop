@@ -50,6 +50,7 @@ vi.mock("drizzle-orm", () => ({
 vi.mock("@/lib/auditLog", () => ({
   auditFromRequest: vi.fn(),
   getAuditLogs: vi.fn().mockResolvedValue([]),
+  buildAuditLogConditions: vi.fn(() => []),
   AUDIT_ACTIONS: {
     LOGIN: "LOGIN", PRODUCT_CREATE: "PRODUCT_CREATE",
   },

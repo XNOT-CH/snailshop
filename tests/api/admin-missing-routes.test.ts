@@ -86,6 +86,7 @@ vi.mock("drizzle-orm", () => ({
 
 vi.mock("@/lib/auditLog", () => ({
   getAuditLogs: vi.fn().mockResolvedValue([]),
+  buildAuditLogConditions: vi.fn(() => []),
   auditFromRequest: vi.fn(),
   AUDIT_ACTIONS: {
     ROLE_UPDATE: "ROLE_UPDATE",

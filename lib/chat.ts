@@ -6,6 +6,7 @@ import { sanitizeChatTags } from "@/lib/chatAdmin";
 import { parseChatMessagePayload } from "@/lib/chatSecurity";
 import { ChatMessageKind, parseChatImagePayload, parseChatMessageContent } from "@/lib/chatMessageContent";
 import { mysqlDateTimeToIso, mysqlNow } from "@/lib/utils/date";
+import { escapeLikePattern } from "@/lib/utils/sql";
 
 // NOTE = internal admin note; never visible to the customer and never bumps
 // lastMessageAt/unread counters, so every query that feeds the customer or a
@@ -355,10 +356,6 @@ function decodeConversationCursor(cursor: string | null | undefined): Conversati
     } catch {
         return null;
     }
-}
-
-function escapeLikePattern(value: string) {
-    return value.replaceAll(/[\\%_]/g, (char) => `\\${char}`);
 }
 
 export async function listAdminConversations(

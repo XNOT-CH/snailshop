@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,6 +36,7 @@ import Swal from "sweetalert2";
 import { PERMISSIONS } from "@/lib/permissions";
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import { escapeHtml } from "@/lib/sanitize";
+import { mysqlDateTimeToIso, TH_TIME_ZONE, getThaiDayStartUtc } from "@/lib/utils/date";
 
 interface AuditChange {
     field: string;
@@ -89,6 +90,12 @@ const ACTION_COLORS: Record<string, string> = {
     API_KEY_CREATE: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300",
     API_KEY_REVOKE: "bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300",
     AUDIT_LOG_DELETE: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+    PIN_VERIFY_FAILED: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300",
+    USER_BAN: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300",
+    USER_UNBAN: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+    DATA_EXPORT: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300",
+    SEASON_PASS_PURCHASE: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+    SEASON_PASS_CLAIM: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300",
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -100,9 +107,15 @@ const ACTION_LABELS: Record<string, string> = {
     PASSWORD_RESET_REQUEST: "ขอรีเซ็ตรหัสผ่าน",
     PASSWORD_RESET_COMPLETE: "รีเซ็ตรหัสผ่าน",
     PROFILE_UPDATE: "แก้ไขโปรไฟล์",
+    PIN_SET: "ตั้ง PIN",
+    PIN_CHANGED: "เปลี่ยน PIN",
+    PIN_RESET: "รีเซ็ต PIN",
+    PIN_VERIFY_FAILED: "ยืนยัน PIN ไม่สำเร็จ",
     USER_CREATE: "เพิ่มผู้ใช้",
     USER_UPDATE: "แก้ไขผู้ใช้",
     USER_DELETE: "ลบผู้ใช้",
+    USER_BAN: "แบนผู้ใช้",
+    USER_UNBAN: "ปลดแบนผู้ใช้",
     USER_ROLE_CHANGE: "เปลี่ยนยศผู้ใช้",
     USER_PERMISSION_CHANGE: "เปลี่ยนสิทธิ์ผู้ใช้",
     ROLE_CREATE: "เพิ่มยศ",
@@ -113,6 +126,9 @@ const ACTION_LABELS: Record<string, string> = {
     PRODUCT_DELETE: "ลบสินค้า",
     PRODUCT_DUPLICATE: "คัดลอกสินค้า",
     PRODUCT_FEATURED_TOGGLE: "สลับสินค้าแนะนำ",
+    PROMO_CREATE: "เพิ่มโค้ดส่วนลด",
+    PROMO_UPDATE: "แก้ไขโค้ดส่วนลด",
+    PROMO_DELETE: "ลบโค้ดส่วนลด",
     NEWS_CREATE: "เพิ่มข่าว",
     NEWS_UPDATE: "แก้ไขข่าว",
     NEWS_DELETE: "ลบข่าว",
@@ -126,6 +142,10 @@ const ACTION_LABELS: Record<string, string> = {
     POPUP_UPDATE: "แก้ไข Popup",
     POPUP_DELETE: "ลบ Popup",
     PURCHASE: "ซื้อสินค้า",
+    SEASON_PASS_PURCHASE: "ซื้อ Season Pass",
+    SEASON_PASS_RENEW_QUEUED: "ต่ออายุ Season Pass",
+    SEASON_PASS_CLAIM: "รับรางวัล Season Pass",
+    SEASON_PASS_QUEUE_ACTIVATED: "เริ่มรอบ Season Pass",
     TOPUP_REQUEST: "คำขอเติมเงิน",
     TOPUP_APPROVE: "อนุมัติเติมเงิน",
     TOPUP_REJECT: "ปฏิเสธเติมเงิน",
@@ -135,10 +155,13 @@ const ACTION_LABELS: Record<string, string> = {
     CHAT_DELETE: "ลบแชต",
     CHAT_TAGS_UPDATE: "แก้ไขแท็กแชต",
     CHAT_PIN_UPDATE: "ปักหมุดแชต",
+    CHAT_ASSIGNEE_UPDATE: "มอบหมายแชต",
+    CHAT_NOTE_CREATE: "เพิ่มโน้ตแชต",
     CHAT_TEMPLATE_CREATE: "เพิ่มเทมเพลตแชต",
     CHAT_TEMPLATE_UPDATE: "แก้ไขเทมเพลตแชต",
     CHAT_TEMPLATE_DELETE: "ลบเทมเพลตแชต",
     SETTINGS_UPDATE: "แก้ไขตั้งค่า",
+    DATA_EXPORT: "ส่งออกข้อมูล",
     API_KEY_CREATE: "สร้าง API Key",
     API_KEY_REVOKE: "ยกเลิก API Key",
     AUDIT_LOG_DELETE: "ลบ Audit Log",
@@ -155,12 +178,23 @@ const ACTION_ORDER = [
     "PASSWORD_RESET_REQUEST",
     "PASSWORD_RESET_COMPLETE",
     "PROFILE_UPDATE",
+    "PIN_SET",
+    "PIN_CHANGED",
+    "PIN_RESET",
+    "PIN_VERIFY_FAILED",
     "PURCHASE",
+    "SEASON_PASS_PURCHASE",
+    "SEASON_PASS_RENEW_QUEUED",
+    "SEASON_PASS_CLAIM",
+    "SEASON_PASS_QUEUE_ACTIVATED",
     "PRODUCT_CREATE",
     "PRODUCT_UPDATE",
     "PRODUCT_DELETE",
     "PRODUCT_DUPLICATE",
     "PRODUCT_FEATURED_TOGGLE",
+    "PROMO_CREATE",
+    "PROMO_UPDATE",
+    "PROMO_DELETE",
     "NEWS_CREATE",
     "NEWS_UPDATE",
     "NEWS_DELETE",
@@ -180,6 +214,8 @@ const ACTION_ORDER = [
     "USER_CREATE",
     "USER_UPDATE",
     "USER_DELETE",
+    "USER_BAN",
+    "USER_UNBAN",
     "USER_ROLE_CHANGE",
     "USER_PERMISSION_CHANGE",
     "HELP_CREATE",
@@ -191,9 +227,12 @@ const ACTION_ORDER = [
     "CHAT_DELETE",
     "CHAT_TAGS_UPDATE",
     "CHAT_PIN_UPDATE",
+    "CHAT_ASSIGNEE_UPDATE",
+    "CHAT_NOTE_CREATE",
     "CHAT_TEMPLATE_CREATE",
     "CHAT_TEMPLATE_UPDATE",
     "CHAT_TEMPLATE_DELETE",
+    "DATA_EXPORT",
     "API_KEY_CREATE",
     "API_KEY_REVOKE",
     "AUDIT_LOG_DELETE",
@@ -243,6 +282,12 @@ const RESOURCE_LABELS: Record<string, string> = {
     HelpQuestion: "คำถาม",
     Category: "หมวดหมู่",
     Order: "รายการสั่งซื้อ",
+    PromoCode: "โค้ดส่วนลด",
+    SeasonPass: "Season Pass",
+    Conversation: "แชต",
+    ApiKey: "API Key",
+    AuditLog: "Audit Log",
+    Banner: "แบนเนอร์",
 };
 
 function getActionBadgeClass(action: string) {
@@ -259,7 +304,7 @@ function getChangeValue(change: AuditChange, key: "old" | "new") {
         : (change.newValue ?? change.new ?? null);
 
     if (value === null || value === undefined || value === "") {
-        return "null";
+        return "—";
     }
 
     if (typeof value === "object") {
@@ -273,8 +318,8 @@ function getChangeValue(change: AuditChange, key: "old" | "new") {
     return typeof value === "string" ? value : `${value}`;
 }
 
-function getResourceDetailsHtml(resourceName?: string, resourceType?: string | null) {
-    if (!resourceName && !resourceType) {
+function getResourceDetailsHtml(resourceName?: string, resourceType?: string | null, resourceId?: string | null) {
+    if (!resourceName && !resourceType && !resourceId) {
         return "";
     }
 
@@ -282,12 +327,16 @@ function getResourceDetailsHtml(resourceName?: string, resourceType?: string | n
     const resourceTypeHtml = resourceType
         ? `<p class="text-xs text-gray-500">${escapeHtml(RESOURCE_LABELS[resourceType] || resourceType)}</p>`
         : "";
+    const resourceIdHtml = resourceId
+        ? `<p class="mt-1 break-all font-mono text-xs text-gray-400">ID: ${escapeHtml(resourceId)}</p>`
+        : "";
 
     return `
         <div class="rounded-xl border border-blue-100 bg-blue-50 p-3 text-sm">
             <p class="mb-1 text-xs font-semibold uppercase tracking-wide text-blue-500">รายการที่เกี่ยวข้อง</p>
             ${resourceNameHtml}
             ${resourceTypeHtml}
+            ${resourceIdHtml}
         </div>
     `;
 }
@@ -331,6 +380,7 @@ export default function AdminAuditLogsPage() {
     const [limit] = useState(20);
     const [actionFilter, setActionFilter] = useState("all");
     const [searchQuery, setSearchQuery] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [quickFilter, setQuickFilter] = useState<QuickFilterKey>("all");
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [deleteMode, setDeleteMode] = useState<"single" | "selected" | "all" | null>(null);
@@ -338,6 +388,15 @@ export default function AdminAuditLogsPage() {
     useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    // Debounce the search box so each keystroke doesn't hit the API.
+    useEffect(() => {
+        const handle = setTimeout(() => {
+            setDebouncedSearch(searchQuery.trim());
+            setPage(0);
+        }, 400);
+        return () => clearTimeout(handle);
+    }, [searchQuery]);
 
     const parseDetails = useCallback((details: string | null): AuditDetails | null => {
         if (!details) return null;
@@ -349,14 +408,17 @@ export default function AdminAuditLogsPage() {
     }, []);
 
     const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
+        // AuditLog.createdAt is a MySQL UTC datetime string without a timezone
+        // marker; normalise it to ISO before formatting in Thai time.
+        const iso = mysqlDateTimeToIso(dateString) ?? dateString;
         return new Intl.DateTimeFormat("th-TH", {
+            timeZone: TH_TIME_ZONE,
             year: "numeric",
             month: "short",
             day: "numeric",
             hour: "2-digit",
             minute: "2-digit",
-        }).format(date);
+        }).format(new Date(iso));
     };
 
     const getFieldLabel = useCallback((field: string) => FIELD_LABELS[field] || field, []);
@@ -393,7 +455,16 @@ export default function AdminAuditLogsPage() {
         const actorId = log.user?.id ? escapeHtml(log.user.id) : "";
         const ipAddress = escapeHtml(log.ipAddress || "-");
 
-        const resourceSection = getResourceDetailsHtml(details?.resourceName, log.resource);
+        const resourceSection = getResourceDetailsHtml(details?.resourceName, log.resource, log.resourceId);
+
+        const userAgentSection = log.userAgent
+            ? `
+                <div class="rounded-xl bg-gray-50 p-3 text-sm">
+                    <p class="mb-1 text-gray-500">อุปกรณ์ / เบราว์เซอร์</p>
+                    <p class="break-all font-mono text-xs text-gray-600">${escapeHtml(log.userAgent)}</p>
+                </div>
+            `
+            : "";
 
         const changesSection = hasChanges
             ? `
@@ -435,6 +506,7 @@ export default function AdminAuditLogsPage() {
                         </div>
                     </div>
                     ${resourceSection}
+                    ${userAgentSection}
                     ${changesSection}
                 </div>
             `,
@@ -453,6 +525,20 @@ export default function AdminAuditLogsPage() {
                 params.set("action", actionFilter);
             }
 
+            if (debouncedSearch) {
+                params.set("search", debouncedSearch);
+            }
+
+            // Quick filters are applied server-side so counts/paging stay honest
+            // across the whole dataset, not just the current page.
+            if (quickFilter === "success") {
+                params.set("status", "SUCCESS");
+            } else if (quickFilter === "failed") {
+                params.set("status", "FAILURE");
+            } else if (quickFilter === "today") {
+                params.set("startDate", getThaiDayStartUtc(new Date()).toISOString());
+            }
+
             const res = await fetch(`/api/admin/audit-logs?${params.toString()}`);
             if (!res.ok) {
                 throw new Error("Failed to fetch logs");
@@ -469,7 +555,7 @@ export default function AdminAuditLogsPage() {
         } finally {
             setLoading(false);
         }
-    }, [actionFilter, limit, page]);
+    }, [actionFilter, debouncedSearch, quickFilter, limit, page]);
 
     useEffect(() => {
         fetchLogs().catch((error) => {
@@ -477,43 +563,9 @@ export default function AdminAuditLogsPage() {
         });
     }, [fetchLogs]);
 
-    const filteredLogs = useMemo(() => {
-        if (!searchQuery) return logs;
-
-        const query = searchQuery.toLowerCase().trim();
-        return logs.filter((log) => {
-            const details = parseDetails(log.details);
-            return [
-                log.user?.username,
-                getActionLabel(log.action),
-                log.action,
-                log.resource,
-                log.ipAddress,
-                details?.resourceName,
-            ].some((value) => value?.toLowerCase().includes(query));
-        });
-    }, [getActionLabel, logs, parseDetails, searchQuery]);
-
-    const todayKey = new Date().toDateString();
-    const quickFilteredLogs = filteredLogs.filter((log) => {
-        if (quickFilter === "today") {
-            return new Date(log.createdAt).toDateString() === todayKey;
-        }
-        if (quickFilter === "success") {
-            return log.status === "SUCCESS";
-        }
-        if (quickFilter === "failed") {
-            return log.status !== "SUCCESS";
-        }
-        return true;
-    });
-
-    const todayCount = filteredLogs.filter((log) => new Date(log.createdAt).toDateString() === todayKey).length;
-    const successCount = filteredLogs.filter((log) => log.status === "SUCCESS").length;
-    const failedCount = filteredLogs.filter((log) => log.status !== "SUCCESS").length;
     const totalPages = Math.ceil(total / limit);
-    const allVisibleSelected = quickFilteredLogs.length > 0 && quickFilteredLogs.every((log) => selectedIds.includes(log.id));
-    const someVisibleSelected = quickFilteredLogs.some((log) => selectedIds.includes(log.id));
+    const allVisibleSelected = logs.length > 0 && logs.every((log) => selectedIds.includes(log.id));
+    const someVisibleSelected = logs.some((log) => selectedIds.includes(log.id));
     const visibleCheckboxState = getVisibleCheckboxState(allVisibleSelected, someVisibleSelected);
 
     const toggleSelectLog = useCallback((logId: string, checked: boolean) => {
@@ -527,13 +579,13 @@ export default function AdminAuditLogsPage() {
     const toggleSelectAllVisible = useCallback((checked: boolean) => {
         setSelectedIds((previous) => {
             if (checked) {
-                return Array.from(new Set([...previous, ...quickFilteredLogs.map((log) => log.id)]));
+                return Array.from(new Set([...previous, ...logs.map((log) => log.id)]));
             }
 
-            const visibleIds = new Set(quickFilteredLogs.map((log) => log.id));
+            const visibleIds = new Set(logs.map((log) => log.id));
             return previous.filter((id) => !visibleIds.has(id));
         });
-    }, [quickFilteredLogs]);
+    }, [logs]);
 
     const handleDeleteLogs = useCallback(async (
         mode: "single" | "selected" | "all",
@@ -627,12 +679,9 @@ export default function AdminAuditLogsPage() {
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                        placeholder="ค้นหา username, ชื่อกิจกรรม, ชื่อ resource..."
+                        placeholder="ค้นหา username, กิจกรรม, resource, IP..."
                         value={searchQuery}
-                        onChange={(e) => {
-                            setSearchQuery(e.target.value);
-                            setPage(0);
-                        }}
+                        onChange={(e) => setSearchQuery(e.target.value)}
                         className="pl-9"
                     />
                 </div>
@@ -661,10 +710,10 @@ export default function AdminAuditLogsPage() {
 
             <div className="flex flex-wrap items-center gap-2">
                 {[
-                    { key: "all" as const, label: `ทั้งหมด ${filteredLogs.length}` },
-                    { key: "today" as const, label: `วันนี้ ${todayCount}` },
-                    { key: "success" as const, label: `สำเร็จ ${successCount}` },
-                    { key: "failed" as const, label: `ล้มเหลว ${failedCount}` },
+                    { key: "all" as const, label: "ทั้งหมด" },
+                    { key: "today" as const, label: "วันนี้" },
+                    { key: "success" as const, label: "สำเร็จ" },
+                    { key: "failed" as const, label: "ล้มเหลว" },
                 ].map((item) => (
                     <button
                         key={item.key}
@@ -683,6 +732,9 @@ export default function AdminAuditLogsPage() {
                         {item.label}
                     </button>
                 ))}
+                <span className="ml-auto text-xs text-muted-foreground">
+                    {loading ? "กำลังโหลด..." : `พบ ${total.toLocaleString("th-TH")} รายการ`}
+                </span>
             </div>
 
             {canDeleteAuditLogs && (
@@ -741,17 +793,17 @@ export default function AdminAuditLogsPage() {
                     </div>
                 )}
 
-                {!loading && quickFilteredLogs.length === 0 && (
+                {!loading && logs.length === 0 && (
                     <div className="py-12 text-center text-muted-foreground">
                         <FileText className="mx-auto mb-4 h-12 w-12 opacity-50" />
                         <p>ไม่พบประวัติกิจกรรม</p>
                     </div>
                 )}
 
-                {!loading && quickFilteredLogs.length > 0 && (
+                {!loading && logs.length > 0 && (
                     <>
                     <div className="space-y-3 p-4 md:hidden">
-                        {quickFilteredLogs.map((log) => {
+                        {logs.map((log) => {
                             const details = parseDetails(log.details);
                             const changes = details?.changes ?? [];
                             const hasChanges = changes.length > 0;
@@ -864,7 +916,7 @@ export default function AdminAuditLogsPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {quickFilteredLogs.map((log) => {
+                                {logs.map((log) => {
                                     const details = parseDetails(log.details);
                                     const changes = details?.changes ?? [];
                                     const hasChanges = changes.length > 0;

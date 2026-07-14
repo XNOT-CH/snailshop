@@ -45,7 +45,7 @@ const tables: TableConfig[] = [
     {
         key: "orders",
         label: "คำสั่งซื้อ",
-        description: "รายการคำสั่งซื้อทั้งหมด (id, userId, totalPrice, status, purchasedAt)",
+        description: "รายการคำสั่งซื้อทั้งหมด (รหัส, ผู้ใช้, ยอดรวม, สถานะ, วันที่ซื้อ)",
         icon: ShoppingCart,
         color: "text-blue-600",
         gradient: "from-blue-500 to-blue-700",
@@ -55,7 +55,7 @@ const tables: TableConfig[] = [
     {
         key: "users",
         label: "ผู้ใช้งาน",
-        description: "ข้อมูลสมาชิกทั้งหมด (id, username, email, role, creditBalance, ...)",
+        description: "ข้อมูลสมาชิกทั้งหมด (รหัส, ชื่อผู้ใช้, อีเมล, บทบาท, เครดิตคงเหลือ, ...)",
         icon: Users,
         color: "text-violet-600",
         gradient: "from-violet-500 to-purple-600",
@@ -65,7 +65,7 @@ const tables: TableConfig[] = [
     {
         key: "topups",
         label: "ประวัติเติมเงิน",
-        description: "รายการเติมเงินทั้งหมด (id, userId, amount, status, senderBank, ...)",
+        description: "รายการเติมเงินทั้งหมด (รหัส, ผู้ใช้, จำนวนเงิน, สถานะ, ธนาคารผู้โอน, ...)",
         icon: CreditCard,
         color: "text-emerald-600",
         gradient: "from-emerald-500 to-teal-600",
@@ -75,7 +75,7 @@ const tables: TableConfig[] = [
     {
         key: "gacha",
         label: "บันทึกกาชา",
-        description: "ประวัติการหมุนกาชาทั้งหมด (id, userId, rewardName, tier, costAmount, ...)",
+        description: "ประวัติการหมุนกาชาทั้งหมด (รหัส, ผู้ใช้, ของรางวัล, ระดับ, จำนวนที่ใช้จ่าย, ...)",
         icon: Gamepad2,
         color: "text-amber-600",
         gradient: "from-amber-500 to-orange-500",
@@ -85,7 +85,7 @@ const tables: TableConfig[] = [
     {
         key: "products",
         label: "สินค้า",
-        description: "รายการสินค้าทั้งหมด (id, name, category, price, isSold, ...)",
+        description: "รายการสินค้าทั้งหมด (รหัส, ชื่อสินค้า, หมวดหมู่, ราคา, ขายแล้ว, ...)",
         icon: Package,
         color: "text-rose-600",
         gradient: "from-rose-500 to-pink-600",
@@ -351,8 +351,8 @@ export default function AdminExportPage() {
             <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-[#355071] dark:bg-[#132133] dark:text-[#bcd8ff]">
                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-[#7ab8ff]" />
                 <div>
-                    <span className="font-semibold">UTF-8 BOM ถูกเพิ่มอัตโนมัติ</span>{" "}
-                    ไฟล์ CSV ที่ดาวน์โหลดจะแสดงภาษาไทยถูกต้องเมื่อเปิดด้วย Excel (Windows)
+                    <span className="font-semibold">หัวตารางและค่าต่างๆ เป็นภาษาไทย</span>{" "}
+                    วันที่แสดงเป็นเวลาไทย สถานะ/บทบาทแปลเป็นไทย และไฟล์มี UTF-8 BOM ให้เปิดใน Excel (Windows) ได้ทันที
                 </div>
             </div>
 
