@@ -8,13 +8,10 @@ import {
     DollarSign,
     Users,
     UserCheck,
-    ShoppingCart,
     ShoppingBag,
     Wallet,
 } from "lucide-react";
 import { RevenueChart } from "@/components/admin/RevenueChart";
-import { SalesDistribution } from "@/components/admin/SalesDistribution";
-import { RecentTransactions } from "@/components/admin/RecentTransactions";
 import { KpiSummaryCards } from "@/components/admin/KpiSummaryCards";
 import { ComparisonSection } from "@/components/admin/ComparisonSection";
 import { GachaSummary } from "@/components/admin/GachaSummary";
@@ -197,35 +194,6 @@ export default async function AdminDashboardPage() {
                 topupContent={<TopupSummaryWithDateRange />}
                 membersContent={<MembersSummary />}
                 gachaContent={<GachaSummary />}
-                purchasesContent={
-                    <div className="grid gap-4 grid-cols-1 lg:grid-cols-5">
-                        {/* Sales Distribution */}
-                        <div className="lg:col-span-2 overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)]">
-                            <div className="border-b border-border py-3 px-5 flex items-center gap-2">
-                                <div className="w-6 h-6 bg-[#145de7] rounded flex items-center justify-center">
-                                    <ShoppingCart className="h-3.5 w-3.5 text-white" />
-                                </div>
-                                <span className="font-bold">สัดส่วนการเติมเงิน</span>
-                            </div>
-                            <div className="p-5">
-                                <SalesDistribution />
-                            </div>
-                        </div>
-
-                        {/* Recent Transactions */}
-                        <div className="lg:col-span-3 overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)]">
-                            <div className="border-b border-border py-3 px-5 flex items-center gap-2">
-                                <div className="w-6 h-6 bg-[#145de7] rounded flex items-center justify-center">
-                                    <Users className="h-3.5 w-3.5 text-white" />
-                                </div>
-                                <span className="font-bold">รายการล่าสุด</span>
-                            </div>
-                            <div className="p-5">
-                                <RecentTransactions />
-                            </div>
-                        </div>
-                    </div>
-                }
             />
         </div>
     );
