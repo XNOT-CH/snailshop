@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { after } from "next/server";
 import { cache } from "react";
 import type { Metadata } from "next";
 import { ProductGallery } from "@/components/ProductGallery";
@@ -19,6 +20,7 @@ import { getSiteSettings } from "@/lib/getSiteSettings";
 import { themeClasses } from "@/lib/theme";
 import { getPrimaryProductImage, normalizeProductImageUrls } from "@/lib/productImages";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
+import { recordProductView } from "@/lib/features/products/productViews";
 
 const getProduct = cache(async (id: string) => {
     return db.query.products.findFirst({
@@ -105,6 +107,9 @@ export default async function ProductDetailPage({
     if (!product) {
         notFound();
     }
+
+    // Analytics only — runs after the response is sent, never blocks the page.
+    after(() => recordProductView(product.id));
 
     const isSold = Boolean(product.isSold);
     const price = Number(product.price);

@@ -16,6 +16,9 @@ import { RevenueChart } from "@/components/admin/RevenueChart";
 import { SalesDistribution } from "@/components/admin/SalesDistribution";
 import { RecentTransactions } from "@/components/admin/RecentTransactions";
 import { KpiSummaryCards } from "@/components/admin/KpiSummaryCards";
+import { ComparisonSection } from "@/components/admin/ComparisonSection";
+import { GachaSummary } from "@/components/admin/GachaSummary";
+import { CategoryDistribution } from "@/components/admin/CategoryDistribution";
 import { ActionCenter } from "@/components/admin/ActionCenter";
 import { BestSellers } from "@/components/admin/BestSellers";
 import { SalesHeatmap } from "@/components/admin/SalesHeatmap";
@@ -74,7 +77,6 @@ export default async function AdminDashboardPage() {
     const creditOutstanding = Number(rawCredit || 0);
     const totalUsers = Number(rawUsers);
     const buyers = Number(rawBuyers);
-    const buyerRate = totalUsers > 0 ? Math.round((buyers / totalUsers) * 100) : 0;
 
     const kpiCards = [
         {
@@ -107,7 +109,7 @@ export default async function AdminDashboardPage() {
         {
             title: "ลูกค้าที่เคยซื้อ",
             value: buyers.toLocaleString(),
-            sub: `${buyerRate}% ของผู้ใช้ทั้งหมด`,
+            sub: `จากผู้ใช้ทั้งหมด ${totalUsers.toLocaleString()} คน`,
             icon: ShoppingBag,
             gradient: "from-amber-500 to-orange-500",
             lightBg: "bg-amber-50 dark:bg-amber-950/30",
@@ -171,6 +173,12 @@ export default async function AdminDashboardPage() {
                             </div>
                         </div>
 
+                        {/* Revenue/order share by product category */}
+                        <CategoryDistribution />
+
+                        {/* Period-vs-period comparison (pick two ranges, any metric) */}
+                        <ComparisonSection />
+
                         {/* Best Sellers + Peak Hours */}
                         <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
                             <div className="overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)]">
@@ -188,6 +196,7 @@ export default async function AdminDashboardPage() {
                 }
                 topupContent={<TopupSummaryWithDateRange />}
                 membersContent={<MembersSummary />}
+                gachaContent={<GachaSummary />}
                 purchasesContent={
                     <div className="grid gap-4 grid-cols-1 lg:grid-cols-5">
                         {/* Sales Distribution */}

@@ -6,11 +6,12 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
 import { eq } from "drizzle-orm";
-import { users } from "../lib/db/schema";
+import { users } from "../../lib/db/schema";
 import bcrypt from "bcryptjs";
 import * as dotenv from "dotenv";
 
 dotenv.config({ path: ".env.local" });
+dotenv.config({ path: ".env" });
 
 const DATABASE_URL = process.env.DATABASE_URL!;
 const isTiDB = DATABASE_URL?.includes("tidbcloud.com");

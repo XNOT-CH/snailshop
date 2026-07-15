@@ -61,6 +61,7 @@ interface RoleOption {
 
 interface AdminUsersClientProps {
   initialUsers: User[];
+  initialSearch?: string;
 }
 
 function formatRoleLabel(role: string) {
@@ -217,14 +218,15 @@ function getEmptyUsersText(searchActive: boolean) {
   return searchActive ? "ไม่พบสมาชิกที่ตรงกับคำค้นหา" : "ยังไม่มีสมาชิก";
 }
 
-export default function AdminUsersClient({ initialUsers }: Readonly<AdminUsersClientProps>) {
+export default function AdminUsersClient({ initialUsers, initialSearch = "" }: Readonly<AdminUsersClientProps>) {
   const currencySettings = useCurrencySettings();
   const pointCurrencyName = getPointCurrencyName(currencySettings);
   const pointCurrencySymbol = getPointCurrencySymbol(currencySettings);
   const permissions = useAdminPermissions();
   const [users, setUsers] = useState<User[]>(initialUsers);
   const [roles, setRoles] = useState<Role[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
+  // Seeded from ?search= for deep links from the dashboard members tab.
+  const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [renderTimestamp] = useState(() => Date.now());
   const canEditUsers = permissions.includes(PERMISSIONS.USER_EDIT);
   const canManageRoles = permissions.includes(PERMISSIONS.USER_MANAGE_ROLE);

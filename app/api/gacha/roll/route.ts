@@ -246,6 +246,9 @@ async function handleSpin1(userId: string, machineId: string | null, costType: s
                 productId: product.id,
                 rewardImageUrl: rewardMeta?.imageUrl ?? null,
                 rewardName: rewardMeta?.name ?? "รางวัล",
+                // Snapshot the reward's baht value now — the product row can be
+                // deleted or repriced later.
+                rewardValue: String(Number(product.discountPrice ?? product.price ?? rewardMeta?.price ?? 0)),
                 selectorLabel,
                 tier,
                 userId,
@@ -460,6 +463,8 @@ async function finalizeCurrencyRewardRoll(
         productId: null,
         rewardImageUrl: rewardMeta?.imageUrl ?? null,
         rewardName: rewardMeta?.name ?? null,
+        // Currency rewards: face value of the granted amount.
+        rewardValue: String(rewardAmount),
         selectorLabel,
         tier,
         userId,

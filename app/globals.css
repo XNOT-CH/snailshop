@@ -125,6 +125,12 @@
   --chart-3: #6a9dff;
   --chart-4: #39b7a0;
   --chart-5: #f0b25a;
+  /* Donut/pie slices — CVD-validated per mode (see DonutChart.tsx) */
+  --pie-1: #145de7;
+  --pie-2: #39b7a0;
+  --pie-3: #d97706;
+  --pie-4: #8b5cf6;
+  --pie-other: #64748b;
   --chart-bar-fill: #145de7;
   --chart-bar-label: #3e8dff;
   --chart-area-stroke: #145de7;
@@ -298,6 +304,11 @@ body.swal2-shown [class*="backdrop-blur"] {
   --chart-3: #6ac6ff;
   --chart-4: #4fd0b5;
   --chart-5: #f4bf67;
+  --pie-1: #3b82f6;
+  --pie-2: #0d9488;
+  --pie-3: #d97706;
+  --pie-4: #8b5cf6;
+  --pie-other: #64748b;
   --chart-bar-fill: #58a6ff;
   --chart-bar-label: #8fe7ff;
   --chart-area-stroke: #58a6ff;

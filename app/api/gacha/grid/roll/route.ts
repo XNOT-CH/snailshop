@@ -85,8 +85,13 @@ async function executeRollTransaction(ctx: RollTxContext) {
         await checkDailySpinLimit({ dbClient: tx, userId: user.id, machineId, dailySpinLimit });
     }
 
+    // Snapshot the reward's baht value at roll time (product sale price or
+    // currency face value) — product rows can be deleted or repriced later.
+    let rewardValue = chosen.rewardAmount ? Number(chosen.rewardAmount) : 0;
+
     if (chosen.rewardType === "PRODUCT" && chosen.product) {
         const product = await fetchProductRewardForClaimOrThrow(tx, chosen.product.id);
+        rewardValue = Number(product.discountPrice ?? product.price ?? 0);
         await processProductReward(tx, user.id, costAmount, {
             id: product.id,
             name: product.name,
@@ -113,6 +118,7 @@ async function executeRollTransaction(ctx: RollTxContext) {
         selectorLabel: "grid",
         costType,
         costAmount: String(costAmount),
+        rewardValue: String(rewardValue),
         ...(machineId ? { gachaMachineId: machineId } : {}),
     });
 }

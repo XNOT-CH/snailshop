@@ -6,7 +6,9 @@ import AdminUsersClient from "./AdminUsersClient";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminUsersPage() {
+export default async function AdminUsersPage({
+    searchParams,
+}: Readonly<{ searchParams: Promise<{ search?: string }> }>) {
     const access = await requirePermission(PERMISSIONS.USER_VIEW);
     if (!access.success) {
         redirect("/admin?error=คุณไม่มีสิทธิ์ดูผู้ใช้");
@@ -34,5 +36,7 @@ export default async function AdminUsersPage() {
         createdAt: typeof user.createdAt === "string" ? user.createdAt : new Date(user.createdAt as string | number | Date).toISOString(),
     }));
 
-    return <AdminUsersClient initialUsers={serializedUsers} />;
+    const { search } = await searchParams;
+
+    return <AdminUsersClient initialUsers={serializedUsers} initialSearch={search ?? ""} />;
 }

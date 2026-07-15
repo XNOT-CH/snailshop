@@ -2,7 +2,8 @@
 
 import { SpinnerScreen } from "@/components/SpinnerScreen";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import Swal from "sweetalert2";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,6 +15,8 @@ import { compressImage } from "@/lib/compressImage";
 import { uploadFileToApi } from "@/lib/client/uploadClient";
 import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 import {
+    ChevronLeft,
+    ChevronRight,
     Image as ImageIcon,
     LayoutGrid,
     Loader2,
@@ -21,6 +24,7 @@ import {
     Megaphone,
     Phone,
     Plus,
+    RotateCcw,
     Save,
     Trash2,
     Type,
@@ -39,6 +43,32 @@ interface ExtraBanner {
     title: string;
     subtitle: string;
 }
+
+interface BannerSlot {
+    image: string;
+    title: string;
+    subtitle: string;
+}
+
+/** Saved-state snapshot used to detect unsaved edits. */
+interface SettingsSnapshot {
+    settings: SiteSettings;
+    extraBanners: ExtraBanner[];
+}
+
+const isValidHttpUrl = (value: string) => {
+    try {
+        const url = new URL(value);
+        return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+        return false;
+    }
+};
+
+/** Full URL or local upload path, same rule as the server-side schema. */
+const isValidImageRef = (value: string) => value.startsWith("/") || isValidHttpUrl(value);
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface SiteSettings {
     heroTitle: string;
@@ -79,6 +109,7 @@ export default function AdminSettingsPage() {
     const ogInputRef = useRef<HTMLInputElement>(null);
     const bgInputRef = useRef<HTMLInputElement>(null);
     const [extraBanners, setExtraBanners] = useState<ExtraBanner[]>([]);
+    const [savedSnapshot, setSavedSnapshot] = useState<SettingsSnapshot | null>(null);
     const [settings, setSettings] = useState<SiteSettings>({
         heroTitle: "",
         heroDescription: "",
@@ -117,7 +148,7 @@ export default function AdminSettingsPage() {
             const res = await fetch("/api/admin/settings");
             const data = await res.json();
             if (data.success && data.data) {
-                setSettings({
+                const loaded: SiteSettings = {
                     heroTitle: data.data.heroTitle || "",
                     heroDescription: data.data.heroDescription || "",
                     announcement: data.data.announcement || "",
@@ -143,14 +174,18 @@ export default function AdminSettingsPage() {
                     twitterUrl: data.data.twitterUrl || "",
                     instagramUrl: data.data.instagramUrl || "",
                     lineUrl: data.data.lineUrl || "",
-                });
+                };
                 // Parse extra banners
+                let parsedBanners: ExtraBanner[] = [];
                 try {
                     const parsed = data.data.bannersJson ? JSON.parse(data.data.bannersJson) : [];
-                    setExtraBanners(Array.isArray(parsed) ? parsed : []);
+                    parsedBanners = Array.isArray(parsed) ? parsed : [];
                 } catch {
-                    setExtraBanners([]);
+                    parsedBanners = [];
                 }
+                setSettings(loaded);
+                setExtraBanners(parsedBanners);
+                setSavedSnapshot({ settings: loaded, extraBanners: parsedBanners });
             }
         } catch (error) {
             console.error("[SETTINGS_FETCH]", error);
@@ -163,6 +198,10 @@ export default function AdminSettingsPage() {
     const handleSave = async () => {
         if (!canEditSettings) {
             showError("คุณไม่มีสิทธิ์แก้ไขตั้งค่า");
+            return;
+        }
+        if (Object.keys(fieldErrors).length > 0) {
+            showError("กรุณาแก้ข้อมูลที่ขึ้นสีแดงให้ถูกต้องก่อนบันทึก");
             return;
         }
 
@@ -180,6 +219,7 @@ export default function AdminSettingsPage() {
             const data = await res.json();
 
             if (data.success) {
+                setSavedSnapshot({ settings, extraBanners });
                 showSuccess("บันทึกการตั้งค่าสำเร็จ");
             } else {
                 showError(data.message || "เกิดข้อผิดพลาด");
@@ -190,6 +230,21 @@ export default function AdminSettingsPage() {
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const discardChanges = async () => {
+        if (!savedSnapshot) return;
+        const confirmed = await Swal.fire({
+            title: "ยกเลิกการแก้ไข?",
+            text: "ค่าทั้งหมดจะกลับเป็นค่าที่บันทึกไว้ล่าสุด",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonText: "ยกเลิกการแก้ไข",
+            cancelButtonText: "แก้ต่อ",
+        });
+        if (!confirmed.isConfirmed) return;
+        setSettings(savedSnapshot.settings);
+        setExtraBanners(savedSnapshot.extraBanners);
     };
 
     const addExtraBanner = () => {
@@ -226,99 +281,191 @@ export default function AdminSettingsPage() {
         setSettings(prev => ({ ...prev, [key]: value }));
     };
 
-    const allBannerImages = [
-        settings.bannerImage1,
-        settings.bannerImage2,
-        settings.bannerImage3,
-        ...extraBanners.map((banner) => banner.image),
+    // ── Banner slots: fixed slots 1–3 live in `settings`, the rest in
+    //    `extraBanners`. A unified accessor lets reordering swap across both.
+    const bannerSlots: BannerSlot[] = [
+        { image: settings.bannerImage1, title: settings.bannerTitle1, subtitle: settings.bannerSubtitle1 },
+        { image: settings.bannerImage2, title: settings.bannerTitle2, subtitle: settings.bannerSubtitle2 },
+        { image: settings.bannerImage3, title: settings.bannerTitle3, subtitle: settings.bannerSubtitle3 },
+        ...extraBanners,
     ];
-    const activeBannerCount = allBannerImages.filter((image) => image && image.trim() !== "").length;
-    const totalBannerCount = allBannerImages.length;
-    const assetPanelClass = "rounded-2xl border border-border bg-slate-50/50 p-4";
+
+    const setBannerSlot = (index: number, slot: BannerSlot) => {
+        if (index < 3) {
+            const n = index + 1;
+            setSettings((prev) => ({
+                ...prev,
+                [`bannerImage${n}`]: slot.image,
+                [`bannerTitle${n}`]: slot.title,
+                [`bannerSubtitle${n}`]: slot.subtitle,
+            }));
+        } else {
+            const extraIndex = index - 3;
+            setExtraBanners((prev) => prev.map((banner, i) => (i === extraIndex ? { ...slot } : banner)));
+        }
+    };
+
+    const moveBanner = (index: number, direction: -1 | 1) => {
+        if (!canEditSettings) return;
+        const target = index + direction;
+        if (target < 0 || target >= bannerSlots.length) return;
+        const a = bannerSlots[index];
+        const b = bannerSlots[target];
+        setBannerSlot(index, b);
+        setBannerSlot(target, a);
+    };
+
+    const activeBannerCount = bannerSlots.filter((slot) => slot.image && slot.image.trim() !== "").length;
+    const totalBannerCount = bannerSlots.length;
+    const assetPanelClass = "rounded-2xl border border-border bg-muted/40 p-4";
     const canEditSettings = permissions.includes(PERMISSIONS.SETTINGS_EDIT);
 
-    // Handle file upload for logo
-    const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // ── Unsaved-changes tracking ──
+    const changedCount = useMemo(() => {
+        if (!savedSnapshot) return 0;
+        let changed = (Object.keys(settings) as Array<keyof SiteSettings>).filter(
+            (key) => settings[key] !== savedSnapshot.settings[key],
+        ).length;
+        const maxBanners = Math.max(extraBanners.length, savedSnapshot.extraBanners.length);
+        for (let i = 0; i < maxBanners; i++) {
+            if (JSON.stringify(extraBanners[i] ?? null) !== JSON.stringify(savedSnapshot.extraBanners[i] ?? null)) {
+                changed += 1;
+            }
+        }
+        return changed;
+    }, [settings, extraBanners, savedSnapshot]);
+    const isDirty = changedCount > 0;
+
+    useEffect(() => {
+        if (!isDirty) return;
+        const warn = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+        };
+        window.addEventListener("beforeunload", warn);
+        return () => window.removeEventListener("beforeunload", warn);
+    }, [isDirty]);
+
+    // ── Client-side validation (mirrors the server rules users hit most) ──
+    const fieldErrors = useMemo(() => {
+        const errors: Partial<Record<keyof SiteSettings, string>> = {};
+        const urlFields: Array<keyof SiteSettings> = ["facebookUrl", "twitterUrl", "instagramUrl", "lineUrl"];
+        for (const field of urlFields) {
+            const value = (settings[field] as string).trim();
+            if (value && !isValidHttpUrl(value)) {
+                errors[field] = "URL ไม่ถูกต้อง (ต้องขึ้นต้นด้วย http:// หรือ https://)";
+            }
+        }
+        const imageFields: Array<keyof SiteSettings> = ["logoUrl", "ogImageUrl", "backgroundImage"];
+        for (const field of imageFields) {
+            const value = (settings[field] as string).trim();
+            if (value && !isValidImageRef(value)) {
+                errors[field] = "ต้องเป็น URL เต็ม หรือ path รูปที่อัปโหลด (ขึ้นต้นด้วย /)";
+            }
+        }
+        const email = settings.contactEmail.trim();
+        if (email && !EMAIL_PATTERN.test(email)) {
+            errors.contactEmail = "รูปแบบอีเมลไม่ถูกต้อง";
+        }
+        return errors;
+    }, [settings]);
+
+    const fieldErrorText = (key: keyof SiteSettings) =>
+        fieldErrors[key] ? <p className="text-xs text-red-500">{fieldErrors[key]}</p> : null;
+    const fieldErrorClass = (key: keyof SiteSettings) =>
+        fieldErrors[key] ? "border-red-500 focus-visible:ring-red-500/40" : "";
+
+    // Shared upload path for the logo / OG / background assets. Accepts a File
+    // directly so both the hidden <input type="file"> and drag & drop use it.
+    const uploadAssetFile = async (
+        file: File,
+        options: {
+            field: "logoUrl" | "ogImageUrl" | "backgroundImage";
+            maxBytes: number;
+            preset?: "banner";
+            setBusy: (busy: boolean) => void;
+            successMessage: string;
+            logTag: string;
+        },
+    ) => {
         if (!canEditSettings) {
             showError("คุณไม่มีสิทธิ์แก้ไขตั้งค่า");
             return;
         }
 
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setIsUploadingLogo(true);
+        options.setBusy(true);
         try {
-            const compressed = await compressImage(file, 2 * 1024 * 1024);
-            const data = await uploadFileToApi(compressed);
+            const compressed = await compressImage(file, options.maxBytes);
+            const data = await uploadFileToApi(
+                compressed,
+                options.preset ? { extraFields: { preset: options.preset } } : undefined,
+            );
             if (data.success) {
-                updateSetting("logoUrl", data.url);
-                showSuccess("อัพโหลดโลโก้สำเร็จ!");
+                updateSetting(options.field, data.url);
+                showSuccess(options.successMessage);
             } else {
                 showError(data.message || "อัพโหลดไม่สำเร็จ");
             }
         } catch (error) {
-            console.error("[SETTINGS_UPLOAD_LOGO]", error);
+            console.error(options.logTag, error);
             showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
         } finally {
-            setIsUploadingLogo(false);
+            options.setBusy(false);
         }
     };
 
-    // Handle file upload for background
-    const handleBgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!canEditSettings) {
-            showError("คุณไม่มีสิทธิ์แก้ไขตั้งค่า");
-            return;
-        }
+    const uploadLogoFile = (file: File) =>
+        uploadAssetFile(file, {
+            field: "logoUrl",
+            maxBytes: 2 * 1024 * 1024,
+            setBusy: setIsUploadingLogo,
+            successMessage: "อัพโหลดโลโก้สำเร็จ!",
+            logTag: "[SETTINGS_UPLOAD_LOGO]",
+        });
 
-        const file = e.target.files?.[0];
-        if (!file) return;
+    const uploadBgFile = (file: File) =>
+        uploadAssetFile(file, {
+            field: "backgroundImage",
+            maxBytes: 4 * 1024 * 1024,
+            preset: "banner",
+            setBusy: setIsUploadingBg,
+            successMessage: "อัพโหลดรูปพื้นหลังสำเร็จ!",
+            logTag: "[SETTINGS_UPLOAD_BG]",
+        });
 
-        setIsUploadingBg(true);
-        try {
-            const compressed = await compressImage(file, 4 * 1024 * 1024);
-            const data = await uploadFileToApi(compressed, { extraFields: { preset: "banner" } });
-            if (data.success) {
-                updateSetting("backgroundImage", data.url);
-                showSuccess("อัพโหลดรูปพื้นหลังสำเร็จ!");
-            } else {
-                showError(data.message || "อัพโหลดไม่สำเร็จ");
-            }
-        } catch (error) {
-            console.error("[SETTINGS_UPLOAD_BG]", error);
-            showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
-        } finally {
-            setIsUploadingBg(false);
-        }
+    const uploadOgFile = (file: File) =>
+        uploadAssetFile(file, {
+            field: "ogImageUrl",
+            maxBytes: 2 * 1024 * 1024,
+            preset: "banner",
+            setBusy: setIsUploadingOg,
+            successMessage: "อัพโหลดรูปแชร์ลิงก์สำเร็จ!",
+            logTag: "[SETTINGS_UPLOAD_OG]",
+        });
+
+    const fileFromInput = (e: React.ChangeEvent<HTMLInputElement>) => e.target.files?.[0];
+
+    const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = fileFromInput(e);
+        if (file) uploadLogoFile(file);
+    };
+    const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = fileFromInput(e);
+        if (file) uploadBgFile(file);
+    };
+    const handleOgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = fileFromInput(e);
+        if (file) uploadOgFile(file);
     };
 
-    const handleOgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!canEditSettings) {
-            showError("คุณไม่มีสิทธิ์แก้ไขตั้งค่า");
-            return;
-        }
-
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setIsUploadingOg(true);
-        try {
-            const compressed = await compressImage(file, 2 * 1024 * 1024);
-            const data = await uploadFileToApi(compressed, { extraFields: { preset: "banner" } });
-            if (data.success) {
-                updateSetting("ogImageUrl", data.url);
-                showSuccess("อัพโหลดรูปแชร์ลิงก์สำเร็จ!");
-            } else {
-                showError(data.message || "อัพโหลดไม่สำเร็จ");
-            }
-        } catch (error) {
-            console.error("[SETTINGS_UPLOAD_OG]", error);
-            showError(error instanceof Error ? error.message : "เกิดข้อผิดพลาดในการอัพโหลด");
-        } finally {
-            setIsUploadingOg(false);
-        }
-    };
+    /** Drop-zone props: drop an image anywhere on the preview to upload it. */
+    const dropProps = (upload: (file: File) => void) => ({
+        onDragOver: (e: React.DragEvent) => e.preventDefault(),
+        onDrop: (e: React.DragEvent) => {
+            e.preventDefault();
+            const file = e.dataTransfer.files?.[0];
+            if (file && file.type.startsWith("image/")) upload(file);
+        },
+    });
 
     if (isLoading) {
         return <SpinnerScreen label="กำลังโหลดการตั้งค่า..." />;
@@ -333,21 +480,32 @@ export default function AdminSettingsPage() {
                         <h1 className="text-2xl font-bold text-foreground">ตั้งค่าเว็บไซต์</h1>
                         <p className="text-muted-foreground">จัดการรูปภาพและข้อความบนเว็บไซต์</p>
                     </div>
-                    <Button onClick={handleSave} disabled={isSaving || !canEditSettings} className="w-full gap-2 sm:w-auto">
-                        {isSaving ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                        ) : (
-                            <Save className="h-4 w-4" />
+                    <div className="flex items-center gap-2">
+                        {isDirty && (
+                            <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300">
+                                แก้ไข {changedCount} จุด
+                            </Badge>
                         )}
-                        บันทึก
-                    </Button>
+                        <Button
+                            onClick={handleSave}
+                            disabled={isSaving || !canEditSettings || !isDirty}
+                            className="w-full gap-2 sm:w-auto"
+                        >
+                            {isSaving ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Save className="h-4 w-4" />
+                            )}
+                            บันทึก
+                        </Button>
+                    </div>
                 </div>
             </div>
 
             <div className="grid gap-6 xl:grid-cols-12">
                 <div className="space-y-6 xl:col-span-5">
                     {/* Homepage Section Toggles */}
-                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
+                    <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
                         <div className="border-b border-border py-3 px-5 flex items-center gap-2">
                             <div className="w-6 h-6 bg-[#145de7] rounded flex items-center justify-center">
                                 <LayoutGrid className="h-3.5 w-3.5 text-white" />
@@ -356,7 +514,7 @@ export default function AdminSettingsPage() {
                             <span className="text-sm text-muted-foreground ml-1">— เปิด/ปิดส่วนต่างๆ ที่แสดงบนหน้าแรก</span>
                         </div>
                         <div className="p-5">
-                            <div className="flex flex-col gap-3 rounded-xl border border-border p-4 bg-gray-50 dark:bg-zinc-800 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-col gap-3 rounded-xl border border-border p-4 bg-muted/50 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <div className="flex items-center gap-2">
                                         <p className="font-medium text-sm">สินค้าทั้งหมด</p>
@@ -378,7 +536,7 @@ export default function AdminSettingsPage() {
                     </div>
 
                     {/* General Settings */}
-                    <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
+                    <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
                         <div className="border-b border-border py-3 px-5 flex items-center gap-2">
                             <div className="w-6 h-6 bg-[#145de7] rounded flex items-center justify-center">
                                 <Type className="h-3.5 w-3.5 text-white" />
@@ -420,8 +578,7 @@ export default function AdminSettingsPage() {
                                     <p className="text-xs text-muted-foreground">อัปโหลดหรือวาง URL เพื่อใช้เป็นโลโก้หลักของเว็บไซต์ • {IMAGE_UPLOAD_RECOMMENDATIONS.logoSquare}</p>
                                 </div>
                                 <div className="grid gap-4 lg:grid-cols-2">
-                                    <div className="space-y-3">
-                                        {/* File Upload */}
+                                    <div className="space-y-2">
                                         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                                             <input
                                                 ref={logoInputRef}
@@ -434,7 +591,7 @@ export default function AdminSettingsPage() {
                                                 type="button"
                                                 variant="outline"
                                                 size="sm"
-                                                className="gap-2"
+                                                className="gap-2 shrink-0"
                                                 onClick={() => logoInputRef.current?.click()}
                                                 disabled={isUploadingLogo}
                                             >
@@ -445,33 +602,33 @@ export default function AdminSettingsPage() {
                                                 )}
                                                 {isUploadingLogo ? "กำลังปรับปรุงภาพ..." : "อัพโหลด"}
                                             </Button>
-                                            <span className="text-sm text-muted-foreground self-center">หรือ</span>
+                                            <span className="shrink-0 text-sm text-muted-foreground">หรือวาง URL</span>
+                                            <div className="flex min-w-0 flex-1 gap-2">
+                                                <Input
+                                                    value={settings.logoUrl}
+                                                    onChange={(e) => updateSetting("logoUrl", e.target.value)}
+                                                    placeholder="https://... หรือ /uploads/..."
+                                                    className={`min-w-0 flex-1 ${fieldErrorClass("logoUrl")}`}
+                                                />
+                                                {settings.logoUrl && (
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        onClick={() => updateSetting("logoUrl", "")}
+                                                        className="text-red-500 hover:text-red-600 shrink-0"
+                                                        aria-label="ล้าง URL โลโก้"
+                                                    >
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </div>
-
-                                        {/* URL Input */}
-                                        <div className="flex flex-col gap-2 sm:flex-row">
-                                            <Input
-                                                value={settings.logoUrl}
-                                                onChange={(e) => updateSetting("logoUrl", e.target.value)}
-                                                placeholder="วาง URL โลโก้..."
-                                                className="flex-1"
-                                            />
-                                            {settings.logoUrl && (
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    onClick={() => updateSetting("logoUrl", "")}
-                                                    className="text-red-500 hover:text-red-600 sm:shrink-0"
-                                                    aria-label="ล้าง URL โลโก้"
-                                                >
-                                                    <X className="h-4 w-4" />
-                                                </Button>
-                                            )}
-                                        </div>
+                                        {fieldErrorText("logoUrl")}
+                                        <p className="text-xs text-muted-foreground">ลากรูปมาวางในกล่องตัวอย่างเพื่ออัปโหลดได้เลย</p>
                                     </div>
 
-                                    <div>
+                                    <div {...dropProps(uploadLogoFile)}>
                                         {settings.logoUrl ? (
                                             <div className="p-4 bg-muted rounded-lg border h-full flex items-center justify-center">
                                                 <Image
@@ -486,8 +643,8 @@ export default function AdminSettingsPage() {
                                                 />
                                             </div>
                                         ) : (
-                                            <div className="rounded-lg border bg-muted h-full flex items-center justify-center p-4">
-                                                <p className="text-sm text-muted-foreground">อัพโหลดหรือใส่ URL เพื่อดูตัวอย่าง</p>
+                                            <div className="rounded-lg border border-dashed bg-muted h-full flex items-center justify-center p-4">
+                                                <p className="text-sm text-muted-foreground">อัพโหลด / วาง URL / ลากรูปมาวางที่นี่</p>
                                             </div>
                                         )}
                                     </div>
@@ -505,7 +662,10 @@ export default function AdminSettingsPage() {
                                 </div>
 
                                 <div className="space-y-4">
-                                    <div className="relative w-full overflow-hidden rounded-xl border bg-muted aspect-[1200/630]">
+                                    <div
+                                        className="relative w-full overflow-hidden rounded-xl border bg-muted aspect-[1200/630]"
+                                        {...dropProps(uploadOgFile)}
+                                    >
                                         {settings.ogImageUrl ? (
                                             <>
                                                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -541,7 +701,7 @@ export default function AdminSettingsPage() {
                                             type="button"
                                             variant="outline"
                                             size="sm"
-                                            className="gap-2"
+                                            className="gap-2 shrink-0"
                                             onClick={() => ogInputRef.current?.click()}
                                             disabled={isUploadingOg}
                                         >
@@ -552,40 +712,29 @@ export default function AdminSettingsPage() {
                                             )}
                                             {isUploadingOg ? "กำลังอัพโหลด..." : "อัพโหลด"}
                                         </Button>
-                                        <span className="text-sm text-muted-foreground self-center">หรือ</span>
-                                        {settings.ogImageUrl && (
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-red-500 hover:text-red-600"
-                                                onClick={() => updateSetting("ogImageUrl", "")}
-                                            >
-                                                ล้างรูป
-                                            </Button>
-                                        )}
+                                        <span className="shrink-0 text-sm text-muted-foreground">หรือวาง URL</span>
+                                        <div className="flex min-w-0 flex-1 gap-2">
+                                            <Input
+                                                value={settings.ogImageUrl}
+                                                onChange={(e) => updateSetting("ogImageUrl", e.target.value)}
+                                                placeholder="https://... หรือ /uploads/..."
+                                                className={`min-w-0 flex-1 ${fieldErrorClass("ogImageUrl")}`}
+                                            />
+                                            {settings.ogImageUrl && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => updateSetting("ogImageUrl", "")}
+                                                    className="text-red-500 hover:text-red-600 shrink-0"
+                                                    aria-label="ล้าง URL รูปแชร์ลิงก์"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
-
-                                    <div className="flex flex-col gap-2 sm:flex-row">
-                                        <Input
-                                            value={settings.ogImageUrl}
-                                            onChange={(e) => updateSetting("ogImageUrl", e.target.value)}
-                                            placeholder="วาง URL รูปแชร์ลิงก์..."
-                                            className="flex-1"
-                                        />
-                                        {settings.ogImageUrl && (
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => updateSetting("ogImageUrl", "")}
-                                                className="text-red-500 hover:text-red-600 sm:shrink-0"
-                                                aria-label="ล้าง URL รูปแชร์ลิงก์"
-                                            >
-                                                <X className="h-4 w-4" />
-                                            </Button>
-                                        )}
-                                    </div>
+                                    {fieldErrorText("ogImageUrl")}
                                 </div>
                             </div>
                             <div className={assetPanelClass}>
@@ -599,7 +748,10 @@ export default function AdminSettingsPage() {
 
                                 {/* Preview full-width */}
                                 {settings.backgroundImage ? (
-                                    <div className="relative w-full aspect-video rounded-xl overflow-hidden border bg-muted">
+                                    <div
+                                        className="relative w-full aspect-video rounded-xl overflow-hidden border bg-muted"
+                                        {...dropProps(uploadBgFile)}
+                                    >
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img
                                             src={settings.backgroundImage}
@@ -615,8 +767,11 @@ export default function AdminSettingsPage() {
                                         </span>
                                     </div>
                                   ) : (
-                                      <div className="w-full aspect-video rounded-xl border border-border bg-white flex items-center justify-center">
-                                          <p className="text-sm text-muted-foreground">ค่าเริ่มต้นพื้นหลังเว็บ: #ffffff</p>
+                                      <div
+                                          className="w-full aspect-video rounded-xl border border-dashed border-border bg-muted flex items-center justify-center"
+                                          {...dropProps(uploadBgFile)}
+                                      >
+                                          <p className="text-sm text-muted-foreground">ค่าเริ่มต้นพื้นหลังเว็บ: #ffffff — ลากรูปมาวางที่นี่เพื่ออัปโหลด</p>
                                       </div>
                                   )}
 
@@ -641,12 +796,13 @@ export default function AdminSettingsPage() {
                                         {isUploadingBg ? "กำลังอัพโหลด..." : "อัพโหลด"}
                                     </Button>
 
+                                    <span className="shrink-0 text-sm text-muted-foreground">หรือวาง URL</span>
                                     <div className="flex-1 flex gap-2 min-w-0">
                                         <Input
                                             value={settings.backgroundImage}
                                             onChange={(e) => updateSetting("backgroundImage", e.target.value)}
-                                            placeholder="วาง URL รูปพื้นหลัง..."
-                                            className="flex-1 min-w-0"
+                                            placeholder="https://... หรือ /uploads/..."
+                                            className={`flex-1 min-w-0 ${fieldErrorClass("backgroundImage")}`}
                                         />
                                         {settings.backgroundImage && (
                                             <Button
@@ -661,9 +817,10 @@ export default function AdminSettingsPage() {
                                         )}
                                     </div>
                                 </div>
+                                {fieldErrorText("backgroundImage")}
 
                                 {/* Blur toggle + hint */}
-                                <div className="flex items-center justify-between rounded-xl border border-border px-4 py-3 bg-gray-50 dark:bg-zinc-800">
+                                <div className="flex items-center justify-between rounded-xl border border-border px-4 py-3 bg-muted/50">
                                     <div>
                                         <p className="text-sm font-medium">เบลอพื้นหลัง</p>
                                         <p className="text-xs text-muted-foreground">ทำให้รูปเบลอเพื่อให้อ่านเนื้อหาได้ง่ายขึ้น</p>
@@ -682,7 +839,7 @@ export default function AdminSettingsPage() {
 
                 <div className="space-y-6 xl:col-span-7">
                     {/* Banner Images */}
-                    <div className="overflow-hidden rounded-xl border border-border bg-white shadow-sm dark:bg-zinc-900">
+                    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
                         <div className="border-b border-border px-5 py-4">
                             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
                                 <div>
@@ -705,6 +862,34 @@ export default function AdminSettingsPage() {
                             </div>
                         </div>
                         <div className="space-y-4 p-5">
+                            {/* Slide-order preview: what the homepage carousel will show, in order */}
+                            {activeBannerCount > 0 && (
+                                <div className="rounded-2xl border border-border bg-muted/40 p-3">
+                                    <p className="mb-2 text-xs font-medium text-muted-foreground">ตัวอย่างลำดับสไลด์บนหน้าแรก (ใช้ปุ่ม ◀ ▶ บนการ์ดเพื่อสลับลำดับ)</p>
+                                    <div className="flex gap-2 overflow-x-auto pb-1">
+                                        {bannerSlots.map((slot, idx) =>
+                                            slot.image?.trim() ? (
+                                                <div
+                                                    key={`order-${idx}`}
+                                                    className="relative h-16 w-40 shrink-0 overflow-hidden rounded-lg border bg-muted"
+                                                >
+                                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                                    <img src={slot.image} alt={`สไลด์ ${idx + 1}`} className="h-full w-full object-cover" />
+                                                    <span className="absolute left-1 top-1 rounded bg-black/60 px-1.5 text-xs font-bold text-white">
+                                                        {idx + 1}
+                                                    </span>
+                                                    {slot.title && (
+                                                        <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-1.5 pb-0.5 pt-2 text-[10px] text-white">
+                                                            {slot.title}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            ) : null,
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="grid gap-6 md:grid-cols-2 2xl:grid-cols-3">
                                 {[1, 2, 3].map((num) => (
                                     <BannerCard
@@ -716,6 +901,8 @@ export default function AdminSettingsPage() {
                                         onImageChange={(v) => updateSetting(`bannerImage${num}` as keyof SiteSettings, v)}
                                         onTitleChange={(v) => updateSetting(`bannerTitle${num}` as keyof SiteSettings, v)}
                                         onSubtitleChange={(v) => updateSetting(`bannerSubtitle${num}` as keyof SiteSettings, v)}
+                                        onMoveLeft={num > 1 ? () => moveBanner(num - 1, -1) : undefined}
+                                        onMoveRight={num - 1 < totalBannerCount - 1 ? () => moveBanner(num - 1, 1) : undefined}
                                         canEdit={canEditSettings}
                                     />
                                 ))}
@@ -730,11 +917,13 @@ export default function AdminSettingsPage() {
                                         onTitleChange={(v) => updateExtraBanner(idx, "title", v)}
                                         onSubtitleChange={(v) => updateExtraBanner(idx, "subtitle", v)}
                                         onRemove={() => removeExtraBanner(idx)}
+                                        onMoveLeft={() => moveBanner(3 + idx, -1)}
+                                        onMoveRight={3 + idx < totalBannerCount - 1 ? () => moveBanner(3 + idx, 1) : undefined}
                                         canEdit={canEditSettings}
                                     />
                                 ))}
                             </div>
-                            <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-border bg-slate-50/70 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div className="flex flex-col gap-3 rounded-2xl border border-dashed border-border bg-muted/40 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
                                 <div>
                                     <p className="text-sm font-medium text-foreground">เพิ่มป้ายโปรโมชันได้ตามต้องการ</p>
                                     <p className="text-xs text-muted-foreground">แบนเนอร์ที่มีรูปแล้วจะถูกนับเป็นชุดพร้อมใช้งานทันที</p>
@@ -754,14 +943,14 @@ export default function AdminSettingsPage() {
                     </div>
 
                     {/* Footer / Contact */}
-                    <div className="overflow-hidden rounded-3xl border border-border bg-card shadow-sm">
+                    <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
                         <div className="border-b border-border px-5 py-4">
                             <div className="flex items-center gap-2">
-                                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#eef4ff] text-[#145de7]">
-                                    <Phone className="h-4 w-4" />
-                                </span>
+                                <div className="w-6 h-6 bg-[#145de7] rounded flex items-center justify-center">
+                                    <Phone className="h-3.5 w-3.5 text-white" />
+                                </div>
                                 <div>
-                                    <p className="font-semibold text-foreground">ส่วนท้าย & ช่องทางติดต่อ</p>
+                                    <p className="font-bold">ส่วนท้าย & ช่องทางติดต่อ</p>
                                     <p className="text-xs text-muted-foreground">ข้อความ เบอร์โทร อีเมล และลิงก์โซเชียลที่แสดงในส่วนท้ายเว็บไซต์</p>
                                 </div>
                             </div>
@@ -801,7 +990,9 @@ export default function AdminSettingsPage() {
                                         value={settings.contactEmail}
                                         onChange={(e) => updateSetting("contactEmail", e.target.value)}
                                         disabled={!canEditSettings}
+                                        className={fieldErrorClass("contactEmail")}
                                     />
+                                    {fieldErrorText("contactEmail")}
                                 </div>
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2">
@@ -813,7 +1004,9 @@ export default function AdminSettingsPage() {
                                         value={settings.facebookUrl}
                                         onChange={(e) => updateSetting("facebookUrl", e.target.value)}
                                         disabled={!canEditSettings}
+                                        className={fieldErrorClass("facebookUrl")}
                                     />
+                                    {fieldErrorText("facebookUrl")}
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="twitterUrl">Twitter / X URL</Label>
@@ -823,7 +1016,9 @@ export default function AdminSettingsPage() {
                                         value={settings.twitterUrl}
                                         onChange={(e) => updateSetting("twitterUrl", e.target.value)}
                                         disabled={!canEditSettings}
+                                        className={fieldErrorClass("twitterUrl")}
                                     />
+                                    {fieldErrorText("twitterUrl")}
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="instagramUrl">Instagram URL</Label>
@@ -833,7 +1028,9 @@ export default function AdminSettingsPage() {
                                         value={settings.instagramUrl}
                                         onChange={(e) => updateSetting("instagramUrl", e.target.value)}
                                         disabled={!canEditSettings}
+                                        className={fieldErrorClass("instagramUrl")}
                                     />
+                                    {fieldErrorText("instagramUrl")}
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="lineUrl">LINE URL</Label>
@@ -843,7 +1040,9 @@ export default function AdminSettingsPage() {
                                         value={settings.lineUrl}
                                         onChange={(e) => updateSetting("lineUrl", e.target.value)}
                                         disabled={!canEditSettings}
+                                        className={fieldErrorClass("lineUrl")}
                                     />
+                                    {fieldErrorText("lineUrl")}
                                 </div>
                             </div>
                             <p className="text-xs text-muted-foreground">
@@ -852,23 +1051,47 @@ export default function AdminSettingsPage() {
                         </div>
                     </div>
 
-                    {/* Save Button Bottom */}
-                    <div className="sticky bottom-4 z-20">
-                        <div className="ml-auto flex flex-col gap-3 rounded-2xl border border-border bg-background/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-                            <div>
-                                <p className="text-sm font-semibold text-foreground">พร้อมบันทึกการเปลี่ยนแปลง</p>
-                                <p className="text-xs text-muted-foreground">ตรวจสอบข้อความ โลโก้ รูปพื้นหลัง และแบนเนอร์ให้เรียบร้อยก่อนกดบันทึก</p>
+                    {/* Unsaved-changes bar: only appears while there is something to save */}
+                    {isDirty && (
+                        <div className="sticky bottom-4 z-20">
+                            <div className="ml-auto flex flex-col gap-3 rounded-2xl border border-amber-300/60 bg-background/95 p-4 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between dark:border-amber-700/50">
+                                <div>
+                                    <p className="text-sm font-semibold text-foreground">
+                                        มีการแก้ไข {changedCount} จุดที่ยังไม่บันทึก
+                                    </p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {Object.keys(fieldErrors).length > 0
+                                            ? "มีข้อมูลที่ไม่ถูกต้อง (ขึ้นสีแดง) — แก้ก่อนถึงจะบันทึกได้"
+                                            : "ถ้าออกจากหน้านี้โดยไม่บันทึก การแก้ไขจะหายทั้งหมด"}
+                                    </p>
+                                </div>
+                                <div className="flex flex-col gap-2 sm:flex-row">
+                                    <Button
+                                        variant="outline"
+                                        onClick={discardChanges}
+                                        disabled={isSaving}
+                                        className="gap-2"
+                                    >
+                                        <RotateCcw className="h-4 w-4" />
+                                        ยกเลิกการแก้ไข
+                                    </Button>
+                                    <Button
+                                        onClick={handleSave}
+                                        disabled={isSaving || !canEditSettings}
+                                        size="lg"
+                                        className="gap-2 sm:min-w-[180px]"
+                                    >
+                                        {isSaving ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Save className="h-4 w-4" />
+                                        )}
+                                        บันทึกการตั้งค่า
+                                    </Button>
+                                </div>
                             </div>
-                            <Button onClick={handleSave} disabled={isSaving || !canEditSettings} size="lg" className="gap-2 sm:min-w-[180px]">
-                                {isSaving ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <Save className="h-4 w-4" />
-                                )}
-                                บันทึกการตั้งค่า
-                            </Button>
                         </div>
-                    </div>
+                    )}
                 </div>
             </div>
         </div>
@@ -885,6 +1108,8 @@ function BannerCard({
     onTitleChange,
     onSubtitleChange,
     onRemove,
+    onMoveLeft,
+    onMoveRight,
     canEdit,
 }: Readonly<{
     number: number;
@@ -895,6 +1120,8 @@ function BannerCard({
     onTitleChange: (v: string) => void;
     onSubtitleChange: (v: string) => void;
     onRemove?: () => void;
+    onMoveLeft?: () => void;
+    onMoveRight?: () => void;
     canEdit: boolean;
 }>) {
     const [isUploading, setIsUploading] = React.useState(false);
@@ -916,15 +1143,12 @@ function BannerCard({
 
     const hasValidImage = isValidUrl(image);
 
-    // Handle file upload
-    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Handle file upload (from the hidden input or drag & drop)
+    const uploadBannerFile = async (file: File) => {
         if (!canEdit) {
             showError("คุณไม่มีสิทธิ์แก้ไขตั้งค่า");
             return;
         }
-
-        const file = e.target.files?.[0];
-        if (!file) return;
 
         setIsUploading(true);
         try {
@@ -944,23 +1168,54 @@ function BannerCard({
         }
     };
 
+    const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) uploadBannerFile(file);
+    };
+
     return (
-        <div className="bg-white dark:bg-zinc-900 rounded-xl border border-border shadow-sm overflow-hidden">
+        <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
             <div className="border-b border-border py-2.5 px-4 flex items-center justify-between gap-2">
-                <Badge variant="secondary" className="bg-blue-100 text-[#145de7] font-semibold">Banner {number}</Badge>
-                {onRemove && (
+                <Badge variant="secondary" className="bg-blue-100 text-[#145de7] font-semibold dark:bg-blue-950/40 dark:text-blue-300">
+                    Banner {number}
+                </Badge>
+                <div className="flex items-center gap-1">
                     <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50"
-                        onClick={onRemove}
-                        disabled={!canEdit}
-                        title="ลบป้ายนี้"
+                        className="h-7 w-7"
+                        onClick={onMoveLeft}
+                        disabled={!canEdit || !onMoveLeft}
+                        title="เลื่อนลำดับขึ้น (แสดงก่อน)"
                     >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <ChevronLeft className="h-3.5 w-3.5" />
                     </Button>
-                )}
+                    <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7"
+                        onClick={onMoveRight}
+                        disabled={!canEdit || !onMoveRight}
+                        title="เลื่อนลำดับลง (แสดงทีหลัง)"
+                    >
+                        <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+                    {onRemove && (
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+                            onClick={onRemove}
+                            disabled={!canEdit}
+                            title="ลบป้ายนี้"
+                        >
+                            <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                    )}
+                </div>
             </div>
             <div className="p-4 space-y-4">
                 <div className="space-y-2">
@@ -980,6 +1235,12 @@ function BannerCard({
                         type="button"
                         className="relative w-full aspect-[4/1] rounded-xl overflow-hidden bg-muted border group"
                         onClick={() => fileInputRef.current?.click()}
+                        onDragOver={(e) => e.preventDefault()}
+                        onDrop={(e) => {
+                            e.preventDefault();
+                            const file = e.dataTransfer.files?.[0];
+                            if (file && file.type.startsWith("image/")) uploadBannerFile(file);
+                        }}
                         disabled={!canEdit}
                     >
                         {hasValidImage ? (

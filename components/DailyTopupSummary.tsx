@@ -293,7 +293,6 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly
         getSortDir,
         handleSort,
         isLoading,
-        methodsTotal,
         paginatedRecords,
         searchTerm,
         selectAllDays,
@@ -703,7 +702,7 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly
                                             />
                                             <span className="text-muted-foreground truncate">{m.name}</span>
                                             <span className="ml-auto font-medium tabular-nums text-xs">
-                                                {methodsTotal > 0 ? ((m.amount / methodsTotal) * 100).toFixed(0) : 0}%
+                                                ฿{m.amount.toLocaleString("th-TH", { maximumFractionDigits: 0 })}
                                             </span>
                                             <span className="text-xs text-muted-foreground tabular-nums">
                                                 ({m.count})
