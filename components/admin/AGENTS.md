@@ -26,7 +26,7 @@ This folder contains most admin-side interactive UI.
 - Admin shell/navigation:
   `AdminSidebar.tsx`, `AdminPermissionsProvider.tsx`
 - Dashboard widgets:
-  `RevenueChart.tsx`, `SalesDistribution.tsx`, `RecentTransactions.tsx`
+  `RevenueChart.tsx`, `BestSellers.tsx`, `CategoryDistribution.tsx`
 
 ## Watchouts
 
