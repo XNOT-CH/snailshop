@@ -633,12 +633,12 @@ export function GachaRhombus({
             </div>
 
             {normalizedCost.costType !== "FREE" && (
-              <div className="w-full rounded-2xl border border-[#b7d0ff] bg-[#cfe1ff]/75 px-4 py-3 text-center text-[#145de7]">
+              <div className="w-full rounded-2xl border border-[#b7d0ff] bg-[#cfe1ff]/75 px-4 py-3 text-center text-[#145de7] dark:border-blue-400/30 dark:bg-blue-500/10 dark:text-blue-200">
                 <p className="text-sm font-bold">ยอด{currencyWord}คงเหลือ: {displayedBalance.toLocaleString()} {currencyWord}</p>
               </div>
             )}
 
-            <label className="flex w-fit cursor-pointer items-center gap-3 rounded-full border border-[#bfe5ce] bg-[#f8fffb] px-4 py-2 text-sm font-medium text-[#1c9751]">
+            <label className="flex w-fit cursor-pointer items-center gap-3 rounded-full border border-[#bfe5ce] bg-[#f8fffb] px-4 py-2 text-sm font-medium text-[#1c9751] dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-300">
               <input
                 type="checkbox"
                 checked={skipAnimationEnabled}
