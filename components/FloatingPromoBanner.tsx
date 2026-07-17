@@ -12,13 +12,16 @@ const HIDDEN_PATH_PREFIXES = ["/login", "/register", "/admin"];
 // floating elements never overlap on mobile.
 const MOBILE_STACK_OFFSET = "bottom-[calc(env(safe-area-inset-bottom)+9.75rem)]";
 
+// Bump the ?v= querystring whenever the artwork file is replaced in-place —
+// the image optimizer caches per-URL, so a same-name swap keeps serving the
+// old pixels until the URL changes.
 const PROMO_BANNERS = [
     {
-        src: "/promo/daily-quest.png",
+        src: "/promo/daily-quest.png?v=2",
         alt: "ภารกิจรายวัน ทำง่าย ได้รางวัลทุกวัน คลิกเลย",
         href: "/season-pass",
-        width: 512,
-        height: 472,
+        width: 530,
+        height: 470,
     },
     {
         src: "/promo/free-rewards.png",
