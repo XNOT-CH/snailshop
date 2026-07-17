@@ -6,6 +6,7 @@ type RouteShellProps = {
   mobileBottomNav: ReactNode;
   footer: ReactNode;
   floatingChat: ReactNode;
+  floatingPromo: ReactNode;
   announcementPopup: ReactNode;
 };
 
@@ -15,6 +16,7 @@ export function RouteShell({
   mobileBottomNav,
   footer,
   floatingChat,
+  floatingPromo,
   announcementPopup,
 }: RouteShellProps) {
   return (
@@ -29,6 +31,7 @@ export function RouteShell({
       {mobileBottomNav}
       <div id="main-footer">{footer}</div>
       <div id="main-chat">{floatingChat}</div>
+      <div id="main-promo">{floatingPromo}</div>
       <div id="main-popup">{announcementPopup}</div>
     </>
   );

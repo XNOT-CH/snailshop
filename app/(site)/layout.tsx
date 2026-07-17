@@ -10,6 +10,7 @@ import { FloatingChatButtonWrapper } from "@/components/FloatingChatButtonWrappe
 import { AnnouncementPopupWrapper } from "@/components/AnnouncementPopupWrapper";
 import { GlobalLoadingWrapper } from "@/components/GlobalLoadingWrapper";
 import { StructuredData } from "@/components/StructuredData";
+import { FloatingPromoBanner } from "@/components/FloatingPromoBanner";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
 import { RouteShell } from "@/components/RouteShell";
 import { getSiteSettings } from "@/lib/getSiteSettings";
@@ -64,6 +65,7 @@ export default async function SiteLayout({
               mobileBottomNav={<MobileBottomNav />}
               footer={<Footer />}
               floatingChat={<FloatingChatButtonWrapper />}
+              floatingPromo={<FloatingPromoBanner />}
               announcementPopup={<AnnouncementPopupWrapper enabled={Boolean(session?.user)} />}
             >
               {children}
