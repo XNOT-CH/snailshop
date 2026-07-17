@@ -5,7 +5,6 @@ import Image from "next/image";
 import { ChangeEvent, KeyboardEvent, useEffect, useRef, useState, useTransition } from "react";
 import { usePathname } from "next/navigation";
 import { ImagePlus, Loader2, LockKeyhole, Send } from "lucide-react";
-import { ChatFabTrigger } from "@/components/chat/ChatFabTrigger";
 import { Button } from "@/components/ui/button";
 import { ChatBrandLogo } from "@/components/chat/ChatBrandLogo";
 import { ChatMessageContent } from "@/components/chat/ChatMessageContent";
@@ -15,7 +14,6 @@ import {
     SheetDescription,
     SheetHeader,
     SheetTitle,
-    SheetTrigger,
 } from "@/components/ui/sheet";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
@@ -263,11 +261,9 @@ export function FloatingChatButton({
     }
 
     return (
+        // No floating trigger anymore — the navbar chat button opens this
+        // sheet via OPEN_CHAT_EVENT, so the sheet is fully controlled.
         <Sheet open={isOpen} onOpenChange={setIsOpen}>
-            <SheetTrigger asChild>
-                <ChatFabTrigger />
-            </SheetTrigger>
-
             <SheetContent
                 side="right"
                 className="h-[100dvh] w-full gap-0 overflow-hidden border-l-0 bg-background p-0 sm:inset-y-4 sm:right-4 sm:h-auto sm:w-[min(420px,calc(100vw-2rem))] sm:max-w-none sm:border sm:border-border"

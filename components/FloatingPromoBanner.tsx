@@ -9,9 +9,9 @@ import { cn } from "@/lib/utils";
 
 const HIDDEN_PATH_PREFIXES = ["/login", "/register", "/admin"];
 
-// Stacks above the chat FAB (52px tall at bottom offset 5.5rem) so the two
-// floating elements never overlap on mobile.
-const MOBILE_STACK_OFFSET = "bottom-[calc(env(safe-area-inset-bottom)+9.75rem)]";
+// Clears the mobile bottom nav; nothing else floats in this corner since
+// the chat FAB was removed (chat now opens from the navbar icon).
+const MOBILE_STACK_OFFSET = "bottom-[calc(env(safe-area-inset-bottom)+5.5rem)]";
 
 const ROTATE_INTERVAL_MS = 4000;
 
