@@ -11,7 +11,7 @@ const FloatingChatButton = dynamic(
 );
 
 const HIDDEN_PATH_PREFIXES = ["/login", "/register", "/admin"];
-const OPEN_CHAT_EVENT = "open-customer-chat";
+export const OPEN_CHAT_EVENT = "open-customer-chat";
 
 export function FloatingChatButtonWrapper() {
     const pathname = usePathname();

@@ -18,6 +18,7 @@ import { MobileAutoHideHeader } from "@/components/MobileAutoHideHeader";
 import { themeClasses } from "@/lib/theme";
 import { PRIMARY_NAV, navIconByHref, navIconByName } from "@/lib/navigation";
 import { NavbarSearch } from "@/components/NavbarSearch";
+import { NavbarChatButton } from "@/components/NavbarChatButton";
 
 function normalizeNavHref(href: string) {
     // Admin-managed nav items in the database may still say "/home";
@@ -143,8 +144,12 @@ export default async function Navbar() {
 
                 <div className="flex shrink-0 items-center gap-1.5 lg:justify-self-end">
                     <NavbarSearch currencySettings={currencySettings} />
-                    {/* On mobile the theme switch lives inside the navigation
-                        drawer instead, to keep the header row uncluttered. */}
+                    {/* On mobile the chat entry point is the floating FAB and
+                        the theme switch lives inside the navigation drawer,
+                        to keep the header row uncluttered. */}
+                    <div className="hidden lg:block">
+                        <NavbarChatButton />
+                    </div>
                     <div className="hidden lg:block">
                         <ThemeToggle />
                     </div>
