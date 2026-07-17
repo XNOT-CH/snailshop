@@ -143,7 +143,11 @@ export default async function Navbar() {
 
                 <div className="flex shrink-0 items-center gap-1.5 lg:justify-self-end">
                     <NavbarSearch currencySettings={currencySettings} />
-                    <ThemeToggle />
+                    {/* On mobile the theme switch lives inside the navigation
+                        drawer instead, to keep the header row uncluttered. */}
+                    <div className="hidden lg:block">
+                        <ThemeToggle />
+                    </div>
                     <NavbarInteractive
                         user={user ? {
                             name: user.name,

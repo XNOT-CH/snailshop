@@ -7,8 +7,9 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
     X, Home, Wallet, User, ChevronRight, Gamepad2,
-    Lock, UserPlus, Menu, LogOut, CircleDollarSign,
+    Lock, UserPlus, Menu, LogOut, CircleDollarSign, Moon, Sun,
 } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useLogout } from "@/components/useLogout";
 import { withImageVersion } from "@/lib/imageUrl";
 import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
@@ -54,6 +55,8 @@ export function NavigationDrawer({
     const [logoutPending, setLogoutPending] = useState(false);
     const pathname = usePathname();
     const logout = useLogout();
+    const { resolvedTheme, setTheme } = useTheme();
+    const isDark = resolvedTheme === "dark";
     const panelRef = useRef<HTMLElement>(null);
     const links = (navLinks && navLinks.length > 0 ? navLinks : DEFAULT_NAV).flatMap((link) => {
         const safeHref = toSafePublicHref(link.href, "");
@@ -298,6 +301,34 @@ export function NavigationDrawer({
                             </Link>
                         );
                     })}
+
+                    {/* Theme switch — replaces the navbar toggle on mobile */}
+                    <div className="my-1 mx-4" style={{ height: "1px", ...drawerStyles.divider }} />
+                    <button
+                        type="button"
+                        onClick={() => setTheme(isDark ? "light" : "dark")}
+                        className="w-full flex items-center gap-3.5 px-5 py-3.5 text-sm font-medium transition-colors"
+                        style={drawerStyles.inactive}
+                        role="switch"
+                        aria-checked={isDark}
+                        aria-label={isDark ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด"}
+                    >
+                        {isDark ? (
+                            <Moon className="h-[19px] w-[19px] flex-shrink-0" />
+                        ) : (
+                            <Sun className="h-[19px] w-[19px] flex-shrink-0" />
+                        )}
+                        <span className="flex-1 text-left">โหมดมืด</span>
+                        <span
+                            className="relative inline-flex h-5 w-9 flex-shrink-0 items-center rounded-full transition-colors"
+                            style={{ background: isDark ? "var(--primary)" : "var(--surface-stroke)" }}
+                        >
+                            <span
+                                className="inline-block h-4 w-4 rounded-full bg-white shadow transition-transform"
+                                style={{ transform: isDark ? "translateX(18px)" : "translateX(2px)" }}
+                            />
+                        </span>
+                    </button>
 
                     {/* Extra account links */}
                     {user && (
