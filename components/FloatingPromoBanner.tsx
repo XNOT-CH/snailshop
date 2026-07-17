@@ -2,15 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const HIDDEN_PATH_PREFIXES = ["/login", "/register", "/admin"];
 
 // Stacks above the chat FAB (52px tall at bottom offset 5.5rem) so the two
 // floating elements never overlap on mobile.
 const MOBILE_STACK_OFFSET = "bottom-[calc(env(safe-area-inset-bottom)+9.75rem)]";
+
+const ROTATE_INTERVAL_MS = 4000;
 
 // Bump the ?v= querystring whenever the artwork file is replaced in-place —
 // the image optimizer caches per-URL, so a same-name swap keeps serving the
@@ -24,11 +27,11 @@ const PROMO_BANNERS = [
         height: 470,
     },
     {
-        src: "/promo/free-rewards.png",
+        src: "/promo/free-rewards.png?v=2",
         alt: "ของฟรี แจกไม่อั้น รับได้ทุกวัน คลิกเลย",
         href: "/gachapons",
-        width: 760,
-        height: 540,
+        width: 1112,
+        height: 819,
     },
 ] as const;
 
@@ -39,7 +42,39 @@ let dismissedThisSession = false;
 export function FloatingPromoBanner() {
     const pathname = usePathname();
     const [dismissed, setDismissed] = useState(() => dismissedThisSession);
+    const [activeIndex, setActiveIndex] = useState(0);
     const shouldHide = HIDDEN_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+
+    useEffect(() => {
+        if (dismissed || shouldHide) {
+            return;
+        }
+
+        let timer: ReturnType<typeof setInterval> | undefined;
+        const start = () => {
+            if (timer === undefined) {
+                timer = setInterval(
+                    () => setActiveIndex((index) => (index + 1) % PROMO_BANNERS.length),
+                    ROTATE_INTERVAL_MS
+                );
+            }
+        };
+        const stop = () => {
+            clearInterval(timer);
+            timer = undefined;
+        };
+        // Pause while the tab is hidden so the banner doesn't churn through
+        // frames (or burn timers) in the background.
+        const handleVisibility = () => (document.hidden ? stop() : start());
+
+        start();
+        document.addEventListener("visibilitychange", handleVisibility);
+
+        return () => {
+            stop();
+            document.removeEventListener("visibilitychange", handleVisibility);
+        };
+    }, [dismissed, shouldHide]);
 
     if (dismissed || shouldHide) {
         return null;
@@ -47,38 +82,49 @@ export function FloatingPromoBanner() {
 
     return (
         <div
-            className={`fixed right-3 z-40 flex w-28 flex-col gap-2 md:hidden ${MOBILE_STACK_OFFSET}`}
+            className={`fixed right-3 z-40 w-28 md:hidden ${MOBILE_STACK_OFFSET}`}
             role="complementary"
             aria-label="โปรโมชันแนะนำ"
         >
-            <button
-                type="button"
-                aria-label="ปิดแบนเนอร์โปรโมชัน"
-                onClick={() => {
-                    dismissedThisSession = true;
-                    setDismissed(true);
-                }}
-                className="animate-promo-banner-in absolute -right-1.5 -top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-black/75 text-white shadow-md transition hover:bg-black active:scale-90"
-            >
-                <X className="h-3.5 w-3.5" />
-            </button>
-            {PROMO_BANNERS.map((banner, index) => (
-                <Link
-                    key={banner.src}
-                    href={banner.href}
-                    prefetch={false}
-                    className="animate-promo-banner-in block drop-shadow-lg transition-transform active:scale-95"
-                    style={{ animationDelay: `${index * 120}ms` }}
+            <div className="animate-promo-banner-in relative aspect-square w-full">
+                <button
+                    type="button"
+                    aria-label="ปิดแบนเนอร์โปรโมชัน"
+                    onClick={() => {
+                        dismissedThisSession = true;
+                        setDismissed(true);
+                    }}
+                    className="absolute -right-1.5 -top-1.5 z-20 flex h-6 w-6 items-center justify-center rounded-full bg-black/75 text-white shadow-md transition hover:bg-black active:scale-90"
                 >
-                    <Image
-                        src={banner.src}
-                        alt={banner.alt}
-                        width={banner.width}
-                        height={banner.height}
-                        className="h-auto w-full"
-                    />
-                </Link>
-            ))}
+                    <X className="h-3.5 w-3.5" />
+                </button>
+                {PROMO_BANNERS.map((banner, index) => {
+                    const isActive = index === activeIndex;
+
+                    return (
+                        <Link
+                            key={banner.src}
+                            href={banner.href}
+                            prefetch={false}
+                            aria-hidden={!isActive}
+                            tabIndex={isActive ? 0 : -1}
+                            className={cn(
+                                "absolute inset-0 z-10 flex items-center justify-center transition-opacity duration-500 active:scale-95 motion-reduce:transition-none",
+                                isActive ? "opacity-100" : "pointer-events-none opacity-0"
+                            )}
+                        >
+                            <Image
+                                src={banner.src}
+                                alt={banner.alt}
+                                width={banner.width}
+                                height={banner.height}
+                                sizes="112px"
+                                className="max-h-full w-auto max-w-full drop-shadow-lg"
+                            />
+                        </Link>
+                    );
+                })}
+            </div>
         </div>
     );
 }
