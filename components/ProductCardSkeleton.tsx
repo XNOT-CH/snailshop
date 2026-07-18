@@ -2,25 +2,27 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 
 export function ProductCardSkeleton({ index = 0 }: Readonly<{ index?: number }>) {
     return (
-        <Card className={`overflow-hidden rounded-3xl border border-border/70 shadow-sm animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 8)}`}>
+        <Card className={`overflow-hidden rounded-2xl border border-border/70 shadow-sm animate-fade-in-up opacity-0 stagger-${Math.min(index + 1, 8)}`}>
             {/* Image Skeleton */}
-            <div className="relative aspect-[4/3] bg-muted">
+            <div className="relative m-2 mb-0 aspect-square overflow-hidden rounded-xl bg-muted sm:m-2.5 sm:mb-0">
                 <div className="h-full w-full animate-shimmer" />
                 {/* Badge Skeleton */}
-                <div className="absolute left-4 top-4 h-6 w-16 animate-skeleton rounded-full bg-foreground/10" />
+                <div className="absolute left-3 top-3 h-6 w-16 animate-skeleton rounded-full bg-foreground/10" />
             </div>
 
             {/* Content Skeleton */}
-            <CardContent className="p-5 pb-4 flex flex-col items-center">
+            <CardContent className="flex flex-col items-start p-3 pb-0 sm:p-4 sm:pb-0">
                 <div className="mb-2 h-5 w-3/4 animate-skeleton rounded-lg bg-foreground/10" />
-                <div className="h-7 w-1/3 animate-skeleton rounded-lg bg-foreground/10" />
+                <div className="h-6 w-1/3 animate-skeleton rounded-lg bg-foreground/10" />
             </CardContent>
 
             {/* Footer Skeleton */}
-            <CardFooter className="flex justify-between gap-3 p-5 pt-0">
-                <div className="h-11 flex-1 animate-skeleton rounded-xl bg-foreground/10" />
-                <div className="h-11 w-11 shrink-0 animate-skeleton rounded-xl bg-foreground/10" />
-                <div className="h-11 w-11 shrink-0 animate-skeleton rounded-xl bg-foreground/10" />
+            <CardFooter className="flex flex-col gap-3 p-3 pt-3 sm:p-4 sm:pt-3">
+                <div className="flex w-full gap-2">
+                    <div className="h-10 flex-1 animate-skeleton rounded-xl bg-foreground/10" />
+                    <div className="h-10 w-10 shrink-0 animate-skeleton rounded-xl bg-foreground/10" />
+                </div>
+                <div className="h-8 w-full animate-skeleton rounded-lg bg-foreground/10" />
             </CardFooter>
         </Card>
     );
