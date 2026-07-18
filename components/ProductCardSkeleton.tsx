@@ -6,8 +6,6 @@ export function ProductCardSkeleton({ index = 0 }: Readonly<{ index?: number }>)
             {/* Image Skeleton */}
             <div className="relative m-2 mb-0 aspect-square overflow-hidden rounded-xl bg-muted sm:m-2.5 sm:mb-0">
                 <div className="h-full w-full animate-shimmer" />
-                {/* Badge Skeleton */}
-                <div className="absolute left-3 top-3 h-6 w-16 animate-skeleton rounded-full bg-foreground/10" />
             </div>
 
             {/* Content Skeleton */}
