@@ -12,6 +12,17 @@ import { Package, ShoppingBag } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
+// One undecryptable order (e.g. data written under a key that has since left
+// the keyring) must not take down the whole inventory page.
+function safeDecrypt(givenData: string | null): string {
+    if (!givenData) return "ไม่พบข้อมูล";
+    try {
+        return decrypt(givenData);
+    } catch {
+        return "ไม่สามารถถอดรหัสข้อมูลได้ กรุณาติดต่อผู้ดูแลร้าน";
+    }
+}
+
 export default async function InventoryPage() {
     const session = await auth();
     const userId = session?.user?.id;
@@ -79,7 +90,7 @@ export default async function InventoryPage() {
                                     day: "numeric",
                                 }
                             )}
-                            secretData={order.givenData ? decrypt(order.givenData) : "ไม่พบข้อมูล"}
+                            secretData={safeDecrypt(order.givenData)}
                         />
                     ))}
                 </div>
