@@ -21,6 +21,7 @@ import { themeClasses } from "@/lib/theme";
 import { getPrimaryProductImage, normalizeProductImageUrls } from "@/lib/productImages";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { recordProductView } from "@/lib/features/products/productViews";
+import { getSoldCountMap } from "@/lib/features/orders/queries";
 
 const getProduct = cache(async (id: string) => {
     return db.query.products.findFirst({
@@ -144,6 +145,7 @@ export default async function ProductDetailPage({
         },
         limit: 4,
     });
+    const soldCountMap = await getSoldCountMap(relatedProducts.map((related) => related.id));
 
     const productImages = normalizeProductImageUrls(product.imageUrls, product.imageUrl);
     const productImage = toAbsoluteAssetUrl(getPrimaryProductImage(product.imageUrls, product.imageUrl) || "/placeholder.jpg");
@@ -301,6 +303,7 @@ export default async function ProductDetailPage({
                                     category={related.category}
                                     isSold={Boolean(related.isSold)}
                                     stockCount={relStock}
+                                    soldCount={soldCountMap.get(related.id) ?? 0}
                                     index={index}
                                     currencySettings={currencySettings}
                                     initialPurchaseMaintenance={purchaseMaintenance}

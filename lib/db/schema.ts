@@ -258,6 +258,7 @@ export const orders = mysqlTable("Order", {
     index("idx_order_status").on(t.status),
     index("idx_order_purchasedAt").on(t.purchasedAt),
     index("idx_order_userId_deletedAt").on(t.userId, t.deletedAt),
+    index("idx_order_productId_status").on(t.productId, t.status),
 ]);
 
 export const ordersRelations = relations(orders, ({ one }) => ({
