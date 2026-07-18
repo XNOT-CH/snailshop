@@ -24,15 +24,19 @@ export function NavbarInteractive({ user, imageVersion, currencySettings }: Read
         <>
             {user ? <NavbarCartButton /> : null}
             {user ? (
-                <NavbarUserMenu
-                    displayName={user.name}
-                    username={user.username}
-                    image={user.image}
-                    imageVersion={imageVersion}
-                    creditBalance={user.creditBalance}
-                    pointBalance={user.pointBalance}
-                    currencySettings={currencySettings}
-                />
+                // On mobile the account entry points are the bottom-nav tab and
+                // the navigation drawer, so the avatar menu is desktop-only.
+                <div className="hidden lg:block">
+                    <NavbarUserMenu
+                        displayName={user.name}
+                        username={user.username}
+                        image={user.image}
+                        imageVersion={imageVersion}
+                        creditBalance={user.creditBalance}
+                        pointBalance={user.pointBalance}
+                        currencySettings={currencySettings}
+                    />
+                </div>
             ) : null}
         </>
     );
