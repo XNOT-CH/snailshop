@@ -634,7 +634,7 @@ export default function AdminSeasonPassEditPage() {
                                                     className="object-contain p-2"
                                                 />
                                             ) : (
-                                                <span className="px-3 text-center text-[11px] font-medium leading-4 text-slate-400">
+                                                <span className="px-3 text-center text-xs font-medium leading-4 text-slate-400">
                                                     ยังไม่ได้ตั้งรูป
                                                 </span>
                                             )}

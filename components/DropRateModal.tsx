@@ -95,7 +95,7 @@ export function DropRateModal({ open, onClose, machineId }: Readonly<DropRateMod
                                         {/* label */}
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium text-foreground leading-none">{tier.label}</p>
-                                            <p className="text-[11px] text-muted-foreground mt-0.5">{tier.labelTh}</p>
+                                            <p className="text-xs text-muted-foreground mt-0.5">{tier.labelTh}</p>
                                         </div>
 
                                         {/* rate + bar */}
@@ -116,7 +116,7 @@ export function DropRateModal({ open, onClose, machineId }: Readonly<DropRateMod
                         </div>
 
                         {/* Footer */}
-                        <p className="text-[10px] text-muted-foreground text-center px-4 pb-3">
+                        <p className="text-xs text-muted-foreground text-center px-4 pb-3">
                             * อัตราการดรอปคำนวณจากน้ำหนักที่ตั้งค่าไว้ *
                         </p>
                     </motion.div>

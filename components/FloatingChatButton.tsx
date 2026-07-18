@@ -369,7 +369,7 @@ export function FloatingChatButton({
                                     className="min-h-16 resize-none border-0 bg-transparent shadow-none focus-visible:ring-0 sm:min-h-20"
                                 />
                                 <div className="mt-2.5 flex items-center justify-between gap-2">
-                                    <p className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
+                                    <p className="min-w-0 flex-1 truncate text-xs text-muted-foreground">
                                         ทีมงานตอบเมื่อมีแอดมินออนไลน์ · รูปหายใน 5 นาที
                                     </p>
 

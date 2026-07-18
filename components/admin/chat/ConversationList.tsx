@@ -110,7 +110,7 @@ function ConversationListItem({
                         </p>
                         <ChatTimestamp
                             value={conversation.lastMessageAt}
-                            className="shrink-0 text-[11px] text-muted-foreground"
+                            className="shrink-0 text-xs text-muted-foreground"
                         />
                     </div>
 
@@ -128,7 +128,7 @@ function ConversationListItem({
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         <Badge
                             variant={getConversationBadgeVariant(conversation.status)}
-                            className={cn("px-2 py-0 text-[10px]", getConversationBadgeClassName(conversation.status))}
+                            className={cn("px-2 py-0 text-xs", getConversationBadgeClassName(conversation.status))}
                         >
                             {getConversationStatusLabel(conversation.status)}
                         </Badge>
@@ -136,7 +136,7 @@ function ConversationListItem({
                             <span
                                 key={`${conversation.id}-${tag}`}
                                 className={cn(
-                                    "rounded-full border px-2 py-0.5 text-[10px] font-medium",
+                                    "rounded-full border px-2 py-0.5 text-xs font-medium",
                                     getChatTagBadgeClassName(tag)
                                 )}
                             >
@@ -144,12 +144,12 @@ function ConversationListItem({
                             </span>
                         ))}
                         {conversation.assignee ? (
-                            <span className="ml-auto truncate text-[10px] text-muted-foreground">
+                            <span className="ml-auto truncate text-xs text-muted-foreground">
                                 ดูแลโดย {conversation.assignee.name || conversation.assignee.username}
                             </span>
                         ) : null}
                         {conversation.unreadByCustomer > 0 && conversation.lastMessageSenderType === "ADMIN" ? (
-                            <span className="ml-auto text-[10px] text-muted-foreground">ลูกค้ายังไม่อ่าน</span>
+                            <span className="ml-auto text-xs text-muted-foreground">ลูกค้ายังไม่อ่าน</span>
                         ) : null}
                     </div>
                 </div>

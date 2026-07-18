@@ -264,7 +264,7 @@ export function QuickReplyManagerDialog({
                                         <div className="flex items-center gap-2">
                                             <p className="truncate text-sm font-semibold text-foreground">{template.title}</p>
                                             {!template.isActive ? (
-                                                <Badge variant="secondary" className="text-[10px]">ปิดใช้งาน</Badge>
+                                                <Badge variant="secondary" className="text-xs">ปิดใช้งาน</Badge>
                                             ) : null}
                                         </div>
                                         <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{template.body}</p>

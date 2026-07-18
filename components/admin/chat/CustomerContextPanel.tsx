@@ -152,25 +152,25 @@ export function CustomerContextPanel({ conversationId, className }: Readonly<Cus
 
                 <div className="grid grid-cols-2 gap-2">
                     <div className="rounded-2xl border border-border bg-muted/40 p-3">
-                        <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Wallet className="h-3.5 w-3.5" />
                             เครดิตคงเหลือ
                         </p>
                         <p className="mt-1 text-sm font-bold text-foreground">{formatBaht(user.creditBalance)}</p>
                     </div>
                     <div className="rounded-2xl border border-border bg-muted/40 p-3">
-                        <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
                             <CircleDollarSign className="h-3.5 w-3.5" />
                             ยอดเติมสะสม
                         </p>
                         <p className="mt-1 text-sm font-bold text-foreground">{formatBaht(user.totalTopup)}</p>
                     </div>
                     <div className="rounded-2xl border border-border bg-muted/40 p-3">
-                        <p className="text-[11px] text-muted-foreground">แต้มสะสม</p>
+                        <p className="text-xs text-muted-foreground">แต้มสะสม</p>
                         <p className="mt-1 text-sm font-bold text-foreground">{user.pointBalance.toLocaleString("th-TH")}</p>
                     </div>
                     <div className="rounded-2xl border border-border bg-muted/40 p-3">
-                        <p className="text-[11px] text-muted-foreground">สมัครสมาชิกเมื่อ</p>
+                        <p className="text-xs text-muted-foreground">สมัครสมาชิกเมื่อ</p>
                         <ChatTimestamp value={user.createdAt} className="mt-1 block text-xs font-medium text-foreground" />
                     </div>
                 </div>
@@ -199,10 +199,10 @@ export function CustomerContextPanel({ conversationId, className }: Readonly<Cus
                                         </span>
                                     </div>
                                     <div className="mt-1 flex items-center justify-between gap-2">
-                                        <Badge variant="outline" className={cn("px-1.5 py-0 text-[10px]", getStatusBadgeClassName(order.status))}>
+                                        <Badge variant="outline" className={cn("px-1.5 py-0 text-xs", getStatusBadgeClassName(order.status))}>
                                             {ORDER_STATUS_LABELS[order.status] ?? order.status}
                                         </Badge>
-                                        <ChatTimestamp value={order.purchasedAt} className="text-[10px] text-muted-foreground" />
+                                        <ChatTimestamp value={order.purchasedAt} className="text-xs text-muted-foreground" />
                                     </div>
                                 </div>
                             ))}
@@ -225,15 +225,15 @@ export function CustomerContextPanel({ conversationId, className }: Readonly<Cus
                                 <div key={topup.id} className="rounded-xl border border-border bg-card px-3 py-2">
                                     <div className="flex items-center justify-between gap-2">
                                         <span className="text-xs font-semibold text-foreground">{formatBaht(topup.amount)}</span>
-                                        <Badge variant="outline" className={cn("px-1.5 py-0 text-[10px]", getStatusBadgeClassName(topup.status))}>
+                                        <Badge variant="outline" className={cn("px-1.5 py-0 text-xs", getStatusBadgeClassName(topup.status))}>
                                             {TOPUP_STATUS_LABELS[topup.status] ?? topup.status}
                                         </Badge>
                                     </div>
                                     <div className="mt-1 flex items-center justify-between gap-2">
-                                        <span className="text-[10px] text-muted-foreground">
+                                        <span className="text-xs text-muted-foreground">
                                             {topup.paymentMethod === "truewallet" ? "TrueWallet" : topup.paymentMethod === "bank" ? "โอนธนาคาร" : "ไม่ระบุช่องทาง"}
                                         </span>
-                                        <ChatTimestamp value={topup.createdAt} className="text-[10px] text-muted-foreground" />
+                                        <ChatTimestamp value={topup.createdAt} className="text-xs text-muted-foreground" />
                                     </div>
                                 </div>
                             ))}

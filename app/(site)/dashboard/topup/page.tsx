@@ -750,7 +750,7 @@ export default function TopupPage() {
                                         >
                                             <Upload className="mx-auto mb-1 h-6 w-6 text-slate-500 sm:mb-2.5 sm:h-9 sm:w-9" />
                                             <p className="text-sm font-bold leading-tight text-slate-600 sm:text-3xl sm:leading-none">ลาก & วาง เพื่ออัปโหลด</p>
-                                            <p className="mt-1 text-[10px] text-slate-500 sm:mt-2 sm:text-base">หรือ</p>
+                                            <p className="mt-1 text-xs text-slate-500 sm:mt-2 sm:text-base">หรือ</p>
                                             <span className="mt-2 inline-flex rounded-lg bg-slate-600 px-4 py-1.5 text-xs font-bold text-white sm:mt-3 sm:rounded-xl sm:px-5 sm:py-3 sm:text-sm">
                                                 อัปโหลดไฟล์
                                             </span>
@@ -777,7 +777,7 @@ export default function TopupPage() {
                                     )}
                                 </div>
 
-                                <p className="mt-2 text-center text-[10px] font-bold leading-snug text-red-500 sm:text-sm">
+                                <p className="mt-2 text-center text-xs font-bold leading-snug text-red-500 sm:text-sm">
                                     กรุณาโอนผ่านแอปธนาคารเท่านั้น ระบบไม่รองรับการโอนด้วยการยืนยันนี้
                                 </p>
 

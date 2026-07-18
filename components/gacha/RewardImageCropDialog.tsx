@@ -305,7 +305,7 @@ export function RewardImageCropDialog({
                                                 }}
                                                 onPointerDown={(event) => beginDrag("move", event)}
                                             >
-                                                <div className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-black/55 px-2.5 py-1 text-[11px] font-medium text-white">
+                                                <div className="absolute left-1/2 top-3 -translate-x-1/2 rounded-full bg-black/55 px-2.5 py-1 text-xs font-medium text-white">
                                                     <span className="inline-flex items-center gap-1">
                                                         <Move className="h-3 w-3" />
                                                         ลากวงกลมได้

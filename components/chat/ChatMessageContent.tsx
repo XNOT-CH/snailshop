@@ -68,7 +68,7 @@ export function ChatMessageContent({
 
             <div
                 className={cn(
-                    "mt-2 flex items-center gap-2 text-[11px]",
+                    "mt-2 flex items-center gap-2 text-xs",
                     tone === "primary" ? "text-blue-100" : "text-slate-400"
                 )}
             >

@@ -14,6 +14,9 @@
 
   --color-foreground: var(--foreground);
 
+  /* Type scale: text-xs (12) / text-sm (14) / text-base (16) / text-xl (20) / text-2xl+ for headings.
+     No arbitrary text-[Npx] sizes — readable content is 12px minimum (Thai vowel marks collapse below that);
+     sub-12px is reserved for fixed-size counter badges, kbd hints, and dense axis labels. */
   --font-sans: var(--font-kanit), "Noto Sans Thai", "Leelawadee UI", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 
   --font-mono: var(--font-geist-mono);

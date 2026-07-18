@@ -245,7 +245,7 @@ function ExportCard({
                         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">{config.description}</p>
 
                         {config.supportsDateRange ? null : (
-                            <p className="mt-2 inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] text-amber-600 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+                            <p className="mt-2 inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-600 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
                                 <Calendar className="h-3 w-3" />
                                 ส่งออกทั้งหมด (ไม่รองรับช่วงวันที่)
                             </p>

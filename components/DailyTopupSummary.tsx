@@ -547,7 +547,7 @@ export function DailyTopupSummary({ selectedDate, startDate, endDate }: Readonly
                             <span className="mx-0.5 h-4 w-px bg-border" />
                             <button
                                 onClick={allDaysSelected ? clearAllDays : selectAllDays}
-                                className="px-2 py-1 rounded-md text-[11px] font-medium text-primary hover:bg-primary/10 transition-colors"
+                                className="px-2 py-1 rounded-md text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
                             >
                                 {allDaysSelected ? "ล้าง" : "เลือกทั้งหมด"}
                             </button>

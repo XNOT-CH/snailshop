@@ -77,7 +77,7 @@ function NoteBubble({ message }: Readonly<{ message: ChatMessage }>) {
     return (
         <div className="flex justify-end">
             <div className="max-w-[90%] rounded-2xl border border-dashed border-amber-400/70 bg-amber-50 px-3.5 py-3 text-sm text-amber-900 shadow-sm dark:border-amber-400/40 dark:bg-amber-500/10 dark:text-amber-100 sm:max-w-[85%]">
-                <p className="mb-1 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-300">
+                <p className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-300">
                     <StickyNote className="h-3.5 w-3.5" />
                     บันทึกภายใน — ลูกค้าไม่เห็น
                 </p>
@@ -211,7 +211,7 @@ export function ChatThread({
                             {showDaySeparator ? (
                                 <div className="flex items-center gap-3 py-2" role="separator" aria-label={group.dayLabel}>
                                     <span className="h-px flex-1 bg-border" />
-                                    <span className="rounded-full bg-muted px-3 py-0.5 text-[11px] font-medium text-muted-foreground">
+                                    <span className="rounded-full bg-muted px-3 py-0.5 text-xs font-medium text-muted-foreground">
                                         {group.dayLabel}
                                     </span>
                                     <span className="h-px flex-1 bg-border" />
