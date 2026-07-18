@@ -20,6 +20,8 @@ import { NAV_ICON_BY_HREF, PRIMARY_NAV, TOPUP_LABEL, isNavActive } from "@/lib/n
 
 interface SerializableNavLink { href: string; label: string; }
 
+interface DrawerCategory { name: string; count: number; }
+
 interface NavigationDrawerProps {
     navLinks?: SerializableNavLink[];
     user?: { name?: string | null; username: string; image?: string | null; creditBalance: number; pointBalance: number; } | null;
@@ -27,7 +29,7 @@ interface NavigationDrawerProps {
     siteName?: string;
     logoUrl?: string;
     walletIconUrl?: string;
-    categories?: string[];
+    categories?: DrawerCategory[];
     currencySettings?: PublicCurrencySettings;
 }
 
@@ -244,7 +246,7 @@ export function NavigationDrawer({
                                 <Lock className="h-4 w-4" /> เข้าสู่ระบบ
                             </Link>
                             <Link href="/register" prefetch={false} onClick={() => setIsOpen(false)}
-                                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-medium text-muted-foreground hover:text-foreground transition-all"
+                                className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg bg-accent/40 text-sm font-medium text-muted-foreground hover:text-foreground transition-all"
                                 style={drawerStyles.secondaryButton}>
                                 <UserPlus className="h-4 w-4" /> สมัครสมาชิก
                             </Link>
@@ -253,7 +255,7 @@ export function NavigationDrawer({
                 </div>
 
                 {/* ── Nav Links ── */}
-                <nav className="flex-1 overflow-y-auto pt-1 pb-2" style={drawerStyles.section}>
+                <nav className="flex-1 overflow-y-auto px-2.5 pt-2 pb-2" style={drawerStyles.section}>
                     {links.map((link) => {
                         const active = isActive(link.href);
                         const isShop = link.href === "/shop" && categories.length > 0;
@@ -265,7 +267,7 @@ export function NavigationDrawer({
                                 <div key={link.href}>
                                     <button
                                         onClick={() => setShopExpanded((v) => !v)}
-                                        className="w-full flex items-center gap-3.5 px-5 py-3.5 text-sm font-medium transition-colors"
+                                        className="w-full flex items-center gap-3.5 rounded-xl px-3.5 py-3 text-sm font-medium transition-colors"
                                         style={active ? activeStyle : inactiveStyle}
                                     >
                                         <NavIcon href={link.href} />
@@ -273,15 +275,23 @@ export function NavigationDrawer({
                                         <ChevronRight className={`h-4 w-4 opacity-50 transition-transform duration-200 ${shopExpanded ? "rotate-90" : ""}`} />
                                     </button>
                                     {shopExpanded && (
-                                        <div className="bg-accent/45">
+                                        <div className="my-1 rounded-xl bg-accent/45 py-1">
+                                            <Link
+                                                href="/shop"
+                                                prefetch={false}
+                                                className="flex items-center gap-2 rounded-lg py-3 pl-11 pr-4 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+                                                onClick={() => setIsOpen(false)}>
+                                                ดูสินค้าทั้งหมด
+                                            </Link>
                                             {categories.map((cat) => (
-                                                <Link key={cat}
-                                                    href={`/shop?category=${encodeURIComponent(cat)}`}
+                                                <Link key={cat.name}
+                                                    href={`/shop?category=${encodeURIComponent(cat.name)}`}
                                                     prefetch={false}
-                                                    className="flex items-center pl-12 pr-5 py-2.5 text-xs transition-colors hover:bg-accent"
+                                                    className="flex items-center gap-2 rounded-lg py-3 pl-11 pr-4 text-sm transition-colors hover:bg-accent"
                                                     style={drawerStyles.inactive}
                                                     onClick={() => setIsOpen(false)}>
-                                                    {cat}
+                                                    <span className="min-w-0 flex-1 truncate">{cat.name}</span>
+                                                    <span className="shrink-0 text-xs opacity-70">({cat.count.toLocaleString()})</span>
                                                 </Link>
                                             ))}
                                         </div>
@@ -294,7 +304,7 @@ export function NavigationDrawer({
                             <Link key={link.href} href={link.href}
                                 prefetch={false}
                                 onClick={() => setIsOpen(false)}
-                                className="flex items-center gap-3.5 px-5 py-3.5 text-sm font-medium transition-colors"
+                                className="flex items-center gap-3.5 rounded-xl px-3.5 py-3 text-sm font-medium transition-colors"
                                 style={active ? activeStyle : inactiveStyle}
                             >
                                 <NavIcon href={link.href} />
@@ -303,12 +313,26 @@ export function NavigationDrawer({
                         );
                     })}
 
-                    {/* Theme switch — replaces the navbar toggle on mobile */}
-                    <div className="my-1 mx-4" style={{ height: "1px", ...drawerStyles.divider }} />
+                    {/* Extra account links */}
+                    {user && (
+                        <>
+                            <div className="my-1 mx-1.5" style={{ height: "1px", ...drawerStyles.divider }} />
+                            <Link href="/profile/settings" prefetch={false} onClick={() => setIsOpen(false)}
+                                className="flex items-center gap-3.5 rounded-xl px-3.5 py-3 text-sm font-medium transition-colors"
+                                style={pathname.startsWith("/profile") ? drawerStyles.active : drawerStyles.inactive}>
+                                <User className="h-[19px] w-[19px] flex-shrink-0" />
+                                <span className="flex-1">ตั้งค่าบัญชี</span>
+                            </Link>
+                        </>
+                    )}
+                </nav>
+
+                {/* ── Footer: settings zone (theme + logout) ── */}
+                <div className="px-4 py-3 flex-shrink-0 space-y-2" style={{ background: "var(--surface-header)", borderTop: "1px solid var(--surface-stroke)" }}>
                     <button
                         type="button"
                         onClick={() => setTheme(isDark ? "light" : "dark")}
-                        className="w-full flex items-center gap-3.5 px-5 py-3.5 text-sm font-medium transition-colors"
+                        className="w-full flex items-center gap-3.5 rounded-xl px-1.5 py-2 text-sm font-medium transition-colors"
                         style={drawerStyles.inactive}
                         role="switch"
                         aria-checked={isDark}
@@ -330,24 +354,7 @@ export function NavigationDrawer({
                             />
                         </span>
                     </button>
-
-                    {/* Extra account links */}
                     {user && (
-                        <>
-                            <div className="my-1 mx-4" style={{ height: "1px", ...drawerStyles.divider }} />
-                            <Link href="/profile/settings" prefetch={false} onClick={() => setIsOpen(false)}
-                                className="flex items-center gap-3.5 px-5 py-3.5 text-sm font-medium transition-colors"
-                                style={pathname.startsWith("/profile") ? drawerStyles.active : drawerStyles.inactive}>
-                                <User className="h-[19px] w-[19px] flex-shrink-0" />
-                                <span className="flex-1">ตั้งค่าบัญชี</span>
-                            </Link>
-                        </>
-                    )}
-                </nav>
-
-                {/* ── Footer ── */}
-                {user && (
-                    <div className="px-4 py-4 flex-shrink-0" style={{ background: "var(--surface-header)", borderTop: "1px solid var(--surface-stroke)" }}>
                         <button
                             type="button"
                             onClick={handleLogout}
@@ -357,8 +364,8 @@ export function NavigationDrawer({
                         >
                             <LogOut className="h-4 w-4" /> ออกจากระบบ
                         </button>
-                    </div>
-                )}
+                    )}
+                </div>
             </aside>
         </>
     );

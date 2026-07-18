@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { auth } from "@/auth";
 import { db, users, navItems, products } from "@/lib/db";
-import { asc, eq } from "drizzle-orm";
+import { asc, count, eq } from "drizzle-orm";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { cacheOrFetch, CACHE_KEYS } from "@/lib/cache";
@@ -52,7 +52,7 @@ export default async function Navbar() {
         cacheOrFetch(
             CACHE_KEYS.PRODUCT_CATEGORIES,
             async () =>
-                db.select({ category: products.category })
+                db.select({ category: products.category, categoryCount: count() })
                     .from(products)
                     .where(eq(products.isSold, false))
                     .groupBy(products.category)
@@ -69,6 +69,10 @@ export default async function Navbar() {
         .map((product) => product.category)
         .filter(Boolean)
         .sort((left, right) => left.localeCompare(right));
+    const drawerCategories = allProducts
+        .filter((row) => Boolean(row.category))
+        .map((row) => ({ name: row.category, count: Number(row.categoryCount ?? 0) }))
+        .sort((left, right) => left.name.localeCompare(right.name));
 
     // When an admin has configured nav items in the DB, respect that list
     // exactly. Only the default (unconfigured) menu ships the full set
@@ -204,7 +208,7 @@ export default async function Navbar() {
                         imageVersion={avatarVersion}
                         siteName={siteName}
                         logoUrl={siteSettings?.logoUrl || undefined}
-                        categories={shopCategories}
+                        categories={drawerCategories}
                         currencySettings={currencySettings}
                     />
                 </div>
