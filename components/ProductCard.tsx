@@ -52,11 +52,6 @@ export function ProductCard({
                 `}
             >
                 <div className={`${themeClasses.surfaceMedia} relative m-2 mb-0 aspect-square overflow-hidden rounded-xl sm:m-2.5 sm:mb-0`}>
-                    <div className="absolute top-3 left-3 z-10 hidden sm:block">
-                        <span className={`${themeClasses.badge} storefront-product-category rounded-full px-2 py-1 text-xs font-medium shadow-sm`}>
-                            {category}
-                        </span>
-                    </div>
                     {isUnavailable && (
                         <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
                             <span className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-full transform -rotate-12">
