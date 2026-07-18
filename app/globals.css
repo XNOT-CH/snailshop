@@ -1543,6 +1543,19 @@ body {
 
 }
 
+/* Radix moves focus onto the dropdown panel itself when a menu opens, which
+   lights the global ring above up as a blue frame around the whole menu.
+   Menus already signal focus through their highlighted item, so drop the
+   panel-level ring. */
+
+[data-slot="dropdown-menu-content"]:focus-visible {
+
+  --tw-ring-shadow: 0 0 #0000;
+
+  --tw-ring-offset-shadow: 0 0 #0000;
+
+}
+
 
 
 /* ========================================
