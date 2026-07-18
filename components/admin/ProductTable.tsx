@@ -413,7 +413,7 @@ function MobileProductCard({
             {autoDeleteLabel ? (
               <Badge
                 variant="outline"
-                className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
+                className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-xs text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
               >
                 <Timer className="mr-1 h-3 w-3" />
                 {autoDeleteLabel}
@@ -542,7 +542,7 @@ function DesktopProductRow({
               <p className="text-xs text-muted-foreground/70 line-through">
                 {getOriginalPriceText(product, isPointProduct, currencySettings)}
               </p>
-              <Badge className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-[11px] font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/10">
+              <Badge className="rounded-full border border-rose-200 bg-rose-50 px-2 py-0.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300 dark:hover:bg-rose-500/10">
                 ลดราคา
               </Badge>
             </>
@@ -565,7 +565,7 @@ function DesktopProductRow({
           {stockToneLabel ? (
             <span
               className={cn(
-                "text-[11px] font-medium",
+                "text-xs font-medium",
                 stockTone === "out"
                   ? "text-rose-600 dark:text-rose-400"
                   : "text-amber-600 dark:text-amber-400",
@@ -590,7 +590,7 @@ function DesktopProductRow({
           {autoDeleteLabel ? (
             <Badge
               variant="outline"
-              className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
+              className="rounded-full border-amber-200 bg-amber-50 px-2.5 py-1 text-xs text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300"
             >
               <Timer className="mr-1 h-3 w-3" />
               {autoDeleteLabel}

@@ -181,6 +181,8 @@ describe("feature behavior", () => {
 });
 ```
 
+Typography scale (see `app/globals.css`): body text uses only `text-xs` (12px), `text-sm` (14px), `text-base` (16px), `text-xl` (20px), and `text-2xl`+ for headings. Do not add arbitrary sizes like `text-[10px]`/`text-[11px]` — anything a user must read is `text-xs` minimum. The only sanctioned sub-12px uses are fixed-size numeric counter badges, `kbd` hints, avatar initials, gacha board tiles, mobile bottom-nav labels, and dense axis labels (e.g. `SalesHeatmap`). Form inputs must render at 16px on mobile (`text-base md:text-sm`, already the default in `components/ui/input.tsx`) to prevent iOS auto-zoom.
+
 ## Task Navigation
 
 Read these first for each task type, then follow the nearest nested `AGENTS.md`.

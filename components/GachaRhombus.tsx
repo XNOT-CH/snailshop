@@ -553,7 +553,7 @@ export function GachaRhombus({
   return (
     <div className="flex w-full max-w-[640px] flex-col items-center gap-4 sm:gap-8">
       <div ref={cardRef} className="relative flex w-full justify-center overflow-hidden rounded-2xl border border-border/60 bg-card p-4 shadow-[0_12px_30px_-26px_rgba(15,23,42,0.24)] sm:p-8 md:p-10">
-        <button onClick={() => setShowDropRate(true)} className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full border border-border/60 bg-background/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground shadow-sm transition-all hover:bg-background hover:text-[#145de7]">
+        <button onClick={() => setShowDropRate(true)} className="absolute left-3 top-3 z-10 flex items-center gap-1 rounded-full border border-border/60 bg-background/80 px-2.5 py-1 text-xs font-medium text-muted-foreground shadow-sm transition-all hover:bg-background hover:text-[#145de7]">
           <Info className="h-3.5 w-3.5" /> อัตราดรอป
         </button>
         <div

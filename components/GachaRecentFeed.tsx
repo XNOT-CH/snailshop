@@ -115,7 +115,7 @@ export function GachaRecentFeed({ refreshKey }: Readonly<{ refreshKey: number }>
                                 <div className="text-center w-full">
                                     <p className="w-full truncate text-xs font-bold text-[#145de7]">ได้รับ: {log.rewardName}</p>
                                     <p className="mt-0.5 w-full truncate text-xs text-slate-500">{log.username}</p>
-                                    <p className="mt-1 inline-block border-b border-slate-300/80 border-dotted text-[10px] text-slate-400">
+                                    <p className="mt-1 inline-block border-b border-slate-300/80 border-dotted text-xs text-slate-400">
                                         {new Date(log.createdAt).toLocaleString('th-TH', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false })}
                                     </p>
                                 </div>

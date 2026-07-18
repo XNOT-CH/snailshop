@@ -131,7 +131,7 @@ function RewardCard({
                 </div>
 
                 {isWinner && (
-                    <div className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-[#145de7] px-2 py-1 text-[10px] font-black text-white shadow-sm">
+                    <div className="absolute right-2 top-2 inline-flex items-center gap-1 rounded-full bg-[#145de7] px-2 py-1 text-xs font-black text-white shadow-sm">
                         <Sparkles className="h-3 w-3" />
                         WIN
                     </div>
@@ -139,10 +139,10 @@ function RewardCard({
             </div>
 
             <div className="mt-1.5 text-center sm:mt-2">
-                <p className="line-clamp-2 min-h-[2.1rem] text-[11px] font-bold leading-[1.05rem] text-slate-900 dark:text-slate-100 sm:min-h-[2.5rem] sm:text-xs sm:leading-5">
+                <p className="line-clamp-2 min-h-[2rem] text-xs font-bold leading-4 text-slate-900 dark:text-slate-100 sm:min-h-[2.5rem] sm:leading-5">
                     {formatRewardLabel(reward)}
                 </p>
-                <p className="mt-0.5 text-[10px] font-medium text-slate-500 dark:text-slate-400 sm:mt-1">
+                <p className="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400 sm:mt-1">
                     {TIER_LABEL[reward.tier] ?? TIER_LABEL.common}
                 </p>
             </div>
@@ -157,8 +157,8 @@ function EmptyRewardSlot() {
                 <div className="mb-3 flex h-16 w-16 items-center justify-center rounded-full border border-dashed border-slate-300 bg-white">
                     <Gift className="h-6 w-6 text-slate-300 dark:text-slate-600" />
                 </div>
-                <p className="text-[11px] font-semibold text-slate-500">ยังไม่เปิดรางวัล</p>
-                <p className="mt-1 text-[10px] text-slate-400">เพิ่มรางวัลในแอดมินได้</p>
+                <p className="text-xs font-semibold text-slate-500">ยังไม่เปิดรางวัล</p>
+                <p className="mt-1 text-xs text-slate-400">เพิ่มรางวัลในแอดมินได้</p>
             </div>
         </div>
     );
@@ -385,7 +385,7 @@ export function GachaGridMachine({
                         <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#145de7]/70">Lucky Board</p>
                         <h2 className="mt-1 text-2xl font-bold leading-none text-[#145de7]">{machineName}</h2>
                     </div>
-                    <div className="rounded-full border border-primary/15 bg-primary/10 px-3 py-1.5 text-right text-[11px] font-semibold text-primary">
+                    <div className="rounded-full border border-primary/15 bg-primary/10 px-3 py-1.5 text-right text-xs font-semibold text-primary">
                         <p className="opacity-70">รางวัลพร้อมสุ่ม</p>
                         <p className="text-sm font-black">{actualRewards.length}/9</p>
                     </div>

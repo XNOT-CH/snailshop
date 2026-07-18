@@ -615,7 +615,7 @@ function CartSheetContent() {
                                                     </p>
                                                 </div>
                                                 <div className="flex items-center gap-2">
-                                                    <span className="rounded-full border border-border/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+                                                    <span className="rounded-full border border-border/80 px-2.5 py-1 text-xs font-medium text-muted-foreground">
                                                         {items.length} สินค้า
                                                     </span>
                                                     <span className="flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background/80">

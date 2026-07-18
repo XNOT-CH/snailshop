@@ -180,7 +180,7 @@ function NavLink({
             {badge ? (
                 <span
                     className={[
-                        "relative z-10 rounded-full px-2 py-0.5 text-[10px] font-semibold tracking-[0.08em]",
+                        "relative z-10 rounded-full px-2 py-0.5 text-xs font-semibold tracking-[0.08em]",
                         active ? "bg-white/90 text-[#145de7] dark:bg-[#0f2035] dark:text-[#8ec9ff]" : "bg-slate-100 text-slate-500 dark:bg-[#1a2b42] dark:text-slate-400",
                     ].join(" ")}
                 >
@@ -266,8 +266,8 @@ function SidebarSection({
     return (
         <section className="space-y-2">
             <div className="px-1.5">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">{title}</p>
-                <p className="mt-1 max-w-[15rem] text-[11px] leading-5 text-slate-400 dark:text-slate-500">{hint}</p>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">{title}</p>
+                <p className="mt-1 max-w-[15rem] text-xs leading-5 text-slate-400 dark:text-slate-500">{hint}</p>
             </div>
 
             <div className="space-y-1">
@@ -359,7 +359,7 @@ export function AdminSidebar({ permissions }: Readonly<{ permissions: string[] }
                     </div>
                     <div className="min-w-0">
                         <p className="truncate text-base font-bold tracking-tight text-slate-900 dark:text-slate-50">แผงควบคุม</p>
-                        <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">จัดการร้านและระบบหลังบ้าน</p>
+                        <p className="truncate text-xs text-slate-400 dark:text-slate-500">จัดการร้านและระบบหลังบ้าน</p>
                     </div>
                 </div>
 
@@ -395,7 +395,7 @@ export function AdminSidebar({ permissions }: Readonly<{ permissions: string[] }
                                 <SheetTitle className="truncate text-base font-bold text-slate-900 dark:text-slate-50">
                                     แผงควบคุม
                                 </SheetTitle>
-                                <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">จัดการร้านและระบบหลังบ้าน</p>
+                                <p className="truncate text-xs text-slate-400 dark:text-slate-500">จัดการร้านและระบบหลังบ้าน</p>
                             </div>
                         </SheetHeader>
 

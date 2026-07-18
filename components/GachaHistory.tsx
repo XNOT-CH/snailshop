@@ -77,15 +77,15 @@ export function GachaHistory({ refreshKey }: Readonly<{ refreshKey: number }>) {
                 <div className="grid grid-cols-3 gap-2 text-center">
                     <div className="rounded-2xl bg-muted/30 border border-border px-1.5 py-2.5 sm:px-2 sm:py-2">
                         <p className="text-xl sm:text-lg font-bold text-foreground">{stats.todayCount}</p>
-                        <p className="text-[10px] text-muted-foreground leading-tight">วันนี้</p>
+                        <p className="text-xs text-muted-foreground leading-tight">วันนี้</p>
                     </div>
                     <div className="rounded-2xl bg-muted/30 border border-border px-1.5 py-2.5 sm:px-2 sm:py-2">
                         <p className="text-xl sm:text-lg font-bold text-foreground">{stats.totalCount}</p>
-                        <p className="text-[10px] text-muted-foreground leading-tight">รวมทั้งหมด</p>
+                        <p className="text-xs text-muted-foreground leading-tight">รวมทั้งหมด</p>
                     </div>
                     <div className="rounded-2xl bg-muted/30 border border-border px-1.5 py-2.5 sm:px-2 sm:py-2 flex flex-col items-center justify-center">
                         <p className="text-xl sm:text-lg font-bold text-foreground leading-none mb-1">{top ? top.emoji : "—"}</p>
-                        <p className="text-[10px] text-muted-foreground leading-tight">
+                        <p className="text-xs text-muted-foreground leading-tight">
                             {top ? top.label : "ยังไม่มี"}
                         </p>
                     </div>
@@ -120,7 +120,7 @@ export function GachaHistory({ refreshKey }: Readonly<{ refreshKey: number }>) {
                             {/* name + tier */}
                             <div className="flex-1 min-w-0 flex flex-col items-start gap-1">
                                 <p className="text-sm sm:text-base font-semibold text-foreground truncate w-full">{log.rewardName}</p>
-                                <span className={`inline-flex items-center gap-1 text-[11px] font-bold tracking-wide px-2 py-0.5 rounded-full border shadow-sm ${tier.color}`}>
+                                <span className={`inline-flex items-center gap-1 text-xs font-bold tracking-wide px-2 py-0.5 rounded-full border shadow-sm ${tier.color}`}>
                                     {tier.emoji} {tier.label}
                                 </span>
                             </div>

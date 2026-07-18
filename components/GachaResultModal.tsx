@@ -95,7 +95,7 @@ export function GachaResultModal({ product, onClose, onSpinAgain }: Readonly<Gac
                     <div className="px-6 sm:px-8 pt-7 pb-1">
                         <div className="inline-flex items-center gap-2 rounded-full border border-white/8 bg-[#222127] px-3 py-1.5">
                             <span className={`inline-block h-2 w-2 rounded-full ${tier.dot}`} />
-                            <span className="text-[10px] font-semibold tracking-[0.22em] text-zinc-300/85">
+                            <span className="text-xs font-semibold tracking-[0.22em] text-zinc-300/85">
                                 {tier.label}
                             </span>
                         </div>
@@ -155,7 +155,7 @@ export function GachaResultModal({ product, onClose, onSpinAgain }: Readonly<Gac
                     >
                         <div className="space-y-2.5">
                             <p className="text-2xl font-bold leading-[1.05] text-zinc-50 sm:text-3xl">{product.name}</p>
-                            <p className="text-[11px] font-medium tracking-[0.14em] text-zinc-500">รางวัลที่ได้รับ</p>
+                            <p className="text-xs font-medium tracking-[0.14em] text-zinc-500">รางวัลที่ได้รับ</p>
                         </div>
                         {product.price > 0 && (
                             <div className="mx-auto inline-flex min-w-[138px] items-center justify-center rounded-full border border-white/10 bg-[#232229] px-4 py-2.5 text-sm text-zinc-200">

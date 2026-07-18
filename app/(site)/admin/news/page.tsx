@@ -665,11 +665,11 @@ export default function AdminNewsPage() {
                                                 <p className="font-semibold text-foreground">
                                                     {article.title}
                                                 </p>
-                                                <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600">
+                                                <span className="inline-flex rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
                                                     ลำดับ {index + 1}
                                                 </span>
                                                 <span
-                                                    className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${
+                                                    className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
                                                         article.isActive
                                                             ? "bg-emerald-100 text-emerald-700"
                                                             : "bg-slate-100 text-slate-500"
@@ -821,12 +821,12 @@ export default function AdminNewsPage() {
                                                         ลำดับปัจจุบัน {article.sortOrder}
                                                     </p>
                                                     {article.link ? (
-                                                        <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                                                        <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
                                                             <Link2 className="h-3 w-3" />
                                                             มีลิงก์
                                                         </span>
                                                     ) : (
-                                                        <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                                                        <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-500">
                                                             ไม่มีลิงก์
                                                         </span>
                                                     )}

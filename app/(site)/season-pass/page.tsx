@@ -196,7 +196,7 @@ export default async function SeasonPassPurchasePage() {
 
                                     return (
                                         <div key={reward.day} className="rounded-2xl border border-border/70 bg-white/85 p-3 shadow-sm dark:border-slate-700/80 dark:bg-slate-950/60 dark:shadow-none">
-                                            <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+                                            <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
                                                 Day {String(reward.day).padStart(2, "0")}
                                             </span>
                                             <div className={`mt-3 flex h-11 w-11 items-center justify-center rounded-2xl ${tone}`}>

@@ -284,7 +284,7 @@ function AddRewardForm({ form, setForm, products, productSearch, setProductSearc
                             className={inputCls}
                             disabled={!canEdit}
                         />
-                        <p className="mt-1 text-[11px] text-muted-foreground">ถ้าสินค้าหมดระหว่างแจก ระบบจะโอนเครดิตจำนวนนี้แทนให้อัตโนมัติ</p>
+                        <p className="mt-1 text-xs text-muted-foreground">ถ้าสินค้าหมดระหว่างแจก ระบบจะโอนเครดิตจำนวนนี้แทนให้อัตโนมัติ</p>
                     </div>
                 )}
                 <div>
@@ -363,7 +363,7 @@ function EditRewardForm({ form, setForm, products, productSearch, setProductSear
                             className={inputCls}
                             disabled={!canEdit}
                         />
-                        <p className="mt-1 text-[11px] text-muted-foreground">ถ้าสินค้าหมดระหว่างแจก ระบบจะโอนเครดิตจำนวนนี้แทนให้อัตโนมัติ</p>
+                        <p className="mt-1 text-xs text-muted-foreground">ถ้าสินค้าหมดระหว่างแจก ระบบจะโอนเครดิตจำนวนนี้แทนให้อัตโนมัติ</p>
                     </div>
                 )}
                 <div><label htmlFor="editRewardTier" className={labelCls}>ระดับรางวัล *</label><select id="editRewardTier" value={form.tier} onChange={e => setForm((f: any) => ({ ...f, tier: e.target.value }))} className={inputCls} disabled={!canEdit}>{TIER_OPTIONS.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}</select></div>
@@ -793,7 +793,7 @@ export default function EditGachaMachinePage() {
                 <div className="px-6 py-4 border-b border-border flex items-center gap-2">
                     <Gift className="w-4 h-4 text-[#145de7]" />
                     <div>
-                        <p className="text-[11px] text-muted-foreground">รางวัล</p>
+                        <p className="text-xs text-muted-foreground">รางวัล</p>
                         <h2 className="text-base font-bold text-[#145de7] leading-none">จัดการรางวัล</h2>
                     </div>
                     <span className="ml-auto text-xs text-muted-foreground">{rewards.length} รายการ</span>
@@ -813,14 +813,14 @@ export default function EditGachaMachinePage() {
                             style={{ width: `${Math.min(100, totalUsed)}%` }}
                         />
                     </div>
-                    <p className="mt-1 text-[11px] text-muted-foreground">
+                    <p className="mt-1 text-xs text-muted-foreground">
                         {getProbabilityStatusMessage(totalUsed, isProbabilityComplete, remaining)}
                     </p>
                     <div className="mt-4 rounded-xl border border-[#d9e5ff] bg-white p-4 shadow-sm">
                         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                             <div>
                                 <h3 className="text-sm font-bold text-[#145de7]">ผลจำลองอัตราสุ่ม</h3>
-                                <p className="text-[11px] text-muted-foreground">
+                                <p className="text-xs text-muted-foreground">
                                     ใช้ค่า probability ปัจจุบันของรางวัลในตู้ใบนี้เพื่อจำลอง {SIMULATION_RUNS.toLocaleString()} ครั้ง
                                 </p>
                             </div>
@@ -838,15 +838,15 @@ export default function EditGachaMachinePage() {
                             <>
                                 <div className="mt-3 grid gap-3 sm:grid-cols-3">
                                     <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
-                                        <p className="text-[11px] text-muted-foreground">จำนวนรางวัลที่นำมาคิด</p>
+                                        <p className="text-xs text-muted-foreground">จำนวนรางวัลที่นำมาคิด</p>
                                         <p className="mt-1 text-sm font-bold text-foreground">{simulationResults.length.toLocaleString()} รายการ</p>
                                     </div>
                                     <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
-                                        <p className="text-[11px] text-muted-foreground">รอบจำลองล่าสุด</p>
+                                        <p className="text-xs text-muted-foreground">รอบจำลองล่าสุด</p>
                                         <p className="mt-1 text-sm font-bold text-foreground">{simulationRounds.toLocaleString()} ครั้ง</p>
                                     </div>
                                     <div className="rounded-lg border border-border bg-muted/20 px-3 py-2">
-                                        <p className="text-[11px] text-muted-foreground">เปอร์เซ็นต์รวมของรางวัลที่ใช้จริง</p>
+                                        <p className="text-xs text-muted-foreground">เปอร์เซ็นต์รวมของรางวัลที่ใช้จริง</p>
                                         <p className="mt-1 text-sm font-bold text-foreground">
                                             {simulationResults.reduce((sum, row) => sum + row.configuredProbability, 0).toFixed(2)}%
                                         </p>
@@ -856,7 +856,7 @@ export default function EditGachaMachinePage() {
                                 <div className="mt-3 overflow-hidden rounded-xl border border-[#d9e5ff] bg-white">
                                     <div className="overflow-x-auto">
                                         <div className="min-w-[420px]">
-                                            <div className="grid grid-cols-[minmax(0,1.5fr)_90px_90px_90px] gap-2 border-b border-border bg-[#f7faff] px-3 py-2 text-[11px] font-bold text-[#145de7]">
+                                            <div className="grid grid-cols-[minmax(0,1.5fr)_90px_90px_90px] gap-2 border-b border-border bg-[#f7faff] px-3 py-2 text-xs font-bold text-[#145de7]">
                                                 <span>รางวัล</span>
                                                 <span className="text-right">ตั้งไว้</span>
                                                 <span className="text-right">สุ่มได้</span>

@@ -209,14 +209,14 @@ export function NavigationDrawer({
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="font-bold text-sm truncate text-foreground">{shownUserName}</p>
-                                    <p className="mt-0.5 text-[11px] text-muted-foreground">@{user.username}</p>
+                                    <p className="mt-0.5 text-xs text-muted-foreground">@{user.username}</p>
                                     <div className="flex items-center gap-1.5 mt-0.5">
                                         <CircleDollarSign className="h-3.5 w-3.5 text-primary" />
                                         <span className="text-primary text-xs font-medium">
                                             เครดิต: {Number(user.creditBalance).toLocaleString()}
                                         </span>
                                     </div>
-                                    <div className="mt-1 text-[11px] text-emerald-500">
+                                    <div className="mt-1 text-xs text-emerald-500">
                                         {formatCurrencyAmount(user.pointBalance, "POINT", currencySettings)}
                                     </div>
                                 </div>

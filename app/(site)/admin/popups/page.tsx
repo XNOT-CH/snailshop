@@ -534,12 +534,12 @@ export default function AdminPopupsPage() {
                                             </p>
                                             <div className="flex flex-wrap items-center gap-2">
                                                 {popup.linkUrl ? (
-                                                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                                                    <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
                                                         <Link2 className="h-3 w-3" />
                                                         มีลิงก์
                                                     </span>
                                                 ) : (
-                                                    <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                                                    <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-500">
                                                         ไม่มีลิงก์
                                                     </span>
                                                 )}
@@ -648,12 +648,12 @@ export default function AdminPopupsPage() {
                                                 </p>
                                                 <div className="flex flex-wrap items-center gap-2">
                                                     {popup.linkUrl ? (
-                                                        <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700">
+                                                        <span className="inline-flex items-center gap-1 rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
                                                             <Link2 className="h-3 w-3" />
                                                             มีลิงก์
                                                         </span>
                                                     ) : (
-                                                        <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-500">
+                                                        <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs font-medium text-slate-500">
                                                             ไม่มีลิงก์
                                                         </span>
                                                     )}

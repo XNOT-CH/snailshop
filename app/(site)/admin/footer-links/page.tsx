@@ -124,7 +124,7 @@ function SortableRow({ link, canEditSettings, onEdit, onDelete }: SortableRowPro
                 <div className="space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold text-foreground">{link.label}</p>
-                        <span className="inline-flex rounded-full bg-indigo-100 px-2 py-0.5 text-[11px] font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
+                        <span className="inline-flex rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
                             {COLUMN_LABELS[link.column] ?? COLUMN_LABELS.services}
                         </span>
                     </div>
@@ -229,11 +229,11 @@ function SortableCard({ link, canEditSettings, onEdit, onDelete }: SortableCardP
                 <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold text-foreground">{link.label}</p>
-                        <span className="inline-flex rounded-full bg-indigo-100 px-2 py-1 text-[11px] font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
+                        <span className="inline-flex rounded-full bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
                             {COLUMN_LABELS[link.column] ?? COLUMN_LABELS.services}
                         </span>
                         <span
-                            className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${
+                            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
                                 link.isActive
                                     ? "bg-emerald-100 text-emerald-700"
                                     : "bg-slate-100 text-slate-500"
@@ -242,7 +242,7 @@ function SortableCard({ link, canEditSettings, onEdit, onDelete }: SortableCardP
                             {link.isActive ? "แสดง" : "ซ่อน"}
                         </span>
                         <span
-                            className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${
+                            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
                                 link.openInNewTab
                                     ? "bg-blue-100 text-blue-700"
                                     : "bg-slate-100 text-slate-500"
@@ -306,7 +306,7 @@ function DragPreview({ link }: Readonly<{ link: FooterLink }>) {
                     <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold text-foreground">{link.label}</p>
                         <span
-                            className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${
+                            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
                                 link.openInNewTab
                                     ? "bg-blue-100 text-blue-700"
                                     : "bg-slate-100 text-slate-500"
@@ -315,7 +315,7 @@ function DragPreview({ link }: Readonly<{ link: FooterLink }>) {
                             {link.openInNewTab ? "เปิดแท็บใหม่" : "แท็บเดิม"}
                         </span>
                         <span
-                            className={`inline-flex rounded-full px-2 py-1 text-[11px] font-medium ${
+                            className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
                                 link.isActive
                                     ? "bg-emerald-100 text-emerald-700"
                                     : "bg-slate-100 text-slate-500"
@@ -703,7 +703,7 @@ export default function FooterLinksAdminPage() {
                         <div className="flex items-center gap-2">
                             <p className="font-semibold text-foreground">แสดงผลบนหน้าเว็บ</p>
                             <span
-                                className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                                className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
                                     settings?.isActive
                                         ? "bg-emerald-100 text-emerald-700"
                                         : "bg-slate-100 text-slate-500"

@@ -879,7 +879,7 @@ export default function AdminSettingsPage() {
                                                         {idx + 1}
                                                     </span>
                                                     {slot.title && (
-                                                        <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-1.5 pb-0.5 pt-2 text-[10px] text-white">
+                                                        <span className="absolute inset-x-0 bottom-0 truncate bg-gradient-to-t from-black/70 to-transparent px-1.5 pb-0.5 pt-2 text-xs text-white">
                                                             {slot.title}
                                                         </span>
                                                     )}

@@ -89,7 +89,7 @@ export function ChatComposer({
                 />
 
                 {isNoteMode ? (
-                    <p className="mb-1 flex items-center gap-1.5 px-1 text-[11px] font-semibold text-amber-600 dark:text-amber-300">
+                    <p className="mb-1 flex items-center gap-1.5 px-1 text-xs font-semibold text-amber-600 dark:text-amber-300">
                         <StickyNote className="h-3.5 w-3.5" />
                         โหมดบันทึกภายใน — ข้อความนี้ลูกค้าจะไม่เห็น
                     </p>
@@ -152,7 +152,7 @@ export function ChatComposer({
                     <div className="flex items-center gap-2">
                         <span
                             className={cn(
-                                "text-[11px] tabular-nums",
+                                "text-xs tabular-nums",
                                 nearLimit ? "font-semibold text-amber-600 dark:text-amber-400" : "text-muted-foreground"
                             )}
                         >

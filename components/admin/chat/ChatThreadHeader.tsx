@@ -90,7 +90,7 @@ export function ChatThreadHeader({
                         </p>
                         <Badge
                             variant={getConversationBadgeVariant(conversation.status)}
-                            className={cn("shrink-0 px-2 py-0 text-[10px]", getConversationBadgeClassName(conversation.status))}
+                            className={cn("shrink-0 px-2 py-0 text-xs", getConversationBadgeClassName(conversation.status))}
                         >
                             {getConversationStatusLabel(conversation.status)}
                         </Badge>
@@ -151,7 +151,7 @@ export function ChatThreadHeader({
                                 <Tag className="h-4 w-4 md:mr-2" />
                                 <span className="hidden md:inline">แท็ก</span>
                                 {conversation.tags.length > 0 ? (
-                                    <span className="ml-1 rounded-full bg-primary/15 px-1.5 text-[10px] font-semibold text-primary">
+                                    <span className="ml-1 rounded-full bg-primary/15 px-1.5 text-xs font-semibold text-primary">
                                         {conversation.tags.length}
                                     </span>
                                 ) : null}
