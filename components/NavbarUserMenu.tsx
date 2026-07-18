@@ -56,7 +56,7 @@ const UserAvatarButton = React.forwardRef<
             size="icon"
             className="rounded-full"
             disabled={disabled}
-            aria-label="\u0E40\u0E21\u0E19\u0E39\u0E1C\u0E39\u0E49\u0E43\u0E0A\u0E49"
+            aria-label="เมนูผู้ใช้"
             {...props}
         >
             <Avatar className="h-9 w-9 border-2 border-primary">
