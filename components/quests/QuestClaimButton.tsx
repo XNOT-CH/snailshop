@@ -14,7 +14,6 @@ interface QuestClaimButtonProps {
     claimed: boolean;
     claimable: boolean;
     ctaHref: string | null;
-    isLoggedIn: boolean;
 }
 
 export function QuestClaimButton({
@@ -22,7 +21,6 @@ export function QuestClaimButton({
     claimed,
     claimable,
     ctaHref,
-    isLoggedIn,
 }: Readonly<QuestClaimButtonProps>) {
     const router = useRouter();
     const [isClaiming, setIsClaiming] = useState(false);
@@ -55,14 +53,6 @@ export function QuestClaimButton({
             <Button variant="outline" size="sm" className="pointer-events-none gap-1.5 rounded-xl border-emerald-500/40 text-emerald-600 dark:text-emerald-400" tabIndex={-1}>
                 <CheckCircle2 className="h-4 w-4" />
                 รับแล้ว
-            </Button>
-        );
-    }
-
-    if (!isLoggedIn) {
-        return (
-            <Button asChild size="sm" variant="outline" className="rounded-xl">
-                <Link href="/login" prefetch={false}>เข้าสู่ระบบ</Link>
             </Button>
         );
     }
