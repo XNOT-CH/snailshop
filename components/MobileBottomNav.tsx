@@ -56,9 +56,9 @@ export function MobileBottomNav() {
                         isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                     );
                     const iconWrapperClassName = cn(
-                        "relative z-10 flex h-8 w-8 items-center justify-center rounded-2xl transition-[background-color,color,box-shadow,transform] duration-300 ease-out group-active:scale-90",
+                        "relative z-10 flex h-8 w-8 items-center justify-center rounded-2xl transition-[color,transform] duration-300 ease-out group-active:scale-90",
                         isActive
-                            ? "-translate-y-0.5 scale-105 bg-primary/12 text-primary shadow-sm"
+                            ? "-translate-y-0.5 scale-105 text-primary"
                             : "text-current group-hover:-translate-y-0.5"
                     );
                     const labelClassName = cn(
@@ -74,13 +74,6 @@ export function MobileBottomNav() {
                             className={itemClassName}
                             aria-current={isActive ? "page" : undefined}
                         >
-                            <span
-                                aria-hidden="true"
-                                className={cn(
-                                    "absolute inset-x-2 bottom-1 top-1 rounded-2xl bg-primary/8 opacity-0 transition-[opacity,transform] duration-300 ease-out",
-                                    isActive ? "scale-100 opacity-100" : "scale-75 group-hover:scale-95 group-hover:opacity-50"
-                                )}
-                            />
                             <div className={iconWrapperClassName}>
                                 <Icon className="h-[18px] w-[18px]" />
                             </div>
