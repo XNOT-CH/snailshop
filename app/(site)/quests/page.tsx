@@ -38,7 +38,7 @@ export default async function QuestsPage() {
 
     return (
         <div className="animate-page-enter">
-            <div className="relative left-1/2 w-screen -translate-x-1/2 border-y border-border/50 bg-card/95 px-3 pb-8 pt-4 shadow-xl shadow-primary/10 sm:left-auto sm:w-auto sm:translate-x-0 sm:border sm:px-5 sm:py-7 lg:px-6">
+            <div className="relative left-1/2 min-h-[calc(100dvh-4rem)] w-screen -translate-x-1/2 border-y border-border/50 bg-card/95 px-3 pb-8 pt-4 shadow-xl shadow-primary/10 sm:left-auto sm:w-auto sm:translate-x-0 sm:border sm:px-5 sm:py-7 lg:px-6">
                 <PageBreadcrumb items={[{ label: "ภารกิจรายวัน" }]} className="mb-4" />
 
                 <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
