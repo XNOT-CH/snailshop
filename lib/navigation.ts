@@ -1,4 +1,5 @@
 import {
+    CalendarCheck,
     Dices,
     Gift,
     HelpCircle,
@@ -33,6 +34,8 @@ export const NAV_ICON_BY_NAME: Record<string, LucideIcon> = {
     gift: Gift,
     season: Gift,
     "season-pass": Gift,
+    quests: CalendarCheck,
+    quest: CalendarCheck,
 };
 
 /** Map a known href → lucide icon (for hardcoded surfaces like the drawer). */
@@ -42,6 +45,7 @@ export const NAV_ICON_BY_HREF: Record<string, LucideIcon> = {
     "/shop": ShoppingBag,
     "/gachapons": Dices,
     "/season-pass": Gift,
+    "/quests": CalendarCheck,
     "/dashboard": LayoutDashboard,
     "/dashboard/topup": Wallet,
     "/help": HelpCircle,
@@ -69,6 +73,7 @@ const NAV_MATCHERS: Record<string, (pathname: string) => boolean> = {
     "/shop": (p) => p === "/shop" || p.startsWith("/shop/") || p.startsWith("/product"),
     "/gachapons": (p) => p.startsWith("/gacha"),
     "/season-pass": (p) => p === "/season-pass" || p.startsWith("/season-pass/"),
+    "/quests": (p) => p === "/quests" || p.startsWith("/quests/"),
     "/dashboard": (p) => p.startsWith("/dashboard") || p.startsWith("/profile"),
     "/help": (p) => p === "/help" || p.startsWith("/help/"),
 };
@@ -96,6 +101,7 @@ export const PRIMARY_NAV = {
     shop: { href: "/shop", label: "ร้านค้า", shortLabel: "ร้านค้า" },
     gacha: { href: "/gachapons", label: "หมวดหมู่กาชา", shortLabel: "กาชา" },
     seasonPass: { href: "/season-pass", label: "Season Pass", shortLabel: "พาส" },
+    quests: { href: "/quests", label: "ภารกิจ", shortLabel: "ภารกิจ" },
     dashboard: { href: "/dashboard", label: "บัญชี", shortLabel: "บัญชี" },
     help: { href: "/help", label: "ช่วยเหลือ", shortLabel: "ช่วยเหลือ" },
 } as const satisfies Record<string, PrimaryNavEntry>;

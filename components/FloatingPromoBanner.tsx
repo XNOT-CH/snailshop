@@ -22,7 +22,7 @@ const PROMO_BANNERS = [
     {
         src: "/promo/daily-quest.png?v=2",
         alt: "ภารกิจรายวัน ทำง่าย ได้รางวัลทุกวัน คลิกเลย",
-        href: "/season-pass",
+        href: "/quests",
         width: 530,
         height: 470,
     },

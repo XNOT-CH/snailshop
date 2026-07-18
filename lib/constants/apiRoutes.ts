@@ -15,6 +15,7 @@ export const API_ROUTES = {
     GACHA_HISTORY: "/api/gacha/history",
     GACHA_ROLL: "/api/gacha/roll",
     GACHA_GRID_REWARDS: "/api/gacha/grid/rewards",
+    QUEST_CLAIM: "/api/quests/claim",
     GACHA_GRID_ROLL: "/api/gacha/grid/roll",
     ADMIN_GACHA_REWARDS: "/api/admin/gacha-rewards",
     ADMIN_GACHA_REWARDS_UPLOAD_IMAGE: "/api/admin/gacha-rewards/upload-image",

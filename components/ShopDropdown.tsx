@@ -44,7 +44,7 @@ export function ShopDropdown({ categories }: Readonly<ShopDropdownProps>) {
             <button
                 onClick={() => setOpen((v) => !v)}
                 className={cn(
-                    "flex items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-all duration-200",
+                    "flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-2 text-sm font-medium transition-all duration-200",
                     isActive || open
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:bg-primary hover:text-primary-foreground"

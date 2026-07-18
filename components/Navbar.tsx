@@ -86,6 +86,7 @@ export default async function Navbar() {
                   PRIMARY_NAV.shop,
                   PRIMARY_NAV.gacha,
                   PRIMARY_NAV.seasonPass,
+                  PRIMARY_NAV.quests,
                   PRIMARY_NAV.dashboard,
                   PRIMARY_NAV.help,
               ].map((item) => ({
@@ -125,7 +126,7 @@ export default async function Navbar() {
                     </span>
                 </Link>
 
-                <nav className="hidden min-w-0 items-center justify-center gap-1 lg:flex">
+                <nav className="hidden min-w-0 items-center justify-center gap-0.5 lg:flex">
                     {navLinks.map((link) => {
                         const Icon = link.icon;
 

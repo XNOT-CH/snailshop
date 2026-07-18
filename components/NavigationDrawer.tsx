@@ -36,6 +36,7 @@ const DEFAULT_NAV: SerializableNavLink[] = [
     PRIMARY_NAV.shop,
     PRIMARY_NAV.gacha,
     PRIMARY_NAV.seasonPass,
+    PRIMARY_NAV.quests,
     PRIMARY_NAV.dashboard,
     PRIMARY_NAV.help,
 ].map(({ href, label }) => ({ href, label }));
