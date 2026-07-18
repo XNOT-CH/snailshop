@@ -52,7 +52,7 @@ export function MobileBottomNav() {
                     const isActive = item.match(pathname);
                     const Icon = item.icon;
                     const itemClassName = cn(
-                        "group relative flex h-14 min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 overflow-hidden rounded-2xl px-1 py-1 text-[10px] font-medium transition-[color,transform] duration-300 ease-out active:scale-[0.96]",
+                        "group relative flex h-14 min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-0.5 overflow-hidden rounded-2xl px-1 py-1 text-xs font-medium transition-[color,transform] duration-300 ease-out active:scale-[0.96]",
                         isActive ? "text-primary" : "text-muted-foreground hover:text-foreground"
                     );
                     const iconWrapperClassName = cn(
@@ -75,7 +75,7 @@ export function MobileBottomNav() {
                             aria-current={isActive ? "page" : undefined}
                         >
                             <div className={iconWrapperClassName}>
-                                <Icon className="h-[18px] w-[18px]" />
+                                <Icon className="h-[22px] w-[22px]" />
                             </div>
                             <span className={labelClassName}>{item.label}</span>
                         </Link>
