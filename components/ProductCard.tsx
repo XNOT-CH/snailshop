@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Package } from "lucide-react";
 import { ThumbImage } from "@/components/ThumbImage";
 import { ProductCardActions } from "@/components/ProductCardActions";
 import { RevealOnScroll } from "@/components/RevealOnScroll";
@@ -40,6 +41,14 @@ export function ProductCard({
     const hasDiscount = discountPrice !== null && discountPrice < price;
     const activePrice = hasDiscount && discountPrice !== null ? discountPrice : price;
     const isUnavailable = isSold || stockCount === 0;
+    let stockLabel: string;
+    if (isSold) {
+        stockLabel = "ขายแล้ว";
+    } else if (stockCount === 0) {
+        stockLabel = "สินค้าหมด";
+    } else {
+        stockLabel = `คงเหลือ ${(stockCount ?? 1).toLocaleString("th-TH")} ชิ้น`;
+    }
 
     return (
         <RevealOnScroll index={index}>
@@ -48,7 +57,7 @@ export function ProductCard({
                     ${themeClasses.surface} storefront-product-card group relative flex flex-col overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_20px_40px_-12px_rgba(39,71,121,0.22)] dark:hover:shadow-[0_24px_48px_-16px_rgba(0,0,0,0.7)]
                 `}
             >
-                <div className={`${themeClasses.surfaceMedia} relative aspect-square overflow-hidden border-b border-border/80`}>
+                <div className={`${themeClasses.surfaceMedia} relative m-2 mb-0 aspect-square overflow-hidden rounded-xl sm:m-2.5 sm:mb-0`}>
                     <div className="absolute top-3 left-3 z-10 hidden sm:block">
                         <span className={`${themeClasses.badge} storefront-product-category rounded-full px-2 py-1 text-xs font-medium shadow-sm`}>
                             {category}
@@ -79,21 +88,21 @@ export function ProductCard({
                         className="object-cover"
                     />
                 </div>
-                <div className="p-3 text-center sm:p-4">
-                    <h3 className="mb-1 truncate text-center text-sm font-semibold leading-tight text-foreground sm:text-base">
+                <div className="flex flex-1 flex-col p-3 sm:p-4">
+                    <h3 className="mb-1 truncate text-sm font-semibold leading-tight text-foreground sm:text-base">
                         <Link href={`/product/${id}`} prefetch={false} className="transition-colors hover:text-primary">
                             {title}
                         </Link>
                     </h3>
-                    <div className="text-center">
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                        <p className={`text-base font-bold leading-tight sm:text-lg ${hasDiscount ? "text-red-500 dark:text-red-400" : "text-primary"}`}>
+                            {formatCurrencyAmount(activePrice, currency, currencySettings)}
+                        </p>
                         {hasDiscount && (
                             <p className="text-sm text-muted-foreground line-through">
                                 {formatCurrencyAmount(price, currency, currencySettings)}
                             </p>
                         )}
-                        <p className={`text-base font-bold leading-tight sm:text-lg ${hasDiscount ? "text-red-500 dark:text-red-400" : "text-primary"}`}>
-                            {formatCurrencyAmount(activePrice, currency, currencySettings)}
-                        </p>
                     </div>
                     <ProductCardActions
                         id={id}
@@ -109,6 +118,12 @@ export function ProductCard({
                         currencySettings={currencySettings}
                         initialPurchaseMaintenance={initialPurchaseMaintenance}
                     />
+                    <div className="mt-3 border-t border-border/70 pt-3">
+                        <div className="flex items-center justify-center gap-1.5 rounded-lg border border-border/70 bg-accent/30 px-2.5 py-1.5 text-xs text-muted-foreground">
+                            <Package className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">{stockLabel}</span>
+                        </div>
+                    </div>
                 </div>
             </div>
         </RevealOnScroll>
