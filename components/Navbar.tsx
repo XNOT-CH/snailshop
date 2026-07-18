@@ -74,7 +74,7 @@ export default async function Navbar() {
     // exactly. Only the default (unconfigured) menu ships the full set
     // including the gacha hub and Season Pass — admins manage those via
     // /admin/nav-items instead of having them force-injected here.
-    const navLinks =
+    const navLinks = (
         dbNavItems.length > 0
             ? dbNavItems.map((item) => ({
                   href: normalizeNavHref(item.href),
@@ -93,7 +93,10 @@ export default async function Navbar() {
                   href: item.href,
                   label: item.label,
                   icon: navIconByHref(item.href),
-              }));
+              }))
+    // Daily quests are a logged-in feature; hide the entry from guests
+    // (the /quests page itself also redirects them to /login).
+    ).filter((item) => item.href !== "/quests" || Boolean(userId));
 
     return (
         <MobileAutoHideHeader>

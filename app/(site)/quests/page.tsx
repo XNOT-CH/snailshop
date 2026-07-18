@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { CalendarCheck, CheckCircle2, Coins, Dices, Gift, ShoppingBag, Sparkles, Wallet, type LucideIcon } from "lucide-react";
 import { auth } from "@/auth";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
@@ -33,7 +34,8 @@ function progressText(goalType: QuestGoalType, progress: number, goalValue: numb
 
 export default async function QuestsPage() {
     const session = await auth();
-    const userId = session?.user?.id ?? null;
+    const userId = session?.user?.id;
+    if (!userId) redirect("/login");
     const board = await getDailyQuestBoard(userId);
 
     return (
@@ -110,7 +112,6 @@ export default async function QuestsPage() {
                                             claimed={quest.claimed}
                                             claimable={quest.claimable}
                                             ctaHref={quest.ctaHref}
-                                            isLoggedIn={Boolean(userId)}
                                         />
                                     </div>
                                 </div>
@@ -119,11 +120,6 @@ export default async function QuestsPage() {
                     </div>
                 )}
 
-                {!userId && (
-                    <p className="mt-6 text-center text-sm text-muted-foreground">
-                        เข้าสู่ระบบเพื่อเก็บความคืบหน้าและรับแต้มจากภารกิจ
-                    </p>
-                )}
             </div>
         </div>
     );
