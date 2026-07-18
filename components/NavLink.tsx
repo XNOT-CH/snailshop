@@ -19,7 +19,7 @@ export function NavLink({ href, children }: Readonly<NavLinkProps>) {
             href={href}
             prefetch={false}
             className={cn(
-                "flex whitespace-nowrap items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium transition-all duration-200",
+                "flex whitespace-nowrap items-center gap-1 rounded-full px-2 py-2 text-sm font-medium transition-all duration-200",
                 isActive
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-primary hover:text-primary-foreground"

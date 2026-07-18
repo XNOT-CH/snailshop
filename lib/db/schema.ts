@@ -748,6 +748,50 @@ export const gachaRollLogsRelations = relations(gachaRollLogs, ({ one }) => ({
     gachaMachine: one(gachaMachines, { fields: [gachaRollLogs.gachaMachineId], references: [gachaMachines.id] }),
 }));
 
+// ─────────────────────────────────────────────
+// Daily Quests
+// ─────────────────────────────────────────────
+// Quest progress is derived on the fly from existing activity tables
+// (Order/Topup/GachaRollLog/SeasonPassClaim) scoped to the Thai calendar
+// day — no per-quest progress rows, only the claim record below.
+export const dailyQuests = mysqlTable("DailyQuest", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    slug: varchar("slug", { length: 100 }).unique().notNull(),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: varchar("description", { length: 500 }),
+    // CHECK_IN | PURCHASE_COUNT | TOPUP_AMOUNT | GACHA_SPINS | SEASON_PASS_CLAIM
+    goalType: varchar("goalType", { length: 30 }).notNull(),
+    goalValue: int("goalValue").default(1).notNull(),
+    rewardPoints: int("rewardPoints").notNull(),
+    // Where "ไปทำเลย" sends the user (e.g. /shop, /gachapons).
+    ctaHref: varchar("ctaHref", { length: 255 }),
+    sortOrder: int("sortOrder").default(0).notNull(),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: now(),
+    updatedAt: updatedAt(),
+}, (t) => [
+    index("idx_daily_quest_active_sort").on(t.isActive, t.sortOrder),
+]);
+
+export const dailyQuestClaims = mysqlTable("DailyQuestClaim", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    userId: varchar("userId", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
+    questId: varchar("questId", { length: 36 }).notNull().references(() => dailyQuests.id, { onDelete: "cascade" }),
+    // Thai calendar day key (YYYY-MM-DD); the unique index is the concurrency
+    // guard against double claims.
+    dateKey: varchar("dateKey", { length: 10 }).notNull(),
+    rewardPoints: int("rewardPoints").notNull(),
+    createdAt: now(),
+}, (t) => [
+    uniqueIndex("uq_daily_quest_claim_user_quest_date").on(t.userId, t.questId, t.dateKey),
+    index("idx_daily_quest_claim_user_date").on(t.userId, t.dateKey),
+]);
+
+export const dailyQuestClaimsRelations = relations(dailyQuestClaims, ({ one }) => ({
+    user: one(users, { fields: [dailyQuestClaims.userId], references: [users.id] }),
+    quest: one(dailyQuests, { fields: [dailyQuestClaims.questId], references: [dailyQuests.id] }),
+}));
+
 export const gachaDailySpinCounters = mysqlTable("GachaDailySpinCounter", {
     id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
     userId: varchar("userId", { length: 36 }).notNull(),
