@@ -22,7 +22,7 @@ export function ProductCardSkeleton({ index = 0 }: Readonly<{ index?: number }>)
                     <div className="h-10 flex-1 animate-skeleton rounded-xl bg-foreground/10" />
                     <div className="h-10 w-10 shrink-0 animate-skeleton rounded-xl bg-foreground/10" />
                 </div>
-                <div className="h-8 w-full animate-skeleton rounded-lg bg-foreground/10" />
+                <div className="h-4 w-2/5 animate-skeleton self-start rounded bg-foreground/10" />
             </CardFooter>
         </Card>
     );

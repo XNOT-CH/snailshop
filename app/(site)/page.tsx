@@ -11,6 +11,7 @@ import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { buildPageMetadata, DEFAULT_SITE_DESCRIPTION, resolveSiteName } from "@/lib/seo";
 import { cacheOrFetch, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
+import { getSoldCountMap } from "@/lib/features/orders/queries";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { products, newsArticles } from "@/lib/db";
 import { themeClasses } from "@/lib/theme";
@@ -128,6 +129,12 @@ export default async function HomePage() {
     }
   }
 
+  const soldCountMap = await getSoldCountMap([
+    ...featuredProducts.map((product) => product.id),
+    ...saleProducts.map((product) => product.id),
+    ...productList.map((product) => product.id),
+  ]);
+
   return (
     <div className="animate-page-enter">
       <WelcomeRedirect />
@@ -146,6 +153,7 @@ export default async function HomePage() {
               product.discountPrice === null || product.discountPrice === undefined
                 ? null
                 : Number(product.discountPrice),
+            soldCount: soldCountMap.get(product.id) ?? 0,
           }))}
           initialCurrencySettings={currencySettings}
           initialMaintenance={maintenance}
@@ -156,6 +164,7 @@ export default async function HomePage() {
             ...product,
             price: Number(product.price),
             discountPrice: Number(product.discountPrice),
+            soldCount: soldCountMap.get(product.id) ?? 0,
           }))}
           initialCurrencySettings={currencySettings}
           initialMaintenance={maintenance}
@@ -201,6 +210,7 @@ export default async function HomePage() {
                     currency={product.currency}
                     category={product.category}
                     isSold={Boolean(product.isSold)}
+                    soldCount={soldCountMap.get(product.id) ?? 0}
                     index={index}
                     currencySettings={currencySettings}
                     initialPurchaseMaintenance={maintenance.purchase}

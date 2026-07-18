@@ -13,6 +13,7 @@ interface FeaturedProduct {
   imageUrl: string | null;
   category: string;
   isSold: boolean;
+  soldCount?: number;
 }
 
 interface FeaturedProductsProps {
@@ -75,6 +76,7 @@ export function FeaturedProducts({
               currency={product.currency}
               category={product.category}
               isSold={Boolean(product.isSold)}
+              soldCount={product.soldCount}
               index={index}
               currencySettings={initialCurrencySettings ?? undefined}
               initialPurchaseMaintenance={maintenance}

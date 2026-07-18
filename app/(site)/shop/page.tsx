@@ -8,6 +8,7 @@ import { ShopControls } from "@/components/ShopControls";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { db, products } from "@/lib/db";
+import { getSoldCountMap } from "@/lib/features/orders/queries";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { buildPageMetadata } from "@/lib/seo";
 import { decrypt } from "@/lib/encryption";
@@ -223,6 +224,7 @@ export default async function ShopPage(props: ShopPageProps) {
             .sort((a, b) => compareShopProducts(a, b, currentSort))
             .slice(offset, offset + PRODUCTS_PER_PAGE)
         : dbVisibleProducts;
+    const soldCountMap = await getSoldCountMap(visibleProducts.map((product) => product.id));
     const pageHref = (page: number) => {
         const params = new URLSearchParams();
         params.set("category", currentCategory);
@@ -315,6 +317,7 @@ export default async function ShopPage(props: ShopPageProps) {
                             category={product.category}
                             isSold={Boolean(product.isSold)}
                             stockCount={product.stockCount ?? undefined}
+                            soldCount={soldCountMap.get(product.id) ?? 0}
                             index={index}
                             priorityImage={index < 4}
                             currencySettings={currencySettings}

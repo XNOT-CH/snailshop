@@ -17,6 +17,7 @@ interface ProductCardProps {
     category: string;
     isSold: boolean;
     stockCount?: number;
+    soldCount?: number;
     index?: number;
     priorityImage?: boolean;
     currencySettings?: PublicCurrencySettings;
@@ -33,6 +34,7 @@ export function ProductCard({
     category,
     isSold,
     stockCount,
+    soldCount,
     index = 0,
     priorityImage = false,
     currencySettings,
@@ -41,14 +43,6 @@ export function ProductCard({
     const hasDiscount = discountPrice !== null && discountPrice < price;
     const activePrice = hasDiscount && discountPrice !== null ? discountPrice : price;
     const isUnavailable = isSold || stockCount === 0;
-    let stockLabel: string;
-    if (isSold) {
-        stockLabel = "ขายแล้ว";
-    } else if (stockCount === 0) {
-        stockLabel = "สินค้าหมด";
-    } else {
-        stockLabel = `คงเหลือ ${(stockCount ?? 1).toLocaleString("th-TH")} ชิ้น`;
-    }
 
     return (
         <RevealOnScroll index={index}>
@@ -118,11 +112,9 @@ export function ProductCard({
                         currencySettings={currencySettings}
                         initialPurchaseMaintenance={initialPurchaseMaintenance}
                     />
-                    <div className="mt-3 border-t border-border/70 pt-3">
-                        <div className="flex items-center justify-center gap-1.5 rounded-lg border border-border/70 bg-accent/30 px-2.5 py-1.5 text-xs text-muted-foreground">
-                            <Package className="h-3.5 w-3.5 shrink-0" />
-                            <span className="truncate">{stockLabel}</span>
-                        </div>
+                    <div className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Package className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">ขายไปแล้ว {(soldCount ?? 0).toLocaleString("th-TH")} ชิ้น</span>
                     </div>
                 </div>
             </div>
