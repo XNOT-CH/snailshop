@@ -2,7 +2,7 @@
 
 import Image, { type ImageProps } from "next/image";
 import { useState } from "react";
-import { getThumbImageUrl, shouldBypassImageOptimization } from "@/lib/imageUrl";
+import { getThumbImageUrl } from "@/lib/imageUrl";
 
 type ThumbImageProps = Omit<ImageProps, "src" | "onError"> & {
     src: string;
@@ -29,7 +29,6 @@ export function ThumbImage({ src, alt, onFinalError, ...props }: Readonly<ThumbI
             {...props}
             src={activeSrc}
             alt={alt}
-            unoptimized={shouldBypassImageOptimization(activeSrc)}
             onError={() => {
                 if (activeSrc !== src) {
                     setActiveSrc(src);

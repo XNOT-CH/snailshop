@@ -15,10 +15,6 @@ export function withImageVersion(imageUrl: string | null | undefined, version: s
     return `${imageUrl}${separator}v=${encodeURIComponent(String(version))}`;
 }
 
-export function shouldBypassImageOptimization(imageUrl: string | null | undefined) {
-    return typeof imageUrl === "string" && imageUrl.startsWith("/uploads/");
-}
-
 /**
  * Managed uploads store a 640px `<name>.thumb.webp` next to the full image.
  * Returns the thumb URL for small renders (cards, tiles); callers must fall
