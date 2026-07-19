@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Loader2, User, Gift } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { shouldBypassImageOptimization } from "@/lib/imageUrl";
+
 import { fetchGachaRecentActivity, type RecentGachaLog } from "@/lib/client/gachaActivityClient";
 
 export function GachaRecentFeed({ refreshKey }: Readonly<{ refreshKey: number }>) {
@@ -101,7 +101,6 @@ export function GachaRecentFeed({ refreshKey }: Readonly<{ refreshKey: number }>
                                             fill
                                             sizes="80px"
                                             className="object-cover"
-                                            unoptimized={shouldBypassImageOptimization(log.rewardImageUrl)}
                                         />
                                     ) : (
                                         <Gift className="w-8 h-8 text-muted-foreground/30" />

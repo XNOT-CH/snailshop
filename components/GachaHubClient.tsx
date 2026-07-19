@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { LayoutGrid } from "lucide-react";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
-import { shouldBypassImageOptimization } from "@/lib/imageUrl";
+
 import { getGachaCostLabel, normalizeGachaCost, normalizeGachaCostType } from "@/lib/gachaCost";
 
 export interface GachaCategoryLite {
@@ -45,7 +45,6 @@ function HubImage({ src, alt }: { src: string; alt: string }) {
             height={960}
             sizes="(max-width: 640px) 100vw, 800px"
             className="h-auto max-h-[560px] w-full object-contain"
-            unoptimized={shouldBypassImageOptimization(src)}
             onError={() => setErr(true)}
         />
     );

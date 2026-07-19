@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Gift, RotateCcw, X } from "lucide-react";
 import Image from "next/image";
-import { shouldBypassImageOptimization } from "@/lib/imageUrl";
+
 
 interface GachaProduct {
     id: string;
@@ -125,7 +125,6 @@ export function GachaResultModal({ product, onClose, onSpinAgain }: Readonly<Gac
                                     fill
                                     sizes="176px"
                                     className="object-cover"
-                                    unoptimized={shouldBypassImageOptimization(product.imageUrl)}
                                     onError={() => setImgErr(true)}
                                 />
                             ) : (

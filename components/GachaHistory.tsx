@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
-import { shouldBypassImageOptimization } from "@/lib/imageUrl";
+
 import {
     fetchGachaHistoryActivity,
     type GachaHistoryLog,
@@ -111,7 +111,6 @@ export function GachaHistory({ refreshKey }: Readonly<{ refreshKey: number }>) {
                                         width={48}
                                         height={48}
                                         className="object-contain w-full h-full p-0.5"
-                                        unoptimized={shouldBypassImageOptimization(log.rewardImageUrl)}
                                     />
                                 ) : (
                                     <span className="text-2xl">{tier.emoji}</span>
