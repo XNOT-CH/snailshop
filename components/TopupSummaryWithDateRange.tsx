@@ -4,7 +4,21 @@ import { useState } from "react";
 import { subDays, format } from "date-fns";
 import { th } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
-import { DailyTopupSummary } from "@/components/DailyTopupSummary";
+import dynamic from "next/dynamic";
+import { Loader2 } from "lucide-react";
+
+// Defers recharts until the top-up tab content mounts.
+const DailyTopupSummary = dynamic(
+    () => import("@/components/DailyTopupSummary").then((mod) => mod.DailyTopupSummary),
+    {
+        ssr: false,
+        loading: () => (
+            <div className="flex items-center justify-center" style={{ height: 320 }}>
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+        ),
+    },
+);
 import { DateRangePicker } from "@/components/DateRangePicker";
 
 export function TopupSummaryWithDateRange() {

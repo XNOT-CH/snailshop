@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { DollarSign, Receipt, ShoppingCart, Wallet, type LucideIcon } from "lucide-react";
-import { KpiDrilldownDialog } from "@/components/admin/KpiDrilldownDialog";
+import dynamic from "next/dynamic";
+
+// Only mounts when a KPI card is clicked, so its recharts payload loads on
+// first drilldown instead of with the dashboard.
+const KpiDrilldownDialog = dynamic(
+    () => import("@/components/admin/KpiDrilldownDialog").then((mod) => mod.KpiDrilldownDialog),
+    { ssr: false },
+);
 import { DeltaBadge } from "@/components/admin/DeltaBadge";
 
 type Range = "today" | "7d" | "30d" | "all";
