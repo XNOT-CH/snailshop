@@ -1,9 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { X, ChevronLeft, ChevronRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
 import {
     markPopupSeen,
     shouldShowPopup,
@@ -23,6 +22,8 @@ interface AnnouncementPopupProps {
     defaultVisible?: boolean;
 }
 
+const CLOSE_ANIMATION_MS = 220;
+
 export default function AnnouncementPopup({
     initialPopups,
     defaultVisible = false,
@@ -30,7 +31,9 @@ export default function AnnouncementPopup({
     const [popups, setPopups] = useState<PopupData[]>(() => initialPopups ?? []);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isVisible, setIsVisible] = useState(defaultVisible);
+    const [isClosing, setIsClosing] = useState(false);
     const [isLoaded, setIsLoaded] = useState(Boolean(initialPopups));
+    const closeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     // Fetch popups on mount
     useEffect(() => {
@@ -79,9 +82,18 @@ export default function AnnouncementPopup({
         };
     }, [initialPopups]);
 
-    // Lock background scroll while the popup is open (matches NavigationDrawer)
     useEffect(() => {
-        if (!isVisible) {
+        return () => {
+            if (closeTimeoutRef.current) {
+                clearTimeout(closeTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    // Lock background scroll while the popup is open (matches NavigationDrawer).
+    // Released as soon as the close fade-out starts, not when it finishes.
+    useEffect(() => {
+        if (!isVisible || isClosing) {
             return;
         }
         const previousOverflow = document.body.style.overflow;
@@ -89,15 +101,22 @@ export default function AnnouncementPopup({
         return () => {
             document.body.style.overflow = previousOverflow;
         };
-    }, [isVisible]);
+    }, [isVisible, isClosing]);
 
-    // Handle close with animation
+    // Handle close: play the fade-out, then unmount
     const handleClose = () => {
+        if (isClosing) {
+            return;
+        }
         // Persist the "seen" state per the popup's dismiss option (no-op for
         // show_always). Marking also happens at display time in the wrapper, so
         // this mainly covers the standalone-mount path.
         markPopupSeen(popups);
-        setIsVisible(false);
+        setIsClosing(true);
+        closeTimeoutRef.current = setTimeout(() => {
+            setIsVisible(false);
+            setIsClosing(false);
+        }, CLOSE_ANIMATION_MS);
     };
 
     // Handle image click (open link)
@@ -121,7 +140,7 @@ export default function AnnouncementPopup({
     };
 
     // Don't render anything if not loaded or no popups
-    if (!isLoaded || popups.length === 0) {
+    if (!isLoaded || popups.length === 0 || !isVisible) {
         return null;
     }
 
@@ -130,140 +149,98 @@ export default function AnnouncementPopup({
     const hasMultiple = popups.length > 1;
 
     return (
-        <AnimatePresence>
-            {isVisible && (
-                <motion.div
-                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.3 }}
+        <div
+            className={`announcement-overlay fixed inset-0 z-[9999] flex items-center justify-center p-4${isClosing ? " is-closing" : ""}`}
+            onClick={handleClose}
+        >
+            {/* Backdrop */}
+            <div className="absolute inset-0 bg-black/62" />
+
+            {/* Popup Content with Bounce Animation */}
+            <div
+                className="announcement-card relative max-w-[90vw] max-h-[90vh] w-full max-w-lg"
+                onClick={(e) => e.stopPropagation()}
+            >
+                {/* Close Button */}
+                <button
                     onClick={handleClose}
+                    className="announcement-close absolute -top-3 -right-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-card/95 text-foreground shadow-xl shadow-black/25 transition-[background-color,scale] hover:bg-accent hover:scale-110 active:scale-90"
+                    aria-label="ปิด"
                 >
-                    {/* Backdrop */}
-                    <motion.div
-                        className="absolute inset-0 bg-black/62"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                    />
+                    <X className="h-5 w-5" />
+                </button>
 
-                    {/* Popup Content with Bounce Animation */}
-                    <motion.div
-                        className="relative max-w-[90vw] max-h-[90vh] w-full max-w-lg"
-                        initial={{ opacity: 0, scale: 0.3, y: 100 }}
-                        animate={{
-                            opacity: 1,
-                            scale: 1,
-                            y: 0,
-                        }}
-                        exit={{ opacity: 0, scale: 0.5, y: 50 }}
-                        transition={{
-                            type: "spring",
-                            stiffness: 400,
-                            damping: 15,
-                            mass: 1,
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Close Button */}
-                        <motion.button
-                            onClick={handleClose}
-                            className="absolute -top-3 -right-3 z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/60 bg-card/95 text-foreground shadow-xl shadow-black/25 transition-colors hover:bg-accent"
-                            aria-label="ปิด"
-                            initial={{ scale: 0, rotate: -180 }}
-                            animate={{ scale: 1, rotate: 0 }}
-                            transition={{
-                                type: "spring",
-                                stiffness: 500,
-                                damping: 20,
-                                delay: 0.2
-                            }}
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                        >
-                            <X className="h-5 w-5" />
-                        </motion.button>
+                {/* Image Container */}
+                {currentPopupLinkUrl ? (
+                    <div className="relative w-full aspect-square overflow-hidden rounded-3xl border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)]">
+                        <button
+                            type="button"
+                            className="absolute inset-0 z-0 cursor-pointer"
+                            onClick={handleImageClick}
+                            aria-label={currentPopup.title ? `เปิดลิงก์ ${currentPopup.title}` : "เปิดลิงก์ประชาสัมพันธ์"}
+                        />
+                        <Image
+                            src={currentPopup.imageUrl}
+                            alt={currentPopup.title || "ประชาสัมพันธ์"}
+                            fill
+                            sizes="(max-width: 768px) 90vw, 500px"
+                            className="object-cover"
+                            loading="lazy"
+                            fetchPriority="low"
+                        />
 
-                        {/* Image Container */}
-                        {currentPopupLinkUrl ? (
-                            <div className="relative w-full aspect-square overflow-hidden rounded-3xl border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)]">
+                        {/* Carousel Navigation */}
+                        {hasMultiple && (
+                            <>
                                 <button
-                                    type="button"
-                                    className="absolute inset-0 z-0 cursor-pointer"
-                                    onClick={handleImageClick}
-                                    aria-label={currentPopup.title ? `เปิดลิงก์ ${currentPopup.title}` : "เปิดลิงก์ประชาสัมพันธ์"}
-                                />
-                                <Image
-                                    src={currentPopup.imageUrl}
-                                    alt={currentPopup.title || "ประชาสัมพันธ์"}
-                                    fill
-                                    sizes="(max-width: 768px) 90vw, 500px"
-                                    className="object-cover"
-                                    loading="lazy"
-                                    fetchPriority="low"
-                                />
+                                    onClick={goToPrevious}
+                                    className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white transition-[background-color,scale] hover:bg-black/65 hover:scale-110 active:scale-90"
+                                    aria-label="รูปก่อนหน้า"
+                                >
+                                    <ChevronLeft className="w-6 h-6" />
+                                </button>
+                                <button
+                                    onClick={goToNext}
+                                    className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white transition-[background-color,scale] hover:bg-black/65 hover:scale-110 active:scale-90"
+                                    aria-label="รูปถัดไป"
+                                >
+                                    <ChevronRight className="w-6 h-6" />
+                                </button>
 
-                                {/* Carousel Navigation */}
-                                {hasMultiple && (
-                                    <>
-                                        <motion.button
-                                            onClick={goToPrevious}
-                                            className="absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white transition-colors hover:bg-black/65"
-                                            aria-label="รูปก่อนหน้า"
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                        >
-                                            <ChevronLeft className="w-6 h-6" />
-                                        </motion.button>
-                                        <motion.button
-                                            onClick={goToNext}
-                                            className="absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border border-white/15 bg-black/45 text-white transition-colors hover:bg-black/65"
-                                            aria-label="รูปถัดไป"
-                                            whileHover={{ scale: 1.1 }}
-                                            whileTap={{ scale: 0.9 }}
-                                        >
-                                            <ChevronRight className="w-6 h-6" />
-                                        </motion.button>
-
-                                        {/* Dot Indicators */}
-                                        <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-2">
-                                            {popups.map((popup, index) => (
-                                                <motion.button
-                                                    key={popup.id}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        setCurrentIndex(index);
-                                                    }}
-                                                    className={`w-2.5 h-2.5 rounded-full transition-all ${index === currentIndex
-                                                        ? "bg-primary shadow-[0_0_0_4px_rgba(88,166,255,0.18)]"
-                                                        : "bg-white/35 hover:bg-primary/75"
-                                                        }`}
-                                                    aria-label={`ไปที่รูปที่ ${index + 1}`}
-                                                    animate={{ scale: index === currentIndex ? 1.2 : 1 }}
-                                                    whileHover={{ scale: 1.3 }}
-                                                />
-                                            ))}
-                                        </div>
-                                    </>
-                                )}
-                            </div>
-                        ) : (
-                            <div className="relative w-full aspect-square overflow-hidden rounded-3xl border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)]">
-                                <Image
-                                    src={currentPopup.imageUrl}
-                                    alt={currentPopup.title || "ประชาสัมพันธ์"}
-                                    fill
-                                    sizes="(max-width: 768px) 90vw, 500px"
-                                    className="object-cover"
-                                    loading="lazy"
-                                    fetchPriority="low"
-                                />
-                            </div>
+                                {/* Dot Indicators */}
+                                <div className="absolute bottom-3 left-1/2 z-10 flex -translate-x-1/2 gap-2">
+                                    {popups.map((popup, index) => (
+                                        <button
+                                            key={popup.id}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setCurrentIndex(index);
+                                            }}
+                                            className={`w-2.5 h-2.5 rounded-full transition-all hover:scale-[1.3] ${index === currentIndex
+                                                ? "scale-[1.2] bg-primary shadow-[0_0_0_4px_rgba(88,166,255,0.18)]"
+                                                : "bg-white/35 hover:bg-primary/75"
+                                                }`}
+                                            aria-label={`ไปที่รูปที่ ${index + 1}`}
+                                        />
+                                    ))}
+                                </div>
+                            </>
                         )}
-                    </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>
+                    </div>
+                ) : (
+                    <div className="relative w-full aspect-square overflow-hidden rounded-3xl border border-white/10 bg-card/95 shadow-[0_28px_60px_-26px_rgba(0,0,0,0.75)]">
+                        <Image
+                            src={currentPopup.imageUrl}
+                            alt={currentPopup.title || "ประชาสัมพันธ์"}
+                            fill
+                            sizes="(max-width: 768px) 90vw, 500px"
+                            className="object-cover"
+                            loading="lazy"
+                            fetchPriority="low"
+                        />
+                    </div>
+                )}
+            </div>
+        </div>
     );
 }

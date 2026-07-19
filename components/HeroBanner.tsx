@@ -1,11 +1,7 @@
 import { HeroBannerClient } from "./HeroBannerClient";
 import ReactDOM from "react-dom";
+import { getImageProps } from "next/image";
 import { getSiteSettings } from "@/lib/getSiteSettings";
-
-// Next.js image optimization proxy prefix
-function getNextImageUrl(src: string) {
-    return `/_next/image?url=${encodeURIComponent(src)}&w=1920&q=75`;
-}
 
 export async function HeroBanner() {
     const settings = await getSiteSettings();
@@ -55,10 +51,22 @@ export async function HeroBanner() {
 
     // Preload the first (LCP) banner image so fetchpriority=high is set in the HTML head
     // This makes the LCP image discoverable from the initial document even though
-    // the carousel is a client component
+    // the carousel is a client component. getImageProps mirrors the exact
+    // srcset/sizes the <Image> in HeroBannerClient renders — keep the two in
+    // sync, otherwise the browser downloads the hero twice.
     if (banners.length > 0) {
-        ReactDOM.preload(getNextImageUrl(banners[0].image), {
+        const { props: heroImageProps } = getImageProps({
+            src: banners[0].image,
+            alt: "",
+            fill: true,
+            sizes: "(max-width: 1024px) 100vw, 1200px",
+            quality: 65,
+        });
+
+        ReactDOM.preload(heroImageProps.src, {
             as: "image",
+            imageSrcSet: heroImageProps.srcSet,
+            imageSizes: heroImageProps.sizes,
             fetchPriority: "high",
         });
     }

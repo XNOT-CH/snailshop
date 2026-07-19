@@ -10,18 +10,6 @@ vi.mock("next/image", () => ({
   },
 }));
 
-vi.mock("framer-motion", () => ({
-  AnimatePresence: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-  motion: {
-    div: ({ children, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-      <div {...props}>{children}</div>
-    ),
-    button: ({ children, ...props }: React.ButtonHTMLAttributes<HTMLButtonElement>) => (
-      <button {...props}>{children}</button>
-    ),
-  },
-}));
-
 const popupPayload = [
   {
     id: "popup-1",
