@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { WelcomeSeenMarker } from "@/components/WelcomeSeenMarker";
 import { getSiteSettings } from "@/lib/getSiteSettings";
+import { getOptimizedUploadSrc } from "@/lib/imageUrl";
 import { resolveSiteName } from "@/lib/seo";
 import { WELCOME_SEEN_COOKIE } from "@/lib/welcomeCookie";
 import { normalizeWelcomeStripImages } from "@/lib/welcomeStrip";
@@ -105,8 +106,10 @@ export default async function WelcomePage({ searchParams }: WelcomePageProps) {
             <div key={set} className="snail-welcome-frame-set">
               {marqueeImages.map((imageUrl, frame) => (
                 <div key={`${set}-${frame}`} className="snail-welcome-frame">
+                  {/* Frames render at ~71px max; request a 256px optimizer
+                      variant instead of the raw full-size upload. */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={imageUrl} alt="" className="snail-welcome-frame-image" />
+                  <img src={getOptimizedUploadSrc(imageUrl, 256, 65)} alt="" className="snail-welcome-frame-image" />
                 </div>
               ))}
             </div>
