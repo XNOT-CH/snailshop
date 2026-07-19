@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
 import { db, users } from "@/lib/db";
@@ -34,11 +35,20 @@ const perks = [
     "เข้าถึงหน้า Season Pass ได้สะดวกรวดเร็ว",
 ];
 
-export default async function SeasonPassPurchasePage() {
+export default async function SeasonPassPurchasePage(props: Readonly<{ searchParams?: Promise<{ renew?: string }> }>) {
     const session = await auth();
     const userId = session?.user?.id;
     const plan = await getOrCreateSeasonPassPlan();
     const activeSubscription = userId ? await getCurrentSeasonPassSubscription(userId) : null;
+
+    // Pass holders land on their reward board, not the sales page. The sales
+    // page stays reachable for renewal via /season-pass?renew=1 (linked from
+    // the board). This also routes fresh buyers to the board right after
+    // purchase, because the purchase button calls router.refresh() on success.
+    const searchParams = await props.searchParams;
+    if (activeSubscription && !searchParams?.renew) {
+        redirect("/dashboard/season-pass");
+    }
     const rewardsPreview = (await getSeasonPassRewardCatalog(plan.id)).slice(0, 6);
     const user = userId
         ? await db.query.users.findFirst({
