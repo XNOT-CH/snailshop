@@ -11,6 +11,7 @@ import {
   resolveSiteName,
   toAbsoluteAssetUrl,
 } from "@/lib/seo";
+import { getOptimizedUploadSrc } from "@/lib/imageUrl";
 
 const kanit = Kanit({
   subsets: ["latin", "thai"],
@@ -30,7 +31,11 @@ export async function generateMetadata(): Promise<Metadata> {
   const siteName = resolveSiteName(settings?.heroTitle);
   const siteDescription = settings?.heroDescription?.trim() || DEFAULT_SITE_DESCRIPTION;
   const siteTitle = `${siteName} - Game ID Marketplace`;
-  const faviconUrl = toAbsoluteAssetUrl(settings?.logoUrl);
+  // The stored logo is a full-size upload (can be 100KB+); browsers fetch the
+  // favicon on every cold page view, so serve a 128px optimizer variant.
+  const faviconUrl = toAbsoluteAssetUrl(
+    settings?.logoUrl ? getOptimizedUploadSrc(settings.logoUrl, 128, 75) : settings?.logoUrl,
+  );
   const socialImage =
     toAbsoluteAssetUrl(settings?.ogImageUrl || settings?.bannerImage1 || settings?.logoUrl) ||
     absoluteUrl(DEFAULT_OG_IMAGE_PATH);
