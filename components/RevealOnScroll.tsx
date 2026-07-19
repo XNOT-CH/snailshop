@@ -1,7 +1,6 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
-import { useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 interface RevealOnScrollProps {
     children: ReactNode;
@@ -9,30 +8,40 @@ interface RevealOnScrollProps {
     className?: string;
 }
 
-const emptySubscribe = () => () => {};
-
 export function RevealOnScroll({ children, index = 0, className }: Readonly<RevealOnScrollProps>) {
-    const prefersReduced = useReducedMotion();
+    const ref = useRef<HTMLDivElement>(null);
+    const [revealed, setRevealed] = useState(false);
 
-    // Only honor the reduced-motion preference after hydration so the first
-    // client render matches the server (useReducedMotion is false during SSR).
-    const hydrated = useSyncExternalStore(emptySubscribe, () => true, () => false);
+    useEffect(() => {
+        const element = ref.current;
+        if (!element) {
+            return;
+        }
 
-    const reduce = hydrated && prefersReduced;
+        // prefers-reduced-motion is handled in CSS: the reveal-on-scroll rules
+        // are overridden to be fully visible with no transition, so the
+        // observer toggling is-revealed becomes a visual no-op there.
+        const observer = new IntersectionObserver(
+            (entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) {
+                    setRevealed(true);
+                    observer.disconnect();
+                }
+            },
+            { rootMargin: "0px 0px -120px 0px" },
+        );
+
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, []);
 
     return (
-        <motion.div
-            className={className}
-            initial={reduce ? false : { opacity: 0, y: 32, scale: 0.97 }}
-            whileInView={{ opacity: 1, y: 0, scale: 1 }}
-            viewport={{ once: true, margin: "0px 0px -120px 0px" }}
-            transition={
-                reduce
-                    ? { duration: 0 }
-                    : { duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: Math.min(index, 8) * 0.07 }
-            }
+        <div
+            ref={ref}
+            className={`reveal-on-scroll${revealed ? " is-revealed" : ""}${className ? ` ${className}` : ""}`}
+            style={{ transitionDelay: revealed ? `${Math.min(index, 8) * 0.07}s` : undefined }}
         >
             {children}
-        </motion.div>
+        </div>
     );
 }
