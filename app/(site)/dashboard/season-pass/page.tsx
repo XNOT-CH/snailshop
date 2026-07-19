@@ -124,12 +124,21 @@ export default async function SeasonPassPage(props: Readonly<{ searchParams?: Pr
 
     return (
         <div className="season-pass-dashboard space-y-6">
-            <PageBreadcrumb
-                items={[
-                    { label: "แดชบอร์ด", href: "/dashboard" },
-                    { label: "Season Pass 30 วัน" },
-                ]}
-            />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <PageBreadcrumb
+                    items={[
+                        { label: "แดชบอร์ด", href: "/dashboard" },
+                        { label: "Season Pass 30 วัน" },
+                    ]}
+                />
+                {/* /season-pass redirects active holders here, so the renew
+                    entry needs ?renew=1 to reach the sales page. */}
+                {plan.isActive ? (
+                    <SeasonPassLinkButton href="/season-pass?renew=1">
+                        ต่ออายุ Season Pass
+                    </SeasonPassLinkButton>
+                ) : null}
+            </div>
             <SeasonPassDashboardContent
                 durationDays={plan.durationDays}
                 price={Number(plan.price)}
