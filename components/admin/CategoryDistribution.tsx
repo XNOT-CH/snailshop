@@ -7,7 +7,8 @@ import type { DateRange } from "react-day-picker";
 import { ChartPie, ChevronDown, Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { DateRangePicker } from "@/components/DateRangePicker";
-import { DonutChart, DONUT_SLICE_HUES, DONUT_OTHER_COLOR } from "@/components/admin/DonutChart";
+import { DonutChart } from "@/components/admin/DonutChartLazy";
+import { DONUT_SLICE_HUES, DONUT_OTHER_COLOR } from "@/components/admin/donutPalette";
 
 interface ProductRow {
     name: string;

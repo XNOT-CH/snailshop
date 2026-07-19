@@ -13,14 +13,14 @@ import {
 } from "lucide-react";
 import { RevenueChart } from "@/components/admin/RevenueChart";
 import { KpiSummaryCards } from "@/components/admin/KpiSummaryCards";
-import { ComparisonSection } from "@/components/admin/ComparisonSection";
-import { GachaSummary } from "@/components/admin/GachaSummary";
+import { ComparisonSection } from "@/components/admin/ComparisonSectionLazy";
+import { GachaSummary } from "@/components/admin/GachaSummaryLazy";
 import { CategoryDistribution } from "@/components/admin/CategoryDistribution";
 import { ActionCenter } from "@/components/admin/ActionCenter";
 import { BestSellers } from "@/components/admin/BestSellers";
 import { SalesHeatmap } from "@/components/admin/SalesHeatmap";
 import { TopupSummaryWithDateRange } from "@/components/TopupSummaryWithDateRange";
-import { MembersSummary } from "@/components/MembersSummary";
+import { MembersSummary } from "@/components/MembersSummaryLazy";
 import { DashboardTabs } from "@/components/DashboardTabs";
 import { AdminDashboardHeader } from "@/components/admin/AdminDashboardHeader";
 

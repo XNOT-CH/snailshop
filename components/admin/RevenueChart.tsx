@@ -2,7 +2,20 @@
 
 import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { RevenueAreaChart } from "@/components/admin/RevenueAreaChart";
+import dynamic from "next/dynamic";
+
+// Defers recharts until the chart mounts so the dashboard shell paints first.
+const RevenueAreaChart = dynamic(
+    () => import("@/components/admin/RevenueAreaChart").then((mod) => mod.RevenueAreaChart),
+    {
+        ssr: false,
+        loading: () => (
+            <div className="flex items-center justify-center" style={{ height: 350 }}>
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+        ),
+    },
+);
 
 type Granularity = "day" | "week" | "month" | "year";
 

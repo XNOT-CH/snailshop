@@ -7,7 +7,7 @@ import { Dices, Loader2, Trophy, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DeltaBadge } from "@/components/admin/DeltaBadge";
-import { DonutChart } from "@/components/admin/DonutChart";
+import { DonutChart } from "@/components/admin/DonutChartLazy";
 import { formatBucketLabel } from "@/lib/features/dashboard/bucketLabels";
 
 type RangeDays = 7 | 30 | 90;
