@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { DollarSign, Receipt, ShoppingCart, Wallet, type LucideIcon } from "lucide-react";
-import { DeltaBadge } from "@/components/admin/DeltaBadge";
 
 type Range = "today" | "7d" | "30d" | "all";
 
@@ -14,22 +13,11 @@ interface PeriodMetrics {
     netInflow: number;
 }
 
-interface KpiSummary {
-    current: PeriodMetrics;
-    previous: PeriodMetrics | null;
-}
-
 const rangeLabels: Record<Range, string> = {
     today: "วันนี้",
     "7d": "7 วัน",
     "30d": "30 วัน",
     all: "ทั้งหมด",
-};
-
-const compareLabels: Record<Exclude<Range, "all">, string> = {
-    today: "เทียบเมื่อวาน",
-    "7d": "เทียบ 7 วันก่อนหน้า",
-    "30d": "เทียบ 30 วันก่อนหน้า",
 };
 
 const baht = (value: number, fractionDigits = 0) =>
@@ -86,23 +74,9 @@ const CARDS: CardDef[] = [
     },
 ];
 
-function DeltaLine({
-    current,
-    previous,
-    compareLabel,
-    format,
-}: Readonly<{ current: number; previous: number; compareLabel: string; format: (value: number) => string }>) {
-    return (
-        <p className="flex items-center gap-1 text-xs text-muted-foreground">
-            <DeltaBadge current={current} baseline={previous} format={format} />
-            {compareLabel}
-        </p>
-    );
-}
-
 export function KpiSummaryCards() {
     const [range, setRange] = useState<Range>("7d");
-    const [cache, setCache] = useState<Partial<Record<Range, KpiSummary>>>({});
+    const [cache, setCache] = useState<Partial<Record<Range, PeriodMetrics>>>({});
 
     useEffect(() => {
         if (cache[range]) {
@@ -115,7 +89,7 @@ export function KpiSummaryCards() {
             .then((response) => response.json())
             .then((json) => {
                 if (!cancelled && json?.success && json.current) {
-                    setCache((prev) => ({ ...prev, [range]: { current: json.current, previous: json.previous ?? null } }));
+                    setCache((prev) => ({ ...prev, [range]: json.current }));
                 }
             })
             .catch(() => {
@@ -165,16 +139,8 @@ export function KpiSummaryCards() {
                                             {card.title} · {rangeLabels[range]}
                                         </p>
                                         <p className="text-2xl font-bold tracking-tight">
-                                            {summary ? card.format(summary.current[card.key]) : "…"}
+                                            {summary ? card.format(summary[card.key]) : "…"}
                                         </p>
-                                        {summary && range !== "all" && summary.previous && (
-                                            <DeltaLine
-                                                current={summary.current[card.key]}
-                                                previous={summary.previous[card.key]}
-                                                compareLabel={compareLabels[range]}
-                                                format={card.format}
-                                            />
-                                        )}
                                         {card.subtitle && <p className="text-xs text-muted-foreground">{card.subtitle}</p>}
                                     </div>
                                     <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${card.lightBg}`}>

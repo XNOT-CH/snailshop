@@ -18,7 +18,6 @@ import {
 } from "recharts";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { Button } from "@/components/ui/button";
-import { DeltaBadge } from "@/components/admin/DeltaBadge";
 import { formatCompactBaht } from "@/lib/formatters/currency";
 import { formatBucketLabel, type BucketGranularity } from "@/lib/features/dashboard/bucketLabels";
 
@@ -440,9 +439,8 @@ export function ComparisonSection() {
                                 <p className="mt-1 text-lg font-bold tracking-tight tabular-nums">
                                     {data ? m.format(data.a.totals[m.key]) : "…"}
                                 </p>
-                                <p className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                                    <span className="tabular-nums">{data ? m.format(data.b.totals[m.key]) : "…"}</span>
-                                    {data && <DeltaBadge current={data.a.totals[m.key]} baseline={data.b.totals[m.key]} />}
+                                <p className="text-xs text-muted-foreground tabular-nums">
+                                    {data ? m.format(data.b.totals[m.key]) : "…"}
                                 </p>
                             </button>
                         );
