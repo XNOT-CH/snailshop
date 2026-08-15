@@ -2,14 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { DollarSign, Receipt, ShoppingCart, Wallet, type LucideIcon } from "lucide-react";
-import dynamic from "next/dynamic";
-
-// Only mounts when a KPI card is clicked, so its recharts payload loads on
-// first drilldown instead of with the dashboard.
-const KpiDrilldownDialog = dynamic(
-    () => import("@/components/admin/KpiDrilldownDialog").then((mod) => mod.KpiDrilldownDialog),
-    { ssr: false },
-);
 import { DeltaBadge } from "@/components/admin/DeltaBadge";
 
 type Range = "today" | "7d" | "30d" | "all";
@@ -52,7 +44,6 @@ interface CardDef {
     lightBg: string;
     iconColor: string;
     format: (value: number) => string;
-    isBaht: boolean;
 }
 
 const CARDS: CardDef[] = [
@@ -64,7 +55,6 @@ const CARDS: CardDef[] = [
         lightBg: "bg-blue-50 dark:bg-blue-950/30",
         iconColor: "text-[#145de7] dark:text-blue-400",
         format: (v) => baht(v),
-        isBaht: true,
     },
     {
         key: "orders",
@@ -74,7 +64,6 @@ const CARDS: CardDef[] = [
         lightBg: "bg-amber-50 dark:bg-amber-950/30",
         iconColor: "text-amber-600 dark:text-amber-400",
         format: (v) => v.toLocaleString("th-TH"),
-        isBaht: false,
     },
     {
         key: "aov",
@@ -84,7 +73,6 @@ const CARDS: CardDef[] = [
         lightBg: "bg-violet-50 dark:bg-violet-950/30",
         iconColor: "text-violet-600 dark:text-violet-400",
         format: (v) => baht(v, 2),
-        isBaht: true,
     },
     {
         key: "netInflow",
@@ -95,7 +83,6 @@ const CARDS: CardDef[] = [
         lightBg: "bg-emerald-50 dark:bg-emerald-950/30",
         iconColor: "text-emerald-600 dark:text-emerald-400",
         format: (v) => baht(v),
-        isBaht: true,
     },
 ];
 
@@ -116,7 +103,6 @@ function DeltaLine({
 export function KpiSummaryCards() {
     const [range, setRange] = useState<Range>("7d");
     const [cache, setCache] = useState<Partial<Record<Range, KpiSummary>>>({});
-    const [drilldown, setDrilldown] = useState<CardDef["key"] | null>(null);
 
     useEffect(() => {
         if (cache[range]) {
@@ -142,7 +128,6 @@ export function KpiSummaryCards() {
     }, [range, cache]);
 
     const summary = cache[range];
-    const activeCard = CARDS.find((card) => card.key === drilldown);
 
     return (
         <div className="space-y-3">
@@ -167,17 +152,10 @@ export function KpiSummaryCards() {
             <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                 {CARDS.map((card) => {
                     const Icon = card.icon;
-                    const clickable = range !== "all";
                     return (
-                        <button
+                        <div
                             key={card.key}
-                            type="button"
-                            disabled={!clickable}
-                            onClick={() => setDrilldown(card.key)}
-                            title={clickable ? "ดูรายละเอียดรายวัน" : undefined}
-                            className={`relative overflow-hidden rounded-2xl border border-border/80 bg-card/95 text-left shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)] transition-shadow duration-300 hover:shadow-[0_24px_50px_-28px_rgba(15,23,42,0.18)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                                clickable ? "cursor-pointer" : "cursor-default"
-                            }`}
+                            className="relative overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)]"
                         >
                             <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${card.gradient}`} />
                             <div className="p-5 pt-6">
@@ -204,25 +182,10 @@ export function KpiSummaryCards() {
                                     </div>
                                 </div>
                             </div>
-                        </button>
+                        </div>
                     );
                 })}
             </div>
-
-            {range !== "all" && activeCard && (
-                <KpiDrilldownDialog
-                    open
-                    onOpenChange={(open) => {
-                        if (!open) setDrilldown(null);
-                    }}
-                    metric={activeCard.key}
-                    metricTitle={activeCard.title}
-                    range={range}
-                    compareLabel={compareLabels[range]}
-                    format={activeCard.format}
-                    isBaht={activeCard.isBaht}
-                />
-            )}
         </div>
     );
 }
