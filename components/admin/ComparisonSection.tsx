@@ -168,7 +168,7 @@ function CompareTooltip({
                 </div>
                 <div className="flex items-center justify-between gap-6">
                     <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                        <span className="inline-block h-0.5 w-4 rounded-full border-t-2 border-dashed border-muted-foreground" />
+                        <span className="inline-block h-0.5 w-4 rounded-full border-t-2 border-dashed border-[var(--chart-5)]" />
                         {row.bDate ? formatBucketLabel(row.bDate, granularity, true) : labelB}
                     </span>
                     <span className="text-sm font-semibold tabular-nums text-muted-foreground">
@@ -466,7 +466,7 @@ export function ComparisonSection() {
                                 {labelA}
                             </span>
                             <span className="flex items-center gap-1.5">
-                                <span className="inline-block h-0.5 w-5 rounded-full border-t-2 border-dashed border-muted-foreground" />
+                                <span className="inline-block h-0.5 w-5 rounded-full border-t-2 border-dashed border-[var(--chart-5)]" />
                                 {labelB}
                             </span>
                             <span className="ml-auto">
@@ -512,11 +512,11 @@ export function ComparisonSection() {
                                         type="monotone"
                                         dataKey="b"
                                         name={labelB}
-                                        stroke="var(--color-muted-foreground)"
+                                        stroke="var(--chart-5)"
                                         strokeWidth={2}
                                         strokeDasharray="6 4"
                                         dot={false}
-                                        activeDot={{ r: 4, fill: "var(--color-muted-foreground)", stroke: "var(--card)", strokeWidth: 2 }}
+                                        activeDot={{ r: 4, fill: "var(--chart-5)", stroke: "var(--card)", strokeWidth: 2 }}
                                         animationDuration={500}
                                     />
                                     <Line
@@ -573,8 +573,7 @@ export function ComparisonSection() {
                                     <Bar
                                         dataKey="b"
                                         name={labelB}
-                                        fill="var(--color-muted-foreground)"
-                                        fillOpacity={0.55}
+                                        fill="var(--chart-5)"
                                         radius={[4, 4, 0, 0]}
                                         maxBarSize={28}
                                         animationDuration={500}
