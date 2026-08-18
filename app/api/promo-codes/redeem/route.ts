@@ -108,7 +108,8 @@ export async function POST(request: NextRequest) {
                     and(
                         eq(promoUsages.promoCodeId, promo.id),
                         eq(promoUsages.userId, userId),
-                        ne(promoUsages.status, "REVERTED")
+                        ne(promoUsages.status, "REVERTED"),
+                        ne(promoUsages.status, "REJECTED")
                     )
                 );
 
@@ -130,10 +131,14 @@ export async function POST(request: NextRequest) {
                 throw new Error("จำนวนเครดิตของโค้ดนี้ไม่ถูกต้อง");
             }
 
-            await tx
-                .update(users)
-                .set({ creditBalance: sql`creditBalance + ${creditAmount}` })
-                .where(eq(users.id, userId));
+            const pending = promo.requiresApproval;
+
+            if (!pending) {
+                await tx
+                    .update(users)
+                    .set({ creditBalance: sql`creditBalance + ${creditAmount}` })
+                    .where(eq(users.id, userId));
+            }
 
             await tx
                 .update(promoCodes)
@@ -147,7 +152,7 @@ export async function POST(request: NextRequest) {
                 orderId: null,
                 promoCode: promo.code,
                 discountAmount: creditAmount.toFixed(2),
-                status: "COMPLETED",
+                status: pending ? "PENDING" : "COMPLETED",
             });
 
             const updatedUser = await tx.query.users.findFirst({
@@ -159,6 +164,7 @@ export async function POST(request: NextRequest) {
                 code: promo.code,
                 amount: creditAmount,
                 balance: Number(updatedUser?.creditBalance ?? 0),
+                pending,
             };
         });
 
@@ -166,7 +172,9 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json({
             success: true,
-            message: `เติมเครดิตสำเร็จ +฿${result.amount.toLocaleString()}`,
+            message: result.pending
+                ? `ส่งคำขอใช้โค้ดแล้ว รอแอดมินอนุมัติ +฿${result.amount.toLocaleString()}`
+                : `เติมเครดิตสำเร็จ +฿${result.amount.toLocaleString()}`,
             data: result,
         });
     } catch (error) {

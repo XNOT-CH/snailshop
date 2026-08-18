@@ -60,6 +60,7 @@ interface PromoCode {
     usageLimit: number | null;
     usagePerUser: number | null;
     usedCount: number;
+    requiresApproval: boolean;
     startsAt: string;
     expiresAt: string | null;
     isActive: boolean;
@@ -78,6 +79,7 @@ type PromoFormState = {
     startsAt: string;
     expiresAt: string;
     isActive: boolean;
+    requiresApproval: boolean;
 };
 
 const initialFormData: PromoFormState = {
@@ -92,6 +94,7 @@ const initialFormData: PromoFormState = {
     startsAt: "",
     expiresAt: "",
     isActive: true,
+    requiresApproval: false,
 };
 
 const ITEMS_PER_PAGE_OPTIONS = [10, 20, 50] as const;
@@ -261,6 +264,10 @@ function PromoConditionLines({ code }: Readonly<{ code: PromoCode }>) {
         lines.push(`ขั้นต่ำ ฿${code.minPurchase.toLocaleString()}`);
     }
 
+    if (code.codeType === "CREDIT" && code.requiresApproval) {
+        lines.push("ต้องรออนุมัติก่อนใช้");
+    }
+
     if (code.usagePerUser) {
         lines.push(`คนละไม่เกิน ${code.usagePerUser.toLocaleString()} ครั้ง`);
     }
@@ -369,6 +376,7 @@ export default function AdminPromoCodesPage() {
             startsAt: toBangkokDateInputValue(promoCode.startsAt),
             expiresAt: toBangkokDateInputValue(promoCode.expiresAt),
             isActive: promoCode.isActive,
+            requiresApproval: promoCode.requiresApproval,
         });
         setIsDialogOpen(true);
     };
@@ -406,6 +414,7 @@ export default function AdminPromoCodesPage() {
                     startsAt: normalizeStartDateForApi(formData.startsAt),
                     expiresAt: normalizeEndDateForApi(formData.expiresAt),
                     isActive: formData.isActive,
+                    requiresApproval: isDiscount ? undefined : formData.requiresApproval,
                 }
                 : {
                     code: formData.code,
@@ -422,6 +431,7 @@ export default function AdminPromoCodesPage() {
                     excludedCategories: [],
                     isNewUserOnly: false,
                     isActive: formData.isActive,
+                    requiresApproval: isDiscount ? false : formData.requiresApproval,
                 };
 
             const response = await fetchWithCsrf(url, {
@@ -589,6 +599,7 @@ export default function AdminPromoCodesPage() {
                                             discountType: value === "CREDIT" ? "FIXED" : current.discountType,
                                             minPurchase: value === "CREDIT" ? "" : current.minPurchase,
                                             maxDiscount: value === "CREDIT" ? "" : current.maxDiscount,
+                                            requiresApproval: value === "CREDIT" ? current.requiresApproval : false,
                                         }))
                                     }
                                 >
@@ -661,6 +672,28 @@ export default function AdminPromoCodesPage() {
                                     />
                                 </div>
                             </div>
+
+                            {formData.codeType === "CREDIT" ? (
+                                <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 px-4 py-3">
+                                    <div className="space-y-0.5">
+                                        <Label htmlFor="requires-approval">ต้องรออนุมัติก่อนใช้</Label>
+                                        <p className="text-xs text-muted-foreground">
+                                            เปิดไว้ = แอดมินต้องกดอนุมัติที่หน้า &quot;ตรวจสอบการใช้โค้ดเติมเงิน&quot; ก่อนเครดิตจะเข้าบัญชี
+                                        </p>
+                                    </div>
+                                    <Switch
+                                        id="requires-approval"
+                                        checked={formData.requiresApproval}
+                                        onCheckedChange={(checked) =>
+                                            setFormData((current) => ({
+                                                ...current,
+                                                requiresApproval: checked,
+                                            }))
+                                        }
+                                        disabled={!canEditPromo}
+                                    />
+                                </div>
+                            ) : null}
 
                             {formData.codeType === "DISCOUNT" ? (
                                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

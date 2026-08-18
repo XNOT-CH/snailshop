@@ -18,6 +18,7 @@ export interface PromoUpdateInput {
     excludedCategories?: string[] | null;
     isNewUserOnly?: boolean;
     isActive?: boolean;
+    requiresApproval?: boolean;
 }
 
 export function parseOptionalDecimal(value: string | number | null | undefined) {
@@ -53,6 +54,7 @@ export function serializePromo(code: PromoRecordInput) {
         applicableCategories: Array.isArray(code.applicableCategories) ? code.applicableCategories : [],
         excludedCategories: Array.isArray(code.excludedCategories) ? code.excludedCategories : [],
         isNewUserOnly: Boolean(code.isNewUserOnly),
+        requiresApproval: Boolean(code.requiresApproval),
     };
 }
 
@@ -70,6 +72,7 @@ export function buildPromoInsertValues(input: PromoCodeInput) {
         usageLimit: input.maxUses > 0 ? input.maxUses : null,
         usagePerUser: input.usagePerUser > 0 ? input.usagePerUser : null,
         usedCount: 0,
+        requiresApproval: input.codeType === "CREDIT" && input.requiresApproval,
         startsAt: input.startsAt ? toMySQLDatetime(new Date(input.startsAt)) : toMySQLDatetime(new Date()),
         expiresAt: input.expiresAt ? toMySQLDatetime(new Date(input.expiresAt)) : null,
         applicableCategories: normalizeCategoryList(input.applicableCategories),
@@ -106,6 +109,7 @@ export function buildPromoUpdateValues(input: PromoUpdateInput) {
     }
     if (input.isNewUserOnly !== undefined) updateData.isNewUserOnly = input.isNewUserOnly;
     if (input.isActive !== undefined) updateData.isActive = input.isActive;
+    if (input.requiresApproval !== undefined) updateData.requiresApproval = input.requiresApproval;
 
     return updateData;
 }

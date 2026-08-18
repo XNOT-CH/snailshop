@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { and, count, eq, isNotNull, lte } from "drizzle-orm";
-import { ChevronRight, ClipboardList, MessagesSquare, PackageX } from "lucide-react";
+import { ChevronRight, ClipboardList, MessagesSquare, PackageX, Ticket } from "lucide-react";
 import { db, products } from "@/lib/db";
 import { countAdminUnread } from "@/lib/chat";
+import { countPendingCreditCodeUsages } from "@/lib/features/promo/queries";
 import { PERMISSIONS } from "@/lib/permissions";
 
 const LOW_STOCK_THRESHOLD = 3;
@@ -23,7 +24,8 @@ export async function ActionCenter({ permissions }: Readonly<{ permissions: stri
     const permissionSet = new Set(permissions);
     const items: ActionItem[] = [];
 
-    const [unread, lowStock] = await Promise.all([
+    const [pendingCodeUsages, unread, lowStock] = await Promise.all([
+        permissionSet.has(PERMISSIONS.TOPUP_CODE_VIEW) ? countPendingCreditCodeUsages() : null,
         permissionSet.has(PERMISSIONS.CHAT_VIEW) ? countAdminUnread() : null,
         permissionSet.has(PERMISSIONS.PRODUCT_VIEW)
             ? db
@@ -32,6 +34,19 @@ export async function ActionCenter({ permissions }: Readonly<{ permissions: stri
                   .where(and(eq(products.isSold, false), isNotNull(products.stockCount), lte(products.stockCount, LOW_STOCK_THRESHOLD)))
             : null,
     ]);
+
+    if (pendingCodeUsages !== null) {
+        items.push({
+            key: "topup-codes",
+            label: "โค้ดเติมเงินรออนุมัติ",
+            detail: null,
+            count: pendingCodeUsages,
+            unit: "รายการ",
+            href: "/admin/slips",
+            icon: Ticket,
+            activeTile: "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300",
+        });
+    }
 
     if (unread) {
         items.push({

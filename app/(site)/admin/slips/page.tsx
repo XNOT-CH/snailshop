@@ -1,15 +1,17 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { AlertCircle, CalendarClock, ChevronLeft, ChevronRight, FileCheck, Search, Ticket, Wallet } from "lucide-react";
+import { AlertCircle, CalendarClock, ChevronLeft, ChevronRight, Clock3, FileCheck, Search, Ticket, Wallet } from "lucide-react";
 import { SpinnerScreen } from "@/components/SpinnerScreen";
 import { TopupCodeUsageTable, type TopupCodeUsage } from "@/components/admin/TopupCodeUsageTable";
 import { showError } from "@/lib/swal";
+import { cn } from "@/lib/utils";
 
 interface Summary {
     today: { count: number; amount: number };
     allTime: { count: number; amount: number };
     activeCodeCount: number;
+    pendingCount: number;
 }
 
 interface Pagination {
@@ -19,18 +21,27 @@ interface Pagination {
     totalPages: number;
 }
 
+const STATUS_FILTERS = [
+    { value: "ALL", label: "ทั้งหมด" },
+    { value: "PENDING", label: "รออนุมัติ" },
+    { value: "COMPLETED", label: "สำเร็จ" },
+    { value: "REJECTED", label: "ปฏิเสธ" },
+];
+
 export default function AdminSlipsPage() {
     const [usages, setUsages] = useState<TopupCodeUsage[]>([]);
     const [summary, setSummary] = useState<Summary | null>(null);
     const [pagination, setPagination] = useState<Pagination | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [status, setStatus] = useState("ALL");
     const [page, setPage] = useState(1);
 
-    const fetchUsages = useCallback(async (params: { search: string; page: number }) => {
+    const fetchUsages = useCallback(async (params: { search: string; status: string; page: number }) => {
         try {
             const query = new URLSearchParams({
                 search: params.search,
+                status: params.status,
                 page: String(params.page),
                 pageSize: "20",
             });
@@ -54,11 +65,11 @@ export default function AdminSlipsPage() {
 
     useEffect(() => {
         const timeout = setTimeout(() => {
-            fetchUsages({ search, page });
+            fetchUsages({ search, status, page });
         }, search ? 300 : 0);
 
         return () => clearTimeout(timeout);
-    }, [fetchUsages, search, page]);
+    }, [fetchUsages, search, status, page]);
 
     if (isLoading && !summary) {
         return <SpinnerScreen label="กำลังโหลดข้อมูลการใช้โค้ด..." />;
@@ -74,7 +85,18 @@ export default function AdminSlipsPage() {
                 <p className="mt-1 text-muted-foreground">ดูประวัติคนที่ใช้โค้ดเติมเครดิต ว่าใครใช้โค้ดไหน เมื่อไหร่ ได้เท่าไหร่</p>
             </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="admin-slips-summary-card rounded-2xl border border-red-200 bg-[linear-gradient(135deg,#fef2f2_0%,#ffffff_100%)] p-5 shadow-sm dark:border-red-500/30 dark:bg-[linear-gradient(135deg,rgba(39,15,15,0.98)_0%,rgba(49,20,20,0.94)_100%)]">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-600 text-white shadow-sm">
+                            <Clock3 className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <p className="text-sm text-slate-500 dark:text-[#9ab0cb]">รออนุมัติ</p>
+                            <p className="text-2xl font-bold text-slate-900 dark:text-[#eef4ff]">{summary?.pendingCount ?? 0} รายการ</p>
+                        </div>
+                    </div>
+                </div>
                 <div className="admin-slips-summary-card rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_100%)] p-5 shadow-sm dark:border-[#2d4362] dark:bg-[linear-gradient(135deg,rgba(15,25,39,0.98)_0%,rgba(20,32,49,0.94)_100%)]">
                     <div className="flex items-center gap-3">
                         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
@@ -121,18 +143,41 @@ export default function AdminSlipsPage() {
                         <span className="font-bold text-foreground">ประวัติการใช้โค้ด ({pagination?.totalRecords ?? 0})</span>
                     </div>
 
-                    <div className="relative">
-                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
-                        <input
-                            type="text"
-                            placeholder="ค้นหา user หรือโค้ด..."
-                            value={search}
-                            onChange={(event) => {
-                                setSearch(event.target.value);
-                                setPage(1);
-                            }}
-                            className="h-9 w-full rounded-xl border border-border bg-muted pl-9 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:border-blue-500 focus:bg-card focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-500/20 sm:w-56"
-                        />
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <div className="relative">
+                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
+                            <input
+                                type="text"
+                                placeholder="ค้นหา user หรือโค้ด..."
+                                value={search}
+                                onChange={(event) => {
+                                    setSearch(event.target.value);
+                                    setPage(1);
+                                }}
+                                className="h-9 w-full rounded-xl border border-border bg-muted pl-9 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:border-blue-500 focus:bg-card focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-500/20 sm:w-56"
+                            />
+                        </div>
+
+                        <div className="flex gap-1.5">
+                            {STATUS_FILTERS.map((filter) => (
+                                <button
+                                    key={filter.value}
+                                    type="button"
+                                    onClick={() => {
+                                        setStatus(filter.value);
+                                        setPage(1);
+                                    }}
+                                    className={cn(
+                                        "rounded-full border px-3 py-1.5 text-xs font-medium transition",
+                                        status === filter.value
+                                            ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                                            : "border-border bg-muted text-muted-foreground hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
+                                    )}
+                                >
+                                    {filter.label}
+                                </button>
+                            ))}
+                        </div>
                     </div>
                 </div>
 

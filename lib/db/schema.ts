@@ -455,6 +455,7 @@ export const promoCodes = mysqlTable("PromoCode", {
     usageLimit: int("usageLimit"),
     usagePerUser: int("usagePerUser"),
     usedCount: int("usedCount").default(0).notNull(),
+    requiresApproval: boolean("requiresApproval").default(false).notNull(),
     startsAt: datetime("startsAt", { mode: "string" }).default(sql`now()`).notNull(),
     expiresAt: datetime("expiresAt", { mode: "string" }),
     applicableCategories: json("applicableCategories").$type<string[]>(),
@@ -481,6 +482,10 @@ export const promoUsages = mysqlTable("PromoUsage", {
     index("idx_promousage_promo_user_status").on(t.promoCodeId, t.userId, t.status),
     index("idx_promousage_order").on(t.orderId),
 ]);
+
+export const promoUsagesRelations = relations(promoUsages, ({ one }) => ({
+    user: one(users, { fields: [promoUsages.userId], references: [users.id] }),
+}));
 
 // ─────────────────────────────────────────────
 // FooterWidgetSettings

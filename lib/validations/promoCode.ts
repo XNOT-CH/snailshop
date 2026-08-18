@@ -25,6 +25,7 @@ const promoCodeBaseSchema = z.object({
     excludedCategories: z.array(z.string().trim().min(1)).default([]),
     isNewUserOnly: z.boolean().default(false),
     isActive: z.boolean().default(true),
+    requiresApproval: z.boolean().default(false),
 });
 
 export const promoCodeSchema = promoCodeBaseSchema.refine(
@@ -68,6 +69,7 @@ export const promoCodeUpdateSchema = z.object({
     excludedCategories: z.array(z.string().trim().min(1)).optional(),
     isNewUserOnly: z.boolean().optional(),
     isActive: z.boolean().optional(),
+    requiresApproval: z.boolean().optional(),
 }).refine(
     (d) => d.discountType !== "PERCENTAGE" || d.discountValue === undefined || d.discountValue <= 100,
     {

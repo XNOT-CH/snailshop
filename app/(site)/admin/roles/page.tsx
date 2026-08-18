@@ -70,6 +70,8 @@ const PERMISSION_GROUPS = {
   ],
   "โค้ดเติมเงิน": [
     { key: PERMISSIONS.TOPUP_CODE_VIEW, label: "ดูการใช้โค้ดเติมเงิน" },
+    { key: PERMISSIONS.TOPUP_CODE_APPROVE, label: "อนุมัติการใช้โค้ดเติมเงิน" },
+    { key: PERMISSIONS.TOPUP_CODE_REJECT, label: "ปฏิเสธการใช้โค้ดเติมเงิน" },
   ],
   "ตั้งค่า": [
     { key: PERMISSIONS.SETTINGS_VIEW, label: "ดูตั้งค่า" },
