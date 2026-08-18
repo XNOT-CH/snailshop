@@ -36,8 +36,8 @@ describe("lib/permissions", () => {
       expect(perms).toContain(PERMISSIONS.PRODUCT_VIEW);
     });
     it("merges custom permissions with role permissions", () => {
-      const perms = getUserPermissions("USER", [PERMISSIONS.SLIP_VIEW]);
-      expect(perms).toContain(PERMISSIONS.SLIP_VIEW);
+      const perms = getUserPermissions("USER", [PERMISSIONS.TOPUP_CODE_VIEW]);
+      expect(perms).toContain(PERMISSIONS.TOPUP_CODE_VIEW);
       expect(perms).toContain(PERMISSIONS.PRODUCT_VIEW);
     });
     it("accepts custom permissions as JSON string (legacy)", () => {
@@ -67,11 +67,11 @@ describe("lib/permissions", () => {
     it("USER has PRODUCT_VIEW", () => {
       expect(hasPermission("USER", PERMISSIONS.PRODUCT_VIEW)).toBe(true);
     });
-    it("USER does not have SLIP_APPROVE without custom", () => {
-      expect(hasPermission("USER", PERMISSIONS.SLIP_APPROVE)).toBe(false);
+    it("USER does not have PROMO_EDIT without custom", () => {
+      expect(hasPermission("USER", PERMISSIONS.PROMO_EDIT)).toBe(false);
     });
-    it("USER has SLIP_APPROVE with custom permission", () => {
-      expect(hasPermission("USER", PERMISSIONS.SLIP_APPROVE, [PERMISSIONS.SLIP_APPROVE])).toBe(true);
+    it("USER has PROMO_EDIT with custom permission", () => {
+      expect(hasPermission("USER", PERMISSIONS.PROMO_EDIT, [PERMISSIONS.PROMO_EDIT])).toBe(true);
     });
     it("handles malformed JSON custom permissions", () => {
       expect(hasPermission("USER", PERMISSIONS.PRODUCT_VIEW, "not-json")).toBe(true);
@@ -83,7 +83,7 @@ describe("lib/permissions", () => {
       expect(hasAllPermissions("ADMIN", [PERMISSIONS.PRODUCT_VIEW, PERMISSIONS.SETTINGS_EDIT])).toBe(true);
     });
     it("returns false when user is missing one permission", () => {
-      expect(hasAllPermissions("USER", [PERMISSIONS.PRODUCT_VIEW, PERMISSIONS.SLIP_APPROVE])).toBe(false);
+      expect(hasAllPermissions("USER", [PERMISSIONS.PRODUCT_VIEW, PERMISSIONS.PROMO_EDIT])).toBe(false);
     });
     it("returns true for empty permissions list", () => {
       expect(hasAllPermissions("USER", [])).toBe(true);
@@ -96,10 +96,10 @@ describe("lib/permissions", () => {
 
   describe("hasAnyPermission", () => {
     it("returns true when user has at least one listed permission", () => {
-      expect(hasAnyPermission("USER", [PERMISSIONS.SLIP_APPROVE, PERMISSIONS.PRODUCT_VIEW])).toBe(true);
+      expect(hasAnyPermission("USER", [PERMISSIONS.PROMO_EDIT, PERMISSIONS.PRODUCT_VIEW])).toBe(true);
     });
     it("returns false when user has none of the listed permissions", () => {
-      expect(hasAnyPermission("USER", [PERMISSIONS.SLIP_APPROVE, PERMISSIONS.AUDIT_LOG_VIEW])).toBe(false);
+      expect(hasAnyPermission("USER", [PERMISSIONS.PROMO_EDIT, PERMISSIONS.AUDIT_LOG_VIEW])).toBe(false);
     });
     it("returns false for empty permissions list", () => {
       expect(hasAnyPermission("USER", [])).toBe(false);
@@ -111,52 +111,52 @@ describe("lib/permissions", () => {
 
   describe("addCustomPermission", () => {
     it("adds a new permission", () => {
-      const result = addCustomPermission([], PERMISSIONS.SLIP_VIEW);
-      expect(result).toContain(PERMISSIONS.SLIP_VIEW);
+      const result = addCustomPermission([], PERMISSIONS.TOPUP_CODE_VIEW);
+      expect(result).toContain(PERMISSIONS.TOPUP_CODE_VIEW);
     });
     it("does not duplicate existing permission", () => {
-      const result = addCustomPermission([PERMISSIONS.SLIP_VIEW], PERMISSIONS.SLIP_VIEW);
-      expect(result.filter((p) => p === PERMISSIONS.SLIP_VIEW)).toHaveLength(1);
+      const result = addCustomPermission([PERMISSIONS.TOPUP_CODE_VIEW], PERMISSIONS.TOPUP_CODE_VIEW);
+      expect(result.filter((p) => p === PERMISSIONS.TOPUP_CODE_VIEW)).toHaveLength(1);
     });
     it("accepts null input", () => {
       const result = addCustomPermission(null, PERMISSIONS.SETTINGS_EDIT);
       expect(result).toContain(PERMISSIONS.SETTINGS_EDIT);
     });
     it("accepts JSON string input", () => {
-      const result = addCustomPermission(JSON.stringify([PERMISSIONS.SLIP_VIEW]), PERMISSIONS.ORDER_VIEW_ALL);
-      expect(result).toContain(PERMISSIONS.SLIP_VIEW);
+      const result = addCustomPermission(JSON.stringify([PERMISSIONS.TOPUP_CODE_VIEW]), PERMISSIONS.ORDER_VIEW_ALL);
+      expect(result).toContain(PERMISSIONS.TOPUP_CODE_VIEW);
       expect(result).toContain(PERMISSIONS.ORDER_VIEW_ALL);
     });
   });
 
   describe("removeCustomPermission", () => {
     it("removes an existing permission", () => {
-      const result = removeCustomPermission([PERMISSIONS.SLIP_VIEW, PERMISSIONS.SETTINGS_VIEW], PERMISSIONS.SLIP_VIEW);
-      expect(result).not.toContain(PERMISSIONS.SLIP_VIEW);
+      const result = removeCustomPermission([PERMISSIONS.TOPUP_CODE_VIEW, PERMISSIONS.SETTINGS_VIEW], PERMISSIONS.TOPUP_CODE_VIEW);
+      expect(result).not.toContain(PERMISSIONS.TOPUP_CODE_VIEW);
       expect(result).toContain(PERMISSIONS.SETTINGS_VIEW);
     });
     it("is a no-op when permission not present", () => {
-      const result = removeCustomPermission([PERMISSIONS.SETTINGS_VIEW], PERMISSIONS.SLIP_VIEW);
+      const result = removeCustomPermission([PERMISSIONS.SETTINGS_VIEW], PERMISSIONS.TOPUP_CODE_VIEW);
       expect(result).toEqual([PERMISSIONS.SETTINGS_VIEW]);
     });
     it("accepts null input (returns empty)", () => {
-      const result = removeCustomPermission(null, PERMISSIONS.SLIP_VIEW);
+      const result = removeCustomPermission(null, PERMISSIONS.TOPUP_CODE_VIEW);
       expect(result).toEqual([]);
     });
     it("accepts JSON string input", () => {
       const result = removeCustomPermission(
-        JSON.stringify([PERMISSIONS.SLIP_VIEW, PERMISSIONS.SETTINGS_VIEW]),
-        PERMISSIONS.SLIP_VIEW
+        JSON.stringify([PERMISSIONS.TOPUP_CODE_VIEW, PERMISSIONS.SETTINGS_VIEW]),
+        PERMISSIONS.TOPUP_CODE_VIEW
       );
-      expect(result).not.toContain(PERMISSIONS.SLIP_VIEW);
+      expect(result).not.toContain(PERMISSIONS.TOPUP_CODE_VIEW);
     });
   });
 
   describe("normalizePermissionSelection", () => {
     it("applies nested permission dependencies", () => {
-      const result = normalizePermissionSelection([PERMISSIONS.SLIP_APPROVE]);
-      expect(result).toContain(PERMISSIONS.SLIP_APPROVE);
-      expect(result).toContain(PERMISSIONS.SLIP_VIEW);
+      const result = normalizePermissionSelection([PERMISSIONS.PROMO_EDIT]);
+      expect(result).toContain(PERMISSIONS.PROMO_EDIT);
+      expect(result).toContain(PERMISSIONS.PROMO_VIEW);
       expect(result).toContain(PERMISSIONS.ADMIN_PANEL);
     });
   });

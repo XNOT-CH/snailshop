@@ -548,15 +548,3 @@ describe("API: /api/admin/currency-settings (error paths)", () => {
   });
 });
 
-// ════════════════════════════════════════════════════════════════
-// /api/admin/slips — error paths
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/admin/slips (error paths)", () => {
-  it("PATCH returns 500 on invalid JSON body", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    const { PATCH } = await import("@/app/api/admin/slips/route");
-    // invalid-json body → request.json() throws → catch → 500
-    const res = await PATCH(new NextRequest("http://localhost", { method: "PATCH", body: "invalid-json" }));
-    expect(res.status).toBe(500);
-  });
-});

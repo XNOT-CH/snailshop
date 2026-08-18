@@ -23,8 +23,8 @@ This folder contains reusable UI and feature-specific client components.
   `components/admin/AdminSidebar.tsx`, `components/admin/AdminPermissionsProvider.tsx`
 - Product admin table:
   `components/admin/ProductTable.tsx`, `components/admin/ProductImageGalleryField.tsx`
-- Slip approval UI:
-  `components/admin/SlipTable.tsx`, `components/admin/TopupTable.tsx`
+- Topup code usage UI:
+  `components/admin/TopupCodeUsageTable.tsx`
 - Public storefront:
   `components/Navbar.tsx`, `components/Footer.tsx`, `components/HeroBanner.tsx`, `components/ProductCard.tsx`
 - Dashboard:

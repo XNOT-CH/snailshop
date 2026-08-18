@@ -30,7 +30,7 @@ function getFallbackAdminRoute(permissions: string[]) {
     const permissionRoutes: Array<[string, string]> = [
         [PERMISSIONS.PRODUCT_VIEW, "/admin/products"],
         [PERMISSIONS.CHAT_VIEW, "/admin/chat"],
-        [PERMISSIONS.SLIP_VIEW, "/admin/slips"],
+        [PERMISSIONS.TOPUP_CODE_VIEW, "/admin/slips"],
         [PERMISSIONS.USER_VIEW, "/admin/users"],
         [PERMISSIONS.CONTENT_VIEW, "/admin/news"],
         [PERMISSIONS.PROMO_VIEW, "/admin/promo-codes"],

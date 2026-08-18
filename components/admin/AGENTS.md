@@ -10,10 +10,8 @@ This folder contains most admin-side interactive UI.
   Client permission context
 - `ProductTable.tsx`
   Product list interactions
-- `SlipTable.tsx`
-  Pending slip review actions
-- `TopupTable.tsx`
-  Topup summaries/tables
+- `TopupCodeUsageTable.tsx`
+  Read-only log of who redeemed CREDIT-type promo (topup) codes
 - `AdminChatInbox.tsx`
   Admin chat UI
 
@@ -21,8 +19,8 @@ This folder contains most admin-side interactive UI.
 
 - Product admin UI:
   `ProductTable.tsx`, `ProductImageGalleryField.tsx`
-- Slip approval UI:
-  `SlipTable.tsx`, `TopupTable.tsx`
+- Topup code usage UI:
+  `TopupCodeUsageTable.tsx`
 - Admin shell/navigation:
   `AdminSidebar.tsx`, `AdminPermissionsProvider.tsx`
 - Dashboard widgets:

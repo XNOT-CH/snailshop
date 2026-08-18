@@ -420,73 +420,9 @@ describe("API: /api/admin/currency-settings (GET + PUT)", () => {
 });
 
 // ════════════════════════════════════════════════════════════════
-// /api/admin/slips
+// /api/admin/slips (topup code usage log — GET only, see
+// tests/api/admin-topup-code-usages.test.ts for coverage)
 // ════════════════════════════════════════════════════════════════
-describe("API: /api/admin/slips (PATCH)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("returns 401 when not admin", async () => {
-    (isAdmin as any).mockResolvedValue(UNAUTH);
-    const { PATCH } = await import("@/app/api/admin/slips/route");
-    const res = await PATCH(mkReq("http://localhost", { method: "PATCH", body: JSON.stringify({ id: "t1", action: "APPROVE" }) }));
-    expect(res.status).toBe(401);
-  });
-
-  it("returns 400 when id or action is missing", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    const { PATCH } = await import("@/app/api/admin/slips/route");
-    const res = await PATCH(mkReq("http://localhost", { method: "PATCH", body: JSON.stringify({ id: "t1" }) }));
-    expect(res.status).toBe(400);
-    expect((await res.json()).message).toContain("Missing");
-  });
-
-  it("returns 400 when action is invalid", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    const { PATCH } = await import("@/app/api/admin/slips/route");
-    const res = await PATCH(mkReq("http://localhost", { method: "PATCH", body: JSON.stringify({ id: "t1", action: "INVALID" }) }));
-    expect(res.status).toBe(400);
-    expect((await res.json()).message).toContain("Invalid action");
-  });
-
-  it("returns 404 when topup not found", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (db.query.topups.findFirst as any).mockResolvedValue(null);
-    const { PATCH } = await import("@/app/api/admin/slips/route");
-    const res = await PATCH(mkReq("http://localhost", { method: "PATCH", body: JSON.stringify({ id: "t999", action: "APPROVE" }) }));
-    expect(res.status).toBe(404);
-  });
-
-  it("returns 400 when topup is already processed", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (db.query.topups.findFirst as any).mockResolvedValue({ id: "t1", status: "APPROVED", amount: "500", userId: "u1", user: { username: "user1" } });
-    const { PATCH } = await import("@/app/api/admin/slips/route");
-    const res = await PATCH(mkReq("http://localhost", { method: "PATCH", body: JSON.stringify({ id: "t1", action: "APPROVE" }) }));
-    expect(res.status).toBe(400);
-    expect((await res.json()).message).toContain("already processed");
-  });
-
-  it("approves a pending topup", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (db.query.topups.findFirst as any).mockResolvedValue({ id: "t1", status: "PENDING", amount: "1000", userId: "u1", user: { username: "user1" } });
-    const { PATCH } = await import("@/app/api/admin/slips/route");
-    const res = await PATCH(mkReq("http://localhost", { method: "PATCH", body: JSON.stringify({ id: "t1", action: "APPROVE" }) }));
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.message).toContain("1,000");
-  });
-
-  it("rejects a pending topup", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (db.query.topups.findFirst as any).mockResolvedValue({ id: "t1", status: "PENDING", amount: "500", userId: "u1", user: { username: "user1" } });
-    const { PATCH } = await import("@/app/api/admin/slips/route");
-    const res = await PATCH(mkReq("http://localhost", { method: "PATCH", body: JSON.stringify({ id: "t1", action: "REJECT" }) }));
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.message).toContain("rejected");
-  });
-});
 
 // ════════════════════════════════════════════════════════════════
 // /api/admin/gacha-settings

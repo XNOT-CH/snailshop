@@ -11,7 +11,7 @@ interface RouteParams {
 }
 
 export async function GET(_request: NextRequest, { params }: RouteParams) {
-    const authCheck = await requirePermission(PERMISSIONS.SLIP_VIEW);
+    const authCheck = await requirePermission(PERMISSIONS.TOPUP_CODE_VIEW);
     if (!authCheck.success) {
         return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     }

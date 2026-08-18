@@ -1,24 +1,22 @@
-# Admin Slips Notes
+# Admin Topup Code Usage Notes
 
-This folder is the admin review surface for pending topup slips.
+This folder is the admin audit surface for who has redeemed CREDIT-type promo codes (topup codes).
 
 ## Files
 
 - `page.tsx`
-  Loads pending slips, summary cards, and table view
+  Client page: fetches summary cards + paginated usage log from the API and renders search/status filters
 
 ## Read with
 
-- `components/admin/SlipTable.tsx`
+- `components/admin/TopupCodeUsageTable.tsx`
 - `app/api/admin/slips/route.ts`
-- `app/api/admin/slips/[id]/image/route.ts`
-- `app/api/topup/route.ts`
-- `lib/sensitiveData.ts`
-- `lib/slipStorage.ts`
+- `lib/features/promo/queries.ts`
+- `app/api/promo-codes/redeem/route.ts`
 - `lib/permissions.ts`
 
 ## Watchouts
 
-- Approval updates user balance.
-- Pending slips are decrypted before being shown.
-- Proof image URLs are built through slip-storage helpers.
+- Read-only audit log — redemption already completes instantly in `/api/promo-codes/redeem`, there is no approve/reject step here.
+- This route/page path (`/admin/slips`) is legacy naming kept to avoid breaking bookmarks; it no longer reviews bank-transfer slips.
+- Bank-transfer slip storage/review (`lib/slipStorage.ts`, `app/api/admin/slips/[id]/image/route.ts`) is unrelated and still used by the topup dashboard summary — do not delete it from this folder's cleanup.
