@@ -48,14 +48,13 @@ export async function userHasCompletedOrder(userId: string) {
 
 export interface CreditCodeUsageFilters {
     search?: string;
-    status?: string;
     startDate?: Date;
     endDate?: Date;
     page: number;
     pageSize: number;
 }
 
-function buildCreditUsageFilters({ search, status, startDate, endDate }: Omit<CreditCodeUsageFilters, "page" | "pageSize">) {
+function buildCreditUsageFilters({ search, startDate, endDate }: Omit<CreditCodeUsageFilters, "page" | "pageSize">) {
     const filters = [eq(promoCodes.codeType, "CREDIT")];
 
     if (search?.trim()) {
@@ -67,10 +66,6 @@ function buildCreditUsageFilters({ search, status, startDate, endDate }: Omit<Cr
                 like(promoUsages.promoCode, likeValue)
             )!
         );
-    }
-
-    if (status && status !== "ALL") {
-        filters.push(eq(promoUsages.status, status));
     }
 
     if (startDate) {
@@ -107,7 +102,6 @@ export async function listCreditCodeUsages(filters: CreditCodeUsageFilters) {
                 id: promoUsages.id,
                 code: promoUsages.promoCode,
                 amount: promoUsages.discountAmount,
-                status: promoUsages.status,
                 createdAt: promoUsages.createdAt,
                 username: users.username,
                 email: users.email,

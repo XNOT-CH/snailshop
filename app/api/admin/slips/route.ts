@@ -14,14 +14,12 @@ export async function GET(request: NextRequest) {
         const rawPage = Number.parseInt(params.get("page") || "1", 10) || 1;
         const rawPageSize = Number.parseInt(params.get("pageSize") || "20", 10) || 20;
         const search = params.get("search")?.trim() || "";
-        const status = params.get("status") || "ALL";
         const startDateParam = params.get("startDate");
         const endDateParam = params.get("endDate");
 
         const [usages, summary] = await Promise.all([
             listCreditCodeUsages({
                 search,
-                status,
                 startDate: startDateParam ? new Date(startDateParam) : undefined,
                 endDate: endDateParam ? new Date(endDateParam) : undefined,
                 page: Math.max(1, rawPage),
@@ -37,7 +35,6 @@ export async function GET(request: NextRequest) {
                     id: row.id,
                     code: row.code,
                     amount: Number(row.amount),
-                    status: row.status,
                     createdAt: typeof row.createdAt === "string" ? row.createdAt : new Date(row.createdAt).toISOString(),
                     user: { username: row.username, email: row.email },
                 })),

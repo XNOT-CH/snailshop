@@ -49,7 +49,6 @@ describe("API: /api/admin/slips (GET topup code usage log)", () => {
                     id: "u1",
                     code: "TOPUP100",
                     amount: "100.00",
-                    status: "COMPLETED",
                     createdAt: "2026-03-14 10:00:00",
                     username: "alice",
                     email: "alice@example.com",
@@ -69,21 +68,20 @@ describe("API: /api/admin/slips (GET topup code usage log)", () => {
             id: "u1",
             code: "TOPUP100",
             amount: 100,
-            status: "COMPLETED",
             user: { username: "alice", email: "alice@example.com" },
         });
         expect(body.data.summary).toEqual(SUMMARY);
         expect(body.data.pagination).toEqual({ page: 1, pageSize: 20, totalRecords: 1, totalPages: 1 });
     });
 
-    it("passes search, status, and pagination query params through", async () => {
+    it("passes search and pagination query params through", async () => {
         (requirePermission as any).mockResolvedValue({ success: true });
 
         const { GET } = await import("@/app/api/admin/slips/route");
-        await GET(new NextRequest("http://localhost/api/admin/slips?search=alice&status=COMPLETED&page=2&pageSize=10"));
+        await GET(new NextRequest("http://localhost/api/admin/slips?search=alice&page=2&pageSize=10"));
 
         expect(listCreditCodeUsages).toHaveBeenCalledWith(
-            expect.objectContaining({ search: "alice", status: "COMPLETED", page: 2, pageSize: 10 })
+            expect.objectContaining({ search: "alice", page: 2, pageSize: 10 })
         );
     });
 

@@ -8,14 +8,11 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
 
 export interface TopupCodeUsage {
     id: string;
     code: string;
     amount: number;
-    status: string;
     createdAt: string;
     user: {
         email: string | null;
@@ -27,23 +24,6 @@ interface TopupCodeUsageTableProps {
     usages: TopupCodeUsage[];
 }
 
-function StatusBadge({ status }: Readonly<{ status: string }>) {
-    const isReverted = status === "REVERTED";
-
-    return (
-        <Badge
-            variant="outline"
-            className={cn(
-                isReverted
-                    ? "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-300"
-                    : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300"
-            )}
-        >
-            {isReverted ? "ถูกย้อนกลับ" : "สำเร็จ"}
-        </Badge>
-    );
-}
-
 export function TopupCodeUsageTable({ usages }: Readonly<TopupCodeUsageTableProps>) {
     return (
         <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-[#2d4362] dark:bg-zinc-900">
@@ -53,8 +33,7 @@ export function TopupCodeUsageTable({ usages }: Readonly<TopupCodeUsageTableProp
                         <TableHead className="font-semibold text-slate-600 dark:text-[#9ab0cb]">User</TableHead>
                         <TableHead className="font-semibold text-slate-600 dark:text-[#9ab0cb]">โค้ด</TableHead>
                         <TableHead className="font-semibold text-slate-600 dark:text-[#9ab0cb]">เครดิตที่ได้รับ</TableHead>
-                        <TableHead className="hidden font-semibold text-slate-600 dark:text-[#9ab0cb] md:table-cell">วันเวลา</TableHead>
-                        <TableHead className="text-right font-semibold text-slate-600 dark:text-[#9ab0cb]">สถานะ</TableHead>
+                        <TableHead className="text-right font-semibold text-slate-600 dark:text-[#9ab0cb]">วันเวลา</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -69,7 +48,7 @@ export function TopupCodeUsageTable({ usages }: Readonly<TopupCodeUsageTableProp
                             <TableCell className="font-bold text-indigo-600 dark:text-indigo-400">
                                 +฿{usage.amount.toLocaleString()}
                             </TableCell>
-                            <TableCell className="hidden text-slate-500 dark:text-[#9ab0cb] md:table-cell">
+                            <TableCell className="text-right text-slate-500 dark:text-[#9ab0cb]">
                                 <div className="space-y-0.5">
                                     <p>
                                         {new Date(usage.createdAt).toLocaleDateString("th-TH", {
@@ -85,9 +64,6 @@ export function TopupCodeUsageTable({ usages }: Readonly<TopupCodeUsageTableProp
                                         })}
                                     </p>
                                 </div>
-                            </TableCell>
-                            <TableCell className="text-right">
-                                <StatusBadge status={usage.status} />
                             </TableCell>
                         </TableRow>
                     ))}

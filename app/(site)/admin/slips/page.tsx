@@ -5,7 +5,6 @@ import { AlertCircle, CalendarClock, ChevronLeft, ChevronRight, FileCheck, Searc
 import { SpinnerScreen } from "@/components/SpinnerScreen";
 import { TopupCodeUsageTable, type TopupCodeUsage } from "@/components/admin/TopupCodeUsageTable";
 import { showError } from "@/lib/swal";
-import { cn } from "@/lib/utils";
 
 interface Summary {
     today: { count: number; amount: number };
@@ -20,26 +19,18 @@ interface Pagination {
     totalPages: number;
 }
 
-const STATUS_FILTERS = [
-    { value: "ALL", label: "ทั้งหมด" },
-    { value: "COMPLETED", label: "สำเร็จ" },
-    { value: "REVERTED", label: "ถูกย้อนกลับ" },
-];
-
 export default function AdminSlipsPage() {
     const [usages, setUsages] = useState<TopupCodeUsage[]>([]);
     const [summary, setSummary] = useState<Summary | null>(null);
     const [pagination, setPagination] = useState<Pagination | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [search, setSearch] = useState("");
-    const [status, setStatus] = useState("ALL");
     const [page, setPage] = useState(1);
 
-    const fetchUsages = useCallback(async (params: { search: string; status: string; page: number }) => {
+    const fetchUsages = useCallback(async (params: { search: string; page: number }) => {
         try {
             const query = new URLSearchParams({
                 search: params.search,
-                status: params.status,
                 page: String(params.page),
                 pageSize: "20",
             });
@@ -63,11 +54,11 @@ export default function AdminSlipsPage() {
 
     useEffect(() => {
         const timeout = setTimeout(() => {
-            fetchUsages({ search, status, page });
+            fetchUsages({ search, page });
         }, search ? 300 : 0);
 
         return () => clearTimeout(timeout);
-    }, [fetchUsages, search, status, page]);
+    }, [fetchUsages, search, page]);
 
     if (isLoading && !summary) {
         return <SpinnerScreen label="กำลังโหลดข้อมูลการใช้โค้ด..." />;
@@ -130,41 +121,18 @@ export default function AdminSlipsPage() {
                         <span className="font-bold text-foreground">ประวัติการใช้โค้ด ({pagination?.totalRecords ?? 0})</span>
                     </div>
 
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                        <div className="relative">
-                            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
-                            <input
-                                type="text"
-                                placeholder="ค้นหา user หรือโค้ด..."
-                                value={search}
-                                onChange={(event) => {
-                                    setSearch(event.target.value);
-                                    setPage(1);
-                                }}
-                                className="h-9 w-full rounded-xl border border-border bg-muted pl-9 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:border-blue-500 focus:bg-card focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-500/20 sm:w-56"
-                            />
-                        </div>
-
-                        <div className="flex gap-1.5">
-                            {STATUS_FILTERS.map((filter) => (
-                                <button
-                                    key={filter.value}
-                                    type="button"
-                                    onClick={() => {
-                                        setStatus(filter.value);
-                                        setPage(1);
-                                    }}
-                                    className={cn(
-                                        "rounded-full border px-3 py-1.5 text-xs font-medium transition",
-                                        status === filter.value
-                                            ? "border-blue-600 bg-blue-600 text-white shadow-sm"
-                                            : "border-border bg-muted text-muted-foreground hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-300"
-                                    )}
-                                >
-                                    {filter.label}
-                                </button>
-                            ))}
-                        </div>
+                    <div className="relative">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
+                        <input
+                            type="text"
+                            placeholder="ค้นหา user หรือโค้ด..."
+                            value={search}
+                            onChange={(event) => {
+                                setSearch(event.target.value);
+                                setPage(1);
+                            }}
+                            className="h-9 w-full rounded-xl border border-border bg-muted pl-9 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:border-blue-500 focus:bg-card focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-500/20 sm:w-56"
+                        />
                     </div>
                 </div>
 
