@@ -48,13 +48,14 @@ export async function userHasCompletedOrder(userId: string) {
 
 export interface CreditCodeUsageFilters {
     search?: string;
+    status?: string;
     startDate?: Date;
     endDate?: Date;
     page: number;
     pageSize: number;
 }
 
-function buildCreditUsageFilters({ search, startDate, endDate }: Omit<CreditCodeUsageFilters, "page" | "pageSize">) {
+function buildCreditUsageFilters({ search, status, startDate, endDate }: Omit<CreditCodeUsageFilters, "page" | "pageSize">) {
     const filters = [eq(promoCodes.codeType, "CREDIT")];
 
     if (search?.trim()) {
@@ -66,6 +67,10 @@ function buildCreditUsageFilters({ search, startDate, endDate }: Omit<CreditCode
                 like(promoUsages.promoCode, likeValue)
             )!
         );
+    }
+
+    if (status && status !== "ALL") {
+        filters.push(eq(promoUsages.status, status));
     }
 
     if (startDate) {
@@ -102,6 +107,7 @@ export async function listCreditCodeUsages(filters: CreditCodeUsageFilters) {
                 id: promoUsages.id,
                 code: promoUsages.promoCode,
                 amount: promoUsages.discountAmount,
+                status: promoUsages.status,
                 createdAt: promoUsages.createdAt,
                 username: users.username,
                 email: users.email,
@@ -120,21 +126,35 @@ export async function listCreditCodeUsages(filters: CreditCodeUsageFilters) {
     };
 }
 
+export async function countPendingCreditCodeUsages() {
+    const [row] = await db
+        .select({ count: count() })
+        .from(promoUsages)
+        .innerJoin(promoCodes, eq(promoUsages.promoCodeId, promoCodes.id))
+        .where(and(eq(promoCodes.codeType, "CREDIT"), eq(promoUsages.status, "PENDING")));
+
+    return Number(row?.count ?? 0);
+}
+
 export async function getCreditCodeUsageSummary() {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
 
-    const [[todayRow], [allTimeRow], [activeCodesRow]] = await Promise.all([
+    const [[todayRow], [allTimeRow], [activeCodesRow], [pendingRow]] = await Promise.all([
         db
             .select({ count: count(), amount: sum(promoUsages.discountAmount) })
             .from(promoUsages)
             .innerJoin(promoCodes, eq(promoUsages.promoCodeId, promoCodes.id))
-            .where(and(eq(promoCodes.codeType, "CREDIT"), gte(promoUsages.createdAt, toMySQLDatetime(todayStart)))),
+            .where(and(
+                eq(promoCodes.codeType, "CREDIT"),
+                eq(promoUsages.status, "COMPLETED"),
+                gte(promoUsages.createdAt, toMySQLDatetime(todayStart))
+            )),
         db
             .select({ count: count(), amount: sum(promoUsages.discountAmount) })
             .from(promoUsages)
             .innerJoin(promoCodes, eq(promoUsages.promoCodeId, promoCodes.id))
-            .where(eq(promoCodes.codeType, "CREDIT")),
+            .where(and(eq(promoCodes.codeType, "CREDIT"), eq(promoUsages.status, "COMPLETED"))),
         db
             .select({ count: count() })
             .from(promoCodes)
@@ -144,11 +164,17 @@ export async function getCreditCodeUsageSummary() {
                 lte(promoCodes.startsAt, mysqlNow()),
                 or(isNull(promoCodes.expiresAt), gte(promoCodes.expiresAt, mysqlNow()))
             )),
+        db
+            .select({ count: count() })
+            .from(promoUsages)
+            .innerJoin(promoCodes, eq(promoUsages.promoCodeId, promoCodes.id))
+            .where(and(eq(promoCodes.codeType, "CREDIT"), eq(promoUsages.status, "PENDING"))),
     ]);
 
     return {
         today: { count: Number(todayRow?.count ?? 0), amount: Number(todayRow?.amount ?? 0) },
         allTime: { count: Number(allTimeRow?.count ?? 0), amount: Number(allTimeRow?.amount ?? 0) },
         activeCodeCount: Number(activeCodesRow?.count ?? 0),
+        pendingCount: Number(pendingRow?.count ?? 0),
     };
 }
