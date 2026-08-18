@@ -29,7 +29,7 @@ export async function POST(request: Request) {
         const result = await validateBody(request, roleSchema);
         if ("error" in result) return result.error;
         const { name, description, permissions } = result.data;
-        // Pull in dependent permissions (e.g. SLIP_APPROVE implies SLIP_VIEW +
+        // Pull in dependent permissions (e.g. PROMO_EDIT implies PROMO_VIEW +
         // ADMIN_PANEL) so a created role isn't left with unusable dangling perms.
         const normalizedPermissions = normalizePermissionSelection(permissions);
 

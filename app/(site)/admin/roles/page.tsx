@@ -68,10 +68,8 @@ const PERMISSION_GROUPS = {
     { key: PERMISSIONS.ORDER_VIEW, label: "ดูคำสั่งซื้อตัวเอง" },
     { key: PERMISSIONS.ORDER_VIEW_ALL, label: "ดูคำสั่งซื้อทั้งหมด" },
   ],
-  "สลิป/เติมเงิน": [
-    { key: PERMISSIONS.SLIP_VIEW, label: "ดูสลิป" },
-    { key: PERMISSIONS.SLIP_APPROVE, label: "อนุมัติสลิป" },
-    { key: PERMISSIONS.SLIP_REJECT, label: "ปฏิเสธสลิป" },
+  "โค้ดเติมเงิน": [
+    { key: PERMISSIONS.TOPUP_CODE_VIEW, label: "ดูการใช้โค้ดเติมเงิน" },
   ],
   "ตั้งค่า": [
     { key: PERMISSIONS.SETTINGS_VIEW, label: "ดูตั้งค่า" },

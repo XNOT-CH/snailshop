@@ -1,21 +1,11 @@
 import Link from "next/link";
-import { and, count, eq, isNotNull, lte, sql } from "drizzle-orm";
-import { ChevronRight, ClipboardList, MessagesSquare, PackageX, ReceiptText } from "lucide-react";
-import { db, products, topups } from "@/lib/db";
+import { and, count, eq, isNotNull, lte } from "drizzle-orm";
+import { ChevronRight, ClipboardList, MessagesSquare, PackageX } from "lucide-react";
+import { db, products } from "@/lib/db";
 import { countAdminUnread } from "@/lib/chat";
 import { PERMISSIONS } from "@/lib/permissions";
-import { mysqlDateTimeToIso } from "@/lib/utils/date";
 
 const LOW_STOCK_THRESHOLD = 3;
-
-/** "ค้างนานสุด 3 ชม."-style label from a UTC datetime string. */
-function formatAge(oldestIso: string): string {
-    const ageMs = Date.now() - new Date(oldestIso).getTime();
-    const hours = Math.floor(ageMs / (60 * 60 * 1000));
-    if (hours < 1) return "ไม่ถึง 1 ชม.";
-    if (hours < 24) return `${hours} ชม.`;
-    return `${Math.floor(hours / 24)} วัน`;
-}
 
 interface ActionItem {
     key: string;
@@ -24,7 +14,7 @@ interface ActionItem {
     count: number;
     unit: string;
     href: string;
-    icon: typeof ReceiptText;
+    icon: typeof PackageX;
     /** Icon tile colours used only while the item has outstanding work. */
     activeTile: string;
 }
@@ -33,13 +23,7 @@ export async function ActionCenter({ permissions }: Readonly<{ permissions: stri
     const permissionSet = new Set(permissions);
     const items: ActionItem[] = [];
 
-    const [pendingSlips, unread, lowStock] = await Promise.all([
-        permissionSet.has(PERMISSIONS.SLIP_VIEW)
-            ? db
-                  .select({ pending: count(), oldest: sql<string | null>`MIN(${topups.createdAt})` })
-                  .from(topups)
-                  .where(eq(topups.status, "PENDING"))
-            : null,
+    const [unread, lowStock] = await Promise.all([
         permissionSet.has(PERMISSIONS.CHAT_VIEW) ? countAdminUnread() : null,
         permissionSet.has(PERMISSIONS.PRODUCT_VIEW)
             ? db
@@ -48,21 +32,6 @@ export async function ActionCenter({ permissions }: Readonly<{ permissions: stri
                   .where(and(eq(products.isSold, false), isNotNull(products.stockCount), lte(products.stockCount, LOW_STOCK_THRESHOLD)))
             : null,
     ]);
-
-    if (pendingSlips) {
-        const [{ pending, oldest }] = pendingSlips;
-        const oldestIso = mysqlDateTimeToIso(oldest);
-        items.push({
-            key: "slips",
-            label: "สลิปรอตรวจ",
-            detail: pending > 0 && oldestIso ? `ค้างนานสุด ${formatAge(oldestIso)}` : null,
-            count: Number(pending),
-            unit: "รายการ",
-            href: "/admin/slips",
-            icon: ReceiptText,
-            activeTile: "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300",
-        });
-    }
 
     if (unread) {
         items.push({

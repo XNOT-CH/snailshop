@@ -57,8 +57,9 @@ type NavGroup = {
 type NavEntry = NavItem | ({ group: true } & NavGroup);
 
 type NavSection = {
-    title: string;
-    hint: string;
+    id: string;
+    title?: string;
+    hint?: string;
     items: NavEntry[];
 };
 
@@ -68,15 +69,15 @@ function isNavGroup(entry: NavEntry): entry is ({ group: true } & NavGroup) {
 
 const navigationSections: NavSection[] = [
     {
-        title: "ใช้งานบ่อย",
-        hint: "เมนูที่แอดมินเปิดบ่อยที่สุด",
+        id: "frequent",
         items: [
             { href: "/admin", label: "แดชบอร์ด", icon: LayoutDashboard, badge: "หลัก", requiredPermission: PERMISSIONS.DASHBOARD_VIEW },
             { href: "/admin/chat", label: "แชทลูกค้า", icon: MessagesSquare, requiredPermission: PERMISSIONS.CHAT_VIEW },
-            { href: "/admin/slips", label: "ตรวจสอบสลิป", icon: FileCheck, requiredPermission: PERMISSIONS.SLIP_VIEW },
+            { href: "/admin/slips", label: "ตรวจสอบการใช้โค้ดเติมเงิน", icon: FileCheck, requiredPermission: PERMISSIONS.TOPUP_CODE_VIEW },
         ],
     },
     {
+        id: "manage-shop",
         title: "จัดการร้าน",
         hint: "สินค้า ผู้ใช้ และสิทธิ์พิเศษ",
         items: [
@@ -98,6 +99,7 @@ const navigationSections: NavSection[] = [
         ],
     },
     {
+        id: "content",
         title: "คอนเทนต์",
         hint: "สิ่งที่ลูกค้าเห็นบนหน้าร้าน",
         items: [
@@ -110,6 +112,7 @@ const navigationSections: NavSection[] = [
         ],
     },
     {
+        id: "settings",
         title: "ตั้งค่าและระบบ",
         hint: "เครื่องมือหลังบ้านและค่าระบบ",
         items: [
@@ -257,18 +260,20 @@ function SidebarSection({
     pathname,
     onLinkClick,
 }: Readonly<{
-    title: string;
-    hint: string;
+    title?: string;
+    hint?: string;
     items: NavEntry[];
     pathname: string;
     onLinkClick?: () => void;
 }>) {
     return (
         <section className="space-y-2">
-            <div className="px-1.5">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">{title}</p>
-                <p className="mt-1 max-w-[15rem] text-xs leading-5 text-slate-400 dark:text-slate-500">{hint}</p>
-            </div>
+            {title ? (
+                <div className="px-1.5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">{title}</p>
+                    {hint ? <p className="mt-1 max-w-[15rem] text-xs leading-5 text-slate-400 dark:text-slate-500">{hint}</p> : null}
+                </div>
+            ) : null}
 
             <div className="space-y-1">
                 {items.map((entry) => {
@@ -322,7 +327,7 @@ function SidebarNav({
             <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-3">
                 {visibleSections.map((section) => (
                     <SidebarSection
-                        key={section.title}
+                        key={section.id}
                         title={section.title}
                         hint={section.hint}
                         items={section.items}
