@@ -23,6 +23,7 @@ export default async function AdminProductsPage() {
     await runAutoDelete();
 
     const productList = await db.query.products.findMany({
+        where: (t, { isNull }) => isNull(t.deletedAt),
         orderBy: (t, { desc }) => desc(t.createdAt),
         columns: {
             id: true,

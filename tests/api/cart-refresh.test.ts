@@ -28,6 +28,8 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("drizzle-orm", () => ({
     inArray: vi.fn((_column, values) => ({ values })),
+    and: vi.fn((...args) => ({ args })),
+    isNull: vi.fn((value) => ({ isNull: value })),
 }));
 
 vi.mock("@/lib/features/products/shared", () => ({

@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, eq, gte, sql } from "drizzle-orm";
+import { and, eq, gte, isNull, sql } from "drizzle-orm";
 import { db, orders, products, users } from "@/lib/db";
 import { decrypt, encrypt } from "@/lib/encryption";
 import { getPointCurrencyName } from "@/lib/currencySettings";
@@ -208,7 +208,7 @@ type ClaimProductRewardInput = {
 
 export async function fetchProductRewardForClaimOrThrow(tx: DbTransaction, productId: string) {
     const product = await tx.query.products.findFirst({
-        where: eq(products.id, productId),
+        where: and(eq(products.id, productId), isNull(products.deletedAt)),
         columns: {
             id: true,
             name: true,

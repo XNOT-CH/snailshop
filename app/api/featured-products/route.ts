@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db, products } from "@/lib/db";
-import { eq, asc, desc } from "drizzle-orm";
+import { and, eq, asc, desc, isNull } from "drizzle-orm";
 import { cacheOrFetch, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +19,7 @@ export async function GET() {
                 category: products.category,
                 isSold: products.isSold,
             }).from(products)
-                .where(eq(products.isFeatured, true))
+                .where(and(isNull(products.deletedAt), eq(products.isFeatured, true)))
                 .orderBy(asc(products.isSold), asc(products.sortOrder), desc(products.createdAt))
                 .limit(20),
             CACHE_TTL.MEDIUM

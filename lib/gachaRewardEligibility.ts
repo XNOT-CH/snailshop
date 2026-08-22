@@ -1,6 +1,7 @@
 export type RewardEligibilityProduct = {
     isSold?: boolean;
     orderId?: string | null;
+    deletedAt?: string | null;
 } | null | undefined;
 
 export type RewardEligibilityInput = {
@@ -12,7 +13,7 @@ export type RewardEligibilityInput = {
 
 export function isRewardEligibleForRoll(reward: RewardEligibilityInput) {
     if (reward.rewardType === "PRODUCT") {
-        return Boolean(reward.product && !reward.product.isSold && !reward.product.orderId);
+        return Boolean(reward.product && !reward.product.isSold && !reward.product.orderId && !reward.product.deletedAt);
     }
 
     return Boolean(reward.rewardName && reward.rewardAmount && Number(reward.rewardAmount) > 0);

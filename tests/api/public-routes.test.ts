@@ -37,6 +37,8 @@ vi.mock("drizzle-orm", () => ({
   asc: vi.fn(),
   desc: vi.fn(),
   isNotNull: vi.fn(),
+  and: vi.fn(),
+  isNull: vi.fn(),
 }));
 
 vi.mock("@/lib/cache", () => ({

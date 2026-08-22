@@ -202,6 +202,7 @@ export const products = mysqlTable("Product", {
     orderId: varchar("orderId", { length: 36 }).unique().references(() => orders.id, { onDelete: "set null" }),
     autoDeleteAfterSale: int("autoDeleteAfterSale"),
     scheduledDeleteAt: datetime("scheduledDeleteAt", { mode: "string" }),
+    deletedAt: datetime("deletedAt", { mode: "string" }),
     createdAt: now(),
     updatedAt: updatedAt(),
 }, (t) => [
@@ -209,6 +210,7 @@ export const products = mysqlTable("Product", {
     index("idx_product_isSold_stockCount_category").on(t.isSold, t.stockCount, t.category),
     index("idx_product_isFeatured_isSold").on(t.isFeatured, t.isSold),
     index("idx_product_sortOrder").on(t.sortOrder),
+    index("idx_product_deletedAt").on(t.deletedAt),
 ]);
 
 export const productsRelations = relations(products, ({ one, many }) => ({

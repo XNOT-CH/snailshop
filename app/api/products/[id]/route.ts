@@ -104,7 +104,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     try {
         const { id } = await params;
         const product = await findProductById(id);
-        if (!product) return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
+        if (!product || product.deletedAt) return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
 
         if (product.orderId) {
             await clearProductOrder(id);
@@ -113,7 +113,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
         await auditFromRequest(request, {
             action: AUDIT_ACTIONS.PRODUCT_DELETE, resource: "Product", resourceId: id, resourceName: product.name,
-            details: { resourceName: product.name, deletedData: { name: product.name, price: product.price, category: product.category } },
+            details: { resourceName: product.name, deletedData: product },
         });
 
         await invalidateProductCaches();

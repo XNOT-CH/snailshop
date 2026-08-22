@@ -59,6 +59,7 @@ export default async function HomePage() {
         isSold: products.isSold,
       }).from(products)
         .where(and(
+          isNull(products.deletedAt),
           eq(products.isFeatured, true),
           eq(products.isSold, false),
           or(gt(products.stockCount, 0), isNull(products.stockCount)),
@@ -81,6 +82,7 @@ export default async function HomePage() {
           isSold: products.isSold,
         }).from(products)
           .where(and(
+            isNull(products.deletedAt),
             isNotNull(products.discountPrice),
             eq(products.isSold, false),
             or(gt(products.stockCount, 0), isNull(products.stockCount)),
@@ -118,6 +120,7 @@ export default async function HomePage() {
     try {
       productList = await db.query.products.findMany({
         where: and(
+          isNull(products.deletedAt),
           eq(products.isSold, false),
           or(gt(products.stockCount, 0), isNull(products.stockCount)),
         ),

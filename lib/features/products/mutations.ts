@@ -3,6 +3,7 @@ import { db, products } from "@/lib/db";
 import { buildProductInsertValues, buildProductUpdateValues } from "@/lib/features/products/shared";
 import { encrypt } from "@/lib/encryption";
 import { getStockCount } from "@/lib/stock";
+import { mysqlNow } from "@/lib/utils/date";
 import type { ProductPayloadInput } from "./shared";
 
 export async function createProduct(input: Required<Pick<ProductPayloadInput, "title" | "category">> & ProductPayloadInput, priceNumber: number, discountPriceNumber: number | null) {
@@ -23,6 +24,14 @@ export function clearProductOrder(id: string) {
 }
 
 export function deleteProduct(id: string) {
+    return db.update(products).set({ deletedAt: mysqlNow() }).where(eq(products.id, id));
+}
+
+export function restoreProduct(id: string) {
+    return db.update(products).set({ deletedAt: null }).where(eq(products.id, id));
+}
+
+export function permanentlyDeleteProduct(id: string) {
     return db.delete(products).where(eq(products.id, id));
 }
 

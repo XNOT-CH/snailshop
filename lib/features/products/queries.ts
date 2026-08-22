@@ -1,4 +1,4 @@
-import { eq, ne } from "drizzle-orm";
+import { and, eq, isNull, ne } from "drizzle-orm";
 import { db, products } from "@/lib/db";
 
 export function findProductById(id: string) {
@@ -9,7 +9,7 @@ export function findProductById(id: string) {
 
 export function findProductAvailabilityById(id: string) {
     return db.query.products.findFirst({
-        where: eq(products.id, id),
+        where: and(eq(products.id, id), isNull(products.deletedAt)),
         columns: {
             id: true,
             isSold: true,

@@ -342,7 +342,7 @@ export async function executeSingleProductPurchaseTransaction(params: {
         await conn.beginTransaction();
 
         const [productRows] = await conn.execute(
-            `SELECT ${PRODUCT_COLUMNS_SQL} FROM Product WHERE id = ? FOR UPDATE`,
+            `SELECT ${PRODUCT_COLUMNS_SQL} FROM Product WHERE id = ? AND deletedAt IS NULL FOR UPDATE`,
             [productId],
         );
         const product = (productRows as PurchaseProductRow[])[0];
@@ -470,7 +470,7 @@ export async function executeCartPurchaseTransaction(params: {
 
         const [rows] = await conn.execute(
             `SELECT ${PRODUCT_COLUMNS_SQL}
-             FROM Product WHERE id IN (${productIds.map(() => "?").join(",")}) FOR UPDATE`,
+             FROM Product WHERE id IN (${productIds.map(() => "?").join(",")}) AND deletedAt IS NULL FOR UPDATE`,
             productIds,
         );
         const productList = rows as PurchaseProductRow[];

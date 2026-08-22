@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { auth } from "@/auth";
 import { db, users, navItems, products } from "@/lib/db";
-import { asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, isNull } from "drizzle-orm";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { cacheOrFetch, CACHE_KEYS } from "@/lib/cache";
@@ -54,7 +54,7 @@ export default async function Navbar() {
             async () =>
                 db.select({ category: products.category, categoryCount: count() })
                     .from(products)
-                    .where(eq(products.isSold, false))
+                    .where(and(isNull(products.deletedAt), eq(products.isSold, false)))
                     .groupBy(products.category)
                     .orderBy(asc(products.category)),
             60,
