@@ -85,7 +85,7 @@ export function TurnstileWidget({
                 strategy="afterInteractive"
                 onLoad={() => setScriptReady(true)}
             />
-            <div id={containerId} className="min-h-16" />
+            <div id={containerId} className="min-h-16 w-full max-w-full overflow-hidden" />
         </>
     );
 }
