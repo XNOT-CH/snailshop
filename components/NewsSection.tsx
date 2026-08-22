@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Calendar, ArrowRight, Newspaper } from "lucide-react";
 import { themeClasses } from "@/lib/theme";
 import { toSafePublicHref } from "@/lib/sanitize";
+import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 
 interface NewsArticle {
     id: string;
@@ -70,8 +71,9 @@ export function NewsSection({ initialNews }: Readonly<NewsSectionProps>) {
                                         className="object-cover"
                                     />
                                 ) : (
-                                    <div className="flex h-full w-full items-center justify-center bg-muted">
-                                        <Newspaper className="h-10 w-10 text-muted-foreground/30" />
+                                    <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-muted text-muted-foreground/40">
+                                        <Newspaper className="h-10 w-10" />
+                                        <span className="text-xs">{IMAGE_UPLOAD_RECOMMENDATIONS.newsCover}</span>
                                     </div>
                                 )}
                             </div>
