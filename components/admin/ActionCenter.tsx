@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { and, count, eq, isNotNull, lte } from "drizzle-orm";
+import { and, count, eq, isNotNull, isNull, lte } from "drizzle-orm";
 import { ChevronRight, ClipboardList, MessagesSquare, PackageX, Ticket } from "lucide-react";
 import { db, products } from "@/lib/db";
 import { countAdminUnread } from "@/lib/chat";
@@ -31,7 +31,7 @@ export async function ActionCenter({ permissions }: Readonly<{ permissions: stri
             ? db
                   .select({ lowStock: count() })
                   .from(products)
-                  .where(and(eq(products.isSold, false), isNotNull(products.stockCount), lte(products.stockCount, LOW_STOCK_THRESHOLD)))
+                  .where(and(isNull(products.deletedAt), eq(products.isSold, false), isNotNull(products.stockCount), lte(products.stockCount, LOW_STOCK_THRESHOLD)))
             : null,
     ]);
 

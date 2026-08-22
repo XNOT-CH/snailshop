@@ -25,7 +25,7 @@ import { getSoldCountMap } from "@/lib/features/orders/queries";
 
 const getProduct = cache(async (id: string) => {
     return db.query.products.findFirst({
-        where: eq(products.id, id),
+        where: and(eq(products.id, id), isNull(products.deletedAt)),
         columns: {
             id: true,
             name: true,
@@ -124,6 +124,7 @@ export default async function ProductDetailPage({
 
     const relatedProducts = await db.query.products.findMany({
         where: and(
+            isNull(products.deletedAt),
             eq(products.category, product.category),
             ne(products.id, product.id),
             eq(products.isSold, false),

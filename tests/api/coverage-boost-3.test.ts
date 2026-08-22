@@ -84,7 +84,7 @@ vi.mock("@/lib/db", () => ({
 }));
 
 vi.mock("drizzle-orm", () => ({
-  eq: vi.fn(), or: vi.fn(), asc: vi.fn(), desc: vi.fn(),
+  eq: vi.fn(), or: vi.fn(), and: vi.fn(), isNull: vi.fn(), asc: vi.fn(), desc: vi.fn(),
 }));
 
 import { isAdmin } from "@/lib/auth";

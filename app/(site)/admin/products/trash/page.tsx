@@ -9,6 +9,7 @@ import { db, products } from "@/lib/db";
 import { requirePermission } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
 import { TrashRunButton } from "@/components/admin/TrashRunButton";
+import { DeletedProductActions } from "@/components/admin/DeletedProductActions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -62,6 +63,11 @@ export default async function ProductTrashPage() {
             gt(products.scheduledDeleteAt, sql`${nowStr}`)
         ),
         orderBy: (t, { asc }) => asc(t.scheduledDeleteAt),
+    });
+
+    const manuallyDeletedProducts = await db.query.products.findMany({
+        where: (t, { isNotNull: notNull }) => notNull(t.deletedAt),
+        orderBy: (t, { desc }) => desc(t.deletedAt),
     });
 
     const deleteAuditLogs = await db.query.auditLogs.findMany({
@@ -132,6 +138,50 @@ export default async function ProductTrashPage() {
 
                 {overdueProducts.length > 0 ? <TrashRunButton count={overdueProducts.length} /> : null}
             </div>
+
+            <Card className="border-red-200">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-red-600">
+                        <Trash2 className="h-5 w-5" />
+                        สินค้าที่ถูกลบ ({manuallyDeletedProducts.length})
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                        ลบด้วยตนเองจากหน้าจัดการสินค้า — กู้คืนได้จนกว่าจะกดลบถาวร
+                    </p>
+                </CardHeader>
+                <CardContent>
+                    {manuallyDeletedProducts.length === 0 ? (
+                        <div className="py-8 text-center text-muted-foreground">
+                            <Trash2 className="mx-auto mb-3 h-10 w-10 opacity-30" />
+                            <p>ไม่มีสินค้าในถังขยะ</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {manuallyDeletedProducts.map((product) => (
+                                <div
+                                    key={product.id}
+                                    className="flex items-center gap-3 rounded-lg border border-red-100 bg-red-50 p-3 dark:border-red-500/30 dark:bg-red-500/10"
+                                >
+                                    <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-muted">
+                                        {product.imageUrl ? (
+                                            <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
+                                        ) : (
+                                            <Package className="m-2 h-6 w-6 text-muted-foreground" />
+                                        )}
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate text-sm font-medium">{product.name}</p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {product.category} · ลบเมื่อ {formatDate(product.deletedAt)}
+                                        </p>
+                                    </div>
+                                    <DeletedProductActions productId={product.id} productName={product.name} />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
 
             <Card className="border-slate-200">
                 <CardHeader>

@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
         // Stale = still listed, has (or may have) stock, existed before the
         // window, and sold nothing inside it.
         const staleConditions = and(
+            isNull(products.deletedAt),
             eq(products.isSold, false),
             or(isNull(products.stockCount), gt(products.stockCount, 0)),
             lt(products.createdAt, cutoff),

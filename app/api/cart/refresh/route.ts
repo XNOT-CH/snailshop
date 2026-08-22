@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { inArray } from "drizzle-orm";
+import { and, inArray, isNull } from "drizzle-orm";
 import { db, products } from "@/lib/db";
 import { getProductStockCount } from "@/lib/features/products/shared";
 
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
             stockCount: products.stockCount,
             secretData: products.secretData,
             stockSeparator: products.stockSeparator,
-        }).from(products).where(inArray(products.id, productIds));
+        }).from(products).where(and(isNull(products.deletedAt), inArray(products.id, productIds)));
 
         const productsById = new Map(productRows.map((product) => [product.id, product]));
         const refreshedItems = [];

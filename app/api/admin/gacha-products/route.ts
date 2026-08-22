@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { db, products } from "@/lib/db";
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { requirePermission } from "@/lib/auth";
 import { decrypt } from "@/lib/encryption";
 import { getStockCount } from "@/lib/stock";
@@ -11,7 +11,7 @@ export async function GET() {
     if (!authCheck.success) return NextResponse.json({ success: false, message: authCheck.error }, { status: 401 });
     try {
         const productList = await db.query.products.findMany({
-            where: eq(products.isSold, false),
+            where: and(isNull(products.deletedAt), eq(products.isSold, false)),
             orderBy: (t, { desc }) => desc(t.createdAt),
             columns: { id: true, name: true, price: true, imageUrl: true, category: true, stockCount: true, secretData: true, stockSeparator: true },
         });

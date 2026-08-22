@@ -57,7 +57,7 @@ vi.mock("@/lib/db", () => ({
 
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn(), or: vi.fn(), and: vi.fn(), gte: vi.fn(), lte: vi.fn(),
-  isNotNull: vi.fn(), asc: vi.fn(), desc: vi.fn(), sql: vi.fn(),
+  isNotNull: vi.fn(), isNull: vi.fn(), asc: vi.fn(), desc: vi.fn(), sql: vi.fn(),
 }));
 
 vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-03-14 00:00:00") }));

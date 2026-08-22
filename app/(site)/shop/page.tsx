@@ -116,8 +116,9 @@ export default async function ShopPage(props: ShopPageProps) {
     const currentSort = normalizeShopSort(searchParams.sort);
     const requestedPage = normalizePage(searchParams.page);
     const activePrice = sql`COALESCE(${products.discountPrice}, ${products.price})`;
-    const dbSellableFilter = and(eq(products.isSold, false), gt(products.stockCount, 0));
-    const legacyStockFilter = and(eq(products.isSold, false), isNull(products.stockCount));
+    const notDeleted = isNull(products.deletedAt);
+    const dbSellableFilter = and(notDeleted, eq(products.isSold, false), gt(products.stockCount, 0));
+    const legacyStockFilter = and(notDeleted, eq(products.isSold, false), isNull(products.stockCount));
     const categoryDbSellableFilter = currentCategory === "all"
         ? dbSellableFilter
         : and(dbSellableFilter, eq(products.category, currentCategory));
@@ -140,7 +141,7 @@ export default async function ShopPage(props: ShopPageProps) {
         legacyProductsForCounts,
         [{ count: dbSellableProductCount }],
     ] = await Promise.all([
-        db.select({ count: count() }).from(products),
+        db.select({ count: count() }).from(products).where(notDeleted),
         db.select({
             category: products.category,
             categoryCount: count(),

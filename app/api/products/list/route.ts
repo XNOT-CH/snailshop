@@ -21,6 +21,7 @@ export async function GET() {
                 isFeatured: products.isFeatured,
             }).from(products)
                 .where(and(
+                    isNull(products.deletedAt),
                     eq(products.isSold, false),
                     or(gt(products.stockCount, 0), isNull(products.stockCount)),
                 ))

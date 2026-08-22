@@ -213,7 +213,13 @@ describe("lib/gachaExecution", () => {
             });
 
             expect(tx.__findProductFirst).toHaveBeenCalledWith({
-                where: { kind: "eq", left: "id", right: "product-1" },
+                where: {
+                    kind: "and",
+                    args: [
+                        { kind: "eq", left: "id", right: "product-1" },
+                        { kind: "isNull", value: undefined },
+                    ],
+                },
                 columns: {
                     id: true,
                     name: true,
