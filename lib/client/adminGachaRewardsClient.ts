@@ -1,4 +1,5 @@
 import { API_ROUTES } from "@/lib/constants/apiRoutes";
+import { fetchWithCsrf } from "@/lib/csrf-client";
 
 export interface AdminGachaRewardsResponse<TData = unknown> {
     success: boolean;
@@ -73,7 +74,7 @@ export function fetchAdminGachaRewards<TData = unknown>({
 
 export function createAdminGachaReward<TData = unknown>(
     payload: unknown,
-    { fetcher = fetch }: AdminGachaRewardsClientOptions = {},
+    { fetcher = fetchWithCsrf }: AdminGachaRewardsClientOptions = {},
 ): Promise<AdminGachaRewardsResult<TData>> {
     return requestAdminGachaRewards<TData>(
         API_ROUTES.ADMIN_GACHA_REWARDS,
@@ -89,7 +90,7 @@ export function createAdminGachaReward<TData = unknown>(
 export function updateAdminGachaReward<TData = unknown>(
     id: string,
     payload: unknown,
-    { fetcher = fetch }: AdminGachaRewardsClientOptions = {},
+    { fetcher = fetchWithCsrf }: AdminGachaRewardsClientOptions = {},
 ): Promise<AdminGachaRewardsResult<TData>> {
     return requestAdminGachaRewards<TData>(
         API_ROUTES.adminGachaReward(id),
@@ -104,7 +105,7 @@ export function updateAdminGachaReward<TData = unknown>(
 
 export function deleteAdminGachaReward<TData = unknown>(
     id: string,
-    { fetcher = fetch }: AdminGachaRewardsClientOptions = {},
+    { fetcher = fetchWithCsrf }: AdminGachaRewardsClientOptions = {},
 ): Promise<AdminGachaRewardsResult<TData>> {
     return requestAdminGachaRewards<TData>(
         API_ROUTES.adminGachaReward(id),
@@ -115,7 +116,7 @@ export function deleteAdminGachaReward<TData = unknown>(
 
 export function uploadAdminGachaRewardImage<TData = unknown>(
     file: Blob,
-    { fetcher = fetch }: AdminGachaRewardsClientOptions = {},
+    { fetcher = fetchWithCsrf }: AdminGachaRewardsClientOptions = {},
 ): Promise<AdminGachaRewardsResult<TData>> {
     const formData = new FormData();
     formData.append(IMAGE_UPLOAD_FIELD_NAME, file);
