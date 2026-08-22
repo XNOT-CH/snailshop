@@ -7,6 +7,7 @@ import { LayoutGrid } from "lucide-react";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
 
 import { getGachaCostLabel, normalizeGachaCost, normalizeGachaCostType } from "@/lib/gachaCost";
+import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 
 export interface GachaCategoryLite {
     id: string;
@@ -24,15 +25,20 @@ export interface GachaMachineLite {
     category: GachaCategoryLite | null;
 }
 
+function MachineImagePlaceholder() {
+    return (
+        <div className="flex aspect-[4/1] w-full flex-col items-center justify-center gap-1.5 text-muted-foreground/40">
+            <LayoutGrid className="h-10 w-10" />
+            <span className="text-xs">{IMAGE_UPLOAD_RECOMMENDATIONS.gachaMachineBanner}</span>
+        </div>
+    );
+}
+
 function HubImage({ src, alt }: { src: string; alt: string }) {
     const [err, setErr] = useState(false);
 
     if (err) {
-        return (
-            <div className="flex aspect-[4/1] w-full items-center justify-center">
-                <LayoutGrid className="h-10 w-10 text-muted-foreground/20" />
-            </div>
-        );
+        return <MachineImagePlaceholder />;
     }
 
     // Renders at the image's own aspect ratio so the whole banner is visible;
@@ -150,9 +156,7 @@ export function GachaHubClient({ machines }: Readonly<GachaHubClientProps>) {
                                     {machine.imageUrl && (machine.imageUrl.startsWith("/") || machine.imageUrl.startsWith("http")) ? (
                                         <HubImage src={machine.imageUrl} alt={machine.name} />
                                     ) : (
-                                        <div className="flex aspect-[4/1] w-full items-center justify-center">
-                                            <LayoutGrid className="h-10 w-10 text-muted-foreground/20" />
-                                        </div>
+                                        <MachineImagePlaceholder />
                                     )}
                                 </div>
 
