@@ -2,13 +2,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { History, Package, Timer, Trash2, ArrowLeft } from "lucide-react";
-import { and, eq, gt, isNotNull, lte, sql } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { AUDIT_ACTIONS } from "@/lib/auditLog";
 import { runAutoDelete } from "@/lib/autoDelete";
 import { db, products } from "@/lib/db";
 import { requirePermission } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
-import { TrashRunButton } from "@/components/admin/TrashRunButton";
+import { mysqlDateTimeToIso, mysqlNow, TH_TIME_ZONE } from "@/lib/utils/date";
 import { DeletedProductActions } from "@/components/admin/DeletedProductActions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,19 +16,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
 
-interface DeletedProductHistoryItem {
+const PURGE_HISTORY_LIMIT = 20;
+
+interface PurgedProductHistoryItem {
     id: string;
     name: string;
     category: string;
     imageUrl: string | null;
-    scheduledDeleteAt: string | null;
-    deletedAt: string;
+    purgedAt: string;
 }
 
+// Both deletedAt and scheduledDeleteAt are stored as UTC strings. Handing one
+// straight to new Date() parses it as local time, which showed every timestamp
+// on this page seven hours early.
 function formatDate(dateStr: string | null) {
-    if (!dateStr) return "-";
+    const iso = mysqlDateTimeToIso(dateStr);
+    if (!iso) return "-";
 
-    return new Date(dateStr).toLocaleString("th-TH", {
+    return new Date(iso).toLocaleString("th-TH", {
+        timeZone: TH_TIME_ZONE,
         year: "numeric",
         month: "short",
         day: "numeric",
@@ -43,41 +49,38 @@ export default async function ProductTrashPage() {
         redirect("/admin?error=คุณไม่มีสิทธิ์ดูสินค้า");
     }
 
-    await runAutoDelete();
+    // Opening a page shouldn't write. The sweep only moves products into the
+    // trash (recoverable), but it still runs solely for admins who could do it
+    // by hand — a view-only account used to trigger it just by loading here.
+    const canDeleteProducts = new Set(access.permissions ?? []).has(PERMISSIONS.PRODUCT_DELETE);
+    if (canDeleteProducts) {
+        await runAutoDelete();
+    }
 
-    const nowStr = new Date().toISOString().slice(0, 19).replace("T", " ");
+    // Same UTC string comparison the sweep itself uses, so "overdue" here means
+    // exactly what it means in runAutoDelete().
+    const nowUtc = mysqlNow();
 
-    const overdueProducts = await db.query.products.findMany({
-        where: and(
-            eq(products.isSold, true),
-            isNotNull(products.scheduledDeleteAt),
-            lte(products.scheduledDeleteAt, sql`${nowStr}`)
-        ),
-        orderBy: (t, { asc }) => asc(t.scheduledDeleteAt),
-    });
-
-    const pendingProducts = await db.query.products.findMany({
-        where: and(
-            eq(products.isSold, true),
-            isNotNull(products.scheduledDeleteAt),
-            gt(products.scheduledDeleteAt, sql`${nowStr}`)
-        ),
-        orderBy: (t, { asc }) => asc(t.scheduledDeleteAt),
-    });
-
-    const manuallyDeletedProducts = await db.query.products.findMany({
-        where: (t, { isNotNull: notNull }) => notNull(t.deletedAt),
+    const trashedProducts = await db.query.products.findMany({
+        where: isNotNull(products.deletedAt),
         orderBy: (t, { desc }) => desc(t.deletedAt),
     });
 
-    const deleteAuditLogs = await db.query.auditLogs.findMany({
-        where: (table, { and: combine, eq: equals }) =>
-            combine(
-                equals(table.action, AUDIT_ACTIONS.PRODUCT_DELETE),
-                equals(table.resourceId, "auto-delete")
-            ),
+    // Still live, sold out, counting down. Once the timer passes, the sweep moves
+    // them into the list above instead of dropping the row.
+    const pendingProducts = await db.query.products.findMany({
+        where: and(
+            eq(products.isSold, true),
+            isNull(products.deletedAt),
+            isNotNull(products.scheduledDeleteAt)
+        ),
+        orderBy: (t, { asc }) => asc(t.scheduledDeleteAt),
+    });
+
+    const purgeAuditLogs = await db.query.auditLogs.findMany({
+        where: (table, { eq: equals }) => equals(table.action, AUDIT_ACTIONS.PRODUCT_PERMANENT_DELETE),
         orderBy: (table, { desc }) => desc(table.createdAt),
-        limit: 20,
+        limit: PURGE_HISTORY_LIMIT,
         columns: {
             id: true,
             details: true,
@@ -85,34 +88,29 @@ export default async function ProductTrashPage() {
         },
     });
 
-    const deletedHistory = deleteAuditLogs.flatMap((log) => {
-        if (!log.details) {
-            return [] as DeletedProductHistoryItem[];
-        }
+    // The permanent delete is the only irreversible step left, so it is the one
+    // worth a history. Auto-trashing no longer destroys anything and shows up in
+    // the trash list itself.
+    const purgeHistory = purgeAuditLogs.flatMap<PurgedProductHistoryItem>((log) => {
+        if (!log.details) return [];
 
         try {
             const parsed = JSON.parse(log.details) as {
-                deletedProducts?: Array<{
-                    id?: string;
-                    name?: string;
-                    category?: string;
-                    imageUrl?: string | null;
-                    scheduledDeleteAt?: string | null;
-                }>;
+                resourceName?: string;
+                deletedData?: { category?: string; imageUrl?: string | null };
             };
 
-            return (parsed.deletedProducts ?? [])
-                .filter((item) => typeof item?.name === "string")
-                .map((item, index) => ({
-                    id: item.id ?? `${log.id}-${index}`,
-                    name: item.name ?? "ไม่ทราบชื่อสินค้า",
-                    category: item.category ?? "-",
-                    imageUrl: item.imageUrl ?? null,
-                    scheduledDeleteAt: item.scheduledDeleteAt ?? null,
-                    deletedAt: log.createdAt,
-                }));
+            if (!parsed.resourceName) return [];
+
+            return [{
+                id: log.id,
+                name: parsed.resourceName,
+                category: parsed.deletedData?.category ?? "-",
+                imageUrl: parsed.deletedData?.imageUrl ?? null,
+                purgedAt: log.createdAt,
+            }];
         } catch {
-            return [] as DeletedProductHistoryItem[];
+            return [];
         }
     });
 
@@ -131,33 +129,31 @@ export default async function ProductTrashPage() {
                             ถังขยะสินค้า
                         </h1>
                         <p className="text-sm text-muted-foreground">
-                            สินค้าที่ถูกซื้อแล้วและตั้งเวลาลบอัตโนมัติ
+                            สินค้าที่ลบเองและสินค้าที่ครบกำหนดลบอัตโนมัติ — กู้คืนได้ทั้งหมด จะหายถาวรก็ต่อเมื่อกดลบถาวรเท่านั้น
                         </p>
                     </div>
                 </div>
-
-                {overdueProducts.length > 0 ? <TrashRunButton count={overdueProducts.length} /> : null}
             </div>
 
-            <Card className="border-red-200">
+            <Card className="border-red-200 dark:border-red-500/30">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-red-600">
+                    <CardTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
                         <Trash2 className="h-5 w-5" />
-                        สินค้าที่ถูกลบ ({manuallyDeletedProducts.length})
+                        สินค้าในถังขยะ ({trashedProducts.length})
                     </CardTitle>
                     <p className="text-sm text-muted-foreground">
-                        ลบด้วยตนเองจากหน้าจัดการสินค้า — กู้คืนได้จนกว่าจะกดลบถาวร
+                        กู้คืนได้จนกว่าจะกดลบถาวร
                     </p>
                 </CardHeader>
                 <CardContent>
-                    {manuallyDeletedProducts.length === 0 ? (
+                    {trashedProducts.length === 0 ? (
                         <div className="py-8 text-center text-muted-foreground">
                             <Trash2 className="mx-auto mb-3 h-10 w-10 opacity-30" />
                             <p>ไม่มีสินค้าในถังขยะ</p>
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {manuallyDeletedProducts.map((product) => (
+                            {trashedProducts.map((product) => (
                                 <div
                                     key={product.id}
                                     className="flex items-center gap-3 rounded-lg border border-red-100 bg-red-50 p-3 dark:border-red-500/30 dark:bg-red-500/10"
@@ -183,25 +179,96 @@ export default async function ProductTrashPage() {
                 </CardContent>
             </Card>
 
-            <Card className="border-slate-200">
+            <Card className="border-orange-200 dark:border-orange-500/30">
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-slate-700">
-                        <History className="h-5 w-5 text-slate-500" />
-                        ประวัติที่ลบแล้ว ({deletedHistory.length})
+                    <CardTitle className="flex items-center gap-2 text-orange-600 dark:text-orange-400">
+                        <Timer className="h-5 w-5" />
+                        ตั้งเวลารอลบ ({pendingProducts.length})
                     </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                        สินค้าที่ขายหมดแล้วและตั้งเวลาลบอัตโนมัติ — ครบกำหนดแล้วจะย้ายเข้าถังขยะด้านบน
+                    </p>
                 </CardHeader>
                 <CardContent>
-                    {deletedHistory.length === 0 ? (
+                    {pendingProducts.length === 0 ? (
                         <div className="py-8 text-center text-muted-foreground">
-                            <History className="mx-auto mb-3 h-10 w-10 opacity-30" />
-                            <p>ยังไม่มีประวัติสินค้าที่ถูกลบอัตโนมัติ</p>
+                            <Timer className="mx-auto mb-3 h-10 w-10 opacity-30" />
+                            <p>ไม่มีสินค้าที่รอลบ</p>
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {deletedHistory.map((item) => (
+                            {pendingProducts.map((product) => {
+                                const isOverdue = product.scheduledDeleteAt
+                                    ? product.scheduledDeleteAt <= nowUtc
+                                    : false;
+
+                                return (
+                                    <div
+                                        key={product.id}
+                                        className="flex items-center gap-3 rounded-lg border border-orange-100 bg-orange-50 p-3 dark:border-orange-500/30 dark:bg-orange-500/12"
+                                    >
+                                        <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-muted">
+                                            {product.imageUrl ? (
+                                                <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
+                                            ) : (
+                                                <Package className="m-2 h-6 w-6 text-muted-foreground" />
+                                            )}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="truncate text-sm font-medium">{product.name}</p>
+                                            <p className="text-xs text-muted-foreground">{product.category}</p>
+                                        </div>
+                                        <div className="flex-shrink-0 text-right">
+                                            {isOverdue ? (
+                                                <Badge variant="destructive" className="gap-1 text-xs">
+                                                    <Timer className="h-3 w-3" />
+                                                    รอรอบเก็บกวาด
+                                                </Badge>
+                                            ) : (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="gap-1 border-orange-300 text-xs text-orange-600 dark:border-orange-500/40 dark:text-orange-300"
+                                                >
+                                                    <Timer className="h-3 w-3" />
+                                                    {formatDate(product.scheduledDeleteAt)}
+                                                </Badge>
+                                            )}
+                                            {isOverdue ? (
+                                                <p className="mt-1 text-xs text-muted-foreground">
+                                                    ครบกำหนด {formatDate(product.scheduledDeleteAt)}
+                                                </p>
+                                            ) : null}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-foreground">
+                        <History className="h-5 w-5 text-muted-foreground" />
+                        ประวัติการลบถาวร ({purgeHistory.length})
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                        แสดง {PURGE_HISTORY_LIMIT} รายการล่าสุด — สินค้าเหล่านี้กู้คืนไม่ได้แล้ว
+                    </p>
+                </CardHeader>
+                <CardContent>
+                    {purgeHistory.length === 0 ? (
+                        <div className="py-8 text-center text-muted-foreground">
+                            <History className="mx-auto mb-3 h-10 w-10 opacity-30" />
+                            <p>ยังไม่มีสินค้าที่ถูกลบถาวร</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {purgeHistory.map((item) => (
                                 <div
-                                    key={`${item.id}-${item.deletedAt}`}
-                                    className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3"
+                                    key={item.id}
+                                    className="flex items-center gap-3 rounded-lg border border-border bg-muted/40 p-3"
                                 >
                                     <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-muted">
                                         {item.imageUrl ? (
@@ -216,108 +283,11 @@ export default async function ProductTrashPage() {
                                     </div>
                                     <div className="flex-shrink-0 text-right">
                                         <Badge variant="secondary" className="text-xs">
-                                            ลบแล้ว
+                                            ลบถาวรแล้ว
                                         </Badge>
                                         <p className="mt-1 text-xs text-muted-foreground">
-                                            ลบเมื่อ {formatDate(item.deletedAt)}
+                                            {formatDate(item.purgedAt)}
                                         </p>
-                                        <p className="text-xs text-muted-foreground">
-                                            ครบกำหนด {formatDate(item.scheduledDeleteAt)}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-
-            <Card className="border-red-200">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-red-600">
-                        <Trash2 className="h-5 w-5" />
-                        ถึงเวลาลบแล้ว ({overdueProducts.length})
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {overdueProducts.length === 0 ? (
-                        <div className="py-8 text-center text-muted-foreground">
-                            <Package className="mx-auto mb-3 h-10 w-10 opacity-30" />
-                            <p>ไม่มีสินค้าที่ครบกำหนดลบ</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-2">
-                            {overdueProducts.map((product) => (
-                                <div
-                                    key={product.id}
-                                    className="flex items-center gap-3 rounded-lg border border-red-100 bg-red-50 p-3"
-                                >
-                                    <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-muted">
-                                        {product.imageUrl ? (
-                                            <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
-                                        ) : (
-                                            <Package className="m-2 h-6 w-6 text-muted-foreground" />
-                                        )}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-medium">{product.name}</p>
-                                        <p className="text-xs text-muted-foreground">{product.category}</p>
-                                    </div>
-                                    <div className="flex-shrink-0 text-right">
-                                        <Badge variant="destructive" className="gap-1 text-xs">
-                                            <Timer className="h-3 w-3" />
-                                            ครบกำหนดแล้ว
-                                        </Badge>
-                                        <p className="mt-1 text-xs text-muted-foreground">
-                                            {formatDate(product.scheduledDeleteAt)}
-                                        </p>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </CardContent>
-            </Card>
-
-            <Card className="border-orange-200">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-orange-600">
-                        <Timer className="h-5 w-5" />
-                        ตั้งเวลารอลบ ({pendingProducts.length})
-                    </CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {pendingProducts.length === 0 ? (
-                        <div className="py-8 text-center text-muted-foreground">
-                            <Timer className="mx-auto mb-3 h-10 w-10 opacity-30" />
-                            <p>ไม่มีสินค้าที่รอลบ</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-2">
-                            {pendingProducts.map((product) => (
-                                <div
-                                    key={product.id}
-                                    className="flex items-center gap-3 rounded-lg border border-orange-100 bg-orange-50 p-3 dark:border-orange-500/30 dark:bg-orange-500/12"
-                                >
-                                    <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-muted">
-                                        {product.imageUrl ? (
-                                            <Image src={product.imageUrl} alt={product.name} fill className="object-cover" />
-                                        ) : (
-                                            <Package className="m-2 h-6 w-6 text-muted-foreground" />
-                                        )}
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <p className="truncate text-sm font-medium">{product.name}</p>
-                                        <p className="text-xs text-muted-foreground">{product.category}</p>
-                                    </div>
-                                    <div className="flex-shrink-0 text-right">
-                                        <Badge
-                                            variant="outline"
-                                            className="gap-1 border-orange-300 text-xs text-orange-600"
-                                        >
-                                            <Timer className="h-3 w-3" />
-                                            {formatDate(product.scheduledDeleteAt)}
-                                        </Badge>
                                     </div>
                                 </div>
                             ))}

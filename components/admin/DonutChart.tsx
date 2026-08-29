@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
 export interface DonutSlice {
@@ -28,7 +29,8 @@ interface DonutChartProps {
 
 /**
  * Shared donut chart: hue slices assigned by fixed position, anything past the
- * 4th slice folded into a gray "อื่นๆ", legend with value + %, total in the hole.
+ * 4th slice folded into a gray "อื่นๆ", legend with the slice value, total in
+ * the hole.
  */
 export function DonutChart({
     data,
@@ -37,6 +39,11 @@ export function DonutChart({
     emptyText = "ยังไม่มีข้อมูล",
     height = 200,
 }: Readonly<DonutChartProps>) {
+    // The tooltip follows the cursor and is wider than the hole, so it always
+    // lands on the centre total. Fade the total out while a slice is hovered —
+    // the tooltip is showing that slice's number anyway.
+    const [hovered, setHovered] = useState(false);
+
     // Hue index comes from the slice's position in the ORIGINAL data (before
     // zero-value slices are dropped) so the same entity keeps the same color
     // across paired donuts fed the same entity order with different measures.
@@ -84,11 +91,13 @@ export function DonutChart({
                             cy="50%"
                             innerRadius="62%"
                             outerRadius="90%"
-                            paddingAngle={3}
+                            paddingAngle={slices.length > 1 ? 3 : 0}
                             cornerRadius={4}
                             dataKey="value"
                             stroke="none"
                             isAnimationActive={false}
+                            onMouseEnter={() => setHovered(true)}
+                            onMouseLeave={() => setHovered(false)}
                         >
                             {slices.map((slice) => (
                                 <Cell
@@ -100,6 +109,11 @@ export function DonutChart({
                         </Pie>
                         <Tooltip
                             formatter={(value: number, name: string) => [format(value), name]}
+                            wrapperStyle={{ zIndex: 10 }}
+                            // recharts inlines `color: #000` on every tooltip item (it falls
+                            // back to that when a slice carries no payload color), which beats
+                            // contentStyle and leaves black text on the dark popover.
+                            itemStyle={{ color: "var(--popover-foreground)" }}
                             contentStyle={{
                                 backgroundColor: "var(--popover)",
                                 borderColor: "var(--border)",
@@ -111,7 +125,9 @@ export function DonutChart({
                         />
                     </PieChart>
                 </ResponsiveContainer>
-                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                <div
+                    className={`pointer-events-none absolute inset-0 flex flex-col items-center justify-center transition-opacity duration-150 ${hovered ? "opacity-0" : "opacity-100"}`}
+                >
                     <span className="text-lg font-bold tracking-tight tabular-nums">{format(total)}</span>
                     {centerCaption && <span className="text-xs text-muted-foreground">{centerCaption}</span>}
                 </div>

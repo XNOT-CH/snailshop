@@ -19,16 +19,15 @@ export function updateProduct(id: string, input: ProductPayloadInput, priceNumbe
         .where(eq(products.id, id));
 }
 
-export function clearProductOrder(id: string) {
-    return db.update(products).set({ orderId: null }).where(eq(products.id, id));
-}
-
 export function deleteProduct(id: string) {
     return db.update(products).set({ deletedAt: mysqlNow() }).where(eq(products.id, id));
 }
 
+// Clearing scheduledDeleteAt is the point of the restore, not a bonus: a
+// sold-out product keeps its auto-delete timer, so restoring one without
+// dropping the timer just sent it straight back to the trash on the next sweep.
 export function restoreProduct(id: string) {
-    return db.update(products).set({ deletedAt: null }).where(eq(products.id, id));
+    return db.update(products).set({ deletedAt: null, scheduledDeleteAt: null }).where(eq(products.id, id));
 }
 
 export function permanentlyDeleteProduct(id: string) {
