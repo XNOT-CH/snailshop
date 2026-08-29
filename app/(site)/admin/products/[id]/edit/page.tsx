@@ -6,13 +6,13 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
+import { ProductAutoDeleteField } from "@/components/admin/ProductAutoDeleteField";
 import { ProductImageGalleryField } from "@/components/admin/ProductImageGalleryField";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
@@ -21,6 +21,7 @@ import { getPointCurrencyName } from "@/lib/currencySettings";
 import { normalizeProductImageUrls } from "@/lib/productImages";
 import { PERMISSIONS } from "@/lib/permissions";
 import { fetchWithCsrf } from "@/lib/csrf-client";
+import { formatAutoDeleteSummary, getAutoDeleteAfterSaleValue } from "@/lib/features/products/autoDelete";
 import {
     getCalculatedDiscountPrice,
     getDiscountHelperText,
@@ -33,7 +34,6 @@ import {
 import {
     ArrowLeft,
     Banknote,
-    Clock,
     Gem,
     Loader2,
     Package,
@@ -41,40 +41,6 @@ import {
     Timer,
 } from "lucide-react";
 
-const AUTO_DELETE_PRESETS = [
-    { label: "30 นาที", value: "30" },
-    { label: "1 ชม.", value: "60" },
-    { label: "6 ชม.", value: "360" },
-    { label: "12 ชม.", value: "720" },
-    { label: "1 วัน", value: "1440" },
-    { label: "3 วัน", value: "4320" },
-    { label: "7 วัน", value: "10080" },
-];
-
-function formatAutoDeleteSummary(autoDeleteAfterSale: string) {
-    if (!autoDeleteAfterSale) {
-        return null;
-    }
-
-    const autoDeleteMinutes = Number(autoDeleteAfterSale);
-    if (autoDeleteMinutes >= 1440) {
-        return `${(autoDeleteMinutes / 1440).toFixed(1)} วัน`;
-    }
-
-    if (autoDeleteMinutes >= 60) {
-        return `${(autoDeleteMinutes / 60).toFixed(1)} ชั่วโมง`;
-    }
-
-    return `${autoDeleteAfterSale} นาที`;
-}
-
-function getAutoDeleteAfterSaleValue(autoDeleteEnabled: boolean, autoDeleteAfterSale: string) {
-    if (!autoDeleteEnabled || !autoDeleteAfterSale) {
-        return null;
-    }
-
-    return Number(autoDeleteAfterSale);
-}
 export default function EditProductPage() {
     const router = useRouter();
     const currencySettings = useCurrencySettings();
@@ -514,68 +480,15 @@ export default function EditProductPage() {
                     </CardHeader>
 
                     <CardContent className="space-y-5 p-6">
-                        <div className="admin-product-edit-autodelete-toggle flex items-start justify-between gap-4 rounded-2xl border border-amber-100 bg-white p-4">
-                            <div className="space-y-1">
-                                <p className="text-sm font-medium text-slate-900">เปิดใช้งาน</p>
-                                <p className="text-xs text-slate-500">
-                                    สินค้าจะถูกลบออกอัตโนมัติหลังถูกซื้อตามเวลาที่กำหนด
-                                </p>
-                            </div>
-                            <Switch checked={autoDeleteEnabled} onCheckedChange={setAutoDeleteEnabled} disabled={!canEditProduct} />
-                            
-                        </div>
-
-                        {autoDeleteEnabled && (
-                            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-                                <div className="admin-product-edit-autodelete-presets rounded-2xl border border-amber-100 bg-white p-4">
-                                    <Label className="text-sm font-medium text-slate-800">เลือกเวลาด่วน</Label>
-                                    <div className="mt-3 flex flex-wrap gap-2">
-                                        {AUTO_DELETE_PRESETS.map((preset) => (
-                                            <button
-                                                key={preset.value}
-                                                type="button"
-                                                onClick={() => setFormData((prev) => ({ ...prev, autoDeleteAfterSale: preset.value }))}
-                                                disabled={!canEditProduct}
-                                                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                                                    formData.autoDeleteAfterSale === preset.value
-                                                        ? "border-amber-500 bg-amber-500 text-white shadow-sm"
-                                                        : "border-amber-200 bg-amber-50/70 text-amber-700 hover:bg-amber-100"
-                                                }`}
-                                            >
-                                                {preset.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div className="admin-product-edit-autodelete-custom rounded-2xl border border-amber-100 bg-amber-50/60 p-4">
-                                    <Label htmlFor="autoDeleteAfterSale" className="flex items-center gap-2 text-sm font-medium text-slate-800">
-                                        <Clock className="h-3.5 w-3.5" />
-                                        กำหนดเวลาเอง
-                                    </Label>
-                                    <div className="mt-3 flex items-center gap-2">
-                                        <Input
-                                            id="autoDeleteAfterSale"
-                                            name="autoDeleteAfterSale"
-                                            type="number"
-                                            min="1"
-                                            placeholder="เช่น 60"
-                                            value={formData.autoDeleteAfterSale}
-                                            onChange={handleChange}
-                                            disabled={!canEditProduct}
-                                            className="w-36 border-amber-200 bg-white focus-visible:ring-amber-200"
-                                        />
-                                        <span className="text-sm text-slate-500">นาที</span>
-                                    </div>
-                                    {autoDeleteSummary && (
-                                        <p className="mt-3 inline-flex rounded-full bg-white px-3 py-1 text-xs font-medium text-amber-700 ring-1 ring-amber-200">
-                                            ระยะเวลาที่เลือก: {autoDeleteSummary}
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-
+                        <ProductAutoDeleteField
+                            enabled={autoDeleteEnabled}
+                            onEnabledChange={setAutoDeleteEnabled}
+                            minutes={formData.autoDeleteAfterSale}
+                            onMinutesChange={(minutes) =>
+                                setFormData((prev) => ({ ...prev, autoDeleteAfterSale: minutes }))
+                            }
+                            disabled={!canEditProduct}
+                        />
                     </CardContent>
                 </Card>
 
