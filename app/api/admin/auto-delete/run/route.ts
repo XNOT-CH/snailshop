@@ -3,7 +3,8 @@ import { runAutoDelete } from "@/lib/autoDelete";
 import { requirePermissionWithCsrf } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
 
-// Protected by CRON_SECRET env var
+// Sweeps sold-out products past their timer into the product trash (soft
+// delete, recoverable). Protected by CRON_SECRET env var.
 // Call: GET /api/admin/auto-delete/run?secret=<CRON_SECRET>
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
@@ -30,16 +31,16 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: permissionCheck.error }, { status: 401 });
     }
 
-    return runAutoDeleteAndRespond();
+    return runAutoDeleteAndRespond(permissionCheck.userId ?? null);
 }
 
-async function runAutoDeleteAndRespond() {
+async function runAutoDeleteAndRespond(actorId: string | null = null) {
     try {
-        const { deleted, names } = await runAutoDelete();
+        const { deleted, names } = await runAutoDelete({ actorId });
 
         return NextResponse.json({
             success: true,
-            message: deleted > 0 ? `Deleted ${deleted} product(s)` : "No products to delete",
+            message: deleted > 0 ? `Moved ${deleted} product(s) to trash` : "No products to delete",
             deleted,
             products: names,
         });

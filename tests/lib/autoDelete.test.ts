@@ -1,22 +1,27 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-const { createAuditLogMock, findManyMock, deleteWhereMock, updateWhereMock } = vi.hoisted(() => ({
+const { createAuditLogMock, findManyMock, deleteWhereMock, updateSetMock, updateWhereMock, isNullMock } = vi.hoisted(() => ({
     createAuditLogMock: vi.fn(),
     findManyMock: vi.fn(),
     deleteWhereMock: vi.fn(),
+    updateSetMock: vi.fn(),
     updateWhereMock: vi.fn(),
+    isNullMock: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
     db: {
         query: { products: { findMany: findManyMock } },
         delete: vi.fn(() => ({ where: deleteWhereMock })),
-        update: vi.fn(() => ({ set: vi.fn(() => ({ where: updateWhereMock })) })),
+        update: vi.fn(() => ({
+            set: updateSetMock.mockReturnValue({ where: updateWhereMock }),
+        })),
     },
     products: {
         id: "id",
         isSold: "isSold",
         scheduledDeleteAt: "scheduledDeleteAt",
+        deletedAt: "deletedAt",
         orderId: "orderId",
     },
 }));
@@ -25,8 +30,13 @@ vi.mock("drizzle-orm", () => ({
     and: vi.fn(),
     eq: vi.fn(),
     isNotNull: vi.fn(),
+    isNull: isNullMock,
     lte: vi.fn(),
     sql: vi.fn(),
+}));
+
+vi.mock("@/lib/utils/date", () => ({
+    mysqlNow: () => "2026-08-29 12:00:00",
 }));
 
 vi.mock("@/lib/auditLog", () => ({
@@ -50,16 +60,42 @@ function soldProduct(id: string, name: string, orderId: string | null = null) {
 describe("runAutoDelete", () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        updateSetMock.mockReturnValue({ where: updateWhereMock });
     });
 
-    it("deletes every expired product and reports them", async () => {
+    // The timer used to drop the row outright while the trash page promised the
+    // same products were recoverable. Soft-deleting is what makes that promise
+    // true, so it is the assertion that matters most here.
+    it("moves every expired product into the trash instead of destroying it", async () => {
         findManyMock.mockResolvedValue([soldProduct("p1", "Steam key"), soldProduct("p2", "Netflix")]);
 
         const result = await runAutoDelete();
 
         expect(result.deleted).toBe(2);
         expect(result.names).toEqual(["Steam key", "Netflix"]);
-        expect(deleteWhereMock).toHaveBeenCalledTimes(2);
+        expect(updateWhereMock).toHaveBeenCalledTimes(2);
+        expect(deleteWhereMock).not.toHaveBeenCalled();
+    });
+
+    // Leaving the timer set would keep a trashed product in the "waiting to be
+    // deleted" list and re-sweep it on every page load.
+    it("stamps deletedAt and clears the timer", async () => {
+        findManyMock.mockResolvedValue([soldProduct("p1", "Steam key")]);
+
+        await runAutoDelete();
+
+        expect(updateSetMock).toHaveBeenCalledWith({
+            deletedAt: "2026-08-29 12:00:00",
+            scheduledDeleteAt: null,
+        });
+    });
+
+    it("excludes products that are already in the trash", async () => {
+        findManyMock.mockResolvedValue([]);
+
+        await runAutoDelete();
+
+        expect(isNullMock).toHaveBeenCalledWith("deletedAt");
     });
 
     // This is the behaviour the route used to own. Auditing here means a cron
@@ -74,21 +110,27 @@ describe("runAutoDelete", () => {
             action: "PRODUCT_DELETE",
             resource: "Product",
             resourceId: "auto-delete",
-            resourceName: "Auto-deleted 1 products",
+            resourceName: "Auto-trashed 1 products",
             details: expect.objectContaining({
                 reason: "auto_delete_cron",
-                deletedProducts: [expect.objectContaining({ id: "p1", name: "Steam key" })],
+                trashedProducts: [expect.objectContaining({ id: "p1", name: "Steam key" })],
             }),
         }));
     });
 
-    it("clears the order link before deleting a product that has one", async () => {
-        findManyMock.mockResolvedValue([soldProduct("p1", "Steam key", "order-1")]);
+    // A sweep that rides along with a page load has no actor. Falling back to the
+    // current session logged whoever opened the page as the one who deleted.
+    it("credits nobody unless an actor is passed in", async () => {
+        findManyMock.mockResolvedValue([soldProduct("p1", "Steam key")]);
 
         await runAutoDelete();
 
-        expect(updateWhereMock).toHaveBeenCalledTimes(1);
-        expect(deleteWhereMock).toHaveBeenCalledTimes(1);
+        expect(createAuditLogMock).toHaveBeenCalledWith(expect.objectContaining({ userId: null }));
+
+        createAuditLogMock.mockClear();
+        await runAutoDelete({ actorId: "admin-1" });
+
+        expect(createAuditLogMock).toHaveBeenCalledWith(expect.objectContaining({ userId: "admin-1" }));
     });
 
     it("does not audit when nothing was due for deletion", async () => {
@@ -100,9 +142,9 @@ describe("runAutoDelete", () => {
         expect(createAuditLogMock).not.toHaveBeenCalled();
     });
 
-    it("skips a product that fails to delete without aborting the batch or over-reporting", async () => {
+    it("skips a product that fails to trash without aborting the batch or over-reporting", async () => {
         findManyMock.mockResolvedValue([soldProduct("p1", "Steam key"), soldProduct("p2", "Netflix")]);
-        deleteWhereMock.mockRejectedValueOnce(new Error("FK constraint"));
+        updateWhereMock.mockRejectedValueOnce(new Error("deadlock"));
         vi.spyOn(console, "error").mockImplementation(() => {});
 
         const result = await runAutoDelete();
@@ -110,7 +152,7 @@ describe("runAutoDelete", () => {
         expect(result.deleted).toBe(1);
         expect(result.names).toEqual(["Netflix"]);
         expect(createAuditLogMock).toHaveBeenCalledWith(expect.objectContaining({
-            resourceName: "Auto-deleted 1 products",
+            resourceName: "Auto-trashed 1 products",
         }));
     });
 });

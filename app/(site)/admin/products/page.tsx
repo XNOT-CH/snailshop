@@ -18,7 +18,12 @@ export default async function AdminProductsPage() {
     }
     const permissionSet = new Set(access.permissions ?? []);
 
-    await runAutoDelete();
+    // Sweep expired sold-out products into the trash, but only for admins who
+    // could delete them by hand — loading a page shouldn't write on behalf of
+    // someone who lacks the permission.
+    if (permissionSet.has(PERMISSIONS.PRODUCT_DELETE)) {
+        await runAutoDelete();
+    }
 
     const productList = await db.query.products.findMany({
         where: (t, { isNull }) => isNull(t.deletedAt),

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { invalidateProductCaches } from "@/lib/cache";
-import { clearProductOrder, deleteProduct, updateProduct } from "@/lib/features/products/mutations";
+import { deleteProduct, updateProduct } from "@/lib/features/products/mutations";
 import { findProductById, listOtherProductsForStockCheck } from "@/lib/features/products/queries";
 import { decryptProductSecret, parseProductPrice, validateCurrency, validateDiscountPrice, validatePointCurrencyPricing, type ProductPayloadInput } from "@/lib/features/products/shared";
 import { findProductStockUserConflict, productStockUserConflictResponseMessage } from "@/lib/features/products/stockValidation";
@@ -106,9 +106,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         const product = await findProductById(id);
         if (!product || product.deletedAt) return NextResponse.json({ success: false, message: "Product not found" }, { status: 404 });
 
-        if (product.orderId) {
-            await clearProductOrder(id);
-        }
+        // The order link stays put: this is a soft delete, and Order keeps its own
+        // product snapshot anyway, so cutting the pointer only cost the restore
+        // its link back.
         await deleteProduct(id);
 
         await auditFromRequest(request, {
