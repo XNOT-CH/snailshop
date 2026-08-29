@@ -13,12 +13,10 @@ import {
 } from "lucide-react";
 import { RevenueChart } from "@/components/admin/RevenueChart";
 import { KpiSummaryCards } from "@/components/admin/KpiSummaryCards";
-import { ComparisonSection } from "@/components/admin/ComparisonSectionLazy";
 import { GachaSummary } from "@/components/admin/GachaSummaryLazy";
 import { CategoryDistribution } from "@/components/admin/CategoryDistribution";
 import { ActionCenter } from "@/components/admin/ActionCenter";
 import { BestSellers } from "@/components/admin/BestSellers";
-import { SalesHeatmap } from "@/components/admin/SalesHeatmap";
 import { TopupSummaryWithDateRange } from "@/components/TopupSummaryWithDateRange";
 import { MembersSummary } from "@/components/MembersSummaryLazy";
 import { DashboardTabs } from "@/components/DashboardTabs";
@@ -173,20 +171,10 @@ export default async function AdminDashboardPage() {
                         {/* Revenue/order share by product category */}
                         <CategoryDistribution />
 
-                        {/* Period-vs-period comparison (pick two ranges, any metric) */}
-                        <ComparisonSection />
-
-                        {/* Best Sellers + Peak Hours */}
-                        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-                            <div className="overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)]">
-                                <div className="p-5">
-                                    <BestSellers />
-                                </div>
-                            </div>
-                            <div className="overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)]">
-                                <div className="p-5">
-                                    <SalesHeatmap />
-                                </div>
+                        {/* Best Sellers */}
+                        <div className="overflow-hidden rounded-2xl border border-border/80 bg-card/95 shadow-[0_18px_40px_-28px_rgba(15,23,42,0.3)]">
+                            <div className="p-5">
+                                <BestSellers />
                             </div>
                         </div>
                     </div>
