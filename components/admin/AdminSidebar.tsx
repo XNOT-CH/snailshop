@@ -26,6 +26,7 @@ import {
     Layers,
     LayoutDashboard,
     LinkIcon,
+    ListChecks,
     LogOut,
     Megaphone,
     Menu,
@@ -84,6 +85,10 @@ const navigationSections: NavSection[] = [
             { href: "/admin/products", label: "จัดการสินค้า", icon: Package, requiredPermission: PERMISSIONS.PRODUCT_VIEW },
             { href: "/admin/promo-codes", label: "โค้ดส่วนลด", icon: Ticket, requiredPermission: PERMISSIONS.PROMO_VIEW },
             { href: "/admin/season-pass", label: "Season Pass", icon: Gift, requiredPermission: PERMISSIONS.SEASON_PASS_VIEW },
+            // Placeholder entry — the management screen behind it isn't built yet.
+            // Left ungated because there is no quest permission to gate on; the
+            // admin layout already requires ADMIN_PANEL to get this far.
+            { href: "/admin/quests", label: "ภารกิจรายวัน", icon: ListChecks },
             { href: "/admin/users", label: "จัดการผู้ใช้", icon: Users, requiredPermission: PERMISSIONS.USER_VIEW },
             { href: "/admin/roles", label: "จัดการสิทธิ์", icon: Shield, requiredPermission: PERMISSIONS.USER_MANAGE_ROLE },
             {
