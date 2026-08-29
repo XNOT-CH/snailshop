@@ -17,7 +17,8 @@ const THAI_UTC_OFFSET_MS = 7 * 60 * 60 * 1000;
 /**
  * Bucket key for the Thai-local bucket starting at UTC instant `t`: the ISO
  * date ("2026-07-11") for daily buckets or date-hour ("2026-07-11T09") for
- * hourly ones. Matches the DATE_FORMAT patterns in kpiBucketMetrics.ts.
+ * hourly ones. Matches the DATE_FORMAT patterns used by the dashboard
+ * aggregation queries (e.g. the revenue and gacha-summary routes).
  */
 export const bucketKey = (t: number, hourly: boolean) =>
     new Date(t + THAI_UTC_OFFSET_MS).toISOString().slice(0, hourly ? 13 : 10);

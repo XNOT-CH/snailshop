@@ -2,7 +2,6 @@
  * Tests for:
  * - /api/admin/dashboard/kpi-summary   (GET)
  * - /api/admin/dashboard/best-sellers  (GET)
- * - /api/admin/dashboard/sales-heatmap (GET)
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
@@ -30,13 +29,6 @@ const DENIED = { success: false, error: "Unauthorized" };
 /** select().from().where() resolving to `rows` (kpi-summary shape). */
 const mockWhereSelect = (rows: unknown[]) => ({
   from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue(rows) }),
-});
-
-/** select().from().where().groupBy() resolving to `rows` (heatmap shape). */
-const mockGroupBySelect = (rows: unknown[]) => ({
-  from: vi.fn().mockReturnValue({
-    where: vi.fn().mockReturnValue({ groupBy: vi.fn().mockResolvedValue(rows) }),
-  }),
 });
 
 /** select().from().where().groupBy().orderBy().limit() resolving to `rows` (best-sellers shape). */
@@ -161,45 +153,6 @@ describe("API: /api/admin/dashboard/best-sellers (GET)", () => {
     });
     const { GET } = await import("@/app/api/admin/dashboard/best-sellers/route");
     const res = await GET(mkReq());
-    expect(res.status).toBe(500);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
-// /api/admin/dashboard/sales-heatmap
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/admin/dashboard/sales-heatmap (GET)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("returns 401 without dashboard permission", async () => {
-    (requirePermission as any).mockResolvedValue(DENIED);
-    const { GET } = await import("@/app/api/admin/dashboard/sales-heatmap/route");
-    const res = await GET();
-    expect(res.status).toBe(401);
-  });
-
-  it("returns weekday/hour buckets with numeric values", async () => {
-    (requirePermission as any).mockResolvedValue(ALLOWED);
-    (db.select as any) = vi.fn().mockReturnValue(mockGroupBySelect([
-      { weekday: "0", hour: "13", orderCount: "3", revenue: "900" },
-    ]));
-
-    const { GET } = await import("@/app/api/admin/dashboard/sales-heatmap/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.windowDays).toBe(30);
-    expect(body.data[0]).toEqual({ weekday: 0, hour: 13, orders: 3, revenue: 900 });
-  });
-
-  it("returns 500 on DB error", async () => {
-    (requirePermission as any).mockResolvedValue(ALLOWED);
-    (db.select as any) = vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({ where: vi.fn().mockReturnValue({ groupBy: vi.fn().mockRejectedValue(new Error("DB fail")) }) }),
-    });
-    const { GET } = await import("@/app/api/admin/dashboard/sales-heatmap/route");
-    const res = await GET();
     expect(res.status).toBe(500);
   });
 });
