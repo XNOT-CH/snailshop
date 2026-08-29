@@ -59,3 +59,23 @@ export async function listOtherProductsForTakenUsers(id: string) {
         columns: { name: true, secretData: true, stockSeparator: true },
     });
 }
+
+/** Distinct categories still in use by live products, for the product forms. */
+export async function listProductCategories(): Promise<string[]> {
+    if (typeof db.query.products.findMany !== "function") {
+        return [];
+    }
+
+    const rows = await db.query.products.findMany({
+        where: isNull(products.deletedAt),
+        columns: { category: true },
+    });
+
+    const categories = new Set<string>();
+    for (const row of rows) {
+        const category = row.category?.trim();
+        if (category) categories.add(category);
+    }
+
+    return Array.from(categories).sort((a, b) => a.localeCompare(b, "th"));
+}

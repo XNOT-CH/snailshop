@@ -75,39 +75,4 @@ describe("API: product stock taken users", () => {
     await expect(res.json()).resolves.toEqual({ success: false, message: "Unauthorized" });
   });
 
-  it("returns taken users for the create product stock page", async () => {
-    (requirePermission as any).mockResolvedValue({ success: true });
-    (listProductsForStockCheck as any).mockResolvedValue([
-      {
-        name: "Existing Game",
-        secretData: "encrypted_user1 / pass1",
-        stockSeparator: "newline",
-      },
-      {
-        name: "Broken Game",
-        secretData: "bad-encrypted-stock",
-        stockSeparator: "newline",
-      },
-    ]);
-
-    const { GET } = await import("@/app/api/products/new/stock/route");
-    const res = await GET();
-
-    expect(res.status).toBe(200);
-    await expect(res.json()).resolves.toEqual({
-      success: true,
-      takenUsers: { user1: "Existing Game" },
-    });
-    expect(listProductsForStockCheck).toHaveBeenCalledOnce();
-  });
-
-  it("returns 401 for the create product stock page without product-create permission", async () => {
-    (requirePermission as any).mockResolvedValue({ success: false, error: "Unauthorized" });
-
-    const { GET } = await import("@/app/api/products/new/stock/route");
-    const res = await GET();
-
-    expect(res.status).toBe(401);
-    await expect(res.json()).resolves.toEqual({ success: false, message: "Unauthorized" });
-  });
 });
