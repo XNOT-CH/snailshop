@@ -30,6 +30,37 @@ export function buildProductStockTakenUsers(products: ProductStockCheckProduct[]
     return takenUsers;
 }
 
+/**
+ * Which of these usernames are already held by another product. Answering for a
+ * named set keeps the create form from having to download every username in the
+ * shop just to warn about a handful.
+ */
+export function findTakenUsersAmong(
+    users: string[],
+    products: ProductStockCheckProduct[]
+): Record<string, string> {
+    const wanted = new Set(users.filter(Boolean));
+    if (wanted.size === 0) return {};
+
+    const conflicts: Record<string, string> = {};
+
+    for (const product of products) {
+        if (!product.secretData?.trim()) continue;
+
+        try {
+            for (const user of extractUsersFromEncryptedStock(product.secretData, product.stockSeparator)) {
+                if (user && wanted.has(user) && !conflicts[user]) {
+                    conflicts[user] = product.name;
+                }
+            }
+        } catch {
+            // Undecryptable stock is skipped, same as everywhere else.
+        }
+    }
+
+    return conflicts;
+}
+
 export async function findProductStockUserConflict(
     secretData: string,
     stockSeparator: string | null | undefined,

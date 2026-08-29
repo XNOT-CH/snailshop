@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -12,7 +12,6 @@ import {
     Package,
     Plus,
     Shield,
-    Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { ProductAutoDeleteField } from "@/components/admin/ProductAutoDeleteField";
 import { ProductImageGalleryField } from "@/components/admin/ProductImageGalleryField";
+import { ProductStockDraftList } from "@/components/admin/ProductStockDraftList";
 import { ProductStockPasteField } from "@/components/admin/ProductStockPasteField";
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import { getPointCurrencyName } from "@/lib/currencySettings";
@@ -66,9 +66,9 @@ export default function AddProductPage() {
     });
     const [singleUser, setSingleUser] = useState("");
     const [singlePass, setSinglePass] = useState("");
-    const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [discountMode, setDiscountMode] = useState<DiscountMode>("amount");
-    const [takenUsers, setTakenUsers] = useState<Record<string, string>>({});
+    const [knownCategories, setKnownCategories] = useState<string[]>([]);
+    const [highlightFrom, setHighlightFrom] = useState<number | null>(null);
     const [hasSaved, setHasSaved] = useState(false);
     const [stockMode, setStockMode] = useState<"single" | "paste">("single");
     const [autoDeleteEnabled, setAutoDeleteEnabled] = useState(false);
@@ -94,6 +94,10 @@ export default function AddProductPage() {
             autoDeleteAfterSale.trim().length > 0);
 
     const stockUsers = useMemo(() => stockItems.map((item) => getStockUser(item)), [stockItems]);
+    const isNewCategory =
+        formData.category.trim().length > 0 &&
+        knownCategories.length > 0 &&
+        !knownCategories.includes(formData.category.trim());
     const hasDiscountPrice = formData.discountPrice.trim().length > 0;
     const priceNumber = Number(formData.price);
     const discountInputNumber = Number(formData.discountPrice);
@@ -113,27 +117,41 @@ export default function AddProductPage() {
     const normalizedDiscountPrice = getNormalizedDiscountPrice(calculatedDiscountPrice);
 
     useEffect(() => {
-        if (!canCreateProduct) return;
-
         let cancelled = false;
 
-        fetch("/api/products/new/stock")
+        fetch("/api/admin/products/categories")
             .then((response) => response.json())
-            .then((data: { success: boolean; takenUsers?: Record<string, string> }) => {
+            .then((data: { success: boolean; categories?: string[] }) => {
                 if (!cancelled && data.success) {
-                    setTakenUsers(data.takenUsers || {});
+                    setKnownCategories(data.categories ?? []);
                 }
             })
             .catch(() => {
-                if (!cancelled) {
-                    setTakenUsers({});
-                }
+                if (!cancelled) setKnownCategories([]);
             });
 
         return () => {
             cancelled = true;
         };
-    }, [canCreateProduct]);
+    }, []);
+
+    // Asks about the usernames on screen only. This page used to download every
+    // username in the shop on load just to warn about the few being typed in.
+    const checkStockUsers = useCallback(async (users: string[]) => {
+        if (users.length === 0) return {};
+
+        try {
+            const response = await fetchWithCsrf("/api/admin/products/stock-check", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ users }),
+            });
+            const data = await response.json() as { success: boolean; conflicts?: Record<string, string> };
+            return data.success ? data.conflicts ?? {} : {};
+        } catch {
+            return {};
+        }
+    }, []);
 
     useEffect(() => {
         if (!isDirty) return;
@@ -162,75 +180,58 @@ export default function AddProductPage() {
         }
     };
 
-    const handleAddSingleStock = () => {
-        if (!canCreateProduct) {
-            showError("คุณไม่มีสิทธิ์เพิ่มสินค้า");
-            return;
-        }
-
+    const handleAddSingleStock = async () => {
         if (!singleUser.trim() || !singlePass.trim()) {
             showError("กรุณากรอก User และ Pass");
             return;
         }
 
         const newUser = singleUser.trim();
-        const isDuplicate = stockItems.some((item) => getStockUser(item) === newUser);
-        if (isDuplicate) {
+        if (stockItems.some((item) => getStockUser(item) === newUser)) {
             showError(`User "${newUser}" มีในสต็อกอยู่แล้ว`);
             return;
         }
 
-        if (takenUsers[newUser]) {
-            showError(`User "${newUser}" มีอยู่ในสต็อกของสินค้า "${takenUsers[newUser]}" แล้ว`);
+        const conflicts = await checkStockUsers([newUser]);
+        if (conflicts[newUser]) {
+            showError(`User "${newUser}" มีอยู่ในสต็อกของสินค้า "${conflicts[newUser]}" แล้ว`);
             return;
         }
 
-        const newEntry = formatStockEntry(newUser, singlePass);
+        setHighlightFrom(stockItems.length);
         setFormData((prev) => ({
             ...prev,
-            secretData: prev.secretData ? `${prev.secretData}\n${newEntry}` : newEntry,
+            secretData: [prev.secretData, formatStockEntry(newUser, singlePass)].filter(Boolean).join("\n"),
         }));
         setSingleUser("");
         setSinglePass("");
-        showSuccess("เพิ่มสต๊อกสำเร็จ");
     };
 
     const handleAddPastedStock = (entries: ParsedStockLine[]) => {
-        if (!canCreateProduct || entries.length === 0) return;
+        if (entries.length === 0) return;
 
         const added = entries.map((entry) => formatStockEntry(entry.user, entry.pass));
+        setHighlightFrom(stockItems.length);
         setFormData((prev) => ({
             ...prev,
             secretData: [prev.secretData, added.join("\n")].filter(Boolean).join("\n"),
         }));
-        showSuccess(`เพิ่มสต๊อก ${added.length} รายการ`);
     };
 
     const rebuildSecretData = (items: string[]) => {
         setFormData((prev) => ({ ...prev, secretData: items.join("\n") }));
     };
 
-    const handleDeleteStock = (index: number) => {
-        if (!canCreateProduct) {
-            showError("คุณไม่มีสิทธิ์แก้ไขสต๊อกสินค้า");
-            return;
-        }
-
-        const items = stockItems.filter((_, itemIndex) => itemIndex !== index);
+    const handleStockItemsChange = (items: string[]) => {
+        setHighlightFrom(null);
         rebuildSecretData(items);
-        if (editingIndex === index) {
-            setEditingIndex(null);
-        }
-        showSuccess("ลบสต๊อกสำเร็จ");
     };
 
-    // These inputs sit inside the create form, so Enter would otherwise submit it
-    // and create the product with whatever stock had already been added.
     const handleStockFieldKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
         if (event.key !== "Enter") return;
 
         event.preventDefault();
-        handleAddSingleStock();
+        void handleAddSingleStock();
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -283,12 +284,25 @@ export default function AddProductPage() {
             return;
         }
 
-        const takenUser = stockItems
-            .map((item) => getStockUser(item))
-            .find((user) => user && takenUsers[user]);
-        if (takenUser) {
-            showError(`User "${takenUser}" มีอยู่ในสต็อกของสินค้า "${takenUsers[takenUser]}" แล้ว`);
-            return;
+        const category = formData.category.trim();
+        if (knownCategories.length > 0 && !knownCategories.includes(category)) {
+            const confirmed = await showConfirm(
+                "สร้างหมวดหมู่ใหม่?",
+                `ยังไม่มีหมวดหมู่ "${category}" ในร้าน สินค้าชิ้นนี้จะสร้างหมวดใหม่ขึ้นมา`,
+                "ใช่ สร้างหมวดใหม่",
+                "กลับไปแก้"
+            );
+            if (!confirmed) return;
+        }
+
+        if (stockItems.length === 0) {
+            const confirmed = await showConfirm(
+                "ยังไม่มีสต๊อก",
+                "สินค้าจะขึ้นหน้าร้านในสภาพที่ลูกค้ากดซื้อไม่ได้จนกว่าจะเพิ่มสต๊อก",
+                "สร้างแบบไม่มีสต๊อก",
+                "กลับไปเพิ่มสต๊อก"
+            );
+            if (!confirmed) return;
         }
 
         setIsLoading(true);
@@ -298,6 +312,7 @@ export default function AddProductPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     ...formData,
+                    category,
                     autoDeleteAfterSale: getAutoDeleteAfterSaleValue(autoDeleteEnabled, autoDeleteAfterSale),
                     image: formData.images[0] || "",
                     discountPrice: normalizedDiscountPrice === null ? "" : String(normalizedDiscountPrice),
@@ -492,12 +507,24 @@ export default function AddProductPage() {
                                 <Input
                                     id="category"
                                     name="category"
+                                    list="known-product-categories"
                                     placeholder="เช่น ROV, Valorant, Genshin"
                                     value={formData.category}
                                     onChange={handleChange}
                                     required
                                     disabled={!canCreateProduct}
+                                    autoComplete="off"
                                 />
+                                <datalist id="known-product-categories">
+                                    {knownCategories.map((category) => (
+                                        <option key={category} value={category} />
+                                    ))}
+                                </datalist>
+                                {isNewCategory ? (
+                                    <p className="text-xs text-amber-600 dark:text-amber-400">
+                                        หมวดหมู่ใหม่ — ยังไม่มีสินค้าอื่นใช้ชื่อนี้
+                                    </p>
+                                ) : null}
                             </div>
 
                             <div className="space-y-3">
@@ -576,7 +603,7 @@ export default function AddProductPage() {
                                 {stockMode === "paste" ? (
                                     <ProductStockPasteField
                                         existingUsers={stockUsers}
-                                        takenUsers={takenUsers}
+                                        onCheckUsers={checkStockUsers}
                                         onAdd={handleAddPastedStock}
                                         disabled={!canCreateProduct}
                                     />
@@ -633,39 +660,15 @@ export default function AddProductPage() {
                                         <Eye className="h-4 w-4" />
                                     </div>
                                     <span className="font-bold text-foreground">รายการสต๊อก</span>
-                                    <Badge variant="secondary" className="ml-auto">
-                                        {stockItems.length} รายการ
-                                    </Badge>
                                 </div>
 
                                 <div className="p-5">
-                                    <div className="space-y-2 overflow-y-auto max-h-64">
-                                        {stockItems.map((item, index) => (
-                                            <div
-                                                key={`${item}-${index}`}
-                                                className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/70 p-3 text-sm dark:border-[#355071] dark:bg-[#162334]"
-                                            >
-                                                <div className="flex min-w-0 items-center gap-2">
-                                                    <Badge variant="outline" className="text-xs">
-                                                        #{index + 1}
-                                                    </Badge>
-                                                    <span className="max-w-[220px] truncate font-mono text-xs">
-                                                        {item}
-                                                    </span>
-                                                </div>
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="h-7 w-7 text-muted-foreground hover:text-red-600"
-                                                    onClick={() => handleDeleteStock(index)}
-                                                    disabled={!canCreateProduct}
-                                                >
-                                                    <Trash2 className="h-3.5 w-3.5" />
-                                                </Button>
-                                            </div>
-                                        ))}
-                                    </div>
+                                    <ProductStockDraftList
+                                        items={stockItems}
+                                        onChange={handleStockItemsChange}
+                                        highlightFrom={highlightFrom}
+                                        disabled={!canCreateProduct}
+                                    />
                                 </div>
                             </div>
                         )}

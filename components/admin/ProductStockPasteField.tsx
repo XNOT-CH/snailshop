@@ -1,16 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ClipboardList, Plus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ClipboardList, Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { parseStockPaste, type ParsedStockLine } from "@/lib/stock";
 
 interface ProductStockPasteFieldProps {
-    /** Usernames already in this product's stock. */
+    /** Usernames already in this product's draft stock. */
     existingUsers: string[];
-    /** Usernames held by other products, mapped to that product's name. */
-    takenUsers: Record<string, string>;
+    /** Asks the server which of these usernames another product already holds. */
+    onCheckUsers: (users: string[]) => Promise<Record<string, string>>;
     onAdd: (entries: ParsedStockLine[]) => void;
     disabled?: boolean;
 }
@@ -21,6 +21,7 @@ player002:mypassword
 player003,mypassword`;
 
 const MAX_PROBLEMS_SHOWN = 5;
+const CHECK_DEBOUNCE_MS = 500;
 
 /**
  * Adding stock one account at a time was the whole reason a batch of fifty keys
@@ -29,20 +30,55 @@ const MAX_PROBLEMS_SHOWN = 5;
  */
 export function ProductStockPasteField({
     existingUsers,
-    takenUsers,
+    onCheckUsers,
     onAdd,
     disabled = false,
 }: ProductStockPasteFieldProps) {
     const [text, setText] = useState("");
+    const [takenUsers, setTakenUsers] = useState<Record<string, string>>({});
+    const [isChecking, setIsChecking] = useState(false);
+
+    const parsed = useMemo(() => parseStockPaste(text), [text]);
+    const parsedUsers = useMemo(() => parsed.items.map((item) => item.user), [parsed]);
+    const parsedUsersKey = parsedUsers.join("\n");
+
+    // One request per pause in typing, for the usernames on screen only.
+    useEffect(() => {
+        if (parsedUsers.length === 0) {
+            setTakenUsers({});
+            return;
+        }
+
+        let cancelled = false;
+        setIsChecking(true);
+
+        const timer = setTimeout(() => {
+            onCheckUsers(parsedUsers)
+                .then((conflicts) => {
+                    if (!cancelled) setTakenUsers(conflicts);
+                })
+                .catch(() => {
+                    if (!cancelled) setTakenUsers({});
+                })
+                .finally(() => {
+                    if (!cancelled) setIsChecking(false);
+                });
+        }, CHECK_DEBOUNCE_MS);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+        // parsedUsersKey stands in for the array identity.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [parsedUsersKey, onCheckUsers]);
 
     const review = useMemo(() => {
-        const { items, problems } = parseStockPaste(text);
         const existing = new Set(existingUsers);
-
         const ready: ParsedStockLine[] = [];
         const blocked: { line: number; user: string; reason: string }[] = [];
 
-        for (const item of items) {
+        for (const item of parsed.items) {
             if (existing.has(item.user)) {
                 blocked.push({ line: item.line, user: item.user, reason: "มีในสต๊อกของสินค้านี้แล้ว" });
                 continue;
@@ -54,7 +90,7 @@ export function ProductStockPasteField({
             ready.push(item);
         }
 
-        for (const problem of problems) {
+        for (const problem of parsed.problems) {
             blocked.push({
                 line: problem.line,
                 user: problem.user ?? problem.raw,
@@ -65,7 +101,7 @@ export function ProductStockPasteField({
         blocked.sort((a, b) => a.line - b.line);
 
         return { ready, blocked };
-    }, [text, existingUsers, takenUsers]);
+    }, [parsed, existingUsers, takenUsers]);
 
     const handleAdd = () => {
         if (review.ready.length === 0) return;
@@ -89,7 +125,7 @@ export function ProductStockPasteField({
             {text.trim().length > 0 ? (
                 <div className="space-y-2 rounded-xl border border-border bg-muted/40 p-3">
                     <p className="flex items-center gap-2 text-xs font-medium text-foreground">
-                        <ClipboardList className="h-3.5 w-3.5" />
+                        {isChecking ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ClipboardList className="h-3.5 w-3.5" />}
                         อ่านได้ {review.ready.length} รายการ
                         {review.blocked.length > 0 ? ` · ข้าม ${review.blocked.length} บรรทัด` : ""}
                     </p>
