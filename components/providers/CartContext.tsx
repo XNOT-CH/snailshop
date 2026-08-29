@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, Rea
 import { useRouter } from "next/navigation";
 import { showSuccess, showError, showInfo } from "@/lib/swal";
 import { normalizeCurrencyCode, type ProductCurrencyCode } from "@/lib/currencySettings";
+import { toBaht, toSatang } from "@/lib/money";
 import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
 
 // Cart item interface
@@ -265,12 +266,19 @@ export function CartProvider({
     }, []);
 
     const cartTotals = React.useMemo(() => {
-        const totalsByCurrency = items.reduce<Record<ProductCurrencyCode, number>>((accumulator, item) => {
+        // Totalled in satang and with the same active-price rule the checkout
+        // uses, so the number shown here is the number the server will charge.
+        const satangByCurrency = items.reduce<Record<ProductCurrencyCode, number>>((accumulator, item) => {
             const currency = normalizeCurrencyCode(item.currency);
-            const price = item.discountPrice ?? item.price;
-            accumulator[currency] += price * (item.quantity || 1);
+            const discountPrice = Number(item.discountPrice ?? Number.NaN);
+            const price = Number.isFinite(discountPrice) && discountPrice > 0 ? discountPrice : item.price;
+            accumulator[currency] += toSatang(price) * (item.quantity || 1);
             return accumulator;
         }, { THB: 0, POINT: 0 });
+        const totalsByCurrency: Record<ProductCurrencyCode, number> = {
+            THB: toBaht(satangByCurrency.THB),
+            POINT: toBaht(satangByCurrency.POINT),
+        };
         const subtotal = totalsByCurrency.THB;
 
         return {

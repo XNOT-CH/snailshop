@@ -13,6 +13,7 @@ import {
     getPointCurrencyName,
     type PublicCurrencySettings,
 } from "@/lib/currencySettings";
+import { sumAmounts, toBaht, toSatang } from "@/lib/money";
 
 export type CheckoutItemInput = {
     productId: string;
@@ -94,8 +95,16 @@ const PRODUCT_COLUMNS_SQL = [
     "imageUrl",
 ].join(", ");
 
+// `??` alone would treat a stored discountPrice of 0.00 as the active price and
+// hand the product out for free. The write paths reject a discount <= 0, so this
+// only guards rows predating that check (or edited straight in the database).
 export function getActivePrice(product: PurchaseProductRow) {
-    return Number(product.discountPrice ?? product.price);
+    const discountPrice = Number(product.discountPrice ?? Number.NaN);
+    if (Number.isFinite(discountPrice) && discountPrice > 0) {
+        return discountPrice;
+    }
+
+    return Number(product.price);
 }
 
 export function processStock(decryptedData: string, separatorType: string, qty: number) {
@@ -140,7 +149,8 @@ export function buildCartThbPromoItems(
             return {
                 productId: item.productId,
                 category: product.category,
-                subtotal: getActivePrice(product) * item.quantity,
+                // satang * integer quantity stays exact; price * quantity does not.
+                subtotal: toBaht(toSatang(getActivePrice(product)) * item.quantity),
             };
         })
         .filter(Boolean) as PromoCartLineItem[];
@@ -163,26 +173,66 @@ export function buildDiscountedThbPriceMap(
     const eligibleItems = eligibleSet === null
         ? thbItems
         : thbItems.filter((item) => eligibleSet.has(item.productId));
-    const totalEligibleCents = eligibleItems.reduce((sum, item) => sum + Math.round(item.subtotal * 100), 0);
-    const totalDiscountCents = Math.min(Math.round(discountAmount * 100), totalEligibleCents);
+    const baseCentsById = new Map(eligibleItems.map((item) => [item.productId, toSatang(item.subtotal)] as const));
+    const totalEligibleCents = eligibleItems.reduce((sum, item) => sum + (baseCentsById.get(item.productId) ?? 0), 0);
+    const totalDiscountCents = Math.min(toSatang(discountAmount), totalEligibleCents);
 
     if (eligibleItems.length === 0 || totalDiscountCents <= 0 || totalEligibleCents <= 0) {
         return priceMap;
     }
 
+    // Give every line its floored proportional share, then hand the leftover
+    // satang to lines that still have room. Dumping the whole remainder on the
+    // last line used to lose it whenever that line capped at its own subtotal,
+    // so the cart charged more than the promo promised.
+    const discountCentsById = new Map<string, number>();
     let distributedDiscountCents = 0;
 
-    eligibleItems.forEach((item, index) => {
-        const baseCents = Math.round(item.subtotal * 100);
-        const discountCents = index === eligibleItems.length - 1
-            ? Math.min(baseCents, totalDiscountCents - distributedDiscountCents)
-            : Math.min(baseCents, Math.floor((totalDiscountCents * baseCents) / totalEligibleCents));
+    eligibleItems.forEach((item) => {
+        const baseCents = baseCentsById.get(item.productId) ?? 0;
+        const share = Math.min(baseCents, Math.floor((totalDiscountCents * baseCents) / totalEligibleCents));
 
-        distributedDiscountCents += discountCents;
-        priceMap.set(item.productId, Math.max(0, baseCents - discountCents) / 100);
+        discountCentsById.set(item.productId, share);
+        distributedDiscountCents += share;
+    });
+
+    for (const item of eligibleItems) {
+        if (distributedDiscountCents >= totalDiscountCents) {
+            break;
+        }
+
+        const baseCents = baseCentsById.get(item.productId) ?? 0;
+        const assigned = discountCentsById.get(item.productId) ?? 0;
+        const room = Math.min(baseCents - assigned, totalDiscountCents - distributedDiscountCents);
+        if (room <= 0) {
+            continue;
+        }
+
+        discountCentsById.set(item.productId, assigned + room);
+        distributedDiscountCents += room;
+    }
+
+    eligibleItems.forEach((item) => {
+        const baseCents = baseCentsById.get(item.productId) ?? 0;
+        const discountCents = discountCentsById.get(item.productId) ?? 0;
+
+        priceMap.set(item.productId, toBaht(Math.max(0, baseCents - discountCents)));
     });
 
     return priceMap;
+}
+
+// The discount actually handed out, which is what the PromoUsage ledger should
+// record — the promo's headline discountAmount can exceed it once per-line caps
+// and satang rounding are applied.
+export function sumAppliedDiscount(
+    thbItems: PromoCartLineItem[],
+    discountedPriceMap: Map<string, number>,
+) {
+    return toBaht(thbItems.reduce((sum, item) => {
+        const chargedSatang = toSatang(discountedPriceMap.get(item.productId) ?? item.subtotal);
+        return sum + (toSatang(item.subtotal) - chargedSatang);
+    }, 0));
 }
 
 export function validateAndSummarizeCartProducts(
@@ -208,18 +258,20 @@ export function validateAndSummarizeCartProducts(
     }
 
     const thbItems = buildCartThbPromoItems(productList, items);
-    const totalTHB = thbItems.reduce((sum, item) => sum + item.subtotal, 0);
+    const totalTHB = sumAmounts(thbItems.map((item) => item.subtotal));
 
-    const totalPoints = productList.reduce((sum, product) => {
+    // pointBalance is an INT column and the deduction below rounds, so round the
+    // total once here and let the check and the charge agree on one number.
+    const totalPoints = Math.round(productList.reduce((sum, product) => {
         const item = items.find((candidate) => candidate.productId === product.id);
         if (!item || product.currency !== "POINT") {
             return sum;
         }
 
         return sum + (getActivePrice(product) * item.quantity);
-    }, 0);
+    }, 0));
 
-    if (checkThbBalance && totalTHB > 0 && Number(user.creditBalance) < totalTHB) {
+    if (checkThbBalance && totalTHB > 0 && toSatang(user.creditBalance) < toSatang(totalTHB)) {
         throw new Error(
             `เครดิตไม่เพียงพอ (ต้องการ ${formatCurrencyAmount(totalTHB, "THB", currencySettings)} แต่มี ${formatCurrencyAmount(Number(user.creditBalance), "THB", currencySettings)})`,
         );
@@ -352,7 +404,8 @@ export async function executeSingleProductPurchaseTransaction(params: {
 
         const lockedUser = await lockPurchaseUserForUpdate(conn, user.id);
         const unitPrice = getActivePrice(product);
-        const baseTotalPrice = unitPrice * qty;
+        const baseTotalSatang = toSatang(unitPrice) * qty;
+        const baseTotalPrice = toBaht(baseTotalSatang);
         const isPointCurrency = product.currency === "POINT";
         if (isPointCurrency && promoCode) {
             throw new Error("โค้ดส่วนลดใช้ได้เฉพาะสินค้าสกุลเงินบาท");
@@ -363,13 +416,15 @@ export async function executeSingleProductPurchaseTransaction(params: {
                 { productId: product.id, category: product.category, subtotal: baseTotalPrice },
             ])
             : null;
-        const totalPrice = Math.max(
-            0,
-            Math.round((baseTotalPrice - (promoData?.discountAmount ?? 0)) * 100) / 100,
-        );
+        // The discount can't exceed the line itself, so the capped figure is what
+        // gets charged and what the PromoUsage ledger has to record.
+        const appliedDiscountSatang = Math.min(baseTotalSatang, toSatang(promoData?.discountAmount ?? 0));
+        const appliedDiscount = toBaht(appliedDiscountSatang);
+        const totalSatang = Math.max(0, baseTotalSatang - appliedDiscountSatang);
+        const totalPrice = toBaht(totalSatang);
         const userBalance = isPointCurrency ? Number(lockedUser.pointBalance ?? 0) : Number(lockedUser.creditBalance);
 
-        if (userBalance < totalPrice) {
+        if (toSatang(userBalance) < totalSatang) {
             const requiredAmount = formatCurrencyAmount(
                 totalPrice,
                 isPointCurrency ? "POINT" : "THB",
@@ -433,7 +488,7 @@ export async function executeSingleProductPurchaseTransaction(params: {
                     user.id,
                     orderId,
                     promoData.code,
-                    promoData.discountAmount.toFixed(2),
+                    appliedDiscount.toFixed(2),
                 ],
             );
         }
@@ -444,7 +499,7 @@ export async function executeSingleProductPurchaseTransaction(params: {
             order: { id: orderId },
             product,
             finalPrice: totalPrice,
-            promoData,
+            promoData: promoData ? { ...promoData, discountAmount: appliedDiscount } : null,
         };
     } catch (error) {
         await conn.rollback();
@@ -490,9 +545,14 @@ export async function executeCartPurchaseTransaction(params: {
             appliedPromo?.discountAmount ?? 0,
             appliedPromo ? appliedPromo.eligibleProductIds : null,
         );
-        const finalTotalTHB = items.reduce((sum, item) => sum + (discountedPriceMap.get(item.productId) ?? 0), 0);
+        const finalTotalSatang = items.reduce(
+            (sum, item) => sum + toSatang(discountedPriceMap.get(item.productId) ?? 0),
+            0,
+        );
+        const finalTotalTHB = toBaht(finalTotalSatang);
+        const appliedDiscount = appliedPromo ? sumAppliedDiscount(thbItems, discountedPriceMap) : 0;
 
-        if (finalTotalTHB > 0 && Number(lockedUser.creditBalance) < finalTotalTHB) {
+        if (finalTotalSatang > 0 && toSatang(lockedUser.creditBalance) < finalTotalSatang) {
             throw new Error(
                 `เครดิตไม่เพียงพอ (ต้องการ ${formatCurrencyAmount(finalTotalTHB, "THB", currencySettings)} แต่มี ${formatCurrencyAmount(Number(lockedUser.creditBalance), "THB", currencySettings)})`,
             );
@@ -513,9 +573,10 @@ export async function executeCartPurchaseTransaction(params: {
                 item.quantity,
             );
             const orderId = crypto.randomUUID();
+            const lineTotal = toBaht(toSatang(getActivePrice(product)) * item.quantity);
             const unitPrice = product.currency === "THB" || !product.currency
-                ? (discountedPriceMap.get(product.id) ?? (getActivePrice(product) * item.quantity))
-                : (getActivePrice(product) * item.quantity);
+                ? (discountedPriceMap.get(product.id) ?? lineTotal)
+                : lineTotal;
 
             await conn.execute(
                 "INSERT INTO `Order` (id, userId, totalPrice, status, givenData, productId, productName, productImage) VALUES (?, ?, ?, 'COMPLETED', ?, ?, ?, ?)",
@@ -569,7 +630,7 @@ export async function executeCartPurchaseTransaction(params: {
                     userId,
                     orderResults[0]?.orderId ?? null,
                     appliedPromo.code,
-                    appliedPromo.discountAmount.toFixed(2),
+                    appliedDiscount.toFixed(2),
                 ],
             );
         }
@@ -581,7 +642,7 @@ export async function executeCartPurchaseTransaction(params: {
             totalTHB: finalTotalTHB,
             totalPoints,
             promoCode: appliedPromo?.code ?? null,
-            discountAmount: appliedPromo?.discountAmount ?? 0,
+            discountAmount: appliedDiscount,
             purchasedCount: items.reduce((sum, item) => sum + item.quantity, 0),
         };
     } catch (error) {
