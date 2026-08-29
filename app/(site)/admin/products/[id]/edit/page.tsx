@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { ProductAutoDeleteField } from "@/components/admin/ProductAutoDeleteField";
+import { ProductDiscountField } from "@/components/admin/ProductDiscountField";
 import { ProductImageGalleryField } from "@/components/admin/ProductImageGalleryField";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,12 +24,9 @@ import { PERMISSIONS } from "@/lib/permissions";
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import { formatAutoDeleteSummary, getAutoDeleteAfterSaleValue } from "@/lib/features/products/autoDelete";
 import {
-    getCalculatedDiscountPrice,
-    getDiscountHelperText,
-    getDiscountInputErrorMessage,
-    getDiscountMessage,
+    getDiscountErrorText,
+    getDiscountState,
     getFetchedDiscountAmount,
-    getNormalizedDiscountPrice,
     type DiscountMode,
 } from "@/lib/features/products/pricing";
 import {
@@ -131,26 +129,17 @@ export default function EditProductPage() {
             return;
         }
 
-        const hasDiscountPrice = formData.discountPrice.trim().length > 0;
-        const priceNumber = Number(formData.price);
-        const discountInputNumber = Number(formData.discountPrice);
-        const calculatedDiscountPrice = getCalculatedDiscountPrice(
-            hasDiscountPrice,
-            true,
-            priceNumber,
-            discountInputNumber,
+        const submittedDiscount = getDiscountState(
+            formData.price,
+            formData.discountPrice,
             discountMode,
             formData.currency,
         );
-        const normalizedDiscountPrice = getNormalizedDiscountPrice(calculatedDiscountPrice);
+        const normalizedDiscountPrice = submittedDiscount.normalized;
 
-        if (hasDiscountPrice) {
-            if (!Number.isFinite(discountInputNumber) || discountInputNumber <= 0) {
-                showError(getDiscountInputErrorMessage(discountMode));
-                return;
-            }
-            if (discountMode === "percent" && discountInputNumber >= 100) {
-                showError("ส่วนลดแบบเปอร์เซ็นต้องน้อยกว่า 100%");
+        if (submittedDiscount.hasDiscount) {
+            if (!submittedDiscount.isValid) {
+                showError(getDiscountErrorText(discountMode));
                 return;
             }
             if (normalizedDiscountPrice === null) {
@@ -193,36 +182,8 @@ export default function EditProductPage() {
     }
 
     const isPointCurrency = formData.currency === "POINT";
-    const hasDiscountPrice = formData.discountPrice.trim().length > 0;
-    const priceNumber = Number(formData.price);
-    const discountInputNumber = Number(formData.discountPrice);
-    const isDiscountValueValid =
-        !hasDiscountPrice ||
-        (Number.isFinite(discountInputNumber) &&
-            discountInputNumber > 0 &&
-            (discountMode === "percent" ? discountInputNumber < 100 : discountInputNumber < priceNumber));
-    const calculatedDiscountPrice = isDiscountValueValid
-        ? getCalculatedDiscountPrice(
-            hasDiscountPrice,
-            isDiscountValueValid,
-            priceNumber,
-            discountInputNumber,
-            discountMode,
-            formData.currency,
-        )
-        : null;
-    const normalizedDiscountPrice = getNormalizedDiscountPrice(calculatedDiscountPrice);
+    const discountState = getDiscountState(formData.price, formData.discountPrice, discountMode, formData.currency);
     const autoDeleteSummary = formatAutoDeleteSummary(formData.autoDeleteAfterSale);
-    const discountMessage = getDiscountMessage({
-        hasDiscountPrice,
-        isDiscountValueValid,
-        normalizedDiscountPrice,
-        discountMode,
-        isPointCurrency,
-        pointCurrencyName,
-        discountInputNumber,
-        currency: formData.currency,
-    });
 
     return (
         <div className="admin-product-edit-page space-y-6">
@@ -364,49 +325,18 @@ export default function EditProductPage() {
                                                 <div className="mb-2 flex items-center gap-2 text-sm font-medium text-rose-700">
                                                     <span>ส่วนลด</span>
                                                 </div>
-                                                <div className="admin-product-edit-discount-inner space-y-2 rounded-2xl border border-rose-200/70 bg-white/70 p-3 dark:border-rose-500/25 dark:bg-[#132133]/90">
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <Button
-                                                            type="button"
-                                                            variant={discountMode === "amount" ? "default" : "outline"}
-                                                            className="rounded-xl"
-                                                            onClick={() => setDiscountMode("amount")}
-                                                            disabled={!canEditProduct}
-                                                        >
-                                                            ลดเป็น{isPointCurrency ? pointCurrencyName : "บาท"}
-                                                        </Button>
-                                                        <Button
-                                                            type="button"
-                                                            variant={discountMode === "percent" ? "default" : "outline"}
-                                                            className="rounded-xl"
-                                                            onClick={() => setDiscountMode("percent")}
-                                                            disabled={!canEditProduct}
-                                                        >
-                                                            ลดเป็น %
-                                                        </Button>
-                                                    </div>
-                                                    <Input
-                                                        id="discountPrice"
-                                                        name="discountPrice"
-                                                        type="number"
-                                                        placeholder={discountMode === "percent" ? "เช่น 15" : "เว้นว่างถ้าไม่ลดราคา"}
-                                                        min="0"
-                                                        max={discountMode === "percent" ? "99.99" : undefined}
-                                                        step={discountMode === "percent" ? "0.01" : isPointCurrency ? "1" : "0.01"}
-                                                        value={formData.discountPrice}
-                                                        onChange={handleChange}
-                                                        disabled={!canEditProduct}
-                                                        className="border-rose-200 bg-white focus-visible:ring-rose-200 dark:border-rose-500/30 dark:bg-[#132133] dark:focus-visible:ring-rose-500/20"
-                                                    />
-                                                    <div className="flex items-center justify-between text-xs">
-                                                        <span className="text-slate-500">
-                                                            {getDiscountHelperText(discountMode, isPointCurrency, pointCurrencyName)}
-                                                        </span>
-                                                        {discountMessage ? (
-                                                            <span className={discountMessage.className}>{discountMessage.text}</span>
-                                                        ) : null}
-                                                    </div>
-                                                </div>
+                                                <ProductDiscountField
+                                                    currency={formData.currency}
+                                                    pointCurrencyName={pointCurrencyName}
+                                                    mode={discountMode}
+                                                    onModeChange={setDiscountMode}
+                                                    value={formData.discountPrice}
+                                                    onValueChange={(value) =>
+                                                        setFormData((prev) => ({ ...prev, discountPrice: value }))
+                                                    }
+                                                    state={discountState}
+                                                    disabled={!canEditProduct}
+                                                />
                                                 <p className="mt-2 text-xs text-rose-600/80">
                                                     หากตั้งค่าส่วนลด สินค้าจะแสดงในหมวดสินค้าลดราคา
                                                 </p>

@@ -5,10 +5,10 @@ import {
     getDiscountAmountButtonLabel,
     getDiscountHint,
     getDiscountInputStep,
-    getDiscountMessage,
     getDiscountPlaceholder,
     getDiscountSummary,
     getDiscountValueValidationMessage,
+    getDiscountState,
     getFetchedDiscountAmount,
     getNormalizedDiscountPrice,
     getPriceInputPlaceholder,
@@ -76,38 +76,38 @@ describe("lib/features/products/pricing", () => {
         expect(getFetchedDiscountAmount(100, 100, "THB")).toBeNull();
     });
 
-    it("builds edit-page discount message state", () => {
-        expect(getDiscountMessage({
-            hasDiscountPrice: false,
-            isDiscountValueValid: true,
-            normalizedDiscountPrice: 90,
-            discountMode: "amount",
-            isPointCurrency: false,
-            pointCurrencyName: "พอยท์",
-            discountInputNumber: 10,
-            currency: "THB",
-        })).toBeNull();
+    // Both product forms read their discount from here now, so the rules that
+    // used to live twice — once per form — are only correct in one place.
+    it("derives the discount state both product forms render from", () => {
+        expect(getDiscountState("1000", "", "amount", "THB")).toMatchObject({
+            hasDiscount: false,
+            isValid: true,
+            normalized: null,
+        });
 
-        expect(getDiscountMessage({
-            hasDiscountPrice: true,
-            isDiscountValueValid: false,
-            normalizedDiscountPrice: null,
-            discountMode: "percent",
-            isPointCurrency: false,
-            pointCurrencyName: "พอยท์",
-            discountInputNumber: 100,
-            currency: "THB",
-        })?.text).toBe("เปอร์เซ็นต์ต้องน้อยกว่า 100%");
+        expect(getDiscountState("1000", "150", "amount", "THB")).toMatchObject({
+            hasDiscount: true,
+            isValid: true,
+            normalized: 850,
+        });
 
-        expect(getDiscountMessage({
-            hasDiscountPrice: true,
-            isDiscountValueValid: true,
-            normalizedDiscountPrice: 850,
-            discountMode: "amount",
-            isPointCurrency: false,
-            pointCurrencyName: "พอยท์",
-            discountInputNumber: 150,
-            currency: "THB",
-        })?.text).toBe("ลด 150.00 บาท เหลือ 850.00");
+        expect(getDiscountState("1000", "15", "percent", "THB")).toMatchObject({
+            isValid: true,
+            normalized: 850,
+        });
+
+        // A discount at or over the full price, or 100%, leaves nothing to sell.
+        expect(getDiscountState("1000", "1000", "amount", "THB")).toMatchObject({
+            isValid: false,
+            normalized: null,
+        });
+        expect(getDiscountState("1000", "100", "percent", "THB")).toMatchObject({
+            isValid: false,
+            normalized: null,
+        });
+        expect(getDiscountState("1000", "abc", "amount", "THB")).toMatchObject({
+            isValid: false,
+            normalized: null,
+        });
     });
 });

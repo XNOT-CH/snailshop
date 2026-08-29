@@ -8,6 +8,7 @@ import {
     Banknote,
     Eye,
     Gem,
+    Image as ImageIcon,
     Loader2,
     Package,
     Plus,
@@ -22,6 +23,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { ProductAutoDeleteField } from "@/components/admin/ProductAutoDeleteField";
+import { ProductDiscountField } from "@/components/admin/ProductDiscountField";
 import { ProductImageGalleryField } from "@/components/admin/ProductImageGalleryField";
 import { ProductStockDraftList } from "@/components/admin/ProductStockDraftList";
 import { ProductStockPasteField } from "@/components/admin/ProductStockPasteField";
@@ -32,15 +34,8 @@ import { showConfirm, showError, showSuccess } from "@/lib/swal";
 import { findDuplicateStockUser, formatStockEntry, getStockUser, splitStock, type ParsedStockLine, type StockSeparatorType } from "@/lib/stock";
 import { getAutoDeleteAfterSaleValue } from "@/lib/features/products/autoDelete";
 import {
-    getCalculatedDiscountPrice,
-    getDiscountAmountButtonLabel,
     getDiscountErrorText,
-    getDiscountHint,
-    getDiscountInputStep,
-    getDiscountPlaceholder,
-    getDiscountSummary,
-    getDiscountValueValidationMessage,
-    getNormalizedDiscountPrice,
+    getDiscountState,
     getPriceInputPlaceholder,
     getPriceInputStep,
     type DiscountMode,
@@ -98,23 +93,11 @@ export default function AddProductPage() {
         formData.category.trim().length > 0 &&
         knownCategories.length > 0 &&
         !knownCategories.includes(formData.category.trim());
-    const hasDiscountPrice = formData.discountPrice.trim().length > 0;
-    const priceNumber = Number(formData.price);
-    const discountInputNumber = Number(formData.discountPrice);
-    const isDiscountValueValid =
-        !hasDiscountPrice ||
-        (Number.isFinite(discountInputNumber) &&
-            discountInputNumber > 0 &&
-            (discountMode === "percent" ? discountInputNumber < 100 : discountInputNumber < priceNumber));
-    const calculatedDiscountPrice = getCalculatedDiscountPrice(
-        hasDiscountPrice,
-        isDiscountValueValid,
-        priceNumber,
-        discountInputNumber,
-        discountMode,
-        formData.currency,
+    const discountState = useMemo(
+        () => getDiscountState(formData.price, formData.discountPrice, discountMode, formData.currency),
+        [formData.price, formData.discountPrice, discountMode, formData.currency]
     );
-    const normalizedDiscountPrice = getNormalizedDiscountPrice(calculatedDiscountPrice);
+    const normalizedDiscountPrice = discountState.normalized;
 
     useEffect(() => {
         let cancelled = false;
@@ -263,13 +246,9 @@ export default function AddProductPage() {
             showError("กรุณากรอกหมวดหมู่");
             return;
         }
-        if (hasDiscountPrice) {
-            if (!Number.isFinite(discountInputNumber) || discountInputNumber <= 0) {
-                showError(getDiscountValueValidationMessage(discountMode));
-                return;
-            }
-            if (discountMode === "percent" && discountInputNumber >= 100) {
-                showError("ส่วนลดแบบเปอร์เซ็นต้องน้อยกว่า 100%");
+        if (discountState.hasDiscount) {
+            if (!discountState.isValid) {
+                showError(getDiscountErrorText(discountMode));
                 return;
             }
             if (normalizedDiscountPrice === null) {
@@ -348,9 +327,9 @@ export default function AddProductPage() {
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)]">
-                    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#2d4362] dark:bg-[#0f1927]">
-                        <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3.5 dark:border-[#2d4362]">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#145de7] text-white">
+                    <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+                        <div className="flex items-center gap-2 border-b border-border px-5 py-3.5">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                                 <Shield className="h-4 w-4" />
                             </div>
                             <span className="font-bold text-foreground">ข้อมูลสินค้า</span>
@@ -380,14 +359,14 @@ export default function AddProductPage() {
                                     className="grid gap-3 sm:grid-cols-2"
                                     disabled={!canCreateProduct}
                                 >
-                                    <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 transition hover:border-slate-300 dark:border-[#355071] dark:bg-[#132133] dark:hover:border-[#4b7098]">
+                                    <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-card px-3 py-3 transition hover:border-primary/40">
                                         <RadioGroupItem value="THB" id="currency-thb" />
                                         <span className="flex items-center gap-2 text-sm font-medium">
                                             <Banknote className="h-4 w-4 text-green-600" />
                                             บาท (THB)
                                         </span>
                                     </label>
-                                    <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3 transition hover:border-slate-300 dark:border-[#355071] dark:bg-[#132133] dark:hover:border-[#4b7098]">
+                                    <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-card px-3 py-3 transition hover:border-primary/40">
                                         <RadioGroupItem value="POINT" id="currency-point" />
                                         <span className="flex items-center gap-2 text-sm font-medium">
                                             <Gem className="h-4 w-4 text-purple-600" />
@@ -427,75 +406,26 @@ export default function AddProductPage() {
                                         disabled={!canCreateProduct}
                                         className={
                                             formData.currency === "POINT"
-                                                ? "border-purple-300 focus:border-purple-500"
+                                                ? "border-violet-300 focus-visible:ring-violet-200 dark:border-violet-500/40 dark:focus-visible:ring-violet-500/20"
                                                 : ""
                                         }
                                     />
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label htmlFor="discountPrice" className="flex items-center gap-2">
-                                        ส่วนลด
-                                    </Label>
-                                    <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50/75 p-3 dark:border-[#355071] dark:bg-[#162334]">
-                                            <div className="grid grid-cols-2 gap-2">
-                                            <Button
-                                                type="button"
-                                                variant={discountMode === "amount" ? "default" : "outline"}
-                                                className="rounded-xl"
-                                                onClick={() => setDiscountMode("amount")}
-                                                disabled={!canCreateProduct}
-                                            >
-                                                {getDiscountAmountButtonLabel(formData.currency, pointCurrencyName)}
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                variant={discountMode === "percent" ? "default" : "outline"}
-                                                className="rounded-xl"
-                                                onClick={() => setDiscountMode("percent")}
-                                                disabled={!canCreateProduct}
-                                            >
-                                                ลดเป็น %
-                                            </Button>
-                                        </div>
-                                        <Input
-                                            id="discountPrice"
-                                            name="discountPrice"
-                                            type="number"
-                                            placeholder={getDiscountPlaceholder(discountMode)}
-                                            min="0"
-                                            max={discountMode === "percent" ? "99.99" : undefined}
-                                            step={getDiscountInputStep(discountMode, formData.currency)}
-                                            value={formData.discountPrice}
-                                            onChange={handleChange}
-                                            disabled={!canCreateProduct}
-                                            className={
-                                                hasDiscountPrice
-                                                    ? "border-amber-300 bg-amber-50/40 focus:border-amber-500"
-                                                    : "bg-white dark:bg-[#132133]"
-                                            }
-                                        />
-                                        <div className="flex items-center justify-between text-xs">
-                                            <span className="text-muted-foreground">
-                                                {getDiscountHint(discountMode, formData.currency, pointCurrencyName)}
-                                            </span>
-                                            {hasDiscountPrice && !isDiscountValueValid ? (
-                                                <span className="font-medium text-rose-600">
-                                                    {getDiscountErrorText(discountMode)}
-                                                </span>
-                                            ) : normalizedDiscountPrice !== null && (
-                                                <span className="font-medium text-amber-700">
-                                                    {getDiscountSummary(
-                                                        discountMode,
-                                                        formData.currency,
-                                                        pointCurrencyName,
-                                                        discountInputNumber,
-                                                        normalizedDiscountPrice,
-                                                    )}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
+                                    <Label htmlFor="discountPrice">ส่วนลด</Label>
+                                    <ProductDiscountField
+                                        currency={formData.currency}
+                                        pointCurrencyName={pointCurrencyName}
+                                        mode={discountMode}
+                                        onModeChange={setDiscountMode}
+                                        value={formData.discountPrice}
+                                        onValueChange={(value) =>
+                                            setFormData((prev) => ({ ...prev, discountPrice: value }))
+                                        }
+                                        state={discountState}
+                                        disabled={!canCreateProduct}
+                                    />
                                     <p className="text-xs text-muted-foreground">
                                         หากตั้งค่าส่วนลด สินค้าจะแสดงใน &quot;สินค้าลดราคา&quot;
                                     </p>
@@ -527,17 +457,6 @@ export default function AddProductPage() {
                                 ) : null}
                             </div>
 
-                            <div className="space-y-3">
-                                <Label>รูปภาพสินค้า</Label>
-                                <div className="admin-product-image-panel rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-[#355071] dark:bg-[#162334]">
-                                    <ProductImageGalleryField
-                                        images={formData.images}
-                                        disabled={!canCreateProduct}
-                                        onChange={(images) => setFormData((prev) => ({ ...prev, images }))}
-                                    />
-                                </div>
-                            </div>
-
                             <div className="space-y-2">
                                 <Label htmlFor="description">รายละเอียด</Label>
                                 <Textarea
@@ -565,8 +484,25 @@ export default function AddProductPage() {
                     </div>
 
                     <div className="space-y-6">
-                        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#2d4362] dark:bg-[#0f1927]">
-                            <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3.5 dark:border-[#2d4362]">
+                        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+                            <div className="flex items-center gap-2 border-b border-border px-5 py-3.5">
+                                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                                    <ImageIcon className="h-4 w-4" />
+                                </div>
+                                <span className="font-bold text-foreground">ภาพสินค้า</span>
+                            </div>
+
+                            <div className="admin-product-image-panel p-5">
+                                <ProductImageGalleryField
+                                    images={formData.images}
+                                    disabled={!canCreateProduct}
+                                    onChange={(images) => setFormData((prev) => ({ ...prev, images }))}
+                                />
+                            </div>
+                        </div>
+
+                        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+                            <div className="flex items-center gap-2 border-b border-border px-5 py-3.5">
                                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500 text-white">
                                     <Package className="h-4 w-4" />
                                 </div>
@@ -637,7 +573,7 @@ export default function AddProductPage() {
 
                                 <Button
                                     type="button"
-                                    className="w-full gap-2 rounded-xl bg-[#145de7] text-white hover:bg-[#114fc4]"
+                                    className="w-full gap-2 rounded-xl"
                                     onClick={handleAddSingleStock}
                                     disabled={!canCreateProduct}
                                 >
@@ -654,9 +590,9 @@ export default function AddProductPage() {
                         </div>
 
                         {stockItems.length > 0 && (
-                            <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#2d4362] dark:bg-[#0f1927]">
-                                <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3.5 dark:border-[#2d4362]">
-                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#145de7] text-white">
+                            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+                                <div className="flex items-center gap-2 border-b border-border px-5 py-3.5">
+                                    <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
                                         <Eye className="h-4 w-4" />
                                     </div>
                                     <span className="font-bold text-foreground">รายการสต๊อก</span>
@@ -676,14 +612,14 @@ export default function AddProductPage() {
                 </div>
 
                 <div className="sticky bottom-4 z-10 flex justify-end">
-                    <div className="flex w-full max-w-md items-center justify-between gap-4 rounded-2xl border border-slate-200 bg-white/95 px-4 py-3 shadow-lg backdrop-blur dark:border-[#355071] dark:bg-[#0f1927]/95">
+                    <div className="flex w-full max-w-md items-center justify-between gap-4 rounded-2xl border border-border bg-card/95 px-4 py-3 shadow-lg backdrop-blur">
                         <div className="min-w-0">
-                            <p className="text-sm font-semibold text-slate-900 dark:text-[#eef4ff]">พร้อมสร้างสินค้าใหม่</p>
-                            <p className="text-xs text-slate-500 dark:text-[#96adca]">สต๊อกเริ่มต้น {stockItems.length} รายการ</p>
+                            <p className="text-sm font-semibold text-foreground">พร้อมสร้างสินค้าใหม่</p>
+                            <p className="text-xs text-muted-foreground">สต๊อกเริ่มต้น {stockItems.length} รายการ</p>
                         </div>
                         <Button
                             type="submit"
-                            className="min-w-[150px] rounded-xl bg-[#145de7] text-white hover:bg-[#114fc4]"
+                            className="min-w-[150px] rounded-xl"
                             size="lg"
                             disabled={!canCreateProduct || isLoading}
                         >
