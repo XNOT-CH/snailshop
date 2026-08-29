@@ -577,9 +577,9 @@ export default function AdminSettingsPage() {
                                     <Label>โลโก้</Label>
                                     <p className="text-xs text-muted-foreground">อัปโหลดหรือวาง URL เพื่อใช้เป็นโลโก้หลักของเว็บไซต์ • {IMAGE_UPLOAD_RECOMMENDATIONS.logoSquare}</p>
                                 </div>
-                                <div className="grid gap-4 lg:grid-cols-2">
+                                <div className="space-y-4">
                                     <div className="space-y-2">
-                                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                        <div className="flex flex-wrap items-center gap-2">
                                             <input
                                                 ref={logoInputRef}
                                                 type="file"
@@ -603,26 +603,26 @@ export default function AdminSettingsPage() {
                                                 {isUploadingLogo ? "กำลังปรับปรุงภาพ..." : "อัพโหลด"}
                                             </Button>
                                             <span className="shrink-0 text-sm text-muted-foreground">หรือวาง URL</span>
-                                            <div className="flex min-w-0 flex-1 gap-2">
-                                                <Input
-                                                    value={settings.logoUrl}
-                                                    onChange={(e) => updateSetting("logoUrl", e.target.value)}
-                                                    placeholder="https://... หรือ /uploads/..."
-                                                    className={`min-w-0 flex-1 ${fieldErrorClass("logoUrl")}`}
-                                                />
-                                                {settings.logoUrl && (
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        onClick={() => updateSetting("logoUrl", "")}
-                                                        className="text-red-500 hover:text-red-600 shrink-0"
-                                                        aria-label="ล้าง URL โลโก้"
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                    </Button>
-                                                )}
-                                            </div>
+                                        </div>
+                                        <div className="flex min-w-0 gap-2">
+                                            <Input
+                                                value={settings.logoUrl}
+                                                onChange={(e) => updateSetting("logoUrl", e.target.value)}
+                                                placeholder="https://... หรือ /uploads/..."
+                                                className={`min-w-0 flex-1 ${fieldErrorClass("logoUrl")}`}
+                                            />
+                                            {settings.logoUrl && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    onClick={() => updateSetting("logoUrl", "")}
+                                                    className="text-red-500 hover:text-red-600 shrink-0"
+                                                    aria-label="ล้าง URL โลโก้"
+                                                >
+                                                    <X className="h-4 w-4" />
+                                                </Button>
+                                            )}
                                         </div>
                                         {fieldErrorText("logoUrl")}
                                         <p className="text-xs text-muted-foreground">ลากรูปมาวางในกล่องตัวอย่างเพื่ออัปโหลดได้เลย</p>
@@ -630,7 +630,7 @@ export default function AdminSettingsPage() {
 
                                     <div {...dropProps(uploadLogoFile)}>
                                         {settings.logoUrl ? (
-                                            <div className="p-4 bg-muted rounded-lg border h-full flex items-center justify-center">
+                                            <div className="flex min-h-32 items-center justify-center rounded-lg border bg-muted p-4">
                                                 <Image
                                                     src={settings.logoUrl}
                                                     alt="Logo Preview"
@@ -643,7 +643,7 @@ export default function AdminSettingsPage() {
                                                 />
                                             </div>
                                         ) : (
-                                            <div className="rounded-lg border border-dashed bg-muted h-full flex items-center justify-center p-4">
+                                            <div className="flex min-h-32 items-center justify-center rounded-lg border border-dashed bg-muted p-4">
                                                 <p className="text-sm text-muted-foreground">อัพโหลด / วาง URL / ลากรูปมาวางที่นี่</p>
                                             </div>
                                         )}

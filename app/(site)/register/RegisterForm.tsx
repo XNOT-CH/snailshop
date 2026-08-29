@@ -202,11 +202,15 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                                 type="password"
                                 placeholder="ยืนยันรหัสผ่านอีกครั้ง"
                                 autoComplete="new-password"
+                                aria-invalid={Boolean(formData.confirmPassword && !passwordsMatch)}
                                 className="h-12 rounded-xl border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 placeholder:text-[#7a8796] focus-visible:ring-[#145de7] dark:border-border dark:bg-muted/50 dark:text-foreground"
                                 value={formData.confirmPassword}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
                                 required
                             />
+                            {formData.confirmPassword && !passwordsMatch ? (
+                                <p className="text-xs text-red-500">รหัสผ่านไม่ตรงกัน</p>
+                            ) : null}
                         </div>
 
                         {/* PIN (optional) */}

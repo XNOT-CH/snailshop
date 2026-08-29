@@ -242,7 +242,7 @@ export function CustomerContextPanel({ conversationId, className }: Readonly<Cus
                 </section>
 
                 <Link
-                    href="/admin/users"
+                    href={`/admin/users?search=${encodeURIComponent(user.username)}`}
                     className="flex items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium text-primary transition hover:bg-muted"
                 >
                     ดูโปรไฟล์เต็ม

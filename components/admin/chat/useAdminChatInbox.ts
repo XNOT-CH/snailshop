@@ -99,6 +99,10 @@ export function useAdminChatInbox() {
 
     searchQueryRef.current = searchQuery;
 
+    const selectedConversationIdRef = useRef(selectedConversationId);
+
+    selectedConversationIdRef.current = selectedConversationId;
+
     async function refreshList(options: { showLoader?: boolean; reset?: boolean } = {}) {
         if (options.showLoader) {
             setIsLoadingList(true);
@@ -179,7 +183,17 @@ export function useAdminChatInbox() {
 
     function applyConversationDetail(detail: ChatConversationDetail, { mergeHistory }: { mergeHistory: boolean }) {
         setSelectedConversation((current) => {
-            if (!mergeHistory || !current || current.id !== detail.id) {
+            if (!mergeHistory) {
+                return detail;
+            }
+
+            // A background update (send/upload/meta-patch/poll) for a conversation
+            // the admin has since navigated away from — discard the stale response.
+            if (detail.id !== selectedConversationIdRef.current) {
+                return current;
+            }
+
+            if (!current || current.id !== detail.id) {
                 return detail;
             }
 

@@ -2,8 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { runAutoDelete } from "@/lib/autoDelete";
-import { getStockCount } from "@/lib/stock";
-import { decrypt } from "@/lib/encryption";
 import { requirePermission } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,32 +32,11 @@ export default async function AdminProductsPage() {
             currency: true,
             imageUrl: true,
             category: true,
-            secretData: true,
-            stockSeparator: true,
+            stockCount: true,
             isSold: true,
             isFeatured: true,
             autoDeleteAfterSale: true,
         },
-    });
-
-    const productsWithStock = productList.map((product) => {
-        let stockCount = 0;
-
-        if (!product.isSold) {
-            try {
-                stockCount = getStockCount(
-                    decrypt(product.secretData ?? ""),
-                    product.stockSeparator ?? "newline"
-                );
-            } catch {
-                stockCount = 0;
-            }
-        }
-
-        return {
-            ...product,
-            stockCount,
-        };
     });
 
     return (
@@ -116,7 +93,7 @@ export default async function AdminProductsPage() {
                         </div>
                     ) : (
                         <ProductTable
-                            products={productsWithStock.map((p) => ({
+                            products={productList.map((p) => ({
                                 id: p.id,
                                 name: p.name,
                                 description: p.description,
@@ -127,7 +104,7 @@ export default async function AdminProductsPage() {
                                 category: p.category,
                                 isSold: p.isSold,
                                 isFeatured: p.isFeatured,
-                                stockCount: p.stockCount,
+                                stockCount: p.stockCount ?? 0,
                                 autoDeleteAfterSale: p.autoDeleteAfterSale,
                             }))}
                             canCreate={permissionSet.has(PERMISSIONS.PRODUCT_CREATE)}

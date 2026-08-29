@@ -1182,23 +1182,6 @@ export default function AdminUsersClient({ initialUsers, initialSearch = "" }: R
           </>
         )}
       </div>
-
-      <div className="rounded-2xl border border-border bg-white px-5 py-4 shadow-sm dark:bg-zinc-900">
-        <h3 className="mb-3 text-sm font-semibold text-foreground">คำอธิบายสัญลักษณ์</h3>
-        <div className="flex flex-wrap gap-6 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-amber-600 px-2 py-0.5 text-xs font-semibold text-white">
-              <Crown className="h-3 w-3" />
-              VIP
-            </span>
-            <span>= ยอดเติมสะสมมากกว่า 10,000 บาท</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="h-6 w-6 rounded-full bg-blue-100 ring-2 ring-amber-400 ring-offset-1 ring-offset-background dark:bg-blue-500/20" />
-            <span>= {pointCurrencyName}สะสมมากกว่า 5,000 แต้ม</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }

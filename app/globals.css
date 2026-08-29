@@ -3119,7 +3119,6 @@ html.dark .admin-console [class*="via-white"] {
 }
 
 html.dark .admin-console [class*="#eef4ff"] {
-  background-color: rgba(20, 32, 49, 0.9) !important;
   color: #d9e9ff !important;
 }
 

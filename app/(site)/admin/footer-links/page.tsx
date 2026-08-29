@@ -332,6 +332,127 @@ function DragPreview({ link }: Readonly<{ link: FooterLink }>) {
     );
 }
 
+// ── Column board (per-column drag list) ───────────────────────────────────────
+interface FooterColumnBoardProps {
+    column: FooterColumn;
+    links: FooterLink[];
+    canEditSettings: boolean;
+    reordering: boolean;
+    sensors: ReturnType<typeof useSensors>;
+    onDragEnd: (column: FooterColumn, event: DragEndEvent) => void;
+    onEdit: (link: FooterLink) => void;
+    onDelete: (link: FooterLink) => void;
+}
+
+function FooterColumnBoard({
+    column,
+    links,
+    canEditSettings,
+    reordering,
+    sensors,
+    onDragEnd,
+    onEdit,
+    onDelete,
+}: FooterColumnBoardProps) {
+    const [activeLink, setActiveLink] = useState<FooterLink | null>(null);
+
+    return (
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+            <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <div className="flex items-center gap-2">
+                        <span className="inline-flex rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
+                            {COLUMN_LABELS[column]}
+                        </span>
+                        <p className="text-sm font-semibold text-foreground">
+                            {links.length} รายการ
+                        </p>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                        {canEditSettings
+                            ? "ลากปุ่ม ⠿ เพื่อเรียงลำดับภายในคอลัมน์นี้"
+                            : "ตรวจสอบลิงก์ที่ใช้งานอยู่ พร้อมสถานะและรูปแบบการเปิดลิงก์"}
+                    </p>
+                </div>
+                <div className="flex items-center gap-2">
+                    {reordering && (
+                        <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                    <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        พร้อมแสดง {links.filter((item) => item.isActive).length} รายการ
+                    </div>
+                </div>
+            </div>
+
+            {links.length === 0 ? (
+                <div className="py-12 text-center text-muted-foreground">
+                    ยังไม่มีลิงก์ในคอลัมน์นี้ เพิ่มรายการแรกได้จากฟอร์มด้านบน
+                </div>
+            ) : (
+                <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+                    onDragStart={({ active }: DragStartEvent) => {
+                        setActiveLink(links.find((link) => link.id === active.id) ?? null);
+                    }}
+                    onDragCancel={() => setActiveLink(null)}
+                    onDragEnd={(e) => {
+                        setActiveLink(null);
+                        onDragEnd(column, e);
+                    }}
+                >
+                    <SortableContext items={links.map((l) => l.id)} strategy={verticalListSortingStrategy}>
+                        {/* Mobile cards */}
+                        <div className="space-y-3 p-4 md:hidden">
+                            {links.map((link) => (
+                                <SortableCard
+                                    key={link.id}
+                                    link={link}
+                                    canEditSettings={canEditSettings}
+                                    onEdit={onEdit}
+                                    onDelete={onDelete}
+                                />
+                            ))}
+                        </div>
+
+                        {/* Desktop table */}
+                        <div className="hidden overflow-x-auto md:block">
+                            <Table className="min-w-[860px]">
+                                <TableHeader>
+                                    <TableRow className="bg-muted/30">
+                                        <TableHead className="w-[50px]" />
+                                        <TableHead className="min-w-[220px]">ข้อความ</TableHead>
+                                        <TableHead className="min-w-[280px]">ลิงก์</TableHead>
+                                        <TableHead className="w-[130px] text-center">แท็บใหม่</TableHead>
+                                        <TableHead className="w-[100px] text-center">สถานะ</TableHead>
+                                        <TableHead className="w-[130px] text-right">จัดการ</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {links.map((link) => (
+                                        <SortableRow
+                                            key={link.id}
+                                            link={link}
+                                            canEditSettings={canEditSettings}
+                                            onEdit={onEdit}
+                                            onDelete={onDelete}
+                                        />
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </SortableContext>
+                    <DragOverlay dropAnimation={null}>
+                        {activeLink ? <DragPreview link={activeLink} /> : null}
+                    </DragOverlay>
+                </DndContext>
+            )}
+        </div>
+    );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function FooterLinksAdminPage() {
     const permissions = useAdminPermissions();
@@ -340,13 +461,12 @@ export default function FooterLinksAdminPage() {
     const [links, setLinks] = useState<FooterLink[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
-    const [reordering, setReordering] = useState(false);
+    const [reorderingColumn, setReorderingColumn] = useState<FooterColumn | null>(null);
 
     const [newLabel, setNewLabel] = useState("");
     const [newHref, setNewHref] = useState("");
     const [newColumn, setNewColumn] = useState<FooterColumn>("services");
     const [newOpenInNewTab, setNewOpenInNewTab] = useState(false);
-    const [activeLink, setActiveLink] = useState<FooterLink | null>(null);
     const [titleDraft, setTitleDraft] = useState("");
     const [secondaryTitleDraft, setSecondaryTitleDraft] = useState("");
     const [savingTitles, setSavingTitles] = useState(false);
@@ -379,31 +499,40 @@ export default function FooterLinksAdminPage() {
         void fetchData();
     }, [fetchData]);
 
-    const sortedLinks = useMemo(
-        () =>
-            [...links].sort((a, b) => {
+    const linksByColumn = useMemo(() => {
+        const grouped: Record<FooterColumn, FooterLink[]> = { services: [], cards: [] };
+        for (const link of links) {
+            (grouped[link.column] ?? grouped.services).push(link);
+        }
+        for (const column of Object.keys(grouped) as FooterColumn[]) {
+            grouped[column].sort((a, b) => {
                 if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
                 return a.label.localeCompare(b.label);
-            }),
-        [links],
-    );
+            });
+        }
+        return grouped;
+    }, [links]);
 
-    // ── Drag end ──────────────────────────────────────────────────────────────
-    const handleDragEnd = async (event: DragEndEvent) => {
+    // ── Drag end (scoped to a single column) ─────────────────────────────────
+    const handleDragEnd = async (column: FooterColumn, event: DragEndEvent) => {
         const { active, over } = event;
-        setActiveLink(null);
         if (!over || active.id === over.id) return;
 
-        const oldIndex = sortedLinks.findIndex((l) => l.id === active.id);
-        const newIndex = sortedLinks.findIndex((l) => l.id === over.id);
+        const columnLinks = linksByColumn[column];
+        const oldIndex = columnLinks.findIndex((l) => l.id === active.id);
+        const newIndex = columnLinks.findIndex((l) => l.id === over.id);
         if (oldIndex === -1 || newIndex === -1) return;
 
-        const reordered = arrayMove(sortedLinks, oldIndex, newIndex);
+        const reordered = arrayMove(columnLinks, oldIndex, newIndex);
+        const reorderedIds = new Set(reordered.map((l) => l.id));
+        const sortOrderById = new Map(reordered.map((l, i) => [l.id, i]));
 
-        // Optimistic update
-        setLinks(reordered.map((l, i) => ({ ...l, sortOrder: i })));
+        // Optimistic update — only touch links in this column
+        setLinks((prev) =>
+            prev.map((l) => (reorderedIds.has(l.id) ? { ...l, sortOrder: sortOrderById.get(l.id)! } : l)),
+        );
 
-        setReordering(true);
+        setReorderingColumn(column);
         try {
             await Promise.all(
                 reordered.map((l, i) =>
@@ -418,7 +547,7 @@ export default function FooterLinksAdminPage() {
             showError("เกิดข้อผิดพลาดในการจัดลำดับ");
             void fetchData();
         } finally {
-            setReordering(false);
+            setReorderingColumn(null);
         }
     };
 
@@ -729,7 +858,7 @@ export default function FooterLinksAdminPage() {
                     </p>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div className="space-y-1.5">
-                            <Label htmlFor="titleDraft">คอลัมน์ที่ 1</Label>
+                            <Label htmlFor="titleDraft">คอลัมน์ที่ 1 ({COLUMN_LABELS.services})</Label>
                             <Input
                                 id="titleDraft"
                                 placeholder="บริการของเรา"
@@ -739,7 +868,7 @@ export default function FooterLinksAdminPage() {
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <Label htmlFor="secondaryTitleDraft">คอลัมน์ที่ 2</Label>
+                            <Label htmlFor="secondaryTitleDraft">คอลัมน์ที่ 2 ({COLUMN_LABELS.cards})</Label>
                             <Input
                                 id="secondaryTitleDraft"
                                 placeholder="บัตรเติมเกม"
@@ -848,97 +977,20 @@ export default function FooterLinksAdminPage() {
                 </form>
             </div>
 
-            {/* Links list */}
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-                <div className="flex flex-col gap-3 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                        <p className="text-sm font-semibold text-foreground">
-                            รายการลิงก์ {links.length} รายการ
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                            {canEditSettings
-                                ? "ลากปุ่ม ⠿ เพื่อเรียงลำดับ"
-                                : "ตรวจสอบลิงก์ที่ใช้งานอยู่ พร้อมสถานะและรูปแบบการเปิดลิงก์"}
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {reordering && (
-                            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                        )}
-                        <div className="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-xs text-muted-foreground">
-                            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                            พร้อมแสดง {links.filter((item) => item.isActive).length} รายการ
-                        </div>
-                    </div>
-                </div>
-
-                {links.length === 0 ? (
-                    <div className="py-12 text-center text-muted-foreground">
-                        ยังไม่มีลิงก์ในส่วนท้าย เพิ่มรายการแรกได้จากฟอร์มด้านบน
-                    </div>
-                ) : (
-                    <DndContext
-                        sensors={sensors}
-                        collisionDetection={closestCenter}
-                        modifiers={[restrictToVerticalAxis, restrictToParentElement]}
-                        onDragStart={({ active }: DragStartEvent) => {
-                            setActiveLink(
-                                sortedLinks.find((link) => link.id === active.id) ?? null,
-                            );
-                        }}
-                        onDragCancel={() => setActiveLink(null)}
-                        onDragEnd={(e) => void handleDragEnd(e)}
-                    >
-                        <SortableContext
-                            items={sortedLinks.map((l) => l.id)}
-                            strategy={verticalListSortingStrategy}
-                        >
-                            {/* Mobile cards */}
-                            <div className="space-y-3 p-4 md:hidden">
-                                {sortedLinks.map((link) => (
-                                    <SortableCard
-                                        key={link.id}
-                                        link={link}
-                                        canEditSettings={canEditSettings}
-                                        onEdit={openEditModal}
-                                        onDelete={(l) => void handleDeleteLink(l)}
-                                    />
-                                ))}
-                            </div>
-
-                            {/* Desktop table */}
-                            <div className="hidden overflow-x-auto md:block">
-                                <Table className="min-w-[860px]">
-                                    <TableHeader>
-                                        <TableRow className="bg-muted/30">
-                                            <TableHead className="w-[50px]" />
-                                            <TableHead className="min-w-[220px]">ข้อความ</TableHead>
-                                            <TableHead className="min-w-[280px]">ลิงก์</TableHead>
-                                            <TableHead className="w-[130px] text-center">แท็บใหม่</TableHead>
-                                            <TableHead className="w-[100px] text-center">สถานะ</TableHead>
-                                            <TableHead className="w-[130px] text-right">จัดการ</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {sortedLinks.map((link) => (
-                                            <SortableRow
-                                                key={link.id}
-                                                link={link}
-                                                canEditSettings={canEditSettings}
-                                                onEdit={openEditModal}
-                                                onDelete={(l) => void handleDeleteLink(l)}
-                                            />
-                                        ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        </SortableContext>
-                        <DragOverlay dropAnimation={null}>
-                            {activeLink ? <DragPreview link={activeLink} /> : null}
-                        </DragOverlay>
-                    </DndContext>
-                )}
-            </div>
+            {/* Links list — one board per column, so drag order matches what shows on the site */}
+            {(Object.keys(COLUMN_LABELS) as FooterColumn[]).map((column) => (
+                <FooterColumnBoard
+                    key={column}
+                    column={column}
+                    links={linksByColumn[column]}
+                    canEditSettings={canEditSettings}
+                    reordering={reorderingColumn === column}
+                    sensors={sensors}
+                    onDragEnd={(col, e) => void handleDragEnd(col, e)}
+                    onEdit={openEditModal}
+                    onDelete={(l) => void handleDeleteLink(l)}
+                />
+            ))}
         </div>
     );
 }

@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DeltaBadge } from "@/components/admin/DeltaBadge";
 import { DonutChart } from "@/components/admin/DonutChartLazy";
 import {
     BarChart,
@@ -108,10 +107,10 @@ const TREND_PERIODS = [
 
 // ─── Signup KPI cards ───────────────────────────────────
 const KPI_CARDS = [
-    { key: "todayCount" as const, label: "วันนี้", compare: "เทียบเมื่อวาน", icon: Sun },
-    { key: "weekCount" as const, label: "7 วันล่าสุด", compare: "เทียบ 7 วันก่อน", icon: Clock },
-    { key: "monthCount" as const, label: "เดือนนี้", compare: "เทียบช่วงเดียวกันเดือนก่อน", icon: CalendarDays },
-    { key: "totalCount" as const, label: "ทั้งหมด", compare: null, icon: Database },
+    { key: "todayCount" as const, label: "วันนี้", icon: Sun },
+    { key: "weekCount" as const, label: "7 วันล่าสุด", icon: Clock },
+    { key: "monthCount" as const, label: "เดือนนี้", icon: CalendarDays },
+    { key: "totalCount" as const, label: "ทั้งหมด", icon: Database },
 ];
 
 function daysAgoLabel(iso: string | null): string {
@@ -264,7 +263,6 @@ export function MembersSummary() {
             <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
                 {KPI_CARDS.map((kpi) => {
                     const Icon = kpi.icon;
-                    const previous = kpi.key !== "totalCount" ? data.previous?.[kpi.key] : undefined;
                     return (
                         <Card key={kpi.key} className="border-border/50 hover:shadow-md transition-shadow">
                             <CardContent className="p-4 flex items-start justify-between">
@@ -274,12 +272,6 @@ export function MembersSummary() {
                                         {data[kpi.key].toLocaleString("th-TH")}{" "}
                                         <span className="text-sm font-normal text-muted-foreground">คน</span>
                                     </p>
-                                    {kpi.compare && previous !== undefined && (
-                                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                                            <DeltaBadge current={data[kpi.key]} baseline={previous} />
-                                            {kpi.compare}
-                                        </p>
-                                    )}
                                 </div>
                                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-sky-500/15 dark:bg-sky-500/20">
                                     <Icon className="h-4.5 w-4.5 text-sky-700 dark:text-sky-400" />

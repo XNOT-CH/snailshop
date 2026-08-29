@@ -3,10 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { Dices, Loader2, Trophy, Users } from "lucide-react";
+import { Dices, Loader2, Trophy } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DeltaBadge } from "@/components/admin/DeltaBadge";
 import { DonutChart } from "@/components/admin/DonutChartLazy";
 import { formatBucketLabel } from "@/lib/features/dashboard/bucketLabels";
 
@@ -40,17 +39,10 @@ interface TopPlayer {
     spent: number;
 }
 
-interface DistributionBucket {
-    key: string;
-    label: string;
-    players: number;
-}
-
 interface GachaSummaryData {
     kpis: GachaKpis;
     daily: DailyPoint[];
     topPlayers: TopPlayer[];
-    distribution: DistributionBucket[];
 }
 
 interface MachineTier {
@@ -129,7 +121,7 @@ export function GachaSummary() {
                 if (!cancelled && json?.success) {
                     setSummaryCache((prev) => ({
                         ...prev,
-                        [days]: { kpis: json.kpis, daily: json.daily, topPlayers: json.topPlayers, distribution: json.distribution },
+                        [days]: { kpis: json.kpis, daily: json.daily, topPlayers: json.topPlayers },
                     }));
                 }
             })
@@ -167,7 +159,6 @@ export function GachaSummary() {
     }
 
     const { kpis } = summary;
-    const maxBucket = Math.max(1, ...summary.distribution.map((bucket) => bucket.players));
     const machineList = machines ?? [];
     const tierMachine =
         machineList.find((m) => (m.machineId ?? "__default__") === selectedMachine) ?? machineList[0];
@@ -178,25 +169,21 @@ export function GachaSummary() {
         {
             label: "การสุ่มวันนี้",
             value: `${kpis.rollsToday.toLocaleString("th-TH")} ตา`,
-            delta: { current: kpis.rollsToday, baseline: kpis.rollsYesterday, label: "เทียบเมื่อวาน" },
             sub: null as string | null,
         },
         {
             label: "การสุ่ม 7 วันล่าสุด",
             value: `${kpis.rolls7d.toLocaleString("th-TH")} ตา`,
-            delta: { current: kpis.rolls7d, baseline: kpis.rollsPrev7d, label: "เทียบ 7 วันก่อน" },
             sub: null,
         },
         {
             label: `รายได้กาชา (${days} วัน)`,
             value: baht(kpis.revenue),
-            delta: null,
             sub: `เสียเงิน ${kpis.paidRolls.toLocaleString("th-TH")} ตา · ฟรี ${kpis.freeRolls.toLocaleString("th-TH")} ตา`,
         },
         {
             label: `ผู้เล่น (${days} วัน)`,
             value: `${kpis.players.toLocaleString("th-TH")} คน`,
-            delta: null,
             sub: `เฉลี่ย ${kpis.avgRollsPerPlayer.toLocaleString("th-TH", { maximumFractionDigits: 1 })} ตา/คน`,
         },
     ];
@@ -230,12 +217,6 @@ export function GachaSummary() {
                             <div className="space-y-1">
                                 <p className="text-xs font-medium text-muted-foreground">{kpi.label}</p>
                                 <p className="text-2xl font-bold tracking-tight">{kpi.value}</p>
-                                {kpi.delta && (
-                                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                                        <DeltaBadge current={kpi.delta.current} baseline={kpi.delta.baseline} />
-                                        {kpi.delta.label}
-                                    </p>
-                                )}
                                 {kpi.sub && <p className="text-xs text-muted-foreground">{kpi.sub}</p>}
                             </div>
                             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-500/15 dark:bg-violet-500/20">
@@ -339,70 +320,42 @@ export function GachaSummary() {
                 </Card>
             </div>
 
-            {/* Top players + distribution */}
-            <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-                <Card className="border-border/50">
-                    <CardContent className="p-6">
-                        <div className="mb-4 flex items-center gap-2">
-                            <Trophy className="h-4 w-4 text-amber-500" />
-                            <h4 className="text-base font-semibold text-foreground">สุ่มเยอะสุด {days} วัน</h4>
-                        </div>
-                        {summary.topPlayers.length === 0 ? (
-                            <p className="py-8 text-center text-sm text-muted-foreground">ยังไม่มีการสุ่มในช่วงนี้</p>
-                        ) : (
-                            <div className="space-y-1">
-                                {summary.topPlayers.map((player, idx) => (
-                                    <button
-                                        key={player.id}
-                                        type="button"
-                                        onClick={() => goToUser(player.username)}
-                                        className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted/50"
-                                    >
-                                        <span className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground">{idx + 1}</span>
-                                        <Avatar className="h-8 w-8 shrink-0">
-                                            <AvatarImage src={player.image || undefined} alt={player.username} />
-                                            <AvatarFallback className="bg-violet-500/15 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400 text-xs">
-                                                {player.username.slice(0, 2).toUpperCase()}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <span className="min-w-0 flex-1 truncate text-sm font-medium">{player.username}</span>
-                                        <div className="shrink-0 text-right">
-                                            <p className="text-sm font-bold tabular-nums">{player.rolls.toLocaleString("th-TH")} ตา</p>
-                                            <p className="text-xs text-muted-foreground tabular-nums">{baht(player.spent)}</p>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-
-                <Card className="border-border/50">
-                    <CardContent className="p-6">
-                        <div className="mb-1 flex items-center gap-2">
-                            <Users className="h-4 w-4 text-sky-500" />
-                            <h4 className="text-base font-semibold text-foreground">ผู้เล่นส่วนใหญ่สุ่มกี่ตา</h4>
-                        </div>
-                        <p className="mb-4 text-xs text-muted-foreground">จำนวนผู้เล่นแบ่งตามจำนวนตาที่สุ่มในช่วง {days} วัน</p>
-                        <div className="space-y-3">
-                            {summary.distribution.map((bucket) => (
-                                <div key={bucket.key}>
-                                    <div className="mb-1 flex items-center justify-between text-sm">
-                                        <span className="text-muted-foreground">{bucket.label}</span>
-                                        <span className="font-semibold tabular-nums">{bucket.players.toLocaleString("th-TH")} คน</span>
+            {/* Top players */}
+            <Card className="border-border/50 lg:max-w-md">
+                <CardContent className="p-6">
+                    <div className="mb-4 flex items-center gap-2">
+                        <Trophy className="h-4 w-4 text-amber-500" />
+                        <h4 className="text-base font-semibold text-foreground">สุ่มเยอะสุด {days} วัน</h4>
+                    </div>
+                    {summary.topPlayers.length === 0 ? (
+                        <p className="py-8 text-center text-sm text-muted-foreground">ยังไม่มีการสุ่มในช่วงนี้</p>
+                    ) : (
+                        <div className="space-y-1">
+                            {summary.topPlayers.map((player, idx) => (
+                                <button
+                                    key={player.id}
+                                    type="button"
+                                    onClick={() => goToUser(player.username)}
+                                    className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted/50"
+                                >
+                                    <span className="w-5 shrink-0 text-center text-xs font-bold text-muted-foreground">{idx + 1}</span>
+                                    <Avatar className="h-8 w-8 shrink-0">
+                                        <AvatarImage src={player.image || undefined} alt={player.username} />
+                                        <AvatarFallback className="bg-violet-500/15 text-violet-700 dark:bg-violet-500/20 dark:text-violet-400 text-xs">
+                                            {player.username.slice(0, 2).toUpperCase()}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <span className="min-w-0 flex-1 truncate text-sm font-medium">{player.username}</span>
+                                    <div className="shrink-0 text-right">
+                                        <p className="text-sm font-bold tabular-nums">{player.rolls.toLocaleString("th-TH")} ตา</p>
+                                        <p className="text-xs text-muted-foreground tabular-nums">{baht(player.spent)}</p>
                                     </div>
-                                    <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
-                                        <div
-                                            className="h-full rounded-full bg-[var(--chart-1)]"
-                                            style={{ width: `${(bucket.players / maxBucket) * 100}%` }}
-                                        />
-                                    </div>
-                                </div>
+                                </button>
                             ))}
                         </div>
-                    </CardContent>
-                </Card>
-            </div>
+                    )}
+                </CardContent>
+            </Card>
 
             {/* Machines */}
             <Card className="border-border/50">
