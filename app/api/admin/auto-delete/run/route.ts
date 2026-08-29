@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { runAutoDelete } from "@/lib/autoDelete";
-import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { requirePermissionWithCsrf } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
 
@@ -12,7 +11,6 @@ export async function GET(request: NextRequest) {
     const cronSecret = process.env.CRON_SECRET;
     const isProduction = process.env.NODE_ENV === "production";
     const isCronRequest = !!cronSecret && secret === cronSecret;
-    let adminUserId: string | undefined;
 
     if (isProduction && !cronSecret) {
         console.error("[AUTO_DELETE_CRON] Missing CRON_SECRET in production.");
@@ -23,7 +21,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ success: false, message: "Invalid cron secret" }, { status: 401 });
     }
 
-    return runAutoDeleteAndRespond(request, adminUserId);
+    return runAutoDeleteAndRespond();
 }
 
 export async function POST(request: NextRequest) {
@@ -32,23 +30,12 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: permissionCheck.error }, { status: 401 });
     }
 
-    return runAutoDeleteAndRespond(request, permissionCheck.userId);
+    return runAutoDeleteAndRespond();
 }
 
-async function runAutoDeleteAndRespond(request: NextRequest, adminUserId: string | undefined) {
+async function runAutoDeleteAndRespond() {
     try {
-        const { deleted, names, deletedItems } = await runAutoDelete();
-
-        if (deleted > 0 && adminUserId) {
-            await auditFromRequest(request, {
-                userId: adminUserId,
-                action: AUDIT_ACTIONS.PRODUCT_DELETE,
-                resource: "Product",
-                resourceId: "auto-delete",
-                resourceName: `Auto-deleted ${deleted} products`,
-                details: { reason: "auto_delete_cron", deletedProducts: deletedItems },
-            });
-        }
+        const { deleted, names } = await runAutoDelete();
 
         return NextResponse.json({
             success: true,

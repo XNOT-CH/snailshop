@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const { auditFromRequestMock, requirePermissionWithCsrfMock, runAutoDeleteMock } = vi.hoisted(() => ({
-    auditFromRequestMock: vi.fn(),
+// Auditing lives inside runAutoDelete() now, not in this route, so that a cron
+// run gets logged too — the route only ever had the admin's id, which is why
+// cron deletions used to vanish from the audit trail. The audit assertions that
+// used to live here moved to tests/lib/autoDelete.test.ts.
+const { requirePermissionWithCsrfMock, runAutoDeleteMock } = vi.hoisted(() => ({
     requirePermissionWithCsrfMock: vi.fn(),
     runAutoDeleteMock: vi.fn(),
 }));
@@ -13,13 +16,6 @@ vi.mock("@/lib/autoDelete", () => ({
 
 vi.mock("@/lib/auth", () => ({
     requirePermissionWithCsrf: requirePermissionWithCsrfMock,
-}));
-
-vi.mock("@/lib/auditLog", () => ({
-    auditFromRequest: auditFromRequestMock,
-    AUDIT_ACTIONS: {
-        PRODUCT_DELETE: "PRODUCT_DELETE",
-    },
 }));
 
 vi.mock("@/lib/permissions", () => ({
@@ -64,7 +60,6 @@ describe("API: /api/admin/auto-delete/run", () => {
 
         expect(res.status).toBe(200);
         expect(runAutoDeleteMock).toHaveBeenCalledTimes(1);
-        expect(auditFromRequestMock).not.toHaveBeenCalled();
     });
 
     it("requires CSRF-backed product delete permission for manual POST runs", async () => {
@@ -81,9 +76,15 @@ describe("API: /api/admin/auto-delete/run", () => {
         expect(res.status).toBe(200);
         expect(requirePermissionWithCsrfMock).toHaveBeenCalledTimes(1);
         expect(runAutoDeleteMock).toHaveBeenCalledTimes(1);
-        expect(auditFromRequestMock).toHaveBeenCalledWith(expect.any(NextRequest), expect.objectContaining({
-            userId: "admin-1",
-            action: "PRODUCT_DELETE",
-        }));
+    });
+
+    it("refuses a manual POST run without the product delete permission", async () => {
+        requirePermissionWithCsrfMock.mockResolvedValue({ success: false, error: "Forbidden" });
+        const { POST } = await import("@/app/api/admin/auto-delete/run/route");
+
+        const res = await POST(request("http://localhost/api/admin/auto-delete/run", "POST"));
+
+        expect(res.status).toBe(401);
+        expect(runAutoDeleteMock).not.toHaveBeenCalled();
     });
 });

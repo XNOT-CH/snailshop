@@ -1,5 +1,6 @@
 import { db, products } from "@/lib/db";
 import { and, eq, isNotNull, lte, sql } from "drizzle-orm";
+import { createAuditLog, AUDIT_ACTIONS } from "@/lib/auditLog";
 
 export interface AutoDeletedProductSnapshot {
     id: string;
@@ -57,6 +58,13 @@ export async function runAutoDelete(): Promise<{
 
     if (names.length > 0) {
         console.log(`[AUTO_DELETE] Deleted ${names.length} product(s):`, names.join(", "));
+        await createAuditLog({
+            action: AUDIT_ACTIONS.PRODUCT_DELETE,
+            resource: "Product",
+            resourceId: "auto-delete",
+            resourceName: `Auto-deleted ${names.length} products`,
+            details: { reason: "auto_delete_cron", deletedProducts: deletedItems },
+        });
     }
 
     return { deleted: names.length, names, deletedItems };
