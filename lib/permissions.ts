@@ -62,6 +62,10 @@ export const PERMISSIONS = {
     SEASON_PASS_VIEW: "seasonpass:view",
     SEASON_PASS_EDIT: "seasonpass:edit",
 
+    // Daily quest permissions
+    QUEST_VIEW: "quest:view",
+    QUEST_EDIT: "quest:edit",
+
     // Export permissions
     EXPORT_DATA: "export:data",
 } as const;
@@ -96,6 +100,8 @@ export const PERMISSION_DEPENDENCIES: Partial<Record<Permission, Permission[]>> 
     [PERMISSIONS.GACHA_EDIT]: [PERMISSIONS.GACHA_VIEW],
     [PERMISSIONS.SEASON_PASS_VIEW]: [PERMISSIONS.ADMIN_PANEL],
     [PERMISSIONS.SEASON_PASS_EDIT]: [PERMISSIONS.SEASON_PASS_VIEW],
+    [PERMISSIONS.QUEST_VIEW]: [PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.QUEST_EDIT]: [PERMISSIONS.QUEST_VIEW],
     [PERMISSIONS.EXPORT_DATA]: [PERMISSIONS.ADMIN_PANEL],
 };
 

@@ -103,6 +103,10 @@ const PERMISSION_GROUPS = {
     { key: PERMISSIONS.SEASON_PASS_VIEW, label: "ดู Season Pass" },
     { key: PERMISSIONS.SEASON_PASS_EDIT, label: "แก้ไข Season Pass" },
   ],
+  "ภารกิจรายวัน": [
+    { key: PERMISSIONS.QUEST_VIEW, label: "ดูภารกิจรายวัน" },
+    { key: PERMISSIONS.QUEST_EDIT, label: "แก้ไขภารกิจรายวัน" },
+  ],
   "รายงาน/ส่งออก": [{ key: PERMISSIONS.EXPORT_DATA, label: "ส่งออกข้อมูล" }],
 } as const;
 

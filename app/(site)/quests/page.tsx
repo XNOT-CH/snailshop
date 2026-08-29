@@ -5,6 +5,7 @@ import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { QuestClaimButton } from "@/components/quests/QuestClaimButton";
 import { QuestResetCountdown } from "@/components/quests/QuestResetCountdown";
 import { getDailyQuestBoard, type QuestGoalType } from "@/lib/features/quests/dailyQuests";
+import { getQuestGoalUnit } from "@/lib/features/quests/questGoalTypes";
 import { buildPageMetadata } from "@/lib/seo";
 import { themeClasses } from "@/lib/theme";
 
@@ -28,7 +29,7 @@ function progressText(goalType: QuestGoalType, progress: number, goalValue: numb
     if (goalValue <= 1) {
         return progress >= goalValue ? "สำเร็จแล้ว" : "ยังไม่สำเร็จ";
     }
-    const unit = goalType === "TOPUP_AMOUNT" ? "บาท" : "ครั้ง";
+    const unit = getQuestGoalUnit(goalType);
     return `${progress.toLocaleString("th-TH")} จาก ${goalValue.toLocaleString("th-TH")} ${unit}`;
 }
 
