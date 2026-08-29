@@ -1,4 +1,5 @@
 import { findPromoByCode, countPromoUsageByUser, userHasCompletedOrder } from "@/lib/features/promo/queries";
+import { roundAmount, sumAmounts, toSatang } from "@/lib/money";
 
 type CategoryList = string[] | null | undefined;
 
@@ -113,7 +114,7 @@ export function getPromoCategoryError(promo: PromoRecord, productCategory: strin
  */
 export function summarizePromoEligibleItems<T extends PromoLineItem>(promo: PromoRecord, items: T[]) {
     const eligibleItems = items.filter((item) => getPromoCategoryError(promo, item.category) === null);
-    const eligibleTotal = eligibleItems.reduce((sum, item) => sum + item.subtotal, 0);
+    const eligibleTotal = sumAmounts(eligibleItems.map((item) => item.subtotal));
     const categoryError = items.length > 0 && eligibleItems.length === 0
         ? getPromoCategoryError(promo, items[0]?.category) ?? "โค้ดนี้ไม่สามารถใช้กับสินค้าในตะกร้าได้"
         : null;
@@ -155,7 +156,9 @@ export function getPromoValidationMessage(
     }
 
     const minPurchase = normalizeOptionalAmount(promo.minPurchase);
-    if (minPurchase !== null && typeof totalPrice === "number" && totalPrice < minPurchase) {
+    // Compared in satang: a cart that sums to exactly the minimum can land on
+    // 299.99999999999994 as a float and get turned away for being short.
+    if (minPurchase !== null && typeof totalPrice === "number" && toSatang(totalPrice) < toSatang(minPurchase)) {
         return `ยอดซื้อไม่ถึงขั้นต่ำ ${minPurchase.toLocaleString()} บาท`;
     }
 
@@ -206,10 +209,13 @@ export function calculatePromoDiscountAmount(promo: PromoRecord, totalPrice: num
     if (discountType === "FIXED") {
         return {
             minPurchase,
-            discountAmount: Math.min(totalPrice, Number(promo.discountValue)),
+            discountAmount: roundAmount(Math.min(totalPrice, Number(promo.discountValue))),
         };
     }
 
+    // Rounded here rather than at each caller: 99.99 at 7% is 6.9993, and the
+    // preview, the charge, and the PromoUsage row each used to round it their
+    // own way. One value, decided once.
     let discountAmount = (totalPrice * Number(promo.discountValue)) / 100;
     const maxDiscount = normalizeOptionalAmount(promo.maxDiscount);
     if (maxDiscount !== null && discountAmount > maxDiscount) {
@@ -218,7 +224,7 @@ export function calculatePromoDiscountAmount(promo: PromoRecord, totalPrice: num
 
     return {
         minPurchase,
-        discountAmount: Math.min(totalPrice, discountAmount),
+        discountAmount: roundAmount(Math.min(totalPrice, discountAmount)),
     };
 }
 

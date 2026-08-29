@@ -1,4 +1,5 @@
 import { encrypt, decrypt } from "@/lib/encryption";
+import { MAX_DECIMAL_AMOUNT, roundAmount } from "@/lib/money";
 import { getStockCount, splitStock } from "@/lib/stock";
 import { mysqlNow } from "@/lib/utils/date";
 
@@ -32,13 +33,20 @@ function normalizeProductImages(images: string[] | null | undefined, fallbackIma
     return [];
 }
 
+// Snapped to satang and bounded to what DECIMAL(10,2) holds: MySQL would round
+// 10.999 to 11.00 on write while the audit log and the API response kept saying
+// 10.999, and anything past the column's ceiling failed with a raw driver error.
 export function parseProductPrice(price: string | number) {
     const priceNumber = Number.parseFloat(String(price));
     if (Number.isNaN(priceNumber) || priceNumber <= 0) {
         return { error: "Price must be a positive number" as const };
     }
 
-    return { value: priceNumber };
+    if (priceNumber > MAX_DECIMAL_AMOUNT) {
+        return { error: "ราคาต้องไม่เกิน 99,999,999.99" as const };
+    }
+
+    return { value: roundAmount(priceNumber) };
 }
 
 // Only THB and POINT are real currencies in the purchase paths. An unknown
@@ -81,7 +89,7 @@ export function validatePointCurrencyPricing(
 
 export function validateDiscountPrice(discountPrice: string | number | null | undefined, priceNumber: number) {
     if (discountPrice !== undefined && discountPrice !== "" && discountPrice !== null) {
-        const value = Number(discountPrice);
+        const value = roundAmount(Number(discountPrice));
         if (Number.isNaN(value) || value <= 0) {
             return { error: "Discount price must be a positive number" as const };
         }
