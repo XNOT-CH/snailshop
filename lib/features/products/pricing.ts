@@ -42,6 +42,48 @@ export function getNormalizedDiscountPrice(calculatedDiscountPrice: number | nul
     return null;
 }
 
+export interface DiscountState {
+    /** Something was typed in the discount box. */
+    hasDiscount: boolean;
+    inputNumber: number;
+    isValid: boolean;
+    /** Price after the discount, or null while the input is empty or invalid. */
+    normalized: number | null;
+}
+
+/**
+ * One definition of "what does this discount input mean", shared by the create
+ * form, the edit form and the field they both render. The two forms used to
+ * each keep their own copy of these four derived values.
+ */
+export function getDiscountState(
+    price: string,
+    discountInput: string,
+    discountMode: DiscountMode,
+    currency: string,
+): DiscountState {
+    const hasDiscount = discountInput.trim().length > 0;
+    const priceNumber = Number(price);
+    const inputNumber = Number(discountInput);
+
+    const isValid =
+        !hasDiscount ||
+        (Number.isFinite(inputNumber) &&
+            inputNumber > 0 &&
+            (discountMode === "percent" ? inputNumber < 100 : inputNumber < priceNumber));
+
+    const calculated = getCalculatedDiscountPrice(
+        hasDiscount,
+        isValid,
+        priceNumber,
+        inputNumber,
+        discountMode,
+        currency,
+    );
+
+    return { hasDiscount, inputNumber, isValid, normalized: getNormalizedDiscountPrice(calculated) };
+}
+
 export function getDiscountPlaceholder(discountMode: DiscountMode) {
     if (discountMode === "percent") {
         return "เช่น 15";
@@ -55,8 +97,6 @@ export function getDiscountValueValidationMessage(discountMode: DiscountMode) {
         ? "กรุณากรอกเปอร์เซ็นส่วนลดให้ถูกต้อง"
         : "กรุณากรอกจำนวนส่วนลดให้ถูกต้อง";
 }
-
-export const getDiscountInputErrorMessage = getDiscountValueValidationMessage;
 
 export function getPriceInputPlaceholder(currency: string) {
     return currency === "POINT" ? "เช่น 100" : "เช่น 1500";
@@ -86,17 +126,11 @@ export function getDiscountHint(discountMode: DiscountMode, currency: string, po
     return `กรอกจำนวน${currency === "POINT" ? pointCurrencyName : "บาท"}ที่ต้องการลด`;
 }
 
-export function getDiscountHelperText(discountMode: DiscountMode, isPointCurrency: boolean, pointCurrencyName: string) {
-    return getDiscountHint(discountMode, isPointCurrency ? "POINT" : "THB", pointCurrencyName);
-}
-
 export function getDiscountErrorText(discountMode: DiscountMode) {
     return discountMode === "percent"
         ? "เปอร์เซ็นต์ต้องน้อยกว่า 100%"
         : "จำนวนส่วนลดต้องน้อยกว่าราคาเต็ม";
 }
-
-export const getDiscountValidationText = getDiscountErrorText;
 
 export function getDiscountSummaryUnit(
     discountMode: DiscountMode,
@@ -154,53 +188,4 @@ export function getFetchedDiscountAmount(
     }
 
     return normalizeMoney(priceNumber - discountPriceNumber, currency);
-}
-
-export function getDiscountMessage(options: {
-    hasDiscountPrice: boolean;
-    isDiscountValueValid: boolean;
-    normalizedDiscountPrice: number | null;
-    discountMode: DiscountMode;
-    isPointCurrency: boolean;
-    pointCurrencyName: string;
-    discountInputNumber: number;
-    currency: string;
-}) {
-    const {
-        currency,
-        discountInputNumber,
-        discountMode,
-        hasDiscountPrice,
-        isDiscountValueValid,
-        isPointCurrency,
-        normalizedDiscountPrice,
-        pointCurrencyName,
-    } = options;
-
-    if (!hasDiscountPrice) {
-        return null;
-    }
-
-    if (!isDiscountValueValid) {
-        return {
-            className: "font-medium text-rose-600",
-            text: getDiscountValidationText(discountMode),
-        };
-    }
-
-    if (normalizedDiscountPrice === null) {
-        return null;
-    }
-
-    return {
-        className: "font-medium text-rose-700",
-        text: getDiscountSummaryText(
-            discountMode,
-            isPointCurrency,
-            pointCurrencyName,
-            discountInputNumber,
-            currency,
-            normalizedDiscountPrice,
-        ),
-    };
 }
