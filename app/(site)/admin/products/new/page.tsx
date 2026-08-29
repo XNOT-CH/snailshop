@@ -22,12 +22,15 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
+import { ProductAutoDeleteField } from "@/components/admin/ProductAutoDeleteField";
 import { ProductImageGalleryField } from "@/components/admin/ProductImageGalleryField";
+import { ProductStockPasteField } from "@/components/admin/ProductStockPasteField";
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { PERMISSIONS } from "@/lib/permissions";
 import { showConfirm, showError, showSuccess } from "@/lib/swal";
-import { findDuplicateStockUser, getStockUser, splitStock, type StockSeparatorType } from "@/lib/stock";
+import { findDuplicateStockUser, formatStockEntry, getStockUser, splitStock, type ParsedStockLine, type StockSeparatorType } from "@/lib/stock";
+import { getAutoDeleteAfterSaleValue } from "@/lib/features/products/autoDelete";
 import {
     getCalculatedDiscountPrice,
     getDiscountAmountButtonLabel,
@@ -67,6 +70,9 @@ export default function AddProductPage() {
     const [discountMode, setDiscountMode] = useState<DiscountMode>("amount");
     const [takenUsers, setTakenUsers] = useState<Record<string, string>>({});
     const [hasSaved, setHasSaved] = useState(false);
+    const [stockMode, setStockMode] = useState<"single" | "paste">("single");
+    const [autoDeleteEnabled, setAutoDeleteEnabled] = useState(false);
+    const [autoDeleteAfterSale, setAutoDeleteAfterSale] = useState("");
 
     const stockItems = useMemo(
         () => splitStock(formData.secretData, formData.stockSeparator),
@@ -84,8 +90,10 @@ export default function AddProductPage() {
             formData.secretData.length > 0 ||
             formData.images.length > 0 ||
             singleUser.trim().length > 0 ||
-            singlePass.trim().length > 0);
+            singlePass.trim().length > 0 ||
+            autoDeleteAfterSale.trim().length > 0);
 
+    const stockUsers = useMemo(() => stockItems.map((item) => getStockUser(item)), [stockItems]);
     const hasDiscountPrice = formData.discountPrice.trim().length > 0;
     const priceNumber = Number(formData.price);
     const discountInputNumber = Number(formData.discountPrice);
@@ -177,7 +185,7 @@ export default function AddProductPage() {
             return;
         }
 
-        const newEntry = `${newUser} / ${singlePass.trim()}`;
+        const newEntry = formatStockEntry(newUser, singlePass);
         setFormData((prev) => ({
             ...prev,
             secretData: prev.secretData ? `${prev.secretData}\n${newEntry}` : newEntry,
@@ -185,6 +193,17 @@ export default function AddProductPage() {
         setSingleUser("");
         setSinglePass("");
         showSuccess("เพิ่มสต๊อกสำเร็จ");
+    };
+
+    const handleAddPastedStock = (entries: ParsedStockLine[]) => {
+        if (!canCreateProduct || entries.length === 0) return;
+
+        const added = entries.map((entry) => formatStockEntry(entry.user, entry.pass));
+        setFormData((prev) => ({
+            ...prev,
+            secretData: [prev.secretData, added.join("\n")].filter(Boolean).join("\n"),
+        }));
+        showSuccess(`เพิ่มสต๊อก ${added.length} รายการ`);
     };
 
     const rebuildSecretData = (items: string[]) => {
@@ -279,6 +298,7 @@ export default function AddProductPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     ...formData,
+                    autoDeleteAfterSale: getAutoDeleteAfterSaleValue(autoDeleteEnabled, autoDeleteAfterSale),
                     image: formData.images[0] || "",
                     discountPrice: normalizedDiscountPrice === null ? "" : String(normalizedDiscountPrice),
                 }),
@@ -503,27 +523,27 @@ export default function AddProductPage() {
                                     disabled={!canCreateProduct}
                                 />
                             </div>
+
+                            <div className="space-y-3">
+                                <Label>การลบอัตโนมัติ</Label>
+                                <ProductAutoDeleteField
+                                    enabled={autoDeleteEnabled}
+                                    onEnabledChange={setAutoDeleteEnabled}
+                                    minutes={autoDeleteAfterSale}
+                                    onMinutesChange={setAutoDeleteAfterSale}
+                                    disabled={!canCreateProduct}
+                                />
+                            </div>
                         </div>
                     </div>
 
                     <div className="space-y-6">
-                        <div className="admin-product-stock-summary rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_100%)] p-4 shadow-sm dark:border-[#2d4362] dark:bg-[linear-gradient(135deg,rgba(15,25,39,0.98)_0%,rgba(20,32,49,0.94)_100%)]">
-                            <div className="flex items-start justify-between gap-4">
-                                <div>
-                                    <p className="text-sm font-semibold text-slate-900 dark:text-[#eef4ff]">สรุปสต๊อกก่อนสร้างสินค้า</p>
-                                </div>
-                                <Badge className="rounded-full bg-blue-600 px-3 py-1 text-white hover:bg-blue-600">
-                                    {stockItems.length} รายการ
-                                </Badge>
-                            </div>
-                        </div>
-
                         <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-[#2d4362] dark:bg-[#0f1927]">
                             <div className="flex items-center gap-2 border-b border-slate-200 px-5 py-3.5 dark:border-[#2d4362]">
                                 <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500 text-white">
                                     <Package className="h-4 w-4" />
                                 </div>
-                                <span className="font-bold text-foreground">เพิ่มสต๊อก 1 รายการ</span>
+                                <span className="font-bold text-foreground">เพิ่มสต๊อก</span>
                                 {stockItems.length > 0 && (
                                     <Badge variant="secondary" className="ml-auto">
                                         {stockItems.length} รายการ
@@ -532,6 +552,36 @@ export default function AddProductPage() {
                             </div>
 
                             <div className="space-y-4 p-5">
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Button
+                                        type="button"
+                                        variant={stockMode === "single" ? "default" : "outline"}
+                                        className="rounded-xl"
+                                        onClick={() => setStockMode("single")}
+                                        disabled={!canCreateProduct}
+                                    >
+                                        ทีละรายการ
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant={stockMode === "paste" ? "default" : "outline"}
+                                        className="rounded-xl"
+                                        onClick={() => setStockMode("paste")}
+                                        disabled={!canCreateProduct}
+                                    >
+                                        วางหลายรายการ
+                                    </Button>
+                                </div>
+
+                                {stockMode === "paste" ? (
+                                    <ProductStockPasteField
+                                        existingUsers={stockUsers}
+                                        takenUsers={takenUsers}
+                                        onAdd={handleAddPastedStock}
+                                        disabled={!canCreateProduct}
+                                    />
+                                ) : (
+                                <>
                                 <div className="space-y-2">
                                     <Label htmlFor="singleUser">User *</Label>
                                     <Input
@@ -567,8 +617,10 @@ export default function AddProductPage() {
                                     <Plus className="h-4 w-4" />
                                     เพิ่มสต๊อก
                                 </Button>
+                                </>
+                                )}
 
-                                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700">
+                                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
                                     แต่ละรายการจะถูกส่งให้ลูกค้าทีละ 1 ชิ้นเมื่อซื้อ
                                 </p>
                             </div>
