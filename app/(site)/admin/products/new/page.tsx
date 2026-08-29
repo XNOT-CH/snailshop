@@ -26,7 +26,7 @@ import { ProductImageGalleryField } from "@/components/admin/ProductImageGallery
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { PERMISSIONS } from "@/lib/permissions";
-import { showError, showSuccess } from "@/lib/swal";
+import { showConfirm, showError, showSuccess } from "@/lib/swal";
 import { findDuplicateStockUser, getStockUser, splitStock, type StockSeparatorType } from "@/lib/stock";
 import {
     getCalculatedDiscountPrice,
@@ -66,11 +66,26 @@ export default function AddProductPage() {
     const [editingIndex, setEditingIndex] = useState<number | null>(null);
     const [discountMode, setDiscountMode] = useState<DiscountMode>("amount");
     const [takenUsers, setTakenUsers] = useState<Record<string, string>>({});
+    const [hasSaved, setHasSaved] = useState(false);
 
     const stockItems = useMemo(
         () => splitStock(formData.secretData, formData.stockSeparator),
         [formData.secretData, formData.stockSeparator]
     );
+    // Everything typed so far lives only in this component's state, so leaving the
+    // page throws it away. Anything filled in counts as work worth warning about.
+    const isDirty =
+        !hasSaved &&
+        (formData.title.trim().length > 0 ||
+            formData.price.trim().length > 0 ||
+            formData.discountPrice.trim().length > 0 ||
+            formData.category.trim().length > 0 ||
+            formData.description.trim().length > 0 ||
+            formData.secretData.length > 0 ||
+            formData.images.length > 0 ||
+            singleUser.trim().length > 0 ||
+            singlePass.trim().length > 0);
+
     const hasDiscountPrice = formData.discountPrice.trim().length > 0;
     const priceNumber = Number(formData.price);
     const discountInputNumber = Number(formData.discountPrice);
@@ -111,6 +126,33 @@ export default function AddProductPage() {
             cancelled = true;
         };
     }, [canCreateProduct]);
+
+    useEffect(() => {
+        if (!isDirty) return;
+
+        const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = "";
+        };
+
+        window.addEventListener("beforeunload", warnBeforeLeaving);
+        return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
+    }, [isDirty]);
+
+    const handleLeave = async (event: React.MouseEvent<HTMLAnchorElement>) => {
+        if (!isDirty) return;
+
+        event.preventDefault();
+        const confirmed = await showConfirm(
+            "ออกจากหน้านี้?",
+            "ข้อมูลสินค้าและสต๊อกที่กรอกไว้จะหายทั้งหมด",
+            "ออกโดยไม่บันทึก",
+            "อยู่ต่อ"
+        );
+        if (confirmed) {
+            router.push("/admin/products");
+        }
+    };
 
     const handleAddSingleStock = () => {
         if (!canCreateProduct) {
@@ -161,6 +203,15 @@ export default function AddProductPage() {
             setEditingIndex(null);
         }
         showSuccess("ลบสต๊อกสำเร็จ");
+    };
+
+    // These inputs sit inside the create form, so Enter would otherwise submit it
+    // and create the product with whatever stock had already been added.
+    const handleStockFieldKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key !== "Enter") return;
+
+        event.preventDefault();
+        handleAddSingleStock();
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -235,6 +286,7 @@ export default function AddProductPage() {
 
             const data = await response.json();
             if (data.success) {
+                setHasSaved(true);
                 showSuccess("สร้างสินค้าสำเร็จ");
                 router.push("/admin/products");
             } else {
@@ -252,6 +304,7 @@ export default function AddProductPage() {
         <div className="admin-product-new-page space-y-6">
             <Link
                 href="/admin/products"
+                onClick={handleLeave}
                 className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
             >
                 <ArrowLeft className="h-4 w-4" />
@@ -486,6 +539,7 @@ export default function AddProductPage() {
                                         placeholder="เช่น username123"
                                         value={singleUser}
                                         onChange={(e) => setSingleUser(e.target.value)}
+                                        onKeyDown={handleStockFieldKeyDown}
                                         disabled={!canCreateProduct}
                                         className="font-mono"
                                     />
@@ -498,6 +552,7 @@ export default function AddProductPage() {
                                         placeholder="เช่น password456"
                                         value={singlePass}
                                         onChange={(e) => setSinglePass(e.target.value)}
+                                        onKeyDown={handleStockFieldKeyDown}
                                         disabled={!canCreateProduct}
                                         className="font-mono"
                                     />
