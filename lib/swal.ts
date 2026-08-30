@@ -339,6 +339,61 @@ export const hideLoading = () => {
     void loadSwal().then((Swal) => Swal.close());
 };
 
+/**
+ * Asks for the account password before a change that could hand the account to
+ * someone else. Same shape as the PIN prompt so the two feel like one family.
+ */
+export const showPasswordPrompt = async (
+    title: string,
+    description: string,
+): Promise<string | null> => {
+    const Swal = await loadSwal();
+    const result = await Swal.fire({
+        ...modalDefaults,
+        title,
+        html: `
+            <div class="space-y-3 text-left">
+                <p class="text-sm text-slate-500">${escapeHtml(description)}</p>
+                <input
+                    id="swal-password-input"
+                    type="password"
+                    autocomplete="current-password"
+                    class="w-full rounded-xl border border-slate-200 px-4 py-3 text-slate-900 outline-none focus:border-blue-500"
+                    placeholder="รหัสผ่านบัญชีของคุณ"
+                />
+            </div>
+        `,
+        width: "min(92vw, 28rem)",
+        showCancelButton: true,
+        confirmButtonColor: "#2563eb",
+        confirmButtonText: "ยืนยัน",
+        cancelButtonText: "ยกเลิก",
+        reverseButtons: true,
+        focusConfirm: false,
+        customClass: {
+            popup: "rounded-3xl !p-6 sm:!p-8",
+            actions: "flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-center",
+            confirmButton: "w-full sm:w-auto rounded-xl px-8 py-2",
+            cancelButton: "w-full sm:w-auto rounded-xl px-8 py-2",
+        },
+        didOpen: () => {
+            const input = document.getElementById("swal-password-input") as HTMLInputElement | null;
+            input?.focus();
+        },
+        preConfirm: () => {
+            const input = document.getElementById("swal-password-input") as HTMLInputElement | null;
+            const value = input?.value ?? "";
+            if (!value) {
+                Swal.showValidationMessage("กรุณากรอกรหัสผ่าน");
+                return null;
+            }
+            return value;
+        },
+    });
+
+    return result.isConfirmed ? result.value : null;
+};
+
 export const showPinPrompt = async (actionLabel = "ยืนยันรายการ"): Promise<string | null> => {
     const Swal = await loadSwal();
     const result = await Swal.fire({

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { decryptUserSensitiveFields } from "@/lib/sensitiveData";
+import { decryptUserSensitiveFields, omitClientHiddenUserFields } from "@/lib/sensitiveData";
 
 export async function GET() {
     try {
@@ -17,7 +17,7 @@ export async function GET() {
             where: eq(users.id, userId),
             columns: {
                 id: true, name: true, username: true, email: true, phone: true,
-                image: true, role: true, creditBalance: true, phoneVerified: true,
+                image: true, role: true, creditBalance: true,
                 emailVerified: true, pointBalance: true, pinHash: true, pinUpdatedAt: true, pinLockedUntil: true, firstName: true, lastName: true, firstNameEn: true,
                 lastNameEn: true, taxFullName: true, taxPhone: true, taxAddress: true,
                 taxProvince: true, taxDistrict: true, taxSubdistrict: true, taxPostalCode: true,
@@ -33,7 +33,8 @@ export async function GET() {
         return NextResponse.json({
             success: true,
             data: {
-                ...decryptUserSensitiveFields(user),
+                // hasPin is the only thing the page needs to know about the PIN.
+                ...omitClientHiddenUserFields(decryptUserSensitiveFields(user)),
                 hasPin: Boolean(user.pinHash),
                 pinUpdatedAt: user.pinUpdatedAt,
                 pinLockedUntil: user.pinLockedUntil,

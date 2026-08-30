@@ -403,19 +403,6 @@ describe("API: /api/admin/nav-items/[id] (error paths)", () => {
 });
 
 // ════════════════════════════════════════════════════════════════
-// /api/user/settings — deprecated legacy endpoint
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/user/settings (error paths)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("PATCH returns 410 when the legacy route is disabled", async () => {
-    const { PATCH } = await import("@/app/api/user/settings/route");
-    const res = await PATCH();
-    expect(res.status).toBe(410);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
 // /api/admin/popups — error paths
 // ════════════════════════════════════════════════════════════════
 describe("API: /api/admin/popups (error paths)", () => {

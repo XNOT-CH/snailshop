@@ -50,6 +50,22 @@ export function encryptUserSensitiveFields<T extends Record<string, unknown>>(re
     };
 }
 
+/**
+ * Fields that must never reach a client, even when a whole user record is
+ * spread into a response. The PIN hash guards password changes and gacha
+ * spending, and a six-digit PIN behind bcrypt falls to an offline search.
+ */
+const CLIENT_HIDDEN_USER_FIELDS = ["password", "pinHash"] as const;
+
+/** Drops the never-send fields from a user record bound for the browser. */
+export function omitClientHiddenUserFields<T extends Record<string, unknown>>(record: T): T {
+    const safe = { ...record };
+    for (const field of CLIENT_HIDDEN_USER_FIELDS) {
+        delete safe[field];
+    }
+    return safe;
+}
+
 export function decryptUserSensitiveFields<T extends Record<string, unknown>>(record: T): T {
     return {
         ...record,

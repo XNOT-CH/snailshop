@@ -197,6 +197,10 @@ export async function getUserAddressProfiles(): Promise<ActionResult<AddressProf
     }
 }
 
+// A "use server" file may only export async functions, so this stays local.
+// One account does not need more than this, and it bounds writes from a client.
+const MAX_ADDRESS_PROFILES = 20;
+
 export async function saveUserAddressProfile(input: unknown): Promise<ActionResult<AddressProfileData>> {
     try {
         const userId = await requireUserId();
@@ -241,6 +245,18 @@ export async function saveUserAddressProfile(input: unknown): Promise<ActionResu
 
             if (!existing) {
                 return { success: false, message: "ไม่พบข้อมูลที่อยู่" };
+            }
+        } else {
+            const saved = await db.query.userAddressProfiles.findMany({
+                where: eq(userAddressProfiles.userId, userId),
+                columns: { id: true },
+            });
+
+            if (saved.length >= MAX_ADDRESS_PROFILES) {
+                return {
+                    success: false,
+                    message: `บันทึกที่อยู่ได้สูงสุด ${MAX_ADDRESS_PROFILES} รายการ กรุณาลบรายการที่ไม่ใช้แล้วก่อน`,
+                };
             }
         }
 

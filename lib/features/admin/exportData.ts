@@ -1,10 +1,19 @@
 import { and, desc, gte, lte } from "drizzle-orm";
 import { db, gachaRollLogs, orders, products, topups, users } from "@/lib/db";
+import { decryptUserSensitiveFields } from "@/lib/sensitiveData";
 import { maskTransactionRef } from "@/lib/dataProtection";
 import { decryptTopupSensitiveFields } from "@/lib/sensitiveData";
 import { mysqlDateTimeToIso, TH_TIME_ZONE } from "@/lib/utils/date";
 
 export const EXPORT_ROW_LIMIT = 50000;
+
+/** Joins the address parts a customer filled in into one readable line. */
+function joinAddressLine(parts: unknown[]): string {
+    return parts
+        .map((part) => (typeof part === "string" ? part.trim() : ""))
+        .filter(Boolean)
+        .join(" ");
+}
 
 const ADMIN_EXPORT_TABLE_NAMES = ["orders", "users", "topups", "gacha", "products"] as const;
 
@@ -230,6 +239,13 @@ const USER_COLUMNS: ExportColumn[] = [
     { key: "totalTopup", header: "เติมเงินสะสม (บาท)" },
     { key: "lifetimePoints", header: "พอยต์สะสม" },
     { key: "createdAt", header: "วันที่สมัคร", format: formatThaiDateTime },
+    // Collected on the account settings page for prize shipping and tax
+    // invoices; until now nothing in the app could read them back.
+    { key: "shipFullName", header: "ผู้รับของรางวัล" },
+    { key: "shipPhone", header: "เบอร์ผู้รับ" },
+    { key: "shipAddressLine", header: "ที่อยู่จัดส่งรางวัล" },
+    { key: "taxFullName", header: "ชื่อผู้ออกใบกำกับภาษี" },
+    { key: "taxAddressLine", header: "ที่อยู่ใบกำกับภาษี" },
 ];
 
 async function exportUsers(dateTag: string): Promise<AdminExportPayload> {
@@ -246,13 +262,42 @@ async function exportUsers(dateTag: string): Promise<AdminExportPayload> {
                         totalTopup: users.totalTopup,
                         lifetimePoints: users.lifetimePoints,
                         createdAt: users.createdAt,
+                        shipFullName: users.shipFullName,
+                        shipPhone: users.shipPhone,
+                        shipAddress: users.shipAddress,
+                        shipSubdistrict: users.shipSubdistrict,
+                        shipDistrict: users.shipDistrict,
+                        shipProvince: users.shipProvince,
+                        shipPostalCode: users.shipPostalCode,
+                        taxFullName: users.taxFullName,
+                        taxAddress: users.taxAddress,
+                        taxSubdistrict: users.taxSubdistrict,
+                        taxDistrict: users.taxDistrict,
+                        taxProvince: users.taxProvince,
+                        taxPostalCode: users.taxPostalCode,
                     })
                     .from(users)
                     .orderBy(desc(users.createdAt))
                     .limit(EXPORT_ROW_LIMIT);
 
+    // Addresses are stored encrypted, and the sheet needs one readable line.
+    const decrypted = rows.map((row) => {
+        const plain = decryptUserSensitiveFields(row as Record<string, unknown>);
+        return {
+            ...plain,
+            shipAddressLine: joinAddressLine([
+                plain.shipAddress, plain.shipSubdistrict, plain.shipDistrict,
+                plain.shipProvince, plain.shipPostalCode,
+            ]),
+            taxAddressLine: joinAddressLine([
+                plain.taxAddress, plain.taxSubdistrict, plain.taxDistrict,
+                plain.taxProvince, plain.taxPostalCode,
+            ]),
+        };
+    });
+
     return {
-        csv: buildLocalizedCsv(USER_COLUMNS, rows as Record<string, unknown>[]),
+        csv: buildLocalizedCsv(USER_COLUMNS, decrypted as Record<string, unknown>[]),
         filename: `users_${dateTag}.csv`,
     };
 }

@@ -2889,21 +2889,6 @@ html.dark .profile-settings-page [class*="text-blue-600"] {
   color: #8ec9ff !important;
 }
 
-html.dark .profile-settings-page .bg-green-50,
-html.dark .profile-settings-page .bg-red-50 {
-  background-color: rgba(18, 29, 43, 0.88) !important;
-}
-
-html.dark .profile-settings-page .border-green-200,
-html.dark .profile-settings-page .border-red-200 {
-  border-color: rgba(55, 77, 109, 0.78) !important;
-}
-
-html.dark .profile-settings-page .text-green-700,
-html.dark .profile-settings-page .text-red-700 {
-  color: #edf4ff !important;
-}
-
 html.dark .season-pass-dashboard [class*="bg-[radial-gradient(circle_at_top_right,rgba(26,86,219,0.12),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.96))]"] {
   background: radial-gradient(circle at top right, rgba(88, 166, 255, 0.14), transparent 30%), linear-gradient(180deg, rgba(15, 25, 39, 0.98), rgba(10, 18, 30, 0.98)) !important;
 }
