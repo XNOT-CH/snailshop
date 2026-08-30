@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { and, inArray, isNull } from "drizzle-orm";
 import { db, products } from "@/lib/db";
+import { isAuthenticated } from "@/lib/auth";
+import { checkPurchaseRateLimit, getClientIp } from "@/lib/rateLimit";
 import { getProductStockCount } from "@/lib/features/products/shared";
+import { MAX_CART_QUANTITY } from "@/lib/constants/cart";
 
 export const dynamic = "force-dynamic";
 
 const MSG_SELECT_PRODUCTS = "กรุณาเลือกสินค้าอย่างน้อย 1 รายการ";
-const MSG_MAX_PRODUCTS = "ไม่สามารถตรวจสอบสินค้ามากกว่า 50 รายการในครั้งเดียว";
+const MSG_MAX_PRODUCTS = `ไม่สามารถตรวจสอบสินค้ามากกว่า ${MAX_CART_QUANTITY} รายการในครั้งเดียว`;
 const MSG_PRODUCTS_NOT_FOUND = "บางสินค้าไม่พบในระบบ";
 const MSG_INVALID_QUANTITY = "จำนวนสินค้าต้องเป็นจำนวนเต็มบวก";
 const REFRESH_VALIDATION_MESSAGES = new Set([
@@ -63,6 +66,24 @@ function toNumber(value: string | number | null | undefined) {
 }
 
 export async function POST(request: NextRequest) {
+    // Only a signed-in shopper has a cart to check, and each check reads up to
+    // 50 products — decrypting their stock when the count is not stored.
+    const authCheck = await isAuthenticated();
+    if (!authCheck.success || !authCheck.userId) {
+        return NextResponse.json(
+            { success: false, message: authCheck.error ?? "กรุณาเข้าสู่ระบบก่อน" },
+            { status: 401 },
+        );
+    }
+
+    const rateLimit = await checkPurchaseRateLimit(`${getClientIp(request)}:${authCheck.userId}:cart-refresh`);
+    if (rateLimit.blocked) {
+        return NextResponse.json(
+            { success: false, message: "ตรวจสอบตะกร้าถี่เกินไป กรุณารอสักครู่" },
+            { status: 429 },
+        );
+    }
+
     try {
         const { items } = await request.json();
         const refreshItems = normalizeRefreshItems(items);
@@ -72,7 +93,7 @@ export async function POST(request: NextRequest) {
         }
 
         const totalRequestedQuantity = refreshItems.reduce((sum, item) => sum + item.quantity, 0);
-        if (totalRequestedQuantity > 50) {
+        if (totalRequestedQuantity > MAX_CART_QUANTITY) {
             return NextResponse.json({ success: false, message: MSG_MAX_PRODUCTS }, { status: 400 });
         }
 

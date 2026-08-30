@@ -7,6 +7,19 @@ const dbMock = vi.hoisted(() => ({
     where: vi.fn(),
 }));
 
+const { isAuthenticatedMock, rateLimitMock } = vi.hoisted(() => ({
+    isAuthenticatedMock: vi.fn(),
+    rateLimitMock: vi.fn(),
+}));
+
+// The endpoint now needs a signed-in shopper and a throttle: it reads up to 50
+// products per call and decrypts their stock when the count is not stored.
+vi.mock("@/lib/auth", () => ({ isAuthenticated: isAuthenticatedMock }));
+vi.mock("@/lib/rateLimit", () => ({
+    checkPurchaseRateLimit: rateLimitMock,
+    getClientIp: vi.fn(() => "127.0.0.1"),
+}));
+
 vi.mock("@/lib/db", () => ({
     db: {
         select: dbMock.select,
@@ -79,6 +92,11 @@ function product(overrides: Partial<{
 
 describe("API: /api/cart/refresh (POST)", () => {
     beforeEach(() => {
+        isAuthenticatedMock.mockResolvedValue({ success: true, userId: "user-1" });
+        rateLimitMock.mockResolvedValue({ blocked: false });
+    });
+
+    beforeEach(() => {
         vi.clearAllMocks();
         dbMock.where.mockResolvedValue([]);
         dbMock.from.mockReturnValue({ where: dbMock.where });
@@ -132,6 +150,26 @@ describe("API: /api/cart/refresh (POST)", () => {
         expect(body.items).toEqual([]);
         expect(body.soldProductIds).toEqual(["sold-product"]);
         expect(body.missingProductIds).toEqual(["missing-product"]);
+    });
+
+    it("refuses a caller with no session", async () => {
+        isAuthenticatedMock.mockResolvedValue({ success: false, error: "ไม่ได้เข้าสู่ระบบ" });
+        const { POST } = await import("@/app/api/cart/refresh/route");
+
+        const res = await POST(mkReq({ items: [{ productId: "p1", quantity: 1 }] }));
+
+        expect(res.status).toBe(401);
+        expect(dbMock.select).not.toHaveBeenCalled();
+    });
+
+    it("refuses a caller checking too often", async () => {
+        rateLimitMock.mockResolvedValue({ blocked: true });
+        const { POST } = await import("@/app/api/cart/refresh/route");
+
+        const res = await POST(mkReq({ items: [{ productId: "p1", quantity: 1 }] }));
+
+        expect(res.status).toBe(429);
+        expect(dbMock.select).not.toHaveBeenCalled();
     });
 
     it("returns 400 when item quantity is invalid", async () => {

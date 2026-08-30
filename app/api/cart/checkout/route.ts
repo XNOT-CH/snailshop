@@ -9,6 +9,7 @@ import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { checkPurchaseRateLimit, getClientIp } from "@/lib/rateLimit";
+import { MAX_CART_QUANTITY } from "@/lib/constants/cart";
 import { resolveSiteName } from "@/lib/seo";
 import { assertPinForProtectedAction } from "@/lib/security/pin";
 import {
@@ -19,7 +20,7 @@ import {
 } from "@/lib/features/orders/purchase";
 
 const MSG_SELECT_PRODUCTS = "กรุณาเลือกสินค้าอย่างน้อย 1 รายการ";
-const MSG_MAX_PRODUCTS = "ไม่สามารถซื้อสินค้ามากกว่า 50 รายการในครั้งเดียว";
+const MSG_MAX_PRODUCTS = `ไม่สามารถซื้อสินค้ามากกว่า ${MAX_CART_QUANTITY} รายการในครั้งเดียว`;
 const MSG_LOGIN_REQUIRED = "กรุณาเข้าสู่ระบบก่อน";
 const MSG_USER_NOT_FOUND = "ไม่พบผู้ใช้งาน กรุณาเข้าสู่ระบบใหม่";
 const MSG_PRODUCTS_NOT_FOUND = "บางสินค้าไม่พบในระบบ";
@@ -91,18 +92,6 @@ export async function POST(request: NextRequest) {
     }
 
     const ip = getClientIp(request);
-    const rateLimit = await checkPurchaseRateLimit(`${ip}:cart`);
-    if (rateLimit.blocked) {
-        return NextResponse.json(
-            { success: false, message: "คำขอสั่งซื้อถี่เกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง" },
-            {
-                status: 429,
-                headers: {
-                    "Retry-After": String(Math.max(1, Math.ceil((rateLimit.retryAfter ?? 1000) / 1000))),
-                },
-            },
-        );
-    }
 
     try {
         const csrfAuth = await isAuthenticatedWithCsrf(request);
@@ -110,6 +99,21 @@ export async function POST(request: NextRequest) {
             return NextResponse.json(
                 { success: false, message: csrfAuth.error ?? MSG_LOGIN_REQUIRED },
                 { status: 401 }
+            );
+        }
+
+        // Keyed by account as well as IP: a shared connection (mobile network,
+        // net cafe) put unrelated shoppers into one bucket.
+        const rateLimit = await checkPurchaseRateLimit(`${ip}:${csrfAuth.userId}:cart`);
+        if (rateLimit.blocked) {
+            return NextResponse.json(
+                { success: false, message: "คำขอสั่งซื้อถี่เกินไป กรุณารอสักครู่แล้วลองใหม่อีกครั้ง" },
+                {
+                    status: 429,
+                    headers: {
+                        "Retry-After": String(Math.max(1, Math.ceil((rateLimit.retryAfter ?? 1000) / 1000))),
+                    },
+                },
             );
         }
 
@@ -121,7 +125,7 @@ export async function POST(request: NextRequest) {
         }
 
         const totalRequestedQuantity = checkoutItems.reduce((sum, item) => sum + item.quantity, 0);
-        if (totalRequestedQuantity > 50) {
+        if (totalRequestedQuantity > MAX_CART_QUANTITY) {
             return NextResponse.json({ success: false, message: MSG_MAX_PRODUCTS }, { status: 400 });
         }
 

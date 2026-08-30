@@ -155,6 +155,49 @@ function CartSheetContent() {
         };
     }, [isCartOpen]);
 
+    // Read through a ref so syncing the cart doesn't retrigger this effect.
+    const latestItemsRef = useRef(items);
+    useEffect(() => {
+        latestItemsRef.current = items;
+    }, [items]);
+
+    useEffect(() => {
+        if (!isCartOpen || latestItemsRef.current.length === 0) return;
+
+        let active = true;
+        (async () => {
+            try {
+                const data = await refreshCartItems(buildCartRefreshPayload({ items: latestItemsRef.current }));
+                if (!active || !data.success) return;
+
+                const refreshedById = new Map((data.items ?? []).map((item) => [item.id, item]));
+                const current = latestItemsRef.current;
+                const synced = current
+                    .map((item) => {
+                        const refreshed = refreshedById.get(item.id);
+                        return refreshed ? buildSyncedCartItem(item, refreshed) : null;
+                    })
+                    .filter((item): item is CartContextItem => item !== null);
+
+                const removedCount = current.length - synced.length;
+                const changed = removedCount > 0
+                    || synced.some((item, index) => hasCartItemChanged(current[index], item));
+                if (!changed) return;
+
+                replaceCartItems(synced);
+                if (removedCount > 0) {
+                    showWarning(`นำสินค้าที่ไม่พร้อมจำหน่ายออกจากตะกร้าแล้ว ${removedCount} รายการ`);
+                }
+            } catch {
+                // Leave the cart as it is; checkout re-checks before charging.
+            }
+        })();
+
+        return () => {
+            active = false;
+        };
+    }, [isCartOpen, replaceCartItems]);
+
     const appliedPromoRef = useRef(appliedPromo);
     useEffect(() => {
         appliedPromoRef.current = appliedPromo;
@@ -223,12 +266,16 @@ function CartSheetContent() {
             }
         }
 
-        fetchRecommendedProducts();
+        // Only worth fetching once the shopper actually opens the cart: this
+        // component is mounted in the layout of every page.
+        if (isCartOpen && recommendedProducts.length === 0) {
+            fetchRecommendedProducts();
+        }
 
         return () => {
             isActive = false;
         };
-    }, []);
+    }, [isCartOpen, recommendedProducts.length]);
 
     const finalThbTotal = appliedPromo?.finalPrice ?? thbTotal;
     const finalTotals = {
@@ -769,6 +816,17 @@ function CartSheetContent() {
                                                     {pointShortfall > 0 ? (
                                                         <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:bg-amber-500/10 dark:text-amber-200">
                                                             {pointLabel}ไม่พอ ขาดอีก {formatCurrencyAmount(pointShortfall, "POINT", currencySettings)}
+                                                            {" · "}
+                                                            <button
+                                                                type="button"
+                                                                className="underline underline-offset-2"
+                                                                onClick={() => {
+                                                                    closeCart();
+                                                                    router.push("/quests");
+                                                                }}
+                                                            >
+                                                                รับ{pointLabel}จากภารกิจรายวัน
+                                                            </button>
                                                         </p>
                                                     ) : null}
                                                 </>

@@ -2,7 +2,7 @@ import React from "react";
 import { renderToString } from "react-dom/server";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { CART_STORAGE_KEY, CartProvider, useCart, type CartItem } from "@/components/providers/CartContext";
+import { CART_STORAGE_KEY, CartProvider, getCartStorageKey, useCart, type CartItem } from "@/components/providers/CartContext";
 import { showError, showInfo, showSuccess } from "@/lib/swal";
 
 vi.mock("next/navigation", () => ({
@@ -48,9 +48,12 @@ function CartHarness({ item }: Readonly<{ item: CartItem }>) {
     );
 }
 
+const USER_ID = "user-1";
+const USER_CART_KEY = getCartStorageKey(USER_ID) as string;
+
 function renderCart(item: CartItem) {
     render(
-        <CartProvider initialAuthenticated>
+        <CartProvider initialAuthenticated userId={USER_ID}>
             <CartHarness item={item} />
         </CartProvider>,
     );
@@ -107,10 +110,10 @@ describe("CartProvider addToCart", () => {
     });
 
     it("server-renders an empty cart before hydrating stored items", async () => {
-        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify([product]));
+        localStorage.setItem(USER_CART_KEY, JSON.stringify([product]));
 
         const serverHtml = renderToString(
-            <CartProvider initialAuthenticated>
+            <CartProvider initialAuthenticated userId={USER_ID}>
                 <CartHarness item={product} />
             </CartProvider>,
         );
@@ -121,6 +124,45 @@ describe("CartProvider addToCart", () => {
         await waitFor(() => {
             expect(JSON.parse(screen.getByTestId("items").textContent ?? "[]")).toEqual([product]);
         });
+    });
+
+    // A cart belongs to an account: two people sharing a browser must not see
+    // each other's, and a lapsed session must not delete anything.
+    it("keeps each account's cart under its own key", async () => {
+        localStorage.setItem(getCartStorageKey("someone-else") as string, JSON.stringify([product]));
+
+        renderCart(product);
+
+        await waitFor(() => {
+            expect(JSON.parse(screen.getByTestId("items").textContent ?? "[]")).toEqual([]);
+        });
+    });
+
+    it("leaves the stored cart alone when the visitor is signed out", async () => {
+        localStorage.setItem(USER_CART_KEY, JSON.stringify([product]));
+
+        render(
+            <CartProvider initialAuthenticated={false} userId={null}>
+                <CartHarness item={product} />
+            </CartProvider>,
+        );
+
+        await waitFor(() => {
+            expect(JSON.parse(screen.getByTestId("items").textContent ?? "[]")).toEqual([]);
+        });
+        expect(localStorage.getItem(USER_CART_KEY)).toBe(JSON.stringify([product]));
+    });
+
+    it("moves a cart left under the old shared key to this account", async () => {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify([product]));
+
+        renderCart(product);
+
+        await waitFor(() => {
+            expect(JSON.parse(screen.getByTestId("items").textContent ?? "[]")).toEqual([product]);
+        });
+        expect(localStorage.getItem(CART_STORAGE_KEY)).toBeNull();
+        expect(JSON.parse(localStorage.getItem(USER_CART_KEY) ?? "[]")).toEqual([product]);
     });
 
     it("removes an item and shows one removal toast", async () => {

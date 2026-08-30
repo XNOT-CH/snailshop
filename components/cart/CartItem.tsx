@@ -6,6 +6,7 @@ import { QuantitySelector } from "@/components/QuantitySelector";
 import { Package, X } from "lucide-react";
 import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
 import { themeClasses } from "@/lib/theme";
+import { MAX_CART_QUANTITY } from "@/lib/constants/cart";
 
 interface CartItemProps {
     item: CartItemType;
@@ -20,7 +21,7 @@ export function CartItem({ item, onRemove, onUpdateQuantity, currencySettings }:
     const subtotal = displayPrice * quantity;
     const originalSubtotal = item.price * quantity;
     const hasProductDiscount = item.discountPrice != null && item.discountPrice < item.price;
-    const maxQty = item.stock != null && item.stock > 0 ? item.stock : 99;
+    const maxQty = item.stock != null && item.stock > 0 ? item.stock : MAX_CART_QUANTITY;
 
     return (
         <div className={`${themeClasses.surfaceSoft} flex items-center gap-3 rounded-xl px-3 py-3 transition-colors`}>

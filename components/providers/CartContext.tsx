@@ -6,6 +6,7 @@ import { showSuccess, showError, showInfo } from "@/lib/swal";
 import { normalizeCurrencyCode, type ProductCurrencyCode } from "@/lib/currencySettings";
 import { toBaht, toSatang } from "@/lib/money";
 import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
+import { MAX_CART_QUANTITY } from "@/lib/constants/cart";
 
 // Cart item interface
 export interface CartItem {
@@ -33,28 +34,33 @@ interface CartContextType {
     openCart: () => void;
     closeCart: () => void;
     itemCount: number;
-    subtotal: number;
-    total: number;
     totalsByCurrency: Record<ProductCurrencyCode, number>;
     isLoading: boolean;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+/** Where carts used to live: one key for the whole browser, no account in it. */
 export const CART_STORAGE_KEY = "gamestore_cart";
+
+/** Carts are stored per account so two people on one browser never see each other's. */
+export function getCartStorageKey(userId: string | null | undefined): string | null {
+    return userId ? `${CART_STORAGE_KEY}:${userId}` : null;
+}
 
 interface CartProviderProps {
     children: ReactNode;
     initialAuthenticated?: boolean;
+    userId?: string | null;
 }
 
-function readStoredCart(): CartItem[] {
+function readCartAtKey(storageKey: string): CartItem[] {
     if (typeof window === "undefined") {
         return [];
     }
 
     try {
-        const savedCart = localStorage.getItem(CART_STORAGE_KEY);
+        const savedCart = localStorage.getItem(storageKey);
         if (!savedCart) {
             return [];
         }
@@ -67,9 +73,36 @@ function readStoredCart(): CartItem[] {
     }
 }
 
+/**
+ * Reads this account's cart, moving over anything left under the old shared key
+ * the first time. Without the move, shipping the per-account key would empty
+ * every existing customer's cart — the thing this change exists to prevent.
+ */
+function readStoredCart(storageKey: string): CartItem[] {
+    const stored = readCartAtKey(storageKey);
+    if (stored.length > 0) {
+        return stored;
+    }
+
+    const legacy = readCartAtKey(CART_STORAGE_KEY);
+    if (legacy.length === 0) {
+        return [];
+    }
+
+    try {
+        localStorage.setItem(storageKey, JSON.stringify(legacy));
+        localStorage.removeItem(CART_STORAGE_KEY);
+    } catch (error) {
+        console.error("Failed to move the cart to its per-account key:", error);
+    }
+
+    return legacy;
+}
+
 export function CartProvider({
     children,
     initialAuthenticated = false,
+    userId = null,
 }: Readonly<CartProviderProps>) {
     const router = useRouter();
     const [items, setItems] = useState<CartItem[]>([]);
@@ -84,23 +117,22 @@ export function CartProvider({
         itemsRef.current = items;
     }, [items]);
 
+    const storageKey = getCartStorageKey(userId);
+
     useEffect(() => {
         setIsAuthenticated(initialAuthenticated);
 
-        if (initialAuthenticated) {
-            setItems(readStoredCart());
+        if (initialAuthenticated && storageKey) {
+            setItems(readStoredCart(storageKey));
             setIsCartHydrated(true);
             return;
         }
 
+        // A signed-out visitor sees an empty cart, but the stored one is left
+        // alone: a session that lapsed overnight used to wipe it for good.
         setItems([]);
         setIsCartHydrated(true);
-        try {
-            localStorage.removeItem(CART_STORAGE_KEY);
-        } catch (error) {
-            console.error("Failed to clear cart for guest session:", error);
-        }
-    }, [initialAuthenticated]);
+    }, [initialAuthenticated, storageKey]);
 
     useEffect(() => {
         if (!isAuthenticated) {
@@ -108,8 +140,8 @@ export function CartProvider({
         }
 
         const handleStorage = (event: StorageEvent) => {
-            if (event.key === CART_STORAGE_KEY) {
-                setItems(readStoredCart());
+            if (storageKey && event.key === storageKey) {
+                setItems(readCartAtKey(storageKey));
             }
         };
 
@@ -118,18 +150,18 @@ export function CartProvider({
         return () => {
             window.removeEventListener("storage", handleStorage);
         };
-    }, [isAuthenticated]);
+    }, [isAuthenticated, storageKey]);
 
     // Save cart to localStorage whenever items change
     useEffect(() => {
-        if (isAuthenticated && isCartHydrated) {
+        if (isAuthenticated && isCartHydrated && storageKey) {
             try {
-                localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+                localStorage.setItem(storageKey, JSON.stringify(items));
             } catch (error) {
                 console.error("Failed to save cart to localStorage:", error);
             }
         }
-    }, [items, isAuthenticated, isCartHydrated]);
+    }, [items, isAuthenticated, isCartHydrated, storageKey]);
 
     // Update item quantity
     const updateQuantity = useCallback((productId: string, quantity: number) => {
@@ -138,7 +170,7 @@ export function CartProvider({
             prev.map((item) => {
                 if (item.id !== productId) return item;
                 // Cap quantity at available stock if known
-                const maxQty = item.stock != null && item.stock > 0 ? item.stock : 99;
+                const maxQty = item.stock != null && item.stock > 0 ? item.stock : MAX_CART_QUANTITY;
                 const clampedQty = Math.min(quantity, maxQty);
                 return { ...item, quantity: clampedQty };
             })
@@ -149,6 +181,13 @@ export function CartProvider({
     const addToCart = useCallback(async (product: CartItem): Promise<boolean> => {
         const authCheck = await requireAuthBeforePurchase(router);
         if (!authCheck.allowed) {
+            return false;
+        }
+
+        if (authCheck.unverified) {
+            // The cart is only stored for a signed-in account, so an item added
+            // here would disappear on reload without a word.
+            showError("ตรวจสอบสถานะการเข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
             return false;
         }
 
@@ -279,12 +318,11 @@ export function CartProvider({
             THB: toBaht(satangByCurrency.THB),
             POINT: toBaht(satangByCurrency.POINT),
         };
-        const subtotal = totalsByCurrency.THB;
 
+        // No single "total": a cart can hold both currencies, and one number
+        // could only ever be half the answer.
         return {
             itemCount: items.reduce((count, item) => count + (item.quantity || 1), 0),
-            subtotal,
-            total: subtotal,
             totalsByCurrency,
         };
     }, [items]);
@@ -301,8 +339,6 @@ export function CartProvider({
         openCart,
         closeCart,
         itemCount: cartTotals.itemCount,
-        subtotal: cartTotals.subtotal,
-        total: cartTotals.total,
         totalsByCurrency: cartTotals.totalsByCurrency,
         isLoading,
     }), [items, addToCart, updateQuantity, removeFromCart, replaceCartItems, clearCart, isInCart, isCartOpen, openCart, closeCart, cartTotals, isLoading]);

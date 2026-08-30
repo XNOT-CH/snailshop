@@ -54,7 +54,7 @@ export default async function SiteLayout({
       <StructuredData data={structuredData} />
       <ThemeProvider>
         <ToastProvider>
-          <CartProvider initialAuthenticated={Boolean(session?.user)}>
+          <CartProvider initialAuthenticated={Boolean(session?.user)} userId={session?.user?.id}>
             <DynamicBackground
               backgroundImage={settings?.backgroundImage}
               backgroundBlur={settings?.backgroundBlur}
