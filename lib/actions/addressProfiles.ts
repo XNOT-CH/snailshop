@@ -197,8 +197,9 @@ export async function getUserAddressProfiles(): Promise<ActionResult<AddressProf
     }
 }
 
-/** One account does not need more than this, and it bounds writes from a client. */
-export const MAX_ADDRESS_PROFILES = 20;
+// A "use server" file may only export async functions, so this stays local.
+// One account does not need more than this, and it bounds writes from a client.
+const MAX_ADDRESS_PROFILES = 20;
 
 export async function saveUserAddressProfile(input: unknown): Promise<ActionResult<AddressProfileData>> {
     try {
