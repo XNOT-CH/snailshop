@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 
-const { requirePermissionMock, updateRewardsMock, setMock, findFirstMock, getPlanMock } = vi.hoisted(() => ({
+const { requirePermissionMock, updateRewardsMock, setMock, findFirstMock, getPlanMock, auditMock, getRewardsMock } = vi.hoisted(() => ({
     requirePermissionMock: vi.fn(),
+    auditMock: vi.fn(),
+    getRewardsMock: vi.fn(),
     updateRewardsMock: vi.fn(),
     setMock: vi.fn(() => ({ where: vi.fn().mockResolvedValue(undefined) })),
     findFirstMock: vi.fn(),
@@ -28,8 +30,16 @@ vi.mock("drizzle-orm", () => ({ eq: vi.fn() }));
 
 vi.mock("@/lib/seasonPass", () => ({
     getOrCreateSeasonPassPlan: getPlanMock,
-    getAdminSeasonPassRewards: vi.fn(),
+    getAdminSeasonPassRewards: getRewardsMock,
     updateAdminSeasonPassRewards: updateRewardsMock,
+}));
+
+vi.mock("@/lib/auditLog", () => ({
+    auditFromRequest: auditMock,
+    AUDIT_ACTIONS: {
+        SEASON_PASS_PLAN_UPDATE: "SEASON_PASS_PLAN_UPDATE",
+        SEASON_PASS_REWARDS_UPDATE: "SEASON_PASS_REWARDS_UPDATE",
+    },
 }));
 
 function rewardsRequest(rewards: unknown) {
@@ -49,6 +59,9 @@ describe("API: /api/admin/season-pass/rewards (PUT)", () => {
         vi.resetModules();
         requirePermissionMock.mockResolvedValue({ success: true });
         updateRewardsMock.mockResolvedValue([]);
+        getRewardsMock.mockResolvedValue([
+            { dayNumber: 1, rewardType: "credits", amount: "10", label: "เครดิต 10", highlight: false },
+        ]);
         setMock.mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) });
     });
 
@@ -59,6 +72,15 @@ describe("API: /api/admin/season-pass/rewards (PUT)", () => {
 
         expect(res.status).toBe(200);
         expect(updateRewardsMock).toHaveBeenCalledOnce();
+        expect(auditMock).toHaveBeenCalledWith(
+            expect.anything(),
+            expect.objectContaining({
+                action: "SEASON_PASS_REWARDS_UPDATE",
+                details: expect.objectContaining({
+                    changes: [{ field: "day 1", old: "credits 10", new: "credits 50" }],
+                }),
+            }),
+        );
     });
 
     // A board day pays straight into a customer balance, so an extra digit is a

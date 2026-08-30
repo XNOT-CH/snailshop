@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { getAdminSeasonPassRewards, updateAdminSeasonPassRewards } from "@/lib/seasonPass";
 import { PERMISSIONS } from "@/lib/permissions";
 import { SEASON_PASS_REWARD_DAYS } from "@/lib/seasonPassConfig";
@@ -79,6 +80,11 @@ export async function PUT(request: NextRequest) {
             }
         }
 
+        // Snapshot before writing so the trail names the days that moved rather
+        // than all thirty every time someone presses save.
+        const previousRewards = await getAdminSeasonPassRewards();
+        const previousByDay = new Map(previousRewards.map((reward) => [reward.dayNumber, reward]));
+
         const updatedRewards = await updateAdminSeasonPassRewards(
             rewards.map((reward) => ({
                 dayNumber: reward.dayNumber,
@@ -91,6 +97,25 @@ export async function PUT(request: NextRequest) {
                 pointReward: reward.pointReward ?? null,
             })),
         );
+
+        const changes = rewards.flatMap((reward) => {
+            const previous = previousByDay.get(reward.dayNumber);
+            const before = previous
+                ? `${previous.rewardType} ${previous.amount}${previous.highlight ? " (ไฮไลต์)" : ""}`
+                : "-";
+            const after = `${reward.rewardType} ${reward.amount.trim()}${reward.highlight ? " (ไฮไลต์)" : ""}`;
+            return before === after ? [] : [{ field: `day ${reward.dayNumber}`, old: before, new: after }];
+        });
+
+        if (changes.length > 0) {
+            await auditFromRequest(request, {
+                action: AUDIT_ACTIONS.SEASON_PASS_REWARDS_UPDATE,
+                resource: "SeasonPassReward",
+                resourceId: "board",
+                resourceName: `แก้รางวัล ${changes.length} วัน`,
+                details: { resourceName: `แก้รางวัล ${changes.length} วัน`, changes },
+            });
+        }
 
         return NextResponse.json(updatedRewards);
     } catch (error) {

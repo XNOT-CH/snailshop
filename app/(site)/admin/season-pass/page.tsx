@@ -35,7 +35,9 @@ export default async function AdminSeasonPassPage() {
     }
     const canEditSeasonPass = access.permissions?.includes(PERMISSIONS.SEASON_PASS_EDIT);
 
-    const overview = await getAdminSeasonPassOverview();
+    const overview = await getAdminSeasonPassOverview(new Date(), {
+        normalizeStatuses: Boolean(canEditSeasonPass),
+    });
     const { plan, stats, rewardSummary, subscribers } = overview;
 
     const rewardRows = rewardSummary.filter((reward) => reward.item !== "Milestone Days");

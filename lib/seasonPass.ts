@@ -281,6 +281,12 @@ export async function getOrCreateSeasonPassPlan() {
     return plan;
 }
 
+function getAffectedRows(result: unknown): number {
+    const rows = Array.isArray(result) ? result[0] : result;
+    const affected = (rows as { affectedRows?: number } | undefined)?.affectedRows;
+    return Number.isFinite(affected) ? Number(affected) : 0;
+}
+
 export async function expireSeasonPassSubscriptions(userId?: string) {
     const conditions = [eq(seasonPassSubscriptions.status, "ACTIVE"), lt(seasonPassSubscriptions.endAt, mysqlNow())];
 
@@ -288,10 +294,13 @@ export async function expireSeasonPassSubscriptions(userId?: string) {
         conditions.push(eq(seasonPassSubscriptions.userId, userId));
     }
 
-    await db
+    const result = await db
         .update(seasonPassSubscriptions)
         .set({ status: "EXPIRED" })
         .where(and(...conditions));
+
+    // The cron endpoint reports how many rows it moved.
+    return getAffectedRows(result);
 }
 
 export async function activateQueuedSeasonPassSubscriptions(userId?: string) {
@@ -305,10 +314,12 @@ export async function activateQueuedSeasonPassSubscriptions(userId?: string) {
         conditions.push(eq(seasonPassSubscriptions.userId, userId));
     }
 
-    await db
+    const result = await db
         .update(seasonPassSubscriptions)
         .set({ status: "ACTIVE" })
         .where(and(...conditions));
+
+    return getAffectedRows(result);
 }
 
 export async function getCurrentSeasonPassSubscription(userId: string) {
@@ -492,15 +503,23 @@ type AdminSeasonPassOverviewSubscriber = {
     note: string;
 };
 
-export async function getAdminSeasonPassOverview(now: Date = new Date()) {
+export async function getAdminSeasonPassOverview(
+    now: Date = new Date(),
+    options: { normalizeStatuses?: boolean } = {},
+) {
     const plan = await getOrCreateSeasonPassPlan();
     const rewardCatalog = await getSeasonPassRewardCatalog(plan.id);
     const todayKey = formatDateInTimeZone(now, TH_TIME_ZONE);
     const monthStart = `${getFirstDayOfMonthInTimeZone(now, TH_TIME_ZONE)} 00:00:00`;
     const expiringSoonThreshold = toMySQLDatetime(addDays(now, 3));
 
-    await expireSeasonPassSubscriptions();
-    await activateQueuedSeasonPassSubscriptions();
+    // Status normalization is a write. It rides along here only for admins who
+    // could run it themselves; the scheduled job at
+    // GET /api/admin/season-pass/lifecycle is what keeps it correct in between.
+    if (options.normalizeStatuses) {
+        await expireSeasonPassSubscriptions();
+        await activateQueuedSeasonPassSubscriptions();
+    }
 
     const [activeCountRow] = await db
         .select({ count: sql<number>`count(*)` })

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
+import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { db, seasonPassPlans } from "@/lib/db";
 import { SEASON_PASS_REWARD_DAYS } from "@/lib/seasonPassConfig";
 import { getOrCreateSeasonPassPlan } from "@/lib/seasonPass";
@@ -91,6 +92,26 @@ export async function PUT(request: NextRequest) {
         const updatedPlan = await db.query.seasonPassPlans.findFirst({
             where: eq(seasonPassPlans.id, currentPlan.id),
         });
+
+        // The package price is a money setting; it was the one product-shaped
+        // thing in the admin that could be changed without leaving a trace.
+        const nextIsActive = body.isActive ?? currentPlan.isActive;
+        const changes = [];
+        if (currentPlan.name !== name) changes.push({ field: "name", old: String(currentPlan.name ?? ""), new: name });
+        if (Number(currentPlan.price) !== Number(price)) changes.push({ field: "price", old: String(currentPlan.price), new: String(price) });
+        if (Boolean(currentPlan.isActive) !== Boolean(nextIsActive)) {
+            changes.push({ field: "isActive", old: String(Boolean(currentPlan.isActive)), new: String(Boolean(nextIsActive)) });
+        }
+
+        if (changes.length > 0) {
+            await auditFromRequest(request, {
+                action: AUDIT_ACTIONS.SEASON_PASS_PLAN_UPDATE,
+                resource: "SeasonPassPlan",
+                resourceId: currentPlan.id,
+                resourceName: name,
+                details: { resourceName: name, changes },
+            });
+        }
 
         return NextResponse.json(updatedPlan);
     } catch {
