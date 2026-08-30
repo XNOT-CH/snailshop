@@ -5,8 +5,8 @@ import { and, eq, ne } from "drizzle-orm";
 import { auth } from "@/auth";
 import { createAuditLog, AUDIT_ACTIONS, getChanges } from "@/lib/auditLog";
 import { db, users } from "@/lib/db";
-import { decryptUserSensitiveFields, encryptUserSensitiveFields } from "@/lib/sensitiveData";
-import { updateProfileSchema, UpdateProfileInput } from "@/lib/validations/profile";
+import { decryptUserSensitiveFields, omitClientHiddenUserFields } from "@/lib/sensitiveData";
+import { MIN_PASSWORD_LENGTH, updateProfileSchema, UpdateProfileInput } from "@/lib/validations/profile";
 import { verifyUserPin } from "@/lib/security/pin";
 
 interface ActionResult {
@@ -26,30 +26,6 @@ function getFieldErrors(issues: any[]) {
         fieldErrors[field].push(error.message);
     }
     return fieldErrors;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapTaxAddress(taxAddress: any, updateData: any) {
-    if (!taxAddress) return;
-    updateData.taxFullName = taxAddress.fullName || null;
-    updateData.taxPhone = taxAddress.phone || null;
-    updateData.taxAddress = taxAddress.address || null;
-    updateData.taxProvince = taxAddress.province || null;
-    updateData.taxDistrict = taxAddress.district || null;
-    updateData.taxSubdistrict = taxAddress.subdistrict || null;
-    updateData.taxPostalCode = taxAddress.postalCode || null;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapShippingAddress(shippingAddress: any, updateData: any) {
-    if (!shippingAddress) return;
-    updateData.shipFullName = shippingAddress.fullName || null;
-    updateData.shipPhone = shippingAddress.phone || null;
-    updateData.shipAddress = shippingAddress.address || null;
-    updateData.shipProvince = shippingAddress.province || null;
-    updateData.shipDistrict = shippingAddress.district || null;
-    updateData.shipSubdistrict = shippingAddress.subdistrict || null;
-    updateData.shipPostalCode = shippingAddress.postalCode || null;
 }
 
 /**
@@ -112,6 +88,31 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
         if (validatedData.name !== undefined) updateData.name = validatedData.name || null;
         if (validatedData.email !== undefined) {
             const nextEmail = validatedData.email ? validatedData.email.trim().toLowerCase() : null;
+            const currentEmail = (currentUser.email ?? "").trim().toLowerCase();
+            const emailIsChanging = currentEmail !== (nextEmail ?? "");
+
+            // The address is what "forgot password" sends the reset link to, so
+            // moving it is as sensitive as changing the password itself — which
+            // has always asked for the current one.
+            if (emailIsChanging) {
+                if (!validatedData.currentPassword) {
+                    return {
+                        success: false,
+                        message: "กรุณากรอกรหัสผ่านปัจจุบันเพื่อเปลี่ยนอีเมล",
+                        errors: { currentPassword: ["กรุณากรอกรหัสผ่านปัจจุบันเพื่อเปลี่ยนอีเมล"] },
+                    };
+                }
+
+                const isPasswordValid = await bcrypt.compare(validatedData.currentPassword, currentUser.password);
+                if (!isPasswordValid) {
+                    return {
+                        success: false,
+                        message: "รหัสผ่านปัจจุบันไม่ถูกต้อง",
+                        errors: { currentPassword: ["รหัสผ่านปัจจุบันไม่ถูกต้อง"] },
+                    };
+                }
+            }
+
             if (nextEmail) {
                 const existingEmailUser = await db.query.users.findFirst({
                     where: and(eq(users.email, nextEmail), ne(users.id, userId)),
@@ -128,7 +129,7 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
             }
 
             updateData.email = nextEmail;
-            if ((currentUser.email ?? "").trim().toLowerCase() !== (nextEmail ?? "")) {
+            if (emailIsChanging) {
                 updateData.emailVerified = false;
             }
         }
@@ -139,21 +140,14 @@ export async function updateProfile(formData: UpdateProfileInput): Promise<Actio
         if (validatedData.lastNameEn !== undefined) updateData.lastNameEn = validatedData.lastNameEn || null;
         if (validatedData.image !== undefined) updateData.image = validatedData.image || null;
 
-        mapTaxAddress(validatedData.taxAddress, updateData);
-        mapShippingAddress(validatedData.shippingAddress, updateData);
-
-        // Only run encryption when there are actually tax/ship fields to encrypt.
-        // Encrypting an empty object creates null values for all 14 address fields,
-        // which would wipe the user's saved addresses on password-only changes.
-        const hasSensitiveFields = Object.keys(updateData).some(
-            (k) => k.startsWith("tax") || k.startsWith("ship")
-        );
+        // Addresses are not written here. They belong to UserAddressProfile, which
+        // mirrors the default one into the legacy tax*/ship* columns — two writers
+        // for the same fields meant a half-finished save could leave the two
+        // copies disagreeing.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const encryptedUpdateData: Record<string, any> = hasSensitiveFields
-            ? encryptUserSensitiveFields(updateData)
-            : { ...updateData };
+        const encryptedUpdateData: Record<string, any> = { ...updateData };
 
-        if (validatedData.password && validatedData.password.length >= 6) {
+        if (validatedData.password && validatedData.password.length >= MIN_PASSWORD_LENGTH) {
             // Verify current password before allowing change
             if (!validatedData.currentPassword) {
                 return {
@@ -275,7 +269,7 @@ export async function getCurrentUserProfile() {
         }
 
         return {
-            ...decryptUserSensitiveFields(user),
+            ...omitClientHiddenUserFields(decryptUserSensitiveFields(user)),
             hasPin: Boolean(user.pinHash),
             pinUpdatedAt: user.pinUpdatedAt,
             pinLockedUntil: user.pinLockedUntil,

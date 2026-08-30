@@ -128,7 +128,7 @@ export function PinSettingsCard({
                     ความปลอดภัยด้วย PIN
                 </CardTitle>
                 <CardDescription>
-                    ใช้ PIN 6 หลักสำหรับยืนยันรายการสำคัญในอนาคต
+                    PIN 6 หลักใช้ยืนยันตอนเปลี่ยนรหัสผ่านและตอนหมุนกาชา
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">

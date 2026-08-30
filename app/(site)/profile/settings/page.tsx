@@ -48,7 +48,8 @@ import {
 } from "lucide-react";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { updateProfile } from "@/lib/actions/user";
-import { showLoading, hideLoading, showSuccessAlert, showErrorAlert } from "@/lib/swal";
+import type { UpdateProfileInput } from "@/lib/validations/profile";
+import { showLoading, hideLoading, showPasswordPrompt, showSuccessAlert, showErrorAlert } from "@/lib/swal";
 import { ThaiAddressSelector } from "@/components/ThaiAddressSelector";
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import { compressImage } from "@/lib/compressImage";
@@ -353,6 +354,34 @@ export default function ProfileSettingsPage() {
         setIsEditingVerifiedEmail(false);
     }, []);
 
+    // Everything on this page lives in component state until a card is saved, so
+    // closing the tab throws away whatever was typed.
+    const hasUnsavedChanges =
+        Boolean(profile) && (
+            (formData.name ?? "") !== (profile?.name ?? "")
+            || (formData.email ?? "") !== (profile?.email ?? "")
+            || (formData.phone ?? "") !== (profile?.phone ?? "")
+            || (formData.firstName ?? "") !== (profile?.firstName ?? "")
+            || (formData.lastName ?? "") !== (profile?.lastName ?? "")
+            || (formData.firstNameEn ?? "") !== (profile?.firstNameEn ?? "")
+            || (formData.lastNameEn ?? "") !== (profile?.lastNameEn ?? "")
+            || formData.password.length > 0
+            || editingTax
+            || editingShip
+        );
+
+    useEffect(() => {
+        if (!hasUnsavedChanges) return;
+
+        const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = "";
+        };
+
+        window.addEventListener("beforeunload", warnBeforeLeaving);
+        return () => window.removeEventListener("beforeunload", warnBeforeLeaving);
+    }, [hasUnsavedChanges]);
+
     const buildSubmitData = (section: "contact" | "personal" | "password" | "tax" | "ship") => {
         switch (section) {
             case "contact":
@@ -377,13 +406,10 @@ export default function ProfileSettingsPage() {
                     pin: formData.pin,
                 };
             case "tax":
-                return {
-                    taxAddress,
-                };
             case "ship":
-                return {
-                    shippingAddress: shipAddress,
-                };
+                // Addresses are saved through saveUserAddressProfile, which owns
+                // both the profile row and the legacy columns it mirrors into.
+                return {};
         }
     };
 
@@ -474,6 +500,13 @@ export default function ProfileSettingsPage() {
             return;
         }
 
+        let passwordForEmailChange = "";
+        if (section === "contact" && (formData.email ?? "").trim().toLowerCase() !== (profile?.email ?? "").trim().toLowerCase()) {
+            const entered = await promptForCurrentPassword();
+            if (!entered) return;
+            passwordForEmailChange = entered;
+        }
+
         let pinForProtectedAction = "";
         if (section === "password" && formData.password && profile?.hasPin) {
             const pinCheck = await requirePinForAction("ยืนยัน PIN เพื่อเปลี่ยนรหัสผ่าน");
@@ -488,22 +521,35 @@ export default function ProfileSettingsPage() {
         showLoading("กำลังบันทึก...");
 
         try {
-            const submitData = section === "password" && pinForProtectedAction
-                ? {
-                    ...buildSubmitData(section),
-                    pin: pinForProtectedAction,
-                }
-                : buildSubmitData(section);
+            // One writer, one result: the address cards never touch updateProfile,
+            // so a failure here cannot leave half of the address saved.
+            if (section === "tax" || section === "ship") {
+                const profileSaved = await saveAddressProfileForSection(section);
+                hideLoading();
+                if (!profileSaved) return;
+
+                await showSuccessAlert("สำเร็จ!", "บันทึกข้อมูลที่อยู่เรียบร้อยแล้ว");
+                setEditingTax(false);
+                setEditingShip(false);
+                try {
+                    await refreshProfile();
+                } catch { }
+                router.refresh();
+                return;
+            }
+
+            const submitData: UpdateProfileInput = {
+                ...buildSubmitData(section),
+                ...(section === "password" && pinForProtectedAction ? { pin: pinForProtectedAction } : {}),
+                ...(section === "contact" && passwordForEmailChange
+                    ? { currentPassword: passwordForEmailChange }
+                    : {}),
+            };
             const result = await updateProfile(submitData);
 
             hideLoading();
 
             if (result.success) {
-                if (section === "tax" || section === "ship") {
-                    const profileSaved = await saveAddressProfileForSection(section);
-                    if (!profileSaved) return;
-                }
-
                 await showSuccessAlert("สำเร็จ!", result.message);
                 // Clear password fields after success
                 if (section === "password") {
@@ -543,6 +589,11 @@ export default function ProfileSettingsPage() {
             setIsLoading(false);
         }
     };
+
+    // The server asks for the account password before moving the e-mail, so the
+    // card collects it instead of letting the save come back with an error.
+    const promptForCurrentPassword = () =>
+        showPasswordPrompt("ยืนยันรหัสผ่าน", "กรอกรหัสผ่านบัญชีเพื่อยืนยันการเปลี่ยนอีเมล");
 
     const handleCancelEmailEdit = () => {
         setFormData((prev) => ({
@@ -1720,6 +1771,7 @@ export default function ProfileSettingsPage() {
                             <Input
                                 id="currentPassword"
                                 type="password"
+                                autoComplete="current-password"
                                 placeholder="กรอกรหัสผ่านปัจจุบันของคุณ"
                                 value={formData.currentPassword}
                                 onChange={(e) =>
@@ -1743,7 +1795,8 @@ export default function ProfileSettingsPage() {
                                     <Input
                                         id="password"
                                         type={showNewPassword ? "text" : "password"}
-                                        placeholder="อย่างน้อย 6 ตัวอักษร"
+                                        autoComplete="new-password"
+                                        placeholder="อย่างน้อย 8 ตัวอักษร"
                                         value={formData.password}
                                         onChange={(e) =>
                                             setFormData((prev) => ({
@@ -1774,6 +1827,7 @@ export default function ProfileSettingsPage() {
                                     <Input
                                         id="confirmPassword"
                                         type={showConfirmPassword ? "text" : "password"}
+                                        autoComplete="new-password"
                                         placeholder="กรอกรหัสผ่านอีกครั้ง"
                                         value={formData.confirmPassword}
                                         onChange={(e) =>

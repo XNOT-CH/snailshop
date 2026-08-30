@@ -55,7 +55,6 @@ export async function verifyUserPin(userId: string, pin: string) {
         columns: {
             id: true,
             pinHash: true,
-            pinFailedAttempts: true,
             pinLockedUntil: true,
         },
     });
@@ -79,12 +78,28 @@ export async function verifyUserPin(userId: string, pin: string) {
     const isCurrentPinValid = await verifyPin(pin, user.pinHash);
 
     if (!isCurrentPinValid) {
-        const nextFailedAttempts = user.pinFailedAttempts + 1;
-        await db.update(users).set({
-            pinFailedAttempts: nextFailedAttempts,
-            pinLockedUntil: nextFailedAttempts >= PIN_MAX_FAILED_ATTEMPTS ? buildPinLockUntilDate() : null,
-            updatedAt: mysqlNow(),
-        }).where(eq(users.id, userId));
+        // Bump the failed-attempt counter under a row lock so parallel wrong-PIN
+        // attempts can't all read the same baseline and slip past the lockout.
+        // bcrypt already ran above, so the lock is held only for the short
+        // re-read + counter write (not the slow hash compare).
+        const nextFailedAttempts = await db.transaction(async (tx) => {
+            const [locked] = await tx
+                .select({
+                    pinFailedAttempts: users.pinFailedAttempts,
+                })
+                .from(users)
+                .where(eq(users.id, userId))
+                .for("update");
+
+            const attempts = (locked?.pinFailedAttempts ?? 0) + 1;
+            await tx.update(users).set({
+                pinFailedAttempts: attempts,
+                pinLockedUntil: attempts >= PIN_MAX_FAILED_ATTEMPTS ? buildPinLockUntilDate() : null,
+                updatedAt: mysqlNow(),
+            }).where(eq(users.id, userId));
+
+            return attempts;
+        });
 
         await createAuditLog({
             userId,

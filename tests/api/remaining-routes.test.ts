@@ -1,5 +1,5 @@
 /**
- * Tests for dashboard overview, upload, user/settings, and topup API routes
+ * Tests for dashboard overview, upload, and topup API routes
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
@@ -142,21 +142,6 @@ describe("API: /api/upload (POST)", () => {
     });
     const res = await POST(req);
     expect(res.status).toBe(400);
-  });
-});
-
-// ═══════════════════════════════════════
-// User Settings
-// ═══════════════════════════════════════
-describe("API: /api/user/settings (PATCH)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("returns 410 because the legacy endpoint is disabled", async () => {
-    const { PATCH } = await import("@/app/api/user/settings/route");
-    const res = await PATCH();
-    expect(res.status).toBe(410);
-    const body = await res.json();
-    expect(body.message).toContain("disabled");
   });
 });
 

@@ -42,6 +42,7 @@ vi.mock("@/lib/validations/profile", () => ({
   updateProfileSchema: {
     safeParse: vi.fn(),
   },
+  MIN_PASSWORD_LENGTH: 8,
 }));
 
 import { auth } from "@/auth";
@@ -99,13 +100,48 @@ describe("lib/actions/user: updateProfile", () => {
       data: { name: "John Updated", email: "john@test.com", phone: "0812345678" },
     });
     (db.query.users.findFirst as any).mockResolvedValueOnce({
-      id: "u1", name: "John", email: null, image: null, password: "hash",
+      id: "u1", name: "John", email: "john@test.com", image: null, password: "hash",
       firstName: null, lastName: null, firstNameEn: null, lastNameEn: null,
     }).mockResolvedValueOnce(null);
     const { updateProfile } = await import("@/lib/actions/user");
     const result = await updateProfile({ name: "John Updated" } as any);
     expect(result.success).toBe(true);
     expect(result.message).toContain("อัปเดตโปรไฟล์เรียบร้อยแล้ว");
+  });
+
+  // Moving the e-mail moves where a password reset link goes, so it now asks
+  // for the account password the same way a password change does.
+  it("refuses an e-mail change without the current password", async () => {
+    (auth as any).mockResolvedValue(mkSession("u1"));
+    (updateProfileSchema.safeParse as any).mockReturnValue({
+      success: true,
+      data: { name: "John", email: "moved@test.com" },
+    });
+    (db.query.users.findFirst as any).mockResolvedValue({
+      id: "u1", name: "John", email: "john@test.com", image: null, password: "hash",
+      firstName: null, lastName: null, firstNameEn: null, lastNameEn: null,
+    });
+    const { updateProfile } = await import("@/lib/actions/user");
+    const result = await updateProfile({ name: "John", email: "moved@test.com" } as any);
+    expect(result.success).toBe(false);
+    expect(result.errors?.currentPassword).toBeDefined();
+  });
+
+  it("allows an e-mail change when the current password is given", async () => {
+    (auth as any).mockResolvedValue(mkSession("u1"));
+    (updateProfileSchema.safeParse as any).mockReturnValue({
+      success: true,
+      data: { name: "John", email: "moved@test.com", currentPassword: "oldpass123" },
+    });
+    (db.query.users.findFirst as any)
+      .mockResolvedValueOnce({
+        id: "u1", name: "John", email: "john@test.com", image: null, password: "hash",
+        firstName: null, lastName: null, firstNameEn: null, lastNameEn: null,
+      })
+      .mockResolvedValueOnce(null);
+    const { updateProfile } = await import("@/lib/actions/user");
+    const result = await updateProfile({ name: "John", email: "moved@test.com", currentPassword: "oldpass123" } as any);
+    expect(result.success).toBe(true);
   });
 
   it("updates profile with password change", async () => {

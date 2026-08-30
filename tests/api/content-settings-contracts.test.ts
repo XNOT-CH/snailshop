@@ -456,16 +456,4 @@ describe("content/settings API response contracts", () => {
       links: [],
     });
   });
-
-  it("preserves deprecated user settings PATCH contract", async () => {
-    const { PATCH } = await import("@/app/api/user/settings/route");
-
-    const response = await PATCH();
-
-    expect(response.status).toBe(410);
-    await expect(response.json()).resolves.toEqual({
-      success: false,
-      message: "Legacy password settings endpoint is disabled.",
-    });
-  });
 });

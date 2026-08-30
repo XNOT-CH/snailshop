@@ -76,6 +76,24 @@ const profileImageValue = z
         { message: "กรุณาใส่ URL รูปโปรไฟล์ที่ถูกต้อง หรือ path รูปที่อัปโหลด" }
     );
 
+// Passwords people actually pick first. An account here holds a real credit
+// balance, so "123456" clearing the bar was the wrong bar.
+const COMMON_PASSWORDS = new Set([
+    "12345678", "123456789", "1234567890", "password", "password1", "password123",
+    "qwerty123", "qwertyui", "iloveyou", "abc12345", "11111111", "00000000",
+    "asdfghjk", "zxcvbnm1", "football", "baseball", "sunshine", "princess",
+    "admin123", "welcome1", "letmein1", "monkey12", "dragon12", "superman",
+]);
+
+export const MIN_PASSWORD_LENGTH = 8;
+
+export const passwordSchema = z
+    .string()
+    .min(MIN_PASSWORD_LENGTH, `รหัสผ่านต้องมีอย่างน้อย ${MIN_PASSWORD_LENGTH} ตัวอักษร`)
+    .refine((value) => !COMMON_PASSWORDS.has(value.toLowerCase()), {
+        message: "รหัสผ่านนี้ถูกเดาง่ายเกินไป กรุณาตั้งรหัสผ่านอื่น",
+    });
+
 export const updateProfileSchema = z.object({
     name: z
         .string()
@@ -96,14 +114,10 @@ export const updateProfileSchema = z.object({
     lastName: z.string().max(100).transform((value) => value.trim()).pipe(optionalThaiNameSchema).optional().or(z.literal("")),
     firstNameEn: z.string().max(100).transform((value) => value.trim()).pipe(optionalEnglishNameSchema).optional().or(z.literal("")),
     lastNameEn: z.string().max(100).transform((value) => value.trim()).pipe(optionalEnglishNameSchema).optional().or(z.literal("")),
-    taxAddress: addressSchema.optional(),
-    shippingAddress: addressSchema.optional(),
     currentPassword: z
         .string()
         .optional(),
-    password: z
-        .string()
-        .min(6, "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร")
+    password: passwordSchema
         .or(z.literal(""))
         .optional(),
     confirmPassword: z
