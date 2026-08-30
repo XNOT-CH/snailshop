@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { getAdminSeasonPassRewards, updateAdminSeasonPassRewards } from "@/lib/seasonPass";
 import { PERMISSIONS } from "@/lib/permissions";
+import { SEASON_PASS_REWARD_DAYS } from "@/lib/seasonPassConfig";
 import { contentApiError } from "@/lib/features/content/apiResponse";
 
 const ALLOWED_TYPES = new Set(["credits", "points", "tickets"]);
+// A board day hands its amount straight to a customer balance, so a slipped
+// digit is a real payout. Anything above this is a typo, not a promotion.
+const MAX_REWARD_AMOUNT = 1_000_000;
 
 export async function GET() {
     const authCheck = await requirePermission(PERMISSIONS.SEASON_PASS_VIEW);
@@ -46,7 +50,11 @@ export async function PUT(request: NextRequest) {
         }
 
         for (const reward of rewards) {
-            if (!Number.isInteger(reward.dayNumber) || reward.dayNumber < 1 || reward.dayNumber > 30) {
+            if (
+                !Number.isInteger(reward.dayNumber)
+                || reward.dayNumber < 1
+                || reward.dayNumber > SEASON_PASS_REWARD_DAYS
+            ) {
                 return contentApiError("Invalid day number", { status: 400 });
             }
 
@@ -61,6 +69,13 @@ export async function PUT(request: NextRequest) {
             const numericAmount = Number(reward.amount);
             if (!Number.isInteger(numericAmount) || numericAmount < 0) {
                 return contentApiError("Reward amount must be a non-negative whole number", { status: 400 });
+            }
+
+            if (numericAmount > MAX_REWARD_AMOUNT) {
+                return contentApiError(
+                    `จำนวนรางวัลต่อวันต้องไม่เกิน ${MAX_REWARD_AMOUNT.toLocaleString()}`,
+                    { status: 400 },
+                );
             }
         }
 

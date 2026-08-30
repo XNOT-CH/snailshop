@@ -82,7 +82,9 @@ export async function PUT(request: NextRequest) {
                 description,
                 price,
                 durationDays,
-                isActive: body.isActive ?? true,
+                // Omitting the field keeps the plan as it is; defaulting to true
+                // meant an unrelated save could put a paused plan back on sale.
+                isActive: body.isActive ?? currentPlan.isActive,
             })
             .where(eq(seasonPassPlans.id, currentPlan.id));
 

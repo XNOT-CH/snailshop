@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowLeft, CalendarDays, Gift, PackageCheck, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { requirePermission } from "@/lib/auth";
+import { PERMISSIONS } from "@/lib/permissions";
 import { getPointCurrencyName } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { buildPageMetadata } from "@/lib/seo";
@@ -40,6 +43,13 @@ function getRewardTypeLabel(value: string, pointCurrencyName: string) {
 }
 
 export default async function AdminSeasonPassLogsPage() {
+    // Middleware guards this path too, but every other admin page checks again
+    // here so the whole surface never rests on one config file.
+    const access = await requirePermission(PERMISSIONS.SEASON_PASS_VIEW);
+    if (!access.success) {
+        redirect("/admin?error=คุณไม่มีสิทธิ์ดู Season Pass");
+    }
+
     const logs = await getAdminSeasonPassClaimLogs(150);
     const currencySettings = await getCurrencySettings().catch(() => null);
     const pointCurrencyName = getPointCurrencyName(currencySettings);
