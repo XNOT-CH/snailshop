@@ -1858,21 +1858,21 @@ export default function ProfileSettingsPage() {
                             <Alert
                                 className={
                                     passwordsMatch
-                                        ? "border-green-200 bg-green-50"
-                                        : "border-red-200 bg-red-50"
+                                        ? "border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10"
+                                        : "border-rose-200 bg-rose-50 dark:border-rose-500/30 dark:bg-rose-500/10"
                                 }
                             >
                                 {passwordsMatch ? (
                                     <>
                                         <CheckCircle className="h-4 w-4 text-green-600" />
-                                        <AlertDescription className="text-green-700">
+                                        <AlertDescription className="text-emerald-700 dark:text-emerald-300">
                                             รหัสผ่านตรงกัน
                                         </AlertDescription>
                                     </>
                                 ) : (
                                     <>
                                         <AlertTriangle className="h-4 w-4 text-red-600" />
-                                        <AlertDescription className="text-red-700">
+                                        <AlertDescription className="text-rose-700 dark:text-rose-300">
                                             รหัสผ่านไม่ตรงกัน
                                         </AlertDescription>
                                     </>
