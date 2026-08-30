@@ -123,7 +123,7 @@ describe("API: /api/season-pass/purchase (POST)", () => {
 
         expect(conn.execute).toHaveBeenCalledWith(
             expect.stringContaining("INSERT INTO SeasonPassSubscription"),
-            expect.arrayContaining(["u1", "plan-1", "2026-05-01 00:00:00", "2026-06-01 00:00:00"]),
+            expect.arrayContaining(["u1", "plan-1", 50, "2026-05-01 00:00:00", "2026-06-01 00:00:00"]),
         );
         expect(conn.execute).not.toHaveBeenCalledWith(
             expect.stringContaining("UPDATE SeasonPassSubscription SET endAt = ?"),
@@ -172,8 +172,8 @@ describe("API: /api/season-pass/purchase (POST)", () => {
             endAt: "2026-05-01 00:00:00",
         });
         expect(conn.execute).toHaveBeenCalledWith(
-            expect.stringContaining("VALUES (?, ?, ?, 'ACTIVE', UTC_TIMESTAMP(), ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())"),
-            expect.arrayContaining(["u1", "plan-1", "2026-05-01 00:00:00"]),
+            expect.stringContaining("VALUES (?, ?, ?, ?, 'ACTIVE', UTC_TIMESTAMP(), ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())"),
+            expect.arrayContaining(["u1", "plan-1", 50, "2026-05-01 00:00:00"]),
         );
     });
 });

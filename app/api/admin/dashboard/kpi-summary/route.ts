@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
 import { toMySQLDatetime } from "@/lib/utils/date";
 import { KPI_RANGES, getKpiPeriodBounds, type KpiRange } from "@/lib/features/dashboard/kpiPeriods";
+import { getSeasonPassRevenueTotal } from "@/lib/seasonPass";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,9 @@ type PeriodMetrics = {
     aov: number;
     topup: number;
     netInflow: number;
+    /** Part of `revenue` and `orders`, kept separate so the UI can break it out. */
+    seasonPassRevenue: number;
+    seasonPassSales: number;
 };
 
 async function loadPeriodMetrics(start: Date | null, end: Date | null): Promise<PeriodMetrics> {
@@ -29,7 +33,7 @@ async function loadPeriodMetrics(start: Date | null, end: Date | null): Promise<
         topupConditions.push(lt(topups.createdAt, toMySQLDatetime(end)));
     }
 
-    const [[orderRow], [topupRow]] = await Promise.all([
+    const [[orderRow], [topupRow], seasonPass] = await Promise.all([
         db
             .select({ revenue: sql<string>`COALESCE(SUM(${orders.totalPrice}), 0)`, orderCount: count() })
             .from(orders)
@@ -38,10 +42,13 @@ async function loadPeriodMetrics(start: Date | null, end: Date | null): Promise<
             .select({ total: sql<string>`COALESCE(SUM(${topups.amount}), 0)` })
             .from(topups)
             .where(and(...topupConditions)),
+        // Season Pass sales are credit spend like any order, but they live in
+        // their own table and were missing from every revenue number here.
+        getSeasonPassRevenueTotal(start ?? undefined, end ?? undefined),
     ]);
 
-    const revenue = Number(orderRow.revenue);
-    const orderCount = Number(orderRow.orderCount);
+    const revenue = Number(orderRow.revenue) + seasonPass.revenue;
+    const orderCount = Number(orderRow.orderCount) + seasonPass.sales;
     const topup = Number(topupRow.total);
 
     return {
@@ -50,6 +57,8 @@ async function loadPeriodMetrics(start: Date | null, end: Date | null): Promise<
         aov: orderCount > 0 ? revenue / orderCount : 0,
         topup,
         netInflow: topup - revenue,
+        seasonPassRevenue: seasonPass.revenue,
+        seasonPassSales: seasonPass.sales,
     };
 }
 

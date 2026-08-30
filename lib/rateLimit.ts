@@ -90,6 +90,11 @@ const config = {
         maxAttempts: 30,
         windowMs: 60 * 1000,
     },
+    // Season Pass purchase/claim APIs
+    seasonPass: {
+        maxAttempts: 12,
+        windowMs: 60 * 1000,
+    },
 };
 
 /**
@@ -853,6 +858,12 @@ export async function checkGachaRateLimit(identifier: string) {
     const key = `gacha:${identifier}`;
     const distributed = await checkDistributedWindowRateLimit(key, config.gacha.maxAttempts, config.gacha.windowMs);
     return distributed ?? checkWindowRateLimit(key, config.gacha.maxAttempts, config.gacha.windowMs);
+}
+
+export async function checkSeasonPassRateLimit(identifier: string) {
+    const key = `seasonpass:${identifier}`;
+    const distributed = await checkDistributedWindowRateLimit(key, config.seasonPass.maxAttempts, config.seasonPass.windowMs);
+    return distributed ?? checkWindowRateLimit(key, config.seasonPass.maxAttempts, config.seasonPass.windowMs);
 }
 
 /**

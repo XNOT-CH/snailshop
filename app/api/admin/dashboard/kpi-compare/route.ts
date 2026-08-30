@@ -37,12 +37,14 @@ async function loadPeriod(period: Period, hourly: boolean) {
     const revenue = points.reduce((acc, p) => acc + p.revenue, 0);
     const orders = points.reduce((acc, p) => acc + p.orders, 0);
     const topup = points.reduce((acc, p) => acc + p.topup, 0);
+    const seasonPassRevenue = points.reduce((acc, p) => acc + p.seasonPassRevenue, 0);
     const totals: BucketMetrics = {
         revenue,
         orders,
         aov: orders > 0 ? revenue / orders : 0,
         topup,
         netInflow: topup - revenue,
+        seasonPassRevenue,
     };
 
     return { points, totals };

@@ -17,6 +17,13 @@ vi.mock("drizzle-orm", () => ({
   and: vi.fn(), count: vi.fn(), eq: vi.fn(), gte: vi.fn(), isNull: vi.fn(), lt: vi.fn(), sql: vi.fn(),
 }));
 
+vi.mock("@/lib/seasonPass", () => ({
+  // Season Pass revenue is summed from its own table; these tests only cover the
+  // order/topup side, so it contributes nothing here.
+  getSeasonPassRevenueTotal: vi.fn().mockResolvedValue({ revenue: 0, sales: 0 }),
+  getSeasonPassRevenueBuckets: vi.fn().mockResolvedValue(new Map()),
+}));
+
 import { requirePermission } from "@/lib/auth";
 import { db } from "@/lib/db";
 
@@ -84,12 +91,12 @@ describe("API: /api/admin/dashboard/kpi-compare (GET)", () => {
     expect(body.a.points).toHaveLength(7);
     expect(body.a.points[0].date).toBe("2026-07-05");
     expect(body.a.points[0].revenue).toBe(100);
-    expect(body.a.points[6]).toEqual({ date: "2026-07-11", revenue: 300, orders: 2, aov: 150, topup: 500, netInflow: 200 });
+    expect(body.a.points[6]).toEqual({ date: "2026-07-11", revenue: 300, orders: 2, aov: 150, topup: 500, netInflow: 200, seasonPassRevenue: 0 });
     // Totals aggregate across buckets; AOV is total revenue / total orders.
-    expect(body.a.totals).toEqual({ revenue: 400, orders: 3, aov: 400 / 3, topup: 500, netInflow: 100 });
+    expect(body.a.totals).toEqual({ revenue: 400, orders: 3, aov: 400 / 3, topup: 500, netInflow: 100, seasonPassRevenue: 0 });
 
     expect(body.b.points).toHaveLength(7);
-    expect(body.b.totals).toEqual({ revenue: 200, orders: 1, aov: 200, topup: 0, netInflow: -200 });
+    expect(body.b.totals).toEqual({ revenue: 200, orders: 1, aov: 200, topup: 0, netInflow: -200, seasonPassRevenue: 0 });
   });
 
   it("uses hourly buckets when both periods are a single day", async () => {

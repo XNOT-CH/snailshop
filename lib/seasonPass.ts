@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, lte, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, lt, sql, type SQL } from "drizzle-orm";
 import { getPointCurrencyName, type PublicCurrencySettings } from "@/lib/currencySettings";
 import { db, seasonPassClaims, seasonPassPlans, seasonPassRewards, seasonPassSubscriptions, users } from "@/lib/db";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
@@ -281,6 +281,12 @@ export async function getOrCreateSeasonPassPlan() {
     return plan;
 }
 
+function getAffectedRows(result: unknown): number {
+    const rows = Array.isArray(result) ? result[0] : result;
+    const affected = (rows as { affectedRows?: number } | undefined)?.affectedRows;
+    return Number.isFinite(affected) ? Number(affected) : 0;
+}
+
 export async function expireSeasonPassSubscriptions(userId?: string) {
     const conditions = [eq(seasonPassSubscriptions.status, "ACTIVE"), lt(seasonPassSubscriptions.endAt, mysqlNow())];
 
@@ -288,10 +294,13 @@ export async function expireSeasonPassSubscriptions(userId?: string) {
         conditions.push(eq(seasonPassSubscriptions.userId, userId));
     }
 
-    await db
+    const result = await db
         .update(seasonPassSubscriptions)
         .set({ status: "EXPIRED" })
         .where(and(...conditions));
+
+    // The cron endpoint reports how many rows it moved.
+    return getAffectedRows(result);
 }
 
 export async function activateQueuedSeasonPassSubscriptions(userId?: string) {
@@ -305,10 +314,12 @@ export async function activateQueuedSeasonPassSubscriptions(userId?: string) {
         conditions.push(eq(seasonPassSubscriptions.userId, userId));
     }
 
-    await db
+    const result = await db
         .update(seasonPassSubscriptions)
         .set({ status: "ACTIVE" })
         .where(and(...conditions));
+
+    return getAffectedRows(result);
 }
 
 export async function getCurrentSeasonPassSubscription(userId: string) {
@@ -460,26 +471,67 @@ export async function getAdminSeasonPassRewards(planId?: string) {
     }));
 }
 
-export async function getAdminSeasonPassClaimLogs(limit = 100) {
-    return db
-        .select({
-            id: seasonPassClaims.id,
-            dayNumber: seasonPassClaims.dayNumber,
-            rewardType: seasonPassClaims.rewardType,
-            rewardLabel: seasonPassClaims.rewardLabel,
-            rewardAmount: seasonPassClaims.rewardAmount,
-            claimDateKey: seasonPassClaims.claimDateKey,
-            createdAt: seasonPassClaims.createdAt,
-            username: users.username,
-            displayName: users.name,
-            subscriptionStartAt: seasonPassSubscriptions.startAt,
-            subscriptionEndAt: seasonPassSubscriptions.endAt,
-        })
-        .from(seasonPassClaims)
-        .innerJoin(users, eq(users.id, seasonPassClaims.userId))
-        .innerJoin(seasonPassSubscriptions, eq(seasonPassSubscriptions.id, seasonPassClaims.subscriptionId))
-        .orderBy(desc(seasonPassClaims.createdAt))
-        .limit(limit);
+export interface SeasonPassClaimLogFilters {
+    /** Matches username or display name. */
+    search?: string;
+    /** Thai calendar day keys (YYYY-MM-DD), inclusive. */
+    from?: string;
+    to?: string;
+    page?: number;
+    pageSize?: number;
+}
+
+/**
+ * Claim history with filters and a total, so the page can say how many rows
+ * exist rather than showing the newest 150 and leaving the rest unreachable.
+ */
+export async function getAdminSeasonPassClaimLogs(filters: SeasonPassClaimLogFilters = {}) {
+    const pageSize = Math.min(Math.max(filters.pageSize ?? 50, 1), 200);
+    const page = Math.max(filters.page ?? 1, 1);
+
+    const conditions = [];
+    const search = filters.search?.trim();
+    if (search) {
+        const pattern = `%${search}%`;
+        conditions.push(sql`(${users.username} LIKE ${pattern} OR ${users.name} LIKE ${pattern})`);
+    }
+    if (filters.from) conditions.push(gte(seasonPassClaims.claimDateKey, filters.from));
+    if (filters.to) conditions.push(lte(seasonPassClaims.claimDateKey, filters.to));
+
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [rows, [totalRow]] = await Promise.all([
+        db
+            .select({
+                id: seasonPassClaims.id,
+                dayNumber: seasonPassClaims.dayNumber,
+                rewardType: seasonPassClaims.rewardType,
+                rewardLabel: seasonPassClaims.rewardLabel,
+                rewardAmount: seasonPassClaims.rewardAmount,
+                claimDateKey: seasonPassClaims.claimDateKey,
+                createdAt: seasonPassClaims.createdAt,
+                username: users.username,
+                displayName: users.name,
+                subscriptionStartAt: seasonPassSubscriptions.startAt,
+                subscriptionEndAt: seasonPassSubscriptions.endAt,
+            })
+            .from(seasonPassClaims)
+            .innerJoin(users, eq(users.id, seasonPassClaims.userId))
+            .innerJoin(seasonPassSubscriptions, eq(seasonPassSubscriptions.id, seasonPassClaims.subscriptionId))
+            .where(where)
+            .orderBy(desc(seasonPassClaims.createdAt))
+            .limit(pageSize)
+            .offset((page - 1) * pageSize),
+        db
+            .select({ total: sql<number>`count(*)` })
+            .from(seasonPassClaims)
+            .innerJoin(users, eq(users.id, seasonPassClaims.userId))
+            .where(where),
+    ]);
+
+    const total = Number(totalRow?.total ?? 0);
+
+    return { rows, total, page, pageSize, pageCount: Math.max(Math.ceil(total / pageSize), 1) };
 }
 
 type AdminSeasonPassOverviewSubscriber = {
@@ -492,15 +544,23 @@ type AdminSeasonPassOverviewSubscriber = {
     note: string;
 };
 
-export async function getAdminSeasonPassOverview(now: Date = new Date()) {
+export async function getAdminSeasonPassOverview(
+    now: Date = new Date(),
+    options: { normalizeStatuses?: boolean } = {},
+) {
     const plan = await getOrCreateSeasonPassPlan();
     const rewardCatalog = await getSeasonPassRewardCatalog(plan.id);
     const todayKey = formatDateInTimeZone(now, TH_TIME_ZONE);
     const monthStart = `${getFirstDayOfMonthInTimeZone(now, TH_TIME_ZONE)} 00:00:00`;
     const expiringSoonThreshold = toMySQLDatetime(addDays(now, 3));
 
-    await expireSeasonPassSubscriptions();
-    await activateQueuedSeasonPassSubscriptions();
+    // Status normalization is a write. It rides along here only for admins who
+    // could run it themselves; the scheduled job at
+    // GET /api/admin/season-pass/lifecycle is what keeps it correct in between.
+    if (options.normalizeStatuses) {
+        await expireSeasonPassSubscriptions();
+        await activateQueuedSeasonPassSubscriptions();
+    }
 
     const [activeCountRow] = await db
         .select({ count: sql<number>`count(*)` })
@@ -513,15 +573,16 @@ export async function getAdminSeasonPassOverview(now: Date = new Date()) {
             ),
         );
 
-    const [salesCountRow] = await db
-        .select({ count: sql<number>`count(*)` })
+    // COALESCE covers rows sold before pricePaid existed; everything sold since
+    // carries the amount actually charged, so changing the price no longer
+    // rewrites past months.
+    const [salesRow] = await db
+        .select({
+            count: sql<number>`count(*)`,
+            amount: sql<string>`COALESCE(SUM(COALESCE(${seasonPassSubscriptions.pricePaid}, ${plan.price})), 0)`,
+        })
         .from(seasonPassSubscriptions)
-        .where(
-            and(
-                eq(seasonPassSubscriptions.planId, plan.id),
-                gte(seasonPassSubscriptions.createdAt, monthStart),
-            ),
-        );
+        .where(gte(seasonPassSubscriptions.createdAt, monthStart));
 
     const [pendingTodayRow] = await db
         .select({ count: sql<number>`count(distinct ${seasonPassSubscriptions.id})` })
@@ -614,49 +675,38 @@ export async function getAdminSeasonPassOverview(now: Date = new Date()) {
         }),
     );
 
-    const rewardSummary = [
-        {
-            item: "เครดิต",
-            amount: rewardCatalog
-                .filter((reward) => reward.type === "credits")
-                .reduce((total, reward) => total + Number(reward.amount || 0), 0),
-            days: rewardCatalog.filter((reward) => reward.type === "credits").length,
-            state: "ใช้งานจริง",
-        },
-        {
-            item: "พอยต์",
-            amount: rewardCatalog
-                .filter((reward) => reward.type === "points")
-                .reduce((total, reward) => total + Number(reward.amount || 0), 0),
-            days: rewardCatalog.filter((reward) => reward.type === "points").length,
-            state: "ใช้งานจริง",
-        },
-        {
-            item: "ตั๋วสุ่ม",
-            amount: rewardCatalog
-                .filter((reward) => reward.type === "tickets")
-                .reduce((total, reward) => total + Number(reward.amount || 0), 0),
-            days: rewardCatalog.filter((reward) => reward.type === "tickets").length,
-            state: "ใช้งานจริง",
-        },
-        {
-            item: "Milestone Days",
-            amount: rewardCatalog.filter((reward) => reward.highlight).length,
-            days: rewardCatalog.length,
-            state: plan.isActive ? "เปิดขาย" : "ปิดขาย",
-        },
-    ];
+    // One row per reward kind with its own unit. The old shape summed credits,
+    // points and tickets into a bare "รวม N" and carried a fourth row that was
+    // not a reward at all — a highlight-day counter the page filtered back out.
+    const pointCurrencyName = getPointCurrencyName(await getCurrencySettings().catch(() => null));
+    const rewardSummary = ([
+        { item: "เครดิต", type: "credits" as const, unit: "เครดิต" },
+        { item: pointCurrencyName, type: "points" as const, unit: pointCurrencyName },
+        { item: "ตั๋วสุ่ม", type: "tickets" as const, unit: "ใบ" },
+    ]).map(({ item, type, unit }) => {
+        const rewardsOfType = rewardCatalog.filter((reward) => reward.type === type);
+        return {
+            item,
+            unit,
+            amount: rewardsOfType.reduce((total, reward) => total + Number(reward.amount || 0), 0),
+            days: rewardsOfType.length,
+        };
+    });
+
+    const highlightDays = rewardCatalog.filter((reward) => reward.highlight).length;
 
     return {
         plan,
         stats: {
             activeCount: Number(activeCountRow?.count ?? 0),
-            salesCountThisMonth: Number(salesCountRow?.count ?? 0),
-            salesAmountThisMonth: Number(salesCountRow?.count ?? 0) * Number(plan.price),
+            salesCountThisMonth: Number(salesRow?.count ?? 0),
+            salesAmountThisMonth: Number(salesRow?.amount ?? 0),
             pendingTodayCount: Number(pendingTodayRow?.count ?? 0),
             expiringSoonCount: Number(expiringSoonRow?.count ?? 0),
         },
         rewardSummary,
+        highlightDays,
+        boardDays: rewardCatalog.length,
         subscribers,
     };
 }
@@ -760,4 +810,176 @@ export function getSeasonPassExtensionEndAt(baseEndAt: string | null, durationDa
 
 export function getSeasonPassInitialEndAt(durationDays: number) {
     return toMySQLDatetime(addDays(new Date(), durationDays));
+}
+
+/**
+ * Season Pass money for a window, bucketed the same way the dashboard buckets
+ * orders. Season Pass sales never create an Order row, so every revenue report
+ * that reads only Order was blind to them.
+ */
+export async function getSeasonPassRevenueBuckets(
+    start: Date,
+    end: Date | null,
+    buildBucketKey: (thaiTimestamp: SQL) => SQL<string>,
+) {
+    const plan = await getOrCreateSeasonPassPlan();
+    const thaiCreatedAt = sql`CONVERT_TZ(${seasonPassSubscriptions.createdAt}, '+00:00', '+07:00')`;
+    const bucketKey = buildBucketKey(thaiCreatedAt);
+
+    const rows = await db
+        .select({
+            key: bucketKey,
+            amount: sql<string>`COALESCE(SUM(COALESCE(${seasonPassSubscriptions.pricePaid}, ${plan.price})), 0)`,
+            sales: sql<number>`count(*)`,
+        })
+        .from(seasonPassSubscriptions)
+        .where(
+            end
+                ? and(
+                    gte(seasonPassSubscriptions.createdAt, toMySQLDatetime(start)),
+                    lt(seasonPassSubscriptions.createdAt, toMySQLDatetime(end)),
+                )
+                : gte(seasonPassSubscriptions.createdAt, toMySQLDatetime(start)),
+        )
+        .groupBy(bucketKey);
+
+    return new Map(rows.map((row) => [row.key, { revenue: Number(row.amount), sales: Number(row.sales) }]));
+}
+
+/** Season Pass money for a window as a single total. */
+export async function getSeasonPassRevenueTotal(start?: Date, end?: Date) {
+    const plan = await getOrCreateSeasonPassPlan();
+    const conditions = [];
+    if (start) conditions.push(gte(seasonPassSubscriptions.createdAt, toMySQLDatetime(start)));
+    if (end) conditions.push(lt(seasonPassSubscriptions.createdAt, toMySQLDatetime(end)));
+
+    const [row] = await db
+        .select({
+            amount: sql<string>`COALESCE(SUM(COALESCE(${seasonPassSubscriptions.pricePaid}, ${plan.price})), 0)`,
+            sales: sql<number>`count(*)`,
+        })
+        .from(seasonPassSubscriptions)
+        .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+    return { revenue: Number(row?.amount ?? 0), sales: Number(row?.sales ?? 0) };
+}
+
+export interface AdminSubscriberFilters {
+    search?: string;
+    /** "active" (default), "expired" or "all". */
+    status?: "active" | "expired" | "all";
+    page?: number;
+    pageSize?: number;
+}
+
+/**
+ * The full subscriber list behind the overview card, which only ever showed the
+ * six passes closest to expiry — so an admin could not look up the customer who
+ * just wrote in. Claims for the whole page are read in one query rather than one
+ * per subscriber.
+ */
+export async function getAdminSeasonPassSubscribers(
+    filters: AdminSubscriberFilters = {},
+    now: Date = new Date(),
+) {
+    const plan = await getOrCreateSeasonPassPlan();
+    const rewardCatalog = await getSeasonPassRewardCatalog(plan.id);
+    const pageSize = Math.min(Math.max(filters.pageSize ?? 25, 1), 100);
+    const page = Math.max(filters.page ?? 1, 1);
+    const status = filters.status ?? "active";
+    const todayKey = formatDateInTimeZone(now, TH_TIME_ZONE);
+
+    const conditions = [];
+    const search = filters.search?.trim();
+    if (search) {
+        const pattern = `%${search}%`;
+        conditions.push(sql`(${users.username} LIKE ${pattern} OR ${users.name} LIKE ${pattern})`);
+    }
+    if (status === "active") {
+        conditions.push(lte(seasonPassSubscriptions.startAt, mysqlNow()));
+        conditions.push(gte(seasonPassSubscriptions.endAt, mysqlNow()));
+    } else if (status === "expired") {
+        conditions.push(lt(seasonPassSubscriptions.endAt, mysqlNow()));
+    }
+
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [rows, [totalRow]] = await Promise.all([
+        db
+            .select({
+                subscriptionId: seasonPassSubscriptions.id,
+                userId: seasonPassSubscriptions.userId,
+                startAt: seasonPassSubscriptions.startAt,
+                createdAt: seasonPassSubscriptions.createdAt,
+                endAt: seasonPassSubscriptions.endAt,
+                status: seasonPassSubscriptions.status,
+                pricePaid: seasonPassSubscriptions.pricePaid,
+                username: users.username,
+                displayName: users.name,
+            })
+            .from(seasonPassSubscriptions)
+            .innerJoin(users, eq(users.id, seasonPassSubscriptions.userId))
+            .where(where)
+            .orderBy(asc(seasonPassSubscriptions.endAt))
+            .limit(pageSize)
+            .offset((page - 1) * pageSize),
+        db
+            .select({ total: sql<number>`count(*)` })
+            .from(seasonPassSubscriptions)
+            .innerJoin(users, eq(users.id, seasonPassSubscriptions.userId))
+            .where(where),
+    ]);
+
+    const subscriptionIds = rows.map((row) => row.subscriptionId);
+    const claims = subscriptionIds.length > 0
+        ? await db
+            .select()
+            .from(seasonPassClaims)
+            .where(inArray(seasonPassClaims.subscriptionId, subscriptionIds))
+        : [];
+
+    const claimsBySubscription = new Map<string, typeof claims>();
+    for (const claim of claims) {
+        const list = claimsBySubscription.get(claim.subscriptionId) ?? [];
+        list.push(claim);
+        claimsBySubscription.set(claim.subscriptionId, list);
+    }
+
+    const subscribers = rows.map((row) => {
+        const subscriptionClaims = claimsBySubscription.get(row.subscriptionId) ?? [];
+        const boardState = buildSeasonPassBoard({
+            startAt: row.startAt,
+            createdAt: row.createdAt,
+            durationDays: plan.durationDays,
+            claims: subscriptionClaims,
+            rewardCatalog,
+            now,
+        });
+        const claimedToday = subscriptionClaims.some((claim) => claim.claimDateKey === todayKey);
+        const isRunning = row.startAt <= mysqlNow() && row.endAt >= mysqlNow();
+
+        let statusLabel = "ยังไม่ได้รับ";
+        if (!isRunning) statusLabel = "หมดอายุแล้ว";
+        else if (claimedToday) statusLabel = "รับแล้ว";
+        else if (boardState.missedCount > 0) statusLabel = "พลาดสิทธิ์";
+
+        return {
+            subscriptionId: row.subscriptionId,
+            userId: row.userId,
+            username: row.username,
+            displayName: row.displayName,
+            statusLabel,
+            isRunning,
+            pricePaid: row.pricePaid !== null && row.pricePaid !== undefined ? Number(row.pricePaid) : null,
+            claimedCount: boardState.claimedCount,
+            missedCount: boardState.missedCount,
+            progressText: `${Math.min(boardState.currentDay, plan.durationDays)}/${plan.durationDays} วัน • รับแล้ว ${boardState.claimedCount}`,
+            expiresAtText: formatThaiDateShort(row.endAt),
+            endAt: row.endAt,
+        };
+    });
+
+    const total = Number(totalRow?.total ?? 0);
+
+    return { subscribers, total, page, pageSize, pageCount: Math.max(Math.ceil(total / pageSize), 1) };
 }

@@ -21,6 +21,13 @@ vi.mock("drizzle-orm", () => ({
   and: vi.fn(), count: vi.fn(), eq: vi.fn(), gte: vi.fn(), isNull: vi.fn(), lt: vi.fn(), sql: vi.fn(),
 }));
 
+vi.mock("@/lib/seasonPass", () => ({
+  // Season Pass revenue is summed from its own table; these tests only cover the
+  // order/topup side, so it contributes nothing here.
+  getSeasonPassRevenueTotal: vi.fn().mockResolvedValue({ revenue: 0, sales: 0 }),
+  getSeasonPassRevenueBuckets: vi.fn().mockResolvedValue(new Map()),
+}));
+
 import { requirePermission } from "@/lib/auth";
 import { db } from "@/lib/db";
 
@@ -81,8 +88,8 @@ describe("API: /api/admin/dashboard/kpi-summary (GET)", () => {
     const body = await res.json();
     expect(body.success).toBe(true);
     expect(body.range).toBe("7d");
-    expect(body.current).toEqual({ revenue: 1000, orders: 4, aov: 250, topup: 1500, netInflow: 500 });
-    expect(body.previous).toEqual({ revenue: 500, orders: 2, aov: 250, topup: 400, netInflow: -100 });
+    expect(body.current).toEqual({ revenue: 1000, orders: 4, aov: 250, topup: 1500, netInflow: 500, seasonPassRevenue: 0, seasonPassSales: 0 });
+    expect(body.previous).toEqual({ revenue: 500, orders: 2, aov: 250, topup: 400, netInflow: -100, seasonPassRevenue: 0, seasonPassSales: 0 });
   });
 
   it("returns null previous and zero aov for range=all with no orders", async () => {

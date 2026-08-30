@@ -316,6 +316,10 @@ export const seasonPassSubscriptions = mysqlTable("SeasonPassSubscription", {
     id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
     userId: varchar("userId", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
     planId: varchar("planId", { length: 36 }).notNull().references(() => seasonPassPlans.id, { onDelete: "restrict" }),
+    // What this sale actually charged. NULL on rows bought before the column
+    // existed; revenue used to be recomputed from the plan's current price, so
+    // changing the price rewrote every past month.
+    pricePaid: decimal("pricePaid", { precision: 10, scale: 2 }),
     status: varchar("status", { length: 20 }).default("ACTIVE").notNull(),
     startAt: datetime("startAt", { mode: "string" }).default(sql`now()`).notNull(),
     endAt: datetime("endAt", { mode: "string" }).notNull(),
@@ -325,6 +329,7 @@ export const seasonPassSubscriptions = mysqlTable("SeasonPassSubscription", {
     index("idx_season_pass_subscription_user_status").on(t.userId, t.status),
     index("idx_season_pass_subscription_user_status_endAt").on(t.userId, t.status, t.endAt),
     index("idx_season_pass_subscription_endAt").on(t.endAt),
+    index("idx_season_pass_subscription_createdAt").on(t.createdAt),
 ]);
 
 export const seasonPassClaims = mysqlTable("SeasonPassClaim", {
