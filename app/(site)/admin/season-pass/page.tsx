@@ -38,10 +38,7 @@ export default async function AdminSeasonPassPage() {
     const overview = await getAdminSeasonPassOverview(new Date(), {
         normalizeStatuses: Boolean(canEditSeasonPass),
     });
-    const { plan, stats, rewardSummary, subscribers } = overview;
-
-    const rewardRows = rewardSummary.filter((reward) => reward.item !== "Milestone Days");
-    const highlightSummary = rewardSummary.find((reward) => reward.item === "Milestone Days");
+    const { plan, stats, rewardSummary, highlightDays, subscribers } = overview;
 
     const kpis = [
         {
@@ -143,10 +140,10 @@ export default async function AdminSeasonPassPage() {
                         </div>
                         <p className="mt-1 text-sm text-muted-foreground">
                             บอร์ดทั้งหมด {plan.durationDays} วัน
-                            {highlightSummary ? ` • วันไฮไลต์ ${highlightSummary.amount.toLocaleString()} วัน` : ""}
+                            {highlightDays > 0 ? ` • วันไฮไลต์ ${highlightDays.toLocaleString()} วัน` : ""}
                         </p>
                         <div className="mt-4 space-y-3">
-                            {rewardRows.map((reward) => (
+                            {rewardSummary.map((reward) => (
                                 <div key={reward.item} className="rounded-xl border border-border bg-muted/40 p-4">
                                     <div className="flex flex-wrap items-center justify-between gap-3">
                                         <div>
@@ -154,7 +151,7 @@ export default async function AdminSeasonPassPage() {
                                             <p className="mt-1 text-sm text-muted-foreground">อยู่บนบอร์ด {reward.days.toLocaleString()} วัน</p>
                                         </div>
                                         <Badge variant="secondary" className="rounded-full px-3 py-1">
-                                            รวม {reward.amount.toLocaleString()}
+                                            รวม {reward.amount.toLocaleString()} {reward.unit}
                                         </Badge>
                                     </div>
                                 </div>
@@ -165,9 +162,14 @@ export default async function AdminSeasonPassPage() {
 
                 {/* Subscribers */}
                 <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
-                    <div className="flex items-center gap-2">
-                        <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                        <h2 className="text-xl font-semibold text-foreground">สมาชิกที่ใช้งานอยู่</h2>
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                            <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                            <h2 className="text-xl font-semibold text-foreground">ใกล้หมดอายุที่สุด 6 คน</h2>
+                        </div>
+                        <Button asChild variant="outline" size="sm">
+                            <Link href="/admin/season-pass/subscribers">ดูสมาชิกทั้งหมด</Link>
+                        </Button>
                     </div>
                     <div className="mt-5 space-y-3">
                         {subscribers.length > 0 ? (

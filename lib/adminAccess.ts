@@ -17,6 +17,7 @@ const ADMIN_PAGE_RULES: AdminAccessRule[] = [
     { path: "/admin/gacha-machines/", permission: PERMISSIONS.GACHA_EDIT },
     { path: "/admin/season-pass/edit", permission: PERMISSIONS.SEASON_PASS_EDIT, exact: true },
     { path: "/admin/season-pass/logs", permission: PERMISSIONS.SEASON_PASS_VIEW, exact: true },
+    { path: "/admin/season-pass/subscribers", permission: PERMISSIONS.SEASON_PASS_VIEW, exact: true },
     { path: "/admin/season-pass", permission: PERMISSIONS.SEASON_PASS_VIEW, exact: true },
     { path: "/admin/quests", permission: PERMISSIONS.QUEST_VIEW, exact: true },
     { path: "/admin/products/new", permission: PERMISSIONS.PRODUCT_CREATE, exact: true },

@@ -463,7 +463,7 @@ export default function AdminSeasonPassEditPage() {
                     </Link>
                 </Button>
                 <div>
-                    <h1 className="flex items-center gap-2 text-2xl font-bold text-slate-900">
+                    <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
                         <Ticket className="h-6 w-6 text-[#145de7]" />
                         แก้ไขแพ็กเกจ Season Pass
                     </h1>
@@ -538,7 +538,7 @@ export default function AdminSeasonPassEditPage() {
 
                     <div className="flex flex-col gap-3 rounded-2xl border border-border bg-background/70 p-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <p className="font-medium text-slate-900">เปิดขายแพ็กเกจนี้</p>
+                            <p className="font-medium text-foreground">เปิดขายแพ็กเกจนี้</p>
                             <p className="text-sm text-muted-foreground">
                                 ถ้าปิดไว้ ผู้ใช้จะไม่สามารถซื้อ Season Pass แพ็กเกจนี้ได้
                             </p>
@@ -550,12 +550,12 @@ export default function AdminSeasonPassEditPage() {
                         />
                     </div>
 
-                    <div className="rounded-2xl border border-blue-100 bg-blue-50/70 p-4">
-                        <p className="text-sm font-semibold text-slate-900">ตัวอย่างที่จะแสดง</p>
-                        <p className="mt-2 text-sm text-slate-600">
+                    <div className="rounded-2xl border border-blue-200 bg-blue-50/70 dark:border-blue-500/30 dark:bg-blue-500/10 p-4">
+                        <p className="text-sm font-semibold text-foreground">ตัวอย่างที่จะแสดง</p>
+                        <p className="mt-2 text-sm text-muted-foreground">
                             {plan.name} · {Number(plan.price || 0).toLocaleString()} บาท · ใช้งาน {plan.durationDays} วัน
                         </p>
-                        <p className="mt-1 text-sm text-slate-500">{plan.description || "ยังไม่ได้ตั้งคำอธิบายแพ็กเกจ"}</p>
+                        <p className="mt-1 text-sm text-muted-foreground">{plan.description || "ยังไม่ได้ตั้งคำอธิบายแพ็กเกจ"}</p>
                     </div>
 
                     <Button onClick={() => void handleSavePlan()} disabled={!canEditSeasonPass || savingPlan} className="w-full sm:w-auto">
@@ -585,15 +585,15 @@ export default function AdminSeasonPassEditPage() {
                             แก้ของรางวัลแต่ละวันได้โดยตรง รวมถึงวันพิเศษและรูปรางวัลที่จะโชว์จริงบนกระดาน
                         </p>
                     </div>
-                    <div className="text-sm text-slate-500">วันพิเศษ: {rewardSummary || "ยังไม่ได้เลือก"}</div>
+                    <div className="text-sm text-muted-foreground">วันพิเศษ: {rewardSummary || "ยังไม่ได้เลือก"}</div>
                 </div>
 
                 <div className="grid gap-4 p-4 sm:p-6 md:grid-cols-2 xl:grid-cols-3">
                     {rewards.map((reward) => (
                         <div key={reward.dayNumber} className="rounded-2xl border border-border bg-background/70 p-4">
                             <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                                <p className="text-base font-semibold text-slate-900">Day {String(reward.dayNumber).padStart(2, "0")}</p>
-                                <div className="flex items-center gap-2 text-xs text-slate-500">
+                                <p className="text-base font-semibold text-foreground">Day {String(reward.dayNumber).padStart(2, "0")}</p>
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                     <span>พิเศษ</span>
                                     <Switch
                                         checked={reward.highlight}
@@ -621,10 +621,10 @@ export default function AdminSeasonPassEditPage() {
                                     </select>
                                 </div>
 
-                                <div className="rounded-2xl border border-amber-100 bg-amber-50/60 p-3">
-                                    <p className="text-xs font-medium text-amber-700">รูปของรางวัล {rewardTypeDisplayName[reward.rewardType]}</p>
+                                <div className="rounded-2xl border border-amber-200 bg-amber-50/60 dark:border-amber-500/30 dark:bg-amber-500/10 p-3">
+                                    <p className="text-xs font-medium text-amber-700 dark:text-amber-300">รูปของรางวัล {rewardTypeDisplayName[reward.rewardType]}</p>
                                     <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center">
-                                        <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
+                                        <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-2xl border border-amber-200 bg-card dark:border-amber-500/30 shadow-sm">
                                             {reward.imageUrl ? (
                                                 <Image
                                                     src={reward.imageUrl}
@@ -634,22 +634,22 @@ export default function AdminSeasonPassEditPage() {
                                                     className="object-contain p-2"
                                                 />
                                             ) : (
-                                                <span className="px-3 text-center text-xs font-medium leading-4 text-slate-400">
+                                                <span className="px-3 text-center text-xs font-medium leading-4 text-muted-foreground">
                                                     ยังไม่ได้ตั้งรูป
                                                 </span>
                                             )}
                                         </div>
                                         <div className="space-y-3">
-                                            <p className="text-sm leading-6 text-slate-600">
+                                            <p className="text-sm leading-6 text-muted-foreground">
                                                 {getDefaultRewardImage(reward.rewardType)
                                                     ? "มีรูปเริ่มต้นให้ก่อน และถ้าไม่ชอบสามารถเปลี่ยนรูปพร้อมครอปใหม่ได้จากตรงนี้"
                                                     : "ถ้ายังไม่ตั้งรูป ระบบจะใช้ไอคอนมาตรฐานของรางวัลนี้ไปก่อน และคุณสามารถอัปโหลดรูปพร้อมครอปได้"}
                                             </p>
-                                            <p className="text-xs text-slate-500">
+                                            <p className="text-xs text-muted-foreground">
                                                 รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB ระบบจะครอปและย่อให้อัตโนมัติ • {IMAGE_UPLOAD_RECOMMENDATIONS.rewardSquare}
                                             </p>
                                             <div className="flex flex-wrap gap-2">
-                                                <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700">
+                                                <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border bg-card px-3 py-2 text-xs font-medium text-foreground shadow-sm transition hover:border-blue-300 hover:text-blue-700 dark:hover:border-blue-500/40 dark:hover:text-blue-300">
                                                     {uploadingDay === reward.dayNumber ? (
                                                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                                                     ) : (
@@ -710,7 +710,7 @@ export default function AdminSeasonPassEditPage() {
                                     />
                                 </div>
 
-                                <p className="text-xs leading-6 text-slate-500">
+                                <p className="text-xs leading-6 text-muted-foreground">
                                     ระบบจะนำจำนวนนี้ไปใช้จริงอัตโนมัติตามชนิดรางวัลที่เลือก
                                 </p>
                             </div>
