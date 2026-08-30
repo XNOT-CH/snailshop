@@ -1,5 +1,6 @@
 import { and, count, eq, gte, isNull, lt, sql } from "drizzle-orm";
 import { db, orders, topups } from "@/lib/db";
+import { getSeasonPassRevenueBuckets } from "@/lib/seasonPass";
 import { toMySQLDatetime } from "@/lib/utils/date";
 
 export type BucketMetrics = {
@@ -8,6 +9,8 @@ export type BucketMetrics = {
     aov: number;
     topup: number;
     netInflow: number;
+    /** Part of `revenue` and `orders`, kept separate so the UI can break it out. */
+    seasonPassRevenue: number;
 };
 
 // Timestamps are stored in UTC; bucket by Thai local time so days line up with
@@ -25,7 +28,7 @@ export async function loadBucketMetrics(start: Date, end: Date, hourly: boolean)
     const orderKey = sql<string>`DATE_FORMAT(${thaiTime(orders.purchasedAt)}, ${format})`;
     const topupKey = sql<string>`DATE_FORMAT(${thaiTime(topups.createdAt)}, ${format})`;
 
-    const [orderRows, topupRows] = await Promise.all([
+    const [orderRows, topupRows, seasonPassByKey] = await Promise.all([
         db
             .select({ key: orderKey, revenue: sql<string>`COALESCE(SUM(${orders.totalPrice}), 0)`, orderCount: count() })
             .from(orders)
@@ -49,6 +52,9 @@ export async function loadBucketMetrics(start: Date, end: Date, hourly: boolean)
                 ),
             )
             .groupBy(topupKey),
+        // Season Pass is bought with credits like everything else but never
+        // creates an Order row, so it has to be summed from its own table.
+        getSeasonPassRevenueBuckets(start, end, (ts) => sql<string>`DATE_FORMAT(${ts}, ${format})`),
     ]);
 
     const revenueByKey = new Map(orderRows.map((row) => [row.key, { revenue: Number(row.revenue), orders: Number(row.orderCount) }]));
@@ -56,13 +62,17 @@ export async function loadBucketMetrics(start: Date, end: Date, hourly: boolean)
 
     return (key: string): BucketMetrics => {
         const order = revenueByKey.get(key) ?? { revenue: 0, orders: 0 };
+        const seasonPass = seasonPassByKey.get(key) ?? { revenue: 0, sales: 0 };
         const topup = topupByKey.get(key) ?? 0;
+        const revenue = order.revenue + seasonPass.revenue;
+        const orderCount = order.orders + seasonPass.sales;
         return {
-            revenue: order.revenue,
-            orders: order.orders,
-            aov: order.orders > 0 ? order.revenue / order.orders : 0,
+            revenue,
+            orders: orderCount,
+            aov: orderCount > 0 ? revenue / orderCount : 0,
             topup,
-            netInflow: topup - order.revenue,
+            netInflow: topup - revenue,
+            seasonPassRevenue: seasonPass.revenue,
         };
     };
 }

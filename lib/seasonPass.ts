@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, lte, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, lt, sql, type SQL } from "drizzle-orm";
 import { getPointCurrencyName, type PublicCurrencySettings } from "@/lib/currencySettings";
 import { db, seasonPassClaims, seasonPassPlans, seasonPassRewards, seasonPassSubscriptions, users } from "@/lib/db";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
@@ -513,15 +513,16 @@ export async function getAdminSeasonPassOverview(now: Date = new Date()) {
             ),
         );
 
-    const [salesCountRow] = await db
-        .select({ count: sql<number>`count(*)` })
+    // COALESCE covers rows sold before pricePaid existed; everything sold since
+    // carries the amount actually charged, so changing the price no longer
+    // rewrites past months.
+    const [salesRow] = await db
+        .select({
+            count: sql<number>`count(*)`,
+            amount: sql<string>`COALESCE(SUM(COALESCE(${seasonPassSubscriptions.pricePaid}, ${plan.price})), 0)`,
+        })
         .from(seasonPassSubscriptions)
-        .where(
-            and(
-                eq(seasonPassSubscriptions.planId, plan.id),
-                gte(seasonPassSubscriptions.createdAt, monthStart),
-            ),
-        );
+        .where(gte(seasonPassSubscriptions.createdAt, monthStart));
 
     const [pendingTodayRow] = await db
         .select({ count: sql<number>`count(distinct ${seasonPassSubscriptions.id})` })
@@ -651,8 +652,8 @@ export async function getAdminSeasonPassOverview(now: Date = new Date()) {
         plan,
         stats: {
             activeCount: Number(activeCountRow?.count ?? 0),
-            salesCountThisMonth: Number(salesCountRow?.count ?? 0),
-            salesAmountThisMonth: Number(salesCountRow?.count ?? 0) * Number(plan.price),
+            salesCountThisMonth: Number(salesRow?.count ?? 0),
+            salesAmountThisMonth: Number(salesRow?.amount ?? 0),
             pendingTodayCount: Number(pendingTodayRow?.count ?? 0),
             expiringSoonCount: Number(expiringSoonRow?.count ?? 0),
         },
@@ -760,4 +761,56 @@ export function getSeasonPassExtensionEndAt(baseEndAt: string | null, durationDa
 
 export function getSeasonPassInitialEndAt(durationDays: number) {
     return toMySQLDatetime(addDays(new Date(), durationDays));
+}
+
+/**
+ * Season Pass money for a window, bucketed the same way the dashboard buckets
+ * orders. Season Pass sales never create an Order row, so every revenue report
+ * that reads only Order was blind to them.
+ */
+export async function getSeasonPassRevenueBuckets(
+    start: Date,
+    end: Date | null,
+    buildBucketKey: (thaiTimestamp: SQL) => SQL<string>,
+) {
+    const plan = await getOrCreateSeasonPassPlan();
+    const thaiCreatedAt = sql`CONVERT_TZ(${seasonPassSubscriptions.createdAt}, '+00:00', '+07:00')`;
+    const bucketKey = buildBucketKey(thaiCreatedAt);
+
+    const rows = await db
+        .select({
+            key: bucketKey,
+            amount: sql<string>`COALESCE(SUM(COALESCE(${seasonPassSubscriptions.pricePaid}, ${plan.price})), 0)`,
+            sales: sql<number>`count(*)`,
+        })
+        .from(seasonPassSubscriptions)
+        .where(
+            end
+                ? and(
+                    gte(seasonPassSubscriptions.createdAt, toMySQLDatetime(start)),
+                    lt(seasonPassSubscriptions.createdAt, toMySQLDatetime(end)),
+                )
+                : gte(seasonPassSubscriptions.createdAt, toMySQLDatetime(start)),
+        )
+        .groupBy(bucketKey);
+
+    return new Map(rows.map((row) => [row.key, { revenue: Number(row.amount), sales: Number(row.sales) }]));
+}
+
+/** Season Pass money for a window as a single total. */
+export async function getSeasonPassRevenueTotal(start?: Date, end?: Date) {
+    const plan = await getOrCreateSeasonPassPlan();
+    const conditions = [];
+    if (start) conditions.push(gte(seasonPassSubscriptions.createdAt, toMySQLDatetime(start)));
+    if (end) conditions.push(lt(seasonPassSubscriptions.createdAt, toMySQLDatetime(end)));
+
+    const [row] = await db
+        .select({
+            amount: sql<string>`COALESCE(SUM(COALESCE(${seasonPassSubscriptions.pricePaid}, ${plan.price})), 0)`,
+            sales: sql<number>`count(*)`,
+        })
+        .from(seasonPassSubscriptions)
+        .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+    return { revenue: Number(row?.amount ?? 0), sales: Number(row?.sales ?? 0) };
 }

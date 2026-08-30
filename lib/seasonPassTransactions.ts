@@ -125,13 +125,13 @@ export async function purchaseSeasonPass(params: {
 
         if (latestSubscription) {
             await conn.execute(
-                "INSERT INTO SeasonPassSubscription (id, userId, planId, status, startAt, endAt, createdAt, updatedAt) VALUES (?, ?, ?, 'QUEUED', ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())",
-                [crypto.randomUUID(), params.userId, plan.id, queuedStartAt, nextEndAt],
+                "INSERT INTO SeasonPassSubscription (id, userId, planId, pricePaid, status, startAt, endAt, createdAt, updatedAt) VALUES (?, ?, ?, ?, 'QUEUED', ?, ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())",
+                [crypto.randomUUID(), params.userId, plan.id, price, queuedStartAt, nextEndAt],
             );
         } else {
             await conn.execute(
-                "INSERT INTO SeasonPassSubscription (id, userId, planId, status, startAt, endAt, createdAt, updatedAt) VALUES (?, ?, ?, 'ACTIVE', UTC_TIMESTAMP(), ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())",
-                [crypto.randomUUID(), params.userId, plan.id, nextEndAt],
+                "INSERT INTO SeasonPassSubscription (id, userId, planId, pricePaid, status, startAt, endAt, createdAt, updatedAt) VALUES (?, ?, ?, ?, 'ACTIVE', UTC_TIMESTAMP(), ?, UTC_TIMESTAMP(), UTC_TIMESTAMP())",
+                [crypto.randomUUID(), params.userId, plan.id, price, nextEndAt],
             );
         }
 

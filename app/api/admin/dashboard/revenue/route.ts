@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { and, gte, isNull, sql } from "drizzle-orm";
+import { and, gte, isNull, sql, type SQL } from "drizzle-orm";
 import { db, orders } from "@/lib/db";
 import { requirePermission } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
 import { formatDateInTimeZone, toMySQLDatetime } from "@/lib/utils/date";
+import { getSeasonPassRevenueBuckets } from "@/lib/seasonPass";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,10 @@ const THAI_UTC_OFFSET_MS = 7 * 60 * 60 * 1000;
 // days/weeks/months line up with the shop's business day. Numeric offsets
 // work without MySQL timezone tables, and Thailand has no DST.
 const purchasedAtThai = sql`CONVERT_TZ(${orders.purchasedAt}, '+00:00', '+07:00')`;
+
+// Season Pass sales live in their own table, so each granularity exposes how to
+// bucket *any* Thai-local timestamp rather than only the order column.
+type BucketExpression = (thaiTimestamp: SQL) => SQL<string>;
 
 /** Today's Thai calendar date, held at UTC midnight so UTC date arithmetic is safe. */
 function thaiTodayAsUtcDate(): Date {
@@ -45,7 +50,7 @@ function getBucketConfig(granularity: Granularity) {
                 return dateKey(d);
             });
             return {
-                period: sql<string>`DATE_FORMAT(${purchasedAtThai}, '%Y-%m-%d')`,
+                period: ((ts: SQL) => sql<string>`DATE_FORMAT(${ts}, '%Y-%m-%d')`) as BucketExpression,
                 startUtc: thaiMidnightUtc(startThai),
                 keys,
             };
@@ -62,7 +67,7 @@ function getBucketConfig(granularity: Granularity) {
                 return dateKey(d);
             });
             return {
-                period: sql<string>`DATE_FORMAT(DATE_SUB(${purchasedAtThai}, INTERVAL WEEKDAY(${purchasedAtThai}) DAY), '%Y-%m-%d')`,
+                period: ((ts: SQL) => sql<string>`DATE_FORMAT(DATE_SUB(${ts}, INTERVAL WEEKDAY(${ts}) DAY), '%Y-%m-%d')`) as BucketExpression,
                 startUtc: thaiMidnightUtc(startThai),
                 keys,
             };
@@ -72,7 +77,7 @@ function getBucketConfig(granularity: Granularity) {
             const startThai = new Date(Date.UTC(startYear, 0, 1));
             const keys = Array.from({ length: 5 }, (_, i) => `${startYear + i}-01-01`);
             return {
-                period: sql<string>`DATE_FORMAT(${purchasedAtThai}, '%Y-01-01')`,
+                period: ((ts: SQL) => sql<string>`DATE_FORMAT(${ts}, '%Y-01-01')`) as BucketExpression,
                 startUtc: thaiMidnightUtc(startThai),
                 keys,
             };
@@ -84,7 +89,7 @@ function getBucketConfig(granularity: Granularity) {
                 dateKey(new Date(Date.UTC(startThai.getUTCFullYear(), startThai.getUTCMonth() + i, 1))),
             );
             return {
-                period: sql<string>`DATE_FORMAT(${purchasedAtThai}, '%Y-%m-01')`,
+                period: ((ts: SQL) => sql<string>`DATE_FORMAT(${ts}, '%Y-%m-01')`) as BucketExpression,
                 startUtc: thaiMidnightUtc(startThai),
                 keys,
             };
@@ -106,18 +111,26 @@ export async function GET(request: NextRequest) {
     try {
         const { period, startUtc, keys } = getBucketConfig(granularity);
 
-        const rows = await db
-            .select({
-                date: period,
-                revenue: sql<string>`COALESCE(SUM(${orders.totalPrice}), 0)`,
-            })
-            .from(orders)
-            // Filter on the raw UTC column so the purchasedAt index stays usable.
-            .where(and(isNull(orders.deletedAt), gte(orders.purchasedAt, toMySQLDatetime(startUtc))))
-            .groupBy(period);
+        const orderPeriod = period(purchasedAtThai);
+
+        const [rows, seasonPassByPeriod] = await Promise.all([
+            db
+                .select({
+                    date: orderPeriod,
+                    revenue: sql<string>`COALESCE(SUM(${orders.totalPrice}), 0)`,
+                })
+                .from(orders)
+                // Filter on the raw UTC column so the purchasedAt index stays usable.
+                .where(and(isNull(orders.deletedAt), gte(orders.purchasedAt, toMySQLDatetime(startUtc))))
+                .groupBy(orderPeriod),
+            getSeasonPassRevenueBuckets(startUtc, null, period),
+        ]);
 
         const revenueByPeriod = new Map(rows.map((row) => [row.date, Number(row.revenue)]));
-        const data = keys.map((date) => ({ date, revenue: revenueByPeriod.get(date) ?? 0 }));
+        const data = keys.map((date) => ({
+            date,
+            revenue: (revenueByPeriod.get(date) ?? 0) + (seasonPassByPeriod.get(date)?.revenue ?? 0),
+        }));
 
         return NextResponse.json({ success: true, granularity, data });
     } catch (error) {
