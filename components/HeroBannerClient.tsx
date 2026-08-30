@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { HeroBannerSkeleton } from "@/components/ProductCardSkeleton";
 
 interface Banner {
     id: number;
@@ -15,10 +16,15 @@ interface HeroBannerClientProps {
     banners: Banner[];
 }
 
-const HeroBannerCarousel = dynamic(
-    () => import("@/components/HeroBannerCarousel").then((mod) => mod.HeroBannerCarousel),
-    { ssr: false },
-);
+const loadHeroBannerCarousel = () =>
+    import("@/components/HeroBannerCarousel").then((mod) => mod.HeroBannerCarousel);
+
+const HeroBannerCarousel = dynamic(loadHeroBannerCarousel, {
+    ssr: false,
+    // Last line of defence: if this ever renders before the module is ready, it
+    // holds the banner's exact height instead of collapsing the page.
+    loading: () => <HeroBannerSkeleton />,
+});
 
 function StaticHeroBanner({
     banner,
@@ -79,16 +85,32 @@ export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
         }
 
         let idleCallbackId: number | null = null;
+        let cancelled = false;
+
+        // Swapping first and loading after left the banner's slot empty for the
+        // ~300ms the carousel took to arrive, so everything below jumped up and
+        // then back down. Load the module first, switch once it is ready.
+        const activate = () => {
+            loadHeroBannerCarousel()
+                .then(() => {
+                    if (!cancelled) setShouldLoadCarousel(true);
+                })
+                .catch(() => {
+                    // Keep showing the static banner if the chunk fails to load.
+                });
+        };
+
         const timeoutId = window.setTimeout(() => {
             if ("requestIdleCallback" in window) {
-                idleCallbackId = window.requestIdleCallback(() => setShouldLoadCarousel(true), { timeout: 3000 });
+                idleCallbackId = window.requestIdleCallback(activate, { timeout: 3000 });
                 return;
             }
 
-            setShouldLoadCarousel(true);
+            activate();
         }, 2500);
 
         return () => {
+            cancelled = true;
             window.clearTimeout(timeoutId);
             if (idleCallbackId !== null) {
                 window.cancelIdleCallback(idleCallbackId);
@@ -104,5 +126,12 @@ export function HeroBannerClient({ banners }: Readonly<HeroBannerClientProps>) {
         return <HeroBannerCarousel banners={banners} />;
     }
 
-    return <StaticHeroBanner banner={firstBanner} onActivate={() => setShouldLoadCarousel(true)} />;
+    return (
+        <StaticHeroBanner
+            banner={firstBanner}
+            onActivate={() => {
+                void loadHeroBannerCarousel().then(() => setShouldLoadCarousel(true));
+            }}
+        />
+    );
 }

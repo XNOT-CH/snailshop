@@ -71,6 +71,12 @@ export async function HeroBanner() {
         });
     }
 
-    return <HeroBannerClient banners={banners} />;
+    // The hero is a 4:1 strip whichever component fills it, so the space is
+    // reserved here — no child swap can change the page height.
+    return (
+        <div className="w-full max-w-[2000px] mx-auto aspect-[4/1]">
+            <HeroBannerClient banners={banners} />
+        </div>
+    );
 }
 
