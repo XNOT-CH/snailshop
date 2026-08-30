@@ -769,6 +769,12 @@ export default function AdminPromoCodesPage() {
                                 </div>
                             </div>
 
+                            {formData.codeType === "DISCOUNT" && !formData.usageLimit && !formData.usagePerUser ? (
+                                <p className="rounded-lg bg-amber-100 px-3 py-2 text-xs text-amber-700 dark:bg-amber-500/15 dark:text-amber-300">
+                                    เว้นว่างทั้งสองช่อง = ลูกค้าคนเดียวใช้โค้ดนี้ซ้ำได้ไม่จำกัดครั้ง ตั้งใจแบบนี้หรือไม่
+                                </p>
+                            ) : null}
+
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div className="space-y-2">
                                     <Label htmlFor="startsAt">เริ่มใช้ได้</Label>
