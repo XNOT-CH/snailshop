@@ -567,11 +567,15 @@ export async function executeCartPurchaseTransaction(params: {
 
             const decrypted = decrypt(product.secretData || "");
             const separatorType = product.stockSeparator || "newline";
-            const { givenJoined, remainingData, remainingCount, isLastStock } = processStock(
-                decrypted,
-                separatorType,
-                item.quantity,
-            );
+            // A cart can hold several products, so the message has to name the
+            // one the customer needs to fix.
+            let stock;
+            try {
+                stock = processStock(decrypted, separatorType, item.quantity);
+            } catch (error) {
+                throw new Error(`${product.name}: ${error instanceof Error ? error.message : "สต็อกไม่เพียงพอ"}`);
+            }
+            const { givenJoined, remainingData, remainingCount, isLastStock } = stock;
             const orderId = crypto.randomUUID();
             const lineTotal = toBaht(toSatang(getActivePrice(product)) * item.quantity);
             const unitPrice = product.currency === "THB" || !product.currency

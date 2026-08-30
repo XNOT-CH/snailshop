@@ -16,14 +16,16 @@ export async function requireAuthBeforePurchase(router: AppRouterInstance) {
         const { response, data } = await requestSessionStatus();
 
         if (!response.ok) {
-            return { allowed: true } as const;
+            // Cannot tell: let the shopper through — the server still gates the
+            // purchase — but say so, because a guest's cart is not stored.
+            return { allowed: true, unverified: true } as const;
         }
 
         if (data.authenticated) {
             return { allowed: true } as const;
         }
     } catch {
-        return { allowed: true } as const;
+        return { allowed: true, unverified: true } as const;
     }
 
     const callbackUrl = encodeURIComponent(buildCurrentUrl());
