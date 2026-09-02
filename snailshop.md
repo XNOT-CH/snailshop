@@ -9,9 +9,22 @@ Half of this file is generated from the code (`npm run knowledge:build`), so it 
 quietly drift out of date. The other half is written by hand and holds what no script
 can derive: the order of files a common change touches, and the traps already paid for.
 
-- Per-directory detail lives in the `AGENTS.md` next to the code — read the nearest one
-  before editing inside a directory.
-- The rules that always apply are in `CLAUDE.md`.
+## Which file owns what
+
+One fact, one home. Everything else points at it — a rule written in two places is a
+rule that will disagree with itself, which is exactly how the `AGENTS.md` layer came to
+have 115 references to files that no longer existed.
+
+| File | Owns | Loaded |
+|---|---|---|
+| `CLAUDE.md` | the rules that always apply, and the skill policy | automatically |
+| **`snailshop.md`** | the index, how to do common changes, traps, decision history | on demand |
+| `AGENTS.md` (per directory) | what one folder is and what to read with it | on demand |
+| `README.md` | getting a human set up and running locally | by a human |
+| `docs/runbooks/` | step-by-step operational procedures | when running one |
+| Claude's memory | how this user works, and their preferences | automatically |
+
+If a fact fits two rows, it belongs in the higher one and the lower one links to it.
 
 ---
 
@@ -77,10 +90,9 @@ double-spend-sensitive — write a test for the failure mode before the fix, and
 
 ## Traps already paid for
 
-**Never run `npm run db:push`.** `DATABASE_URL` in `.env.development.local` and in
-`.env.local` both point at `localhost:3307` — the database the `web` container serves
-from — and it already sits behind `lib/db/schema.ts`. A push applies the whole
-accumulated diff to live data. Use targeted SQL in `drizzle/`.
+**Never run `npm run db:push`** — the rule and its reasoning are in `CLAUDE.md`. The
+part worth repeating where you are standing: the database it would hit is the one the
+`web` container serves from, so there is no safe "just on dev" version of this.
 
 **Dev and production share one database.** The `my_game_store_db_dev` container on
 :3308 is running but nothing points at it. A seed or cleanup "on dev" hits the same
@@ -117,17 +129,22 @@ if a points-priced item is added.
 
 ## Decisions already made
 
-- **Deploy is Docker only** — `docker compose up -d --build web`, or
-  `scripts/windows/deploy-web.bat`. The Cloudflare Workers/OpenNext path was removed in
-  `bade056`; the Cloudflare Tunnel in front of the container is a separate thing and
-  stays.
-- **Branch per piece of work**, without being asked: verify green, `merge --no-ff` into
-  master, push, delete the branch.
-- **Write the tests that catch silent failures** — money, permissions, guards. UI work
-  and code deletion don't need new tests; check those in a browser.
-- **No percentages in the admin UI.** Real numbers only — baht, people, spins,
-  "X จาก Y" — because that is what the reader can act on.
-- The site is in Thai. Preserve Thai user-facing text unless the task says otherwise.
+**The rules themselves live in `CLAUDE.md`** — deploy, branching, when to write tests,
+no percentages in the admin UI, Thai text. They are stated once, there, because that is
+the file an agent loads without being asked. Do not restate them here; a rule written in
+two places is a rule that will disagree with itself.
+
+What belongs here instead is the history behind a decision, which `CLAUDE.md` has no
+room for:
+
+- **Cloudflare Workers/OpenNext was removed** in `bade056`. Nothing in the repo had ever
+  deployed a Worker; under Node every R2 and Hyperdrive call already fell through to the
+  local branch. The Cloudflare **Tunnel** in front of the container is a separate thing
+  and stays.
+- **The API-key feature was removed** in `6364a22` rather than finished: it had a table,
+  audit actions and an admin permission checkbox, but no route behind any of it.
+- **Codex is no longer used** (last activity May). That is why the 225 per-directory
+  `AGENTS.md` files exist and why `CLAUDE.md` now has to point at them explicitly.
 
 ---
 
@@ -181,7 +198,6 @@ If a relevant verification command cannot be run, say why in the handoff.
 
 ### Always Do
 
-- Preserve Thai user-facing text unless the task explicitly asks to change it.
 - Treat UTF-8 as the default for all text files.
 - With PowerShell, use `-Encoding utf8` when reading or writing repository text files.
 - With PowerShell, use `-LiteralPath` when reading or editing routes with bracketed segments such as `app/api/admin/slips/[id]/image/route.ts`.

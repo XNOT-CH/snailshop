@@ -145,9 +145,50 @@ async function buildScriptIndex() {
   ].join("\n");
 }
 
+// One fact, one home. snailshop.md's ownership table says which file owns what; this
+// enforces it for the rules that were actually found duplicated, so a copy-paste into a
+// second file fails the check instead of quietly drifting apart.
+//
+// Each entry: the phrase, the file allowed to state it, and where else it may be
+// mentioned only as a pointer.
+const SINGLE_SOURCE = [
+  { phrase: "A push applies the whole", owner: "CLAUDE.md" },
+  { phrase: "There is no Workers/Vercel path", owner: "CLAUDE.md" },
+  { phrase: "verify it\nis green", owner: "CLAUDE.md" },
+  { phrase: "because that is what the person reading the dashboard can act on", owner: "CLAUDE.md" },
+  { phrase: "Preserve Thai user-facing text", owner: "CLAUDE.md" },
+];
+const SINGLE_SOURCE_FILES = ["CLAUDE.md", "snailshop.md", "AGENTS.md", "README.md"];
+
+async function checkSingleSource() {
+  const contents = new Map();
+  for (const file of SINGLE_SOURCE_FILES) {
+    contents.set(file, await read(file));
+  }
+
+  const problems = [];
+  for (const { phrase, owner } of SINGLE_SOURCE) {
+    const holders = SINGLE_SOURCE_FILES.filter((f) => contents.get(f).includes(phrase));
+    if (!holders.includes(owner)) {
+      problems.push(`"${phrase}" is missing from its owner ${owner}`);
+    }
+    for (const extra of holders.filter((f) => f !== owner)) {
+      problems.push(`"${phrase}" is stated in ${extra} as well as its owner ${owner} — link instead of repeating`);
+    }
+  }
+  return problems;
+}
+
 async function main() {
   const check = process.argv.includes("--check");
   const current = await readFile(TARGET, "utf8");
+
+  const duplicated = await checkSingleSource();
+  if (duplicated.length) {
+    console.error("A rule is stated in more than one place:");
+    for (const problem of duplicated) console.error(`  ${problem}`);
+    process.exit(1);
+  }
 
   const beginAt = current.indexOf(BEGIN);
   const endAt = current.indexOf(END);
