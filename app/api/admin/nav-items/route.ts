@@ -8,6 +8,7 @@ import { validateBody } from "@/lib/validations/validate";
 import { navItemSchema } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
 import { contentApiError } from "@/lib/features/content/apiResponse";
+import { invalidateNavItemCaches } from "@/lib/cache";
 
 const DEFAULT_NAV_ITEMS = [
     { label: "หน้าแรก", href: "/", icon: "home", sortOrder: 0 },
@@ -44,6 +45,8 @@ export async function POST(request: NextRequest) {
         const nextSortOrder = body.sortOrder ?? (maxSort ?? -1) + 1;
         const newId = crypto.randomUUID();
         await db.insert(navItems).values({ id: newId, label: body.label, href: body.href, icon: body.icon || null, sortOrder: nextSortOrder, createdAt: mysqlNow(), updatedAt: mysqlNow() });
+
+        await invalidateNavItemCaches();
         const item = await db.query.navItems.findFirst({ where: (t, { eq }) => eq(t.id, newId) });
 
         await auditFromRequest(request, {

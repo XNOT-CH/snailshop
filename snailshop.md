@@ -135,10 +135,15 @@ the news reorder, and moved footer links between columns. The helper strips the
 defaults; `tests/lib/partialUpdateSchema.test.ts` asserts an empty body stays empty for
 every schema a PATCH-style route uses, so a new schema with a default is caught.
 
-**Footer edits are cached for 60s.** `components/Footer.tsx` caches
-`FooterWidgetSettings` and the link list separately. Every admin write must call
-`invalidateFooterCaches()` (`lib/cache.ts`) or the site keeps the old column names and
-links until the TTL expires.
+**Anything read through `cacheOrFetch` needs an invalidation path.** The footer
+(`components/Footer.tsx`) and the navbar (`components/Navbar.tsx`) each cache their
+data for 60s, and neither set was ever cleared on an admin write — the site kept the
+old column names, menu items and category list until the TTL expired. Call the matching
+helper from every mutating route: `invalidateFooterCaches()`,
+`invalidateNavItemCaches()`, `invalidateProductCaches()` (which also covers the navbar's
+category counts), `invalidateNewsCaches()`, `invalidatePopupCaches()`,
+`invalidateSettingsCaches()`. `tests/lib/cacheInvalidationCoverage.test.ts` fails if a
+key is cached with nothing able to clear it.
 
 **`knowledge:build` only sees git-tracked files** (`git ls-files` in
 `scripts/quality/build-snailshop-index.mjs:22`). A brand-new route or table file is
