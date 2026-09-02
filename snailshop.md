@@ -451,34 +451,34 @@ Read a range, not the file. Landmarks are `name:line`.
 
 | File | Lines | Landmarks |
 |---|---|---|
-| `app/globals.css` | 3925 | — |
-| `app/(site)/profile/settings/page.tsx` | 1920 | ProfileSettingsPage:199 |
-| `app/(site)/admin/settings/page.tsx` | 1356 | AdminSettingsPage:101 |
-| `app/(site)/admin/promo-codes/page.tsx` | 1199 | AdminPromoCodesPage:287 |
-| `app/(site)/admin/users/AdminUsersClient.tsx` | 1188 | AdminUsersClient:221 |
-| `app/(site)/dashboard/topup/page.tsx` | 1127 | TopupPage:116 |
-| `components/admin/ProductTable.tsx` | 1104 | ProductTable:664 |
-| `app/(site)/admin/gacha-machines/[id]/edit/page.tsx` | 1102 | EditGachaMachinePage:426 |
-| `app/(site)/admin/audit-logs/page.tsx` | 1046 | AdminAuditLogsPage:367 |
-| `app/(site)/admin/footer-links/page.tsx` | 997 | FooterLinksAdminPage:457 |
-| `lib/seasonPass.ts` | 986 | getSeasonPassRewardCatalog:215, getSeasonPassRewardByDay:231, getOrCreateSeasonPassPlan:236, expireSeasonPassSubscriptions:290, activateQueuedSeasonPassSubscriptions:306, getCurrentSeasonPassSubscription:325, getLatestSeasonPassSubscription:348, getSeasonPassClaims:359 |
-| `lib/rateLimit.ts` | 979 | checkLoginRateLimit:104, checkLoginIpRateLimit:113, recordFailedLogin:179, recordFailedLoginIp:183, clearLoginAttempts:214, checkLoginRateLimitShared:231, checkLoginIpRateLimitShared:241, recordFailedLoginShared:299 |
-| `components/cart/CartSheet.tsx` | 953 | CartSheet:926 |
-| `app/(site)/admin/news/page.tsx` | 943 | AdminNewsPage:81 |
-| `components/DailyTopupSummary.tsx` | 920 | DailyTopupSummary:285 |
-| `app/(site)/admin/gacha-machines/page.tsx` | 895 | GachaMachinesAdminPage:129 |
-| `lib/chat.ts` | 827 | getOrCreateUserConversation:273, getUserConversation:309, listAdminConversations:361, getAdminConversation:474, countAdminUnread:498, sendConversationMessage:519, markConversationRead:576, updateConversationStatus:586 |
-| `lib/db/schema.ts` | 798 | — |
-| `app/(site)/admin/season-pass/edit/page.tsx` | 748 | AdminSeasonPassEditPage:117 |
-| `app/(site)/admin/help/page.tsx` | 739 | AdminHelpPage:80 |
-| `app/(site)/admin/popups/page.tsx` | 736 | AdminPopupsPage:76 |
-| `components/admin/chat/useAdminChatInbox.ts` | 674 | useAdminChatInbox:69 |
-| `components/GachaRhombus.tsx` | 674 | GachaRhombus:210 |
+| `app/globals.css` | 3925 | @theme inline:11, Unified Luxury Blue Theme:99, :root:101, DARK MODE THEME - Premium Gaming Style:181, SweetAlert2 Global Overrides:187, @layer base:358, DARK MODE ENHANCEMENTS:404, Glass effect cards in dark mode:412 |
+| `app/(site)/profile/settings/page.tsx` | 1920 | parseApiResponse:88, sanitizePhone:112, sanitizeTaxId:116, sanitizeThaiName:120, sanitizeEnglishName:124, cloneAddress:173, hasAddressData:177, getAddressSummary:181 |
+| `app/(site)/admin/settings/page.tsx` | 1356 | isValidHttpUrl:59, isValidImageRef:69, AdminSettingsPage:101, BannerCard:1102 |
+| `app/(site)/admin/promo-codes/page.tsx` | 1199 | parsePromoDate:118, toBangkokDateInputValue:127, isExpired:140, isNotStarted:145, getPromoStatus:150, StatusBadge:185, getCodeTypeBadgeClass:195, getCodeTypeLabel:201 |
+| `app/(site)/admin/users/AdminUsersClient.tsx` | 1188 | formatRoleLabel:67, escapeHtml:80, isInternalRoleCode:89, getSystemRoleLabel:93, sanitizeDecimalInput:105, sanitizeIntegerInput:119, isValidDecimalInput:123, isValidIntegerInput:127 |
+| `app/(site)/dashboard/topup/page.tsx` | 1127 | BANK_INFO:41, getVerifyMethodLabel:96, getVerifyTargetLabel:112, TopupPage:116 |
+| `components/admin/ProductTable.tsx` | 1104 | formatAutoDelete:96, hasDiscountPrice:116, getActivePrice:124, getDisplayStockCount:128, getStockTone:132, getProductCardData:148, getPriceText:161, getOriginalPriceText:167 |
+| `app/(site)/admin/gacha-machines/[id]/edit/page.tsx` | 1102 | validImageUrl:63, defaultAddForm:81, buildRewardPayload:101, sortRewards:123, getSimulationRewardName:152, isRewardEligibleForSimulation:158, validateReward:162, ProductPickerDropdown:181 |
+| `app/(site)/admin/audit-logs/page.tsx` | 1046 | getActionBadgeClass:287, getChangeValue:295, getResourceDetailsHtml:315, getVisibleCheckboxState:338, getDeleteConfirmText:350, AdminAuditLogsPage:367 |
+| `app/(site)/admin/footer-links/page.tsx` | 997 | getDomainLabel:79, SortableRow:98, SortableCard:205, DragPreview:300, FooterColumnBoard:347, FooterLinksAdminPage:457 |
+| `lib/seasonPass.ts` | 986 | normalizeSeasonPassRewardType:28, DEFAULT_PLAN:44, addDays:91, parseMySqlDateTime:97, dateKeyToUtcMs:101, diffDaysByDateKey:106, getEffectiveSeasonPassStartAt:110, normalizeRewardDefinition:125 |
+| `lib/rateLimit.ts` | 979 | config:25, checkLoginRateLimit:104, checkLoginIpRateLimit:113, checkLoginRateLimitWithConfig:122, recordFailedLogin:179, recordFailedLoginIp:183, recordFailedLoginWithConfig:187, clearLoginAttempts:214 |
+| `components/cart/CartSheet.tsx` | 953 | normalizeOptionalPrice:64, buildSyncedCartItem:68, hasCartItemChanged:85, hasCheckoutRelevantChange:96, CartSheetContent:103, CartSheet:926 |
+| `app/(site)/admin/news/page.tsx` | 943 | getExcerpt:75, AdminNewsPage:81 |
+| `components/DailyTopupSummary.tsx` | 920 | StatusBadge:78, DetailModal:106, AmountTooltip:207, TxnTooltip:227, HourlyTooltip:247, SortIcon:269, DailyTopupSummary:285 |
+| `app/(site)/admin/gacha-machines/page.tsx` | 895 | validImageUrl:57, renderCostText:61, getFormFieldString:75, getCostAmountFieldCopy:85, GachaMachinesAdminPage:129, SortableRow:521, MachineTable:649 |
+| `lib/chat.ts` | 827 | serializeMessage:101, serializeConversationTimestamps:130, getChatUser:144, getChatAssignee:162, getConversationMessagesWindow:185, hydrateConversation:242, getOrCreateUserConversation:273, getUserConversation:309 |
+| `lib/db/schema.ts` | 798 | now:19, updatedAt:20 |
+| `app/(site)/admin/season-pass/edit/page.tsx` | 748 | getRewardTypeOptions:55, getRewardTypeDisplayName:63, getDefaultRewardImage:86, normalizeRewardType:90, fallbackRewards:106, AdminSeasonPassEditPage:117 |
+| `app/(site)/admin/help/page.tsx` | 739 | emptyArticleForm:67, emptyVideoForm:74, AdminHelpPage:80 |
+| `app/(site)/admin/popups/page.tsx` | 736 | getDismissLabel:69, AdminPopupsPage:76 |
+| `components/admin/chat/useAdminChatInbox.ts` | 674 | sortConversations:26, mergeConversationPage:43, mergeMessages:53, useAdminChatInbox:69 |
+| `components/GachaRhombus.tsx` | 674 | getParticles:84, WinBurst:106, TileImage:128, getRouletteDelay:145, getRollingButtonLabel:157, getSelectorIndex:169, getPathIndices:173, getIntersectionIndex:179 |
 | `lib/features/orders/purchase.ts` | 659 | getActivePrice:101, processStock:110, getAutoDeleteTimestamp:130, buildCartThbPromoItems:138, buildDiscountedThbPriceMap:162, sumAppliedDiscount:228, validateAndSummarizeCartProducts:238, getRawTransactionConnection:293 |
 | `app/(site)/admin/products/new/page.tsx` | 641 | AddProductPage:44 |
-| `app/(site)/admin/roles/page.tsx` | 630 | AdminRolesPage:116 |
-| `components/MembersSummary.tsx` | 630 | MembersSummary:140 |
-| `app/api/gacha/roll/route.ts` | 620 | POST:499 |
+| `app/(site)/admin/roles/page.tsx` | 630 | normalizeRolePermissions:49, PERMISSION_GROUPS:53, AdminRolesPage:116 |
+| `components/MembersSummary.tsx` | 630 | baht:100, daysAgoLabel:116, MemberCell:122, MembersSummary:140 |
+| `app/api/gacha/roll/route.ts` | 620 | purgeExpiredPendingSpinState:62, shouldFallbackProductReward:76, buildPendingSpinKey:85, fetchRewards:89, fetchTieredProducts:118, handleSpin1:127, persistPendingSpin:339, readPendingSpin:359 |
 
 ### npm scripts (29)
 

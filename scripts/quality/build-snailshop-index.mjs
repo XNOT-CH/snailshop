@@ -90,12 +90,21 @@ async function buildBigFileIndex() {
 
     const landmarks = [];
     lines.forEach((line, index) => {
-      const fn = line.match(/^export (?:default )?(?:async )?function (\w+)/);
-      const comp = line.match(/^export default function (\w+)/);
-      const section = line.match(/^\/\* ={3,}\s*(.+?)\s*={3,} \*\/$/);
-      const cssSection = line.match(/^\/\* -+ (.+?) -+ \*\/$/);
-      const name = fn?.[1] ?? comp?.[1] ?? section?.[1] ?? cssSection?.[1];
-      if (name) landmarks.push(`${name}:${index + 1}`);
+      // TypeScript: top-level declarations worth jumping to.
+      const fn = line.match(/^(?:export )?(?:default )?(?:async )?function (\w+)/);
+      const topConst = line.match(/^(?:export )?const (\w+) = (?:function|\(|async|\{)/);
+
+      // CSS: a banner comment names the section on its own line, either
+      // `/* ==== */ NAME /* ==== */` across three lines, or `/* Name */`.
+      const bannerOpen = /^\/\* ={5,}\s*$/.test(line);
+      const banner = bannerOpen
+        ? lines.slice(index + 1, index + 3).map((l) => l.trim()).find(Boolean)
+        : null;
+      const oneLine = line.match(/^\/\* ([A-Z][^*]{3,60}?) \*\/$/);
+      const atRule = line.match(/^(@layer \w+|@theme \w+|:root)/);
+
+      const name = fn?.[1] ?? topConst?.[1] ?? banner ?? oneLine?.[1] ?? atRule?.[1];
+      if (name) landmarks.push(`${name.replace(/\s+/g, " ")}:${index + 1}`);
     });
 
     entries.push({
