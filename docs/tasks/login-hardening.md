@@ -21,7 +21,7 @@
 หลังแก้ให้รัน:
 - npm run lint
 - npm run build
-- npx vitest run tests/lib/login.test.ts tests/api/login.test.ts
+- npx vitest run tests/lib/login.test.ts
 - npx playwright test tests/e2e/login.spec.ts --project=chromium
 
 สรุปผลท้ายงานเป็น:

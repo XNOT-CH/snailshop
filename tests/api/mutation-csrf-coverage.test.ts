@@ -22,7 +22,6 @@ const INTENTIONAL_NO_CSRF_ROUTES = new Set([
     "app/api/auth/forgot-password/route.ts:POST",
     "app/api/auth/reset-password/route.ts:POST",
     "app/api/cart/refresh/route.ts:POST",
-    "app/api/login/route.ts:POST",
     "app/api/promo-codes/validate/route.ts:POST",
     "app/api/register/route.ts:POST",
     "app/api/session/route.ts:POST",

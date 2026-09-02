@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { LEGACY_LOGIN_DEPRECATED_MESSAGE } from "@/lib/login";
 
 // ── Mock dependencies BEFORE importing route ──
 vi.mock("@/lib/db", () => ({
@@ -82,7 +81,6 @@ vi.mock("@/lib/features/products/mutations", () => ({
 }));
 
 // Now import the route handlers
-import { POST as loginPOST } from "@/app/api/login/route";
 import { POST as registerPOST } from "@/app/api/register/route";
 import { POST as productPOST } from "@/app/api/products/route";
 import { db } from "@/lib/db";
@@ -98,20 +96,6 @@ function makeRequest(body: Record<string, unknown>, method = "POST"): NextReques
     body: JSON.stringify(body),
   });
 }
-
-describe("API: /api/login", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it("returns 410 because the legacy login route is deprecated", async () => {
-    const res = await loginPOST();
-    const body = await res.json();
-    expect(res.status).toBe(410);
-    expect(body.success).toBe(false);
-    expect(body.message).toBe(LEGACY_LOGIN_DEPRECATED_MESSAGE);
-  });
-});
 
 describe("API: /api/register", () => {
   beforeEach(() => {

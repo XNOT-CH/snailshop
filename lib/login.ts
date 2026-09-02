@@ -17,9 +17,6 @@ import {
 import { verifyTurnstileToken } from "@/lib/security/turnstile";
 import { loginSchema } from "@/lib/validations";
 
-export const LEGACY_LOGIN_DEPRECATED_MESSAGE =
-    "Legacy login endpoint is disabled. Use NextAuth credentials sign-in instead.";
-
 /**
  * Constant bcrypt hash (cost 10, matching how real passwords are hashed) used to
  * run a throwaway compare when the username does not exist. This keeps the
