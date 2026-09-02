@@ -1,7 +1,6 @@
 /**
  * Tests targeting SonarQube "new code" files not yet covered:
- * dashboard/members-summary, purchases, topup-summary
- * gacha/recent, gacha/history
+ * dashboard/members-summary, topup-summary, gacha/recent
  * admin/gacha-machines/[id], admin/gacha-machines/reorder, admin/gacha-machines/[id]/duplicate
  * admin/settings
  */
@@ -123,30 +122,6 @@ describe("API: /api/dashboard/members-summary (GET)", () => {
 });
 
 // ═══════════════════════════════════════
-// Dashboard Purchases Summary
-// ═══════════════════════════════════════
-describe("API: /api/dashboard/purchases (GET)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("returns 401 when not authenticated", async () => {
-    (auth as any).mockResolvedValue(null);
-    const { GET } = await import("@/app/api/dashboard/purchases/route");
-    const req = new NextRequest("http://localhost/api/dashboard/purchases");
-    const res = await GET(req);
-    expect(res.status).toBe(401);
-  });
-
-  it("returns user purchases when authenticated", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1", role: "USER" } });
-    const { GET } = await import("@/app/api/dashboard/purchases/route");
-    const req = new NextRequest("http://localhost/api/dashboard/purchases");
-    // just test auth path passes — decrypt may fail in test env
-    const res = await GET(req);
-    expect([200, 500]).toContain(res.status);
-  });
-});
-
-// ═══════════════════════════════════════
 // Dashboard Topup Summary
 // ═══════════════════════════════════════
 describe("API: /api/dashboard/topup-summary (GET)", () => {
@@ -185,41 +160,6 @@ describe("API: /api/gacha/recent (GET)", () => {
     const body = await res.json();
     expect(body.success).toBe(true);
     expect(body.data[0].username).toBe("user1");
-  });
-});
-
-// ═══════════════════════════════════════
-// Gacha History (authenticated)
-// ═══════════════════════════════════════
-describe("API: /api/gacha/history (GET)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("returns 401 when not authenticated", async () => {
-    (isAuthenticated as any).mockResolvedValue({ success: false, error: "Unauthorized" });
-    const { GET } = await import("@/app/api/gacha/history/route");
-    const res = await GET();
-    expect(res.status).toBe(401);
-  });
-
-  it("returns gacha history for user", async () => {
-    (isAuthenticated as any).mockResolvedValue({ success: true, userId: "u1" });
-    (db.query.gachaRollLogs.findMany as any).mockResolvedValue([]);
-    (db.select as any) = vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          // for plain where — count query
-          then: (fn: any) => Promise.resolve([{ count: 0 }]).then(fn),
-          groupBy: vi.fn().mockReturnValue({
-            orderBy: vi.fn().mockReturnValue({
-              limit: vi.fn().mockResolvedValue([]),
-            }),
-          }),
-        }),
-      }),
-    });
-    const { GET } = await import("@/app/api/gacha/history/route");
-    const res = await GET();
-    expect([200, 500]).toContain(res.status);
   });
 });
 

@@ -146,12 +146,6 @@ export interface PurchasedItemProps {
     secretData: string;
 }
 
-export interface BuyButtonProps {
-    productId: string;
-    price: number;
-    disabled?: boolean;
-}
-
 // =====================================
 // Navigation Types
 // =====================================

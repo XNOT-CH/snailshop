@@ -11,7 +11,6 @@ This folder is the UI entry for sign-in.
 
 ## Read with
 
-- `app/api/login/route.ts`
 - `app/api/auth/[...nextauth]/route.ts`
 - `auth.ts`
 - `auth.config.ts`

@@ -254,19 +254,6 @@ describe("API: /api/register (rate limit + existing user paths)", () => {
 });
 
 // ════════════════════════════════════════════════════════════════
-// /api/login — progressive delay path + catch 500
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/login (progressive delay + 500)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("returns 410 while keeping the legacy endpoint disabled", async () => {
-    const { POST } = await import("@/app/api/login/route");
-    const res = await POST();
-    expect(res.status).toBe(410);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
 // /api/admin/roles — POST conflict 400 + catch 500
 // ════════════════════════════════════════════════════════════════
 describe("API: /api/admin/roles (POST paths)", () => {

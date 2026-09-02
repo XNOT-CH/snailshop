@@ -1,6 +1,5 @@
 /**
  * Batch coverage tests for remaining low/zero-coverage routes:
- * - /api/gacha/machines           (GET)
  * - /api/gacha/drop-rates         (GET)
  * - /api/admin/gacha-products     (GET)
  * - /api/admin/nav-items          (GET + POST)
@@ -65,37 +64,6 @@ import { validateBody } from "@/lib/validations/validate";
 const ADMIN_OK = { success: true };
 const UNAUTH   = { success: false, error: "Unauthorized" };
 const mkParams = (id: string) => ({ params: Promise.resolve({ id }) });
-
-// ════════════════════════════════════════════════════════════════
-// /api/gacha/machines
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/gacha/machines (GET)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("returns active machines", async () => {
-    (db.query.gachaMachines.findMany as any).mockResolvedValue([
-      { id: "m1", name: "Gacha 1", imageUrl: "/g1.webp", gameType: "GRID",
-        costType: "CREDIT", costAmount: "100", categoryId: "c1",
-        category: { id: "c1", name: "Action" } },
-    ]);
-    const { GET } = await import("@/app/api/gacha/machines/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.data).toHaveLength(1);
-    expect(body.data[0].name).toBe("Gacha 1");
-  });
-
-  it("returns empty list when no machines", async () => {
-    (db.query.gachaMachines.findMany as any).mockResolvedValue([]);
-    const { GET } = await import("@/app/api/gacha/machines/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.data).toHaveLength(0);
-  });
-});
 
 // ════════════════════════════════════════════════════════════════
 // /api/gacha/drop-rates

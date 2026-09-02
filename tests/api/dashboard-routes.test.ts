@@ -2,7 +2,6 @@
  * Tests for:
  * - lib/validations/validate.ts  (validateBody edge cases: _root path, multi-issue)
  * - /api/dashboard/members-summary (GET)
- * - /api/dashboard/purchases       (GET)
  * - /api/dashboard/topup-summary   (GET)
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -192,69 +191,6 @@ describe("API: /api/dashboard/members-summary (GET)", () => {
     const { GET } = await import("@/app/api/dashboard/members-summary/route");
     const res = await GET(mkMemberReq());
     expect(res.status).toBe(500);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
-// /api/dashboard/purchases
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/dashboard/purchases (GET)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  const mkPurchaseReq = (params = "") =>
-    new NextRequest(`http://localhost/api/dashboard/purchases${params}`);
-
-  it("returns 401 when not authenticated", async () => {
-    (auth as any).mockResolvedValue(null);
-    const { GET } = await import("@/app/api/dashboard/purchases/route");
-    const res = await GET(mkPurchaseReq());
-    expect(res.status).toBe(401);
-  });
-
-  it("returns purchases for authenticated user", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1", role: "USER" } });
-    (db.query.orders.findMany as any).mockResolvedValue([
-      {
-        id: "o1", totalPrice: "500", givenData: "enc_data", purchasedAt: "2026-03-14 10:00:00",
-        product: { name: "ROV Account", imageUrl: "/rov.webp" },
-      },
-      {
-        id: "o2", totalPrice: "200", givenData: null, purchasedAt: "2026-03-14 09:00:00",
-        product: null, // filtered out
-      },
-    ]);
-    const { GET } = await import("@/app/api/dashboard/purchases/route");
-    const res = await GET(mkPurchaseReq());
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.data).toHaveLength(1); // order with null product filtered out
-    expect(body.data[0].secretData).toBe("decrypted-data");
-  });
-
-  it("returns purchases with date param", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1", role: "USER" } });
-    (db.query.orders.findMany as any).mockResolvedValue([]);
-    const { GET } = await import("@/app/api/dashboard/purchases/route");
-    const res = await GET(mkPurchaseReq("?date=2026-03-01"));
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.data).toHaveLength(0);
-  });
-
-  it("handles order with null givenData (uses fallback text)", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1", role: "USER" } });
-    (db.query.orders.findMany as any).mockResolvedValue([
-      {
-        id: "o1", totalPrice: "100", givenData: null, purchasedAt: "2026-03-14",
-        product: { name: "Item", imageUrl: "/item.webp" },
-      },
-    ]);
-    const { GET } = await import("@/app/api/dashboard/purchases/route");
-    const res = await GET(mkPurchaseReq());
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.data[0].secretData).toBe("ไม่พบข้อมูล");
   });
 });
 

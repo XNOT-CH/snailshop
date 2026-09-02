@@ -13,7 +13,7 @@ This folder contains public and admin route handlers.
 - User/account:
   `profile/*`, `user/*`, `register/route.ts`
 - Content:
-  `news/route.ts`, `popups/route.ts`, `nav-items/route.ts`, `footer-widget/route.ts`
+  `popups/route.ts`, `currency-settings/route.ts`
 - Topup:
   `topup/route.ts`, `admin/slips/route.ts`
 - Gacha:

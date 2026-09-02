@@ -92,3 +92,7 @@ lint-report.json
 /storage/*.log
 /storage/*.tsx
 /storage/tmp*
+
+# One-off outputs and personal editor state (do not commit)
+/outputs
+/.obsidian

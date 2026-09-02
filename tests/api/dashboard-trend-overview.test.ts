@@ -1,6 +1,6 @@
 /**
- * Comprehensive tests for dashboard/topup-trend and dashboard/overview
- * Both routes are admin/auth-protected and use db.select() aggregations
+ * Comprehensive tests for dashboard/topup-trend
+ * The route is admin/auth-protected and uses db.select() aggregations
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
@@ -108,78 +108,5 @@ describe("API: /api/dashboard/topup-trend (GET)", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.data.length).toBeGreaterThanOrEqual(7);
-  });
-});
-
-// ─── dashboard/overview ───────────────────────────────────────────────────────
-describe("API: /api/dashboard/overview (GET)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  const mkReq = (url = "http://localhost/api/dashboard/overview") => new NextRequest(url);
-
-  it("returns 401 when not authenticated", async () => {
-    (auth as any).mockResolvedValue(null);
-    const { GET } = await import("@/app/api/dashboard/overview/route");
-    const res = await GET(mkReq());
-    expect(res.status).toBe(401);
-  });
-
-  it("returns 404 when user not found", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1" } });
-    (db.query.users.findFirst as any).mockResolvedValue(null);
-    const { GET } = await import("@/app/api/dashboard/overview/route");
-    const res = await GET(mkReq());
-    expect(res.status).toBe(404);
-  });
-
-  it("returns financial overview data for authenticated user", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1" } });
-    (db.query.users.findFirst as any).mockResolvedValue({ id: "u1", creditBalance: "750" });
-
-    const mockWhere = vi.fn()
-      .mockResolvedValueOnce([{ cnt: 3, total: "300" }]) // orders
-      .mockResolvedValueOnce([{ total: "500" }]);         // topups
-    const mockDb = db as any;
-    mockDb.select.mockReturnValue({ from: vi.fn().mockReturnValue({ where: mockWhere }) });
-
-    const { GET } = await import("@/app/api/dashboard/overview/route");
-    const res = await GET(mkReq());
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.data.creditBalance).toBe(750);
-    expect(body.data.purchasesOnDate).toBe(3);
-    expect(body.data.totalSpending).toBe(300);
-    expect(body.data.totalTopup).toBe(500);
-  });
-
-  it("handles null totals gracefully (no orders/topups)", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1" } });
-    (db.query.users.findFirst as any).mockResolvedValue({ id: "u1", creditBalance: "0" });
-
-    const mockWhere = vi.fn()
-      .mockResolvedValueOnce([{ cnt: 0, total: null }]) // orders
-      .mockResolvedValueOnce([{ total: null }]);          // topups
-    const mockDb = db as any;
-    mockDb.select.mockReturnValue({ from: vi.fn().mockReturnValue({ where: mockWhere }) });
-
-    const { GET } = await import("@/app/api/dashboard/overview/route");
-    const res = await GET(mkReq());
-    const body = await res.json();
-    expect(body.data.totalSpending).toBe(0); // null ?? 0
-    expect(body.data.totalTopup).toBe(0);
-  });
-
-  it("accepts date query parameter", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1" } });
-    (db.query.users.findFirst as any).mockResolvedValue({ id: "u1", creditBalance: "100" });
-
-    const mockWhere = vi.fn().mockResolvedValue([{ cnt: 0, total: null }]);
-    const mockDb = db as any;
-    mockDb.select.mockReturnValue({ from: vi.fn().mockReturnValue({ where: mockWhere }) });
-
-    const { GET } = await import("@/app/api/dashboard/overview/route");
-    const res = await GET(mkReq("http://localhost/api/dashboard/overview?date=2026-03-01"));
-    expect(res.status).toBe(200);
   });
 });

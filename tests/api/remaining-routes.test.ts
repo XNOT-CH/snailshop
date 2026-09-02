@@ -84,38 +84,6 @@ import { auth } from "@/auth";
 import { db } from "@/lib/db";
 import { isAdmin } from "@/lib/auth";
 
-describe("API: /api/dashboard/overview (GET)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("returns 401 when not authenticated", async () => {
-    (auth as any).mockResolvedValue(null);
-    const { GET } = await import("@/app/api/dashboard/overview/route");
-    const req = new NextRequest("http://localhost/api/dashboard/overview");
-    const res = await GET(req);
-    expect(res.status).toBe(401);
-  });
-
-  it("returns 404 when user not found", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1" } });
-    (db.query.users.findFirst as any).mockResolvedValue(null);
-    const { GET } = await import("@/app/api/dashboard/overview/route");
-    const req = new NextRequest("http://localhost/api/dashboard/overview");
-    const res = await GET(req);
-    expect(res.status).toBe(404);
-  });
-
-  it("returns dashboard data for authenticated user", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1" } });
-    (db.query.users.findFirst as any).mockResolvedValue({ id: "u1", creditBalance: "500" });
-    const { GET } = await import("@/app/api/dashboard/overview/route");
-    const req = new NextRequest("http://localhost/api/dashboard/overview");
-    const res = await GET(req);
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-  });
-});
-
 // ═══════════════════════════════════════
 // Upload
 // ═══════════════════════════════════════

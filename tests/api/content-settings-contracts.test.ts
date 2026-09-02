@@ -286,17 +286,7 @@ describe("content/settings API response contracts", () => {
     await expect(unauthorizedResponse.json()).resolves.toEqual({ error: "Unauthorized" });
   });
 
-  it("preserves public raw news, popups, and currency response contracts", async () => {
-    const article = { id: "news-1", title: "Public News" };
-    cacheOrFetchMock.mockResolvedValueOnce([article]);
-    const { GET: getNews } = await import("@/app/api/news/route");
-
-    const newsResponse = await getNews();
-
-    expect(newsResponse.status).toBe(200);
-    await expect(newsResponse.json()).resolves.toEqual([article]);
-
-    vi.resetModules();
+  it("preserves public raw popups and currency response contracts", async () => {
     const popup = { id: "popup-1", imageUrl: "/popup.webp" };
     cacheOrFetchMock.mockResolvedValueOnce([popup]);
     const { GET: getPopups } = await import("@/app/api/popups/route");
@@ -316,17 +306,6 @@ describe("content/settings API response contracts", () => {
   });
 
   it("preserves public content error response contracts", async () => {
-    cacheOrFetchMock.mockRejectedValueOnce(new Error("news db offline"));
-    const { GET: getNews } = await import("@/app/api/news/route");
-
-    const newsResponse = await getNews();
-
-    expect(newsResponse.status).toBe(500);
-    await expect(newsResponse.json()).resolves.toEqual({
-      error: "Failed to fetch news",
-    });
-
-    vi.resetModules();
     cacheOrFetchMock.mockRejectedValueOnce(new Error("popup db offline"));
     const { GET: getPopups } = await import("@/app/api/popups/route");
     const popupsResponse = await getPopups();
@@ -347,27 +326,7 @@ describe("content/settings API response contracts", () => {
     });
   });
 
-  it("preserves nav-items raw and error response contracts", async () => {
-    const navItem = { id: "nav-1", label: "หน้าแรก", href: "/", icon: "home" };
-    dbMock.query.navItems.findMany.mockResolvedValue([navItem]);
-    const { GET: getPublicNav } = await import("@/app/api/nav-items/route");
-
-    const publicResponse = await getPublicNav();
-
-    expect(publicResponse.status).toBe(200);
-    await expect(publicResponse.json()).resolves.toEqual([navItem]);
-
-    vi.resetModules();
-    dbMock.query.navItems.findMany.mockRejectedValueOnce(new Error("nav db offline"));
-    const { GET: getPublicNavWithError } = await import("@/app/api/nav-items/route");
-    const publicErrorResponse = await getPublicNavWithError();
-
-    expect(publicErrorResponse.status).toBe(500);
-    await expect(publicErrorResponse.json()).resolves.toEqual({
-      error: "Failed to fetch nav items",
-    });
-
-    vi.resetModules();
+  it("preserves admin nav-items error response contracts", async () => {
     requirePermissionMock.mockResolvedValue(UNAUTHORIZED);
     const { GET: getAdminNavUnauthorized } = await import("@/app/api/admin/nav-items/route");
     const unauthorizedResponse = await getAdminNavUnauthorized();
@@ -427,33 +386,6 @@ describe("content/settings API response contracts", () => {
     expect(deleteErrorResponse.status).toBe(500);
     await expect(deleteErrorResponse.json()).resolves.toEqual({
       error: "Failed to delete nav item",
-    });
-  });
-
-  it("preserves footer widget active and error fallback contracts", async () => {
-    const settings = { id: "footer-settings", isActive: true, title: "เมนูลัด" };
-    const link = { id: "link-1", label: "Help", href: "/help", openInNewTab: false };
-    dbMock.query.footerWidgetSettings.findFirst.mockResolvedValue(settings);
-    dbMock.query.footerLinks.findMany.mockResolvedValue([link]);
-    const { GET } = await import("@/app/api/footer-widget/route");
-
-    const response = await GET();
-
-    expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({
-      settings: { isActive: true, title: "เมนูลัด" },
-      links: [link],
-    });
-
-    vi.resetModules();
-    dbMock.query.footerWidgetSettings.findFirst.mockRejectedValue(new Error("db offline"));
-    const { GET: getWithError } = await import("@/app/api/footer-widget/route");
-    const errorResponse = await getWithError();
-
-    expect(errorResponse.status).toBe(500);
-    await expect(errorResponse.json()).resolves.toEqual({
-      settings: { isActive: false, title: "" },
-      links: [],
     });
   });
 });

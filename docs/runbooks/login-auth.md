@@ -3,7 +3,6 @@
 ## Source of truth
 
 - Interactive login uses NextAuth Credentials through `/api/auth/*`
-- `app/api/login/route.ts` is deprecated and intentionally returns `410 Gone`
 - Session data is issued by NextAuth JWT callbacks in `auth.config.ts`
 
 ## Required environment
@@ -57,4 +56,4 @@
 - Change route protection in `lib/adminAccess.ts`
 - Change session shape in `auth.config.ts`
 
-Avoid reintroducing business logic into `app/api/login/route.ts`.
+There is no `/api/login` route: NextAuth owns the sign-in path end to end.

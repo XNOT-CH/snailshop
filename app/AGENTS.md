@@ -18,7 +18,7 @@ This folder is the main route tree for the app.
 ## Read first by task
 
 - Login/auth:
-  `app/login/page.tsx`, `app/api/login/route.ts`, `app/api/auth/[...nextauth]/route.ts`
+  `app/login/page.tsx`, `app/api/auth/[...nextauth]/route.ts`
 - Admin shell/navigation:
   `app/admin/layout.tsx`, `app/admin/page.tsx`
 - Topup:

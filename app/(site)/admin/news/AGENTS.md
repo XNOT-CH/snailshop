@@ -11,7 +11,6 @@ This folder is the admin surface for news articles and promotional content.
 
 - `app/api/admin/news/route.ts`
 - `app/api/admin/news/[id]/route.ts`
-- `app/api/news/route.ts`
 - `lib/newsValidation.ts`
 - `lib/validations/content.ts`
 - `components/NewsSection.tsx`
