@@ -74,7 +74,7 @@ lib/              db, auth, business logic, utilities
 hooks/            React hooks
 tests/            unit/integration tests
 public/           static assets
-scripts/          admin, dev, deploy, db, exports, ops, product sync, quality, seeds, storage, Windows helpers
+scripts/          dev, deploy, db, exports, ops, product sync, quality, seeds, storage, Windows helpers
 docs/             runbooks, database notes, project docs
 drizzle/          SQL migrations
 storage/          runtime files, uploads, private assets
@@ -83,7 +83,6 @@ storage/          runtime files, uploads, private assets
 ## Important Paths
 
 - `scripts/windows/` คำสั่งช่วยงานสำหรับ Windows
-- `scripts/admin/` admin maintenance helpers
 - `scripts/dev/` dev server helpers
 - `scripts/deploy/` deployment validation scripts
 - `scripts/db/` database health and database utility scripts
