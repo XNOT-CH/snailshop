@@ -16,13 +16,21 @@ are using and why, the first time you use it in a task. That applies to
 
 ## Where the project knowledge lives
 
-`AGENTS.md` at the repo root is the main instruction file: commands, tech stack,
-critical files, boundaries, and domain safety rules. Read it first.
+**`snailshop.md` at the repo root is the index — read it before opening source.**
+It holds the order of files each common change touches, the traps already paid
+for, the boundaries and safety rules, plus a generated index of every database
+table, API route, file over 600 lines and npm script, each with a line number.
+Half of it is rebuilt from the code by `npm run knowledge:build`, so the indexes
+cannot silently go stale.
+
+Looking a fact up there instead of re-reading an 800-line file is the point: the
+same files were re-opened 117 times within single sessions before it existed.
+The `snailshop` skill in `.claude/skills/` has the lookup and update workflow.
 
 Most directories also carry their own `AGENTS.md` — a short map of what the
 folder is, its high-signal files, and what to read alongside it. Before editing
-inside a directory, read the nearest one. Nested instructions win over the root
-file for their own directory.
+inside a directory, read the nearest one. Nested instructions win for their own
+directory.
 
 These are plain Markdown files, so nothing loads them automatically. Opening them
 is your job.
