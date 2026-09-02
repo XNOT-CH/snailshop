@@ -1,5 +1,4 @@
 import type { NextConfig } from "next";
-import { initOpenNextCloudflareForDev } from "@opennextjs/cloudflare";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -189,6 +188,3 @@ const nextConfig: NextConfig = {
 
 export default nextConfig;
 
-if (process.env.NODE_ENV === "development" && process.env.NEXT_DEV_CLOUDFLARE === "true") {
-  initOpenNextCloudflareForDev();
-}

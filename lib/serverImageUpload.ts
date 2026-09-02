@@ -3,7 +3,6 @@ import path from "node:path";
 import { existsSync } from "node:fs";
 import { mkdir, unlink, writeFile } from "node:fs/promises";
 import sharp from "sharp";
-import { deleteUploadObject, putUploadObject, storageKeyFromPublicUrl } from "@/lib/cloudflareStorage";
 import { getLegacyPublicUploadDir } from "@/lib/runtimeUploads";
 
 const IMAGE_SIGNATURES = {
@@ -153,16 +152,12 @@ export function getThumbFilename(filename: string) {
         : null;
 }
 
-async function saveUploadBuffer(buffer: Buffer, mimeType: SupportedMimeType, uploadDir: string, url: string) {
-    const storageKey = storageKeyFromPublicUrl(url);
-    const savedToR2 = await putUploadObject(storageKey, buffer, mimeType);
-    if (!savedToR2) {
-        if (!existsSync(uploadDir)) {
-            await mkdir(uploadDir, { recursive: true });
-        }
-
-        await writeFile(path.join(uploadDir, path.basename(url)), buffer);
+async function saveUploadBuffer(buffer: Buffer, uploadDir: string, url: string) {
+    if (!existsSync(uploadDir)) {
+        await mkdir(uploadDir, { recursive: true });
     }
+
+    await writeFile(path.join(uploadDir, path.basename(url)), buffer);
 }
 
 export async function saveOptimizedImageUpload(file: File, options: SaveOptimizedUploadOptions) {
@@ -170,7 +165,7 @@ export async function saveOptimizedImageUpload(file: File, options: SaveOptimize
     const optimized = await optimizeImageUpload(file, optimizeOptions);
     const url = `${publicPath}/${optimized.filename}`;
 
-    await saveUploadBuffer(optimized.buffer, optimized.mimeType, uploadDir, url);
+    await saveUploadBuffer(optimized.buffer, uploadDir, url);
 
     const thumbFilename = getThumbFilename(optimized.filename);
     if (thumbFilename) {
@@ -183,7 +178,7 @@ export async function saveOptimizedImageUpload(file: File, options: SaveOptimize
             })
             .webp({ quality: THUMB_QUALITY })
             .toBuffer();
-        await saveUploadBuffer(thumbBuffer, "image/webp", uploadDir, `${publicPath}/${thumbFilename}`);
+        await saveUploadBuffer(thumbBuffer, uploadDir, `${publicPath}/${thumbFilename}`);
     }
 
     return {
@@ -253,11 +248,6 @@ export async function deleteManagedUpload(
 
     for (const targetUrl of targetUrls) {
         const filePaths = resolveManagedUploadPaths(targetUrl, uploadDir, publicPath, fallbackUploadDirs);
-        const storageKey = storageKeyFromPublicUrl(targetUrl);
-
-        if (await deleteUploadObject(storageKey)) {
-            deleted = true;
-        }
 
         for (const filePath of filePaths) {
             if (!existsSync(filePath)) {

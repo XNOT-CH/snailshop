@@ -340,7 +340,7 @@ My Game Store เป็นเว็บร้านขายสินค้าด
 - Shared TypeScript หรือ business logic: `npm run test` และ `npm run lint`
 - API, auth, checkout, admin หรือ user-facing UI: `npm run test`, `npm run build`, และ `npm run test:e2e` เมื่อ practical
 - Purchase locking, stock handoff หรือ checkout locking: เพิ่ม `npm run check:purchase-locking`
-- Deployment/config: `npm run check:deploy`, `npm run cf:check`, `npm run cf:preview` หรือ `npm run cf:deploy` ตามงานจริง
+- Deployment/config: `npm run check:deploy` แล้ว `docker compose build web` เพื่อยืนยันว่า image ยัง build ผ่าน
 - Database migration: อ่าน `drizzle/README.md` ก่อน แล้วใช้ `npm run db:migrate` หรือ dev-only `npm run db:push` ตาม flow ที่ถูกต้อง
 
 ## 14. Risks and Mitigations

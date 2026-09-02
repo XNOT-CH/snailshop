@@ -1,5 +1,4 @@
 import { drizzle } from "drizzle-orm/mysql2";
-import { getCloudflareContext } from "@opennextjs/cloudflare";
 import mysql from "mysql2/promise";
 import * as schema from "./schema";
 
@@ -9,31 +8,6 @@ const globalForDb = globalThis as unknown as {
 };
 
 const isProduction = process.env.NODE_ENV === "production";
-
-function getHyperdrivePoolOptions(): mysql.PoolOptions | null {
-    try {
-        const hyperdrive = getCloudflareContext().env.HYPERDRIVE;
-        if (!hyperdrive) {
-            return null;
-        }
-
-        return {
-            host: hyperdrive.host,
-            user: hyperdrive.user,
-            password: hyperdrive.password,
-            database: hyperdrive.database,
-            port: hyperdrive.port,
-            waitForConnections: true,
-            connectionLimit: 5,
-            charset: "utf8mb4",
-            timezone: "+00:00",
-            connectTimeout: 10000,
-            disableEval: true,
-        } as mysql.PoolOptions;
-    } catch {
-        return null;
-    }
-}
 
 function normalizeDbUrl(rawUrl: string) {
     if (!rawUrl) {
@@ -61,7 +35,7 @@ const isTiDB = dbUrl.includes("tidbcloud.com");
 // NOTE: when scaling to N replicas, keep N * limit under MySQL max_connections.
 const connectionLimit =
     Number(process.env.DB_CONNECTION_LIMIT) || (isProduction ? 20 : 10);
-const poolOptions = (isProduction ? getHyperdrivePoolOptions() : null) ?? {
+const poolOptions = {
     uri: dbUrl,
     waitForConnections: true,
     connectionLimit,

@@ -29,18 +29,13 @@ Run commands from the repository root.
 - DB health: `npm run check:db-health`
 - Purchase locking check: `npm run check:purchase-locking`
 - Deploy readiness: `npm run check:deploy`
-- Cloudflare dry run: `npm run cf:check`
-- Cloudflare preview: `npm run cf:preview`
-- Cloudflare deploy: `npm run cf:deploy`
-- Cloudflare typegen: `npm run cf:typegen`
-- Cloudflare account check: `npm run cf:whoami`
+- Production deploy: `docker compose up -d --build web` (Windows: `scripts/windows/deploy-web.bat`)
 - Commerce reconciliation: `npm run ops:reconcile-commerce`
 - Product export from dev: `npm run products:export:dev`
 - Product import to prod: `npm run products:import:prod`
 - Product stock backfill: `npm run products:backfill-stock-count`
 - Sensitive data migration: `npm run db:migrate-sensitive`
 - Slip storage migration: `npm run storage:migrate-slips`
-- R2 storage migration: `npm run storage:migrate-r2`
 - Legacy slip cleanup: `npm run storage:cleanup-legacy-slips`
 - Sonar scan: `npm run sonar:scan`
 - Sonar fetch: `npm run sonar:fetch`
@@ -52,9 +47,8 @@ Local notes:
 - The dev server binds to `127.0.0.1`, starts from port `3001`, and may move to the next free port.
 - If Playwright targets another port, set `PLAYWRIGHT_BASE_URL` before `npm run test:e2e`.
 - `npm run check:purchase-locking` writes a temporary product row during the lock handoff check and removes it at the end.
-- `npm run cf:check`, `npm run cf:preview`, and `npm run cf:deploy` use `scripts/deploy/run-opennext-cloudflare.mjs`; on Windows, prefer these wrappers over calling OpenNext directly.
+- The production image is built by `docker compose up -d --build web`; the Dockerfile runs `npm run build` itself, so there is no separate build step to run first.
 - `npm run ops:reconcile-commerce` runs in read-only mode by default; use `node scripts/ops/reconcile-commerce.mjs --hours <n>` for a longer lookback window.
-- `npm run storage:migrate-r2` is a dry run by default; provide a bucket with `-- --bucket <name>` or `CLOUDFLARE_R2_UPLOADS_BUCKET`, then add `--apply` only to upload files.
 - For isolated dev DB work on Windows, prefer `scripts/windows/start-dev-db.bat`, `scripts/windows/db-push-dev.bat`, and `scripts/windows/db-studio-dev.bat`.
 - Windows helper scripts live in `scripts/windows/`.
 
@@ -73,8 +67,7 @@ Local notes:
 - MySQL
 - Vitest
 - Playwright
-- OpenNext for Cloudflare
-- Wrangler
+- Docker Compose (production) behind a Cloudflare Tunnel
 - npm with `package-lock.json`
 
 ### File Structure
@@ -135,7 +128,7 @@ Use the smallest command set that proves the change.
 - API route, auth, checkout, admin, or user-facing UI: `npm run test`, `npm run build`, and `npm run test:e2e` when practical.
 - Concurrency-sensitive commerce work: add `npm run check:purchase-locking` when purchase locking, stock handoff, or checkout locking changes.
 - Database schema/migration: read `drizzle/README.md`, then run the relevant Drizzle command.
-- Deployment/config: `npm run check:deploy`; use `npm run cf:check`, `npm run cf:preview`, and `npm run cf:deploy` as the task requires.
+- Deployment/config: `npm run check:deploy`, then `docker compose build web` to prove the image still builds.
 - Security-sensitive change: add or update tests that cover the failure mode.
 
 If a relevant verification command cannot be run, say why in the handoff.
