@@ -5,4 +5,4 @@ This folder contains admin-triggered auto-delete operations.
 ## Read with
 
 - `lib/autoDelete.ts`
-- `app/admin/products/AGENTS.md`
+- `app/(site)/admin/products/AGENTS.md`

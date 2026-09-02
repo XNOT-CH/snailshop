@@ -9,8 +9,8 @@ This folder contains the main user topup submission handler.
 
 ## Read with
 
-- `app/dashboard/topup/page.tsx`
-- `app/admin/slips/page.tsx`
+- `app/(site)/dashboard/topup/page.tsx`
+- `app/(site)/admin/slips/page.tsx`
 - `app/api/admin/slips/route.ts`
 - `lib/validations/topup.ts`
 - `lib/serverImageUpload.ts`

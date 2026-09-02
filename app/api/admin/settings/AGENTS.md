@@ -9,7 +9,7 @@ This folder contains the site settings singleton API.
 
 ## Read with
 
-- `app/admin/settings/page.tsx`
+- `app/(site)/admin/settings/page.tsx`
 - `lib/getSiteSettings.ts`
 - `lib/validations/settings.ts`
 - `lib/db/singletons.ts`

@@ -4,6 +4,6 @@ This folder contains admin currency-setting write/read APIs.
 
 ## Read with
 
-- `app/admin/currency-settings/AGENTS.md`
+- `app/(site)/admin/currency-settings/AGENTS.md`
 - `lib/currencySettings.ts`
 - `lib/getCurrencySettings.ts`

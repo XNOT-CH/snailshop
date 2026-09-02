@@ -22,7 +22,7 @@ Run commands from the repository root.
 - E2E: `npm run test:e2e`
 - E2E headed: `npm run test:e2e:headed`
 - E2E UI mode: `npm run test:e2e:ui`
-- Dev schema sync: `npm run db:push`
+- Dev schema sync: `npm run db:push` (isolated dev DB only - see the warning in `README.md`)
 - Run migrations: `npm run db:migrate`
 - Drizzle Studio: `npm run db:studio`
 - Encoding check: `npm run check:encoding`
@@ -87,7 +87,7 @@ Local notes:
 
 - `auth.ts` - NextAuth runtime and credentials authorization flow.
 - `auth.config.ts` - Edge/session callbacks and protected route behavior.
-- `middleware.ts` - edge route guarding before page or API code runs.
+- `proxy.ts` - edge route guarding before page or API code runs.
 - `lib/auth.ts` - server-side auth helpers.
 - `lib/adminAccess.ts` - admin page/API permission routing.
 - `lib/permissions.ts` - permission definitions and helpers.
@@ -108,9 +108,9 @@ Local notes:
 
 ### Skill Usage
 
-- Before using any installed workflow skill, explicitly tell the user which skill is being used and why.
-- This applies especially to `debug-mantra`, `scrutinize`, `post-mortem`, and `management-talk`.
-- Do not silently apply these skills or infer their use without first naming them to the user.
+- Load a skill on your own when its trigger fits; you do not need to be asked. `CLAUDE.md` requires `andrej-karpathy-skills:karpathy-guidelines` on every coding task.
+- But never silently: name the skill and say why, the first time you use it in a task.
+- This applies to `karpathy-guidelines`, `debug-mantra`, `scrutinize`, `post-mortem`, `management-talk`, and `qwenchance`.
 
 ### Task Modes
 
@@ -180,7 +180,7 @@ Typography scale (see `app/globals.css`): body text uses only `text-xs` (12px), 
 
 Read these first for each task type, then follow the nearest nested `AGENTS.md`.
 
-- Login/auth/session: `app/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `auth.ts`, `auth.config.ts`, `middleware.ts`
+- Login/auth/session: `app/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `auth.ts`, `auth.config.ts`, `proxy.ts`
 - Admin/permissions: `app/(site)/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
 - Product CRUD/stock: `app/(site)/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `components/AGENTS.md`
 - Top-up/slip review: `app/AGENTS.md`, `app/(site)/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
@@ -217,7 +217,7 @@ Read these first for each task type, then follow the nearest nested `AGENTS.md`.
 ### Never Do
 
 - Never expose, print, or commit secrets from `.env*` files.
-- Never edit `node_modules/`, `.next/`, `.open-next/`, `.vercel/`, `coverage/`, `playwright-report/`, or `test-results/`.
+- Never edit `node_modules/`, `.next/`, `coverage/`, `playwright-report/`, or `test-results/`.
 - Never edit runtime uploads/private files under `storage/uploads/` or `storage/private/` unless the task is explicitly about those files.
 - Never trust client-provided user IDs, roles, prices, stock counts, balances, or permissions.
 - Never weaken auth, permissions, CSRF, rate limiting, validation, audit logs, or data protection without an explicit requirement.
@@ -225,11 +225,11 @@ Read these first for each task type, then follow the nearest nested `AGENTS.md`.
 
 ## Domain-Specific Safety Rules
 
-- Admin access changes must check both UI visibility (`components/admin/AdminSidebar.tsx`) and real access control (`lib/adminAccess.ts`, `lib/permissions.ts`, `lib/auth.ts`, `middleware.ts`).
+- Admin access changes must check both UI visibility (`components/admin/AdminSidebar.tsx`) and real access control (`lib/adminAccess.ts`, `lib/permissions.ts`, `lib/auth.ts`, `proxy.ts`).
 - Commerce, wallet, stock, top-up, gacha, and season pass changes must consider race conditions, replay risk, and double-spend behavior.
 - Route handlers live under `app/api/`; keep API response shapes stable for existing consumers.
 - Read `drizzle/README.md` before changing migrations.
-- Use `npm run db:push` only for the isolated dev database flow in `README.md`.
+- Never run `npm run db:push` against the database on `localhost:3307`. Both `.env.development.local` and `.env.local` point there, it is the database the `web` container serves from, and it already sits behind `lib/db/schema.ts` - a push would apply the whole accumulated diff to live data. Add new tables, columns and indexes with targeted SQL instead.
 - Use `npm run db:migrate` for forward migrations.
 - Follow existing component patterns in `components/` and `components/ui/`.
 - Use existing Radix UI/local primitives and `lucide-react` icons when they fit.
@@ -237,6 +237,7 @@ Read these first for each task type, then follow the nearest nested `AGENTS.md`.
 
 ## Git Workflow
 
+- Branch per piece of work without being asked: create the branch, verify it is green, `git merge --no-ff` into `master`, push, then delete the branch.
 - Check the worktree before broad edits.
 - Do not revert user changes unless explicitly asked.
 - Keep diffs focused on the requested task.

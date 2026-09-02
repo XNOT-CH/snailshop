@@ -1,3 +1,3 @@
 # Gacha Dynamic Route Notes
 
-This dynamic folder inherits `app/gacha/AGENTS.md`.
+This dynamic folder inherits `app/(site)/gacha/AGENTS.md`.

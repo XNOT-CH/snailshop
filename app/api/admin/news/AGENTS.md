@@ -11,7 +11,7 @@ This folder contains admin news CRUD APIs.
 
 ## Read with
 
-- `app/admin/news/page.tsx`
+- `app/(site)/admin/news/page.tsx`
 - `lib/newsValidation.ts`
 - `lib/validations/content.ts`
 - `lib/cache.ts`

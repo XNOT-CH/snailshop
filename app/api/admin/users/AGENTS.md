@@ -9,8 +9,8 @@ This folder contains admin user mutation APIs.
 
 ## Read with
 
-- `app/admin/users/page.tsx`
-- `app/admin/users/AdminUsersClient.tsx`
+- `app/(site)/admin/users/page.tsx`
+- `app/(site)/admin/users/AdminUsersClient.tsx`
 - `lib/validations/user.ts`
 - `lib/permissions.ts`
 - `lib/db/schema.ts`

@@ -4,5 +4,5 @@ This folder is the product trash/recovery page.
 
 ## Read with
 
-- `app/admin/products/AGENTS.md`
+- `app/(site)/admin/products/AGENTS.md`
 - related product APIs

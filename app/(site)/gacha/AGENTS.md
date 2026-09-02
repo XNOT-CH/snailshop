@@ -1,13 +1,11 @@
 # Gacha Public Route Notes
 
-This folder contains public gacha hub and machine pages.
+This folder contains public gacha machine pages. `page.tsx` permanently redirects to `/gachapons`, which is the current gacha entry point.
 
 ## Files
 
 - `page.tsx`
   gacha hub/list page
-- `play/page.tsx`
-  play entry
 - `[id]/page.tsx`
   machine detail/play route
 

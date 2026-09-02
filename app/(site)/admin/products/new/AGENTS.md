@@ -4,5 +4,5 @@ This folder is the product creation page.
 
 ## Read with
 
-- `app/admin/products/AGENTS.md`
+- `app/(site)/admin/products/AGENTS.md`
 - `lib/validations/product.ts`

@@ -4,7 +4,6 @@ This folder contains gacha reward management APIs.
 
 ## Read with
 
-- `app/admin/gacha-machines/AGENTS.md`
-- `app/admin/gacha-grid/AGENTS.md`
+- `app/(site)/admin/gacha-machines/AGENTS.md`
 - `lib/gachaMachineProbability.ts`
 - `lib/validations/gacha.ts`

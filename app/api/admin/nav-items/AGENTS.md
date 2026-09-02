@@ -4,6 +4,5 @@ This folder contains nav-item admin APIs.
 
 ## Read with
 
-- `app/admin/nav-items/AGENTS.md`
-- `app/api/nav-items/AGENTS.md`
+- `app/(site)/admin/nav-items/AGENTS.md`
 - `components/Navbar.tsx`

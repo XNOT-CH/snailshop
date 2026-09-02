@@ -4,5 +4,5 @@ This folder contains help-video admin APIs.
 
 ## Read with
 
-- `app/admin/help/AGENTS.md`
+- `app/(site)/admin/help/AGENTS.md`
 - `app/api/admin/help/AGENTS.md`

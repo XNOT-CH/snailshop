@@ -10,7 +10,7 @@ This folder contains public/shared product APIs.
 
 ## Read with
 
-- `app/admin/products/AGENTS.md`
-- `app/product/AGENTS.md`
+- `app/(site)/admin/products/AGENTS.md`
+- `app/(site)/product/AGENTS.md`
 - `lib/features/products/AGENTS.md`
 - `lib/stock.ts`

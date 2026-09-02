@@ -13,8 +13,8 @@ This folder contains grouped product query/mutation helpers.
 
 ## Read with
 
-- `app/admin/products/page.tsx`
-- `app/admin/products/[id]/edit/page.tsx`
+- `app/(site)/admin/products/page.tsx`
+- `app/(site)/admin/products/[id]/edit/page.tsx`
 - `app/api/products/[id]/route.ts`
 - `app/api/admin/products/[id]/featured/route.ts`
 - `lib/stock.ts`

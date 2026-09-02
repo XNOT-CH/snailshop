@@ -17,8 +17,8 @@ This folder contains machine management APIs for gacha admin.
 
 ## Read with
 
-- `app/admin/gacha-machines/page.tsx`
-- `app/admin/gacha-machines/[id]/edit/page.tsx`
+- `app/(site)/admin/gacha-machines/page.tsx`
+- `app/(site)/admin/gacha-machines/[id]/edit/page.tsx`
 - `app/api/admin/gacha-rewards/route.ts`
 - `lib/gachaMachineProbability.ts`
 - `lib/gachaCost.ts`

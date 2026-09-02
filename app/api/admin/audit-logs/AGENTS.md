@@ -4,6 +4,6 @@ This folder contains audit-log admin APIs.
 
 ## Read with
 
-- `app/admin/audit-logs/AGENTS.md`
+- `app/(site)/admin/audit-logs/AGENTS.md`
 - `lib/auditLog.ts`
 - `lib/permissions.ts`

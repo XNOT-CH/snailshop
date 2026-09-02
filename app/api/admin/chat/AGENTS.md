@@ -10,7 +10,7 @@ This folder contains admin-side chat APIs.
 
 ## Read with
 
-- `app/admin/chat/AGENTS.md`
+- `app/(site)/admin/chat/AGENTS.md`
 - `components/admin/AdminChatInbox.tsx`
 - `lib/chat.ts`
 - `lib/chatAdmin.ts`

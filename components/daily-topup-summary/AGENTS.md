@@ -5,4 +5,4 @@ This folder contains daily topup summary UI/data hooks.
 ## Read with
 
 - `app/api/dashboard/AGENTS.md`
-- `app/admin/slips/AGENTS.md`
+- `app/(site)/admin/slips/AGENTS.md`
