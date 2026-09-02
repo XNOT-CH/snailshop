@@ -98,9 +98,10 @@ interface SortableRowProps {
     canEditSettings: boolean;
     onEdit: (link: FooterLink) => void;
     onDelete: (link: FooterLink) => void;
+    onToggleActive: (link: FooterLink) => void;
 }
 
-function SortableRow({ link, columnLabel, canEditSettings, onEdit, onDelete }: SortableRowProps) {
+function SortableRow({ link, columnLabel, canEditSettings, onEdit, onDelete, onToggleActive }: SortableRowProps) {
     const {
         attributes,
         listeners,
@@ -159,15 +160,28 @@ function SortableRow({ link, columnLabel, canEditSettings, onEdit, onDelete }: S
                 </span>
             </TableCell>
             <TableCell className="text-center">
-                <span
-                    className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                        link.isActive
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-slate-100 text-slate-500"
-                    }`}
-                >
-                    {link.isActive ? "แสดง" : "ซ่อน"}
-                </span>
+                {canEditSettings ? (
+                    <div className="flex items-center justify-center gap-2">
+                        <Switch
+                            checked={link.isActive}
+                            onCheckedChange={() => onToggleActive(link)}
+                            aria-label={`${link.isActive ? "ซ่อน" : "แสดง"}ลิงก์ ${link.label}`}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                            {link.isActive ? "แสดง" : "ซ่อน"}
+                        </span>
+                    </div>
+                ) : (
+                    <span
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                            link.isActive
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-slate-100 text-slate-500"
+                        }`}
+                    >
+                        {link.isActive ? "แสดง" : "ซ่อน"}
+                    </span>
+                )}
             </TableCell>
             <TableCell className="text-right">
                 {canEditSettings ? (
@@ -206,9 +220,10 @@ interface SortableCardProps {
     canEditSettings: boolean;
     onEdit: (link: FooterLink) => void;
     onDelete: (link: FooterLink) => void;
+    onToggleActive: (link: FooterLink) => void;
 }
 
-function SortableCard({ link, columnLabel, canEditSettings, onEdit, onDelete }: SortableCardProps) {
+function SortableCard({ link, columnLabel, canEditSettings, onEdit, onDelete, onToggleActive }: SortableCardProps) {
     const {
         attributes,
         listeners,
@@ -278,7 +293,18 @@ function SortableCard({ link, columnLabel, canEditSettings, onEdit, onDelete }: 
             </div>
 
             {canEditSettings ? (
-                <div className="mt-4 flex items-center justify-end gap-1.5">
+                <div className="mt-4 flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2">
+                        <Switch
+                            checked={link.isActive}
+                            onCheckedChange={() => onToggleActive(link)}
+                            aria-label={`${link.isActive ? "ซ่อน" : "แสดง"}ลิงก์ ${link.label}`}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                            {link.isActive ? "แสดงอยู่" : "ซ่อนอยู่"}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
                     <Button
                         variant="ghost"
                         size="icon"
@@ -297,6 +323,7 @@ function SortableCard({ link, columnLabel, canEditSettings, onEdit, onDelete }: 
                     >
                         <Trash2 className="h-4 w-4" />
                     </Button>
+                    </div>
                 </div>
             ) : null}
         </div>
@@ -349,6 +376,7 @@ interface FooterColumnBoardProps {
     onDragEnd: (column: FooterColumn, event: DragEndEvent) => void;
     onEdit: (link: FooterLink) => void;
     onDelete: (link: FooterLink) => void;
+    onToggleActive: (link: FooterLink) => void;
 }
 
 function FooterColumnBoard({
@@ -361,6 +389,7 @@ function FooterColumnBoard({
     onDragEnd,
     onEdit,
     onDelete,
+    onToggleActive,
 }: FooterColumnBoardProps) {
     const [activeLink, setActiveLink] = useState<FooterLink | null>(null);
 
@@ -422,6 +451,7 @@ function FooterColumnBoard({
                                     canEditSettings={canEditSettings}
                                     onEdit={onEdit}
                                     onDelete={onDelete}
+                                    onToggleActive={onToggleActive}
                                 />
                             ))}
                         </div>
@@ -448,6 +478,7 @@ function FooterColumnBoard({
                                             canEditSettings={canEditSettings}
                                             onEdit={onEdit}
                                             onDelete={onDelete}
+                                            onToggleActive={onToggleActive}
                                         />
                                     ))}
                                 </TableBody>
@@ -827,6 +858,37 @@ export default function FooterLinksAdminPage() {
         }
     };
 
+    // ── Show / hide a single link ─────────────────────────────────────────────
+    const handleToggleLinkActive = async (link: FooterLink) => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขลิงก์ส่วนท้าย");
+            return;
+        }
+        const nextActive = !link.isActive;
+
+        // Optimistic — roll back to the server's answer if the write fails
+        setLinks((prev) =>
+            prev.map((item) => (item.id === link.id ? { ...item, isActive: nextActive } : item)),
+        );
+        try {
+            const res = await fetchWithCsrf(`/api/admin/footer-links/${link.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ isActive: nextActive }),
+            });
+            if (res.ok) {
+                showSuccess(nextActive ? "แสดงลิงก์นี้แล้ว" : "ซ่อนลิงก์นี้แล้ว");
+            } else {
+                showError("ไม่สามารถอัปเดตสถานะได้");
+                void fetchData();
+            }
+        } catch (error) {
+            console.error("Error toggling link active:", error);
+            showError("เกิดข้อผิดพลาด");
+            void fetchData();
+        }
+    };
+
     if (loading) {
         return <SpinnerScreen label="กำลังโหลดลิงก์..." />;
     }
@@ -1010,6 +1072,7 @@ export default function FooterLinksAdminPage() {
                     onDragEnd={(col, e) => void handleDragEnd(col, e)}
                     onEdit={openEditModal}
                     onDelete={(l) => void handleDeleteLink(l)}
+                    onToggleActive={(l) => void handleToggleLinkActive(l)}
                 />
             ))}
         </div>
