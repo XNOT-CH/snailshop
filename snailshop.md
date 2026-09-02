@@ -125,16 +125,15 @@ having built nothing — check the image age afterwards.
 **Free gacha spins are unlimited on purpose.** Don't "fix" it. It only needs a warning
 if a points-priced item is added.
 
-**`Schema.partial()` keeps `.default()` in zod 4.** `footerLinkSchema.partial().parse({
-sortOrder: 3 })` returns `{ sortOrder: 3, column: "services", openInNewTab: false,
-isActive: true }` — the defaults are still applied. Any PUT that copies "defined"
-fields into `updateData` therefore rewrites them on every partial write, so a
-drag-to-reorder body silently moved a link to another column. Footer links now use a
-separate `footerLinkUpdateSchema` with no defaults (`lib/validations/content.ts`).
-**Eight other routes still validate with `Schema.partial()`** — help, help-videos,
-nav-items, news, popups, settings, products, quests — and every one of those schemas
-except `createQuestSchema` has `.default()` fields. Audit before trusting a partial
-update there.
+**Never validate a partial update with `Schema.partial()`** — use
+`partialUpdateSchema()` from `lib/validations/partialUpdate.ts`. Zod 4 keeps
+`.default()` through `.partial()`, so `navItemSchema.partial().parse({ isActive:
+false })` returns `{ isActive: false, sortOrder: 0 }`: a field the client never sent
+arrives looking exactly like one it did, and every PUT here writes any defined field.
+That silently reset sort orders on the nav-item and help toggles, un-hid articles on
+the news reorder, and moved footer links between columns. The helper strips the
+defaults; `tests/lib/partialUpdateSchema.test.ts` asserts an empty body stays empty for
+every schema a PATCH-style route uses, so a new schema with a default is caught.
 
 **Footer edits are cached for 60s.** `components/Footer.tsx` caches
 `FooterWidgetSettings` and the link list separately. Every admin write must call

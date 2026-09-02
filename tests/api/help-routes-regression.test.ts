@@ -5,6 +5,11 @@ const { updateSetSpy } = vi.hoisted(() => ({
     updateSetSpy: vi.fn().mockReturnValue({ where: vi.fn() }),
 }));
 
+// The schemas above are stubs, so hand them straight back instead of
+// walking a real zod shape.
+vi.mock("@/lib/validations/partialUpdate", () => ({
+  partialUpdateSchema: vi.fn((schema: unknown) => schema),
+}));
 vi.mock("@/lib/auth", () => ({
     requirePermission: vi.fn(),
     requirePermissionWithCsrf: vi.fn(),

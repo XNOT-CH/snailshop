@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { partialUpdateSchema } from "@/lib/validations/partialUpdate";
 import { normalizePermissionSelection } from "@/lib/permissions";
 import {
   NEWS_DESCRIPTION_MAX_LENGTH,
@@ -106,20 +107,8 @@ export const footerLinkSchema = z.object({
 });
 export type FooterLinkInput = z.infer<typeof footerLinkSchema>;
 
-// Updates must NOT reuse footerLinkSchema.partial(): zod keeps `.default()`
-// through `.partial()`, so a reorder body of just { sortOrder } would come back
-// carrying column "services", openInNewTab false and isActive true — silently
-// moving a "บัตรเติมเกม" link into the other column and un-hiding it.
-export const footerLinkUpdateSchema = z
-  .object({
-    label: z.string().min(1, "กรุณากรอกชื่อลิงก์").max(100),
-    href: safeRequiredUrl,
-    column: z.enum(["services", "cards"]),
-    openInNewTab: z.boolean(),
-    sortOrder: z.coerce.number().int().min(0),
-    isActive: z.boolean(),
-  })
-  .partial();
+// See partialUpdateSchema for why `.partial()` alone is not enough here.
+export const footerLinkUpdateSchema = partialUpdateSchema(footerLinkSchema);
 
 // Help item
 export const helpItemSchema = z.object({

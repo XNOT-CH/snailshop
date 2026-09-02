@@ -5,6 +5,7 @@ import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { invalidatePopupCaches } from "@/lib/cache";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
+import { partialUpdateSchema } from "@/lib/validations/partialUpdate";
 import { popupSchema } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
 import { contentApiError } from "@/lib/features/content/apiResponse";
@@ -27,7 +28,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
     if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const { id } = await params;
-        const result = await validateBody(request, popupSchema.partial());
+        const result = await validateBody(request, partialUpdateSchema(popupSchema));
         if ("error" in result) return result.error;
         const { title, imageUrl, linkUrl, sortOrder, isActive, dismissOption } = result.data;
 

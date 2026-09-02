@@ -3,6 +3,7 @@ import { db, helpVideos } from "@/lib/db";
 import { eq } from "drizzle-orm";
 import { requirePermissionWithCsrf } from "@/lib/auth";
 import { validateBody } from "@/lib/validations/validate";
+import { partialUpdateSchema } from "@/lib/validations/partialUpdate";
 import { helpVideoSchema, type HelpVideoInput } from "@/lib/validations/content";
 import { normalizeYouTubeVideo } from "@/lib/helpVideos";
 import { PERMISSIONS } from "@/lib/permissions";
@@ -17,7 +18,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
     try {
         const { id } = await params;
-        const result = await validateBody(request, helpVideoSchema.partial());
+        const result = await validateBody(request, partialUpdateSchema(helpVideoSchema));
         if ("error" in result) return result.error;
 
         const { title, youtubeUrl, sortOrder, isActive } = result.data as Partial<HelpVideoInput>;
