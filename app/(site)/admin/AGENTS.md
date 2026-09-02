@@ -5,9 +5,9 @@ This folder contains admin pages.
 ## Admin shell
 
 - Layout and permission gate:
-  `app/admin/layout.tsx`
+  `app/(site)/admin/layout.tsx`
 - Dashboard landing:
-  `app/admin/page.tsx`
+  `app/(site)/admin/page.tsx`
 - Sidebar navigation:
   `components/admin/AdminSidebar.tsx`
 - Permission provider for client components:
@@ -19,23 +19,25 @@ This folder contains admin pages.
   `products/page.tsx`, `products/new/page.tsx`, `products/[id]/edit/page.tsx`, `products/[id]/stock/page.tsx`
 - Users and roles:
   `users/page.tsx`, `roles/page.tsx`
-- Slips/topup review:
+- Topup code usage review:
   `slips/page.tsx`
 - Settings/content:
   `settings/page.tsx`, `news/page.tsx`, `popups/page.tsx`, `help/page.tsx`, `nav-items/page.tsx`, `footer-links/page.tsx`
 - Gacha:
-  `gacha-machines/page.tsx`, `gacha-machines/[id]/edit/page.tsx`, `gacha-grid/page.tsx`, `gacha-settings/page.tsx`
+  `gacha-machines/page.tsx`, `gacha-machines/[id]/edit/page.tsx`
+- Quests:
+  `quests/page.tsx`
 - Other operations:
-  `chat/page.tsx`, `audit-logs/page.tsx`, `currency-settings/page.tsx`, `export/page.tsx`, `season-pass/page.tsx`
+  `chat/page.tsx`, `audit-logs/page.tsx`, `currency-settings/page.tsx`, `export/page.tsx`, `season-pass/page.tsx`, `welcome-strip/page.tsx`, `promo-codes/page.tsx`
 
 ## Read first by task
 
 - Add/remove admin menu:
   `components/admin/AdminSidebar.tsx`, `lib/adminAccess.ts`, `lib/permissions.ts`
 - Admin access bug:
-  `app/admin/layout.tsx`, `lib/auth.ts`, `lib/adminAccess.ts`, `middleware.ts`
-- Slip approval:
-  `slips/page.tsx`, `components/admin/SlipTable.tsx`, `app/api/admin/slips/route.ts`
+  `app/(site)/admin/layout.tsx`, `lib/auth.ts`, `lib/adminAccess.ts`, `proxy.ts`
+- Topup code approval:
+  `slips/page.tsx`, `components/admin/TopupCodeUsageTable.tsx`, `app/api/admin/slips/route.ts`
 - Product admin:
   `products/page.tsx`, `components/admin/ProductTable.tsx`, `app/api/admin/products/*`
 - User admin:

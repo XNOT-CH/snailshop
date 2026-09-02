@@ -35,7 +35,6 @@ This folder contains project maintenance, validation, migration, and operational
 - Storage/data migrations:
   `npm run db:migrate-sensitive`
   `npm run storage:migrate-slips`
-  `npm run storage:migrate-r2`
   `npm run storage:cleanup-legacy-slips`
 
 ## Subfolder map
@@ -46,8 +45,6 @@ This folder contains project maintenance, validation, migration, and operational
   Deployment readiness validation
 - `db/`
   Database health checks and shared DB script utilities
-- `admin/`
-  Admin maintenance helpers
 - `exports/`
   Export helper scripts
 - `ops/`

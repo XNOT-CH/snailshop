@@ -16,7 +16,7 @@ This folder contains focused security helpers.
 - `lib/csrf-client.ts`
 - `app/api/topup/route.ts`
 - `auth.ts`
-- `app/login/LoginForm.tsx`
+- `app/(site)/login/LoginForm.tsx`
 
 ## Watchouts
 

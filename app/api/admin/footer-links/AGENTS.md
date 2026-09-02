@@ -4,5 +4,5 @@ This folder contains footer-link admin APIs.
 
 ## Read with
 
-- `app/admin/footer-links/AGENTS.md`
+- `app/(site)/admin/footer-links/AGENTS.md`
 - `components/Footer.tsx`

@@ -87,7 +87,7 @@ Local notes:
 
 - `auth.ts` - NextAuth runtime and credentials authorization flow.
 - `auth.config.ts` - Edge/session callbacks and protected route behavior.
-- `middleware.ts` - edge route guarding before page or API code runs.
+- `proxy.ts` - edge route guarding before page or API code runs.
 - `lib/auth.ts` - server-side auth helpers.
 - `lib/adminAccess.ts` - admin page/API permission routing.
 - `lib/permissions.ts` - permission definitions and helpers.
@@ -180,7 +180,7 @@ Typography scale (see `app/globals.css`): body text uses only `text-xs` (12px), 
 
 Read these first for each task type, then follow the nearest nested `AGENTS.md`.
 
-- Login/auth/session: `app/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `auth.ts`, `auth.config.ts`, `middleware.ts`
+- Login/auth/session: `app/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `auth.ts`, `auth.config.ts`, `proxy.ts`
 - Admin/permissions: `app/(site)/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
 - Product CRUD/stock: `app/(site)/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`, `components/AGENTS.md`
 - Top-up/slip review: `app/AGENTS.md`, `app/(site)/admin/AGENTS.md`, `app/api/AGENTS.md`, `lib/AGENTS.md`
@@ -217,7 +217,7 @@ Read these first for each task type, then follow the nearest nested `AGENTS.md`.
 ### Never Do
 
 - Never expose, print, or commit secrets from `.env*` files.
-- Never edit `node_modules/`, `.next/`, `.open-next/`, `.vercel/`, `coverage/`, `playwright-report/`, or `test-results/`.
+- Never edit `node_modules/`, `.next/`, `coverage/`, `playwright-report/`, or `test-results/`.
 - Never edit runtime uploads/private files under `storage/uploads/` or `storage/private/` unless the task is explicitly about those files.
 - Never trust client-provided user IDs, roles, prices, stock counts, balances, or permissions.
 - Never weaken auth, permissions, CSRF, rate limiting, validation, audit logs, or data protection without an explicit requirement.
@@ -225,7 +225,7 @@ Read these first for each task type, then follow the nearest nested `AGENTS.md`.
 
 ## Domain-Specific Safety Rules
 
-- Admin access changes must check both UI visibility (`components/admin/AdminSidebar.tsx`) and real access control (`lib/adminAccess.ts`, `lib/permissions.ts`, `lib/auth.ts`, `middleware.ts`).
+- Admin access changes must check both UI visibility (`components/admin/AdminSidebar.tsx`) and real access control (`lib/adminAccess.ts`, `lib/permissions.ts`, `lib/auth.ts`, `proxy.ts`).
 - Commerce, wallet, stock, top-up, gacha, and season pass changes must consider race conditions, replay risk, and double-spend behavior.
 - Route handlers live under `app/api/`; keep API response shapes stable for existing consumers.
 - Read `drizzle/README.md` before changing migrations.

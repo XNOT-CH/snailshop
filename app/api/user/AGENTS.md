@@ -9,6 +9,6 @@ This folder contains user account APIs.
 
 ## Read with
 
-- `app/profile/AGENTS.md`
-- `app/dashboard/AGENTS.md`
+- `app/(site)/profile/AGENTS.md`
+- `app/(site)/dashboard/AGENTS.md`
 - `lib/userBalances.ts`

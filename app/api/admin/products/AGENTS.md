@@ -11,7 +11,7 @@ This folder contains admin-specific product actions.
 
 ## Read with
 
-- `app/admin/products/page.tsx`
+- `app/(site)/admin/products/page.tsx`
 - `components/admin/ProductTable.tsx`
 - `lib/features/products/mutations.ts`
 - `lib/features/products/queries.ts`

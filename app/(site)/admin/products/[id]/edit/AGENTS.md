@@ -4,5 +4,5 @@ This folder is the product edit page.
 
 ## Read with
 
-- `app/admin/products/AGENTS.md`
+- `app/(site)/admin/products/AGENTS.md`
 - `lib/features/products/AGENTS.md`

@@ -6,4 +6,4 @@ This folder contains role and permission management UI.
 
 - `app/api/admin/roles/AGENTS.md`
 - `lib/permissions.ts`
-- `app/admin/users/AGENTS.md`
+- `app/(site)/admin/users/AGENTS.md`

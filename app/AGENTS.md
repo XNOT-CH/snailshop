@@ -10,39 +10,39 @@ This folder is the main route tree for the app.
   Layout wrapper
 - `app/api/**/route.ts`
   Route handlers
-- `app/admin/*`
+- `app/(site)/admin/*`
   Admin console pages
-- `app/dashboard/*`
+- `app/(site)/dashboard/*`
   Logged-in user dashboard pages
 
 ## Read first by task
 
 - Login/auth:
-  `app/login/page.tsx`, `app/api/auth/[...nextauth]/route.ts`
+  `app/(site)/login/page.tsx`, `app/api/auth/[...nextauth]/route.ts`
 - Admin shell/navigation:
-  `app/admin/layout.tsx`, `app/admin/page.tsx`
+  `app/(site)/admin/layout.tsx`, `app/(site)/admin/page.tsx`
 - Topup:
-  `app/dashboard/topup/page.tsx`, `app/api/topup/route.ts`, `app/admin/slips/page.tsx`
+  `app/(site)/dashboard/topup/page.tsx`, `app/api/topup/route.ts`, `app/(site)/admin/slips/page.tsx`
 - Products:
-  `app/admin/products/page.tsx`, `app/product/[id]/page.tsx`
+  `app/(site)/admin/products/page.tsx`, `app/(site)/product/[id]/page.tsx`
 - Users:
-  `app/admin/users/page.tsx`, `app/profile/settings/page.tsx`
+  `app/(site)/admin/users/page.tsx`, `app/(site)/profile/settings/page.tsx`
 - Content/settings:
-  `app/admin/settings/page.tsx`, `app/admin/news/page.tsx`, `app/api/admin/settings/route.ts`
+  `app/(site)/admin/settings/page.tsx`, `app/(site)/admin/news/page.tsx`, `app/api/admin/settings/route.ts`
 - Gacha:
-  `app/admin/gacha-machines/page.tsx`, `app/gacha/page.tsx`, `app/gacha-grid/[machineId]/page.tsx`
+  `app/(site)/admin/gacha-machines/page.tsx`, `app/(site)/gacha/page.tsx`, `app/(site)/gacha-grid/[machineId]/page.tsx`
 
 ## High-signal entry files
 
 - Root layout:
   `app/layout.tsx`
 - Admin layout:
-  `app/admin/layout.tsx`
+  `app/(site)/admin/layout.tsx`
 - Dashboard layout:
-  `app/dashboard/layout.tsx`
+  `app/(site)/dashboard/layout.tsx`
 
 ## Watchouts
 
 - Some page files contain direct DB/business logic, not just rendering.
-- A route may still be blocked earlier by `middleware.ts`.
-- For admin pages, read `app/admin/AGENTS.md` next.
+- A route may still be blocked earlier by `proxy.ts`.
+- For admin pages, read `app/(site)/admin/AGENTS.md` next.

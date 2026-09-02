@@ -6,7 +6,7 @@ This folder contains admin-only APIs.
 
 When tracing admin behavior, pair three layers:
 
-1. Admin page in `app/admin/*`
+1. Admin page in `app/(site)/admin/*`
 2. API here in `app/api/admin/*`
 3. Access control in `lib/adminAccess.ts`, `lib/auth.ts`, `lib/permissions.ts`
 

@@ -4,5 +4,5 @@ This folder contains admin export/report APIs.
 
 ## Read with
 
-- `app/admin/export/AGENTS.md`
+- `app/(site)/admin/export/AGENTS.md`
 - related export helpers in `lib/`

@@ -6,4 +6,4 @@ This folder contains help-center management UI.
 
 - `app/api/admin/help/AGENTS.md`
 - `app/api/admin/help-videos/AGENTS.md`
-- `app/help/AGENTS.md`
+- `app/(site)/help/AGENTS.md`

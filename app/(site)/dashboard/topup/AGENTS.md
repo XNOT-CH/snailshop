@@ -10,8 +10,8 @@ This folder is the user-facing topup flow.
 ## Read with
 
 - `app/api/topup/route.ts`
-- `app/admin/slips/page.tsx`
-- `components/admin/SlipTable.tsx`
+- `app/(site)/admin/slips/page.tsx`
+- `components/admin/TopupCodeUsageTable.tsx`
 - `lib/validations/topup.ts`
 - `lib/slipStorage.ts`
 - `lib/serverImageUpload.ts`

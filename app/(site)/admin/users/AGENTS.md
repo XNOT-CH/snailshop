@@ -12,7 +12,7 @@ This folder is the admin surface for user management.
 ## Read with
 
 - `app/api/admin/users/[id]/route.ts`
-- `app/admin/roles/page.tsx`
+- `app/(site)/admin/roles/page.tsx`
 - `lib/permissions.ts`
 - `lib/auth.ts`
 - `lib/validations/user.ts`

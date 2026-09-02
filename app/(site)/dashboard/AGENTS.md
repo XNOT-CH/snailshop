@@ -24,9 +24,9 @@ This folder contains logged-in user dashboard pages.
 - Dashboard shell:
   `layout.tsx`, `components/DashboardSidebar.tsx`
 - Wallet or balance issue:
-  `wallet/page.tsx`, `lib/userBalances.ts`, `lib/wallet.ts`
+  `wallet/page.tsx`, `lib/userBalances.ts`
 
 ## Watchouts
 
-- These pages are protected by `middleware.ts`.
+- These pages are protected by `proxy.ts`.
 - Many pages combine server rendering with client components and API fetches.

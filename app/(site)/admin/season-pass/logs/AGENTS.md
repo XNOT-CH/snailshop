@@ -4,5 +4,5 @@ This folder is the season pass log page.
 
 ## Read with
 
-- `app/admin/season-pass/AGENTS.md`
+- `app/(site)/admin/season-pass/AGENTS.md`
 - `lib/seasonPass.ts`

@@ -10,6 +10,6 @@ This folder contains season-pass admin APIs.
 
 ## Read with
 
-- `app/admin/season-pass/AGENTS.md`
+- `app/(site)/admin/season-pass/AGENTS.md`
 - `app/api/season-pass/AGENTS.md`
 - `lib/seasonPass.ts`
