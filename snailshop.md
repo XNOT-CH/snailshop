@@ -125,6 +125,11 @@ having built nothing — check the image age afterwards.
 **Free gacha spins are unlimited on purpose.** Don't "fix" it. It only needs a warning
 if a points-priced item is added.
 
+**`knowledge:build` only sees git-tracked files** (`git ls-files` in
+`scripts/quality/build-snailshop-index.mjs:22`). A brand-new route or table file is
+silently missing from the generated index until it is staged — `git add` first, then
+rebuild, or the index looks up to date while it is not.
+
 ---
 
 ## Decisions already made
@@ -342,7 +347,7 @@ Jump straight to the line instead of reading the whole 800-line schema.
 | `DailyQuestClaim` | `dailyQuestClaims` | `lib/db/schema.ts:767` |
 | `GachaDailySpinCounter` | `gachaDailySpinCounters` | `lib/db/schema.ts:786` |
 
-### API routes (112)
+### API routes (113)
 
 The handler for each one lives at the matching `app/<url>/route.ts`.
 
@@ -388,6 +393,7 @@ The handler for each one lives at the matching `app/<url>/route.ts`.
 | `/api/admin/help/[id]` | PUT, DELETE |
 | `/api/admin/help` | GET, POST |
 | `/api/admin/nav-items/[id]` | PUT, DELETE |
+| `/api/admin/nav-items/reorder` | POST |
 | `/api/admin/nav-items` | GET, POST |
 | `/api/admin/news/[id]` | GET, PUT, DELETE |
 | `/api/admin/news` | GET, POST |
@@ -461,7 +467,7 @@ The handler for each one lives at the matching `app/<url>/route.ts`.
 | `/api/upload` | POST |
 | `/api/user/balance` | GET |
 
-### Files over 600 lines (28)
+### Files over 600 lines (29)
 
 Read a range, not the file. Landmarks are `name:line`.
 
@@ -491,6 +497,7 @@ Read a range, not the file. Landmarks are `name:line`.
 | `components/admin/chat/useAdminChatInbox.ts` | 674 | sortConversations:26, mergeConversationPage:43, mergeMessages:53, useAdminChatInbox:69 |
 | `components/GachaRhombus.tsx` | 674 | getParticles:84, WinBurst:106, TileImage:128, getRouletteDelay:145, getRollingButtonLabel:157, getSelectorIndex:169, getPathIndices:173, getIntersectionIndex:179 |
 | `lib/features/orders/purchase.ts` | 659 | getActivePrice:101, processStock:110, getAutoDeleteTimestamp:130, buildCartThbPromoItems:138, buildDiscountedThbPriceMap:162, sumAppliedDiscount:228, validateAndSummarizeCartProducts:238, getRawTransactionConnection:293 |
+| `app/(site)/admin/nav-items/page.tsx` | 646 | useNavSortable:70, DragHandle:80, SortableCard:90, SortableRow:159, DragPreview:211, NavItemsAdminPage:223 |
 | `app/(site)/admin/products/new/page.tsx` | 641 | AddProductPage:44 |
 | `app/(site)/admin/roles/page.tsx` | 630 | normalizeRolePermissions:49, PERMISSION_GROUPS:53, AdminRolesPage:116 |
 | `components/MembersSummary.tsx` | 630 | baht:100, daysAgoLabel:116, MemberCell:122, MembersSummary:140 |

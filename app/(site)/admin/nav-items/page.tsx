@@ -2,7 +2,7 @@
 
 import { SpinnerScreen } from "@/components/SpinnerScreen";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,26 @@ import {
 import { Plus, Pencil, Trash2, Loader2, Navigation, GripVertical } from "lucide-react";
 import { showSuccess, showError, showDeleteConfirm } from "@/lib/swal";
 import { PERMISSIONS } from "@/lib/permissions";
+import {
+    DndContext,
+    DragOverlay,
+    closestCenter,
+    KeyboardSensor,
+    PointerSensor,
+    useSensor,
+    useSensors,
+    type DragEndEvent,
+    type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+    arrayMove,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifiers";
 
 interface NavItem {
     id: string;
@@ -37,6 +57,167 @@ interface NavItem {
     icon: string | null;
     sortOrder: number;
     isActive: boolean;
+}
+
+interface SortableItemProps {
+    item: NavItem;
+    canEditSettings: boolean;
+    onEdit: (item: NavItem) => void;
+    onDelete: (item: NavItem) => void;
+    onToggleActive: (item: NavItem) => void;
+}
+
+function useNavSortable(id: string) {
+    const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+    const style: React.CSSProperties = {
+        transition: isDragging ? undefined : transition,
+        opacity: isDragging ? 0 : 1,
+        transform: CSS.Transform.toString(transform),
+    };
+    return { setNodeRef, style, handleProps: { ...attributes, ...listeners } };
+}
+
+function DragHandle({ canEditSettings, handleProps }: Readonly<{ canEditSettings: boolean; handleProps: Record<string, unknown> }>) {
+    return (
+        <GripVertical
+            className={`h-4 w-4 touch-none select-none text-muted-foreground ${canEditSettings ? "cursor-grab active:cursor-grabbing" : "cursor-not-allowed opacity-40"}`}
+            {...(canEditSettings ? handleProps : {})}
+        />
+    );
+}
+
+// Mobile card
+function SortableCard({ item, canEditSettings, onEdit, onDelete, onToggleActive }: Readonly<SortableItemProps>) {
+    const { setNodeRef, style, handleProps } = useNavSortable(item.id);
+
+    return (
+        <div ref={setNodeRef} style={style} className="rounded-xl border border-border p-4">
+            <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                        <DragHandle canEditSettings={canEditSettings} handleProps={handleProps} />
+                        <p className="font-medium">{item.label}</p>
+                    </div>
+                    <p className="mt-2 break-all text-sm text-muted-foreground">
+                        {item.href}
+                    </p>
+                </div>
+                <Switch
+                    checked={item.isActive}
+                    onCheckedChange={() => onToggleActive(item)}
+                    disabled={!canEditSettings}
+                />
+            </div>
+
+            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-lg bg-muted/40 p-3">
+                    <p className="text-xs text-muted-foreground">
+                        ลำดับการแสดงผล
+                    </p>
+                    <p className="mt-1 font-medium">{item.sortOrder}</p>
+                </div>
+                <div className="rounded-lg bg-muted/40 p-3">
+                    <p className="text-xs text-muted-foreground">
+                        สถานะการมองเห็น
+                    </p>
+                    <span
+                                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${item.isActive
+                                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                        : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
+                                        }`}
+                                >
+                                    {item.isActive ? "แสดง" : "ซ่อน"}
+                                </span>
+                </div>
+            </div>
+
+            {canEditSettings ? (
+                <div className="mt-4 flex gap-2">
+                    <Button
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => onEdit(item)}
+                    >
+                        <Pencil className="mr-2 h-4 w-4" />
+                        แก้ไข
+                    </Button>
+                    <Button
+                        variant="outline"
+                        className="flex-1 text-destructive hover:text-destructive"
+                        onClick={() => onDelete(item)}
+                    >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        ลบ
+                    </Button>
+                </div>
+            ) : null}
+        </div>
+    );
+}
+
+// Desktop table row
+function SortableRow({ item, canEditSettings, onEdit, onDelete, onToggleActive }: Readonly<SortableItemProps>) {
+    const { setNodeRef, style, handleProps } = useNavSortable(item.id);
+
+    return (
+        <TableRow ref={setNodeRef} style={style}>
+            <TableCell>
+                <DragHandle canEditSettings={canEditSettings} handleProps={handleProps} />
+            </TableCell>
+            <TableCell className="font-medium">{item.label}</TableCell>
+            <TableCell className="text-muted-foreground">{item.href}</TableCell>
+            <TableCell className="text-center">{item.sortOrder}</TableCell>
+            <TableCell className="text-center">
+                <span
+                                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${item.isActive
+                                        ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                                        : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
+                                        }`}
+                                >
+                                    {item.isActive ? "แสดง" : "ซ่อน"}
+                                </span>
+            </TableCell>
+            <TableCell className="text-center">
+                <Switch
+                    checked={item.isActive}
+                    onCheckedChange={() => onToggleActive(item)}
+                    disabled={!canEditSettings}
+                />
+            </TableCell>
+            <TableCell className="text-right">
+                {canEditSettings ? (
+                    <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => onEdit(item)}>
+                            <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => onDelete(item)}
+                        >
+                            <Trash2 className="h-4 w-4" />
+                        </Button>
+                    </div>
+                ) : (
+                    <span className="text-xs text-slate-400">ดูได้อย่างเดียว</span>
+                )}
+            </TableCell>
+        </TableRow>
+    );
+}
+
+// Floating clone shown while dragging
+function DragPreview({ item }: Readonly<{ item: NavItem }>) {
+    return (
+        <div className="w-[min(92vw,760px)] rounded-xl border border-border bg-card/95 px-4 py-3 shadow-2xl backdrop-blur-sm">
+            <div className="flex items-center gap-3">
+                <GripVertical className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                <p className="font-medium">{item.label}</p>
+                <p className="truncate text-sm text-muted-foreground">{item.href}</p>
+            </div>
+        </div>
+    );
 }
 
 export default function NavItemsAdminPage() {
@@ -56,7 +237,18 @@ export default function NavItemsAdminPage() {
     const [editHref, setEditHref] = useState("");
     const [editSortOrder, setEditSortOrder] = useState(0);
 
+    // Drag & drop reorder
+    const [activeItem, setActiveItem] = useState<NavItem | null>(null);
+    const [reordering, setReordering] = useState(false);
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+        useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    );
 
+    const sortedItems = useMemo(
+        () => [...items].sort((a, b) => a.sortOrder - b.sortOrder),
+        [items],
+    );
 
     const fetchData = useCallback(async () => {
         try {
@@ -74,6 +266,41 @@ export default function NavItemsAdminPage() {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    const handleDragEnd = async (event: DragEndEvent) => {
+        const { active, over } = event;
+        if (!over || active.id === over.id) return;
+
+        const oldIndex = sortedItems.findIndex((i) => i.id === active.id);
+        const newIndex = sortedItems.findIndex((i) => i.id === over.id);
+        if (oldIndex === -1 || newIndex === -1) return;
+
+        const reordered = arrayMove(sortedItems, oldIndex, newIndex);
+        const sortOrderById = new Map(reordered.map((i, index) => [i.id, index]));
+
+        // Optimistic update — server call below rolls it back on failure
+        setItems((prev) =>
+            prev.map((i) => ({ ...i, sortOrder: sortOrderById.get(i.id) ?? i.sortOrder })),
+        );
+
+        setReordering(true);
+        try {
+            const res = await fetchWithCsrf("/api/admin/nav-items/reorder", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    orders: reordered.map((i, index) => ({ id: i.id, sortOrder: index })),
+                }),
+            });
+            if (!res.ok) throw new Error("reorder failed");
+        } catch (error) {
+            console.error("Error reordering nav items:", error);
+            showError("ไม่สามารถจัดลำดับเมนูได้");
+            void fetchData();
+        } finally {
+            setReordering(false);
+        }
+    };
 
     const handleToggleActive = async (item: NavItem) => {
         if (!canEditSettings) {
@@ -277,8 +504,16 @@ export default function NavItemsAdminPage() {
                         <Navigation className="h-5 w-5" />
                         รายการเมนู ({items.length})
                     </CardTitle>
-                    <CardDescription>
-                        เรียงตามลำดับการแสดงผล (Sort Order)
+                    <CardDescription className="flex items-center gap-2">
+                        {canEditSettings
+                            ? "ลากที่ไอคอนจุดหกจุดเพื่อจัดลำดับเมนูใหม่"
+                            : "เรียงตามลำดับการแสดงผล (Sort Order)"}
+                        {reordering && (
+                            <span className="inline-flex items-center gap-1 text-muted-foreground">
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                กำลังบันทึกลำดับ...
+                            </span>
+                        )}
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -287,151 +522,68 @@ export default function NavItemsAdminPage() {
                             ยังไม่มีเมนู เพิ่มเมนูแรกของคุณด้านบน
                         </div>
                     ) : (
-                        <>
-                            <div className="space-y-3 md:hidden">
-                                {[...items]
-                                    .sort((a, b) => a.sortOrder - b.sortOrder)
-                                    .map((item) => (
-                                        <div key={item.id} className="rounded-xl border border-border p-4">
-                                            <div className="flex items-start justify-between gap-3">
-                                                <div className="min-w-0">
-                                                    <div className="flex items-center gap-2">
-                                                        <GripVertical className="h-4 w-4 text-muted-foreground" />
-                                                        <p className="font-medium">{item.label}</p>
-                                                    </div>
-                                                    <p className="mt-2 break-all text-sm text-muted-foreground">
-                                                        {item.href}
-                                                    </p>
-                                                </div>
-                                                <Switch
-                                                    checked={item.isActive}
-                                                    onCheckedChange={() => handleToggleActive(item)}
-                                                    disabled={!canEditSettings}
-                                                />
-                                            </div>
-
-                                            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
-                                                <div className="rounded-lg bg-muted/40 p-3">
-                                                    <p className="text-xs text-muted-foreground">
-                                                        ลำดับการแสดงผล
-                                                    </p>
-                                                    <p className="mt-1 font-medium">{item.sortOrder}</p>
-                                                </div>
-                                                <div className="rounded-lg bg-muted/40 p-3">
-                                                    <p className="text-xs text-muted-foreground">
-                                                        สถานะการมองเห็น
-                                                    </p>
-                                                    <span
-                                                        className={`mt-1 inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${item.isActive
-                                                            ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                                                            : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
-                                                            }`}
-                                                    >
-                                                        {item.isActive ? "แสดง" : "ซ่อน"}
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            {canEditSettings ? (
-                                                <div className="mt-4 flex gap-2">
-                                                    <Button
-                                                        variant="outline"
-                                                        className="flex-1"
-                                                        onClick={() => openEditModal(item)}
-                                                    >
-                                                        <Pencil className="mr-2 h-4 w-4" />
-                                                        แก้ไข
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        className="flex-1 text-destructive hover:text-destructive"
-                                                        onClick={() => handleDeleteItem(item)}
-                                                    >
-                                                        <Trash2 className="mr-2 h-4 w-4" />
-                                                        ลบ
-                                                    </Button>
-                                                </div>
-                                            ) : null}
-                                        </div>
+                        <DndContext
+                            sensors={sensors}
+                            collisionDetection={closestCenter}
+                            modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+                            onDragStart={({ active }: DragStartEvent) => {
+                                setActiveItem(sortedItems.find((i) => i.id === active.id) ?? null);
+                            }}
+                            onDragCancel={() => setActiveItem(null)}
+                            onDragEnd={(event) => {
+                                setActiveItem(null);
+                                void handleDragEnd(event);
+                            }}
+                        >
+                            <SortableContext
+                                items={sortedItems.map((i) => i.id)}
+                                strategy={verticalListSortingStrategy}
+                            >
+                                <div className="space-y-3 md:hidden">
+                                    {sortedItems.map((item) => (
+                                        <SortableCard
+                                            key={item.id}
+                                            item={item}
+                                            canEditSettings={canEditSettings}
+                                            onEdit={openEditModal}
+                                            onDelete={handleDeleteItem}
+                                            onToggleActive={handleToggleActive}
+                                        />
                                     ))}
-                            </div>
+                                </div>
 
-                            <div className="hidden overflow-x-auto md:block">
-                                <Table className="min-w-[760px]">
-                                    <TableHeader>
-                                        <TableRow>
-                                            <TableHead className="w-[50px]"></TableHead>
-                                            <TableHead>ชื่อเมนูที่แสดง</TableHead>
-                                            <TableHead>เส้นทาง URL</TableHead>
-                                            <TableHead className="text-center">ลำดับการแสดงผล</TableHead>
-                                            <TableHead className="text-center">สถานะการมองเห็น</TableHead>
-                                            <TableHead className="text-center">แสดงผล / ซ่อน</TableHead>
-                                            <TableHead className="text-right">จัดการ</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {[...items]
-                                            .sort((a, b) => a.sortOrder - b.sortOrder)
-                                            .map((item) => (
-                                                <TableRow key={item.id}>
-                                                    <TableCell>
-                                                        <GripVertical className="h-4 w-4 text-muted-foreground" />
-                                                    </TableCell>
-                                                    <TableCell className="font-medium">
-                                                        {item.label}
-                                                    </TableCell>
-                                                    <TableCell className="text-muted-foreground">
-                                                        {item.href}
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        {item.sortOrder}
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        <span
-                                                            className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${item.isActive
-                                                                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                                                                : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
-                                                                }`}
-                                                        >
-                                                            {item.isActive ? "แสดง" : "ซ่อน"}
-                                                        </span>
-                                                    </TableCell>
-                                                    <TableCell className="text-center">
-                                                        <Switch
-                                                            checked={item.isActive}
-                                                            onCheckedChange={() => handleToggleActive(item)}
-                                                            disabled={!canEditSettings}
-                                                        />
-                                                    </TableCell>
-                                                    <TableCell className="text-right">
-                                                        {canEditSettings ? (
-                                                            <div className="flex items-center justify-end gap-2">
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    onClick={() => openEditModal(item)}
-                                                                >
-                                                                    <Pencil className="h-4 w-4" />
-                                                                </Button>
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="text-destructive hover:text-destructive"
-                                                                    onClick={() => handleDeleteItem(item)}
-                                                                >
-                                                                    <Trash2 className="h-4 w-4" />
-                                                                </Button>
-                                                            </div>
-                                                        ) : (
-                                                            <span className="text-xs text-slate-400">ดูได้อย่างเดียว</span>
-                                                        )}
-                                                    </TableCell>
-                                                </TableRow>
+                                <div className="hidden overflow-x-auto md:block">
+                                    <Table className="min-w-[760px]">
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="w-[50px]"></TableHead>
+                                                <TableHead>ชื่อเมนูที่แสดง</TableHead>
+                                                <TableHead>เส้นทาง URL</TableHead>
+                                                <TableHead className="text-center">ลำดับการแสดงผล</TableHead>
+                                                <TableHead className="text-center">สถานะการมองเห็น</TableHead>
+                                                <TableHead className="text-center">แสดงผล / ซ่อน</TableHead>
+                                                <TableHead className="text-right">จัดการ</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {sortedItems.map((item) => (
+                                                <SortableRow
+                                                    key={item.id}
+                                                    item={item}
+                                                    canEditSettings={canEditSettings}
+                                                    onEdit={openEditModal}
+                                                    onDelete={handleDeleteItem}
+                                                    onToggleActive={handleToggleActive}
+                                                />
                                             ))}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        </>
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </SortableContext>
+                            <DragOverlay dropAnimation={null}>
+                                {activeItem ? <DragPreview item={activeItem} /> : null}
+                            </DragOverlay>
+                        </DndContext>
                     )}
                 </CardContent>
             </Card>

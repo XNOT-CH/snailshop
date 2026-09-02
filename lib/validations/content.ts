@@ -40,6 +40,17 @@ export const navItemSchema = z.object({
 });
 export type NavItemInput = z.infer<typeof navItemSchema>;
 
+export const navItemsReorderSchema = z.object({
+  orders: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        sortOrder: z.number().int().min(0),
+      }),
+    )
+    .min(1, "ไม่มีรายการให้จัดลำดับ"),
+});
+
 // Currency settings
 export const currencySettingsSchema = z.object({
   name: z.string().min(1, "กรุณากรอกชื่อสกุลเงิน").max(100),
