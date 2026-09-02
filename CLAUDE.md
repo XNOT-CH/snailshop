@@ -31,7 +31,7 @@ is your job.
 
 **Never run `npm run db:push`.** `DATABASE_URL` in `.env.development.local` and
 in `.env.local` both point at `localhost:3307` — the database the `web` container
-serves from — and it already sits behind `schema.ts`. A push applies the whole
+serves from — and it already sits behind `lib/db/schema.ts`. A push applies the whole
 accumulated diff to live data. Add tables, columns and indexes with targeted SQL
 instead (see `drizzle/`).
 

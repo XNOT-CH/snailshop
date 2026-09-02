@@ -20,7 +20,7 @@ sync schema เข้า dev database:
 
 > ⚠️ **อย่ารัน `db:push` กับ database ปกติของโปรเจกต์**
 > `DATABASE_URL` ใน `.env.development.local` และ `.env.local` ชี้ไปที่ตัวเดียวกัน (`localhost:3307`)
-> ซึ่งเป็น database ที่ container `web` ใช้จริง และตัวมันเองก็ตกหลัง `schema.ts` อยู่แล้ว
+> ซึ่งเป็น database ที่ container `web` ใช้จริง และตัวมันเองก็ตกหลัง `lib/db/schema.ts` อยู่แล้ว
 > `db:push` จึงจะ apply diff ทั้งกองลงของจริง ให้เพิ่มตาราง/คอลัมน์/index ใหม่ด้วย SQL เจาะจงแทน
 > (ดูตัวอย่างใน `drizzle/`) คำสั่งด้านล่างใช้ได้เฉพาะกับ dev database ที่แยกออกมาจริงๆ บนพอร์ต 3308
 

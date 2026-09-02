@@ -229,7 +229,7 @@ Read these first for each task type, then follow the nearest nested `AGENTS.md`.
 - Commerce, wallet, stock, top-up, gacha, and season pass changes must consider race conditions, replay risk, and double-spend behavior.
 - Route handlers live under `app/api/`; keep API response shapes stable for existing consumers.
 - Read `drizzle/README.md` before changing migrations.
-- Never run `npm run db:push` against the database on `localhost:3307`. Both `.env.development.local` and `.env.local` point there, it is the database the `web` container serves from, and it already sits behind `schema.ts` - a push would apply the whole accumulated diff to live data. Add new tables, columns and indexes with targeted SQL instead.
+- Never run `npm run db:push` against the database on `localhost:3307`. Both `.env.development.local` and `.env.local` point there, it is the database the `web` container serves from, and it already sits behind `lib/db/schema.ts` - a push would apply the whole accumulated diff to live data. Add new tables, columns and indexes with targeted SQL instead.
 - Use `npm run db:migrate` for forward migrations.
 - Follow existing component patterns in `components/` and `components/ui/`.
 - Use existing Radix UI/local primitives and `lucide-react` icons when they fit.
