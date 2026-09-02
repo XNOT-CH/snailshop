@@ -336,7 +336,7 @@ describe("user validations", () => {
 describe("settings validations", () => {
   describe("siteSettingsSchema", () => {
     it("accepts valid settings", () => {
-      const result = siteSettingsSchema.safeParse({ siteName: "My Store", maintenanceMode: false });
+      const result = siteSettingsSchema.safeParse({ heroTitle: "My Store", showAllProducts: false });
       expect(result.success).toBe(true);
     });
     it("accepts empty optional fields", () => {
