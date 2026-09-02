@@ -66,6 +66,18 @@ commit message.
 **Say what you added.** Never edit `snailshop.md` silently — report the lines you
 added along with the rest of the work.
 
+## One fact, one home
+
+Before writing a fact into `snailshop.md`, check the ownership table at the top of it.
+Rules that always apply belong in `CLAUDE.md`; per-directory detail belongs in that
+directory's `AGENTS.md`; how a human gets set up belongs in `README.md`. Repeating a
+rule in a second file is how the previous documentation layer ended up with 115
+references to files that no longer existed — the copies drifted and nobody noticed.
+
+`npm run knowledge:check` enforces this for the rules that were actually found
+duplicated: it exits 1 if one of them appears outside the file that owns it. If you
+need to mention a rule elsewhere, link to its owner instead of restating it.
+
 ## Keeping the file honest
 
 The hand-written half is a working index, not an archive. If it grows past roughly 200
