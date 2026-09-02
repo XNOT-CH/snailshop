@@ -81,7 +81,6 @@ const PERMISSION_GROUPS = {
     { key: PERMISSIONS.ADMIN_PANEL, label: "เข้าหน้าแอดมิน" },
     { key: PERMISSIONS.AUDIT_LOG_VIEW, label: "ดู Audit Log" },
     { key: PERMISSIONS.AUDIT_LOG_DELETE, label: "ลบ Audit Log" },
-    { key: PERMISSIONS.API_KEY_MANAGE, label: "จัดการ API Key" },
   ],
   "แชท": [
     { key: PERMISSIONS.CHAT_VIEW, label: "ดูแชทลูกค้า" },

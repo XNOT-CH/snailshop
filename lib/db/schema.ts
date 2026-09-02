@@ -80,7 +80,6 @@ export const users = mysqlTable("User", {
 export const usersRelations = relations(users, ({ many }) => ({
     orders: many(orders),
     topups: many(topups),
-    apiKeys: many(apiKeys),
     auditLogs: many(auditLogs),
     emailVerificationTokens: many(emailVerificationTokens),
     addressProfiles: many(userAddressProfiles),
@@ -133,26 +132,6 @@ export const emailVerificationTokens = mysqlTable("EmailVerificationToken", {
 
 export const emailVerificationTokensRelations = relations(emailVerificationTokens, ({ one }) => ({
     user: one(users, { fields: [emailVerificationTokens.userId], references: [users.id] }),
-}));
-
-// ─────────────────────────────────────────────
-// ApiKey
-// ─────────────────────────────────────────────
-export const apiKeys = mysqlTable("ApiKey", {
-    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
-    name: varchar("name", { length: 255 }).notNull(),
-    key: varchar("key", { length: 64 }).unique().notNull(),
-    keyPrefix: varchar("keyPrefix", { length: 8 }).notNull(),
-    userId: varchar("userId", { length: 36 }).notNull().references(() => users.id, { onDelete: "cascade" }),
-    permissions: json("permissions").$type<string[]>(),
-    expiresAt: datetime("expiresAt", { mode: "string" }),
-    lastUsedAt: datetime("lastUsedAt", { mode: "string" }),
-    isActive: boolean("isActive").default(true).notNull(),
-    createdAt: now(),
-}, (t) => [index("idx_apikey_prefix").on(t.keyPrefix)]);
-
-export const apiKeysRelations = relations(apiKeys, ({ one }) => ({
-    user: one(users, { fields: [apiKeys.userId], references: [users.id] }),
 }));
 
 // ─────────────────────────────────────────────

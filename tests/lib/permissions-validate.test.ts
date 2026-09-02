@@ -105,7 +105,7 @@ describe("lib/permissions", () => {
       expect(hasAnyPermission("USER", [])).toBe(false);
     });
     it("ADMIN returns true for any permission", () => {
-      expect(hasAnyPermission("ADMIN", [PERMISSIONS.API_KEY_MANAGE])).toBe(true);
+      expect(hasAnyPermission("ADMIN", [PERMISSIONS.AUDIT_LOG_DELETE])).toBe(true);
     });
   });
 

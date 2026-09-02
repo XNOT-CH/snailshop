@@ -1,16 +1,4 @@
-import { describe, it, expect, vi } from "vitest";
-
-vi.mock("@/lib/db", () => ({
-  db: {
-    query: { apiKeys: { findFirst: vi.fn() } },
-    update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
-    insert: vi.fn().mockReturnValue({ values: vi.fn() }),
-  },
-  apiKeys: { key: "key", keyPrefix: "keyPrefix", isActive: "isActive", id: "id" },
-}));
-vi.mock("drizzle-orm", () => ({ eq: vi.fn(), and: vi.fn() }));
-vi.mock("@/lib/permissions", () => ({ hasPermission: vi.fn(() => true), Permission: {} }));
-vi.mock("@/lib/utils/date", () => ({ mysqlNow: vi.fn(() => "2026-01-01 00:00:00") }));
+import { describe, it, expect } from "vitest";
 
 import {
   getDelimiter, splitStock, getStockCount, takeFirstStock, joinStock, getStockUser, findDuplicateStockUser
@@ -94,49 +82,6 @@ describe("lib/stock", () => {
     });
     it("returns empty string for empty array", () => {
       expect(joinStock([], "newline")).toBe("");
-    });
-  });
-});
-
-// ── apiKey ──────────────────────────────────────────────
-import { generateApiKey, hashApiKey, apiKeyHasPermission } from "@/lib/apiKey";
-import { db } from "@/lib/db";
-
-describe("lib/apiKey", () => {
-  describe("generateApiKey", () => {
-    it("returns rawKey, hashedKey, prefix", () => {
-      const { rawKey, hashedKey, prefix } = generateApiKey();
-      expect(rawKey).toHaveLength(64);
-      expect(hashedKey).toHaveLength(64);
-      expect(prefix).toBe(rawKey.substring(0, 8));
-    });
-    it("generates unique keys each call", () => {
-      const a = generateApiKey();
-      const b = generateApiKey();
-      expect(a.rawKey).not.toBe(b.rawKey);
-    });
-  });
-
-  describe("hashApiKey", () => {
-    it("returns sha256 hex string", () => {
-      const hash = hashApiKey("test-key");
-      expect(hash).toHaveLength(64);
-      expect(hash).toMatch(/^[a-f0-9]+$/);
-    });
-    it("is deterministic", () => {
-      expect(hashApiKey("abc")).toBe(hashApiKey("abc"));
-    });
-  });
-
-  describe("apiKeyHasPermission", () => {
-    it("returns true when permission list is empty (no restriction)", () => {
-      const result = apiKeyHasPermission([], "ADMIN", null, "READ_PRODUCTS" as any);
-      expect(result).toBe(true);
-    });
-    it("returns false when required permission not in key permissions", () => {
-      // When key has specific permissions that don't include the required one
-      const result = apiKeyHasPermission(["WRITE_PRODUCTS"], "USER", null, "READ_PRODUCTS" as any);
-      expect(result).toBe(false);
     });
   });
 });
