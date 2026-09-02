@@ -108,9 +108,9 @@ Local notes:
 
 ### Skill Usage
 
-- Before using any installed workflow skill, explicitly tell the user which skill is being used and why.
-- This applies especially to `debug-mantra`, `scrutinize`, `post-mortem`, and `management-talk`.
-- Do not silently apply these skills or infer their use without first naming them to the user.
+- Load a skill on your own when its trigger fits; you do not need to be asked. `CLAUDE.md` requires `andrej-karpathy-skills:karpathy-guidelines` on every coding task.
+- But never silently: name the skill and say why, the first time you use it in a task.
+- This applies to `karpathy-guidelines`, `debug-mantra`, `scrutinize`, `post-mortem`, `management-talk`, and `qwenchance`.
 
 ### Task Modes
 
