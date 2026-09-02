@@ -4,11 +4,8 @@
  * - /api/admin/export
  * - /api/admin/currency-settings
  * - /api/admin/slips
- * - /api/admin/gacha-settings
  * - /api/admin/footer-links
  * - /api/admin/footer-links/settings
- * - /api/admin/gacha-categories
- * - /api/admin/gacha-categories/[id]
  * - /api/dashboard/topup-trend
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -420,84 +417,6 @@ describe("API: /api/admin/currency-settings (GET + PUT)", () => {
 });
 
 // ════════════════════════════════════════════════════════════════
-// /api/admin/slips (topup code usage log — GET only, see
-// tests/api/admin-topup-code-usages.test.ts for coverage)
-// ════════════════════════════════════════════════════════════════
-
-// ════════════════════════════════════════════════════════════════
-// /api/admin/gacha-settings
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/admin/gacha-settings (GET + PUT)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("GET returns 401 when not admin", async () => {
-    (isAdmin as any).mockResolvedValue(UNAUTH);
-    const { GET } = await import("@/app/api/admin/gacha-settings/route");
-    const res = await GET();
-    expect(res.status).toBe(401);
-  });
-
-  it("GET returns existing settings", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (db.query.gachaSettings.findFirst as any).mockResolvedValue({
-      id: "default", isEnabled: true, costType: "CREDIT", costAmount: "100", dailySpinLimit: 10,
-    });
-    const { GET } = await import("@/app/api/admin/gacha-settings/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.data.isEnabled).toBe(true);
-  });
-
-  it("GET creates default settings when none exist", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (db.query.gachaSettings.findFirst as any)
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ id: "default", isEnabled: true });
-    const { GET } = await import("@/app/api/admin/gacha-settings/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-  });
-
-  it("PUT returns 401 when not admin", async () => {
-    (isAdmin as any).mockResolvedValue(UNAUTH);
-    const { PUT } = await import("@/app/api/admin/gacha-settings/route");
-    const res = await PUT(new Request("http://localhost", { method: "PUT" }));
-    expect(res.status).toBe(401);
-  });
-
-  it("PUT updates existing settings", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (validateBody as any).mockResolvedValue({
-      data: { isEnabled: false, costType: "POINT", costAmount: 200, dailySpinLimit: 5, tierMode: "WEIGHT" },
-    });
-    (db.query.gachaSettings.findFirst as any)
-      .mockResolvedValueOnce({ id: "default" })
-      .mockResolvedValueOnce({ id: "default", isEnabled: false });
-    const { PUT } = await import("@/app/api/admin/gacha-settings/route");
-    const res = await PUT(new Request("http://localhost", { method: "PUT", body: JSON.stringify({}) }));
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-  });
-
-  it("PUT inserts new settings when none exist", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (validateBody as any).mockResolvedValue({
-      data: { isEnabled: true, costType: "CREDIT", costAmount: 50, dailySpinLimit: 100, tierMode: "PRICE" },
-    });
-    (db.query.gachaSettings.findFirst as any)
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ id: "default", isEnabled: true });
-    const { PUT } = await import("@/app/api/admin/gacha-settings/route");
-    const res = await PUT(new Request("http://localhost", { method: "PUT", body: JSON.stringify({}) }));
-    expect(res.status).toBe(200);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
 // /api/admin/footer-links (GET + POST)
 // ════════════════════════════════════════════════════════════════
 describe("API: /api/admin/footer-links (GET + POST)", () => {
@@ -594,96 +513,6 @@ describe("API: /api/admin/footer-links/settings (GET + PUT)", () => {
     const { PUT } = await import("@/app/api/admin/footer-links/settings/route");
     const res = await PUT(mkReq("http://localhost", { method: "PUT", body: JSON.stringify({ isActive: true, title: "Created" }) }));
     expect(res.status).toBe(200);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
-// /api/admin/gacha-categories (GET + POST)
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/admin/gacha-categories (GET + POST)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("GET returns 401 when not admin", async () => {
-    (isAdmin as any).mockResolvedValue(UNAUTH);
-    const { GET } = await import("@/app/api/admin/gacha-categories/route");
-    const res = await GET();
-    expect(res.status).toBe(401);
-  });
-
-  it("GET returns list of categories with machine count", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (db.query.gachaCategories.findMany as any).mockResolvedValue([
-      { id: "c1", name: "Action", sortOrder: 0, machines: [{ id: "m1" }, { id: "m2" }] },
-      { id: "c2", name: "Puzzle", sortOrder: 1, machines: [] },
-    ]);
-    const { GET } = await import("@/app/api/admin/gacha-categories/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.data).toHaveLength(2);
-    expect(body.data[0]._count.machines).toBe(2);
-    expect(body.data[1]._count.machines).toBe(0);
-  });
-
-  it("POST returns 401 when not admin", async () => {
-    (isAdmin as any).mockResolvedValue(UNAUTH);
-    const { POST } = await import("@/app/api/admin/gacha-categories/route");
-    const res = await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ name: "Action" }) }));
-    expect(res.status).toBe(401);
-  });
-
-  it("POST creates a new category", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (db.query.gachaCategories.findFirst as any).mockResolvedValue({ id: "c_new", name: "Horror", sortOrder: 0 });
-    const { POST } = await import("@/app/api/admin/gacha-categories/route");
-    const res = await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ name: "Horror", sortOrder: 2 }) }));
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.data.name).toBe("Horror");
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
-// /api/admin/gacha-categories/[id] (PATCH + DELETE)
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/admin/gacha-categories/[id] (PATCH + DELETE)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("PATCH returns 401 when not admin", async () => {
-    (isAdmin as any).mockResolvedValue(UNAUTH);
-    const { PATCH } = await import("@/app/api/admin/gacha-categories/[id]/route");
-    const res = await PATCH(new Request("http://localhost", { method: "PATCH", body: JSON.stringify({}) }), mkParams("c1"));
-    expect(res.status).toBe(401);
-  });
-
-  it("PATCH updates category name and sortOrder", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (db.query.gachaCategories.findFirst as any).mockResolvedValue({ id: "c1", name: "Updated", sortOrder: 5 });
-    const { PATCH } = await import("@/app/api/admin/gacha-categories/[id]/route");
-    const res = await PATCH(
-      new Request("http://localhost", { method: "PATCH", body: JSON.stringify({ name: "Updated", sortOrder: 5, isActive: true }) }),
-      mkParams("c1")
-    );
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-  });
-
-  it("DELETE returns 401 when not admin", async () => {
-    (isAdmin as any).mockResolvedValue(UNAUTH);
-    const { DELETE } = await import("@/app/api/admin/gacha-categories/[id]/route");
-    const res = await DELETE(new Request("http://localhost"), mkParams("c1"));
-    expect(res.status).toBe(401);
-  });
-
-  it("DELETE removes category", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    const { DELETE } = await import("@/app/api/admin/gacha-categories/[id]/route");
-    const res = await DELETE(new Request("http://localhost"), mkParams("c1"));
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
   });
 });
 

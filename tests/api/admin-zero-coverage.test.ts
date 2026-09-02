@@ -1,6 +1,6 @@
 /**
  * Batch tests for high-impact 0%-covered routes:
- * gacha-categories, gacha-machines, gacha-rewards, currency-settings, slips,
+ * gacha-machines, gacha-rewards, currency-settings, slips,
  * footer-links/[id], footer-links/settings, promo-codes/[id], help/[id],
  * popups/[id], nav-items/[id]
  */
@@ -94,60 +94,6 @@ import { db } from "@/lib/db";
 import { validateBody } from "@/lib/validations/validate";
 
 const mkParams = (id: string) => ({ params: Promise.resolve({ id }) });
-
-// ═══════════════════════════════════════
-// Gacha Categories
-// ═══════════════════════════════════════
-describe("API: /api/admin/gacha-categories", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("GET returns 401 when not admin", async () => {
-    (isAdmin as any).mockResolvedValue({ success: false, error: "Unauthorized" });
-    const { GET } = await import("@/app/api/admin/gacha-categories/route");
-    const res = await GET();
-    expect(res.status).toBe(401);
-  });
-
-  it("GET returns categories", async () => {
-    (isAdmin as any).mockResolvedValue({ success: true });
-    (db.query.gachaCategories.findMany as any).mockResolvedValue([
-      { id: "c1", name: "Action", sortOrder: 0, machines: [{ id: "m1" }] }
-    ]);
-    const { GET } = await import("@/app/api/admin/gacha-categories/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-    expect(body.data[0]._count.machines).toBe(1);
-  });
-
-  it("POST returns 401 when not admin", async () => {
-    (isAdmin as any).mockResolvedValue({ success: false, error: "Unauthorized" });
-    const { POST } = await import("@/app/api/admin/gacha-categories/route");
-    const req = new Request("http://localhost", {
-      method: "POST",
-      body: JSON.stringify({ name: "RPG" }),
-      headers: { "Content-Type": "application/json" },
-    });
-    const res = await POST(req);
-    expect(res.status).toBe(401);
-  });
-
-  it("POST creates category", async () => {
-    (isAdmin as any).mockResolvedValue({ success: true });
-    (db.query.gachaCategories.findFirst as any).mockResolvedValue({ id: "new-id", name: "RPG" });
-    const { POST } = await import("@/app/api/admin/gacha-categories/route");
-    const req = new Request("http://localhost", {
-      method: "POST",
-      body: JSON.stringify({ name: "RPG", sortOrder: 1 }),
-      headers: { "Content-Type": "application/json" },
-    });
-    const res = await POST(req);
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.success).toBe(true);
-  });
-});
 
 // ═══════════════════════════════════════
 // Currency Settings

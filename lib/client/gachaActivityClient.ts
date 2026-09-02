@@ -9,33 +9,9 @@ export interface RecentGachaLog {
     createdAt: string;
 }
 
-export interface GachaHistoryLog {
-    id: string;
-    tier: string;
-    rewardName: string;
-    rewardImageUrl: string | null;
-    costType: string;
-    costAmount: number;
-    createdAt: string;
-}
-
-export interface GachaHistoryStats {
-    todayCount: number;
-    totalCount: number;
-    topTier: string | null;
-}
-
 export interface GachaRecentResponse {
     success: boolean;
     data: RecentGachaLog[];
-}
-
-export interface GachaHistoryResponse {
-    success: boolean;
-    data: {
-        logs: GachaHistoryLog[];
-        stats: GachaHistoryStats;
-    };
 }
 
 type GachaActivityRequestTarget = RequestInfo | URL;
@@ -55,13 +31,4 @@ export async function fetchGachaRecentActivity(
     if (!response.ok) throw new Error("Failed to fetch recent logs");
 
     return response.json() as Promise<GachaRecentResponse>;
-}
-
-export async function fetchGachaHistoryActivity(
-    { fetcher = fetch }: GachaActivityClientOptions = {},
-): Promise<GachaHistoryResponse | null> {
-    const response = await fetcher(API_ROUTES.GACHA_HISTORY);
-    if (!response.ok) return null;
-
-    return response.json() as Promise<GachaHistoryResponse>;
 }

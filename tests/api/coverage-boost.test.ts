@@ -2,14 +2,11 @@
  * Coverage boost tests targeting routes/libs with low coverage:
  * - app/api/topup            (cover EasySlip v2 verification paths)
  * - app/api/upload           (38% → cover file type/size/write)
- * - app/api/nav-items        (50% → cover error path)
- * - app/api/news             (57% → cover error path)
  * - app/api/popups           (66% → cover error path)
  * - app/api/sale-products    (66% → cover error & filter paths)
  * - app/api/session          (73% → cover success & error paths)
  * - app/api/register         (71% → cover success, duplicate, parse error)
  * - app/api/products/[id]/stock (0% → full coverage)
- * - lib/apiSecurity.ts       (73% → cover rate limit & error paths)
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
@@ -326,56 +323,6 @@ describe("API: /api/upload (POST) — extended coverage", () => {
     const { POST } = await import("@/app/api/upload/route");
     const res = await POST(req);
     expect(res.status).toBe(200);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
-// /api/nav-items
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/nav-items (GET)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("returns nav items on success", async () => {
-    (db.query.navItems.findMany as any).mockResolvedValue([
-      { id: "n1", label: "Shop", href: "/shop", icon: "ShoppingCart" },
-    ]);
-    const { GET } = await import("@/app/api/nav-items/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body).toHaveLength(1);
-  });
-
-  it("returns 500 on DB error", async () => {
-    (db.query.navItems.findMany as any).mockRejectedValue(new Error("DB down"));
-    const { GET } = await import("@/app/api/nav-items/route");
-    const res = await GET();
-    expect(res.status).toBe(500);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
-// /api/news
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/news (GET)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("returns news articles on success", async () => {
-    (cacheOrFetch as any).mockResolvedValue([
-      { id: "a1", title: "Big Sale", isActive: true },
-    ]);
-    const { GET } = await import("@/app/api/news/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body).toHaveLength(1);
-  });
-
-  it("returns 500 when cache/DB throws", async () => {
-    (cacheOrFetch as any).mockRejectedValue(new Error("Cache miss"));
-    const { GET } = await import("@/app/api/news/route");
-    const res = await GET();
-    expect(res.status).toBe(500);
   });
 });
 

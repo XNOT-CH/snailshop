@@ -1,7 +1,6 @@
 /**
  * FINAL coverage patch batch 7 — push to 95%+
- * Targets: footer-widget catch, gacha/history catch, gacha/grid/rewards
- * branches, promo-codes/validate branches, dashboard/overview paths,
+ * Targets: gacha/grid/rewards branches, promo-codes/validate branches,
  * admin/help POST success, admin/currency, dashboard/topup-trend.
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -87,42 +86,6 @@ import { validateBody } from "@/lib/validations/validate";
 const ADMIN_OK = { success: true };
 const AUTH_OK  = { success: true, userId: "u1" };
 const mkP = (id: string) => ({ params: Promise.resolve({ id }) });
-
-// ════════════════════════════════════════════════════════════════
-// /api/footer-widget — catch block + inactive settings
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/footer-widget (missing paths)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("GET returns 200 with empty links when settings.isActive=false", async () => {
-    (db.query.footerWidgetSettings.findFirst as any).mockResolvedValue({ isActive: false, title: "" });
-    const { GET } = await import("@/app/api/footer-widget/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.links).toEqual([]);
-  });
-
-  it("GET returns 500 on DB error", async () => {
-    (db.query.footerWidgetSettings.findFirst as any).mockRejectedValueOnce(new Error("DB fail"));
-    const { GET } = await import("@/app/api/footer-widget/route");
-    const res = await GET();
-    expect(res.status).toBe(500);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
-// /api/gacha/history — catch block
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/gacha/history (catch path)", () => {
-  it("GET returns 500 on DB error", async () => {
-    (isAuthenticated as any).mockResolvedValue(AUTH_OK);
-    (db.query.gachaRollLogs.findMany as any).mockRejectedValueOnce(new Error("DB fail"));
-    const { GET } = await import("@/app/api/gacha/history/route");
-    const res = await GET();
-    expect(res.status).toBe(500);
-  });
-});
 
 // ════════════════════════════════════════════════════════════════
 // /api/gacha/grid/rewards — rewardType branches + isNull branch (no machineId)
@@ -236,32 +199,6 @@ describe("API: /api/promo-codes/validate (branch coverage)", () => {
     const body = await res.json();
     expect(body.valid).toBe(true);
     expect(body.discountType).toBe("FIXED");
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
-// /api/dashboard/overview — user not found + dateParam branch
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/dashboard/overview (missing paths)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("GET returns 404 when user not in DB", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1" } });
-    (db.query.users.findFirst as any).mockResolvedValue(null);
-    const { GET } = await import("@/app/api/dashboard/overview/route");
-    const res = await GET(new NextRequest("http://localhost/api/dashboard/overview"));
-    expect(res.status).toBe(404);
-  });
-
-  it("GET with dateParam uses provided date (covers ternary branch)", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1" } });
-    (db.query.users.findFirst as any).mockResolvedValue({ id: "u1", creditBalance: "100" });
-    (db.select as any).mockReturnValue({ from: vi.fn().mockReturnValue({
-      where: vi.fn().mockResolvedValue([{ cnt: 2, total: "150" }]),
-    }) });
-    const { GET } = await import("@/app/api/dashboard/overview/route");
-    const res = await GET(new NextRequest("http://localhost/api/dashboard/overview?date=2026-03-10"));
-    expect(res.status).toBe(200);
   });
 });
 

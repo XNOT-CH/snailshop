@@ -234,15 +234,3 @@ describe("API: /api/gacha/recent (catch path)", () => {
     expect(res.status).toBe(500);
   });
 });
-
-// ════════════════════════════════════════════════════════════════
-// /api/news — GET catch block
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/news (catch path)", () => {
-  it("GET returns 500 on DB error", async () => {
-    (db.query.newsArticles.findMany as any).mockRejectedValueOnce(new Error("DB fail"));
-    const { GET } = await import("@/app/api/news/route");
-    const res = await GET();
-    expect(res.status).toBe(500);
-  });
-});

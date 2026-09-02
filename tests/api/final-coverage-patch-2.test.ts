@@ -489,33 +489,6 @@ describe("lib/auditLog (direct tests)", () => {
 });
 
 // ════════════════════════════════════════════════════════════════
-// /api/admin/gacha-categories — error paths
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/admin/gacha-categories (coverage paths)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("GET returns 200 with mapped category data (_count.machines)", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (db.query.gachaCategories.findMany as any).mockResolvedValue([
-      { id: "c1", name: "Action", sortOrder: 0, machines: [{ id: "m1" }, { id: "m2" }] },
-    ]);
-    const { GET } = await import("@/app/api/admin/gacha-categories/route");
-    const res = await GET();
-    const data = await res.json();
-    expect(res.status).toBe(200);
-    expect(data.data[0]._count.machines).toBe(2);
-  });
-
-  it("POST creates category and returns 200", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (db.query.gachaCategories.findFirst as any).mockResolvedValue({ id: "new1", name: "Arcade" });
-    const { POST } = await import("@/app/api/admin/gacha-categories/route");
-    const res = await POST(new Request("http://localhost", { method: "POST", body: JSON.stringify({ name: "Arcade", sortOrder: 1 }) }));
-    expect(res.status).toBe(200);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
 // /api/admin/gacha-rewards/[id] — error paths
 // ════════════════════════════════════════════════════════════════
 describe("API: /api/admin/gacha-rewards/[id] (error paths)", () => {

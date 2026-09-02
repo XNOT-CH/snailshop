@@ -3,7 +3,6 @@
  * - /api/admin/footer-links/[id]  (PUT + DELETE)
  * - /api/admin/gacha-rewards/[id] (PUT + DELETE)
  * - /api/admin/settings           (GET + PUT)
- * - /api/footer-widget            (GET)
  * - /api/gacha/grid/rewards       (GET)
  */
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -269,47 +268,6 @@ describe("API: /api/admin/settings (GET + PUT)", () => {
     const { PUT } = await import("@/app/api/admin/settings/route");
     const res = await PUT(new Request("http://localhost", { method: "PUT", body: JSON.stringify({}) }));
     expect(res.status).toBe(200);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
-// /api/footer-widget
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/footer-widget (GET)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("returns inactive response when settings not found", async () => {
-    (db.query.footerWidgetSettings.findFirst as any).mockResolvedValue(null);
-    const { GET } = await import("@/app/api/footer-widget/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.settings.isActive).toBe(false);
-    expect(body.links).toHaveLength(0);
-  });
-
-  it("returns inactive response when isActive is false", async () => {
-    (db.query.footerWidgetSettings.findFirst as any).mockResolvedValue({ isActive: false, title: "Quick Links" });
-    const { GET } = await import("@/app/api/footer-widget/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.settings.isActive).toBe(false);
-  });
-
-  it("returns active settings with links", async () => {
-    (db.query.footerWidgetSettings.findFirst as any).mockResolvedValue({ isActive: true, title: "Quick Menu" });
-    (db.query.footerLinks.findMany as any).mockResolvedValue([
-      { id: "l1", label: "Shop", href: "/shop", openInNewTab: false },
-      { id: "l2", label: "Discord", href: "https://discord.gg/x", openInNewTab: true },
-    ]);
-    const { GET } = await import("@/app/api/footer-widget/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.settings.isActive).toBe(true);
-    expect(body.settings.title).toBe("Quick Menu");
-    expect(body.links).toHaveLength(2);
   });
 });
 

@@ -57,36 +57,6 @@ vi.mock("next/headers", () => ({
 import { db } from "@/lib/db";
 
 // ═══════════════════════════════════════════════════════════
-// Public News
-// ═══════════════════════════════════════════════════════════
-describe("API: /api/news (GET)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("returns news articles", async () => {
-    const { GET } = await import("@/app/api/news/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(Array.isArray(body)).toBe(true);
-  });
-});
-
-// ═══════════════════════════════════════════════════════════
-// Public Nav Items
-// ═══════════════════════════════════════════════════════════
-describe("API: /api/nav-items (GET)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("returns active nav items", async () => {
-    const { GET } = await import("@/app/api/nav-items/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(Array.isArray(body)).toBe(true);
-  });
-});
-
-// ═══════════════════════════════════════════════════════════
 // Public Sale Products
 // ═══════════════════════════════════════════════════════════
 describe("API: /api/sale-products (GET)", () => {
@@ -111,33 +81,6 @@ describe("API: /api/popups (GET)", () => {
     const { GET } = await import("@/app/api/popups/route");
     const res = await GET();
     expect(res.status).toBe(200);
-  });
-});
-
-// ═══════════════════════════════════════════════════════════
-// Footer Widget
-// ═══════════════════════════════════════════════════════════
-describe("API: /api/footer-widget (GET)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("returns inactive when settings not found", async () => {
-    (db.query.footerWidgetSettings.findFirst as any).mockResolvedValue(null);
-    const { GET } = await import("@/app/api/footer-widget/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.settings.isActive).toBe(false);
-  });
-
-  it("returns links when active", async () => {
-    (db.query.footerWidgetSettings.findFirst as any).mockResolvedValue({ isActive: true, title: "Links" });
-    (db.query.footerLinks.findMany as any).mockResolvedValue([{ id: "1", label: "Link", href: "/link", openInNewTab: false }]);
-    const { GET } = await import("@/app/api/footer-widget/route");
-    const res = await GET();
-    expect(res.status).toBe(200);
-    const body = await res.json();
-    expect(body.settings.isActive).toBe(true);
-    expect(body.links).toHaveLength(1);
   });
 });
 

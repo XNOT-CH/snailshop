@@ -194,28 +194,6 @@ describe("API: /api/admin/users/[id] (missing paths)", () => {
 });
 
 // ════════════════════════════════════════════════════════════════
-// /api/dashboard/purchases — 401 + 500 
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/dashboard/purchases (missing paths)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("GET returns 401 when not authenticated", async () => {
-    (auth as any).mockResolvedValue(null);
-    const { GET } = await import("@/app/api/dashboard/purchases/route");
-    const res = await GET(new NextRequest("http://localhost"));
-    expect(res.status).toBe(401);
-  });
-
-  it("GET returns 500 on DB error", async () => {
-    (auth as any).mockResolvedValue({ user: { id: "u1" } });
-    (db.select as any).mockReturnValueOnce({ from: vi.fn().mockRejectedValueOnce(new Error("DB fail")) });
-    const { GET } = await import("@/app/api/dashboard/purchases/route");
-    const res = await GET(new NextRequest("http://localhost"));
-    expect(res.status).toBe(500);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
 // /api/dashboard/members-summary — 401 + 500
 // ════════════════════════════════════════════════════════════════
 describe("API: /api/dashboard/members-summary (missing paths)", () => {

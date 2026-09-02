@@ -124,30 +124,6 @@ const AUTH_OK  = { success: true, userId: "u1" };
 const mkParams = (id: string) => ({ params: Promise.resolve({ id }) });
 
 // ════════════════════════════════════════════════════════════════
-// /api/nav-items — catch block
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/nav-items (error path)", () => {
-  it("returns 500 on DB error", async () => {
-    (db.query.navItems.findMany as any).mockRejectedValueOnce(new Error("DB fail"));
-    const { GET } = await import("@/app/api/nav-items/route");
-    const res = await GET();
-    expect(res.status).toBe(500);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
-// /api/footer-widget — catch block
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/footer-widget (error path)", () => {
-  it("returns 500 on DB error", async () => {
-    (db.query.footerWidgetSettings.findFirst as any).mockRejectedValueOnce(new Error("DB fail"));
-    const { GET } = await import("@/app/api/footer-widget/route");
-    const res = await GET();
-    expect(res.status).toBe(500);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
 // /api/session — deprecated legacy endpoint
 // ════════════════════════════════════════════════════════════════
 describe("API: /api/session (error paths)", () => {
@@ -182,31 +158,6 @@ describe("API: /api/profile (edge paths)", () => {
     (auth as any).mockResolvedValue({ user: { id: "u1" } });
     (db.query.users.findFirst as any).mockRejectedValueOnce(new Error("DB fail"));
     const { GET } = await import("@/app/api/profile/route");
-    const res = await GET();
-    expect(res.status).toBe(500);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
-// /api/gacha/history — catch block
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/gacha/history (error path)", () => {
-  it("returns 500 on DB error", async () => {
-    (isAuthenticated as any).mockResolvedValue(AUTH_OK);
-    (db.query.gachaRollLogs.findMany as any).mockRejectedValueOnce(new Error("DB fail"));
-    const { GET } = await import("@/app/api/gacha/history/route");
-    const res = await GET();
-    expect(res.status).toBe(500);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
-// /api/news — catch block (public route)
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/news (error path)", () => {
-  it("returns 500 on DB error", async () => {
-    (db.query.newsArticles.findMany as any).mockRejectedValueOnce(new Error("DB fail"));
-    const { GET } = await import("@/app/api/news/route");
     const res = await GET();
     expect(res.status).toBe(500);
   });
@@ -326,30 +277,6 @@ describe("API: /api/admin/footer-links/[id] (error paths)", () => {
     (db.delete as any).mockReturnValueOnce({ where: vi.fn().mockRejectedValueOnce(new Error("DB fail")) });
     const { DELETE } = await import("@/app/api/admin/footer-links/[id]/route");
     const res = await DELETE(new NextRequest("http://localhost"), mkParams("f1"));
-    expect(res.status).toBe(500);
-  });
-});
-
-// ════════════════════════════════════════════════════════════════
-// /api/admin/gacha-settings — error paths
-// ════════════════════════════════════════════════════════════════
-describe("API: /api/admin/gacha-settings (error paths)", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-
-  it("GET returns 500 on DB error", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (db.query.gachaSettings.findFirst as any).mockRejectedValueOnce(new Error("DB fail"));
-    const { GET } = await import("@/app/api/admin/gacha-settings/route");
-    const res = await GET();
-    expect(res.status).toBe(500);
-  });
-
-  it("PUT returns 500 on DB error", async () => {
-    (isAdmin as any).mockResolvedValue(ADMIN_OK);
-    (validateBody as any).mockResolvedValue({ data: { enabled: true } });
-    (db.query.gachaSettings.findFirst as any).mockRejectedValueOnce(new Error("DB fail"));
-    const { PUT } = await import("@/app/api/admin/gacha-settings/route");
-    const res = await PUT(new Request("http://localhost"));
     expect(res.status).toBe(500);
   });
 });
