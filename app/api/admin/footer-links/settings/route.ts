@@ -7,6 +7,7 @@ import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { PERMISSIONS } from "@/lib/permissions";
 import { contentApiError } from "@/lib/features/content/apiResponse";
+import { invalidateCache, CACHE_KEYS } from "@/lib/cache";
 
 async function getFooterWidgetSettingsRecord() {
     return (
@@ -48,6 +49,10 @@ export async function PUT(request: NextRequest) {
             await db.insert(footerWidgetSettings).values({ id: FOOTER_WIDGET_SETTINGS_SINGLETON_ID, isActive: isActive ?? true, title: title ?? "เมนูลัด", createdAt: mysqlNow(), updatedAt: mysqlNow() });
         }
         const updated = await getFooterWidgetSettingsRecord();
+
+        // The public footer caches this record for 60s; drop it so a renamed
+        // column shows on the site immediately instead of on the next TTL.
+        await invalidateCache([CACHE_KEYS.FOOTER_WIDGET]);
 
         await auditFromRequest(request, {
             userId: authCheck.userId,
