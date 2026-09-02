@@ -7,6 +7,7 @@ import { validateBody } from "@/lib/validations/validate";
 import { navItemsReorderSchema } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
 import { contentApiError } from "@/lib/features/content/apiResponse";
+import { invalidateNavItemCaches } from "@/lib/cache";
 
 export async function POST(request: NextRequest) {
     const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.SETTINGS_EDIT);
@@ -21,6 +22,8 @@ export async function POST(request: NextRequest) {
                 db.update(navItems).set({ sortOrder }).where(eq(navItems.id, id)),
             ),
         );
+
+        await invalidateNavItemCaches();
 
         await auditFromRequest(request, {
             userId: authCheck.userId,

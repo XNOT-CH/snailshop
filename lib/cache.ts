@@ -136,6 +136,8 @@ export async function invalidateProductCaches(): Promise<void> {
         CACHE_KEYS.FEATURED_PRODUCTS,
         CACHE_KEYS.SALE_PRODUCTS,
         CACHE_KEYS.PRODUCTS_LIST,
+        // The navbar's category dropdown is counted from the products table.
+        CACHE_KEYS.PRODUCT_CATEGORIES,
     ]);
 }
 
@@ -158,6 +160,14 @@ export async function invalidateSettingsCaches(): Promise<void> {
  */
 export async function invalidatePopupCaches(): Promise<void> {
     await invalidateCache([CACHE_KEYS.ANNOUNCEMENT_POPUPS]);
+}
+
+/**
+ * Invalidate the nav-item cache — the navbar caches the active menu for 60s,
+ * so an admin edit is invisible until the TTL expires without this.
+ */
+export async function invalidateNavItemCaches(): Promise<void> {
+    await invalidateCache([CACHE_KEYS.NAV_ITEMS]);
 }
 
 /**

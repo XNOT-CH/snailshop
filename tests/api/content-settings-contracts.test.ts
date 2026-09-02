@@ -80,6 +80,7 @@ vi.mock("@/lib/cache", () => ({
   cacheOrFetch: cacheOrFetchMock,
   invalidateNewsCaches: vi.fn(),
   invalidatePopupCaches: vi.fn(),
+  invalidateNavItemCaches: vi.fn(),
 }));
 
 vi.mock("@/lib/db", () => ({
