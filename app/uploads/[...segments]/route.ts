@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import path from "node:path";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { getContentTypeFromFilename, readUploadObject, storageKeyFromSegments } from "@/lib/cloudflareStorage";
+import { getContentTypeFromFilename } from "@/lib/uploadStorage";
 import {
     buildUploadPublicPath,
     getLegacyPublicUploadDir,
@@ -83,20 +83,6 @@ function resolveUploadFilePath(segments: string[]) {
 }
 
 async function serveUploadFile(segments: string[], filename: string, cacheControl: string) {
-    const storageKey = storageKeyFromSegments("uploads", ...segments);
-    const r2Object = await readUploadObject(storageKey);
-    if (r2Object) {
-        return new NextResponse(r2Object.body, {
-            status: 200,
-            headers: {
-                "Cache-Control": cacheControl,
-                "Content-Length": String(r2Object.size),
-                "Content-Type": r2Object.contentType,
-                ...getUploadSecurityHeaders(r2Object.contentType, filename),
-            },
-        });
-    }
-
     const filePath = resolveUploadFilePath(segments);
     if (!filePath) {
         return null;

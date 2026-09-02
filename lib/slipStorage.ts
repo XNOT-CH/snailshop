@@ -1,11 +1,6 @@
 import path from "node:path";
 import { readFile } from "node:fs/promises";
-import {
-    bufferToArrayBuffer,
-    getContentTypeFromFilename,
-    readUploadObject,
-    storageKeyFromPublicUrl,
-} from "@/lib/cloudflareStorage";
+import { bufferToArrayBuffer, getContentTypeFromFilename } from "@/lib/uploadStorage";
 import { resolveManagedUploadPath } from "@/lib/serverImageUpload";
 
 export const PRIVATE_SLIP_UPLOAD_DIR = path.join(process.cwd(), "storage", "private", "slips");
@@ -27,11 +22,6 @@ export function resolveStoredSlipPath(fileUrl: string) {
 }
 
 export async function readStoredSlipFile(fileUrl: string) {
-    const r2Object = await readUploadObject(storageKeyFromPublicUrl(fileUrl));
-    if (r2Object) {
-        return r2Object;
-    }
-
     const filePath = resolveStoredSlipPath(fileUrl);
     if (!filePath) {
         return null;

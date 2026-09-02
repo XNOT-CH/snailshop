@@ -8,17 +8,10 @@ import {
     CHAT_MAX_IMAGE_SIZE,
 } from "@/lib/chatConstraints";
 import { CHAT_IMAGE_TTL_MS } from "@/lib/chatMessageContent";
-import {
-    bufferToArrayBuffer,
-    deleteUploadObject,
-    putUploadObject,
-    readUploadObject,
-    storageKeyFromSegments,
-} from "@/lib/cloudflareStorage";
+import { bufferToArrayBuffer } from "@/lib/uploadStorage";
 import { optimizeImageUpload, sanitizeFilename } from "@/lib/serverImageUpload";
 
 const CHAT_MEDIA_ROOT = path.join(process.cwd(), "storage", "chat-media");
-const CHAT_MEDIA_STORAGE_PREFIX = "chat-media";
 
 function ensureSafeStoredName(storedName: string) {
     const safeName = path.basename(storedName);
@@ -61,13 +54,8 @@ export async function saveChatImageFile(file: File) {
     });
     const extension = optimized.filename.split(".").pop() ?? "bin";
     const storedName = `${Date.now()}-${crypto.randomBytes(8).toString("hex")}.${extension}`;
-    const storageKey = storageKeyFromSegments(CHAT_MEDIA_STORAGE_PREFIX, storedName);
-
-    const savedToR2 = await putUploadObject(storageKey, optimized.buffer, optimized.mimeType);
-    if (!savedToR2) {
-        const filePath = path.join(CHAT_MEDIA_ROOT, storedName);
-        await writeFile(filePath, optimized.buffer);
-    }
+    const filePath = path.join(CHAT_MEDIA_ROOT, storedName);
+    await writeFile(filePath, optimized.buffer);
 
     return {
         storedName,
@@ -79,11 +67,6 @@ export async function saveChatImageFile(file: File) {
 
 export async function readChatImageFile(storedName: string) {
     const safeName = ensureSafeStoredName(storedName);
-    const storageKey = storageKeyFromSegments(CHAT_MEDIA_STORAGE_PREFIX, safeName);
-    const r2Object = await readUploadObject(storageKey);
-    if (r2Object) {
-        return r2Object.body;
-    }
 
     try {
         const filePath = path.join(CHAT_MEDIA_ROOT, safeName);
@@ -99,8 +82,6 @@ export async function deleteChatImageFile(storedName: string | null | undefined)
     }
 
     const safeName = ensureSafeStoredName(storedName);
-    const storageKey = storageKeyFromSegments(CHAT_MEDIA_STORAGE_PREFIX, safeName);
-    await deleteUploadObject(storageKey);
 
     try {
         const filePath = path.join(CHAT_MEDIA_ROOT, safeName);
