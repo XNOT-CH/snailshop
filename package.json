@@ -13,6 +13,8 @@
     "check:db-health": "node scripts/db/validate-db-health.mjs",
     "check:purchase-locking": "node scripts/ops/verify-purchase-locking.mjs",
     "check:encoding": "node scripts/quality/check-encoding.mjs",
+    "knowledge:build": "node scripts/quality/build-snailshop-index.mjs",
+    "knowledge:check": "node scripts/quality/build-snailshop-index.mjs --check",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",

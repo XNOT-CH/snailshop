@@ -53,7 +53,11 @@ next-env.d.ts
 .agent/
 .cline/
 .gemini/
-.claude/
+.claude/*
+# ...except the project skills, which are part of the project, not local state.
+# git cannot re-include a path under an excluded directory, so the contents are
+# excluded rather than the directory itself.
+!.claude/skills/
 
 # cloudflare wrangler local state
 .wrangler/
