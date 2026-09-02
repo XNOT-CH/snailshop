@@ -18,6 +18,12 @@ scripts\windows\start-dev-db.bat
 
 sync schema เข้า dev database:
 
+> ⚠️ **อย่ารัน `db:push` กับ database ปกติของโปรเจกต์**
+> `DATABASE_URL` ใน `.env.development.local` และ `.env.local` ชี้ไปที่ตัวเดียวกัน (`localhost:3307`)
+> ซึ่งเป็น database ที่ container `web` ใช้จริง และตัวมันเองก็ตกหลัง `schema.ts` อยู่แล้ว
+> `db:push` จึงจะ apply diff ทั้งกองลงของจริง ให้เพิ่มตาราง/คอลัมน์/index ใหม่ด้วย SQL เจาะจงแทน
+> (ดูตัวอย่างใน `drizzle/`) คำสั่งด้านล่างใช้ได้เฉพาะกับ dev database ที่แยกออกมาจริงๆ บนพอร์ต 3308
+
 ```bash
 set APP_ENV=development && npm run db:push
 ```
@@ -58,7 +64,6 @@ npm run dev
 npm run build
 npm run test
 npm run test:e2e
-npm run db:push
 npm run db:studio
 docker compose up -d --build web
 ```
@@ -78,6 +83,7 @@ scripts/          dev, deploy, db, exports, ops, product sync, quality, seeds, s
 docs/             runbooks, database notes, project docs
 drizzle/          SQL migrations
 storage/          runtime files, uploads, private assets
+proxy.ts          middleware (Next 16 renamed middleware.ts -> proxy.ts)
 ```
 
 ## Important Paths

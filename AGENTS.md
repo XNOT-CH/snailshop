@@ -22,7 +22,7 @@ Run commands from the repository root.
 - E2E: `npm run test:e2e`
 - E2E headed: `npm run test:e2e:headed`
 - E2E UI mode: `npm run test:e2e:ui`
-- Dev schema sync: `npm run db:push`
+- Dev schema sync: `npm run db:push` (isolated dev DB only - see the warning in `README.md`)
 - Run migrations: `npm run db:migrate`
 - Drizzle Studio: `npm run db:studio`
 - Encoding check: `npm run check:encoding`
@@ -229,7 +229,7 @@ Read these first for each task type, then follow the nearest nested `AGENTS.md`.
 - Commerce, wallet, stock, top-up, gacha, and season pass changes must consider race conditions, replay risk, and double-spend behavior.
 - Route handlers live under `app/api/`; keep API response shapes stable for existing consumers.
 - Read `drizzle/README.md` before changing migrations.
-- Use `npm run db:push` only for the isolated dev database flow in `README.md`.
+- Never run `npm run db:push` against the database on `localhost:3307`. Both `.env.development.local` and `.env.local` point there, it is the database the `web` container serves from, and it already sits behind `schema.ts` - a push would apply the whole accumulated diff to live data. Add new tables, columns and indexes with targeted SQL instead.
 - Use `npm run db:migrate` for forward migrations.
 - Follow existing component patterns in `components/` and `components/ui/`.
 - Use existing Radix UI/local primitives and `lucide-react` icons when they fit.
@@ -237,6 +237,7 @@ Read these first for each task type, then follow the nearest nested `AGENTS.md`.
 
 ## Git Workflow
 
+- Branch per piece of work without being asked: create the branch, verify it is green, `git merge --no-ff` into `master`, push, then delete the branch.
 - Check the worktree before broad edits.
 - Do not revert user changes unless explicitly asked.
 - Keep diffs focused on the requested task.
