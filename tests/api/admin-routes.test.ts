@@ -323,5 +323,15 @@ describe("API: /api/admin/settings", () => {
       const body = await res.json();
       expect(body.success).toBe(true);
     });
+
+    it("rejects a body with no known field instead of writing an empty update", async () => {
+      (isAdmin as any).mockResolvedValue({ success: true });
+      (validateBody as any).mockResolvedValue({ data: {} });
+      const { PUT } = await import("@/app/api/admin/settings/route");
+      const req = new Request("http://localhost/api/admin/settings", { method: "PUT" });
+      const res = await PUT(req);
+      expect(res.status).toBe(400);
+      expect(db.update).not.toHaveBeenCalled();
+    });
   });
 });

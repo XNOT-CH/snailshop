@@ -75,6 +75,15 @@ export async function PUT(request: Request) {
         if ("error" in result) return result.error;
 
         const body = result.data;
+        // A body with no known field would reach db.update().set({}), which throws.
+        // Say so as a 400 instead of failing as a 500.
+        if (Object.keys(body).length === 0) {
+            return NextResponse.json(
+                { success: false, message: "ไม่มีข้อมูลที่จะบันทึก" },
+                { status: 400 }
+            );
+        }
+
         const existing = await getSiteSettingsRecord();
         const changes = getChanges(
             existing as Record<string, unknown> | null,

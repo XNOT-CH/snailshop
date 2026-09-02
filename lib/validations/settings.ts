@@ -19,16 +19,18 @@ const imageUrl = z
         { message: "กรุณาใส่ URL ที่ถูกต้อง หรือ path รูปที่อัปโหลด" }
     );
 
+// Every key here must be a real SiteSettings column: the PUT route writes the
+// parsed body straight into `db.update(siteSettings).set(body)`. The site name
+// and description come from heroTitle/heroDescription, the favicon from logoUrl,
+// and maintenance mode from env vars via lib/maintenanceMode.ts — none of those
+// belong here.
 export const siteSettingsSchema = z.object({
     // General text
-    siteName: z.string().min(1, "กรุณากรอกชื่อเว็บไซต์").max(200).optional(),
-    siteDescription: z.string().max(500).optional().or(z.literal("")),
     heroTitle: z.string().max(200).optional().or(z.literal("")),
     heroDescription: z.string().max(500).optional().or(z.literal("")),
     announcement: z.string().max(1000).optional().or(z.literal("")),
     // Images
     logoUrl: imageUrl,
-    faviconUrl: imageUrl,
     ogImageUrl: imageUrl,
     backgroundImage: imageUrl,
     backgroundBlur: z.boolean().default(true),
@@ -55,14 +57,11 @@ export const siteSettingsSchema = z.object({
     facebookUrl: z.url({ error: "URL ไม่ถูกต้อง" }).optional().or(z.literal("")),
     twitterUrl: z.url({ error: "URL ไม่ถูกต้อง" }).optional().or(z.literal("")),
     instagramUrl: z.url({ error: "URL ไม่ถูกต้อง" }).optional().or(z.literal("")),
-    discordUrl: z.url({ error: "URL ไม่ถูกต้อง" }).optional().or(z.literal("")),
     // Footer contact
     footerDescription: z.string().max(1000).optional().or(z.literal("")),
     contactPhone: z.string().max(50).optional().or(z.literal("")),
     contactEmail: z.string().max(255).optional().or(z.literal("")),
     // Features
-    maintenanceMode: z.boolean().default(false),
-    allowRegistration: z.boolean().default(true),
     showAllProducts: z.boolean().default(true),
 });
 export type SiteSettingsInput = z.infer<typeof siteSettingsSchema>;
