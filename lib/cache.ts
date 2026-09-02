@@ -159,3 +159,12 @@ export async function invalidateSettingsCaches(): Promise<void> {
 export async function invalidatePopupCaches(): Promise<void> {
     await invalidateCache([CACHE_KEYS.ANNOUNCEMENT_POPUPS]);
 }
+
+/**
+ * Invalidate footer caches — the shared layout caches the widget settings and
+ * the link list for 60s each, so any admin write must clear both or the site
+ * keeps showing the old column names and links.
+ */
+export async function invalidateFooterCaches(): Promise<void> {
+    await invalidateCache([CACHE_KEYS.FOOTER_WIDGET, CACHE_KEYS.FOOTER_LINKS]);
+}

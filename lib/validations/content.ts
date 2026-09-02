@@ -102,8 +102,24 @@ export const footerLinkSchema = z.object({
   column: z.enum(["services", "cards"]).default("services"),
   openInNewTab: z.boolean().default(false),
   sortOrder: z.coerce.number().int().min(0).optional(),
+  isActive: z.boolean().default(true),
 });
 export type FooterLinkInput = z.infer<typeof footerLinkSchema>;
+
+// Updates must NOT reuse footerLinkSchema.partial(): zod keeps `.default()`
+// through `.partial()`, so a reorder body of just { sortOrder } would come back
+// carrying column "services", openInNewTab false and isActive true — silently
+// moving a "บัตรเติมเกม" link into the other column and un-hiding it.
+export const footerLinkUpdateSchema = z
+  .object({
+    label: z.string().min(1, "กรุณากรอกชื่อลิงก์").max(100),
+    href: safeRequiredUrl,
+    column: z.enum(["services", "cards"]),
+    openInNewTab: z.boolean(),
+    sortOrder: z.coerce.number().int().min(0),
+    isActive: z.boolean(),
+  })
+  .partial();
 
 // Help item
 export const helpItemSchema = z.object({

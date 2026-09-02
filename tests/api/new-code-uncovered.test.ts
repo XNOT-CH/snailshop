@@ -46,6 +46,7 @@ vi.mock("@/lib/getCurrencySettings", () => ({ getCurrencySettings: vi.fn().mockR
 vi.mock("@/lib/validations/validate", () => ({ validateBody: vi.fn() }));
 vi.mock("@/lib/validations/content", () => ({
   footerLinkSchema: { partial: vi.fn().mockReturnValue({}) },
+  footerLinkUpdateSchema: {},
 }));
 vi.mock("@/lib/validations/gacha", () => ({
   gachaRewardSchema: { partial: vi.fn().mockReturnValue({}) },

@@ -41,6 +41,7 @@ vi.mock("@/lib/cache", () => ({
   invalidateNewsCaches: vi.fn().mockResolvedValue(undefined),
   invalidatePopupCaches: vi.fn().mockResolvedValue(undefined),
   invalidateSettingsCaches: vi.fn().mockResolvedValue(undefined),
+  invalidateFooterCaches: vi.fn().mockResolvedValue(undefined),
   cacheOrFetch: vi.fn((_k: string, fn: () => Promise<unknown>) => fn()),
   CACHE_KEYS: { FEATURED_PRODUCTS: "fp", SITE_SETTINGS: "ss" },
   CACHE_TTL: { LONG: 3600 },

@@ -59,6 +59,7 @@ vi.mock("@/lib/validations/gacha", () => ({
 }));
 vi.mock("@/lib/validations/content", () => ({
   footerLinkSchema: { partial: vi.fn().mockReturnValue({}) },
+  footerLinkUpdateSchema: {},
   navItemSchema: { partial: vi.fn().mockReturnValue({}) },
   footerWidgetSettingsSchema: { partial: vi.fn().mockReturnValue({}) },
 }));

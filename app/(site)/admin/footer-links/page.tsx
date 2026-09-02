@@ -54,7 +54,11 @@ import { restrictToVerticalAxis, restrictToParentElement } from "@dnd-kit/modifi
 
 type FooterColumn = "services" | "cards";
 
-const COLUMN_LABELS: Record<FooterColumn, string> = {
+const COLUMN_ORDER: FooterColumn[] = ["services", "cards"];
+
+// Only the fallback when the saved title is empty — the real names live in
+// FooterWidgetSettings.title / .secondaryTitle and must drive every label here.
+const DEFAULT_COLUMN_LABELS: Record<FooterColumn, string> = {
     services: "บริการของเรา",
     cards: "บัตรเติมเกม",
 };
@@ -90,12 +94,14 @@ function getDomainLabel(href: string) {
 // ── Sortable row (desktop table) ──────────────────────────────────────────────
 interface SortableRowProps {
     link: FooterLink;
+    columnLabel: string;
     canEditSettings: boolean;
     onEdit: (link: FooterLink) => void;
     onDelete: (link: FooterLink) => void;
+    onToggleActive: (link: FooterLink) => void;
 }
 
-function SortableRow({ link, canEditSettings, onEdit, onDelete }: SortableRowProps) {
+function SortableRow({ link, columnLabel, canEditSettings, onEdit, onDelete, onToggleActive }: SortableRowProps) {
     const {
         attributes,
         listeners,
@@ -125,7 +131,7 @@ function SortableRow({ link, canEditSettings, onEdit, onDelete }: SortableRowPro
                     <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold text-foreground">{link.label}</p>
                         <span className="inline-flex rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
-                            {COLUMN_LABELS[link.column] ?? COLUMN_LABELS.services}
+                            {columnLabel}
                         </span>
                     </div>
                     <p className="text-xs text-muted-foreground">{getDomainLabel(link.href)}</p>
@@ -154,15 +160,28 @@ function SortableRow({ link, canEditSettings, onEdit, onDelete }: SortableRowPro
                 </span>
             </TableCell>
             <TableCell className="text-center">
-                <span
-                    className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
-                        link.isActive
-                            ? "bg-emerald-100 text-emerald-700"
-                            : "bg-slate-100 text-slate-500"
-                    }`}
-                >
-                    {link.isActive ? "แสดง" : "ซ่อน"}
-                </span>
+                {canEditSettings ? (
+                    <div className="flex items-center justify-center gap-2">
+                        <Switch
+                            checked={link.isActive}
+                            onCheckedChange={() => onToggleActive(link)}
+                            aria-label={`${link.isActive ? "ซ่อน" : "แสดง"}ลิงก์ ${link.label}`}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                            {link.isActive ? "แสดง" : "ซ่อน"}
+                        </span>
+                    </div>
+                ) : (
+                    <span
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
+                            link.isActive
+                                ? "bg-emerald-100 text-emerald-700"
+                                : "bg-slate-100 text-slate-500"
+                        }`}
+                    >
+                        {link.isActive ? "แสดง" : "ซ่อน"}
+                    </span>
+                )}
             </TableCell>
             <TableCell className="text-right">
                 {canEditSettings ? (
@@ -197,12 +216,14 @@ function SortableRow({ link, canEditSettings, onEdit, onDelete }: SortableRowPro
 // ── Sortable card (mobile) ────────────────────────────────────────────────────
 interface SortableCardProps {
     link: FooterLink;
+    columnLabel: string;
     canEditSettings: boolean;
     onEdit: (link: FooterLink) => void;
     onDelete: (link: FooterLink) => void;
+    onToggleActive: (link: FooterLink) => void;
 }
 
-function SortableCard({ link, canEditSettings, onEdit, onDelete }: SortableCardProps) {
+function SortableCard({ link, columnLabel, canEditSettings, onEdit, onDelete, onToggleActive }: SortableCardProps) {
     const {
         attributes,
         listeners,
@@ -230,7 +251,7 @@ function SortableCard({ link, canEditSettings, onEdit, onDelete }: SortableCardP
                     <div className="flex flex-wrap items-center gap-2">
                         <p className="font-semibold text-foreground">{link.label}</p>
                         <span className="inline-flex rounded-full bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
-                            {COLUMN_LABELS[link.column] ?? COLUMN_LABELS.services}
+                            {columnLabel}
                         </span>
                         <span
                             className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${
@@ -272,7 +293,18 @@ function SortableCard({ link, canEditSettings, onEdit, onDelete }: SortableCardP
             </div>
 
             {canEditSettings ? (
-                <div className="mt-4 flex items-center justify-end gap-1.5">
+                <div className="mt-4 flex items-center justify-between gap-1.5">
+                    <div className="flex items-center gap-2">
+                        <Switch
+                            checked={link.isActive}
+                            onCheckedChange={() => onToggleActive(link)}
+                            aria-label={`${link.isActive ? "ซ่อน" : "แสดง"}ลิงก์ ${link.label}`}
+                        />
+                        <span className="text-xs text-muted-foreground">
+                            {link.isActive ? "แสดงอยู่" : "ซ่อนอยู่"}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
                     <Button
                         variant="ghost"
                         size="icon"
@@ -291,6 +323,7 @@ function SortableCard({ link, canEditSettings, onEdit, onDelete }: SortableCardP
                     >
                         <Trash2 className="h-4 w-4" />
                     </Button>
+                    </div>
                 </div>
             ) : null}
         </div>
@@ -335,6 +368,7 @@ function DragPreview({ link }: Readonly<{ link: FooterLink }>) {
 // ── Column board (per-column drag list) ───────────────────────────────────────
 interface FooterColumnBoardProps {
     column: FooterColumn;
+    columnLabel: string;
     links: FooterLink[];
     canEditSettings: boolean;
     reordering: boolean;
@@ -342,10 +376,12 @@ interface FooterColumnBoardProps {
     onDragEnd: (column: FooterColumn, event: DragEndEvent) => void;
     onEdit: (link: FooterLink) => void;
     onDelete: (link: FooterLink) => void;
+    onToggleActive: (link: FooterLink) => void;
 }
 
 function FooterColumnBoard({
     column,
+    columnLabel,
     links,
     canEditSettings,
     reordering,
@@ -353,6 +389,7 @@ function FooterColumnBoard({
     onDragEnd,
     onEdit,
     onDelete,
+    onToggleActive,
 }: FooterColumnBoardProps) {
     const [activeLink, setActiveLink] = useState<FooterLink | null>(null);
 
@@ -362,7 +399,7 @@ function FooterColumnBoard({
                 <div>
                     <div className="flex items-center gap-2">
                         <span className="inline-flex rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300">
-                            {COLUMN_LABELS[column]}
+                            {columnLabel}
                         </span>
                         <p className="text-sm font-semibold text-foreground">
                             {links.length} รายการ
@@ -410,9 +447,11 @@ function FooterColumnBoard({
                                 <SortableCard
                                     key={link.id}
                                     link={link}
+                                    columnLabel={columnLabel}
                                     canEditSettings={canEditSettings}
                                     onEdit={onEdit}
                                     onDelete={onDelete}
+                                    onToggleActive={onToggleActive}
                                 />
                             ))}
                         </div>
@@ -435,9 +474,11 @@ function FooterColumnBoard({
                                         <SortableRow
                                             key={link.id}
                                             link={link}
+                                            columnLabel={columnLabel}
                                             canEditSettings={canEditSettings}
                                             onEdit={onEdit}
                                             onDelete={onDelete}
+                                            onToggleActive={onToggleActive}
                                         />
                                     ))}
                                 </TableBody>
@@ -470,6 +511,16 @@ export default function FooterLinksAdminPage() {
     const [titleDraft, setTitleDraft] = useState("");
     const [secondaryTitleDraft, setSecondaryTitleDraft] = useState("");
     const [savingTitles, setSavingTitles] = useState(false);
+
+    // Column names come from the saved settings, so every label on this page
+    // matches what the site footer actually renders.
+    const columnLabels = useMemo<Record<FooterColumn, string>>(
+        () => ({
+            services: settings?.title?.trim() || DEFAULT_COLUMN_LABELS.services,
+            cards: settings?.secondaryTitle?.trim() || DEFAULT_COLUMN_LABELS.cards,
+        }),
+        [settings],
+    );
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -587,8 +638,8 @@ export default function FooterLinksAdminPage() {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    title: titleDraft.trim() || "บริการของเรา",
-                    secondaryTitle: secondaryTitleDraft.trim() || "บัตรเติมเกม",
+                    title: titleDraft.trim() || DEFAULT_COLUMN_LABELS.services,
+                    secondaryTitle: secondaryTitleDraft.trim() || DEFAULT_COLUMN_LABELS.cards,
                 }),
             });
             if (res.ok) {
@@ -751,8 +802,8 @@ export default function FooterLinksAdminPage() {
                             id="swal-column"
                             class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
-                            <option value="services" ${link.column === "services" ? "selected" : ""}>บริการของเรา</option>
-                            <option value="cards" ${link.column === "cards" ? "selected" : ""}>บัตรเติมเกม</option>
+                            <option value="services" ${link.column === "services" ? "selected" : ""}>${escapeHtml(columnLabels.services)}</option>
+                            <option value="cards" ${link.column === "cards" ? "selected" : ""}>${escapeHtml(columnLabels.cards)}</option>
                         </select>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
@@ -807,6 +858,37 @@ export default function FooterLinksAdminPage() {
         }
     };
 
+    // ── Show / hide a single link ─────────────────────────────────────────────
+    const handleToggleLinkActive = async (link: FooterLink) => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขลิงก์ส่วนท้าย");
+            return;
+        }
+        const nextActive = !link.isActive;
+
+        // Optimistic — roll back to the server's answer if the write fails
+        setLinks((prev) =>
+            prev.map((item) => (item.id === link.id ? { ...item, isActive: nextActive } : item)),
+        );
+        try {
+            const res = await fetchWithCsrf(`/api/admin/footer-links/${link.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ isActive: nextActive }),
+            });
+            if (res.ok) {
+                showSuccess(nextActive ? "แสดงลิงก์นี้แล้ว" : "ซ่อนลิงก์นี้แล้ว");
+            } else {
+                showError("ไม่สามารถอัปเดตสถานะได้");
+                void fetchData();
+            }
+        } catch (error) {
+            console.error("Error toggling link active:", error);
+            showError("เกิดข้อผิดพลาด");
+            void fetchData();
+        }
+    };
+
     if (loading) {
         return <SpinnerScreen label="กำลังโหลดลิงก์..." />;
     }
@@ -858,7 +940,7 @@ export default function FooterLinksAdminPage() {
                     </p>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                         <div className="space-y-1.5">
-                            <Label htmlFor="titleDraft">คอลัมน์ที่ 1 ({COLUMN_LABELS.services})</Label>
+                            <Label htmlFor="titleDraft">คอลัมน์ที่ 1</Label>
                             <Input
                                 id="titleDraft"
                                 placeholder="บริการของเรา"
@@ -868,7 +950,7 @@ export default function FooterLinksAdminPage() {
                             />
                         </div>
                         <div className="space-y-1.5">
-                            <Label htmlFor="secondaryTitleDraft">คอลัมน์ที่ 2 ({COLUMN_LABELS.cards})</Label>
+                            <Label htmlFor="secondaryTitleDraft">คอลัมน์ที่ 2</Label>
                             <Input
                                 id="secondaryTitleDraft"
                                 placeholder="บัตรเติมเกม"
@@ -951,8 +1033,8 @@ export default function FooterLinksAdminPage() {
                             disabled={!canEditSettings}
                             className="h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:w-64"
                         >
-                            <option value="services">บริการของเรา</option>
-                            <option value="cards">บัตรเติมเกม</option>
+                            <option value="services">{columnLabels.services}</option>
+                            <option value="cards">{columnLabels.cards}</option>
                         </select>
                     </div>
                     <div className="rounded-2xl border border-dashed border-border bg-muted/20 px-4 py-3">
@@ -978,10 +1060,11 @@ export default function FooterLinksAdminPage() {
             </div>
 
             {/* Links list — one board per column, so drag order matches what shows on the site */}
-            {(Object.keys(COLUMN_LABELS) as FooterColumn[]).map((column) => (
+            {COLUMN_ORDER.map((column) => (
                 <FooterColumnBoard
                     key={column}
                     column={column}
+                    columnLabel={columnLabels[column]}
                     links={linksByColumn[column]}
                     canEditSettings={canEditSettings}
                     reordering={reorderingColumn === column}
@@ -989,6 +1072,7 @@ export default function FooterLinksAdminPage() {
                     onDragEnd={(col, e) => void handleDragEnd(col, e)}
                     onEdit={openEditModal}
                     onDelete={(l) => void handleDeleteLink(l)}
+                    onToggleActive={(l) => void handleToggleLinkActive(l)}
                 />
             ))}
         </div>

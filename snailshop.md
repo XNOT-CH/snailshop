@@ -125,6 +125,22 @@ having built nothing — check the image age afterwards.
 **Free gacha spins are unlimited on purpose.** Don't "fix" it. It only needs a warning
 if a points-priced item is added.
 
+**`Schema.partial()` keeps `.default()` in zod 4.** `footerLinkSchema.partial().parse({
+sortOrder: 3 })` returns `{ sortOrder: 3, column: "services", openInNewTab: false,
+isActive: true }` — the defaults are still applied. Any PUT that copies "defined"
+fields into `updateData` therefore rewrites them on every partial write, so a
+drag-to-reorder body silently moved a link to another column. Footer links now use a
+separate `footerLinkUpdateSchema` with no defaults (`lib/validations/content.ts`).
+**Eight other routes still validate with `Schema.partial()`** — help, help-videos,
+nav-items, news, popups, settings, products, quests — and every one of those schemas
+except `createQuestSchema` has `.default()` fields. Audit before trusting a partial
+update there.
+
+**Footer edits are cached for 60s.** `components/Footer.tsx` caches
+`FooterWidgetSettings` and the link list separately. Every admin write must call
+`invalidateFooterCaches()` (`lib/cache.ts`) or the site keeps the old column names and
+links until the TTL expires.
+
 **`knowledge:build` only sees git-tracked files** (`git ls-files` in
 `scripts/quality/build-snailshop-index.mjs:22`). A brand-new route or table file is
 silently missing from the generated index until it is staged — `git add` first, then
@@ -481,8 +497,8 @@ Read a range, not the file. Landmarks are `name:line`.
 | `app/(site)/dashboard/topup/page.tsx` | 1127 | BANK_INFO:41, getVerifyMethodLabel:96, getVerifyTargetLabel:112, TopupPage:116 |
 | `components/admin/ProductTable.tsx` | 1104 | formatAutoDelete:96, hasDiscountPrice:116, getActivePrice:124, getDisplayStockCount:128, getStockTone:132, getProductCardData:148, getPriceText:161, getOriginalPriceText:167 |
 | `app/(site)/admin/gacha-machines/[id]/edit/page.tsx` | 1102 | validImageUrl:63, defaultAddForm:81, buildRewardPayload:101, sortRewards:123, getSimulationRewardName:152, isRewardEligibleForSimulation:158, validateReward:162, ProductPickerDropdown:181 |
+| `app/(site)/admin/footer-links/page.tsx` | 1081 | getDomainLabel:83, SortableRow:104, SortableCard:226, DragPreview:333, FooterColumnBoard:382, FooterLinksAdminPage:498 |
 | `app/(site)/admin/audit-logs/page.tsx` | 1046 | getActionBadgeClass:287, getChangeValue:295, getResourceDetailsHtml:315, getVisibleCheckboxState:338, getDeleteConfirmText:350, AdminAuditLogsPage:367 |
-| `app/(site)/admin/footer-links/page.tsx` | 997 | getDomainLabel:79, SortableRow:98, SortableCard:205, DragPreview:300, FooterColumnBoard:347, FooterLinksAdminPage:457 |
 | `lib/seasonPass.ts` | 986 | normalizeSeasonPassRewardType:28, DEFAULT_PLAN:44, addDays:91, parseMySqlDateTime:97, dateKeyToUtcMs:101, diffDaysByDateKey:106, getEffectiveSeasonPassStartAt:110, normalizeRewardDefinition:125 |
 | `lib/rateLimit.ts` | 979 | config:25, checkLoginRateLimit:104, checkLoginIpRateLimit:113, checkLoginRateLimitWithConfig:122, recordFailedLogin:179, recordFailedLoginIp:183, recordFailedLoginWithConfig:187, clearLoginAttempts:214 |
 | `components/cart/CartSheet.tsx` | 953 | normalizeOptionalPrice:64, buildSyncedCartItem:68, hasCartItemChanged:85, hasCheckoutRelevantChange:96, CartSheetContent:103, CartSheet:926 |
