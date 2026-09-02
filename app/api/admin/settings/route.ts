@@ -5,6 +5,7 @@ import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS, getChanges } from "@/lib/auditLog";
 import { mysqlNow } from "@/lib/utils/date";
 import { validateBody } from "@/lib/validations/validate";
+import { partialUpdateSchema } from "@/lib/validations/partialUpdate";
 import { siteSettingsSchema } from "@/lib/validations/settings";
 import { SITE_SETTINGS_SINGLETON_ID } from "@/lib/db/singletons";
 import { invalidateSettingsCaches } from "@/lib/cache";
@@ -70,7 +71,7 @@ export async function PUT(request: Request) {
     }
 
     try {
-        const result = await validateBody(request, siteSettingsSchema.partial());
+        const result = await validateBody(request, partialUpdateSchema(siteSettingsSchema));
         if ("error" in result) return result.error;
 
         const body = result.data;

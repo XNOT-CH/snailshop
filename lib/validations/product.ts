@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { partialUpdateSchema } from "@/lib/validations/partialUpdate";
 
 // ── Create Product ───────────────────────────────────────
 export const createProductSchema = z.object({
@@ -19,5 +20,5 @@ export const createProductSchema = z.object({
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 
 // ── Update Product ───────────────────────────────────────
-export const updateProductSchema = createProductSchema.partial();
+export const updateProductSchema = partialUpdateSchema(createProductSchema);
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;

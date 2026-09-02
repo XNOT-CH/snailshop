@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { requirePermissionWithCsrf } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { validateBody } from "@/lib/validations/validate";
+import { partialUpdateSchema } from "@/lib/validations/partialUpdate";
 import { helpItemSchema, type HelpItemInput } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
 import { mysqlNow } from "@/lib/utils/date";
@@ -16,7 +17,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
     try {
         const { id } = await params;
-        const result = await validateBody(request, helpItemSchema.partial());
+        const result = await validateBody(request, partialUpdateSchema(helpItemSchema));
         if ("error" in result) return result.error;
         const { title, content, category, sortOrder, isActive } = result.data as Partial<HelpItemInput>;
 

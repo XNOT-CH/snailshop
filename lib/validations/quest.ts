@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { partialUpdateSchema } from "@/lib/validations/partialUpdate";
 import { QUEST_GOAL_TYPES } from "@/lib/features/quests/dailyQuests";
 
 // Column limits come straight from the DailyQuest table so a too-long value is
@@ -36,7 +37,7 @@ export const createQuestSchema = z.object({
     isActive: z.boolean().optional(),
 });
 
-export const updateQuestSchema = createQuestSchema.partial();
+export const updateQuestSchema = partialUpdateSchema(createQuestSchema);
 
 export type CreateQuestInput = z.infer<typeof createQuestSchema>;
 export type UpdateQuestInput = z.infer<typeof updateQuestSchema>;
