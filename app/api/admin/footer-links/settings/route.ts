@@ -7,7 +7,7 @@ import { requirePermission, requirePermissionWithCsrf } from "@/lib/auth";
 import { auditFromRequest, AUDIT_ACTIONS } from "@/lib/auditLog";
 import { PERMISSIONS } from "@/lib/permissions";
 import { contentApiError } from "@/lib/features/content/apiResponse";
-import { invalidateCache, CACHE_KEYS } from "@/lib/cache";
+import { invalidateFooterCaches } from "@/lib/cache";
 
 async function getFooterWidgetSettingsRecord() {
     return (
@@ -52,7 +52,7 @@ export async function PUT(request: NextRequest) {
 
         // The public footer caches this record for 60s; drop it so a renamed
         // column shows on the site immediately instead of on the next TTL.
-        await invalidateCache([CACHE_KEYS.FOOTER_WIDGET]);
+        await invalidateFooterCaches();
 
         await auditFromRequest(request, {
             userId: authCheck.userId,

@@ -7,6 +7,7 @@ import { validateBody } from "@/lib/validations/validate";
 import { footerLinkSchema } from "@/lib/validations/content";
 import { PERMISSIONS } from "@/lib/permissions";
 import { contentApiError } from "@/lib/features/content/apiResponse";
+import { invalidateFooterCaches } from "@/lib/cache";
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.SETTINGS_EDIT);
@@ -25,6 +26,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         if (body.sortOrder !== undefined) updateData.sortOrder = body.sortOrder;
         await db.update(footerLinks).set(updateData).where(eq(footerLinks.id, id));
         const link = await db.query.footerLinks.findFirst({ where: (t, { eq }) => eq(t.id, id) });
+
+        await invalidateFooterCaches();
 
         await auditFromRequest(request, {
             userId: authCheck.userId,
@@ -49,6 +52,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
         const { id } = await params;
         const existing = await db.query.footerLinks.findFirst({ where: (t, { eq }) => eq(t.id, id) });
         await db.delete(footerLinks).where(eq(footerLinks.id, id));
+
+        await invalidateFooterCaches();
 
         await auditFromRequest(_req, {
             userId: authCheck.userId,

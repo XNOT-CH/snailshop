@@ -9,6 +9,7 @@ import { footerLinkSchema } from "@/lib/validations/content";
 import { FOOTER_WIDGET_SETTINGS_SINGLETON_ID } from "@/lib/db/singletons";
 import { PERMISSIONS } from "@/lib/permissions";
 import { contentApiError } from "@/lib/features/content/apiResponse";
+import { invalidateFooterCaches } from "@/lib/cache";
 
 async function getFooterWidgetSettingsRecord() {
     return (
@@ -48,6 +49,8 @@ export async function POST(request: NextRequest) {
         const newId = crypto.randomUUID();
         await db.insert(footerLinks).values({ id: newId, label, href, column: column ?? "services", openInNewTab: openInNewTab ?? false, sortOrder: nextSortOrder, createdAt: mysqlNow(), updatedAt: mysqlNow() });
         const link = await db.query.footerLinks.findFirst({ where: (t, { eq }) => eq(t.id, newId) });
+
+        await invalidateFooterCaches();
 
         await auditFromRequest(request, {
             userId: authCheck.userId,
