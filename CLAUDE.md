@@ -51,9 +51,28 @@ There is no Workers/Vercel path.
 **Branch per piece of work, without being asked.** Create the branch, verify it
 is green, `git merge --no-ff` into `master`, push, delete the branch.
 
+**Write commits as Conventional Commits** — `<type>(<scope>): <subject>`, so the
+next person can read the history and derive the version bump from it instead of
+guessing. Scope is the area (`admin`, `gacha`, `auth`, `db`) and is optional.
+Subject is imperative and lowercase, no trailing period; the body explains *why*,
+not what the diff already shows.
+
+Three carry version meaning:
+
+| Commit | Version effect |
+| --- | --- |
+| `feat: ...` | MINOR — `0.4.0` → `0.5.0` |
+| `fix: ...` | PATCH — `0.4.0` → `0.4.1` |
+| `feat!: ...` or a `BREAKING CHANGE:` footer | MAJOR — but while on `0.x` it is MINOR, per SemVer |
+
+The rest do not move the number: `docs`, `style`, `refactor`, `perf`, `test`,
+`build`, `ci`, `chore`, `revert`. Nothing enforces this — there is no commitlint —
+so the convention is only worth as much as it is followed.
+
 **Bump the version and tag before every production deploy.** The number lives in
-`package.json` only (`0.x` until the real VPS launch, which becomes `1.0.0`; after
-that MINOR = new feature, PATCH = bug fix). On `master`, after the merge:
+`package.json` only, and `0.x` holds until the real VPS launch, which becomes
+`1.0.0`. Pick the new number from the commit types since the last tag —
+`git log v<last>..HEAD --oneline` — highest wins. On `master`, after the merge:
 `git tag -a v<x.y.z> -m "<what changed>"` then `git push --tags` — the tag message
 is the changelog, and the tag is the point you rebuild from when a deploy goes bad.
 `scripts/windows/deploy-web.bat` bakes the version and commit into the image; they
