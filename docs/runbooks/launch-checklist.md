@@ -160,6 +160,30 @@ docker compose logs --tail 50 web
 - ยืนยัน admin account, role, และ permissions ใช้งานได้
 - ถ้า deploy เสี่ยงต่อ commerce ให้เตรียม maintenance env และ runbook incident-commerce
 
+### ทำวันเปิดจริงเท่านั้น — ต้องมีโดเมนจริงก่อน
+
+สามข้อนี้ทำล่วงหน้าไม่ได้ ไม่ใช่เพราะยังไม่ว่าง แต่เพราะมันผูกกับโดเมนและเครื่องจริงที่ยังไม่มี
+บันทึกไว้ตรงนี้ (2026-09-05) เพื่อไม่ต้องจำเอง
+
+1. **Turnstile key คู่จริง + allowed hostnames**
+   dev/preview ใช้ dummy sitekey ของ Cloudflare อยู่ ต้องสร้าง widget จริงแล้วใส่โดเมน launch
+   ลงใน allowed hostnames ของ widget นั้น ถ้าไม่ใส่ จะได้ error 110200 แล้ว
+   **login/register/forgot-password ใช้ไม่ได้ทั้งเว็บ** ไม่ใช่แค่ปุ่มเดียว
+   ตรวจด้วยว่า `E2E_AUTH_TEST_MODE` ไม่ได้ถูกตั้งใน env ของ production
+
+2. **ใส่โดเมนจริงลง `ALLOWED_ORIGIN` / `NEXT_PUBLIC_SITE_URL` / `AUTH_URL`**
+   `getTrustedOrigins` ใน `lib/csrf.ts` เชื่อเฉพาะ origin ที่อยู่ในสามตัวนี้ เวลา request
+   ไม่มี CSRF token มันจะตกไปที่การตรวจ same-origin ซึ่งจะไม่ผ่านทันทีถ้าโดเมนไม่อยู่ในลิสต์
+   อาการคือ admin กดบันทึกแล้วขึ้น "Invalid CSRF token" เฉพาะบนโดเมนจริง เคยเจอมาแล้วครั้งหนึ่ง
+   (ฝั่งโค้ดมี `tests/api/mutation-csrf-coverage.test.ts` คุมไว้แล้วว่าทุก client ต้องใช้
+   `fetchWithCsrf` เหลือแค่ค่า env นี้)
+
+3. **ฐานข้อมูลใหม่ + rotate secret ทั้งชุด**
+   migrate ขึ้นมาสะอาด seed แค่ admin กับ settings — อย่ายกข้อมูล preview มาทั้งก้อน
+   rotate `AUTH_SECRET`, `ENCRYPTION_KEY`, `CSRF_SECRET` และรหัสผ่าน DB ห้ามใช้ค่าชุด preview ต่อ
+   ตอน rotate `ENCRYPTION_KEY` ต้องย้ายค่าเดิมเข้า `ENCRYPTION_PREVIOUS_KEYS` ไม่ใช่ทิ้ง
+   ไม่ต้องรีบทำล่วงหน้า: rotate ก่อนถึงวันเปิดมีแต่จะต้องลาก key เก่าไปเรื่อย ๆ โดยไม่ได้อะไรกลับมา
+
 ## Post-launch Smoke Test
 
 ตรวจบน production URL:
@@ -200,6 +224,6 @@ docker compose logs --tail 50 web
 - transaction/service extraction ของ purchase/order/topup/gacha/season-pass ยังเป็นงานใหญ่ ควรทำเฉพาะเมื่อมี scope และ guard tests ชัดเจน
 - response contract migration และ UI validation consolidation ยังเปลี่ยน behavior/consumer ได้ง่าย ต้อง audit client ก่อนแก้
 - ถ้าไม่ตั้ง Upstash Redis ใน production, rate limit/cache บางส่วนเป็น in-memory และไม่ shared ข้าม instance
-- ไฟล์อัปโหลดอยู่บน disk ของ host เครื่องเดียว: ถ้า disk หายและไม่มี backup ของ `storage/` กับ `public/uploads/` รูปสินค้า สลิป และรูปแชททั้งหมดหายถาวร
+- ไฟล์อัปโหลดอยู่บน disk ของ host เครื่องเดียว ตั้งแต่ 2026-09-05 มี backup รายวันของ `storage/` กับ `public/uploads/` แล้ว (ดู `docs/runbooks/mysql-backup.md`) แต่สำเนาทั้งสองชุดยังอยู่ในเครื่องเดียวกัน — ตอนขึ้น VPS ต้องมีชุดที่ส่งออกนอกเครื่อง ไม่งั้นรูปสินค้า สลิป และรูปแชททั้งหมดยังหายพร้อมเครื่องได้อยู่
 - topup ยังเป็น manual review/PENDING จนกว่าจะเชื่อม provider ตรวจสลิปใหม่ ต้องมี admin process รองรับ
 - ถ้า `RESEND_API_KEY` หรือ sender domain ไม่พร้อม, email receipt/reset/verification จะไม่ส่งจริง
