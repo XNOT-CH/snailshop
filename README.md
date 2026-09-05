@@ -68,6 +68,50 @@ docker compose up -d --build web
 
 Windows helper scripts ถูกย้ายไปไว้ใน `scripts/windows/`
 
+## Commit และ Versioning
+
+commit เขียนตามรูปแบบ [Conventional Commits](https://www.conventionalcommits.org/):
+
+```text
+<type>(<scope>): <subject>
+```
+
+`scope` คือส่วนของระบบ (`admin`, `gacha`, `auth`, `db`) ใส่หรือไม่ใส่ก็ได้
+`subject` เขียนแบบสั่ง ตัวพิมพ์เล็ก ไม่ต้องมีจุดปิด ส่วน body ไว้อธิบาย **ว่าทำไม**
+(สิ่งที่ diff บอกอยู่แล้วไม่ต้องเขียนซ้ำ)
+
+type ที่มีผลกับเลขเวอร์ชัน:
+
+| commit | ผลต่อเวอร์ชัน |
+| --- | --- |
+| `feat:` ฟีเจอร์ใหม่ | MINOR — `0.4.0` → `0.5.0` |
+| `fix:` แก้บั๊ก | PATCH — `0.4.0` → `0.4.1` |
+| `feat!:` หรือมี footer `BREAKING CHANGE:` | MAJOR — แต่ตอนยังอยู่ `0.x` ให้ขึ้น MINOR ตามสเปก SemVer |
+
+type ที่เหลือไม่ขยับเลข: `docs`, `style`, `refactor`, `perf`, `test`, `build`,
+`ci`, `chore`, `revert`
+
+เลขเวอร์ชันเก็บไว้ที่ `package.json` ที่เดียว ตอนนี้อยู่ `0.x` และจะเป็น `1.0.0`
+วันเปิดใช้งานจริงบน VPS ก่อน deploy prod ให้บัมป์เลข (ดูจาก type ของ commit ตั้งแต่
+tag ล่าสุด: `git log v<ล่าสุด>..HEAD --oneline` — type ที่แรงสุดชนะ) แล้ว tag บน `master`:
+
+```bash
+git tag -a v0.5.0 -m "สรุปสั้น ๆ ว่าเปลี่ยนอะไร"
+git push --tags
+```
+
+ข้อความใน tag ทำหน้าที่แทน changelog และ tag คือจุดที่ย้อนกลับไป build ใหม่เมื่อ deploy พัง
+
+ดูว่า production รันเวอร์ชันไหนอยู่:
+
+```bash
+curl http://localhost:3000/api/health
+# {"status":"healthy","version":"0.4.0","commit":"22a7a41","builtAt":"..."}
+```
+
+`commit` ขึ้นเป็น `dev` บน production แปลว่า build arg `GIT_COMMIT` ไม่ได้ถูกส่งเข้าไป
+— deploy ผ่าน `scripts\windows\deploy-web.bat` ซึ่งอ่าน SHA ให้เอง
+
 ## Repository Layout
 
 ```text

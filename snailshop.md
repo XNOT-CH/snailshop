@@ -88,7 +88,10 @@ double-spend-sensitive — write a test for the failure mode before the fix, and
 
 ### Cut a release
 
-1. Bump `"version"` in `package.json` (that is the only place the number exists).
+1. Read the commit types since the last tag — `git log v<last>..HEAD --oneline` — and
+   let the strongest one pick the bump (`feat` MINOR, `fix` PATCH, `!`/`BREAKING
+   CHANGE:` MAJOR, which is still MINOR while on `0.x`). Then bump `"version"` in
+   `package.json` (that is the only place the number exists).
 2. Merge to `master`, then `git tag -a v<x.y.z> -m "<what changed>"` and
    `git push --tags`.
 3. `scripts/windows/deploy-web.bat` — it reads the version and `git rev-parse --short
