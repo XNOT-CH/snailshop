@@ -1,9 +1,18 @@
 import type { NextConfig } from "next";
+import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const isProduction = process.env.NODE_ENV === "production";
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
+
+// package.json is the single source of truth for the release number. GIT_COMMIT
+// arrives as a Docker build arg because .git is in .dockerignore, so the build
+// itself cannot run `git rev-parse`. Both land in the bundle at build time, so
+// one image always reports exactly the code it was built from.
+const packageVersion: string = JSON.parse(
+  readFileSync(path.join(projectRoot, "package.json"), "utf8"),
+).version;
 
 function normalizeOrigin(value: string) {
   if (value.startsWith("http://") || value.startsWith("https://")) {
@@ -23,6 +32,11 @@ const configuredOrigin =
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  env: {
+    APP_VERSION: packageVersion,
+    GIT_COMMIT: process.env.GIT_COMMIT || "dev",
+    BUILT_AT: new Date().toISOString(),
+  },
   turbopack: {
     root: projectRoot,
   },

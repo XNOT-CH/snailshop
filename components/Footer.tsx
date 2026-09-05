@@ -9,6 +9,7 @@ import {
 import { resolveSiteName } from "@/lib/seo";
 import { sanitizePublicFooterLinks } from "@/lib/footerLinks";
 import { cacheOrFetch, CACHE_KEYS } from "@/lib/cache";
+import { APP_VERSION } from "@/lib/version";
 
 async function getFooterData() {
     try {
@@ -193,6 +194,7 @@ export default async function Footer() {
                     <div className="flex flex-col items-center justify-between gap-3 py-4 text-sm md:flex-row">
                         <p className="text-center text-primary-foreground/90">
                             Copyright © {currentYear} {siteName} - All Rights Reserved.
+                            <span className="ml-2 text-xs text-primary-foreground/60">v{APP_VERSION}</span>
                         </p>
                         <div className="flex items-center gap-5">
                             <Link href="/privacy" prefetch={false} className="text-primary-foreground/85 transition-colors hover:text-primary-foreground">
