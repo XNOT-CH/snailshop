@@ -23,7 +23,8 @@ This folder contains Windows-specific helper scripts.
 - `stop-dev-db.bat`
   stops isolated dev DB service `app_db_dev`
 - `db-push-dev.bat`
-  sets `APP_ENV=development` then runs `npm run db:push`
+  sets `APP_ENV=development` then runs `npm run db:push`, but refuses unless
+  `.env.development.local` points at port 3308 — the only database a push may hit
 - `db-studio-dev.bat`
   sets `APP_ENV=development` then runs `npm run db:studio`
 - `backup-prod-db.bat`

@@ -37,11 +37,12 @@ is your job.
 
 ## Rules that override anything else you read
 
-**Never run `npm run db:push`.** `DATABASE_URL` in `.env.development.local` and
-in `.env.local` both point at `localhost:3307` — the database the `web` container
-serves from — and it already sits behind `lib/db/schema.ts`. A push applies the whole
-accumulated diff to live data. Add tables, columns and indexes with targeted SQL
-instead (see `drizzle/`).
+**Never run `npm run db:push` against `localhost:3307`.** That is the database the
+`web` container serves from, and it already sits behind `lib/db/schema.ts`.
+A push applies the whole accumulated diff to live data. Add tables, columns and indexes
+there with targeted SQL instead (see `drizzle/`). The one place a push is allowed is
+the isolated dev database on :3308 — go through `scripts/windows/db-push-dev.bat`,
+which refuses to run unless `.env.development.local` points at that port.
 
 **Deploy is Docker only.** `docker compose up -d --build web`, or
 `scripts/windows/deploy-web.bat`. The Dockerfile runs `npm run build` itself.

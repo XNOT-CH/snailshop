@@ -90,13 +90,19 @@ double-spend-sensitive — write a test for the failure mode before the fix, and
 
 ## Traps already paid for
 
-**Never run `npm run db:push`** — the rule and its reasoning are in `CLAUDE.md`. The
-part worth repeating where you are standing: the database it would hit is the one the
-`web` container serves from, so there is no safe "just on dev" version of this.
+**`npm run db:push` picks its target from whatever `DATABASE_URL` resolves to** — the
+rule and its reasoning are in `CLAUDE.md`. The part worth repeating where you are
+standing: bare `npm run db:push` reads `.env.local`, which is :3307, the database the
+`web` container serves from. Only `scripts/windows/db-push-dev.bat` is safe, and only
+because it refuses unless the dev env file points at :3308.
 
-**Dev and production share one database.** The `my_game_store_db_dev` container on
-:3308 is running but nothing points at it. A seed or cleanup "on dev" hits the same
-rows the deployed site serves.
+**Dev and production are separate databases — keep them that way.** `npm run dev`
+uses `my_game_store_dev` on :3308 (`.env.development.local`); the deployed site uses
+`my_game_store` on :3307 (`.env.local` and the compose `environment:` block). They
+shared :3307 until 2026-09-05, so anything written before then assumed a seed or
+cleanup "on dev" hit the rows the deployed site serves. Start the dev database with
+`docker compose --profile dev up -d app_db_dev` — it is behind the `dev` profile, so a
+plain `docker compose up` does not start it and `npm run dev` fails to connect.
 
 **Mixed line endings break patches silently.** `.gitattributes` sets `eol=lf` and the
 git index is all LF, but files check out as CRLF on Windows and some end up mixed. A
@@ -501,8 +507,8 @@ Read a range, not the file. Landmarks are `name:line`.
 | `app/(site)/dashboard/topup/page.tsx` | 1127 | BANK_INFO:41, getVerifyMethodLabel:96, getVerifyTargetLabel:112, TopupPage:116 |
 | `components/admin/ProductTable.tsx` | 1104 | formatAutoDelete:96, hasDiscountPrice:116, getActivePrice:124, getDisplayStockCount:128, getStockTone:132, getProductCardData:148, getPriceText:161, getOriginalPriceText:167 |
 | `app/(site)/admin/gacha-machines/[id]/edit/page.tsx` | 1102 | validImageUrl:63, defaultAddForm:81, buildRewardPayload:101, sortRewards:123, getSimulationRewardName:152, isRewardEligibleForSimulation:158, validateReward:162, ProductPickerDropdown:181 |
+| `app/(site)/admin/audit-logs/page.tsx` | 1083 | getActionBadgeClass:267, getChangeValue:275, getExtraDetailsHtml:300, getResourceDetailsHtml:350, getVisibleCheckboxState:373, getDeleteConfirmText:385, AdminAuditLogsPage:402 |
 | `app/(site)/admin/footer-links/page.tsx` | 1081 | getDomainLabel:83, SortableRow:104, SortableCard:226, DragPreview:333, FooterColumnBoard:382, FooterLinksAdminPage:498 |
-| `app/(site)/admin/audit-logs/page.tsx` | 1046 | getActionBadgeClass:287, getChangeValue:295, getResourceDetailsHtml:315, getVisibleCheckboxState:338, getDeleteConfirmText:350, AdminAuditLogsPage:367 |
 | `lib/seasonPass.ts` | 986 | normalizeSeasonPassRewardType:28, DEFAULT_PLAN:44, addDays:91, parseMySqlDateTime:97, dateKeyToUtcMs:101, diffDaysByDateKey:106, getEffectiveSeasonPassStartAt:110, normalizeRewardDefinition:125 |
 | `lib/rateLimit.ts` | 979 | config:25, checkLoginRateLimit:104, checkLoginIpRateLimit:113, checkLoginRateLimitWithConfig:122, recordFailedLogin:179, recordFailedLoginIp:183, recordFailedLoginWithConfig:187, clearLoginAttempts:214 |
 | `components/cart/CartSheet.tsx` | 953 | normalizeOptionalPrice:64, buildSyncedCartItem:68, hasCartItemChanged:85, hasCheckoutRelevantChange:96, CartSheetContent:103, CartSheet:926 |
