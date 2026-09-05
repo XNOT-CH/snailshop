@@ -10,6 +10,7 @@ services:
         NEXT_PUBLIC_CUBEJS_API_URL: ${NEXT_PUBLIC_CUBEJS_API_URL}
         NEXT_PUBLIC_CUBEJS_API_TOKEN: ${NEXT_PUBLIC_CUBEJS_API_TOKEN}
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+        GIT_COMMIT: ${GIT_COMMIT:-dev}
       # DATABASE_URL is fed to the build as a secret, not an arg, so the app-DB
       # password never lands in an image layer or the build cache. Sourced from
       # BUILD_DATABASE_URL in your .env (reaches the host DB on :3307 at build).

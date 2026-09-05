@@ -15,6 +15,9 @@ ARG NEXT_PUBLIC_CUBEJS_API_TOKEN
 # Public sitekey only — the client bundle inlines NEXT_PUBLIC_* at build time,
 # so runtime env_file alone leaves the Turnstile widget without a sitekey.
 ARG NEXT_PUBLIC_TURNSTILE_SITE_KEY
+# Short commit the image is built from. .git is in .dockerignore, so the build
+# cannot look it up itself — scripts/windows/deploy-web.bat passes it in.
+ARG GIT_COMMIT=dev
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NODE_ENV=production
@@ -24,6 +27,7 @@ ENV ALLOWED_ORIGIN=$ALLOWED_ORIGIN
 ENV NEXT_PUBLIC_CUBEJS_API_URL=$NEXT_PUBLIC_CUBEJS_API_URL
 ENV NEXT_PUBLIC_CUBEJS_API_TOKEN=$NEXT_PUBLIC_CUBEJS_API_TOKEN
 ENV NEXT_PUBLIC_TURNSTILE_SITE_KEY=$NEXT_PUBLIC_TURNSTILE_SITE_KEY
+ENV GIT_COMMIT=$GIT_COMMIT
 # DATABASE_URL is passed as a BuildKit secret (never an ARG/ENV) so it stays out
 # of the image layers and the build cache — it is exported only for the lifetime
 # of this build command. It IS required: `next build` prerenders DB-backed pages

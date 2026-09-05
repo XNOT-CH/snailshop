@@ -86,6 +86,20 @@ strings; `lib/userBalances.ts` handles balances. All three are replay- and
 double-spend-sensitive — write a test for the failure mode before the fix, and run
 `npm run check:purchase-locking` when touching locking.
 
+### Cut a release
+
+1. Bump `"version"` in `package.json` (that is the only place the number exists).
+2. Merge to `master`, then `git tag -a v<x.y.z> -m "<what changed>"` and
+   `git push --tags`.
+3. `scripts/windows/deploy-web.bat` — it reads the version and `git rev-parse --short
+   HEAD` and passes the commit in as the `GIT_COMMIT` build arg.
+4. Confirm the running image with `curl http://localhost:3000/api/health`; it returns
+   `version`, `commit` and `builtAt` alongside `status`.
+
+`next.config.ts` inlines all three into the bundle via its `env` block, and
+`lib/version.ts` is the only module that reads them. `commit: "dev"` in a *production*
+response means the build arg did not arrive.
+
 ---
 
 ## Traps already paid for
@@ -176,6 +190,13 @@ room for:
   and stays.
 - **The API-key feature was removed** in `6364a22` rather than finished: it had a table,
   audit actions and an admin permission checkbox, but no route behind any of it.
+- **Versioning is SemVer-shaped, not SemVer.** Added at `0.4.0` after 398 commits with
+  zero tags. Nothing consumes this code as a package, so MAJOR-means-breaking buys
+  nothing; the format is kept only because it reads clearly to a human. What was
+  actually missing was release identity — which commit is in the running container —
+  and a point to rebuild from after a bad deploy. `0.4.0` is an arbitrary starting
+  number; `1.0.0` is reserved for the real VPS launch. A `CHANGELOG.md` was considered
+  and skipped: annotated tag messages carry the notes instead.
 - **Codex is no longer used** (last activity May). That is why the 225 per-directory
   `AGENTS.md` files exist and why `CLAUDE.md` now has to point at them explicitly.
 
