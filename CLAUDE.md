@@ -76,7 +76,9 @@ so the convention is only worth as much as it is followed.
 `git tag -a v<x.y.z> -m "<what changed>"` then `git push --tags` — the tag message
 is the changelog, and the tag is the point you rebuild from when a deploy goes bad.
 `scripts/windows/deploy-web.bat` bakes the version and commit into the image; they
-come back out at `/api/health` and in the public footer.
+come back out at `/api/health` and in the public footer. Every version that reaches production
+also needs `docs/releases/v<x.y.z>.md` — the Thai release note the client reads;
+that folder's `AGENTS.md` has the rules and `snailshop.md` has the upload steps.
 
 **Write the tests that catch silent failures yourself** — money, permissions, and
 guards. UI work and code deletion do not need new tests; check those in a
