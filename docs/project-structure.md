@@ -112,7 +112,6 @@ docs/
 
 ```text
 scripts/
-  admin/
   dev/
   db/
   deploy/
@@ -129,7 +128,6 @@ scripts/
 แนวทาง:
 
 - Script ตรวจ database หรือ migration ให้อยู่ใน `scripts/db/`
-- Script สำหรับ admin maintenance ให้อยู่ใน `scripts/admin/`
 - Script ตรวจ deploy readiness ให้อยู่ใน `scripts/deploy/`
 - Script สำหรับ export helper ให้อยู่ใน `scripts/exports/`
 - Script สำหรับ operational verification เช่น purchase locking ให้อยู่ใน `scripts/ops/`

@@ -7,8 +7,6 @@ services:
         AUTH_URL: https://www.snailshop.app
         NEXT_PUBLIC_SITE_URL: https://www.snailshop.app
         ALLOWED_ORIGIN: https://www.snailshop.app
-        NEXT_PUBLIC_CUBEJS_API_URL: ${NEXT_PUBLIC_CUBEJS_API_URL}
-        NEXT_PUBLIC_CUBEJS_API_TOKEN: ${NEXT_PUBLIC_CUBEJS_API_TOKEN}
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
         GIT_COMMIT: ${GIT_COMMIT:-dev}
       # DATABASE_URL is fed to the build as a secret, not an arg, so the app-DB

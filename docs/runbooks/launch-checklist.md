@@ -113,8 +113,12 @@ Production storage:
 
 พฤติกรรมสำคัญ:
 
-- ระบบเติมเงินสร้างรายการ manual review/PENDING เพื่อให้แอดมินตรวจสลิปก่อนอนุมัติ
-- ตรวจ topup smoke test และ admin slip review หลัง deploy
+- การเติมเงินด้วยสลิปถูกตรวจกับ EasySlip API v2 แล้วเข้าเงินให้อัตโนมัติเมื่อผ่าน
+  ไม่มีขั้นตอนให้แอดมินกดอนุมัติสลิปอีกแล้ว (ดู `app/api/topup/AGENTS.md`)
+  การกันสลิปซ้ำทำที่ระดับโค้ดใน `app/api/topup/route.ts` เพราะ MySQL ยอมให้มีค่าว่างซ้ำได้
+- โค้ดเติมเงิน (PromoCode ชนิด CREDIT) เป็นคนละเส้นทาง และยังผ่านการอนุมัติที่ `/admin/slips`
+  เมื่อโค้ดนั้นตั้ง `requiresApproval`
+- ตรวจ topup smoke test หลัง deploy ทั้งเส้นทางสลิปและเส้นทางโค้ด
 - ถ้าเกิด incident เติมเงิน ใช้ `MAINTENANCE_MODE_TOPUP=true` หรือ `MAINTENANCE_MODE=true` แล้ว redeploy ตาม `docs/runbooks/incident-commerce.md`
 
 ## Email
@@ -194,7 +198,8 @@ docker compose logs --tail 50 web
 - upload/read รูป public เช่น product/gacha/profile ใช้งานได้
 - admin slip image อ่านผ่าน API ได้เมื่อมีสิทธิ์
 - forgot/reset password หรือ email flow ที่เกี่ยวข้องส่งเมลได้
-- topup สร้างรายการ PENDING/manual review ได้ และแอดมินอนุมัติผ่านหน้าตรวจสลิปได้
+- topup ด้วยสลิปผ่าน EasySlip แล้วยอดเข้าอัตโนมัติ และยิงสลิปเดิมซ้ำต้องถูกปฏิเสธ
+- โค้ดเติมเงินที่ตั้ง `requiresApproval` ยังขึ้นให้อนุมัติที่ `/admin/slips` ได้
 - cart/checkout/purchase 1 รายการทดสอบผ่าน และสินค้าไปที่ inventory
 - gacha flow ที่เปิดใช้งาน roll ได้ตาม config
 - chat image upload/read/delete ทำงานถ้า release แตะ chat
@@ -225,5 +230,9 @@ docker compose logs --tail 50 web
 - response contract migration และ UI validation consolidation ยังเปลี่ยน behavior/consumer ได้ง่าย ต้อง audit client ก่อนแก้
 - ถ้าไม่ตั้ง Upstash Redis ใน production, rate limit/cache บางส่วนเป็น in-memory และไม่ shared ข้าม instance
 - ไฟล์อัปโหลดอยู่บน disk ของ host เครื่องเดียว ตั้งแต่ 2026-09-05 มี backup รายวันของ `storage/` กับ `public/uploads/` แล้ว (ดู `docs/runbooks/mysql-backup.md`) แต่สำเนาทั้งสองชุดยังอยู่ในเครื่องเดียวกัน — ตอนขึ้น VPS ต้องมีชุดที่ส่งออกนอกเครื่อง ไม่งั้นรูปสินค้า สลิป และรูปแชททั้งหมดยังหายพร้อมเครื่องได้อยู่
-- topup ยังเป็น manual review/PENDING จนกว่าจะเชื่อม provider ตรวจสลิปใหม่ ต้องมี admin process รองรับ
+- การเติมเงินพึ่ง EasySlip ทั้งเส้นทาง ถ้า API ล่ม โควตาหมด หรือ `EASYSLIP_API_KEY` หมดอายุ
+  ลูกค้าจะเติมเงินไม่ได้แบบเงียบ ๆ และไม่มีการแจ้งเตือนอัตโนมัติในตอนนี้ —
+  ต้องเฝ้ายอดเติมเงินรายวันจากแดชบอร์ด หรือทำ alert เมื่อการเรียกล้มเหลวติดกันหลายครั้ง
+- โค้ดเติมเงินคือเงินสด ถ้าโค้ดหลุดออกไปคือเงินไหลออกจริง ออกโค้ดทุกครั้งต้องมีเพดาน
+  จำนวนครั้งและวันหมดอายุเสมอ
 - ถ้า `RESEND_API_KEY` หรือ sender domain ไม่พร้อม, email receipt/reset/verification จะไม่ส่งจริง
