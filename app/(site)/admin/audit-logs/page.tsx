@@ -36,6 +36,7 @@ import Swal from "sweetalert2";
 import { PERMISSIONS } from "@/lib/permissions";
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import { escapeHtml } from "@/lib/sanitize";
+import { RESOURCE_LABELS, DETAIL_LABELS } from "@/lib/auditLabels";
 import { mysqlDateTimeToIso, TH_TIME_ZONE, getThaiDayStartUtc } from "@/lib/utils/date";
 
 interface AuditChange {
@@ -263,27 +264,6 @@ const FIELD_LABELS: Record<string, string> = {
     content: "เนื้อหา",
 };
 
-const RESOURCE_LABELS: Record<string, string> = {
-    Product: "สินค้า",
-    NewsArticle: "ข่าวสาร",
-    AnnouncementPopup: "ป๊อปอัป",
-    Role: "ยศ",
-    User: "ผู้ใช้",
-    TopupRequest: "เติมเงิน",
-    Settings: "ตั้งค่า",
-    HelpCategory: "หมวดหมู่คำถาม",
-    HelpArticle: "บทความช่วยเหลือ",
-    HelpQuestion: "คำถาม",
-    Category: "หมวดหมู่",
-    Order: "รายการสั่งซื้อ",
-    PromoCode: "โค้ดส่วนลด",
-    SeasonPass: "Season Pass",
-    Conversation: "แชต",
-    ApiKey: "API Key",
-    AuditLog: "Audit Log",
-    Banner: "แบนเนอร์",
-};
-
 function getActionBadgeClass(action: string) {
     if (ACTION_COLORS[action]) return ACTION_COLORS[action];
     if (action.endsWith("_CREATE")) return "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300";
@@ -310,6 +290,61 @@ function getChangeValue(change: AuditChange, key: "old" | "new") {
     }
 
     return typeof value === "string" ? value : `${value}`;
+}
+
+// A whole audit trail was invisible because the modal only read `changes` and
+// `resourceName`: the login failure reason, which products the cron deleted, what
+// a setting was changed to. Everything else in `details` is rendered here.
+const MAX_DETAIL_JSON_LENGTH = 2000;
+
+function getExtraDetailsHtml(details: AuditDetails | null) {
+    if (!details) return "";
+
+    const entries = Object.entries(details).filter(
+        ([key, value]) => key !== "resourceName" && key !== "changes" && value !== undefined,
+    );
+    if (entries.length === 0) return "";
+
+    const rowsHtml = entries
+        .map(([key, value]) => {
+            const label = escapeHtml(DETAIL_LABELS[key] || key);
+
+            if (value !== null && typeof value === "object") {
+                let json: string;
+                try {
+                    json = JSON.stringify(value, null, 2);
+                } catch {
+                    json = String(value);
+                }
+                // A cron delete can list dozens of products; keep the modal usable.
+                const clipped = json.length > MAX_DETAIL_JSON_LENGTH
+                    ? `${json.slice(0, MAX_DETAIL_JSON_LENGTH)}…`
+                    : json;
+
+                return `
+                    <div class="mb-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                        <p class="mb-1 text-xs font-semibold text-gray-700">${label}</p>
+                        <pre class="max-h-48 overflow-auto whitespace-pre-wrap break-all rounded bg-white p-2 text-left font-mono text-xs text-gray-600">${escapeHtml(clipped)}</pre>
+                    </div>
+                `;
+            }
+
+            const text = value === null || value === "" ? "—" : `${value}`;
+            return `
+                <div class="mb-2 flex gap-2 rounded-lg border border-gray-200 bg-gray-50 p-3 text-sm">
+                    <span class="text-gray-500">${label}:</span>
+                    <span class="break-all font-medium text-gray-700">${escapeHtml(text)}</span>
+                </div>
+            `;
+        })
+        .join("");
+
+    return `
+        <div>
+            <p class="mb-2 text-sm font-semibold text-gray-700">ข้อมูลเพิ่มเติม</p>
+            ${rowsHtml}
+        </div>
+    `;
 }
 
 function getResourceDetailsHtml(resourceName?: string, resourceType?: string | null, resourceId?: string | null) {
@@ -450,6 +485,7 @@ export default function AdminAuditLogsPage() {
         const ipAddress = escapeHtml(log.ipAddress || "-");
 
         const resourceSection = getResourceDetailsHtml(details?.resourceName, log.resource, log.resourceId);
+        const extraDetailsSection = getExtraDetailsHtml(details);
 
         const userAgentSection = log.userAgent
             ? `
@@ -502,6 +538,7 @@ export default function AdminAuditLogsPage() {
                     ${resourceSection}
                     ${userAgentSection}
                     ${changesSection}
+                    ${extraDetailsSection}
                 </div>
             `,
         });
