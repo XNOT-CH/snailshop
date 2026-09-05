@@ -100,9 +100,11 @@ because it refuses unless the dev env file points at :3308.
 uses `my_game_store_dev` on :3308 (`.env.development.local`); the deployed site uses
 `my_game_store` on :3307 (`.env.local` and the compose `environment:` block). They
 shared :3307 until 2026-09-05, so anything written before then assumed a seed or
-cleanup "on dev" hit the rows the deployed site serves. Start the dev database with
-`docker compose --profile dev up -d app_db_dev` — it is behind the `dev` profile, so a
-plain `docker compose up` does not start it and `npm run dev` fails to connect.
+cleanup "on dev" hit the rows the deployed site serves. The dev database sits behind
+the compose `dev` profile; this machine opts in with `COMPOSE_PROFILES=dev` in `.env`,
+so plain `docker compose` commands include it. On a checkout without that line,
+`npm run dev` cannot connect until you run
+`docker compose --profile dev up -d app_db_dev`.
 
 **Mixed line endings break patches silently.** `.gitattributes` sets `eol=lf` and the
 git index is all LF, but files check out as CRLF on Windows and some end up mixed. A
