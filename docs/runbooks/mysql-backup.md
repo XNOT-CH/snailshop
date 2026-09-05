@@ -12,6 +12,7 @@
 - `C:\backup\mysql-backup.cnf` - ไฟล์ credential จริงบนเครื่อง ห้าม commit
 - `C:\backup\mysql\` - โฟลเดอร์เก็บ backup จริง
 - `C:\backup\docker-mysql\` - โฟลเดอร์เก็บ backup จริงจาก Docker
+- `F:\backup\docker-mysql\` - สำเนาที่สองบนดิสก์คนละลูก (ตั้งค่าผ่าน `SECONDARY_BACKUP_ROOT`)
 
 ## 1. วิธีใช้
 
@@ -125,16 +126,27 @@ scripts\windows\backup-docker-mysql-auto.bat
 set "COMPOSE_SERVICE=app_db"
 set "DATABASE_NAME=my_game_store"
 set "BACKUP_ROOT=C:\backup\docker-mysql"
+set "SECONDARY_BACKUP_ROOT=F:\backup\docker-mysql"
 set "RETENTION_DAYS=30"
+set "UPLOAD_DIRS=storage public\uploads"
 ```
 
-เมื่อสำเร็จจะได้ไฟล์ประมาณนี้:
+`SECONDARY_BACKUP_ROOT` ชี้ไปไดรฟ์ F: ซึ่งเป็น **ดิสก์ลูกคนละลูกกับ C:** ถ้าดิสก์ใดดิสก์หนึ่งพัง อีกชุดยังอยู่
+
+`UPLOAD_DIRS` คือไฟล์ที่ไม่ได้อยู่ในฐานข้อมูลและสร้างใหม่ไม่ได้ — รูปสินค้า รูปกาชา แบนเนอร์ รูปแชท และสลิปโอนเงิน สคริปต์ zip ทั้งสองโฟลเดอร์ไว้ในโฟลเดอร์วันที่เดียวกับไฟล์ `.sql` เพื่อให้ 1 โฟลเดอร์ = กู้เว็บได้ทั้งเว็บ
+
+เมื่อสำเร็จจะได้ไฟล์ประมาณนี้ (และสำเนาชุดเดียวกันบน `F:\backup\docker-mysql\...`):
 
 ```text
 C:\backup\docker-mysql\2026-05-24\my_game_store_020000.sql
+C:\backup\docker-mysql\2026-05-24\uploads_020000.zip
 C:\backup\docker-mysql\2026-05-24\backup_020000.log
 C:\backup\docker-mysql\latest.txt
 ```
+
+**ตอนกู้ไฟล์ ระวังชื่อโฟลเดอร์ในไฟล์ zip:** ข้างในมี `storage\` (คือ `storage/` ใน repo) และ
+`uploads\` (คือ `public/uploads/` ใน repo ไม่ใช่ `storage/uploads/` ซึ่งอยู่ใน `storage\` อีกที)
+แตกผิดที่แล้วรูปจะไม่ขึ้น
 
 ตั้ง Task Scheduler สำหรับ Docker:
 
@@ -148,6 +160,24 @@ Start in: C:\Users\USER\my-game-store
 
 ```bat
 scripts\windows\start-web.bat
+```
+
+**นี่คือสาเหตุที่ backup เคยหายเป็นช่วง ๆ:** ถ้าเครื่องปิดตอน 02:00 task จะรันชดเชยตอนเปิดเครื่อง
+(`StartWhenAvailable`) แต่ตอนนั้น Docker Desktop ยังสตาร์ตไม่เสร็จ สคริปต์เลยตกที่ขั้นตรวจ
+`docker compose exec app_db` แล้วออกตั้งแต่ยังไม่ทันสร้างโฟลเดอร์วันที่ — ล้มแบบไม่ทิ้ง log ไว้เลย
+จึงตั้ง retry ไว้ที่ตัว task (2026-09-05): ล้มแล้วลองใหม่ทุก 30 นาที สูงสุด 3 ครั้ง
+
+```powershell
+$s = (Get-ScheduledTask -TaskName 'MySQL Daily Backup').Settings
+$s.RestartCount = 3
+$s.RestartInterval = 'PT30M'
+Set-ScheduledTask -TaskName 'MySQL Daily Backup' -Settings $s
+```
+
+ตรวจว่ารอบล่าสุดผ่านหรือไม่ (`LastTaskResult` ต้องเป็น 0):
+
+```powershell
+Get-ScheduledTaskInfo -TaskName 'MySQL Daily Backup'
 ```
 
 ## 2. วิธีตรวจสอบ
@@ -209,6 +239,6 @@ C:\xampp\mysql\bin\mysql.exe --defaults-extra-file=C:\backup\mysql-backup.cnf -e
 
 - อย่าใส่รหัสผ่าน MySQL จริงลงใน `.bat`
 - อย่า commit ไฟล์ `.sql` เพราะมีข้อมูลจริงของลูกค้าและระบบ
-- ควรมี backup อีกชุดใน drive อื่นหรือ cloud storage
-- ควรทดสอบ restore อย่างน้อยเดือนละครั้ง
+- สคริปต์ Docker เก็บสำเนาที่สองไว้บนไดรฟ์ F: แล้ว แต่ยังอยู่ในเครื่องเดียวกัน — ตอนขึ้น VPS ต้องมีชุดที่ส่งออกนอกเครื่องจริง ๆ
+- ควรทดสอบ restore อย่างน้อยเดือนละครั้ง — และทดสอบแตกไฟล์ `uploads_*.zip` ด้วย ไม่ใช่แค่ `.sql`
 - ถ้าใช้ตารางที่ไม่ใช่ InnoDB อาจต้องวางแผนช่วงเวลาที่ระบบใช้งานน้อยเป็นพิเศษ

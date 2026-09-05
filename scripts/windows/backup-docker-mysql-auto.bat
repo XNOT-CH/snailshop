@@ -7,8 +7,16 @@ rem The MySQL app password is read from the running Docker container env and is 
 set "COMPOSE_SERVICE=app_db"
 set "DATABASE_NAME=my_game_store"
 set "BACKUP_ROOT=C:\backup\docker-mysql"
-set "SECONDARY_BACKUP_ROOT="
+rem F: is a different physical disk from C:, so a dead disk does not take the
+rem backups with it. This was empty until 2026-09-05, which meant every copy
+rem lived on the same drive as the data it was backing up.
+set "SECONDARY_BACKUP_ROOT=F:\backup\docker-mysql"
 set "RETENTION_DAYS=30"
+
+rem The uploads are not in the database and cannot be regenerated: product and
+rem gacha images, banners, chat media and payment slips. They are archived next
+rem to the SQL dump so one dated folder restores the whole site.
+set "UPLOAD_DIRS=storage public\uploads"
 
 if /I "%~1"=="check" goto check
 if /I "%~1"=="help" goto help
@@ -79,6 +87,13 @@ if errorlevel 1 (
 
 echo %DUMP_FILE%> "%BACKUP_ROOT%\latest.txt"
 call :log "Backup complete. Size: %BACKUP_SIZE% bytes."
+
+call :archive_uploads
+if errorlevel 1 (
+    echo Database backup was created, but archiving the uploads failed. See log: "%LOG_FILE%"
+    popd
+    exit /b 1
+)
 
 if not "%SECONDARY_BACKUP_ROOT%"=="" (
     call :copy_secondary
@@ -214,6 +229,18 @@ if "%ROOT_CHECK:~1%"==":" (
 )
 exit /b 0
 
+:archive_uploads
+set "UPLOADS_FILE=%BACKUP_DIR%\uploads_%NOW%.zip"
+call :log "Archiving uploads: %UPLOAD_DIRS%"
+powershell -NoProfile -Command "$ErrorActionPreference='Stop'; $dirs = '%UPLOAD_DIRS%'.Split(' ') | Where-Object { Test-Path $_ }; if (-not $dirs) { throw 'None of the upload directories exist.' }; Compress-Archive -Path $dirs -DestinationPath '%UPLOADS_FILE%' -CompressionLevel Optimal -Force" >> "%LOG_FILE%" 2>&1
+if errorlevel 1 (
+    call :log "Failed to archive the uploads."
+    set "UPLOADS_FILE="
+    exit /b 1
+)
+for %%A in ("%UPLOADS_FILE%") do call :log "Uploads archived. Size: %%~zA bytes."
+exit /b 0
+
 :copy_secondary
 call :refuse_drive_root "%SECONDARY_BACKUP_ROOT%"
 if errorlevel 1 exit /b 1
@@ -227,6 +254,13 @@ copy /Y "%DUMP_FILE%" "%SECONDARY_DIR%\" >> "%LOG_FILE%" 2>&1
 if errorlevel 1 (
     call :log "Could not copy backup to secondary location."
     exit /b 1
+)
+if not "%UPLOADS_FILE%"=="" (
+    copy /Y "%UPLOADS_FILE%" "%SECONDARY_DIR%\" >> "%LOG_FILE%" 2>&1
+    if errorlevel 1 (
+        call :log "Could not copy the uploads archive to secondary location."
+        exit /b 1
+    )
 )
 call :log "Copied backup to secondary location: %SECONDARY_DIR%"
 exit /b 0
