@@ -12,6 +12,7 @@ import { createEmailVerificationToken } from "@/lib/emailVerification";
 import { sendEmail } from "@/lib/mail";
 import { EmailVerificationEmail } from "@/components/emails/EmailVerificationEmail";
 import { getSiteSettings } from "@/lib/getSiteSettings";
+import { getRegistrationPolicies, hasRegistrationPolicies } from "@/lib/getRegistrationPolicies";
 import { resolveSiteName } from "@/lib/seo";
 
 export async function POST(request: NextRequest) {
@@ -32,6 +33,18 @@ export async function POST(request: NextRequest) {
         const parsed = await parseBody(request, registerSchema);
         if ("error" in parsed) return parsed.error;
         const { username, email, password, pin, turnstileToken } = parsed.data;
+
+        // Consent is only required when an admin has actually published TOS/PP
+        // clauses. The client hides the checkbox in that case, so re-checking
+        // here is what stops a direct POST from skipping it.
+        const policies = await getRegistrationPolicies();
+        if (hasRegistrationPolicies(policies) && parsed.data.acceptedPolicies !== true) {
+            return NextResponse.json(
+                { success: false, message: "กรุณายอมรับเงื่อนไขการใช้งานและนโยบายความเป็นส่วนตัว" },
+                { status: 400 }
+            );
+        }
+        const policiesAccepted = hasRegistrationPolicies(policies);
 
         const clientIp = getClientIp(request);
         const turnstileResult = await verifyTurnstileToken(turnstileToken ?? undefined, clientIp);
@@ -107,6 +120,8 @@ export async function POST(request: NextRequest) {
             resourceName: username,
             details: {
                 resourceName: username,
+                // The record that this account accepted the published TOS/PP.
+                acceptedPolicies: policiesAccepted,
             },
         });
 

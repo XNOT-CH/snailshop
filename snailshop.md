@@ -179,6 +179,16 @@ category counts), `invalidateNewsCaches()`, `invalidatePopupCaches()`,
 `invalidateSettingsCaches()`. `tests/lib/cacheInvalidationCoverage.test.ts` fails if a
 key is cached with nothing able to clear it.
 
+**Drag-to-reorder and client-side search/sort cannot both be live.** A sortable
+list that is also filtered or re-sorted in the browser will save an order that is
+not the one on screen: the drop index is computed over the visible rows, but
+`sortOrder` is written for the whole set. Disable the drag handles whenever a
+search box has text or the list is sorted by anything other than the stored
+order, and say why on screen —
+`components/admin/RegistrationPolicyManager.tsx` (`dragLockReason`) is the
+worked example; `app/(site)/admin/nav-items/page.tsx` avoids the problem only
+because it has no search box.
+
 **`knowledge:build` only sees git-tracked files** (`git ls-files` in
 `scripts/quality/build-snailshop-index.mjs:22`). A brand-new route or table file is
 silently missing from the generated index until it is staged — `git add` first, then
@@ -374,7 +384,7 @@ When finished, report:
 
 <!-- Rebuilt by `npm run knowledge:build`. Do not edit this block by hand. -->
 
-### Database tables (35)
+### Database tables (36)
 
 Jump straight to the line instead of reading the whole 800-line schema.
 
@@ -395,28 +405,29 @@ Jump straight to the line instead of reading the whole 800-line schema.
 | `SiteSettings` | `siteSettings` | `lib/db/schema.ts:351` |
 | `HelpArticle` | `helpArticles` | `lib/db/schema.ts:387` |
 | `HelpVideo` | `helpVideos` | `lib/db/schema.ts:400` |
-| `NewsArticle` | `newsArticles` | `lib/db/schema.ts:416` |
-| `PromoCode` | `promoCodes` | `lib/db/schema.ts:433` |
-| `PromoUsage` | `promoUsages` | `lib/db/schema.ts:457` |
-| `FooterWidgetSettings` | `footerWidgetSettings` | `lib/db/schema.ts:479` |
-| `FooterLink` | `footerLinks` | `lib/db/schema.ts:491` |
-| `NavItem` | `navItems` | `lib/db/schema.ts:508` |
-| `CurrencySettings` | `currencySettings` | `lib/db/schema.ts:524` |
-| `ChatConversation` | `chatConversations` | `lib/db/schema.ts:534` |
-| `ChatMessage` | `chatMessages` | `lib/db/schema.ts:562` |
-| `ChatQuickReply` | `chatQuickReplies` | `lib/db/schema.ts:580` |
-| `AnnouncementPopup` | `announcementPopups` | `lib/db/schema.ts:594` |
-| `Role` | `roles` | `lib/db/schema.ts:611` |
-| `GachaCategory` | `gachaCategories` | `lib/db/schema.ts:627` |
-| `GachaMachine` | `gachaMachines` | `lib/db/schema.ts:643` |
-| `GachaSettings` | `gachaSettings` | `lib/db/schema.ts:675` |
-| `GachaReward` | `gachaRewards` | `lib/db/schema.ts:690` |
-| `GachaRollLog` | `gachaRollLogs` | `lib/db/schema.ts:715` |
-| `DailyQuest` | `dailyQuests` | `lib/db/schema.ts:748` |
-| `DailyQuestClaim` | `dailyQuestClaims` | `lib/db/schema.ts:767` |
-| `GachaDailySpinCounter` | `gachaDailySpinCounters` | `lib/db/schema.ts:786` |
+| `RegistrationPolicy` | `registrationPolicies` | `lib/db/schema.ts:420` |
+| `NewsArticle` | `newsArticles` | `lib/db/schema.ts:438` |
+| `PromoCode` | `promoCodes` | `lib/db/schema.ts:455` |
+| `PromoUsage` | `promoUsages` | `lib/db/schema.ts:479` |
+| `FooterWidgetSettings` | `footerWidgetSettings` | `lib/db/schema.ts:501` |
+| `FooterLink` | `footerLinks` | `lib/db/schema.ts:513` |
+| `NavItem` | `navItems` | `lib/db/schema.ts:530` |
+| `CurrencySettings` | `currencySettings` | `lib/db/schema.ts:546` |
+| `ChatConversation` | `chatConversations` | `lib/db/schema.ts:556` |
+| `ChatMessage` | `chatMessages` | `lib/db/schema.ts:584` |
+| `ChatQuickReply` | `chatQuickReplies` | `lib/db/schema.ts:602` |
+| `AnnouncementPopup` | `announcementPopups` | `lib/db/schema.ts:616` |
+| `Role` | `roles` | `lib/db/schema.ts:633` |
+| `GachaCategory` | `gachaCategories` | `lib/db/schema.ts:649` |
+| `GachaMachine` | `gachaMachines` | `lib/db/schema.ts:665` |
+| `GachaSettings` | `gachaSettings` | `lib/db/schema.ts:697` |
+| `GachaReward` | `gachaRewards` | `lib/db/schema.ts:712` |
+| `GachaRollLog` | `gachaRollLogs` | `lib/db/schema.ts:737` |
+| `DailyQuest` | `dailyQuests` | `lib/db/schema.ts:770` |
+| `DailyQuestClaim` | `dailyQuestClaims` | `lib/db/schema.ts:789` |
+| `GachaDailySpinCounter` | `gachaDailySpinCounters` | `lib/db/schema.ts:808` |
 
-### API routes (113)
+### API routes (116)
 
 The handler for each one lives at the matching `app/<url>/route.ts`.
 
@@ -476,6 +487,9 @@ The handler for each one lives at the matching `app/<url>/route.ts`.
 | `/api/admin/promo-codes` | GET, POST |
 | `/api/admin/quests/[id]` | PATCH, DELETE |
 | `/api/admin/quests` | GET, POST |
+| `/api/admin/registration-policies/[id]` | PUT, DELETE |
+| `/api/admin/registration-policies/reorder` | POST |
+| `/api/admin/registration-policies` | GET, POST, DELETE |
 | `/api/admin/roles/[id]` | GET, PUT, DELETE |
 | `/api/admin/roles` | GET, POST |
 | `/api/admin/season-pass/lifecycle` | GET, POST |
@@ -536,7 +550,7 @@ The handler for each one lives at the matching `app/<url>/route.ts`.
 | `/api/upload` | POST |
 | `/api/user/balance` | GET |
 
-### Files over 600 lines (29)
+### Files over 600 lines (30)
 
 Read a range, not the file. Landmarks are `name:line`.
 
@@ -556,10 +570,11 @@ Read a range, not the file. Landmarks are `name:line`.
 | `lib/rateLimit.ts` | 979 | config:25, checkLoginRateLimit:104, checkLoginIpRateLimit:113, checkLoginRateLimitWithConfig:122, recordFailedLogin:179, recordFailedLoginIp:183, recordFailedLoginWithConfig:187, clearLoginAttempts:214 |
 | `components/cart/CartSheet.tsx` | 953 | normalizeOptionalPrice:64, buildSyncedCartItem:68, hasCartItemChanged:85, hasCheckoutRelevantChange:96, CartSheetContent:103, CartSheet:926 |
 | `app/(site)/admin/news/page.tsx` | 943 | getExcerpt:75, AdminNewsPage:81 |
+| `components/admin/RegistrationPolicyManager.tsx` | 925 | POLICY_COPY:84, emptyForm:112, excerpt:116, csvCell:122, usePolicySortable:126, DragHandle:139, PolicyTableRow:167, PolicyCard:237 |
 | `components/DailyTopupSummary.tsx` | 920 | StatusBadge:78, DetailModal:106, AmountTooltip:207, TxnTooltip:227, HourlyTooltip:247, SortIcon:269, DailyTopupSummary:285 |
 | `app/(site)/admin/gacha-machines/page.tsx` | 895 | validImageUrl:57, renderCostText:61, getFormFieldString:75, getCostAmountFieldCopy:85, GachaMachinesAdminPage:129, SortableRow:521, MachineTable:649 |
 | `lib/chat.ts` | 827 | serializeMessage:101, serializeConversationTimestamps:130, getChatUser:144, getChatAssignee:162, getConversationMessagesWindow:185, hydrateConversation:242, getOrCreateUserConversation:273, getUserConversation:309 |
-| `lib/db/schema.ts` | 798 | now:19, updatedAt:20 |
+| `lib/db/schema.ts` | 820 | now:19, updatedAt:20 |
 | `app/(site)/admin/season-pass/edit/page.tsx` | 748 | getRewardTypeOptions:55, getRewardTypeDisplayName:63, getDefaultRewardImage:86, normalizeRewardType:90, fallbackRewards:106, AdminSeasonPassEditPage:117 |
 | `app/(site)/admin/help/page.tsx` | 739 | emptyArticleForm:67, emptyVideoForm:74, AdminHelpPage:80 |
 | `app/(site)/admin/popups/page.tsx` | 736 | getDismissLabel:69, AdminPopupsPage:76 |

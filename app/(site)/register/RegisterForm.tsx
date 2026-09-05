@@ -5,18 +5,59 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
 import { showSuccess, showError } from "@/lib/swal";
 import { normalizeCallbackUrl } from "@/lib/authRedirect";
 import { AuthFormShell } from "@/components/auth/AuthFormShell";
 import { TurnstileField } from "@/components/auth/TurnstileField";
 import { Loader2, Eye, EyeOff, UserPlus } from "lucide-react";
+import type { PublicRegistrationPolicy, RegistrationPolicies } from "@/lib/getRegistrationPolicies";
 
 interface RegisterFormProps {
     logoUrl: string | null;
     hasTurnstile: boolean;
+    policies: RegistrationPolicies;
 }
 
-export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormProps>) {
+// English is optional in the admin form, so fall back to the Thai text rather
+// than rendering an empty section.
+function policyTitle(policy: PublicRegistrationPolicy) {
+    return policy.titleEn ? `${policy.titleTh} · ${policy.titleEn}` : policy.titleTh;
+}
+
+function PolicySection({
+    heading,
+    items,
+}: Readonly<{ heading: string; items: PublicRegistrationPolicy[] }>) {
+    if (items.length === 0) return null;
+
+    return (
+        <div className="space-y-1">
+            <p className="text-xs font-semibold text-[#5f6f82] dark:text-muted-foreground">{heading}</p>
+            <Accordion type="multiple" className="w-full">
+                {items.map((policy) => (
+                    <AccordionItem key={policy.id} value={policy.id}>
+                        <AccordionTrigger className="py-2 text-left text-xs">
+                            {policyTitle(policy)}
+                        </AccordionTrigger>
+                        <AccordionContent className="whitespace-pre-line text-xs text-muted-foreground">
+                            {policy.contentTh}
+                            {policy.contentEn ? `\n\n${policy.contentEn}` : ""}
+                        </AccordionContent>
+                    </AccordionItem>
+                ))}
+            </Accordion>
+        </div>
+    );
+}
+
+export function RegisterForm({ logoUrl, hasTurnstile, policies }: Readonly<RegisterFormProps>) {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [isLoading, setIsLoading] = useState(false);
@@ -24,6 +65,7 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
     const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
     const [turnstileError, setTurnstileError] = useState<string | null>(null);
     const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
+    const [acceptedPolicies, setAcceptedPolicies] = useState(false);
     const [formData, setFormData] = useState({
         username: "",
         email: "",
@@ -52,6 +94,7 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
 
     const passwordStrength = getPasswordStrength(formData.password);
     const passwordsMatch = formData.password && formData.password === formData.confirmPassword;
+    const hasPolicies = policies.tos.length > 0 || policies.pp.length > 0;
     const callbackUrl = normalizeCallbackUrl(searchParams.get("callbackUrl"));
     const handleTurnstileChange = useCallback((token: string | null) => {
         setTurnstileToken(token);
@@ -78,6 +121,11 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
             return;
         }
 
+        if (hasPolicies && !acceptedPolicies) {
+            showError("กรุณายอมรับเงื่อนไขการใช้งานและนโยบายความเป็นส่วนตัว");
+            return;
+        }
+
         setIsLoading(true);
 
         try {
@@ -91,6 +139,7 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                     password: formData.password,
                     confirmPassword: formData.confirmPassword,
                     turnstileToken,
+                    acceptedPolicies: hasPolicies ? acceptedPolicies : undefined,
                 }),
             });
 
@@ -238,6 +287,31 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                             error={turnstileError}
                         />
 
+                        {/* เงื่อนไขการใช้งาน / นโยบายความเป็นส่วนตัว */}
+                        {hasPolicies ? (
+                            <div className="space-y-3 rounded-xl border border-[#cfd6df] bg-white/70 p-4 dark:border-border dark:bg-muted/30">
+                                <div className="max-h-56 space-y-3 overflow-y-auto pr-1">
+                                    <PolicySection heading="เงื่อนไขการใช้งาน" items={policies.tos} />
+                                    <PolicySection heading="นโยบายความเป็นส่วนตัว" items={policies.pp} />
+                                </div>
+                                <label
+                                    htmlFor="reg-accept-policies"
+                                    className="flex cursor-pointer items-start gap-2 border-t border-[#cfd6df] pt-3 text-xs text-[#5f6f82] dark:border-border dark:text-muted-foreground"
+                                >
+                                    <Checkbox
+                                        id="reg-accept-policies"
+                                        checked={acceptedPolicies}
+                                        onCheckedChange={(checked) => setAcceptedPolicies(checked === true)}
+                                        className="mt-0.5"
+                                    />
+                                    <span>
+                                        ฉันได้อ่านและยอมรับเงื่อนไขการใช้งานและนโยบายความเป็นส่วนตัว
+                                        <span className="text-red-500" aria-hidden="true"> *</span>
+                                    </span>
+                                </label>
+                            </div>
+                        ) : null}
+
                         {/* Submit Button */}
                         <Button
                             type="submit"
@@ -246,6 +320,7 @@ export function RegisterForm({ logoUrl, hasTurnstile }: Readonly<RegisterFormPro
                                 isLoading
                                 || Boolean(formData.confirmPassword && !passwordsMatch)
                                 || (hasTurnstile && !turnstileToken)
+                                || (hasPolicies && !acceptedPolicies)
                             }
                         >
                             {isLoading ? (

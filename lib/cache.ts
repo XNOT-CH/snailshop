@@ -13,6 +13,7 @@ export const CACHE_KEYS = {
     FOOTER_LINKS: "footer_links",
     FOOTER_WIDGET: "footer_widget",
     PRODUCT_CATEGORIES: "product_categories",
+    REGISTRATION_POLICIES: "registration_policies",
 } as const;
 
 // Default TTL values (in seconds)
@@ -177,4 +178,13 @@ export async function invalidateNavItemCaches(): Promise<void> {
  */
 export async function invalidateFooterCaches(): Promise<void> {
     await invalidateCache([CACHE_KEYS.FOOTER_WIDGET, CACHE_KEYS.FOOTER_LINKS]);
+}
+
+/**
+ * Invalidate the registration policy cache — the signup page and the public
+ * /terms and /privacy pages read the TOS/PP clauses through cacheOrFetch, so an
+ * admin write is invisible to visitors until the TTL expires without this.
+ */
+export async function invalidateRegistrationPolicyCaches(): Promise<void> {
+    await invalidateCache([CACHE_KEYS.REGISTRATION_POLICIES]);
 }

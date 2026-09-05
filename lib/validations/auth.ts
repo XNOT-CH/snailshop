@@ -80,6 +80,9 @@ export const registerSchema = z.object({
         .min(1, "กรุณายืนยันว่าไม่ใช่บอท")
         .optional()
         .nullable(),
+    // Optional here on purpose: whether consent is required depends on whether
+    // an admin has published any TOS/PP clause, which only the route can know.
+    acceptedPolicies: z.boolean().optional(),
 }).refine((d) => d.password === d.confirmPassword, {
     message: "รหัสผ่านไม่ตรงกัน",
     path: ["confirmPassword"],

@@ -134,6 +134,35 @@ export const helpVideoSchema = z.object({
 });
 export type HelpVideoInput = z.infer<typeof helpVideoSchema>;
 
+// Registration policy (TOS / PP)
+export const REGISTRATION_POLICY_TYPES = ["TOS", "PP"] as const;
+export type RegistrationPolicyType = (typeof REGISTRATION_POLICY_TYPES)[number];
+
+export const registrationPolicySchema = z.object({
+  type: z.enum(REGISTRATION_POLICY_TYPES),
+  titleTh: z.string().min(1, "กรุณากรอกชื่อหัวข้อ (ไทย)").max(255),
+  titleEn: z.string().max(255).optional().or(z.literal("")),
+  contentTh: z.string().min(1, "กรุณากรอกเนื้อหา (ไทย)").max(20000),
+  contentEn: z.string().max(20000).optional().or(z.literal("")),
+  sortOrder: z.coerce.number().int().min(0).default(0),
+  isActive: z.boolean().default(true),
+});
+export type RegistrationPolicyInput = z.infer<typeof registrationPolicySchema>;
+
+// See partialUpdateSchema for why `.partial()` alone is not enough here.
+export const registrationPolicyUpdateSchema = partialUpdateSchema(registrationPolicySchema);
+
+export const registrationPolicyReorderSchema = z.object({
+  orders: z
+    .array(
+      z.object({
+        id: z.string().min(1),
+        sortOrder: z.number().int().min(0),
+      }),
+    )
+    .min(1, "ไม่มีรายการให้จัดลำดับ"),
+});
+
 // Role
 export const roleSchema = z.object({
   name: z.string().min(1, "กรุณากรอกชื่อ Role").max(100),

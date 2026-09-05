@@ -411,6 +411,28 @@ export const helpVideos = mysqlTable("HelpVideo", {
 ]);
 
 // ─────────────────────────────────────────────
+// RegistrationPolicy
+// ─────────────────────────────────────────────
+// One row = one clause shown on the signup page. TOS and PP have identical
+// shape, so `type` separates them instead of two near-identical tables.
+// The *En columns are optional: NULL/"" means the admin only wrote Thai and
+// the public pages fall back to the Thai text.
+export const registrationPolicies = mysqlTable("RegistrationPolicy", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    type: varchar("type", { length: 10 }).notNull(),
+    titleTh: varchar("titleTh", { length: 255 }).notNull(),
+    titleEn: varchar("titleEn", { length: 255 }),
+    contentTh: text("contentTh").notNull(),
+    contentEn: text("contentEn"),
+    sortOrder: int("sortOrder").default(0).notNull(),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: now(),
+    updatedAt: updatedAt(),
+}, (t) => [
+    index("idx_registration_policy_type_active_sort").on(t.type, t.isActive, t.sortOrder),
+]);
+
+// ─────────────────────────────────────────────
 // NewsArticle
 // ─────────────────────────────────────────────
 export const newsArticles = mysqlTable("NewsArticle", {

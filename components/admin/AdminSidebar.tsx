@@ -34,9 +34,12 @@ import {
     Navigation,
     Newspaper,
     Package,
+    ScrollText,
     Settings,
     Shield,
+    ShieldCheck,
     Ticket,
+    UserPlus,
     Users,
 } from "lucide-react";
 
@@ -108,6 +111,16 @@ const navigationSections: NavSection[] = [
             { href: "/admin/news", label: "จัดการข่าวสาร", icon: Newspaper, requiredPermission: PERMISSIONS.CONTENT_VIEW },
             { href: "/admin/popups", label: "จัดการป๊อปอัพ", icon: Megaphone, requiredPermission: PERMISSIONS.CONTENT_VIEW },
             { href: "/admin/help", label: "จัดการศูนย์ช่วยเหลือ", icon: HelpCircle, requiredPermission: PERMISSIONS.CONTENT_VIEW },
+            {
+                group: true,
+                label: "การสมัครสมาชิก",
+                icon: UserPlus,
+                requiredPermission: PERMISSIONS.CONTENT_VIEW,
+                items: [
+                    { href: "/admin/registration/terms", label: "เงื่อนไขการใช้งาน (TOS)", icon: ScrollText, requiredPermission: PERMISSIONS.CONTENT_VIEW },
+                    { href: "/admin/registration/privacy", label: "นโยบายความเป็นส่วนตัว (PP)", icon: ShieldCheck, requiredPermission: PERMISSIONS.CONTENT_VIEW },
+                ],
+            },
             { href: "/admin/welcome-strip", label: "รูปแถบ Welcome", icon: Images, requiredPermission: PERMISSIONS.SETTINGS_VIEW },
             { href: "/admin/footer-links", label: "ลิงก์ท้ายเว็บ", icon: LinkIcon, requiredPermission: PERMISSIONS.SETTINGS_VIEW },
             { href: "/admin/nav-items", label: "เมนูนำทาง", icon: Navigation, requiredPermission: PERMISSIONS.SETTINGS_VIEW },

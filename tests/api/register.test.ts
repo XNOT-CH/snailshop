@@ -41,15 +41,25 @@ vi.mock("@/lib/security/turnstile", () => ({
   verifyTurnstileToken: vi.fn().mockResolvedValue({ success: true }),
 }));
 
+vi.mock("@/lib/getRegistrationPolicies", () => ({
+  getRegistrationPolicies: vi.fn(),
+  hasRegistrationPolicies: (p: { tos: unknown[]; pp: unknown[] }) => p.tos.length > 0 || p.pp.length > 0,
+}));
+
+const NO_POLICIES = { tos: [], pp: [] };
+const SOME_POLICIES = { tos: [{ id: "tos-1", titleTh: "ข้อ 1", titleEn: null, contentTh: "เนื้อหา", contentEn: null }], pp: [] };
+
 import { db } from "@/lib/db";
 import { parseBody } from "@/lib/api";
 import { verifyTurnstileToken } from "@/lib/security/turnstile";
+import { getRegistrationPolicies } from "@/lib/getRegistrationPolicies";
 
 describe("API: /api/register (POST)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     (parseBody as any).mockResolvedValue({ data: { username: "newuser", email: "new@example.com", password: "secure123", turnstileToken: "token-1" } });
     vi.mocked(verifyTurnstileToken).mockResolvedValue({ success: true });
+    vi.mocked(getRegistrationPolicies).mockResolvedValue(NO_POLICIES as any);
   });
 
   const createRequest = () =>
@@ -98,5 +108,30 @@ describe("API: /api/register (POST)", () => {
     expect(res.status).toBe(400);
     const body = await res.json();
     expect(body.message).toContain("อีเมล");
+  });
+
+  it("returns 400 if published policies exist but consent was not given", async () => {
+    (db.query.users.findFirst as any).mockResolvedValue(null);
+    vi.mocked(getRegistrationPolicies).mockResolvedValue(SOME_POLICIES as any);
+
+    const { POST } = await import("@/app/api/register/route");
+    const res = await POST(createRequest());
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.message).toContain("ยอมรับ");
+    expect(db.insert).not.toHaveBeenCalled();
+  });
+
+  it("registers when published policies exist and consent was given", async () => {
+    (db.query.users.findFirst as any).mockResolvedValue(null);
+    vi.mocked(getRegistrationPolicies).mockResolvedValue(SOME_POLICIES as any);
+    (parseBody as any).mockResolvedValue({
+      data: { username: "newuser", email: "new@example.com", password: "secure123", turnstileToken: "token-1", acceptedPolicies: true },
+    });
+
+    const { POST } = await import("@/app/api/register/route");
+    const res = await POST(createRequest());
+    expect(res.status).toBe(200);
+    expect(db.insert).toHaveBeenCalled();
   });
 });
