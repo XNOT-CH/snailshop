@@ -98,6 +98,15 @@ double-spend-sensitive — write a test for the failure mode before the fix, and
    HEAD` and passes the commit in as the `GIT_COMMIT` build arg.
 4. Confirm the running image with `curl http://localhost:3000/api/health`; it returns
    `version`, `commit` and `builtAt` alongside `status`.
+5. Write `docs/releases/v<x.y.z>.md` — Thai, for the client, rules in that folder's
+   `AGENTS.md`. `git log v<last>..HEAD --oneline` is the raw material; translating and
+   deciding what the client should see is the actual work, which is why there is no
+   generator script.
+6. Upload it to the Drive folder `SNAILSHOP — บันทึกการอัปเดตเว็บไซต์`
+   (id `1vKzWpMlH9wsFfcscbkSwEKsEUn2Vzjnr`) as `text/markdown`, titled
+   `SNAILSHOP v<x.y.z> — <วันที่ไทย>`. Drive converts it to a Google Doc, headings and
+   bold included. One Doc per version because the connector can create files but
+   cannot edit the content of one that already exists.
 
 `next.config.ts` inlines all three into the bundle via its `env` block, and
 `lib/version.ts` is the only module that reads them. `commit: "dev"` in a *production*
@@ -174,6 +183,14 @@ key is cached with nothing able to clear it.
 `scripts/quality/build-snailshop-index.mjs:22`). A brand-new route or table file is
 silently missing from the generated index until it is staged — `git add` first, then
 rebuild, or the index looks up to date while it is not.
+
+---
+
+- **Uploading Markdown to Google Drive mangles 4-byte emoji.** A `text/markdown`
+  upload converts to a Google Doc cleanly — Thai, headings, bold and bullets all
+  survive — but emoji outside the BMP (`🔧`, `🛠`, `📌`) arrive as `ð§`. 3-byte ones
+  like `✨` are fine. Keep emoji out of anything uploaded there and read the file back
+  before handing over the link.
 
 ---
 
