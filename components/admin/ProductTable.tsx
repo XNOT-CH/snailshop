@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCurrencySettings } from "@/hooks/useCurrencySettings";
@@ -69,6 +69,38 @@ interface ProductTableProps {
 }
 
 const ITEMS_PER_PAGE_OPTIONS = [10, 20, 50] as const;
+
+// Tailwind's `md` breakpoint, the one the two layouts below switch on.
+const DESKTOP_QUERY = "(min-width: 768px)";
+
+/**
+ * Which of the two layouts to build.
+ *
+ * The layouts used to be rendered both at once and hidden with `md:hidden` /
+ * `hidden md:block`, which is correct but means every product is built twice —
+ * 37 duplicate rows and roughly 1,200 wasted DOM nodes at 50 per page.
+ *
+ * `null` until hydration finishes, and both are rendered then, because the
+ * server cannot know the viewport: rendering one from a guess would either
+ * flash the wrong layout or leave the list blank until JavaScript arrives. The
+ * CSS classes stay exactly as they were, so that first paint is still correct
+ * at any width; the unused half is only dropped once the browser can say which
+ * half that is. useSyncExternalStore rather than an effect so the server and
+ * hydration renders agree by construction.
+ */
+function useIsDesktop(): boolean | null {
+    const subscribe = useCallback((onChange: () => void) => {
+        const query = window.matchMedia(DESKTOP_QUERY);
+        query.addEventListener("change", onChange);
+        return () => query.removeEventListener("change", onChange);
+    }, []);
+
+    return useSyncExternalStore(
+        subscribe,
+        () => window.matchMedia(DESKTOP_QUERY).matches,
+        () => null,
+    );
+}
 
 const LOW_STOCK_THRESHOLD = 5;
 
@@ -679,6 +711,7 @@ export default function ProductTable({
   canDelete = true,
 }: Readonly<ProductTableProps>) {
   const currencySettings = useCurrencySettings();
+  const isDesktop = useIsDesktop();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
@@ -953,6 +986,7 @@ export default function ProductTable({
         </div>
       </div>
 
+      {isDesktop !== true ? (
       <div className="space-y-3 md:hidden">
         {paginatedProducts.length === 0 ? (
           <div className="rounded-2xl border border-border bg-card px-4 py-16 text-center text-muted-foreground shadow-sm">
@@ -978,6 +1012,9 @@ export default function ProductTable({
         )}
       </div>
 
+      ) : null}
+
+      {isDesktop !== false ? (
       <div className="hidden overflow-hidden rounded-2xl border border-border bg-card shadow-sm md:block">
         <Table>
           <TableHeader>
@@ -1056,6 +1093,7 @@ export default function ProductTable({
           </TableBody>
         </Table>
       </div>
+      ) : null}
 
       <div className="flex flex-col gap-3 rounded-2xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground shadow-sm sm:flex-row sm:items-center sm:justify-between">
         <p>
