@@ -24,14 +24,12 @@ import {
     ArrowDownAZ,
     ArrowDownUp,
     ArrowUpDown,
-    ChevronDown,
     ChevronLeft,
     ChevronRight,
     Download,
     GripVertical,
     Inbox,
     LayoutGrid,
-    Lightbulb,
     List,
     Loader2,
     Pencil,
@@ -97,13 +95,6 @@ const POLICY_COPY = {
 } as const;
 
 const LIST_SUBTITLE = "ค้นหา แก้ไข ลบ หรือจัดลำดับข้อความที่แสดงตอนสมัครสมาชิก";
-
-const HOW_TO_LINES = [
-    "กรอกชื่อหัวข้อและเนื้อหาแล้วกดบันทึก ข้อความจะไปแสดงในหน้าสมัครสมาชิกทันที",
-    "ช่องภาษาอังกฤษไม่บังคับ ถ้าเว้นว่างไว้ ระบบจะใช้ข้อความภาษาไทยแทน",
-    "ลากที่จับด้านซ้ายของแถวเพื่อสลับลำดับ ลำดับบนสุดคือข้อที่ผู้ใช้เห็นก่อน",
-    "ปิดสวิตช์เพื่อซ่อนข้อนั้นชั่วคราวโดยไม่ต้องลบทิ้ง",
-];
 
 type SortMode = "manual" | "title";
 type SortDirection = "asc" | "desc";
@@ -308,7 +299,6 @@ export function RegistrationPolicyManager({ type }: Readonly<{ type: Registratio
     const [saving, setSaving] = useState(false);
     const [reordering, setReordering] = useState(false);
 
-    const [showHowTo, setShowHowTo] = useState(false);
     const [form, setForm] = useState(emptyForm);
     const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -592,32 +582,6 @@ export function RegistrationPolicyManager({ type }: Readonly<{ type: Registratio
 
     return (
         <div className="space-y-6">
-            {/* วิธีใช้งาน */}
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-                <button
-                    type="button"
-                    onClick={() => setShowHowTo((prev) => !prev)}
-                    aria-expanded={showHowTo}
-                    className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-primary"
-                >
-                    <Lightbulb className="h-4 w-4" />
-                    วิธีใช้งาน : คลิกที่นี่
-                    <ChevronDown
-                        className={cn("h-4 w-4 transition-transform", showHowTo && "rotate-180")}
-                    />
-                </button>
-                {showHowTo ? (
-                    <ul className="space-y-2 border-t border-border px-5 py-4 text-xs text-muted-foreground">
-                        {HOW_TO_LINES.map((line) => (
-                            <li key={line} className="flex gap-2">
-                                <span className="text-primary">•</span>
-                                <span>{line}</span>
-                            </li>
-                        ))}
-                    </ul>
-                ) : null}
-            </div>
-
             {/* ฟอร์มเพิ่ม / แก้ไข */}
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                 <div className="flex items-start gap-3 border-b border-border px-5 py-4">
