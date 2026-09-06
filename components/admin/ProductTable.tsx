@@ -42,6 +42,7 @@ import {
   Star,
   Timer,
   Trash2,
+  Warehouse,
 } from "lucide-react";
 import { formatCurrencyAmount } from "@/lib/currencySettings";
 
@@ -284,6 +285,16 @@ function ProductActionsMenu({
             <Link href={`/admin/products/${product.id}/edit`} className="flex items-center gap-2">
               <Pencil className="h-4 w-4" />
               แก้ไขสินค้า
+            </Link>
+          </DropdownMenuItem>
+        ) : null}
+        {/* Gated on the same permission the route itself requires (PRODUCT_EDIT,
+            via lib/adminAccess), so the entry never leads to a redirect. */}
+        {canEdit ? (
+          <DropdownMenuItem asChild>
+            <Link href={`/admin/products/${product.id}/stock`} className="flex items-center gap-2">
+              <Warehouse className="h-4 w-4" />
+              สต๊อกสินค้า
             </Link>
           </DropdownMenuItem>
         ) : null}
