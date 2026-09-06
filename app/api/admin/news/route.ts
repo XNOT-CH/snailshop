@@ -29,7 +29,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CONTENT_EDIT);
-    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
+    if (!authCheck.success) return contentApiError(authCheck.error, { status: 401 });
     try {
         const result = await validateBody(request, newsItemSchema);
         if ("error" in result) return result.error;

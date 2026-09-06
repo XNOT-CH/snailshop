@@ -11,7 +11,7 @@ import { invalidateFooterCaches } from "@/lib/cache";
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.SETTINGS_EDIT);
-    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
+    if (!authCheck.success) return contentApiError(authCheck.error, { status: 401 });
     try {
         const { id } = await params;
         const result = await validateBody(request, footerLinkUpdateSchema);
@@ -48,7 +48,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const authCheck = await requirePermissionWithCsrf(_req, PERMISSIONS.SETTINGS_EDIT);
-    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
+    if (!authCheck.success) return contentApiError(authCheck.error, { status: 401 });
     try {
         const { id } = await params;
         const existing = await db.query.footerLinks.findFirst({ where: (t, { eq }) => eq(t.id, id) });

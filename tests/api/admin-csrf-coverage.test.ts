@@ -106,4 +106,21 @@ describe("admin API CSRF coverage", () => {
 
         expect(fallbackOnlyRoutes).toEqual([]);
     });
+
+    it("hands the guard reason back on 401 instead of a flat \"Unauthorized\"", () => {
+        // fetchWithCsrf refetches the token and retries only when the 401 body
+        // names the CSRF failure. A hardcoded string loses that name, and the
+        // admin gets a dead button until they reload the page by hand.
+        const swallowed = listRouteFiles(ADMIN_API_DIR).flatMap((file) => {
+            const source = fs.readFileSync(file, "utf8");
+            return getMutationHandlers(source)
+                .filter((handler) =>
+                    CSRF_GUARDS.some((guard) => handler.body.includes(guard))
+                    && handler.body.includes('contentApiError("Unauthorized"')
+                )
+                .map((handler) => `${path.relative(process.cwd(), file)}:${handler.method}`);
+        });
+
+        expect(swallowed).toEqual([]);
+    });
 });

@@ -11,7 +11,7 @@ import { invalidateNavItemCaches } from "@/lib/cache";
 
 export async function POST(request: NextRequest) {
     const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.SETTINGS_EDIT);
-    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
+    if (!authCheck.success) return contentApiError(authCheck.error, { status: 401 });
     try {
         const result = await validateBody(request, navItemsReorderSchema);
         if ("error" in result) return result.error;

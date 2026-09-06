@@ -24,7 +24,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
     const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.USER_MANAGE_ROLE);
-    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
+    if (!authCheck.success) return contentApiError(authCheck.error, { status: 401 });
     try {
         const result = await validateBody(request, roleSchema);
         if ("error" in result) return result.error;

@@ -24,7 +24,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
 
 export async function PUT(request: Request, { params }: RouteParams) {
     const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.USER_MANAGE_ROLE);
-    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
+    if (!authCheck.success) return contentApiError(authCheck.error, { status: 401 });
     try {
         const { id } = await params;
         const body = await request.json();
@@ -83,7 +83,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
 export async function DELETE(request: Request, { params }: RouteParams) {
     const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.USER_MANAGE_ROLE);
-    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
+    if (!authCheck.success) return contentApiError(authCheck.error, { status: 401 });
     try {
         const { id } = await params;
         const role = await db.query.roles.findFirst({ where: eq(roles.id, id) });

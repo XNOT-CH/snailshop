@@ -25,7 +25,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
 
 export async function PUT(request: Request, { params }: RouteParams) {
     const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CONTENT_EDIT);
-    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
+    if (!authCheck.success) return contentApiError(authCheck.error, { status: 401 });
     try {
         const { id } = await params;
         const result = await validateBody(request, partialUpdateSchema(newsItemSchema));
@@ -44,7 +44,7 @@ export async function PUT(request: Request, { params }: RouteParams) {
 
 export async function DELETE(request: Request, { params }: RouteParams) {
     const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CONTENT_EDIT);
-    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
+    if (!authCheck.success) return contentApiError(authCheck.error, { status: 401 });
     try {
         const { id } = await params;
         const news = await db.query.newsArticles.findFirst({ where: eq(newsArticles.id, id) });

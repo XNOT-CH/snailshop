@@ -28,7 +28,7 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
     const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.SEASON_PASS_EDIT);
     if (!authCheck.success) {
-        return contentApiError("Unauthorized", { status: 401 });
+        return contentApiError(authCheck.error, { status: 401 });
     }
 
     try {
