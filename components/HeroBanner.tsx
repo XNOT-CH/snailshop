@@ -6,27 +6,31 @@ import { getSiteSettings } from "@/lib/getSiteSettings";
 export async function HeroBanner() {
     const settings = await getSiteSettings();
 
-    // Default banners if no settings
+    // No placeholder image per slot: a slot the admin cleared has to fall out of
+    // the list, and a hardcoded fallback made `filter` below unreachable — every
+    // slot always had an image, so the hero was permanently three slides wide
+    // whatever the admin did. A fresh install still gets three demo banners;
+    // they are seeded into the settings row on first read, not invented here.
     const banners = [
         {
             id: 1,
-            image: settings?.bannerImage1 || "https://images.unsplash.com/photo-1538481199705-c710c4e965fc?w=2000&h=500&fit=crop",
+            image: settings?.bannerImage1 ?? "",
             title: settings?.bannerTitle1 ?? "",
             subtitle: settings?.bannerSubtitle1 ?? "",
         },
         {
             id: 2,
-            image: settings?.bannerImage2 || "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=2000&h=500&fit=crop",
+            image: settings?.bannerImage2 ?? "",
             title: settings?.bannerTitle2 ?? "",
             subtitle: settings?.bannerSubtitle2 ?? "",
         },
         {
             id: 3,
-            image: settings?.bannerImage3 || "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=2000&h=500&fit=crop",
+            image: settings?.bannerImage3 ?? "",
             title: settings?.bannerTitle3 ?? "",
             subtitle: settings?.bannerSubtitle3 ?? "",
         },
-    ].filter(b => b.image); // Only show banners with images
+    ].filter(b => b.image.trim() !== "");
 
     // Parse extra banners from bannersJson
     if (settings?.bannersJson) {
@@ -69,6 +73,12 @@ export async function HeroBanner() {
             imageSizes: heroImageProps.sizes,
             fetchPriority: "high",
         });
+    }
+
+    // Nothing to show at all: render no element rather than an empty 4:1 strip,
+    // which would leave a bar of blank space at the top of the homepage.
+    if (banners.length === 0) {
+        return null;
     }
 
     // The hero is a 4:1 strip whichever component fills it, so the space is

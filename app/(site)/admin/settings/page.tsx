@@ -305,6 +305,17 @@ export default function AdminSettingsPage() {
         }
     };
 
+    // Slots 1-3 are fixed columns on the settings row, so "remove" empties them
+    // rather than dropping a card the way it does for slot 4 and up.
+    const clearBannerSlot = (index: number) => {
+        if (!canEditSettings) {
+            showError("คุณไม่มีสิทธิ์แก้ไขตั้งค่า");
+            return;
+        }
+
+        setBannerSlot(index, { image: "", title: "", subtitle: "" });
+    };
+
     const moveBanner = (index: number, direction: -1 | 1) => {
         if (!canEditSettings) return;
         const target = index + direction;
@@ -901,6 +912,11 @@ export default function AdminSettingsPage() {
                                         onImageChange={(v) => updateSetting(`bannerImage${num}` as keyof SiteSettings, v)}
                                         onTitleChange={(v) => updateSetting(`bannerTitle${num}` as keyof SiteSettings, v)}
                                         onSubtitleChange={(v) => updateSetting(`bannerSubtitle${num}` as keyof SiteSettings, v)}
+                                        onRemove={
+                                            bannerSlots[num - 1].image?.trim()
+                                                ? () => clearBannerSlot(num - 1)
+                                                : undefined
+                                        }
                                         onMoveLeft={num > 1 ? () => moveBanner(num - 1, -1) : undefined}
                                         onMoveRight={num - 1 < totalBannerCount - 1 ? () => moveBanner(num - 1, 1) : undefined}
                                         canEdit={canEditSettings}
