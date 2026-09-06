@@ -24,14 +24,20 @@ vi.mock("@/lib/db", () => {
         promoCodes: { findFirst: vi.fn() },
       },
       $client: { getConnection },
+    select: vi.fn(() => ({
+      from: vi.fn(() => ({
+        where: vi.fn(() => Object.assign(Promise.resolve([]), { orderBy: vi.fn(async () => []) })),
+      })),
+    })),
     },
     rawDbPool: { getConnection },
     users: { id: "id" },
     promoCodes: { code: "code" },
+    productCheckboxes: { id: "id", productId: "productId", title: "title", description: "description", isRequired: "isRequired", createdAt: "createdAt" },
   };
 });
 
-vi.mock("drizzle-orm", () => ({ eq: vi.fn() }));
+vi.mock("drizzle-orm", () => ({ eq: vi.fn(), and: vi.fn(), asc: vi.fn(), inArray: vi.fn() }));
 
 vi.mock("@/lib/encryption", () => ({
   encrypt: vi.fn((d: string) => `enc_${d}`),

@@ -23,18 +23,24 @@ vi.mock("@/lib/db", () => {
       query: { users: { findFirst: vi.fn() } },
       insert: vi.fn().mockReturnValue({ values: vi.fn() }),
       update: vi.fn().mockReturnValue({ set: vi.fn().mockReturnValue({ where: vi.fn() }) }),
-      select: vi.fn().mockReturnValue({ from: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue([]) }) }),
+      select: vi.fn(() => ({
+        from: vi.fn(() => ({
+          where: vi.fn(() => Object.assign(Promise.resolve([]), { orderBy: vi.fn(async () => []) })),
+        })),
+      })),
     },
     rawDbPool: { getConnection },
     users: { id: "id", creditBalance: "creditBalance", pointBalance: "pointBalance" },
     products: { id: "id", isSold: "isSold" },
+    productCheckboxes: { id: "id", productId: "productId", title: "title", description: "description", isRequired: "isRequired", createdAt: "createdAt" },
+
     orders: { id: "id" },
     promoCodes: { id: "id", usedCount: "usedCount" },
     promoUsages: { id: "id" },
   };
 });
 
-vi.mock("drizzle-orm", () => ({ eq: vi.fn(), inArray: vi.fn(), sql: Object.assign(vi.fn(), { join: vi.fn(() => ({})) }) }));
+vi.mock("drizzle-orm", () => ({ eq: vi.fn(), and: vi.fn(), asc: vi.fn(), inArray: vi.fn(), sql: Object.assign(vi.fn(), { join: vi.fn(() => ({})) }) }));
 vi.mock("@/lib/mail", () => ({ sendEmail: vi.fn().mockResolvedValue({}) }));
 vi.mock("@/components/emails/PurchaseReceiptEmail", () => ({ PurchaseReceiptEmail: vi.fn(() => null) }));
 vi.mock("@/lib/encryption", () => ({

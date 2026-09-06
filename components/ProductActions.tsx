@@ -17,6 +17,11 @@ import {
     validatePromoCode,
 } from "@/lib/client/promoCodeClient";
 import { usePurchaseProduct } from "@/hooks/usePurchaseProduct";
+import {
+    areRequiredChecksAccepted,
+    ProductCheckboxConsent,
+    type ProductConsentCheckbox,
+} from "@/components/ProductCheckboxConsent";
 
 interface ProductActionsProps {
     product: {
@@ -31,6 +36,7 @@ interface ProductActionsProps {
     disabled?: boolean;
     maxQuantity?: number;
     currencySettings?: PublicCurrencySettings;
+    checkboxes?: ProductConsentCheckbox[];
 }
 
 export function ProductActions({
@@ -38,11 +44,13 @@ export function ProductActions({
     disabled = false,
     maxQuantity = 99,
     currencySettings,
+    checkboxes = [],
 }: Readonly<ProductActionsProps>) {
     const maintenance = useMaintenanceStatus().purchase;
     const { addToCart, isInCart, isLoading: cartLoading, openCart } = useCart();
     const { isPurchasing, purchaseProduct } = usePurchaseProduct();
     const [quantity, setQuantity] = useState(1);
+    const [acceptedCheckIds, setAcceptedCheckIds] = useState<string[]>([]);
     const [isAdding, setIsAdding] = useState(false);
     const [promoCode, setPromoCode] = useState("");
     const [isCheckingPromo, setIsCheckingPromo] = useState(false);
@@ -56,6 +64,9 @@ export function ProductActions({
     } | null>(null);
     const inCart = isInCart(product.id);
     const isBuying = isPurchasing(product.id);
+    // Required boxes gate both buttons: ticking them is right here on the page,
+    // and /api/purchase refuses the request without them anyway.
+    const checksAccepted = areRequiredChecksAccepted(checkboxes, acceptedCheckIds);
     const normalizedCurrency = normalizeCurrencyCode(product.currency);
     const isPointCurrency = normalizedCurrency === "POINT";
     const hasAppliedPromo = Boolean(appliedPromo);
@@ -137,7 +148,7 @@ export function ProductActions({
             return;
         }
 
-        if (disabled || isBuying) return;
+        if (disabled || isBuying || !checksAccepted) return;
 
         const discountLine = appliedPromo
             ? `<small>โค้ดส่วนลด: <strong>${escapeHtml(appliedPromo.code)}</strong> (ราคาเดิม ฿${escapeHtml(basePrice.toLocaleString())})</small>`
@@ -151,6 +162,7 @@ export function ProductActions({
             currencySettings,
             quantity,
             promoCode: appliedPromo?.code || undefined,
+            acceptedCheckIds,
             priceText: formatCurrencyAmount(finalPrice, normalizedCurrency, currencySettings),
             extraHtml: discountLine,
             onError: async (error) => {
@@ -165,7 +177,7 @@ export function ProductActions({
 
     // Add to Cart handler
     const handleAddToCart = async () => {
-        if (disabled || isAdding) return;
+        if (disabled || isAdding || !checksAccepted) return;
 
         if (inCart) {
             openCart();
@@ -286,14 +298,22 @@ export function ProductActions({
                     )}
 
 
-                    {/* 3. Buy Now */}
+                    {/* 3. Consent checkboxes */}
+                    <ProductCheckboxConsent
+                        checkboxes={checkboxes}
+                        acceptedIds={acceptedCheckIds}
+                        onChange={setAcceptedCheckIds}
+                        disabled={isProcessing}
+                    />
+
+                    {/* 4. Buy Now */}
                     <Button
                         size="lg"
                         className={`w-full gap-2 h-12 text-base rounded-xl font-bold ${disabled
                             ? "cursor-not-allowed border border-border/70 bg-accent/40 text-muted-foreground hover:bg-accent/40"
                             : "bg-primary text-primary-foreground hover:bg-primary/90"
                             }`}
-                        disabled={disabled || isBuying || maintenance?.enabled}
+                        disabled={disabled || isBuying || maintenance?.enabled || !checksAccepted}
                         onClick={handlePurchase}
                     >
                         {isBuying && (
@@ -314,12 +334,12 @@ export function ProductActions({
                         )}
                     </Button>
 
-                    {/* 4. Add to Cart */}
+                    {/* 5. Add to Cart */}
                     <Button
                         variant="outline"
                         size="lg"
                         className="w-full gap-2 h-10 rounded-xl border-border/60 bg-transparent text-sm font-medium text-muted-foreground shadow-none hover:border-primary/50 hover:bg-primary/5 hover:text-primary"
-                        disabled={disabled || isAdding || cartLoading}
+                        disabled={disabled || isAdding || cartLoading || !checksAccepted}
                         onClick={handleAddToCart}
                     >
                         {isAdding && (

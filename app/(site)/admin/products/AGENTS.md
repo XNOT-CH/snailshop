@@ -18,6 +18,7 @@ This folder is the admin surface for product management.
 ## Read with
 
 - `components/admin/ProductTable.tsx`
+- `components/admin/ProductCheckboxManager.tsx` (consent boxes, at the bottom of the edit page)
 - `components/admin/ProductImageGalleryField.tsx`
 - `app/api/products/[id]/route.ts`
 - `app/api/products/[id]/stock/route.ts`
@@ -33,3 +34,5 @@ This folder is the admin surface for product management.
 - Stock is derived from encrypted `secretData`.
 - Some actions use public product APIs, others use admin APIs.
 - Permission checks differ between viewing, creating, editing, and deleting.
+- The checkbox manager saves on its own buttons, not with the product form — it
+  sits outside the `<form>` on purpose.

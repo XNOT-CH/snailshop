@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProductAutoDeleteField } from "@/components/admin/ProductAutoDeleteField";
 import { ProductDiscountField } from "@/components/admin/ProductDiscountField";
 import { ProductImageGalleryField } from "@/components/admin/ProductImageGalleryField";
+import { ProductCheckboxManager } from "@/components/admin/ProductCheckboxManager";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -438,6 +439,10 @@ export default function EditProductPage() {
                     )}
                 </Button>
             </form>
+
+            <div className="mt-6">
+                <ProductCheckboxManager productId={productId} canEdit={canEditProduct} />
+            </div>
         </div>
     );
 }

@@ -16,6 +16,10 @@ export const API_ROUTES = {
     GACHA_GRID_REWARDS: "/api/gacha/grid/rewards",
     QUEST_CLAIM: "/api/quests/claim",
     GACHA_GRID_ROLL: "/api/gacha/grid/roll",
+    PRODUCT_CHECKBOXES: "/api/products/checkboxes",
+    adminProductCheckboxes: (productId: string) => `/api/admin/products/${productId}/checkboxes`,
+    adminProductCheckbox: (productId: string, checkboxId: string) =>
+        `/api/admin/products/${productId}/checkboxes/${checkboxId}`,
     ADMIN_GACHA_REWARDS: "/api/admin/gacha-rewards",
     ADMIN_GACHA_REWARDS_UPLOAD_IMAGE: "/api/admin/gacha-rewards/upload-image",
     adminGachaReward: (id: string) => `/api/admin/gacha-rewards/${id}`,

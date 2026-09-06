@@ -78,11 +78,13 @@ vi.mock("@/lib/db", () => ({
   products:      { id: "id", isFeatured: "isFeatured" },
   users:         { id: "id" },
   promoCodes:    { id: "id", code: "code" },
+  productCheckboxes: { id: "id", productId: "productId", title: "title", description: "description", isRequired: "isRequired", createdAt: "createdAt" },
 }));
 
 vi.mock("drizzle-orm", () => ({
   eq: vi.fn(), and: vi.fn(), gte: vi.fn(), lte: vi.fn(), isNull: vi.fn(),
   count: vi.fn(), max: vi.fn(), sql: vi.fn(), desc: vi.fn(), asc: vi.fn(),
+  inArray: vi.fn(),
 }));
 
 import { auth } from "@/auth";

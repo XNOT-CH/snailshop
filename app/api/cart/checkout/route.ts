@@ -13,6 +13,10 @@ import { MAX_CART_QUANTITY } from "@/lib/constants/cart";
 import { resolveSiteName } from "@/lib/seo";
 import { assertPinForProtectedAction } from "@/lib/security/pin";
 import {
+    assertProductChecksAccepted,
+    ProductChecksNotAcceptedError,
+} from "@/lib/features/products/productCheckboxes";
+import {
     executeCartPurchaseTransaction,
     getRawTransactionConnection,
     type CheckoutItemInput,
@@ -117,7 +121,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { items, productIds, promoCode, pin } = await request.json();
+        const { items, productIds, promoCode, pin, acceptedCheckIds } = await request.json();
         const checkoutItems = normalizeCheckoutItems(items, productIds);
 
         if (checkoutItems.length === 0) {
@@ -147,6 +151,30 @@ export async function POST(request: NextRequest) {
         ]);
         const siteName = resolveSiteName(siteSettings?.heroTitle);
 
+        // Before any money moves: every required consent box on every product in
+        // the cart has to have been ticked. The cart sheet blocks the button,
+        // this blocks the request.
+        let acceptedChecks;
+        try {
+            acceptedChecks = await assertProductChecksAccepted(
+                checkoutItems.map((item) => item.productId),
+                acceptedCheckIds,
+            );
+        } catch (checksError) {
+            if (checksError instanceof ProductChecksNotAcceptedError) {
+                return NextResponse.json(
+                    {
+                        success: false,
+                        message: checksError.message,
+                        requiresChecks: true,
+                        missingChecks: checksError.missingTitles,
+                    },
+                    { status: 409 },
+                );
+            }
+            throw checksError;
+        }
+
         try {
             const conn = await getRawTransactionConnection();
             const { orderResults, totalTHB, totalPoints, purchasedCount } = await executeCartPurchaseTransaction({
@@ -156,6 +184,7 @@ export async function POST(request: NextRequest) {
                 user: user as PurchaseTransactionUser,
                 promoCode: typeof promoCode === "string" ? promoCode : null,
                 currencySettings,
+                acceptedChecks,
             });
 
             if (session?.user?.email) {

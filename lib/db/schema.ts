@@ -196,6 +196,31 @@ export const productsRelations = relations(products, ({ one, many }) => ({
     order: one(orders, { fields: [products.orderId], references: [orders.id] }),
     gachaRewards: many(gachaRewards),
     gachaRollLogs: many(gachaRollLogs),
+    checkboxes: many(productCheckboxes),
+}));
+
+// ─────────────────────────────────────────────
+// Product checkbox
+// ─────────────────────────────────────────────
+// Consent boxes shown on the product page. A row with `isRequired` has to be
+// ticked before the product can be bought; the tick is enforced again in
+// /api/purchase and /api/cart/checkout, not only in the UI.
+export const productCheckboxes = mysqlTable("ProductCheckbox", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    productId: varchar("productId", { length: 36 })
+        .notNull()
+        .references(() => products.id, { onDelete: "cascade" }),
+    title: varchar("title", { length: 255 }).notNull(),
+    description: text("description"),
+    isRequired: boolean("isRequired").default(true).notNull(),
+    createdAt: now(),
+    updatedAt: updatedAt(),
+}, (t) => [
+    index("idx_product_checkbox_productId").on(t.productId),
+]);
+
+export const productCheckboxesRelations = relations(productCheckboxes, ({ one }) => ({
+    product: one(products, { fields: [productCheckboxes.productId], references: [products.id] }),
 }));
 
 // ─────────────────────────────────────────────
@@ -228,6 +253,9 @@ export const orders = mysqlTable("Order", {
     productImage: varchar("productImage", { length: 500 }),
     totalPrice: decimal("totalPrice", { precision: 10, scale: 2 }).notNull(),
     status: varchar("status", { length: 20 }).default("COMPLETED").notNull(),
+    // Snapshot of the consent boxes ticked at purchase time, so the record
+    // survives the ProductCheckbox rows being edited or deleted afterwards.
+    acceptedChecks: json("acceptedChecks").$type<{ id: string; title: string }[]>(),
     purchasedAt: datetime("purchasedAt", { mode: "string" }).default(sql`now()`).notNull(),
     // Soft-delete marker. A user hiding an order from their inventory sets this
     // instead of deleting the row, so the sale stays in admin revenue/exports and

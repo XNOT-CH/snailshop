@@ -14,6 +14,7 @@ import {
     type PublicCurrencySettings,
 } from "@/lib/currencySettings";
 import { sumAmounts, toBaht, toSatang } from "@/lib/money";
+import type { AcceptedCheckSnapshot } from "@/lib/features/products/productCheckboxes";
 
 export type CheckoutItemInput = {
     productId: string;
@@ -105,6 +106,18 @@ export function getActivePrice(product: PurchaseProductRow) {
     }
 
     return Number(product.price);
+}
+
+// One order row belongs to one product, so it only stores that product's boxes.
+// NULL when nothing was ticked, which is also what every order before this
+// feature has.
+function serializeAcceptedChecks(checks: AcceptedCheckSnapshot[] | undefined, productId: string) {
+    const own = (checks ?? []).filter((check) => check.productId === productId);
+    if (own.length === 0) {
+        return null;
+    }
+
+    return JSON.stringify(own.map(({ id, title }) => ({ id, title })));
 }
 
 export function processStock(decryptedData: string, separatorType: string, qty: number) {
@@ -387,8 +400,9 @@ export async function executeSingleProductPurchaseTransaction(params: {
     user: PurchaseTransactionUser;
     promoCode?: string;
     currencySettings?: PublicCurrencySettings | null;
+    acceptedChecks?: AcceptedCheckSnapshot[];
 }) {
-    const { conn, productId, qty, user, promoCode, currencySettings } = params;
+    const { conn, productId, qty, user, promoCode, currencySettings, acceptedChecks } = params;
 
     try {
         await conn.beginTransaction();
@@ -447,8 +461,17 @@ export async function executeSingleProductPurchaseTransaction(params: {
 
         const orderId = crypto.randomUUID();
         await conn.execute(
-            "INSERT INTO `Order` (id, userId, totalPrice, status, givenData, productId, productName, productImage) VALUES (?, ?, ?, 'COMPLETED', ?, ?, ?, ?)",
-            [orderId, user.id, totalPrice, encrypt(givenJoined), product.id, product.name, product.imageUrl ?? null],
+            "INSERT INTO `Order` (id, userId, totalPrice, status, acceptedChecks, givenData, productId, productName, productImage) VALUES (?, ?, ?, 'COMPLETED', ?, ?, ?, ?, ?)",
+            [
+                orderId,
+                user.id,
+                totalPrice,
+                serializeAcceptedChecks(acceptedChecks, product.id),
+                encrypt(givenJoined),
+                product.id,
+                product.name,
+                product.imageUrl ?? null,
+            ],
         );
 
         if (isPointCurrency) {
@@ -516,8 +539,9 @@ export async function executeCartPurchaseTransaction(params: {
     user: PurchaseTransactionUser;
     promoCode?: string | null;
     currencySettings?: PublicCurrencySettings | null;
+    acceptedChecks?: AcceptedCheckSnapshot[];
 }) {
-    const { conn, items, userId, promoCode, currencySettings } = params;
+    const { conn, items, userId, promoCode, currencySettings, acceptedChecks } = params;
     const productIds = items.map((item) => item.productId);
 
     try {
@@ -583,8 +607,17 @@ export async function executeCartPurchaseTransaction(params: {
                 : lineTotal;
 
             await conn.execute(
-                "INSERT INTO `Order` (id, userId, totalPrice, status, givenData, productId, productName, productImage) VALUES (?, ?, ?, 'COMPLETED', ?, ?, ?, ?)",
-                [orderId, userId, String(unitPrice), encrypt(givenJoined), product.id, product.name, product.imageUrl ?? null],
+                "INSERT INTO `Order` (id, userId, totalPrice, status, acceptedChecks, givenData, productId, productName, productImage) VALUES (?, ?, ?, 'COMPLETED', ?, ?, ?, ?, ?)",
+                [
+                    orderId,
+                    userId,
+                    String(unitPrice),
+                    serializeAcceptedChecks(acceptedChecks, product.id),
+                    encrypt(givenJoined),
+                    product.id,
+                    product.name,
+                    product.imageUrl ?? null,
+                ],
             );
 
             await conn.execute(
