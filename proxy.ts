@@ -1,4 +1,4 @@
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import NextAuth from "next-auth";
 import { authConfig } from "@/auth.config";
 import {
@@ -8,6 +8,61 @@ import {
 } from "@/lib/adminAccess";
 
 const { auth } = NextAuth(authConfig);
+
+const isProduction = process.env.NODE_ENV === "production";
+
+// The CSP lives here, not in next.config.ts, because the nonce has to be new on
+// every response and next.config headers are static. Every other security
+// header is still declared there.
+//
+// Dropping 'unsafe-inline' from script-src is the point: with it, any HTML an
+// attacker manages to inject executes. A nonce is unguessable and per-response,
+// so only the inline scripts this app rendered run.
+//
+// No 'strict-dynamic' on purpose — it makes the browser ignore 'self' and trust
+// whatever a trusted script loads, which changes how every chunk and the
+// Turnstile loader resolve. 'self' plus a nonce already closes the injection
+// hole this was written for.
+//
+// style-src keeps 'unsafe-inline': Tailwind and the theme variables emit inline
+// style attributes no nonce can cover, and injected CSS is a far smaller
+// problem than injected script.
+export function buildCsp(nonce: string) {
+    return [
+        "default-src 'self'",
+        // 'unsafe-eval' is dev-only: HMR and React Fast Refresh eval code.
+        `script-src 'self' 'nonce-${nonce}'${isProduction ? "" : " 'unsafe-eval'"} https://challenges.cloudflare.com`,
+        "style-src 'self' 'unsafe-inline'",
+        // Dev serves managed uploads from the sidecar on :3001.
+        `img-src 'self' data: blob: https:${isProduction ? "" : " http://localhost:3001"}`,
+        "font-src 'self' data:",
+        "connect-src 'self' https://challenges.cloudflare.com",
+        // youtube-nocookie hosts the embedded help-center videos.
+        "frame-src https://challenges.cloudflare.com https://www.youtube-nocookie.com",
+        "worker-src 'self' blob:",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'self'",
+    ].join("; ");
+}
+
+// Next reads the nonce back out of the CSP on the *request* headers to tag its
+// own bootstrap and hydration scripts; x-nonce is what our inline scripts read
+// through headers(). Both are needed.
+function continueWithCsp(request: NextRequest) {
+    const nonce = btoa(crypto.randomUUID());
+    const csp = buildCsp(nonce);
+
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set("x-nonce", nonce);
+    requestHeaders.set("Content-Security-Policy", csp);
+
+    const response = NextResponse.next({ request: { headers: requestHeaders } });
+    response.headers.set("Content-Security-Policy", csp);
+
+    return response;
+}
 
 export async function proxy(request: NextRequest) {
     const { pathname } = request.nextUrl;
@@ -62,14 +117,17 @@ export async function proxy(request: NextRequest) {
 
         if (pathname.startsWith("/admin")) {
             const permissions = (session.user as { permissions?: string[] }).permissions ?? [];
-            return getAdminPageAccessResponse(pathname, permissions, request.nextUrl) ?? undefined;
+            return getAdminPageAccessResponse(pathname, permissions, request.nextUrl)
+                ?? continueWithCsp(request);
         }
 
         if (pathname.startsWith("/api/admin")) {
             const permissions = (session.user as { permissions?: string[] }).permissions ?? [];
-            return getAdminApiAccessResponse(pathname, permissions) ?? undefined;
+            return getAdminApiAccessResponse(pathname, permissions) ?? continueWithCsp(request);
         }
     }
+
+    return continueWithCsp(request);
 }
 
 export const config = {

@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import { Kanit } from "next/font/google";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import {
@@ -19,6 +20,23 @@ const kanit = Kanit({
   display: "swap",
   variable: "--font-kanit",
 });
+
+// Runs before the browser restores scroll, so it has to be an inline script
+// rather than a useEffect. Two unrelated jobs share it because a second inline
+// script would be a second thing to hand a CSP nonce to.
+//
+// 1. Disable automatic scroll restoration. It was restoring the previous
+//    position (with an overshoot while the layout was still settling), making
+//    the page visibly jump on refresh.
+// 2. Warn about self-XSS. The scam is to tell a player they can get free
+//    credit by pasting something here; pasted code runs as them and can take
+//    the account. The warning cannot stop someone determined to paste, but it
+//    is the one console risk that is real.
+const SCROLL_AND_CONSOLE_WARNING = [
+  'window.history.scrollRestoration = "manual";',
+  'console.log("%cหยุด!", "color:#e11d48;font-size:38px;font-weight:bold");',
+  'console.log("%cถ้ามีคนบอกให้คุณ copy โค้ดมาวางตรงนี้ นั่นคือการโกง เขากำลังขโมยบัญชีของคุณ อย่าวางเด็ดขาด", "font-size:15px");',
+].join("");
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -95,6 +113,9 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Set by middleware.ts, which also puts it in this request's CSP.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
+
   return (
     <html
       lang="th"
@@ -103,13 +124,9 @@ export default async function RootLayout({
       className={kanit.variable}
     >
       <body className="font-sans antialiased min-h-screen bg-background flex flex-col">
-        {/* Disable the browser's automatic scroll restoration on reload. It was
-            restoring the previous scroll position (with an overshoot while the
-            layout was still settling), making the page visibly jump/scroll on
-            refresh. Must run before the browser restores scroll, so it is an
-            inline script rather than a useEffect. */}
         <script
-          dangerouslySetInnerHTML={{ __html: 'window.history.scrollRestoration = "manual";' }}
+          nonce={nonce}
+          dangerouslySetInnerHTML={{ __html: SCROLL_AND_CONSOLE_WARNING }}
         />
         {children}
       </body>
