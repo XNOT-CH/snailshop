@@ -3,10 +3,27 @@
  * Handles splitting secretData into individual stock items based on separator
  */
 
-export type StockSeparatorType = "newline" | "doubleline" | "triple-dash" | "custom";
+// The single source of truth for what a separator means. getDelimiter below is
+// the same function purchase-time takeFirstStock calls, so an entry added here
+// changes what a buyer receives — there is no display-only version of this
+// list. "custom" is deliberately absent: stockSeparator is varchar(20) holding
+// the *type*, with nowhere to store an arbitrary delimiter string.
+export const SEPARATOR_OPTIONS = [
+    { value: "newline", label: "บรรทัดใหม่", description: "ขึ้นบรรทัดใหม่ 1 บรรทัดต่อ 1 รายการ", delimiter: "\n" },
+    { value: "doubleline", label: "เว้น 1 บรรทัด", description: "เว้นบรรทัดว่างคั่น — ใช้เมื่อ 1 รายการมีหลายบรรทัด", delimiter: "\n\n" },
+    { value: "triple-dash", label: "เส้นคั่น ---", description: "คั่นด้วยบรรทัด --- ระหว่างรายการ", delimiter: "\n---\n" },
+    { value: "comma", label: "จุลภาค ,", description: "คั่นด้วยเครื่องหมายจุลภาค", delimiter: "," },
+    { value: "semicolon", label: "อัฒภาค ;", description: "คั่นด้วยเครื่องหมายอัฒภาค", delimiter: ";" },
+    { value: "pipe", label: "ขีดตั้ง |", description: "คั่นด้วยเครื่องหมายขีดตั้ง", delimiter: "|" },
+    { value: "tab", label: "แท็บ", description: "คั่นด้วยแท็บ — มาจากการคัดลอกในสเปรดชีต", delimiter: "\t" },
+    { value: "space", label: "เว้นวรรค", description: "คั่นด้วยการเว้นวรรค 1 ครั้ง", delimiter: " " },
+] as const satisfies readonly { value: string; label: string; description: string; delimiter: string }[];
 
-export const SEPARATOR_OPTIONS: { value: StockSeparatorType; label: string; description: string; delimiter: string }[] = [
-    { value: "newline", label: "บรรทัดใหม่", description: "แยกแต่ละรายการด้วยการขึ้นบรรทัดใหม่ 1 บรรทัด", delimiter: "\n" },
+export type StockSeparatorType = (typeof SEPARATOR_OPTIONS)[number]["value"];
+
+export const STOCK_SEPARATOR_VALUES = SEPARATOR_OPTIONS.map((option) => option.value) as [
+    StockSeparatorType,
+    ...StockSeparatorType[],
 ];
 
 /**
@@ -23,7 +40,15 @@ export function getDelimiter(separatorType: string): string {
 export function splitStock(secretData: string, separatorType: string): string[] {
     if (!secretData?.trim()) return [];
     const delimiter = getDelimiter(separatorType);
-    return secretData.split(delimiter).filter(item => item.trim() !== "");
+    // Normalise CRLF before splitting, and trim what comes out. The old body
+    // filtered blank items but never trimmed them, so a paste from Windows left
+    // a trailing "\r" on every item — and that item is handed to the buyer
+    // verbatim by takeFirstStock at purchase time.
+    return secretData
+        .replaceAll("\r\n", "\n")
+        .split(delimiter)
+        .map((item) => item.trim())
+        .filter((item) => item !== "");
 }
 
 export function getStockUser(stockItem: string): string {

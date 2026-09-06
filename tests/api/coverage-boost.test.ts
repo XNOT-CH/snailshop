@@ -62,7 +62,8 @@ vi.mock("@/lib/auditLog", () => ({
   auditFromRequest: vi.fn(),
   AUDIT_ACTIONS: { TOPUP_REQUEST: "TOPUP_REQUEST", REGISTER: "REGISTER" },
 }));
-vi.mock("@/lib/cache", () => ({
+vi.mock("@/lib/cache", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/cache")>()),
   cacheOrFetch: vi.fn((_key: any, fn: any) => fn()),
   CACHE_KEYS: { NEWS_ARTICLES: "news", ANNOUNCEMENT_POPUPS: "popups", SALE_PRODUCTS: "sale" },
   CACHE_TTL: { MEDIUM: 300 },
@@ -76,7 +77,10 @@ vi.mock("@/lib/rateLimit", () => ({
   checkTopupRateLimit: vi.fn(() => ({ blocked: false })),
   getClientIp: vi.fn(() => "127.0.0.1"),
 }));
-vi.mock("@/lib/api", () => ({ parseBody: vi.fn() }));
+vi.mock("@/lib/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api")>()),
+  parseBody: vi.fn(),
+}));
 vi.mock("@/lib/validations", () => ({ registerSchema: {} }));
 vi.mock("@/lib/encryption", () => ({ encrypt: vi.fn((s: string) => `enc:${s}`) }));
 vi.mock("bcryptjs", () => ({ default: { hash: vi.fn().mockResolvedValue("hashed_pw") } }));

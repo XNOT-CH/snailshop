@@ -3,7 +3,7 @@
  * across catch blocks, 404 paths, validation branches and lib functions.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { NextRequest } from "next/server";
+import { NextRequest , NextResponse } from "next/server";
 
 // ─── Global Mocks ──────────────────────────────────────────────
 // The schemas above are stubs, so hand them straight back instead of
@@ -41,7 +41,8 @@ vi.mock("@/lib/validations/content", () => ({
   gachaRewardSchema: {},
 }));
 vi.mock("@/lib/validations/gacha", () => ({ gachaRewardSchema: {} }));
-vi.mock("@/lib/cache", () => ({
+vi.mock("@/lib/cache", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/cache")>()),
   invalidateCache: vi.fn().mockResolvedValue(true),
   invalidateNewsCaches: vi.fn().mockResolvedValue(undefined),
   invalidatePopupCaches: vi.fn().mockResolvedValue(undefined),
@@ -72,7 +73,10 @@ vi.mock("@/lib/rateLimit", () => ({
   sleep:                  vi.fn().mockResolvedValue(undefined),
   checkRegisterRateLimit: vi.fn().mockReturnValue({ blocked: false }),
 }));
-vi.mock("@/lib/api", () => ({ parseBody: vi.fn() }));
+vi.mock("@/lib/api", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/api")>()),
+  parseBody: vi.fn(),
+}));
 vi.mock("@/lib/security/turnstile", () => ({
   verifyTurnstileToken: vi.fn().mockResolvedValue({ success: true }),
 }));
@@ -216,6 +220,12 @@ describe("API: /api/products/[id]/stock (missing paths)", () => {
 
   it("PUT returns 400 when secretData is missing", async () => {
     (isAdmin as any).mockResolvedValue(ADMIN_OK);
+    // The route validates through validateBody now, and this file stubs that
+    // module globally — so the rejection has to come from the stub. An earlier
+    // test's mockResolvedValue would otherwise leak in and let the body pass.
+    (validateBody as any).mockResolvedValue({
+      error: NextResponse.json({ success: false, message: "Missing secretData" }, { status: 400 }),
+    });
     const { PUT } = await import("@/app/api/products/[id]/stock/route");
     const res = await PUT(
       new NextRequest("http://localhost", { method: "PUT", body: JSON.stringify({ other: "data" }) }),
@@ -226,6 +236,8 @@ describe("API: /api/products/[id]/stock (missing paths)", () => {
 
   it("PUT returns 404 when product not found", async () => {
     (isAdmin as any).mockResolvedValue(ADMIN_OK);
+    // Body has to pass validation for the 404 branch to be the one under test.
+    (validateBody as any).mockResolvedValue({ data: { secretData: "abc123" } });
     (db.query.products.findFirst as any).mockResolvedValue(null);
     const { PUT } = await import("@/app/api/products/[id]/stock/route");
     const res = await PUT(

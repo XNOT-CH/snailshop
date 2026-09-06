@@ -34,11 +34,19 @@ export function permanentlyDeleteProduct(id: string) {
     return db.delete(products).where(eq(products.id, id));
 }
 
-export function updateProductStock(id: string, secretData: string, stockSeparator: string | null | undefined) {
-    const stockCount = getStockCount(secretData, stockSeparator || "newline");
+// secretData and stockSeparator are written together on purpose. They are two
+// halves of one fact: purchase-time processStock splits the blob with the
+// separator off the same row, and stockCount below is counted with it. Letting
+// one change without the other is how a buyer ends up with the wrong slice.
+export function updateProductStock(
+    id: string,
+    { secretData, stockSeparator }: { secretData: string; stockSeparator: string | null | undefined },
+) {
+    const separator = stockSeparator || "newline";
+    const stockCount = getStockCount(secretData, separator);
 
     return db
         .update(products)
-        .set({ secretData: encrypt(secretData), stockCount, isSold: stockCount === 0 })
+        .set({ secretData: encrypt(secretData), stockSeparator: separator, stockCount, isSold: stockCount === 0 })
         .where(eq(products.id, id));
 }
