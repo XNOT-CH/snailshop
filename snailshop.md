@@ -132,19 +132,24 @@ so plain `docker compose` commands include it. On a checkout without that line,
 `npm run dev` cannot connect until you run
 `docker compose --profile dev up -d app_db_dev`.
 
-**Dev and production share one Redis, and the cache keys are not namespaced.**
-The databases were split on 2026-09-05; the cache was not. `.env`, `.env.local` and
-`.env.development.local` all point at the same Upstash instance, and `CACHE_KEYS` in
-`lib/cache.ts` are bare strings like `registration_policies` — so a dev request that
-warms a key serves that value to the deployed site until the TTL runs out, whatever
-production's own tables say. This bit on 2026-09-06: seed rows written to the dev
-database on :3308 rendered on the live `/terms` after a deploy, while the production
-table was empty. Writing through the admin UI is safe (every mutating route calls its
-`invalidate*Caches()`); raw SQL against either database is not, because it bypasses
-that path and leaves the stale value in place. After touching a cached table by hand,
-delete the key — `curl -H "Authorization: Bearer $UPSTASH_REDIS_REST_TOKEN"
-"$UPSTASH_REDIS_REST_URL/del/<key>"` — and check the *other* environment, not just the
-one you edited.
+**Dev and production share one Redis instance.** `.env`, `.env.local` and
+`.env.development.local` all point at the same Upstash database. Keys written through
+`lib/cache.ts` are namespaced by `NODE_ENV` since 2026-09-06 (`dev:` / `prod:`), so
+content caches no longer cross over — that was found the hard way when seed rows
+written straight into the dev database on :3308 rendered on the live `/terms` after a
+deploy, while production's own table was empty.
+
+Two things the namespace does *not* cover, because they talk to `redis` directly
+rather than through `lib/cache.ts`: `lib/rateLimit.ts` (login attempt counters and
+lockouts — a dev login can spend a production identifier's budget) and the gacha
+pending-spin and lock keys in `app/api/gacha/roll/route.ts`. Prefix those the same way
+if it ever matters.
+
+Raw SQL against a cached table still leaves the stale value in place, in whichever
+environment you edited — writing through the admin UI is safe because every mutating
+route calls its `invalidate*Caches()`. After a hand-edit, delete the key including its
+prefix: `curl -H "Authorization: Bearer $UPSTASH_REDIS_REST_TOKEN"
+"$UPSTASH_REDIS_REST_URL/del/dev:<key>"`.
 
 **Mixed line endings break patches silently.** `.gitattributes` sets `eol=lf` and the
 git index is all LF, but files check out as CRLF on Windows and some end up mixed. A
@@ -572,7 +577,7 @@ Read a range, not the file. Landmarks are `name:line`.
 |---|---|---|
 | `app/globals.css` | 3925 | @theme inline:11, Unified Luxury Blue Theme:99, :root:101, DARK MODE THEME - Premium Gaming Style:181, SweetAlert2 Global Overrides:187, @layer base:358, DARK MODE ENHANCEMENTS:404, Glass effect cards in dark mode:412 |
 | `app/(site)/profile/settings/page.tsx` | 1920 | parseApiResponse:88, sanitizePhone:112, sanitizeTaxId:116, sanitizeThaiName:120, sanitizeEnglishName:124, cloneAddress:173, hasAddressData:177, getAddressSummary:181 |
-| `app/(site)/admin/settings/page.tsx` | 1356 | isValidHttpUrl:59, isValidImageRef:69, AdminSettingsPage:101, BannerCard:1102 |
+| `app/(site)/admin/settings/page.tsx` | 1372 | isValidHttpUrl:59, isValidImageRef:69, AdminSettingsPage:101, BannerCard:1118 |
 | `app/(site)/admin/promo-codes/page.tsx` | 1199 | parsePromoDate:118, toBangkokDateInputValue:127, isExpired:140, isNotStarted:145, getPromoStatus:150, StatusBadge:185, getCodeTypeBadgeClass:195, getCodeTypeLabel:201 |
 | `app/(site)/admin/users/AdminUsersClient.tsx` | 1188 | formatRoleLabel:67, escapeHtml:80, isInternalRoleCode:89, getSystemRoleLabel:93, sanitizeDecimalInput:105, sanitizeIntegerInput:119, isValidDecimalInput:123, isValidIntegerInput:127 |
 | `app/(site)/dashboard/topup/page.tsx` | 1127 | BANK_INFO:41, getVerifyMethodLabel:96, getVerifyTargetLabel:112, TopupPage:116 |

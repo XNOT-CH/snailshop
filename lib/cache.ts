@@ -24,6 +24,20 @@ export const CACHE_TTL = {
     VERY_LONG: 60 * 60 * 24, // 24 hours - for rarely changing data
 } as const;
 
+// Dev and production point at the same Upstash instance, so an unprefixed key
+// is one shared slot: whichever environment last wrote it serves both. On
+// 2026-09-06 seed rows written to the dev database rendered on the live /terms
+// because of exactly this. The namespace is derived from NODE_ENV rather than a
+// new env var so no deployment can forget to set it.
+//
+// Applied inside the four accessors below, so callers keep passing plain
+// CACHE_KEYS values and nothing else in the codebase has to know.
+const CACHE_NAMESPACE = process.env.NODE_ENV === "production" ? "prod" : "dev";
+
+function namespaced(key: string): string {
+    return `${CACHE_NAMESPACE}:${key}`;
+}
+
 /**
  * Get data from cache
  */
@@ -33,7 +47,7 @@ export async function getFromCache<T>(key: string): Promise<T | null> {
     }
 
     try {
-        const cached = await redis.get<T>(key);
+        const cached = await redis.get<T>(namespaced(key));
         if (cached) {
             console.log(`✅ Cache HIT: ${key}`);
             return cached;
@@ -59,7 +73,7 @@ export async function setToCache<T>(
     }
 
     try {
-        await redis.set(key, data, { ex: ttlSeconds });
+        await redis.set(namespaced(key), data, { ex: ttlSeconds });
         console.log(`💾 Cache SET: ${key} (TTL: ${ttlSeconds}s)`);
         return true;
     } catch (error) {
@@ -77,7 +91,7 @@ export async function deleteFromCache(key: string): Promise<boolean> {
     }
 
     try {
-        await redis.del(key);
+        await redis.del(namespaced(key));
         console.log(`🗑️ Cache DELETE: ${key}`);
         return true;
     } catch (error) {
@@ -96,7 +110,7 @@ export async function invalidateCache(keys: string[]): Promise<boolean> {
 
     try {
         for (const key of keys) {
-            await redis.del(key);
+            await redis.del(namespaced(key));
         }
         console.log(`🗑️ Cache INVALIDATED: ${keys.join(", ")}`);
         return true;

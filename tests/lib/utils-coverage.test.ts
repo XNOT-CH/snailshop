@@ -191,7 +191,9 @@ describe("lib/cache", () => {
     const result = await cacheOrFetch("test_key", fetchFn, 60);
     expect(result).toEqual({ id: "fresh" });
     expect(fetchFn).toHaveBeenCalledOnce();
-    expect(redis!.set).toHaveBeenCalledWith("test_key", { id: "fresh" }, { ex: 60 });
+    // Keys reach Redis namespaced by environment — dev and production share one
+    // instance, so the bare key would be a slot both write. See tests/lib/cacheNamespace.
+    expect(redis!.set).toHaveBeenCalledWith("dev:test_key", { id: "fresh" }, { ex: 60 });
   });
 
   it("cacheOrFetch waits for the cache write before resolving", async () => {
