@@ -1,4 +1,9 @@
-# syntax=docker/dockerfile:1
+# No "# syntax=" directive on purpose. Pinning the external dockerfile frontend
+# makes every build pull and run it, and on this machine that frontend dies —
+# "failed to solve: frontend grpc server closed unexpectedly" — which
+# docker compose then reports with exit code 0, so a failed build looks like a
+# successful deploy. The daemon's built-in frontend (Docker 29) handles
+# everything here, RUN --mount=type=secret included.
 FROM node:20-alpine AS base
 WORKDIR /app
 

@@ -170,10 +170,20 @@ is not a regression. Playwright's own server (port 3201) sets the flag, but it s
 decrypt with `ENCRYPTION_PREVIOUS_KEYS=legacy-dev=…` in `.env.development.local`. When
 rotating, move the outgoing key into `ENCRYPTION_PREVIOUS_KEYS` rather than dropping it.
 
-**A Docker build can fail three ways:** a dead BuildKit frontend (drop the `# syntax`
-line), MySQL `max_connections` exhausted by build workers, and CRLF files making a
-patch step miss. A backgrounded `docker compose up -d --build web` has also exited 0
-having built nothing — check the image age afterwards.
+**A Docker build can fail three ways:** a dead BuildKit frontend, MySQL
+`max_connections` exhausted by build workers, and CRLF files making a patch step miss.
+
+The first one is settled: the `# syntax=docker/dockerfile:1` directive was removed from
+the Dockerfile on 2026-09-06 because the external frontend it pins dies on this machine
+every time — `failed to solve: frontend grpc server closed unexpectedly`. Docker 29's
+built-in frontend handles everything here, `RUN --mount=type=secret` included. Do not
+add the directive back without checking that a build still completes.
+
+**Never trust the exit code of `docker compose up -d --build web`.** It exits 0 on a
+failed build, so a deploy that built nothing looks like a success and the old image keeps
+serving. Confirm with the image age — `docker images my-game-store-web
+--format "{{.CreatedSince}} {{.ID}}"` — and then with `/api/health`, which reports the
+version and commit baked into the running image.
 
 **Free gacha spins are unlimited on purpose.** Don't "fix" it. It only needs a warning
 if a points-priced item is added.
@@ -575,13 +585,13 @@ Read a range, not the file. Landmarks are `name:line`.
 
 | File | Lines | Landmarks |
 |---|---|---|
-| `app/globals.css` | 3925 | @theme inline:11, Unified Luxury Blue Theme:99, :root:101, DARK MODE THEME - Premium Gaming Style:181, SweetAlert2 Global Overrides:187, @layer base:358, DARK MODE ENHANCEMENTS:404, Glass effect cards in dark mode:412 |
+| `app/globals.css` | 3947 | @theme inline:11, Unified Luxury Blue Theme:99, :root:101, DARK MODE THEME - Premium Gaming Style:181, SweetAlert2 Global Overrides:187, @layer base:358, DARK MODE ENHANCEMENTS:404, Glass effect cards in dark mode:412 |
 | `app/(site)/profile/settings/page.tsx` | 1920 | parseApiResponse:88, sanitizePhone:112, sanitizeTaxId:116, sanitizeThaiName:120, sanitizeEnglishName:124, cloneAddress:173, hasAddressData:177, getAddressSummary:181 |
 | `app/(site)/admin/settings/page.tsx` | 1372 | isValidHttpUrl:59, isValidImageRef:69, AdminSettingsPage:101, BannerCard:1118 |
 | `app/(site)/admin/promo-codes/page.tsx` | 1199 | parsePromoDate:118, toBangkokDateInputValue:127, isExpired:140, isNotStarted:145, getPromoStatus:150, StatusBadge:185, getCodeTypeBadgeClass:195, getCodeTypeLabel:201 |
 | `app/(site)/admin/users/AdminUsersClient.tsx` | 1188 | formatRoleLabel:67, escapeHtml:80, isInternalRoleCode:89, getSystemRoleLabel:93, sanitizeDecimalInput:105, sanitizeIntegerInput:119, isValidDecimalInput:123, isValidIntegerInput:127 |
+| `components/admin/ProductTable.tsx` | 1153 | useIsDesktop:91, formatAutoDelete:129, hasDiscountPrice:149, getActivePrice:157, getDisplayStockCount:161, getStockTone:165, getProductCardData:181, getPriceText:194 |
 | `app/(site)/dashboard/topup/page.tsx` | 1127 | BANK_INFO:41, getVerifyMethodLabel:96, getVerifyTargetLabel:112, TopupPage:116 |
-| `components/admin/ProductTable.tsx` | 1104 | formatAutoDelete:96, hasDiscountPrice:116, getActivePrice:124, getDisplayStockCount:128, getStockTone:132, getProductCardData:148, getPriceText:161, getOriginalPriceText:167 |
 | `app/(site)/admin/gacha-machines/[id]/edit/page.tsx` | 1102 | validImageUrl:63, defaultAddForm:81, buildRewardPayload:101, sortRewards:123, getSimulationRewardName:152, isRewardEligibleForSimulation:158, validateReward:162, ProductPickerDropdown:181 |
 | `app/(site)/admin/audit-logs/page.tsx` | 1083 | getActionBadgeClass:267, getChangeValue:275, getExtraDetailsHtml:300, getResourceDetailsHtml:350, getVisibleCheckboxState:373, getDeleteConfirmText:385, AdminAuditLogsPage:402 |
 | `app/(site)/admin/footer-links/page.tsx` | 1081 | getDomainLabel:83, SortableRow:104, SortableCard:226, DragPreview:333, FooterColumnBoard:382, FooterLinksAdminPage:498 |
