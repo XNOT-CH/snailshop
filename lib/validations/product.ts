@@ -1,5 +1,11 @@
 import { z } from "zod";
 import { partialUpdateSchema } from "@/lib/validations/partialUpdate";
+import { STOCK_SEPARATOR_VALUES } from "@/lib/stock";
+
+// No .default() here: the stock route needs `undefined` to stay undefined so it
+// can fall back to the separator already stored on the product. Callers that
+// want a default apply it themselves.
+export const stockSeparatorSchema = z.enum(STOCK_SEPARATOR_VALUES);
 
 // ── Create Product ───────────────────────────────────────
 export const createProductSchema = z.object({
@@ -11,9 +17,10 @@ export const createProductSchema = z.object({
     imageUrl: z.url({ error: "URL รูปภาพไม่ถูกต้อง" }).optional().or(z.literal("")),
     description: z.string().max(2000).optional().or(z.literal("")),
     secretData: z.string().optional().or(z.literal("")),
-    // Only "newline" is actually supported by lib/stock (getDelimiter falls back
-    // to "\n" for anything else), so keep the schema in step with reality.
-    stockSeparator: z.enum(["newline"]).default("newline"),
+    // Derived from SEPARATOR_OPTIONS so the schema cannot drift from what
+    // getDelimiter actually understands — an accepted value that is not in
+    // that list silently means newline at purchase time.
+    stockSeparator: stockSeparatorSchema.default("newline"),
     isFeatured: z.boolean().default(false),
     isSaleItem: z.boolean().default(false),
 });

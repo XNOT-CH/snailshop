@@ -1,215 +1,202 @@
 "use client";
 
-import { SpinnerScreen } from "@/components/SpinnerScreen";
-
-import { useState, useEffect, useMemo } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { ArrowLeft, Package } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {
-    ArrowLeft,
-    Loader2,
-    Package,
-    Eye,
-    Plus,
-    Pencil,
-    Trash2,
-    Check,
-    X,
-    Save,
-} from "lucide-react";
-import { showSuccess, showError } from "@/lib/swal";
-import { getDelimiter, splitStock, type StockSeparatorType } from "@/lib/stock";
+import { SpinnerScreen } from "@/components/SpinnerScreen";
+import { StockEditorCard } from "@/components/admin/stock/StockEditorCard";
+import { StockListCard } from "@/components/admin/stock/StockListCard";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import { PERMISSIONS } from "@/lib/permissions";
+import { showConfirm, showError, showSuccess } from "@/lib/swal";
+import { joinStock, splitStock, type StockSeparatorType } from "@/lib/stock";
 
 export default function StockManagementPage() {
     const router = useRouter();
     const params = useParams();
     const productId = params.id as string;
     const permissions = useAdminPermissions();
-    const canEditProduct = permissions.includes(PERMISSIONS.PRODUCT_EDIT);
+    const canEdit = permissions.includes(PERMISSIONS.PRODUCT_EDIT);
 
     const [isFetching, setIsFetching] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [productName, setProductName] = useState("");
-    const [secretData, setSecretData] = useState("");
-    const [originalData, setOriginalData] = useState("");
-    const [stockSeparator, setStockSeparator] = useState<StockSeparatorType>("newline");
 
-    const [takenUsers, setTakenUsers] = useState<Record<string, string>>({});
-    const [singleUser, setSingleUser] = useState("");
-    const [singlePass, setSinglePass] = useState("");
-    const [editingIndex, setEditingIndex] = useState<number | null>(null);
-    const [editUser, setEditUser] = useState("");
-    const [editPass, setEditPass] = useState("");
+    // `stored` is what the server holds; `draft` is only the textarea. They are
+    // separate because the top card stages new stock and appends on save — it is
+    // not a second editor over the same blob.
+    const [stored, setStored] = useState("");
+    const [draft, setDraft] = useState("");
+    const [separator, setSeparator] = useState<StockSeparatorType>("newline");
+    const [savedSeparator, setSavedSeparator] = useState<StockSeparatorType>("newline");
 
-    const stockItems = useMemo(() => {
-        return splitStock(secretData, stockSeparator);
-    }, [secretData, stockSeparator]);
+    const storedItems = useMemo(
+        () => splitStock(stored, separator).map((text, index) => ({ index, text })),
+        [stored, separator],
+    );
+    const draftItems = useMemo(() => splitStock(draft, separator), [draft, separator]);
 
-    const hasChanges = secretData !== originalData;
+    // What the stored blob splits into under the separator currently on the row,
+    // so a change can be described as "was N, becomes M" before anything is written.
+    const storedCountBefore = useMemo(
+        () => splitStock(stored, savedSeparator).length,
+        [stored, savedSeparator],
+    );
 
-    useEffect(() => {
-        const fetchProduct = async () => {
-            try {
-                const [productRes, takenRes] = await Promise.all([
-                    fetch(`/api/products/${productId}`),
-                    fetch(`/api/products/${productId}/stock`),
-                ]);
+    // Non-null only while the choice differs from what is stored AND the split
+    // actually changes — a separator swap that lands on the same count is not
+    // worth a warning.
+    const resplit = useMemo(() => {
+        if (separator === savedSeparator || stored.trim() === "") return null;
+        const after = storedItems.length;
+        return after === storedCountBefore ? null : { before: storedCountBefore, after };
+    }, [separator, savedSeparator, stored, storedItems.length, storedCountBefore]);
 
-                const data = await productRes.json();
-                if (data.success && data.data) {
-                    setProductName(data.data.name || "");
-                    const displayData = data.data.isSold ? "" : (data.data.secretData || "");
-                    setSecretData(displayData);
-                    setOriginalData(displayData);
-                    setStockSeparator((data.data.stockSeparator || "newline") as StockSeparatorType);
-                } else {
-                    showError("ไม่พบสินค้า");
-                    router.push("/admin/products");
-                }
+    const loadStock = useCallback(async () => {
+        setIsFetching(true);
+        try {
+            const res = await fetch(`/api/products/${productId}`);
+            const data = await res.json();
+            if (!res.ok || !data.success) throw new Error(data.message ?? "โหลดข้อมูลไม่สำเร็จ");
 
-                const takenData = await takenRes.json();
-                if (takenData.success) setTakenUsers(takenData.takenUsers ?? {});
-            } catch {
-                showError("เกิดข้อผิดพลาดในการโหลดข้อมูล");
-                router.push("/admin/products");
-            } finally {
-                setIsFetching(false);
-            }
-        };
-
-        fetchProduct();
+            const nextSeparator = (data.data.stockSeparator || "newline") as StockSeparatorType;
+            setProductName(data.data.name ?? "");
+            setStored(data.data.isSold ? "" : (data.data.secretData ?? ""));
+            setSeparator(nextSeparator);
+            setSavedSeparator(nextSeparator);
+        } catch (error) {
+            showError(error instanceof Error ? error.message : "โหลดข้อมูลไม่สำเร็จ");
+            router.push("/admin/products");
+        } finally {
+            setIsFetching(false);
+        }
     }, [productId, router]);
 
-    const rebuildSecretData = (items: string[]) => {
-        setSecretData(items.join(getDelimiter(stockSeparator)));
-    };
+    useEffect(() => {
+        void loadStock();
+    }, [loadStock]);
 
-    const handleAddSingleStock = () => {
-        if (!canEditProduct) {
-            showError("คุณไม่มีสิทธิ์แก้ไขสินค้า");
-            return;
-        }
+    /**
+     * The one writer. Everything that changes stock — appending a batch, deleting
+     * a row, reordering, clearing — goes through here, so secretData and
+     * stockSeparator always reach the server together.
+     */
+    const persist = useCallback(
+        async (nextSecretData: string, nextSeparator: StockSeparatorType, successMessage: string) => {
+            if (!canEdit) {
+                showError("คุณไม่มีสิทธิ์แก้ไขสินค้า");
+                return false;
+            }
 
-        if (!singleUser.trim() || !singlePass.trim()) {
-            showError("กรุณากรอก User และ Pass");
-            return;
-        }
+            setIsSaving(true);
+            try {
+                const res = await fetchWithCsrf(`/api/products/${productId}/stock`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ secretData: nextSecretData, stockSeparator: nextSeparator }),
+                });
+                const data = await res.json().catch(() => ({}));
 
-        const newUser = singleUser.trim();
-        const isDuplicate = stockItems.some((item) => item.split(" / ")[0]?.trim() === newUser);
-        if (isDuplicate) {
-            showError(`User "${newUser}" มีในสต็อกอยู่แล้ว`);
-            return;
-        }
+                if (!res.ok) {
+                    showError(data.message || `บันทึกไม่สำเร็จ (${res.status})`);
+                    return false;
+                }
 
-        if (takenUsers[newUser]) {
-            showError(`User "${newUser}" มีอยู่ในสต็อกของสินค้า "${takenUsers[newUser]}" แล้ว`);
-            return;
-        }
-
-        const newEntry = `${newUser} / ${singlePass.trim()}`;
-        setSecretData((prev) => (prev ? `${prev}\n${newEntry}` : newEntry));
-        setSingleUser("");
-        setSinglePass("");
-        showSuccess("เพิ่มสต็อกสำเร็จ");
-    };
-
-    const handleEditStock = (index: number, item: string) => {
-        if (!canEditProduct) {
-            showError("คุณไม่มีสิทธิ์แก้ไขสินค้า");
-            return;
-        }
-
-        const parts = item.split(" / ");
-        setEditUser(parts[0]?.trim() || item);
-        setEditPass(parts[1]?.trim() || "");
-        setEditingIndex(index);
-    };
-
-    const handleSaveEditStock = () => {
-        if (!canEditProduct) {
-            showError("คุณไม่มีสิทธิ์แก้ไขสินค้า");
-            return;
-        }
-
-        if (editingIndex === null) return;
-
-        if (!editUser.trim() || !editPass.trim()) {
-            showError("กรุณากรอก User และ Pass");
-            return;
-        }
-
-        const updatedUser = editUser.trim();
-        const isDuplicate = stockItems.some((item, index) =>
-            index !== editingIndex && item.split(" / ")[0]?.trim() === updatedUser
-        );
-
-        if (isDuplicate) {
-            showError(`User "${updatedUser}" มีในสต็อกอยู่แล้ว`);
-            return;
-        }
-
-        if (takenUsers[updatedUser]) {
-            showError(`User "${updatedUser}" มีอยู่ในสต็อกของสินค้า "${takenUsers[updatedUser]}" แล้ว`);
-            return;
-        }
-
-        const items = [...stockItems];
-        items[editingIndex] = `${updatedUser} / ${editPass.trim()}`;
-        rebuildSecretData(items);
-        setEditingIndex(null);
-        setEditUser("");
-        setEditPass("");
-        showSuccess("แก้ไขสำเร็จ");
-    };
-
-    const handleDeleteStock = (index: number) => {
-        if (!canEditProduct) {
-            showError("คุณไม่มีสิทธิ์แก้ไขสินค้า");
-            return;
-        }
-
-        const items = stockItems.filter((_, itemIndex) => itemIndex !== index);
-        rebuildSecretData(items);
-        if (editingIndex === index) setEditingIndex(null);
-        showSuccess("ลบสต็อกสำเร็จ");
-    };
+                setStored(nextSecretData);
+                setSavedSeparator(nextSeparator);
+                showSuccess(successMessage);
+                return true;
+            } catch (error) {
+                showError(error instanceof Error ? error.message : "บันทึกไม่สำเร็จ");
+                return false;
+            } finally {
+                setIsSaving(false);
+            }
+        },
+        [canEdit, productId],
+    );
 
     const handleSave = async () => {
-        if (!canEditProduct) {
-            showError("คุณไม่มีสิทธิ์แก้ไขสินค้า");
+        const separatorChanged = separator !== savedSeparator;
+
+        if (draftItems.length === 0 && !separatorChanged) {
+            showError("ยังไม่มีข้อมูลให้บันทึก");
             return;
         }
 
-        setIsSaving(true);
-
-        try {
-            const response = await fetchWithCsrf(`/api/products/${productId}/stock`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ secretData }),
-            });
-
-            const data = await response.json();
-            if (data.success) {
-                setOriginalData(secretData);
-                showSuccess("บันทึกสต็อกสำเร็จ");
-            } else {
-                showError(data.message || "เกิดข้อผิดพลาด");
-            }
-        } catch {
-            showError("ไม่สามารถบันทึกได้");
-        } finally {
-            setIsSaving(false);
+        // Changing the separator re-splits stock that is already for sale, and
+        // takeFirstStock uses the stored separator to decide what the next buyer
+        // receives — so the count moving is the thing worth stopping on.
+        if (separatorChanged && stored.trim() !== "") {
+            const after = splitStock(stored, separator).length;
+            const confirmed = await showConfirm(
+                "เปลี่ยนเกณฑ์การแยกสต็อก?",
+                `สต็อกเดิมของ "${productName}" จะถูกแบ่งใหม่จาก ${storedCountBefore} รายการ เป็น ${after} รายการ `
+                + "และนี่คือสิ่งที่ลูกค้าจะได้รับตอนซื้อ",
+                "เปลี่ยนและบันทึก",
+            );
+            if (!confirmed) return;
         }
+
+        const merged = [...splitStock(stored, separator), ...draftItems];
+        const ok = await persist(
+            joinStock(merged, separator),
+            separator,
+            `บันทึก ${draftItems.length} รายการแล้ว`,
+        );
+        if (ok) setDraft("");
+    };
+
+    const handleDelete = async (index: number) => {
+        const target = storedItems.find((item) => item.index === index);
+        if (!target) return;
+
+        const confirmed = await showConfirm(
+            "ลบรายการนี้?",
+            `จะลบ "${target.text.slice(0, 60)}" ออกจากสต็อกถาวร กู้คืนไม่ได้`,
+            "ลบรายการ",
+        );
+        if (!confirmed) return;
+
+        const remaining = storedItems.filter((item) => item.index !== index).map((item) => item.text);
+        await persist(joinStock(remaining, separator), separator, "ลบรายการแล้ว");
+    };
+
+    const handleMoveToFront = async (index: number) => {
+        const target = storedItems.find((item) => item.index === index);
+        if (!target) return;
+
+        const rest = storedItems.filter((item) => item.index !== index).map((item) => item.text);
+        await persist(joinStock([target.text, ...rest], separator), separator, "ย้ายไปบนสุดแล้ว");
+    };
+
+    const handleClearAll = async () => {
+        const confirmed = await showConfirm(
+            "ล้างสต็อกทั้งหมด?",
+            `จะลบสต็อกทั้ง ${storedItems.length} รายการของ "${productName}" และสินค้าจะกลายเป็นสถานะขายหมดทันที กู้คืนไม่ได้`,
+            "ล้างทั้งหมด",
+        );
+        if (!confirmed) return;
+
+        await persist("", separator, "ล้างสต็อกทั้งหมดแล้ว");
+    };
+
+    const handleExport = () => {
+        // The raw blob, joined the way it is stored, so the file round-trips back
+        // through this page's own import button. No BOM — it would ride along into
+        // the first item on re-import and end up in a customer's hands.
+        const blob = new Blob([joinStock(storedItems.map((item) => item.text), separator)], {
+            type: "text/plain;charset=utf-8",
+        });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `stock-${productId}-${new Date().toISOString().slice(0, 10)}.txt`;
+        anchor.click();
+        URL.revokeObjectURL(url);
     };
 
     if (isFetching) {
@@ -228,202 +215,39 @@ export default function StockManagementPage() {
                         กลับไปรายการสินค้า
                     </Link>
                     <h1 className="flex items-center gap-2 text-2xl font-bold">
-                        <Package className="h-6 w-6 text-amber-600" />
+                        <Package className="h-6 w-6 text-primary" />
                         จัดการสต็อก
                     </h1>
                     <p className="mt-1 text-muted-foreground">{productName}</p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 sm:justify-end">
-                    <Badge variant="secondary" className="px-3 py-1 text-base">
-                        {stockItems.length} รายการ
-                    </Badge>
-                </div>
+                <Badge variant="secondary" className="px-3 py-1 text-base">
+                    {storedItems.length} รายการ
+                </Badge>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <Card className="border-amber-200 bg-amber-50/50">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-base text-amber-700">
-                            <Plus className="h-5 w-5" />
-                            เพิ่มสต็อก
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-3">
-                            <div className="space-y-2">
-                                <Label htmlFor="singleUser">User</Label>
-                                <Input
-                                    id="singleUser"
-                                    placeholder="เช่น username123"
-                                    value={singleUser}
-                                    onChange={(e) => setSingleUser(e.target.value)}
-                                    disabled={!canEditProduct}
-                                    className="font-mono"
-                                />
-                            </div>
+            <StockEditorCard
+                draft={draft}
+                onDraftChange={setDraft}
+                separator={separator}
+                onSeparatorChange={setSeparator}
+                items={draftItems}
+                resplit={resplit}
+                canEdit={canEdit}
+                isSaving={isSaving}
+                onSave={() => void handleSave()}
+            />
 
-                            <div className="space-y-2">
-                                <Label htmlFor="singlePass">Pass</Label>
-                                <Input
-                                    id="singlePass"
-                                    placeholder="เช่น password456"
-                                    value={singlePass}
-                                    onChange={(e) => setSinglePass(e.target.value)}
-                                    disabled={!canEditProduct}
-                                    className="font-mono"
-                                />
-                            </div>
-
-                            <Button
-                                type="button"
-                                className="w-full gap-2"
-                                onClick={handleAddSingleStock}
-                                disabled={!canEditProduct}
-                            >
-                                <Plus className="h-4 w-4" />
-                                เพิ่มสต็อก
-                            </Button>
-
-                            <p className="text-xs text-amber-600">
-                                กรุณากรอก User และ Pass ให้ครบทั้งสองช่อง
-                            </p>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-blue-200 bg-blue-50/50">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="flex items-center gap-2 text-base text-blue-700">
-                            <Eye className="h-5 w-5" />
-                            รายการสต็อก
-                            <Badge variant="secondary" className="ml-auto">
-                                {stockItems.length} รายการ
-                            </Badge>
-                        </CardTitle>
-                    </CardHeader>
-
-                    <CardContent>
-                        {stockItems.length === 0 ? (
-                            <div className="py-8 text-center text-muted-foreground">
-                                <Package className="mx-auto mb-2 h-10 w-10 opacity-30" />
-                                <p>ยังไม่มีสต็อก</p>
-                                <p className="mt-1 text-xs">เพิ่มข้อมูลทางด้านซ้าย</p>
-                            </div>
-                        ) : (
-                            <div className="max-h-[500px] space-y-2 overflow-y-auto">
-                                {stockItems.map((item, index) => (
-                                    <div
-                                        key={`${item}-${index}`}
-                                        className="rounded-lg border bg-card p-3 text-sm"
-                                    >
-                                        {editingIndex === index ? (
-                                            <div className="space-y-2">
-                                                <div className="mb-2 flex items-center gap-2">
-                                                    <Badge variant="outline" className="text-xs">
-                                                        #{index + 1}
-                                                    </Badge>
-                                                    <span className="text-xs text-muted-foreground">กำลังแก้ไข</span>
-                                                </div>
-
-                                                <Input
-                                                    placeholder="User"
-                                                    value={editUser}
-                                                    onChange={(e) => setEditUser(e.target.value)}
-                                                    disabled={!canEditProduct}
-                                                    className="h-8 font-mono text-xs"
-                                                />
-                                                <Input
-                                                    placeholder="Pass"
-                                                    value={editPass}
-                                                    onChange={(e) => setEditPass(e.target.value)}
-                                                    disabled={!canEditProduct}
-                                                    className="h-8 font-mono text-xs"
-                                                />
-
-                                                <div className="flex gap-1">
-                                                    <Button type="button" size="sm" className="h-7 gap-1 text-xs" onClick={handleSaveEditStock} disabled={!canEditProduct}>
-                                                        <Check className="h-3 w-3" /> บันทึก
-                                                    </Button>
-                                                    <Button type="button" size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setEditingIndex(null)}>
-                                                        <X className="h-3 w-3" /> ยกเลิก
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <div className="mb-1 flex items-center gap-2">
-                                                    <Badge variant="outline" className="text-xs">
-                                                        #{index + 1}
-                                                    </Badge>
-                                                    {index === 0 && (
-                                                        <Badge className="border-green-200 bg-green-100 text-xs text-green-700">
-                                                            จะถูกส่งก่อน
-                                                        </Badge>
-                                                    )}
-                                                </div>
-
-                                                <div className="mt-1 space-y-1 font-mono text-xs">
-                                                    <div className="flex gap-2">
-                                                        <span className="w-10 shrink-0 text-muted-foreground">User:</span>
-                                                        <span className="text-foreground">{item.split(" / ")[0] || item}</span>
-                                                    </div>
-                                                    {item.includes(" / ") && (
-                                                        <div className="flex gap-2">
-                                                            <span className="w-10 shrink-0 text-muted-foreground">Pass:</span>
-                                                            <span className="text-foreground">{item.split(" / ")[1]}</span>
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                                <div className="mt-3 flex items-center justify-end gap-2 border-t border-slate-200 pt-3">
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="h-8 gap-1.5 text-xs"
-                                                        onClick={() => handleEditStock(index, item)}
-                                                        disabled={!canEditProduct}
-                                                    >
-                                                        <Pencil className="h-3.5 w-3.5" />
-                                                        แก้ไข
-                                                    </Button>
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="h-8 gap-1.5 border-red-200 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                        onClick={() => handleDeleteStock(index)}
-                                                        disabled={!canEditProduct}
-                                                    >
-                                                        <Trash2 className="h-3.5 w-3.5" />
-                                                        ลบ
-                                                    </Button>
-                                                </div>
-                                            </>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </CardContent>
-                </Card>
-            </div>
-
-            <div className="flex justify-end">
-                <Button
-                    onClick={handleSave}
-                    disabled={!canEditProduct || isSaving || !hasChanges}
-                    className="w-full gap-2 sm:w-auto"
-                >
-                    {isSaving ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                        <Save className="h-4 w-4" />
-                    )}
-                    บันทึก
-                </Button>
-            </div>
+            <StockListCard
+                items={storedItems}
+                canEdit={canEdit}
+                isBusy={isSaving}
+                onDelete={(index) => void handleDelete(index)}
+                onMoveToFront={(index) => void handleMoveToFront(index)}
+                onClearAll={() => void handleClearAll()}
+                onExport={handleExport}
+                onRefresh={() => void loadStock()}
+            />
         </div>
     );
 }
