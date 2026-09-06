@@ -37,6 +37,14 @@ const nextConfig: NextConfig = {
     GIT_COMMIT: process.env.GIT_COMMIT || "dev",
     BUILT_AT: new Date().toISOString(),
   },
+  compiler: {
+    // console.log/info/debug are debugging leftovers — strip them from the
+    // production bundle so a stray one cannot print user data in the browser.
+    // error and warn stay: they are the only signal when a production request
+    // fails, on the server as much as in the browser, and this repo has no
+    // error-tracking service to fall back on.
+    removeConsole: isProduction ? { exclude: ["error", "warn"] } : false,
+  },
   turbopack: {
     root: projectRoot,
   },
@@ -135,31 +143,6 @@ const nextConfig: NextConfig = {
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
-          },
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              // 'unsafe-inline' is required for Next.js' inline bootstrap/hydration
-              // scripts. This still blocks loading scripts from untrusted external
-              // origins. Cloudflare Turnstile is the only external script source.
-              // 'unsafe-eval' is required ONLY in development for Next.js HMR /
-              // React Fast Refresh, which evaluate code via eval(). It is omitted
-              // in production to keep the CSP strict.
-              `script-src 'self' 'unsafe-inline'${isProduction ? "" : " 'unsafe-eval'"} https://challenges.cloudflare.com`,
-              "style-src 'self' 'unsafe-inline'",
-              // Dev serves managed uploads from the sidecar on :3001.
-              `img-src 'self' data: blob: https:${isProduction ? "" : " http://localhost:3001"}`,
-              "font-src 'self' data:",
-              "connect-src 'self' https://challenges.cloudflare.com",
-              // youtube-nocookie hosts the embedded help-center videos.
-              "frame-src https://challenges.cloudflare.com https://www.youtube-nocookie.com",
-              "worker-src 'self' blob:",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "frame-ancestors 'self'",
-            ].join("; "),
           },
           ...(isProduction
             ? [
