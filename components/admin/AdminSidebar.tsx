@@ -339,7 +339,7 @@ function SidebarNav({
 
     return (
         <>
-            <nav className="flex-1 space-y-4 overflow-y-auto px-3 py-3">
+            <nav className="scrollbar-none flex-1 space-y-4 overflow-y-auto px-3 py-3">
                 {visibleSections.map((section) => (
                     <SidebarSection
                         key={section.id}

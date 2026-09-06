@@ -1792,6 +1792,28 @@ html.dark ::-webkit-scrollbar-thumb:hover {
 
 
 
+/* The blue bar above is the page's own scrollbar and stays. The admin sidebar
+
+   is a menu, not a document — the bar there reads as a stray blue element
+
+   rather than a scroll affordance, so that one list scrolls without it. */
+
+.scrollbar-none {
+
+  scrollbar-width: none;
+
+}
+
+
+
+.scrollbar-none::-webkit-scrollbar {
+
+  display: none;
+
+}
+
+
+
 html {
 
   scrollbar-width: thin;
