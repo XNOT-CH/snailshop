@@ -6,55 +6,18 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-    Accordion,
-    AccordionContent,
-    AccordionItem,
-    AccordionTrigger,
-} from "@/components/ui/accordion";
+import { PolicyDialog } from "@/components/auth/PolicyDialog";
 import { showSuccess, showError } from "@/lib/swal";
 import { normalizeCallbackUrl } from "@/lib/authRedirect";
 import { AuthFormShell } from "@/components/auth/AuthFormShell";
 import { TurnstileField } from "@/components/auth/TurnstileField";
 import { Loader2, Eye, EyeOff, UserPlus } from "lucide-react";
-import type { PublicRegistrationPolicy, RegistrationPolicies } from "@/lib/getRegistrationPolicies";
+import type { RegistrationPolicies } from "@/lib/getRegistrationPolicies";
 
 interface RegisterFormProps {
     logoUrl: string | null;
     hasTurnstile: boolean;
     policies: RegistrationPolicies;
-}
-
-// English is optional in the admin form, so fall back to the Thai text rather
-// than rendering an empty section.
-function policyTitle(policy: PublicRegistrationPolicy) {
-    return policy.titleEn ? `${policy.titleTh} · ${policy.titleEn}` : policy.titleTh;
-}
-
-function PolicySection({
-    heading,
-    items,
-}: Readonly<{ heading: string; items: PublicRegistrationPolicy[] }>) {
-    if (items.length === 0) return null;
-
-    return (
-        <div className="space-y-1">
-            <p className="text-xs font-semibold text-[#5f6f82] dark:text-muted-foreground">{heading}</p>
-            <Accordion type="multiple" className="w-full">
-                {items.map((policy) => (
-                    <AccordionItem key={policy.id} value={policy.id}>
-                        <AccordionTrigger className="py-2 text-left text-xs">
-                            {policyTitle(policy)}
-                        </AccordionTrigger>
-                        <AccordionContent className="whitespace-pre-line text-xs text-muted-foreground">
-                            {policy.contentTh}
-                            {policy.contentEn ? `\n\n${policy.contentEn}` : ""}
-                        </AccordionContent>
-                    </AccordionItem>
-                ))}
-            </Accordion>
-        </div>
-    );
 }
 
 export function RegisterForm({ logoUrl, hasTurnstile, policies }: Readonly<RegisterFormProps>) {
@@ -66,6 +29,7 @@ export function RegisterForm({ logoUrl, hasTurnstile, policies }: Readonly<Regis
     const [turnstileError, setTurnstileError] = useState<string | null>(null);
     const [turnstileResetSignal, setTurnstileResetSignal] = useState(0);
     const [acceptedPolicies, setAcceptedPolicies] = useState(false);
+    const [openPolicy, setOpenPolicy] = useState<"tos" | "pp" | null>(null);
     const [formData, setFormData] = useState({
         username: "",
         email: "",
@@ -280,29 +244,54 @@ export function RegisterForm({ logoUrl, hasTurnstile, policies }: Readonly<Regis
                             />
                         </div>
 
-                        {/* เงื่อนไขการใช้งาน / นโยบายความเป็นส่วนตัว */}
+                        {/* เงื่อนไขการใช้งาน / นโยบายความเป็นส่วนตัว — อ่านใน modal ไม่ยืดฟอร์ม */}
                         {hasPolicies ? (
-                            <div className="space-y-3 rounded-xl border border-[#cfd6df] bg-white/70 p-4 dark:border-border dark:bg-muted/30">
-                                <div className="max-h-56 space-y-3 overflow-y-auto pr-1">
-                                    <PolicySection heading="เงื่อนไขการใช้งาน" items={policies.tos} />
-                                    <PolicySection heading="นโยบายความเป็นส่วนตัว" items={policies.pp} />
-                                </div>
-                                <label
-                                    htmlFor="reg-accept-policies"
-                                    className="flex cursor-pointer items-start gap-2 border-t border-[#cfd6df] pt-3 text-xs text-[#5f6f82] dark:border-border dark:text-muted-foreground"
-                                >
-                                    <Checkbox
-                                        id="reg-accept-policies"
-                                        checked={acceptedPolicies}
-                                        onCheckedChange={(checked) => setAcceptedPolicies(checked === true)}
-                                        className="mt-0.5"
-                                    />
-                                    <span>
-                                        ฉันได้อ่านและยอมรับเงื่อนไขการใช้งานและนโยบายความเป็นส่วนตัว
-                                        <span className="text-red-500" aria-hidden="true"> *</span>
-                                    </span>
-                                </label>
-                            </div>
+                            <label
+                                htmlFor="reg-accept-policies"
+                                className="flex cursor-pointer items-start gap-2 text-xs text-[#5f6f82] dark:text-muted-foreground"
+                            >
+                                <Checkbox
+                                    id="reg-accept-policies"
+                                    checked={acceptedPolicies}
+                                    onCheckedChange={(checked) => setAcceptedPolicies(checked === true)}
+                                    className="mt-0.5"
+                                />
+                                <span className="leading-relaxed">
+                                    ฉันได้อ่านและยอมรับ
+                                    {policies.tos.length > 0 ? (
+                                        <>
+                                            {" "}
+                                            <button
+                                                type="button"
+                                                className="font-medium text-primary underline underline-offset-2 hover:opacity-80"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    setOpenPolicy("tos");
+                                                }}
+                                            >
+                                                เงื่อนไขการใช้งาน
+                                            </button>
+                                        </>
+                                    ) : null}
+                                    {policies.tos.length > 0 && policies.pp.length > 0 ? " และ" : null}
+                                    {policies.pp.length > 0 ? (
+                                        <>
+                                            {" "}
+                                            <button
+                                                type="button"
+                                                className="font-medium text-primary underline underline-offset-2 hover:opacity-80"
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    setOpenPolicy("pp");
+                                                }}
+                                            >
+                                                นโยบายความเป็นส่วนตัว
+                                            </button>
+                                        </>
+                                    ) : null}
+                                    <span className="text-red-500" aria-hidden="true"> *</span>
+                                </span>
+                            </label>
                         ) : null}
 
                         <TurnstileField
@@ -344,6 +333,13 @@ export function RegisterForm({ logoUrl, hasTurnstile, policies }: Readonly<Regis
                             </Link>
                         </p>
                     </form>
+
+            <PolicyDialog
+                open={openPolicy !== null}
+                onOpenChange={(open) => setOpenPolicy(open ? openPolicy : null)}
+                title={openPolicy === "pp" ? "นโยบายความเป็นส่วนตัว" : "เงื่อนไขการใช้งาน"}
+                items={openPolicy === "pp" ? policies.pp : policies.tos}
+            />
         </AuthFormShell>
     );
 }
