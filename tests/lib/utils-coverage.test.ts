@@ -73,7 +73,12 @@ vi.mock("@/lib/redis", () => ({
 }));
 
 describe("lib/cache", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // lib/cache keeps values in process memory now, so without this a value
+    // written by one case is still cached for the next one.
+    vi.resetModules();
+  });
 
   it("getFromCache returns null when redis unavailable", async () => {
     const { isRedisAvailable } = await import("@/lib/redis");
