@@ -60,7 +60,12 @@ const mkParams = (id: string) => ({ params: Promise.resolve({ id }) });
 // lib/getSiteSettings
 // ════════════════════════════════════════════════════════════════
 describe("lib/getSiteSettings", () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    // lib/cache keeps values in process memory now, so without this a value
+    // written by one case is still cached for the next one.
+    vi.resetModules();
+  });
 
   it("returns settings when found", async () => {
     (db.query.siteSettings.findFirst as any).mockResolvedValue({
