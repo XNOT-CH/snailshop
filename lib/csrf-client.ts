@@ -57,9 +57,17 @@ export async function fetchWithCsrf(input: RequestInfo | URL, init: RequestInit 
 
     try {
         const data = await clonedResponse.json();
-        const message = typeof data?.message === "string" ? data.message : "";
+        // Routes answer in one of two shapes: { message } from the auth
+        // helpers, { error } from contentApiError. Reading only `message`
+        // meant a rotated token on a contentApiError route never retried and
+        // the admin had to reload the page by hand.
+        const reason = typeof data?.message === "string"
+            ? data.message
+            : typeof data?.error === "string" ? data.error : "";
 
-        if (message !== "Invalid CSRF token" && message !== "Missing CSRF token") {
+        // Still gated on the CSRF wording alone: a real permission denial
+        // answers something else and must surface, not be retried.
+        if (reason !== "Invalid CSRF token" && reason !== "Missing CSRF token") {
             return response;
         }
     } catch {

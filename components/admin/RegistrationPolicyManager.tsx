@@ -446,7 +446,11 @@ export function RegistrationPolicyManager({ type }: Readonly<{ type: Registratio
 
         try {
             const res = await fetchWithCsrf(`${API_BASE}/${item.id}`, { method: "DELETE" });
-            if (!res.ok) throw new Error("delete failed");
+            if (!res.ok) {
+                const data = (await res.json().catch(() => ({}))) as { message?: string; error?: string };
+                showError(data.message || data.error || `ลบไม่สำเร็จ (${res.status})`);
+                return;
+            }
             if (editingId === item.id) resetForm();
             showSuccess("ลบเรียบร้อย");
             await fetchData();

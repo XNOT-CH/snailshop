@@ -77,4 +77,67 @@ describe("lib/csrf-client", () => {
         expect(firstAttemptHeaders.get("X-CSRF-Token")).toBe("stale-token");
         expect(retryHeaders.get("X-CSRF-Token")).toBe("fresh-token");
     });
+
+    it("also retries when the reason arrives as { error }, not { message }", async () => {
+        // contentApiError answers { error }. Reading only { message } left the
+        // admin routes that use it without a retry at all.
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(
+                new Response(JSON.stringify({ csrfToken: "stale-token" }), {
+                    status: 200,
+                    headers: { "Content-Type": "application/json" },
+                })
+            )
+            .mockResolvedValueOnce(
+                new Response(JSON.stringify({ error: "Invalid CSRF token" }), {
+                    status: 401,
+                    headers: { "Content-Type": "application/json" },
+                })
+            )
+            .mockResolvedValueOnce(
+                new Response(JSON.stringify({ csrfToken: "fresh-token" }), {
+                    status: 200,
+                    headers: { "Content-Type": "application/json" },
+                })
+            )
+            .mockResolvedValueOnce(new Response(JSON.stringify({ success: true }), { status: 200 }));
+
+        vi.stubGlobal("fetch", fetchMock);
+
+        const { fetchWithCsrf } = await import("@/lib/csrf-client");
+        const response = await fetchWithCsrf("/api/admin/registration-policies/p1", {
+            method: "DELETE",
+        });
+
+        expect(response.status).toBe(200);
+        expect(fetchMock).toHaveBeenCalledTimes(4);
+    });
+
+    it("does not retry a 401 that is a real permission denial", async () => {
+        const fetchMock = vi
+            .fn()
+            .mockResolvedValueOnce(
+                new Response(JSON.stringify({ csrfToken: "token" }), {
+                    status: 200,
+                    headers: { "Content-Type": "application/json" },
+                })
+            )
+            .mockResolvedValueOnce(
+                new Response(JSON.stringify({ error: "ไม่มีสิทธิ์เข้าถึง" }), {
+                    status: 401,
+                    headers: { "Content-Type": "application/json" },
+                })
+            );
+
+        vi.stubGlobal("fetch", fetchMock);
+
+        const { fetchWithCsrf } = await import("@/lib/csrf-client");
+        const response = await fetchWithCsrf("/api/admin/registration-policies/p1", {
+            method: "DELETE",
+        });
+
+        expect(response.status).toBe(401);
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+    });
 });

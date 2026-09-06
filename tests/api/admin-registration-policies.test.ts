@@ -127,6 +127,20 @@ describe("API: /api/admin/registration-policies", () => {
         expect(dbMock.insert).not.toHaveBeenCalled();
     });
 
+    it("hands the CSRF reason back so fetchWithCsrf can retry with a fresh token", async () => {
+        // The client only refetches a token when the body says exactly this.
+        // A hardcoded "Unauthorized" here silently disabled that retry.
+        csrfPermissionMock.mockResolvedValue({ success: false, error: "Invalid CSRF token" });
+        const { POST } = await import("@/app/api/admin/registration-policies/route");
+
+        const res = await POST(request("/api/admin/registration-policies", "POST", validBody));
+        const body = (await res.json()) as { error?: string };
+
+        expect(res.status).toBe(401);
+        expect(body.error).toBe("Invalid CSRF token");
+        expect(dbMock.insert).not.toHaveBeenCalled();
+    });
+
     it("only returns rows of the requested type", async () => {
         const { GET } = await import("@/app/api/admin/registration-policies/route");
 

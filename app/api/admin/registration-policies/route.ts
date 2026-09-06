@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
     const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CONTENT_EDIT);
-    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
+    if (!authCheck.success) return contentApiError(authCheck.error, { status: 401 });
     try {
         const result = await validateBody(request, registrationPolicySchema);
         if ("error" in result) return result.error;
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
 // Bulk delete for one type — the red "ลบทั้งหมด" button in the admin toolbar.
 export async function DELETE(request: NextRequest) {
     const authCheck = await requirePermissionWithCsrf(request, PERMISSIONS.CONTENT_EDIT);
-    if (!authCheck.success) return contentApiError("Unauthorized", { status: 401 });
+    if (!authCheck.success) return contentApiError(authCheck.error, { status: 401 });
     try {
         const type = readType(request);
         if (!type) return contentApiError("Invalid policy type", { status: 400 });
