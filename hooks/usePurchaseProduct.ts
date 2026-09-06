@@ -10,12 +10,15 @@ import {
     showPurchaseConfirm,
     showPurchaseFailedModal,
     showPurchaseSuccessModal,
+    showWarning,
 } from "@/lib/swal";
 
 export interface PurchaseProductResponse {
     success?: boolean;
     productName?: string;
     message?: string;
+    /** 409 from /api/purchase: the product has consent boxes that were not ticked. */
+    requiresChecks?: boolean;
     [key: string]: unknown;
 }
 
@@ -28,6 +31,8 @@ export interface PurchaseProductOptions {
     currencySettings?: PublicCurrencySettings | null;
     quantity?: number;
     promoCode?: string;
+    /** Ids of the consent boxes ticked on the product page; the API refuses without them. */
+    acceptedCheckIds?: string[];
     extraHtml?: string;
     helperText?: string;
     confirmButtonColor?: string;
@@ -54,6 +59,7 @@ export function usePurchaseProduct() {
         currencySettings,
         quantity,
         promoCode,
+        acceptedCheckIds,
         extraHtml,
         helperText = "ระบบจะซื้อเฉพาะสินค้านี้เท่านั้น สินค้าในตะกร้าจะยังอยู่เหมือนเดิม",
         confirmButtonColor,
@@ -89,6 +95,7 @@ export function usePurchaseProduct() {
                     productId,
                     quantity,
                     promoCode,
+                    acceptedCheckIds,
                     pin: purchaseCheck.pin,
                 }),
             });
@@ -110,6 +117,15 @@ export function usePurchaseProduct() {
                 }
                 await onSuccess?.(data);
                 return true;
+            }
+
+            // Quick-buy buttons (product cards, featured lists) have nowhere to
+            // show the consent boxes, so send the shopper to the product page
+            // where they exist. The product page itself never gets here.
+            if (data.requiresChecks) {
+                showWarning(data.message ?? "สินค้านี้ต้องติ๊กยอมรับเงื่อนไขในหน้าสินค้าก่อนสั่งซื้อ");
+                router.push(`/product/${productId}`);
+                return false;
             }
 
             const { goTopup } = await showPurchaseFailedModal({

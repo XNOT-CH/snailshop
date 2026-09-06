@@ -24,6 +24,7 @@ export const RESOURCE_LABELS: Record<string, string> = {
     Order: "รายการสั่งซื้อ",
     PasswordReset: "รีเซ็ตรหัสผ่าน",
     Product: "สินค้า",
+    ProductCheckbox: "ช่องติ๊กก่อนซื้อ",
     PromoCode: "โค้ดส่วนลด",
     PromoUsage: "การใช้โค้ดส่วนลด",
     Role: "ยศ",

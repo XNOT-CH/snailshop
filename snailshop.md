@@ -79,6 +79,19 @@ faster than searching, and it is how the existing features are built.
    fails with ERROR 3780.
 4. `npm run knowledge:build` to refresh the table index below.
 
+### Add a per-product consent checkbox rule
+
+`ProductCheckbox` rows gate the buy buttons. The enforcement lives in **three**
+places and all three have to agree, or one route silently lets a purchase
+through: `components/ProductActions.tsx` (product page), `components/cart/CartSheet.tsx`
+(checkout), and the two APIs — `/api/purchase` and `/api/cart/checkout` — which
+both call `assertProductChecksAccepted` from
+`lib/features/products/productCheckboxes.ts` before opening the transaction.
+Quick-buy buttons on a product card have nowhere to show the boxes, so the API
+answers 409 with `requiresChecks` and `hooks/usePurchaseProduct.ts` sends the
+shopper to the product page instead. What was ticked is snapshotted into
+`Order.acceptedChecks` inside the purchase transaction.
+
 ### Change money, stock or balances
 
 `lib/features/orders/purchase.ts` is the transaction core; `lib/stock.ts` handles stock
@@ -413,7 +426,7 @@ When finished, report:
 
 <!-- Rebuilt by `npm run knowledge:build`. Do not edit this block by hand. -->
 
-### Database tables (36)
+### Database tables (37)
 
 Jump straight to the line instead of reading the whole 800-line schema.
 
@@ -424,39 +437,40 @@ Jump straight to the line instead of reading the whole 800-line schema.
 | `EmailVerificationToken` | `emailVerificationTokens` | `lib/db/schema.ts:119` |
 | `AuditLog` | `auditLogs` | `lib/db/schema.ts:140` |
 | `Product` | `products` | `lib/db/schema.ts:165` |
-| `ProductViewDaily` | `productViewsDaily` | `lib/db/schema.ts:207` |
-| `Order` | `orders` | `lib/db/schema.ts:219` |
-| `Topup` | `topups` | `lib/db/schema.ts:253` |
-| `SeasonPassPlan` | `seasonPassPlans` | `lib/db/schema.ts:280` |
-| `SeasonPassSubscription` | `seasonPassSubscriptions` | `lib/db/schema.ts:294` |
-| `SeasonPassClaim` | `seasonPassClaims` | `lib/db/schema.ts:314` |
-| `SeasonPassReward` | `seasonPassRewards` | `lib/db/schema.ts:330` |
-| `SiteSettings` | `siteSettings` | `lib/db/schema.ts:351` |
-| `HelpArticle` | `helpArticles` | `lib/db/schema.ts:387` |
-| `HelpVideo` | `helpVideos` | `lib/db/schema.ts:400` |
-| `RegistrationPolicy` | `registrationPolicies` | `lib/db/schema.ts:420` |
-| `NewsArticle` | `newsArticles` | `lib/db/schema.ts:438` |
-| `PromoCode` | `promoCodes` | `lib/db/schema.ts:455` |
-| `PromoUsage` | `promoUsages` | `lib/db/schema.ts:479` |
-| `FooterWidgetSettings` | `footerWidgetSettings` | `lib/db/schema.ts:501` |
-| `FooterLink` | `footerLinks` | `lib/db/schema.ts:513` |
-| `NavItem` | `navItems` | `lib/db/schema.ts:530` |
-| `CurrencySettings` | `currencySettings` | `lib/db/schema.ts:546` |
-| `ChatConversation` | `chatConversations` | `lib/db/schema.ts:556` |
-| `ChatMessage` | `chatMessages` | `lib/db/schema.ts:584` |
-| `ChatQuickReply` | `chatQuickReplies` | `lib/db/schema.ts:602` |
-| `AnnouncementPopup` | `announcementPopups` | `lib/db/schema.ts:616` |
-| `Role` | `roles` | `lib/db/schema.ts:633` |
-| `GachaCategory` | `gachaCategories` | `lib/db/schema.ts:649` |
-| `GachaMachine` | `gachaMachines` | `lib/db/schema.ts:665` |
-| `GachaSettings` | `gachaSettings` | `lib/db/schema.ts:697` |
-| `GachaReward` | `gachaRewards` | `lib/db/schema.ts:712` |
-| `GachaRollLog` | `gachaRollLogs` | `lib/db/schema.ts:737` |
-| `DailyQuest` | `dailyQuests` | `lib/db/schema.ts:770` |
-| `DailyQuestClaim` | `dailyQuestClaims` | `lib/db/schema.ts:789` |
-| `GachaDailySpinCounter` | `gachaDailySpinCounters` | `lib/db/schema.ts:808` |
+| `ProductCheckbox` | `productCheckboxes` | `lib/db/schema.ts:208` |
+| `ProductViewDaily` | `productViewsDaily` | `lib/db/schema.ts:232` |
+| `Order` | `orders` | `lib/db/schema.ts:244` |
+| `Topup` | `topups` | `lib/db/schema.ts:281` |
+| `SeasonPassPlan` | `seasonPassPlans` | `lib/db/schema.ts:308` |
+| `SeasonPassSubscription` | `seasonPassSubscriptions` | `lib/db/schema.ts:322` |
+| `SeasonPassClaim` | `seasonPassClaims` | `lib/db/schema.ts:342` |
+| `SeasonPassReward` | `seasonPassRewards` | `lib/db/schema.ts:358` |
+| `SiteSettings` | `siteSettings` | `lib/db/schema.ts:379` |
+| `HelpArticle` | `helpArticles` | `lib/db/schema.ts:415` |
+| `HelpVideo` | `helpVideos` | `lib/db/schema.ts:428` |
+| `RegistrationPolicy` | `registrationPolicies` | `lib/db/schema.ts:448` |
+| `NewsArticle` | `newsArticles` | `lib/db/schema.ts:466` |
+| `PromoCode` | `promoCodes` | `lib/db/schema.ts:483` |
+| `PromoUsage` | `promoUsages` | `lib/db/schema.ts:507` |
+| `FooterWidgetSettings` | `footerWidgetSettings` | `lib/db/schema.ts:529` |
+| `FooterLink` | `footerLinks` | `lib/db/schema.ts:541` |
+| `NavItem` | `navItems` | `lib/db/schema.ts:558` |
+| `CurrencySettings` | `currencySettings` | `lib/db/schema.ts:574` |
+| `ChatConversation` | `chatConversations` | `lib/db/schema.ts:584` |
+| `ChatMessage` | `chatMessages` | `lib/db/schema.ts:612` |
+| `ChatQuickReply` | `chatQuickReplies` | `lib/db/schema.ts:630` |
+| `AnnouncementPopup` | `announcementPopups` | `lib/db/schema.ts:644` |
+| `Role` | `roles` | `lib/db/schema.ts:661` |
+| `GachaCategory` | `gachaCategories` | `lib/db/schema.ts:677` |
+| `GachaMachine` | `gachaMachines` | `lib/db/schema.ts:693` |
+| `GachaSettings` | `gachaSettings` | `lib/db/schema.ts:725` |
+| `GachaReward` | `gachaRewards` | `lib/db/schema.ts:740` |
+| `GachaRollLog` | `gachaRollLogs` | `lib/db/schema.ts:765` |
+| `DailyQuest` | `dailyQuests` | `lib/db/schema.ts:798` |
+| `DailyQuestClaim` | `dailyQuestClaims` | `lib/db/schema.ts:817` |
+| `GachaDailySpinCounter` | `gachaDailySpinCounters` | `lib/db/schema.ts:836` |
 
-### API routes (116)
+### API routes (119)
 
 The handler for each one lives at the matching `app/<url>/route.ts`.
 
@@ -508,6 +522,8 @@ The handler for each one lives at the matching `app/<url>/route.ts`.
 | `/api/admin/news` | GET, POST |
 | `/api/admin/popups/[id]` | GET, PUT, DELETE |
 | `/api/admin/popups` | GET, POST |
+| `/api/admin/products/[id]/checkboxes/[checkboxId]` | PATCH, DELETE |
+| `/api/admin/products/[id]/checkboxes` | GET, POST |
 | `/api/admin/products/[id]/duplicate` | POST |
 | `/api/admin/products/[id]/featured` | PATCH |
 | `/api/admin/products/categories` | GET |
@@ -560,6 +576,7 @@ The handler for each one lives at the matching `app/<url>/route.ts`.
 | `/api/products/[id]/restore` | POST |
 | `/api/products/[id]` | GET, PUT, DELETE |
 | `/api/products/[id]/stock` | GET, PUT |
+| `/api/products/checkboxes` | GET |
 | `/api/products/list` | GET |
 | `/api/products` | POST |
 | `/api/profile` | GET |
@@ -595,21 +612,21 @@ Read a range, not the file. Landmarks are `name:line`.
 | `app/(site)/admin/gacha-machines/[id]/edit/page.tsx` | 1102 | validImageUrl:63, defaultAddForm:81, buildRewardPayload:101, sortRewards:123, getSimulationRewardName:152, isRewardEligibleForSimulation:158, validateReward:162, ProductPickerDropdown:181 |
 | `app/(site)/admin/audit-logs/page.tsx` | 1083 | getActionBadgeClass:267, getChangeValue:275, getExtraDetailsHtml:300, getResourceDetailsHtml:350, getVisibleCheckboxState:373, getDeleteConfirmText:385, AdminAuditLogsPage:402 |
 | `app/(site)/admin/footer-links/page.tsx` | 1081 | getDomainLabel:83, SortableRow:104, SortableCard:226, DragPreview:333, FooterColumnBoard:382, FooterLinksAdminPage:498 |
+| `components/cart/CartSheet.tsx` | 1011 | normalizeOptionalPrice:70, buildSyncedCartItem:74, hasCartItemChanged:91, hasCheckoutRelevantChange:102, CartSheetContent:109, CartSheet:984 |
 | `lib/seasonPass.ts` | 986 | normalizeSeasonPassRewardType:28, DEFAULT_PLAN:44, addDays:91, parseMySqlDateTime:97, dateKeyToUtcMs:101, diffDaysByDateKey:106, getEffectiveSeasonPassStartAt:110, normalizeRewardDefinition:125 |
 | `lib/rateLimit.ts` | 979 | config:25, checkLoginRateLimit:104, checkLoginIpRateLimit:113, checkLoginRateLimitWithConfig:122, recordFailedLogin:179, recordFailedLoginIp:183, recordFailedLoginWithConfig:187, clearLoginAttempts:214 |
-| `components/cart/CartSheet.tsx` | 953 | normalizeOptionalPrice:64, buildSyncedCartItem:68, hasCartItemChanged:85, hasCheckoutRelevantChange:96, CartSheetContent:103, CartSheet:926 |
 | `app/(site)/admin/news/page.tsx` | 943 | getExcerpt:75, AdminNewsPage:81 |
 | `components/DailyTopupSummary.tsx` | 920 | StatusBadge:78, DetailModal:106, AmountTooltip:207, TxnTooltip:227, HourlyTooltip:247, SortIcon:269, DailyTopupSummary:285 |
 | `app/(site)/admin/gacha-machines/page.tsx` | 895 | validImageUrl:57, renderCostText:61, getFormFieldString:75, getCostAmountFieldCopy:85, GachaMachinesAdminPage:129, SortableRow:521, MachineTable:649 |
 | `components/admin/RegistrationPolicyManager.tsx` | 893 | POLICY_COPY:82, emptyForm:103, excerpt:107, csvCell:113, usePolicySortable:117, DragHandle:130, PolicyTableRow:158, PolicyCard:228 |
+| `lib/db/schema.ts` | 848 | now:19, updatedAt:20 |
 | `lib/chat.ts` | 827 | serializeMessage:101, serializeConversationTimestamps:130, getChatUser:144, getChatAssignee:162, getConversationMessagesWindow:185, hydrateConversation:242, getOrCreateUserConversation:273, getUserConversation:309 |
-| `lib/db/schema.ts` | 820 | now:19, updatedAt:20 |
 | `app/(site)/admin/season-pass/edit/page.tsx` | 748 | getRewardTypeOptions:55, getRewardTypeDisplayName:63, getDefaultRewardImage:86, normalizeRewardType:90, fallbackRewards:106, AdminSeasonPassEditPage:117 |
 | `app/(site)/admin/help/page.tsx` | 739 | emptyArticleForm:67, emptyVideoForm:74, AdminHelpPage:80 |
 | `app/(site)/admin/popups/page.tsx` | 736 | getDismissLabel:69, AdminPopupsPage:76 |
+| `lib/features/orders/purchase.ts` | 692 | getActivePrice:102, serializeAcceptedChecks:114, processStock:123, getAutoDeleteTimestamp:143, buildCartThbPromoItems:151, buildDiscountedThbPriceMap:175, sumAppliedDiscount:241, validateAndSummarizeCartProducts:251 |
 | `components/admin/chat/useAdminChatInbox.ts` | 674 | sortConversations:26, mergeConversationPage:43, mergeMessages:53, useAdminChatInbox:69 |
 | `components/GachaRhombus.tsx` | 674 | getParticles:84, WinBurst:106, TileImage:128, getRouletteDelay:145, getRollingButtonLabel:157, getSelectorIndex:169, getPathIndices:173, getIntersectionIndex:179 |
-| `lib/features/orders/purchase.ts` | 659 | getActivePrice:101, processStock:110, getAutoDeleteTimestamp:130, buildCartThbPromoItems:138, buildDiscountedThbPriceMap:162, sumAppliedDiscount:228, validateAndSummarizeCartProducts:238, getRawTransactionConnection:293 |
 | `app/(site)/admin/nav-items/page.tsx` | 646 | useNavSortable:70, DragHandle:80, SortableCard:90, SortableRow:159, DragPreview:211, NavItemsAdminPage:223 |
 | `app/(site)/admin/products/new/page.tsx` | 641 | AddProductPage:44 |
 | `app/(site)/admin/roles/page.tsx` | 630 | normalizeRolePermissions:49, PERMISSION_GROUPS:53, AdminRolesPage:116 |

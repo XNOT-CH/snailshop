@@ -22,6 +22,7 @@ import { getPrimaryProductImage, normalizeProductImageUrls } from "@/lib/product
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { recordProductView } from "@/lib/features/products/productViews";
 import { getSoldCountMap } from "@/lib/features/orders/queries";
+import { listProductCheckboxes } from "@/lib/features/products/productCheckboxes";
 
 const getProduct = cache(async (id: string) => {
     return db.query.products.findFirst({
@@ -99,9 +100,10 @@ export default async function ProductDetailPage({
     params,
 }: Readonly<ProductDetailPageProps>) {
     const { id } = await params;
-    const [product, currencySettings] = await Promise.all([
+    const [product, currencySettings, checkboxes] = await Promise.all([
         getProduct(id),
         getCurrencySettings(),
+        listProductCheckboxes(id),
     ]);
     const purchaseMaintenance = getMaintenanceState("purchase");
 
@@ -255,6 +257,7 @@ export default async function ProductDetailPage({
                                     disabled={!isAvailable}
                                     maxQuantity={stockCount}
                                     currencySettings={currencySettings}
+                                    checkboxes={checkboxes}
                                 />
                             </div>
 

@@ -15,6 +15,10 @@ import { checkPurchaseRateLimit, getClientIp } from "@/lib/rateLimit";
 import { resolveSiteName } from "@/lib/seo";
 import { assertPinForProtectedAction } from "@/lib/security/pin";
 import {
+    assertProductChecksAccepted,
+    ProductChecksNotAcceptedError,
+} from "@/lib/features/products/productCheckboxes";
+import {
     executeSingleProductPurchaseTransaction,
     getActivePrice,
     getRawTransactionConnection,
@@ -111,7 +115,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const { productId, quantity, promoCode, pin } = await request.json();
+        const { productId, quantity, promoCode, pin, acceptedCheckIds } = await request.json();
 
         if (!productId) {
             return NextResponse.json({ success: false, message: "Product ID is required" }, { status: 400 });
@@ -143,6 +147,21 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ success: false, message: pinCheck.message }, { status: pinCheck.status });
         }
 
+        // Before any money moves: every required consent box on this product has
+        // to have been ticked. The UI blocks the button, this blocks the request.
+        let acceptedChecks;
+        try {
+            acceptedChecks = await assertProductChecksAccepted([productId], acceptedCheckIds);
+        } catch (error) {
+            if (error instanceof ProductChecksNotAcceptedError) {
+                return NextResponse.json(
+                    { success: false, message: error.message, requiresChecks: true, missingChecks: error.missingTitles },
+                    { status: 409 },
+                );
+            }
+            throw error;
+        }
+
         const conn = await getRawTransactionConnection();
         const result = await executeSingleProductPurchaseTransaction({
             conn,
@@ -151,6 +170,7 @@ export async function POST(request: NextRequest) {
             user: user as PurchaseTransactionUser,
             promoCode: typeof promoCode === "string" ? promoCode : undefined,
             currencySettings,
+            acceptedChecks,
         });
 
         await auditFromRequest(request, {

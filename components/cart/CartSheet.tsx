@@ -44,6 +44,12 @@ import {
     checkoutCart,
 } from "@/lib/client/cartCheckoutClient";
 import {
+    areRequiredChecksAccepted,
+    ProductCheckboxConsent,
+    type ProductConsentCheckbox,
+} from "@/components/ProductCheckboxConsent";
+import { API_ROUTES } from "@/lib/constants/apiRoutes";
+import {
     buildCartRefreshPayload,
     refreshCartItems,
     type RefreshedCartItem,
@@ -130,6 +136,8 @@ function CartSheetContent() {
     const thbTotal = totalsByCurrency.THB ?? 0;
     const pointTotal = totalsByCurrency.POINT ?? 0;
     const [balances, setBalances] = useState<{ credit: number; point: number } | null>(null);
+    const [cartCheckboxes, setCartCheckboxes] = useState<(ProductConsentCheckbox & { productId: string })[]>([]);
+    const [acceptedCheckIds, setAcceptedCheckIds] = useState<string[]>([]);
 
     // Load balances when the cart opens so the summary can warn before paying
     useEffect(() => {
@@ -154,6 +162,31 @@ function CartSheetContent() {
             active = false;
         };
     }, [isCartOpen]);
+
+    // Consent boxes for whatever is in the cart. Checkout refuses without the
+    // required ones, so they have to be shown before the pay button.
+    const checkboxProductKey = items.map((item) => item.id).sort((a, b) => a.localeCompare(b)).join(",");
+    useEffect(() => {
+        if (!isCartOpen || !checkboxProductKey) {
+            setCartCheckboxes([]);
+            return;
+        }
+
+        let active = true;
+        fetch(`${API_ROUTES.PRODUCT_CHECKBOXES}?ids=${encodeURIComponent(checkboxProductKey)}`, { cache: "no-store" })
+            .then((response) => response.json())
+            .then((data: { success?: boolean; checkboxes?: (ProductConsentCheckbox & { productId: string })[] }) => {
+                if (!active) return;
+                setCartCheckboxes(data.success ? data.checkboxes ?? [] : []);
+            })
+            .catch(() => { });
+
+        return () => {
+            active = false;
+        };
+    }, [isCartOpen, checkboxProductKey]);
+
+    const checksAccepted = areRequiredChecksAccepted(cartCheckboxes, acceptedCheckIds);
 
     // Read through a ref so syncing the cart doesn't retrigger this effect.
     const latestItemsRef = useRef(items);
@@ -375,6 +408,11 @@ function CartSheetContent() {
             return;
         }
 
+        if (!checksAccepted) {
+            showWarning("กรุณาติ๊กยอมรับเงื่อนไขของสินค้าก่อนชำระเงิน");
+            return;
+        }
+
         const authCheck = await requireAuthBeforePurchase(router);
         if (!authCheck.allowed) {
             closeCart();
@@ -448,6 +486,7 @@ function CartSheetContent() {
                 items: syncedItems,
                 promoCode: appliedPromo?.code,
                 pin: pinCheck.pin,
+                acceptedCheckIds,
             });
             const data = await checkoutCart(checkoutPayload);
 
@@ -833,6 +872,23 @@ function CartSheetContent() {
                                             ) : null}
                                         </div>
 
+                                        {cartCheckboxes.length > 0 ? (
+                                            <div className="space-y-2">
+                                                {items
+                                                    .filter((item) => cartCheckboxes.some((checkbox) => checkbox.productId === item.id))
+                                                    .map((item) => (
+                                                        <ProductCheckboxConsent
+                                                            key={item.id}
+                                                            heading={item.name}
+                                                            checkboxes={cartCheckboxes.filter((checkbox) => checkbox.productId === item.id)}
+                                                            acceptedIds={acceptedCheckIds}
+                                                            onChange={setAcceptedCheckIds}
+                                                            disabled={isCheckingOut}
+                                                        />
+                                                    ))}
+                                            </div>
+                                        ) : null}
+
                                         {creditShortfall > 0 ? (
                                             <button
                                                 type="button"
@@ -850,14 +906,16 @@ function CartSheetContent() {
                                                 type="button"
                                                 className="w-full rounded-xl bg-primary px-4 py-3 text-center text-base font-semibold text-primary-foreground shadow-sm transition-opacity hover:opacity-95 disabled:cursor-not-allowed disabled:opacity-60"
                                                 onClick={handleCheckout}
-                                                disabled={isCheckingOut || maintenance?.enabled || pointShortfall > 0}
+                                                disabled={isCheckingOut || maintenance?.enabled || pointShortfall > 0 || !checksAccepted}
                                                 aria-label={`ชำระเงิน ${itemCount} รายการ`}
                                             >
-                                                {pointShortfall > 0
-                                                    ? `${pointLabel}ไม่เพียงพอ`
-                                                    : isCheckingOut
-                                                        ? "กำลังดำเนินการ..."
-                                                        : `ชำระเงิน (${itemCount})`}
+                                                {!checksAccepted
+                                                    ? "ติ๊กยอมรับเงื่อนไขก่อน"
+                                                    : pointShortfall > 0
+                                                        ? `${pointLabel}ไม่เพียงพอ`
+                                                        : isCheckingOut
+                                                            ? "กำลังดำเนินการ..."
+                                                            : `ชำระเงิน (${itemCount})`}
                                             </button>
                                         )}
                                     </CollapsibleContent>

@@ -13,6 +13,8 @@ export interface CartCheckoutPayload {
     }>;
     promoCode?: string;
     pin?: string;
+    /** Ids of the consent boxes the shopper ticked; the API refuses without them. */
+    acceptedCheckIds?: string[];
 }
 
 export interface CartCheckoutOrder {
@@ -42,6 +44,7 @@ interface BuildCartCheckoutPayloadOptions {
     items: CartCheckoutLineItem[];
     promoCode?: string | null;
     pin?: string | null;
+    acceptedCheckIds?: string[];
 }
 
 interface CheckoutCartOptions {
@@ -52,6 +55,7 @@ export function buildCartCheckoutPayload({
     items,
     promoCode,
     pin,
+    acceptedCheckIds,
 }: BuildCartCheckoutPayloadOptions): CartCheckoutPayload {
     return {
         items: items.map((item) => ({
@@ -60,6 +64,7 @@ export function buildCartCheckoutPayload({
         })),
         promoCode: promoCode || undefined,
         pin: pin || undefined,
+        acceptedCheckIds: acceptedCheckIds?.length ? acceptedCheckIds : undefined,
     };
 }
 
