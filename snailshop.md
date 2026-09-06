@@ -132,6 +132,20 @@ so plain `docker compose` commands include it. On a checkout without that line,
 `npm run dev` cannot connect until you run
 `docker compose --profile dev up -d app_db_dev`.
 
+**Dev and production share one Redis, and the cache keys are not namespaced.**
+The databases were split on 2026-09-05; the cache was not. `.env`, `.env.local` and
+`.env.development.local` all point at the same Upstash instance, and `CACHE_KEYS` in
+`lib/cache.ts` are bare strings like `registration_policies` — so a dev request that
+warms a key serves that value to the deployed site until the TTL runs out, whatever
+production's own tables say. This bit on 2026-09-06: seed rows written to the dev
+database on :3308 rendered on the live `/terms` after a deploy, while the production
+table was empty. Writing through the admin UI is safe (every mutating route calls its
+`invalidate*Caches()`); raw SQL against either database is not, because it bypasses
+that path and leaves the stale value in place. After touching a cached table by hand,
+delete the key — `curl -H "Authorization: Bearer $UPSTASH_REDIS_REST_TOKEN"
+"$UPSTASH_REDIS_REST_URL/del/<key>"` — and check the *other* environment, not just the
+one you edited.
+
 **Mixed line endings break patches silently.** `.gitattributes` sets `eol=lf` and the
 git index is all LF, but files check out as CRLF on Windows and some end up mixed. A
 `sed` or partial patch against a mixed-ending file fails without an error. Match the
