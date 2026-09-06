@@ -76,6 +76,11 @@ vi.mock("@/lib/security/turnstile", () => ({
   verifyTurnstileToken: vi.fn().mockResolvedValue({ success: true }),
 }));
 
+vi.mock("@/lib/getRegistrationPolicies", () => ({
+  getRegistrationPolicies: vi.fn().mockResolvedValue({ tos: [], pp: [] }),
+  hasRegistrationPolicies: () => false,
+}));
+
 vi.mock("@/lib/features/products/mutations", () => ({
   createProduct: vi.fn().mockResolvedValue({ id: "p1" }),
 }));

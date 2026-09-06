@@ -23,6 +23,8 @@ This folder contains admin pages.
   `slips/page.tsx`
 - Settings/content:
   `settings/page.tsx`, `news/page.tsx`, `popups/page.tsx`, `help/page.tsx`, `nav-items/page.tsx`, `footer-links/page.tsx`
+- Signup TOS / privacy policy:
+  `registration/terms/page.tsx`, `registration/privacy/page.tsx` (see `registration/AGENTS.md`)
 - Gacha:
   `gacha-machines/page.tsx`, `gacha-machines/[id]/edit/page.tsx`
 - Quests:

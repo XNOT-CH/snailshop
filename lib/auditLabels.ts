@@ -19,6 +19,7 @@ export const RESOURCE_LABELS: Record<string, string> = {
     FooterWidgetSettings: "ตั้งค่าเมนูลัดท้ายเว็บ",
     HelpArticle: "บทความช่วยเหลือ",
     NavItem: "เมนูนำทาง",
+    RegistrationPolicy: "เงื่อนไข/นโยบายตอนสมัครสมาชิก",
     NewsArticle: "ข่าวสาร",
     Order: "รายการสั่งซื้อ",
     PasswordReset: "รีเซ็ตรหัสผ่าน",

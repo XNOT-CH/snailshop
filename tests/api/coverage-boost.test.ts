@@ -67,6 +67,10 @@ vi.mock("@/lib/cache", () => ({
   CACHE_KEYS: { NEWS_ARTICLES: "news", ANNOUNCEMENT_POPUPS: "popups", SALE_PRODUCTS: "sale" },
   CACHE_TTL: { MEDIUM: 300 },
 }));
+vi.mock("@/lib/getRegistrationPolicies", () => ({
+  getRegistrationPolicies: vi.fn().mockResolvedValue({ tos: [], pp: [] }),
+  hasRegistrationPolicies: () => false,
+}));
 vi.mock("@/lib/rateLimit", () => ({
   checkRegisterRateLimit: vi.fn(() => ({ blocked: false })),
   checkTopupRateLimit: vi.fn(() => ({ blocked: false })),
