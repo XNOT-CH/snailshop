@@ -116,13 +116,13 @@ export function RegisterForm({ logoUrl, hasTurnstile, policies }: Readonly<Regis
             return;
         }
 
-        if (hasTurnstile && !turnstileToken) {
-            setTurnstileError("กรุณายืนยันว่าไม่ใช่บอทก่อนสมัครสมาชิก");
+        if (hasPolicies && !acceptedPolicies) {
+            showError("กรุณายอมรับเงื่อนไขการใช้งานและนโยบายความเป็นส่วนตัว");
             return;
         }
 
-        if (hasPolicies && !acceptedPolicies) {
-            showError("กรุณายอมรับเงื่อนไขการใช้งานและนโยบายความเป็นส่วนตัว");
+        if (hasTurnstile && !turnstileToken) {
+            setTurnstileError("กรุณายืนยันว่าไม่ใช่บอทก่อนสมัครสมาชิก");
             return;
         }
 
@@ -280,13 +280,6 @@ export function RegisterForm({ logoUrl, hasTurnstile, policies }: Readonly<Regis
                             />
                         </div>
 
-                        <TurnstileField
-                            enabled={hasTurnstile}
-                            onTokenChange={handleTurnstileChange}
-                            resetSignal={turnstileResetSignal}
-                            error={turnstileError}
-                        />
-
                         {/* เงื่อนไขการใช้งาน / นโยบายความเป็นส่วนตัว */}
                         {hasPolicies ? (
                             <div className="space-y-3 rounded-xl border border-[#cfd6df] bg-white/70 p-4 dark:border-border dark:bg-muted/30">
@@ -311,6 +304,13 @@ export function RegisterForm({ logoUrl, hasTurnstile, policies }: Readonly<Regis
                                 </label>
                             </div>
                         ) : null}
+
+                        <TurnstileField
+                            enabled={hasTurnstile}
+                            onTokenChange={handleTurnstileChange}
+                            resetSignal={turnstileResetSignal}
+                            error={turnstileError}
+                        />
 
                         {/* Submit Button */}
                         <Button
