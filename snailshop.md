@@ -644,13 +644,13 @@ Read a range, not the file. Landmarks are `name:line`.
 | `app/(site)/admin/gacha-machines/page.tsx` | 895 | validImageUrl:57, renderCostText:61, getFormFieldString:75, getCostAmountFieldCopy:85, GachaMachinesAdminPage:129, SortableRow:521, MachineTable:649 |
 | `components/admin/RegistrationPolicyManager.tsx` | 893 | POLICY_COPY:82, emptyForm:103, excerpt:107, csvCell:113, usePolicySortable:117, DragHandle:130, PolicyTableRow:158, PolicyCard:228 |
 | `lib/chat.ts` | 827 | serializeMessage:101, serializeConversationTimestamps:130, getChatUser:144, getChatAssignee:162, getConversationMessagesWindow:185, hydrateConversation:242, getOrCreateUserConversation:273, getUserConversation:309 |
+| `app/(site)/admin/invite-codes/page.tsx` | 804 | EMPTY_FORM:76, randomCode:84, formatCreatedAt:94, AdminInviteCodesPage:100 |
 | `app/(site)/admin/season-pass/edit/page.tsx` | 748 | getRewardTypeOptions:55, getRewardTypeDisplayName:63, getDefaultRewardImage:86, normalizeRewardType:90, fallbackRewards:106, AdminSeasonPassEditPage:117 |
 | `app/(site)/admin/help/page.tsx` | 739 | emptyArticleForm:67, emptyVideoForm:74, AdminHelpPage:80 |
 | `app/(site)/admin/popups/page.tsx` | 736 | getDismissLabel:69, AdminPopupsPage:76 |
 | `lib/features/orders/purchase.ts` | 692 | getActivePrice:102, serializeAcceptedChecks:114, processStock:123, getAutoDeleteTimestamp:143, buildCartThbPromoItems:151, buildDiscountedThbPriceMap:175, sumAppliedDiscount:241, validateAndSummarizeCartProducts:251 |
 | `components/admin/chat/useAdminChatInbox.ts` | 674 | sortConversations:26, mergeConversationPage:43, mergeMessages:53, useAdminChatInbox:69 |
 | `components/GachaRhombus.tsx` | 674 | getParticles:84, WinBurst:106, TileImage:128, getRouletteDelay:145, getRollingButtonLabel:157, getSelectorIndex:169, getPathIndices:173, getIntersectionIndex:179 |
-| `app/(site)/admin/invite-codes/page.tsx` | 650 | EMPTY_FORM:79, randomCode:87, AdminInviteCodesPage:97 |
 | `app/(site)/admin/nav-items/page.tsx` | 646 | useNavSortable:70, DragHandle:80, SortableCard:90, SortableRow:159, DragPreview:211, NavItemsAdminPage:223 |
 | `app/(site)/admin/products/new/page.tsx` | 641 | AddProductPage:44 |
 | `app/(site)/admin/roles/page.tsx` | 634 | normalizeRolePermissions:49, PERMISSION_GROUPS:53, AdminRolesPage:120 |

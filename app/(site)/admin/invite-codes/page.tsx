@@ -2,31 +2,28 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { format } from "date-fns";
+import { th } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 import {
-    AlertCircle,
+    ArrowDownWideNarrow,
+    ChevronDown,
+    Clock,
     Copy,
     CopyPlus,
+    Lightbulb,
     Link2,
     MoreVertical,
-    MousePointerClick,
     Pencil,
-    Plus,
+    RefreshCw,
+    Save,
+    Search,
     Trash2,
-    UserPlus,
-    Wallet,
+    X,
 } from "lucide-react";
 import { SpinnerScreen } from "@/components/SpinnerScreen";
 import { DateRangePicker } from "@/components/DateRangePicker";
 import { Button } from "@/components/ui/button";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -37,15 +34,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { PERMISSIONS } from "@/lib/permissions";
 import { API_ROUTES } from "@/lib/constants/apiRoutes";
@@ -66,7 +54,16 @@ interface InviteCodeRow {
     topupTotal: number;
 }
 
-type SortKey = "clicks" | "signups" | "topupTotal";
+type SortKey = "signups" | "topupTotal" | "clicks" | "createdAt";
+
+const PAGE_SIZE = 10;
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+    { key: "signups", label: "สมัครมากสุด" },
+    { key: "topupTotal", label: "ยอดเติมมากสุด" },
+    { key: "clicks", label: "คลิกมากสุด" },
+    { key: "createdAt", label: "สร้างล่าสุด" },
+];
 
 const DESTINATION_OPTIONS = [
     { value: "/shop", label: "หน้าร้านค้า" },
@@ -94,17 +91,28 @@ function randomCode() {
     ).join("");
 }
 
+function formatCreatedAt(value: string) {
+    const parsed = new Date(value.replace(" ", "T"));
+    if (Number.isNaN(parsed.getTime())) return value;
+    return format(parsed, "d MMM yyyy HH:mm", { locale: th });
+}
+
 export default function AdminInviteCodesPage() {
     const permissions = useAdminPermissions();
     const canEdit = permissions.includes(PERMISSIONS.INVITE_EDIT);
 
     const [rows, setRows] = useState<InviteCodeRow[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isRefreshing, setIsRefreshing] = useState(false);
     const [range, setRange] = useState<DateRange | undefined>();
+    const [search, setSearch] = useState("");
     const [sortKey, setSortKey] = useState<SortKey>("signups");
-    const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [page, setPage] = useState(1);
+    const [selected, setSelected] = useState<Set<string>>(new Set());
+    const [helpOpen, setHelpOpen] = useState(false);
+
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [form, setForm] = useState(EMPTY_FORM);
+    const [form, setForm] = useState({ ...EMPTY_FORM, code: "" });
     const [isSaving, setIsSaving] = useState(false);
     const [origin, setOrigin] = useState("");
 
@@ -112,11 +120,11 @@ export default function AdminInviteCodesPage() {
         setOrigin(window.location.origin);
     }, []);
 
-    const fetchRows = useCallback(async (selected: DateRange | undefined) => {
+    const fetchRows = useCallback(async (selectedRange: DateRange | undefined) => {
         try {
             const query = new URLSearchParams();
-            if (selected?.from) query.set("startDate", format(selected.from, "yyyy-MM-dd"));
-            if (selected?.to) query.set("endDate", format(selected.to, "yyyy-MM-dd"));
+            if (selectedRange?.from) query.set("startDate", format(selectedRange.from, "yyyy-MM-dd"));
+            if (selectedRange?.to) query.set("endDate", format(selectedRange.to, "yyyy-MM-dd"));
 
             const suffix = query.toString() ? `?${query.toString()}` : "";
             const response = await fetch(`${API_ROUTES.ADMIN_INVITE_CODES}${suffix}`);
@@ -139,23 +147,40 @@ export default function AdminInviteCodesPage() {
         fetchRows(range);
     }, [fetchRows, range]);
 
-    const sortedRows = useMemo(
-        () => [...rows].sort((a, b) => b[sortKey] - a[sortKey] || b.signups - a.signups),
-        [rows, sortKey],
-    );
+    const visibleRows = useMemo(() => {
+        const keyword = search.trim().toLowerCase();
+        const matched = keyword
+            ? rows.filter(
+                  (row) =>
+                      row.code.toLowerCase().includes(keyword) ||
+                      row.label.toLowerCase().includes(keyword) ||
+                      (row.note ?? "").toLowerCase().includes(keyword),
+              )
+            : rows;
+
+        return [...matched].sort((a, b) => {
+            if (sortKey === "createdAt") return b.createdAt.localeCompare(a.createdAt);
+            return b[sortKey] - a[sortKey] || b.signups - a.signups;
+        });
+    }, [rows, search, sortKey]);
+
+    const totalPages = Math.max(1, Math.ceil(visibleRows.length / PAGE_SIZE));
+    const currentPage = Math.min(page, totalPages);
+    const pageRows = visibleRows.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+    const firstShown = visibleRows.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+    const lastShown = Math.min(currentPage * PAGE_SIZE, visibleRows.length);
 
     const totals = useMemo(
         () =>
-            rows.reduce(
+            visibleRows.reduce(
                 (acc, row) => ({
                     clicks: acc.clicks + row.clicks,
                     signups: acc.signups + row.signups,
                     topupTotal: acc.topupTotal + row.topupTotal,
-                    active: acc.active + (row.isActive ? 1 : 0),
                 }),
-                { clicks: 0, signups: 0, topupTotal: 0, active: 0 },
+                { clicks: 0, signups: 0, topupTotal: 0 },
             ),
-        [rows],
+        [visibleRows],
     );
 
     const inviteUrl = (code: string) => `${origin}/r/${code}`;
@@ -169,13 +194,18 @@ export default function AdminInviteCodesPage() {
         }
     };
 
-    const openCreate = () => {
-        setEditingId(null);
-        setForm({ ...EMPTY_FORM, code: randomCode() });
-        setIsDialogOpen(true);
+    const refresh = async () => {
+        setIsRefreshing(true);
+        await fetchRows(range);
+        setIsRefreshing(false);
     };
 
-    const openEdit = (row: InviteCodeRow) => {
+    const resetForm = () => {
+        setEditingId(null);
+        setForm({ ...EMPTY_FORM, code: "" });
+    };
+
+    const startEdit = (row: InviteCodeRow) => {
         setEditingId(row.id);
         setForm({
             code: row.code,
@@ -184,11 +214,13 @@ export default function AdminInviteCodesPage() {
             destination: row.destination,
             isActive: row.isActive,
         });
-        setIsDialogOpen(true);
+        // The form lives at the top of the page; scroll it into view so the
+        // click does not look like it did nothing.
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     // Same channel settings, fresh code — the usual way a second link for the
-    // same promoter gets made. Nothing is written until the dialog is saved.
+    // same promoter gets made. Nothing is written until บันทึก is pressed.
     const duplicateRow = (row: InviteCodeRow) => {
         setEditingId(null);
         setForm({
@@ -198,51 +230,25 @@ export default function AdminInviteCodesPage() {
             destination: row.destination,
             isActive: true,
         });
-        setIsDialogOpen(true);
-    };
-
-    const deleteRow = async (row: InviteCodeRow) => {
-        const confirmed = await showConfirm(
-            `ลบลิงก์ ${row.code}?`,
-            "ลิงก์นี้จะใช้ไม่ได้อีกและหายไปจากตาราง แต่ยอดสมัครและยอดเติมเงินที่นับไว้แล้วยังอยู่ในระบบ และโค้ดนี้จะเอากลับมาใช้ซ้ำไม่ได้",
-            "ลบเลย",
-        );
-        if (!confirmed) return;
-
-        try {
-            const response = await fetchWithCsrf(API_ROUTES.adminInviteCode(row.id), {
-                method: "DELETE",
-            });
-            const data = await response.json();
-
-            if (!data.success) {
-                showError(data.message || "ลบไม่สำเร็จ");
-                return;
-            }
-
-            showSuccess(data.message);
-            await fetchRows(range);
-        } catch (error) {
-            console.error("[INVITE_CODE_DELETE]", error);
-            showError("ลบไม่สำเร็จ");
-        }
+        window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     const saveForm = async () => {
+        if (!form.code.trim() || !form.label.trim()) {
+            showError("กรุณากรอกรหัสคำเชิญและชื่อช่องทาง");
+            return;
+        }
+
         setIsSaving(true);
         try {
             const isEditing = editingId !== null;
+            const note = form.note.trim() ? form.note : null;
             const payload = isEditing
-                ? {
-                      label: form.label,
-                      note: form.note.trim() ? form.note : null,
-                      destination: form.destination,
-                      isActive: form.isActive,
-                  }
+                ? { label: form.label, note, destination: form.destination, isActive: form.isActive }
                 : {
                       code: form.code,
                       label: form.label,
-                      note: form.note.trim() ? form.note : null,
+                      note,
                       destination: form.destination,
                       isActive: form.isActive,
                   };
@@ -263,7 +269,7 @@ export default function AdminInviteCodesPage() {
             }
 
             showSuccess(data.message);
-            setIsDialogOpen(false);
+            resetForm();
             await fetchRows(range);
         } catch (error) {
             console.error("[INVITE_CODE_SAVE]", error);
@@ -299,295 +305,171 @@ export default function AdminInviteCodesPage() {
         }
     };
 
+    const removeIds = async (ids: string[]) => {
+        let removed = 0;
+        for (const id of ids) {
+            try {
+                const response = await fetchWithCsrf(API_ROUTES.adminInviteCode(id), {
+                    method: "DELETE",
+                });
+                const data = await response.json();
+                if (data.success) removed += 1;
+            } catch (error) {
+                console.error("[INVITE_CODE_DELETE]", error);
+            }
+        }
+        return removed;
+    };
+
+    const deleteRow = async (row: InviteCodeRow) => {
+        const confirmed = await showConfirm(
+            `ลบลิงก์ ${row.code}?`,
+            "ลิงก์นี้จะใช้ไม่ได้อีกและหายไปจากตาราง แต่ยอดสมัครและยอดเติมเงินที่นับไว้แล้วยังอยู่ในระบบ และโค้ดนี้จะเอากลับมาใช้ซ้ำไม่ได้",
+            "ลบเลย",
+        );
+        if (!confirmed) return;
+
+        const removed = await removeIds([row.id]);
+        if (removed === 0) {
+            showError("ลบไม่สำเร็จ");
+            return;
+        }
+
+        showSuccess("ลบลิงก์คำเชิญแล้ว");
+        setSelected(new Set());
+        if (editingId === row.id) resetForm();
+        await fetchRows(range);
+    };
+
+    const deleteSelected = async () => {
+        const ids = [...selected];
+        if (ids.length === 0) return;
+
+        const confirmed = await showConfirm(
+            `ลบ ${ids.length} ลิงก์ที่เลือก?`,
+            "ลิงก์เหล่านี้จะใช้ไม่ได้อีกและหายไปจากตาราง แต่ยอดสมัครและยอดเติมเงินที่นับไว้แล้วยังอยู่ในระบบ และโค้ดเหล่านี้จะเอากลับมาใช้ซ้ำไม่ได้",
+            "ลบเลย",
+        );
+        if (!confirmed) return;
+
+        const removed = await removeIds(ids);
+        if (removed === 0) {
+            showError("ลบไม่สำเร็จ");
+        } else if (removed < ids.length) {
+            // Deleted one at a time, so a partial result is possible and has to
+            // be reported honestly rather than as a clean success.
+            showError(`ลบได้ ${removed} จาก ${ids.length} ลิงก์`);
+        } else {
+            showSuccess(`ลบ ${removed} ลิงก์แล้ว`);
+        }
+
+        setSelected(new Set());
+        resetForm();
+        await fetchRows(range);
+    };
+
+    const toggleSelected = (id: string) => {
+        setSelected((current) => {
+            const next = new Set(current);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+        });
+    };
+
+    const allOnPageSelected = pageRows.length > 0 && pageRows.every((row) => selected.has(row.id));
+
+    const toggleSelectPage = () => {
+        setSelected((current) => {
+            const next = new Set(current);
+            if (allOnPageSelected) pageRows.forEach((row) => next.delete(row.id));
+            else pageRows.forEach((row) => next.add(row.id));
+            return next;
+        });
+    };
+
     if (isLoading) {
         return <SpinnerScreen label="กำลังโหลดลิงก์คำเชิญ..." />;
     }
 
     return (
-        <div className="admin-invite-codes-page space-y-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                    <h1 className="flex items-center gap-2 text-2xl font-bold text-foreground">
-                        <Link2 className="h-6 w-6 text-[#145de7]" />
-                        ลิงก์คำเชิญ
-                    </h1>
-                    <p className="mt-1 text-muted-foreground">
-                        สร้างลิงก์ให้คนโปรโมท แล้วดูว่าช่องทางไหนพาคนสมัครและเติมเงินเข้ามา
-                    </p>
-                </div>
-                {canEdit ? (
-                    <Button onClick={openCreate} className="gap-2">
-                        <Plus className="h-4 w-4" />
-                        สร้างลิงก์ใหม่
-                    </Button>
+        <div className="admin-invite-codes-page space-y-4">
+            {/* วิธีใช้งาน */}
+            <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                <button
+                    type="button"
+                    onClick={() => setHelpOpen((open) => !open)}
+                    className="flex w-full items-center gap-2 px-5 py-3 text-left text-sm font-medium text-foreground transition hover:bg-muted/60"
+                >
+                    <Lightbulb className="h-4 w-4 text-amber-500" />
+                    วิธีใช้งาน : คลิกที่นี่
+                    <ChevronDown
+                        className={cn("ml-auto h-4 w-4 transition-transform", helpOpen && "rotate-180")}
+                    />
+                </button>
+                {helpOpen ? (
+                    <div className="space-y-1.5 border-t border-border px-5 py-4 text-sm text-muted-foreground">
+                        <p>1. สร้างรหัสคำเชิญหนึ่งรหัสต่อหนึ่งช่องทาง แล้วส่งลิงก์ให้คนโปรโมทไปแปะ</p>
+                        <p>2. ตารางด้านล่างจะบอกว่าช่องทางไหนมีคนกดเข้ามา สมัครสมาชิก และเติมเงินเท่าไร</p>
+                        <p>3. คลิกนับคนไม่ซ้ำต่อวัน ส่วนยอดเติมเงินนับตลอดอายุบัญชีของคนที่สมัครผ่านลิงก์นั้น</p>
+                        <p>4. ปิดสวิตช์เมื่อเลิกจ้าง ลิงก์จะยังเข้าเว็บได้แต่จะไม่นับให้อีก</p>
+                    </div>
                 ) : null}
             </div>
 
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <DateRangePicker value={range} onChange={setRange} placeholder="ทุกช่วงเวลา" />
-                <p className="text-xs text-muted-foreground">
-                    ช่วงวันที่มีผลกับ &quot;คลิก&quot; และ &quot;สมัครสมาชิก&quot; เท่านั้น —
-                    ยอดเติมเงินนับตลอดอายุบัญชีของคนที่สมัครผ่านลิงก์
-                </p>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#eff6ff_0%,#ffffff_100%)] p-5 shadow-sm dark:border-[#2d4362] dark:bg-[linear-gradient(135deg,rgba(15,25,39,0.98)_0%,rgba(20,32,49,0.94)_100%)]">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-sm">
-                            <MousePointerClick className="h-5 w-5" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-slate-500 dark:text-[#9ab0cb]">คลิกทั้งหมด</p>
-                            <p className="text-2xl font-bold text-slate-900 dark:text-[#eef4ff]">
-                                {totals.clicks.toLocaleString()} คน
-                            </p>
-                            <p className="text-xs text-slate-400 dark:text-[#8399b8]">นับคนไม่ซ้ำต่อวัน</p>
-                        </div>
+            {/* ฟอร์มสร้าง / แก้ไข */}
+            <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                <div className="flex items-center gap-3 border-b border-border px-5 py-4">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#145de7]/10 text-[#145de7] ring-1 ring-[#145de7]/30 dark:bg-[#145de7]/20">
+                        <Link2 className="h-5 w-5" />
                     </div>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#f0fdf4_0%,#ffffff_100%)] p-5 shadow-sm dark:border-[#2d4362] dark:bg-[linear-gradient(135deg,rgba(15,25,39,0.98)_0%,rgba(20,32,49,0.94)_100%)]">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-sm">
-                            <UserPlus className="h-5 w-5" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-slate-500 dark:text-[#9ab0cb]">สมัครสมาชิก</p>
-                            <p className="text-2xl font-bold text-slate-900 dark:text-[#eef4ff]">
-                                {totals.signups.toLocaleString()} คน
-                            </p>
-                            <p className="text-xs text-slate-400 dark:text-[#8399b8]">
-                                คลิก {totals.clicks.toLocaleString()} → สมัคร {totals.signups.toLocaleString()}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#fff7ed_0%,#ffffff_100%)] p-5 shadow-sm dark:border-[#2d4362] dark:bg-[linear-gradient(135deg,rgba(15,25,39,0.98)_0%,rgba(20,32,49,0.94)_100%)]">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm">
-                            <Wallet className="h-5 w-5" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-slate-500 dark:text-[#9ab0cb]">ยอดเติมเงินรวม</p>
-                            <p className="text-2xl font-bold text-slate-900 dark:text-[#eef4ff]">
-                                ฿{totals.topupTotal.toLocaleString()}
-                            </p>
-                            <p className="text-xs text-slate-400 dark:text-[#8399b8]">ตลอดอายุบัญชี</p>
-                        </div>
-                    </div>
-                </div>
-                <div className="rounded-2xl border border-slate-200 bg-[linear-gradient(135deg,#f8fafc_0%,#ffffff_100%)] p-5 shadow-sm dark:border-[#2d4362] dark:bg-[linear-gradient(135deg,rgba(15,25,39,0.98)_0%,rgba(20,32,49,0.94)_100%)]">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-600 text-white shadow-sm">
-                            <Link2 className="h-5 w-5" />
-                        </div>
-                        <div>
-                            <p className="text-sm text-slate-500 dark:text-[#9ab0cb]">ลิงก์ที่เปิดใช้งาน</p>
-                            <p className="text-2xl font-bold text-slate-900 dark:text-[#eef4ff]">
-                                {totals.active} จาก {rows.length}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="overflow-hidden rounded-xl border border-border bg-white shadow-sm dark:bg-zinc-900">
-                <div className="flex flex-col gap-3 border-b border-border px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex items-center gap-2">
-                        <div className="flex h-6 w-6 items-center justify-center rounded bg-[#145de7]">
-                            <Link2 className="h-3.5 w-3.5 text-white" />
-                        </div>
-                        <span className="font-bold text-foreground">ลิงก์ทั้งหมด ({rows.length})</span>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs">
-                        <span className="text-muted-foreground">เรียงตาม</span>
-                        {(
-                            [
-                                { key: "signups", label: "สมัคร" },
-                                { key: "topupTotal", label: "ยอดเติม" },
-                                { key: "clicks", label: "คลิก" },
-                            ] as { key: SortKey; label: string }[]
-                        ).map((option) => (
-                            <button
-                                key={option.key}
-                                type="button"
-                                onClick={() => setSortKey(option.key)}
-                                className={cn(
-                                    "rounded-full border px-3 py-1.5 font-medium transition",
-                                    sortKey === option.key
-                                        ? "border-blue-600 bg-blue-600 text-white shadow-sm"
-                                        : "border-border bg-muted text-muted-foreground hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-300",
-                                )}
-                            >
-                                {option.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-
-                {rows.length === 0 ? (
-                    <div className="py-14 text-center text-muted-foreground">
-                        <AlertCircle className="mx-auto mb-3 h-12 w-12 opacity-30" />
-                        <p className="font-semibold text-foreground">ยังไม่มีลิงก์คำเชิญ</p>
-                        <p className="mt-1 text-sm">สร้างลิงก์แรกเพื่อเริ่มวัดผลแต่ละช่องทาง</p>
-                    </div>
-                ) : (
-                    <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>ช่องทาง</TableHead>
-                                    <TableHead>โค้ด / ลิงก์</TableHead>
-                                    <TableHead className="text-right">คลิก</TableHead>
-                                    <TableHead className="text-right">สมัครสมาชิก</TableHead>
-                                    <TableHead className="text-right">ยอดเติมเงิน</TableHead>
-                                    <TableHead>ปลายทาง</TableHead>
-                                    <TableHead className="text-center">สถานะ</TableHead>
-                                    <TableHead className="text-right">จัดการ</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {sortedRows.map((row) => (
-                                    <TableRow key={row.id}>
-                                        <TableCell>
-                                            <p className="font-semibold text-foreground">{row.label}</p>
-                                            {row.note ? (
-                                                <p className="text-xs text-muted-foreground">{row.note}</p>
-                                            ) : null}
-                                        </TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-mono text-sm text-foreground">{row.code}</span>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => copyLink(row.code)}
-                                                    aria-label={`คัดลอกลิงก์ของ ${row.code}`}
-                                                    className="flex h-7 w-7 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground transition hover:text-foreground"
-                                                >
-                                                    <Copy className="h-3.5 w-3.5" />
-                                                </button>
-                                            </div>
-                                            <p className="text-xs text-muted-foreground">/r/{row.code}</p>
-                                        </TableCell>
-                                        <TableCell className="text-right tabular-nums">
-                                            {row.clicks.toLocaleString()}
-                                        </TableCell>
-                                        <TableCell className="text-right font-semibold tabular-nums text-foreground">
-                                            {row.signups.toLocaleString()}
-                                        </TableCell>
-                                        <TableCell className="text-right font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
-                                            ฿{row.topupTotal.toLocaleString()}
-                                        </TableCell>
-                                        <TableCell className="text-sm text-muted-foreground">
-                                            {row.destination}
-                                        </TableCell>
-                                        <TableCell className="text-center">
-                                            <Switch
-                                                checked={row.isActive}
-                                                disabled={!canEdit}
-                                                onCheckedChange={(next) => toggleActive(row, next)}
-                                                aria-label={`เปิดใช้งานลิงก์ ${row.code}`}
-                                            />
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button
-                                                        type="button"
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        aria-label={`เมนูจัดการลิงก์ ${row.code}`}
-                                                        className="rounded-full border border-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
-                                                    >
-                                                        <MoreVertical className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end" className="w-48">
-                                                    {canEdit ? (
-                                                        <DropdownMenuItem
-                                                            onClick={() => openEdit(row)}
-                                                            className="flex items-center gap-2"
-                                                        >
-                                                            <Pencil className="h-4 w-4" />
-                                                            แก้ไข
-                                                        </DropdownMenuItem>
-                                                    ) : null}
-                                                    <DropdownMenuItem
-                                                        onClick={() => copyLink(row.code)}
-                                                        className="flex items-center gap-2"
-                                                    >
-                                                        <Copy className="h-4 w-4" />
-                                                        คัดลอกลิงก์
-                                                    </DropdownMenuItem>
-                                                    {canEdit ? (
-                                                        <DropdownMenuItem
-                                                            onClick={() => duplicateRow(row)}
-                                                            className="flex items-center gap-2"
-                                                        >
-                                                            <CopyPlus className="h-4 w-4" />
-                                                            ทำซ้ำ
-                                                        </DropdownMenuItem>
-                                                    ) : null}
-                                                    {canEdit ? <DropdownMenuSeparator /> : null}
-                                                    {canEdit ? (
-                                                        <DropdownMenuItem
-                                                            onClick={() => deleteRow(row)}
-                                                            className="flex items-center gap-2 text-rose-600 focus:text-rose-600 dark:text-rose-400 dark:focus:text-rose-400"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                            ลบ
-                                                        </DropdownMenuItem>
-                                                    ) : null}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                        <p className="border-t border-border px-5 py-3 text-xs text-muted-foreground">
-                            คนหนึ่งคนถูกนับให้ลิงก์ล่าสุดที่กดก่อนสมัคร และยอดเติมเงินของเขาจะนับให้ลิงก์นั้นตลอดไป
+                    <div>
+                        <h1 className="text-lg font-bold text-[#145de7] dark:text-[#6ea2ff]">
+                            รหัสคำเชิญ
+                        </h1>
+                        <p className="text-sm text-muted-foreground">
+                            {editingId ? "แก้ไขรหัสที่เลือกไว้" : "สร้างลิงก์ให้คนโปรโมท แล้วดูว่าช่องทางไหนพาคนสมัครและเติมเงินเข้ามา"}
                         </p>
                     </div>
-                )}
-            </div>
+                </div>
 
-            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>{editingId ? "แก้ไขลิงก์คำเชิญ" : "สร้างลิงก์คำเชิญ"}</DialogTitle>
-                        <DialogDescription>
-                            ตั้งชื่อช่องทางให้จำได้ว่าลิงก์นี้ส่งให้ใคร แล้วส่งลิงก์ให้เขาไปแปะ
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="space-y-4">
+                <div className="space-y-4 px-5 py-5">
+                    <div className="grid gap-4 md:grid-cols-3">
                         <div className="space-y-2">
-                            <Label htmlFor="invite-label">ชื่อช่องทาง</Label>
-                            <Input
-                                id="invite-label"
-                                value={form.label}
-                                onChange={(event) => setForm({ ...form, label: event.target.value })}
-                                placeholder="เช่น TikTok — น้องเอ"
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="invite-code">โค้ด</Label>
+                            <Label htmlFor="invite-code" className="gap-1.5">
+                                รหัสคำเชิญ
+                                <span className="h-1.5 w-1.5 rounded-full bg-rose-500" aria-hidden="true" />
+                            </Label>
                             <Input
                                 id="invite-code"
                                 value={form.code}
-                                disabled={editingId !== null}
+                                disabled={!canEdit || editingId !== null}
                                 onChange={(event) =>
                                     setForm({ ...form, code: event.target.value.toUpperCase() })
                                 }
+                                placeholder="เช่น REXZYSTUDIO"
                                 className="font-mono"
                             />
                             <p className="text-xs text-muted-foreground">
                                 {editingId
-                                    ? "โค้ดแก้ไม่ได้ เพราะลิงก์ถูกแจกออกไปแล้วและมีผู้สมัครผูกอยู่"
+                                    ? "รหัสแก้ไม่ได้ เพราะลิงก์ถูกแจกออกไปแล้วและมีผู้สมัครผูกอยู่"
                                     : `ลิงก์ที่ได้: ${origin}/r/${form.code || "CODE"}`}
                             </p>
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="invite-label" className="gap-1.5">
+                                ชื่อช่องทาง
+                                <span className="h-1.5 w-1.5 rounded-full bg-rose-500" aria-hidden="true" />
+                            </Label>
+                            <Input
+                                id="invite-label"
+                                value={form.label}
+                                disabled={!canEdit}
+                                onChange={(event) => setForm({ ...form, label: event.target.value })}
+                                placeholder="เช่น TikTok — น้องเอ"
+                            />
+                            <p className="text-xs text-muted-foreground">ชื่อที่ใช้จำว่าลิงก์นี้ส่งให้ใคร</p>
                         </div>
 
                         <div className="space-y-2">
@@ -595,10 +477,9 @@ export default function AdminInviteCodesPage() {
                             <select
                                 id="invite-destination"
                                 value={form.destination}
-                                onChange={(event) =>
-                                    setForm({ ...form, destination: event.target.value })
-                                }
-                                className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-base shadow-xs outline-none md:text-sm"
+                                disabled={!canEdit}
+                                onChange={(event) => setForm({ ...form, destination: event.target.value })}
+                                className="h-9 w-full rounded-md border border-input bg-transparent px-3 text-base shadow-xs outline-none disabled:opacity-50 md:text-sm"
                             >
                                 {DESTINATION_OPTIONS.map((option) => (
                                     <option key={option.value} value={option.value}>
@@ -606,44 +487,317 @@ export default function AdminInviteCodesPage() {
                                     </option>
                                 ))}
                             </select>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="invite-note">หมายเหตุ (เห็นเฉพาะแอดมิน)</Label>
-                            <Textarea
-                                id="invite-note"
-                                value={form.note}
-                                onChange={(event) => setForm({ ...form, note: event.target.value })}
-                                placeholder="เช่น ค่าจ้าง 2,000 บาท/เดือน ติดต่อทางไลน์"
-                                rows={2}
-                            />
-                        </div>
-
-                        <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
-                            <div>
-                                <Label htmlFor="invite-active">เปิดใช้งาน</Label>
-                                <p className="text-xs text-muted-foreground">
-                                    ปิดแล้วลิงก์ยังเข้าเว็บได้ แต่จะไม่นับคลิกและไม่ผูกคนสมัครให้อีก
-                                </p>
-                            </div>
-                            <Switch
-                                id="invite-active"
-                                checked={form.isActive}
-                                onCheckedChange={(next) => setForm({ ...form, isActive: next })}
-                            />
+                            <p className="text-xs text-muted-foreground">หน้าที่คนกดลิงก์จะไปโผล่</p>
                         </div>
                     </div>
 
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
-                            ยกเลิก
-                        </Button>
-                        <Button onClick={saveForm} disabled={isSaving || !form.label.trim()}>
+                    <div className="flex items-center justify-between rounded-xl border border-border px-4 py-2.5">
+                        <div>
+                            <Label htmlFor="invite-active">เปิดใช้งาน</Label>
+                            <p className="text-xs text-muted-foreground">
+                                ปิดแล้วลิงก์ยังเข้าเว็บได้ แต่จะไม่นับคลิกและไม่ผูกคนสมัครให้อีก
+                            </p>
+                        </div>
+                        <Switch
+                            id="invite-active"
+                            checked={form.isActive}
+                            disabled={!canEdit}
+                            onCheckedChange={(next) => setForm({ ...form, isActive: next })}
+                        />
+                    </div>
+
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                        <Button
+                            onClick={saveForm}
+                            disabled={!canEdit || isSaving}
+                            className="h-11 flex-1 gap-2 bg-[#145de7] text-white hover:bg-[#1150c9]"
+                        >
+                            <Save className="h-4 w-4" />
                             {isSaving ? "กำลังบันทึก..." : "บันทึก"}
                         </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                        {editingId ? (
+                            <Button
+                                variant="outline"
+                                onClick={resetForm}
+                                className="h-11 gap-2 sm:w-40"
+                            >
+                                <X className="h-4 w-4" />
+                                ยกเลิกการแก้ไข
+                            </Button>
+                        ) : null}
+                    </div>
+                </div>
+            </div>
+
+            {/* รายการ */}
+            <div className="overflow-hidden rounded-2xl border border-border bg-card">
+                <div className="flex items-center gap-3 border-b border-border px-5 py-4">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#145de7]/10 text-[#145de7] ring-1 ring-[#145de7]/30 dark:bg-[#145de7]/20">
+                        <Link2 className="h-5 w-5" />
+                    </div>
+                    <div>
+                        <h2 className="text-lg font-bold text-[#145de7] dark:text-[#6ea2ff]">
+                            รหัสคำเชิญ
+                        </h2>
+                        <p className="text-sm text-muted-foreground">รายการรหัสที่สร้างไว้</p>
+                    </div>
+                    <p className="ml-auto hidden text-sm text-muted-foreground sm:block">
+                        รวม คลิก {totals.clicks.toLocaleString()} · สมัคร {totals.signups.toLocaleString()} ·
+                        ฿{totals.topupTotal.toLocaleString()}
+                    </p>
+                </div>
+
+                {/* แถบเครื่องมือ */}
+                <div className="flex flex-wrap items-center gap-2 border-b border-border px-5 py-3">
+                    <div className="relative">
+                        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/70" />
+                        <input
+                            type="text"
+                            placeholder="ค้นหา..."
+                            value={search}
+                            onChange={(event) => {
+                                setSearch(event.target.value);
+                                setPage(1);
+                            }}
+                            className="h-9 w-full rounded-xl border border-border bg-muted pl-9 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:border-blue-500 focus:bg-card focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-500/20 sm:w-60"
+                        />
+                    </div>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                aria-label="เรียงลำดับ"
+                                className="h-9 w-9"
+                            >
+                                <ArrowDownWideNarrow className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start" className="w-44">
+                            {SORT_OPTIONS.map((option) => (
+                                <DropdownMenuItem
+                                    key={option.key}
+                                    onClick={() => setSortKey(option.key)}
+                                    className={cn(
+                                        "flex items-center gap-2",
+                                        sortKey === option.key && "font-semibold text-[#145de7]",
+                                    )}
+                                >
+                                    {option.label}
+                                </DropdownMenuItem>
+                            ))}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+
+                    <DateRangePicker value={range} onChange={setRange} placeholder="ทุกช่วงเวลา" />
+
+                    <div className="ml-auto flex items-center gap-2">
+                        {canEdit ? (
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="icon"
+                                aria-label="ลบลิงก์ที่เลือก"
+                                disabled={selected.size === 0}
+                                onClick={deleteSelected}
+                                className="h-9 w-9 border-rose-500/60 text-rose-600 hover:bg-rose-50 hover:text-rose-700 disabled:opacity-40 dark:text-rose-400 dark:hover:bg-rose-500/10"
+                            >
+                                <Trash2 className="h-4 w-4" />
+                            </Button>
+                        ) : null}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            aria-label="รีเฟรชข้อมูล"
+                            onClick={refresh}
+                            className="h-9 w-9"
+                        >
+                            <RefreshCw className={cn("h-4 w-4", isRefreshing && "animate-spin")} />
+                        </Button>
+                    </div>
+                </div>
+
+                {selected.size > 0 ? (
+                    <div className="border-b border-border bg-muted/50 px-5 py-2 text-sm text-muted-foreground">
+                        เลือกไว้ {selected.size} ลิงก์
+                    </div>
+                ) : null}
+
+                {/* หัวคอลัมน์ */}
+                <div className="flex items-center gap-3 border-b border-border px-5 py-2.5 text-xs font-medium text-muted-foreground">
+                    {canEdit ? (
+                        <Checkbox
+                            checked={allOnPageSelected}
+                            onCheckedChange={toggleSelectPage}
+                            aria-label="เลือกทั้งหน้า"
+                            disabled={pageRows.length === 0}
+                        />
+                    ) : null}
+                    <span className="flex-1">รหัสคำเชิญ</span>
+                    <span className="w-20 text-center">คลิก</span>
+                    <span className="w-24 text-center">ผู้สมัคร</span>
+                    <span className="w-28 text-center">ยอดเติมเงิน</span>
+                    <span className="w-24 text-center">สถานะ</span>
+                    <span className="w-9" />
+                </div>
+
+                {pageRows.length === 0 ? (
+                    <div className="py-14 text-center text-muted-foreground">
+                        <Link2 className="mx-auto mb-3 h-12 w-12 opacity-30" />
+                        <p className="font-semibold text-foreground">
+                            {search ? "ไม่พบรหัสที่ค้นหา" : "ยังไม่มีรหัสคำเชิญ"}
+                        </p>
+                        <p className="mt-1 text-sm">
+                            {search ? "ลองคำค้นอื่น" : "สร้างรหัสแรกจากฟอร์มด้านบนเพื่อเริ่มวัดผลแต่ละช่องทาง"}
+                        </p>
+                    </div>
+                ) : (
+                    <div className="divide-y divide-border">
+                        {pageRows.map((row) => (
+                            <div key={row.id} className="px-5 py-3">
+                                <div className="flex items-center gap-3">
+                                    {canEdit ? (
+                                        <Checkbox
+                                            checked={selected.has(row.id)}
+                                            onCheckedChange={() => toggleSelected(row.id)}
+                                            aria-label={`เลือก ${row.code}`}
+                                        />
+                                    ) : null}
+
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2">
+                                            <span className="truncate font-mono font-semibold text-[#145de7] dark:text-[#6ea2ff]">
+                                                {row.code}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => copyLink(row.code)}
+                                                aria-label={`คัดลอกลิงก์ของ ${row.code}`}
+                                                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border bg-muted text-muted-foreground transition hover:text-foreground"
+                                            >
+                                                <Copy className="h-3 w-3" />
+                                            </button>
+                                        </div>
+                                        <p className="truncate text-sm text-foreground">{row.label}</p>
+                                    </div>
+
+                                    <span className="w-20 text-center tabular-nums text-foreground">
+                                        {row.clicks.toLocaleString()}
+                                    </span>
+                                    <span className="w-24 text-center font-semibold tabular-nums text-foreground">
+                                        {row.signups.toLocaleString()}
+                                    </span>
+                                    <span className="w-28 text-center font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
+                                        ฿{row.topupTotal.toLocaleString()}
+                                    </span>
+                                    <span className="flex w-24 justify-center">
+                                        <Switch
+                                            checked={row.isActive}
+                                            disabled={!canEdit}
+                                            onCheckedChange={(next) => toggleActive(row, next)}
+                                            aria-label={`เปิดใช้งานลิงก์ ${row.code}`}
+                                        />
+                                    </span>
+
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="icon"
+                                                aria-label={`เมนูจัดการลิงก์ ${row.code}`}
+                                                className="h-9 w-9 shrink-0 rounded-full border border-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
+                                            >
+                                                <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="end" className="w-48">
+                                            {canEdit ? (
+                                                <DropdownMenuItem
+                                                    onClick={() => startEdit(row)}
+                                                    className="flex items-center gap-2"
+                                                >
+                                                    <Pencil className="h-4 w-4" />
+                                                    แก้ไข
+                                                </DropdownMenuItem>
+                                            ) : null}
+                                            <DropdownMenuItem
+                                                onClick={() => copyLink(row.code)}
+                                                className="flex items-center gap-2"
+                                            >
+                                                <Copy className="h-4 w-4" />
+                                                คัดลอกลิงก์
+                                            </DropdownMenuItem>
+                                            {canEdit ? (
+                                                <DropdownMenuItem
+                                                    onClick={() => duplicateRow(row)}
+                                                    className="flex items-center gap-2"
+                                                >
+                                                    <CopyPlus className="h-4 w-4" />
+                                                    ทำซ้ำ
+                                                </DropdownMenuItem>
+                                            ) : null}
+                                            {canEdit ? <DropdownMenuSeparator /> : null}
+                                            {canEdit ? (
+                                                <DropdownMenuItem
+                                                    onClick={() => deleteRow(row)}
+                                                    className="flex items-center gap-2 text-rose-600 focus:text-rose-600 dark:text-rose-400 dark:focus:text-rose-400"
+                                                >
+                                                    <Trash2 className="h-4 w-4" />
+                                                    ลบ
+                                                </DropdownMenuItem>
+                                            ) : null}
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
+                                </div>
+
+                                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                                    <span className="rounded-full bg-muted px-2 py-0.5">/r/{row.code}</span>
+                                    <span className="flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        {formatCreatedAt(row.createdAt)}
+                                    </span>
+                                    <span>ปลายทาง {row.destination}</span>
+                                    {row.note ? <span className="truncate">{row.note}</span> : null}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                <div className="flex flex-col items-center gap-3 border-t border-border px-5 py-4">
+                    <p className="text-sm text-muted-foreground">
+                        แสดง {firstShown} ถึง {lastShown} จาก {visibleRows.length} รายการ
+                    </p>
+                    <div className="flex items-center gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === 1}
+                            onClick={() => setPage((value) => Math.max(1, value - 1))}
+                        >
+                            ย้อนกลับ
+                        </Button>
+                        <span className="flex h-9 min-w-9 items-center justify-center rounded-full border border-[#145de7] px-3 text-sm font-semibold text-[#145de7] dark:text-[#6ea2ff]">
+                            {currentPage}
+                        </span>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === totalPages}
+                            onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+                        >
+                            ถัดไป
+                        </Button>
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                        คนหนึ่งคนถูกนับให้ลิงก์ล่าสุดที่กดก่อนสมัคร และยอดเติมเงินของเขาจะนับให้ลิงก์นั้นตลอดไป
+                    </p>
+                </div>
+            </div>
         </div>
     );
 }
