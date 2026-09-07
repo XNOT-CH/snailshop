@@ -6,10 +6,13 @@ import type { DateRange } from "react-day-picker";
 import {
     AlertCircle,
     Copy,
+    CopyPlus,
     Link2,
+    MoreVertical,
     MousePointerClick,
     Pencil,
     Plus,
+    Trash2,
     UserPlus,
     Wallet,
 } from "lucide-react";
@@ -24,6 +27,13 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -40,7 +50,7 @@ import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider
 import { PERMISSIONS } from "@/lib/permissions";
 import { API_ROUTES } from "@/lib/constants/apiRoutes";
 import { fetchWithCsrf } from "@/lib/csrf-client";
-import { showError, showSuccess } from "@/lib/swal";
+import { showConfirm, showError, showSuccess } from "@/lib/swal";
 import { cn } from "@/lib/utils";
 
 interface InviteCodeRow {
@@ -175,6 +185,47 @@ export default function AdminInviteCodesPage() {
             isActive: row.isActive,
         });
         setIsDialogOpen(true);
+    };
+
+    // Same channel settings, fresh code — the usual way a second link for the
+    // same promoter gets made. Nothing is written until the dialog is saved.
+    const duplicateRow = (row: InviteCodeRow) => {
+        setEditingId(null);
+        setForm({
+            code: randomCode(),
+            label: `${row.label} (สำเนา)`,
+            note: row.note ?? "",
+            destination: row.destination,
+            isActive: true,
+        });
+        setIsDialogOpen(true);
+    };
+
+    const deleteRow = async (row: InviteCodeRow) => {
+        const confirmed = await showConfirm(
+            `ลบลิงก์ ${row.code}?`,
+            "ลิงก์นี้จะใช้ไม่ได้อีกและหายไปจากตาราง แต่ยอดสมัครและยอดเติมเงินที่นับไว้แล้วยังอยู่ในระบบ และโค้ดนี้จะเอากลับมาใช้ซ้ำไม่ได้",
+            "ลบเลย",
+        );
+        if (!confirmed) return;
+
+        try {
+            const response = await fetchWithCsrf(API_ROUTES.adminInviteCode(row.id), {
+                method: "DELETE",
+            });
+            const data = await response.json();
+
+            if (!data.success) {
+                showError(data.message || "ลบไม่สำเร็จ");
+                return;
+            }
+
+            showSuccess(data.message);
+            await fetchRows(range);
+        } catch (error) {
+            console.error("[INVITE_CODE_DELETE]", error);
+            showError("ลบไม่สำเร็จ");
+        }
     };
 
     const saveForm = async () => {
@@ -439,16 +490,56 @@ export default function AdminInviteCodesPage() {
                                             />
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                disabled={!canEdit}
-                                                onClick={() => openEdit(row)}
-                                                className="gap-1"
-                                            >
-                                                <Pencil className="h-3.5 w-3.5" />
-                                                แก้ไข
-                                            </Button>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button
+                                                        type="button"
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        aria-label={`เมนูจัดการลิงก์ ${row.code}`}
+                                                        className="rounded-full border border-transparent text-muted-foreground hover:border-border hover:bg-muted hover:text-foreground"
+                                                    >
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="end" className="w-48">
+                                                    {canEdit ? (
+                                                        <DropdownMenuItem
+                                                            onClick={() => openEdit(row)}
+                                                            className="flex items-center gap-2"
+                                                        >
+                                                            <Pencil className="h-4 w-4" />
+                                                            แก้ไข
+                                                        </DropdownMenuItem>
+                                                    ) : null}
+                                                    <DropdownMenuItem
+                                                        onClick={() => copyLink(row.code)}
+                                                        className="flex items-center gap-2"
+                                                    >
+                                                        <Copy className="h-4 w-4" />
+                                                        คัดลอกลิงก์
+                                                    </DropdownMenuItem>
+                                                    {canEdit ? (
+                                                        <DropdownMenuItem
+                                                            onClick={() => duplicateRow(row)}
+                                                            className="flex items-center gap-2"
+                                                        >
+                                                            <CopyPlus className="h-4 w-4" />
+                                                            ทำซ้ำ
+                                                        </DropdownMenuItem>
+                                                    ) : null}
+                                                    {canEdit ? <DropdownMenuSeparator /> : null}
+                                                    {canEdit ? (
+                                                        <DropdownMenuItem
+                                                            onClick={() => deleteRow(row)}
+                                                            className="flex items-center gap-2 text-rose-600 focus:text-rose-600 dark:text-rose-400 dark:focus:text-rose-400"
+                                                        >
+                                                            <Trash2 className="h-4 w-4" />
+                                                            ลบ
+                                                        </DropdownMenuItem>
+                                                    ) : null}
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
                                         </TableCell>
                                     </TableRow>
                                 ))}

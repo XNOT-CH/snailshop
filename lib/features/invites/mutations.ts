@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db, inviteCodes } from "@/lib/db";
 import type { CreateInviteCodeInput, UpdateInviteCodeInput } from "@/lib/validations/inviteCode";
 import { findInviteCodeById } from "./queries";
@@ -14,6 +14,16 @@ export async function createInviteCode(input: CreateInviteCodeInput) {
         isActive: input.isActive,
     });
     return findInviteCodeById(id);
+}
+
+// Hides the code from the admin table and kills the link, without touching the
+// signups attributed to it. There is no hard delete: User.inviteCodeId is the
+// attribution record and its foreign key is ON DELETE RESTRICT.
+export async function softDeleteInviteCode(id: string) {
+    await db
+        .update(inviteCodes)
+        .set({ deletedAt: sql`now()`, isActive: false })
+        .where(eq(inviteCodes.id, id));
 }
 
 // `code` is not updatable — see lib/validations/inviteCode.ts.

@@ -459,37 +459,37 @@ Jump straight to the line instead of reading the whole 800-line schema.
 | `ProductCheckbox` | `productCheckboxes` | `lib/db/schema.ts:215` |
 | `ProductViewDaily` | `productViewsDaily` | `lib/db/schema.ts:239` |
 | `InviteCode` | `inviteCodes` | `lib/db/schema.ts:258` |
-| `InviteClickDaily` | `inviteClicksDaily` | `lib/db/schema.ts:277` |
-| `Order` | `orders` | `lib/db/schema.ts:289` |
-| `Topup` | `topups` | `lib/db/schema.ts:326` |
-| `SeasonPassPlan` | `seasonPassPlans` | `lib/db/schema.ts:353` |
-| `SeasonPassSubscription` | `seasonPassSubscriptions` | `lib/db/schema.ts:367` |
-| `SeasonPassClaim` | `seasonPassClaims` | `lib/db/schema.ts:387` |
-| `SeasonPassReward` | `seasonPassRewards` | `lib/db/schema.ts:403` |
-| `SiteSettings` | `siteSettings` | `lib/db/schema.ts:424` |
-| `HelpArticle` | `helpArticles` | `lib/db/schema.ts:460` |
-| `HelpVideo` | `helpVideos` | `lib/db/schema.ts:473` |
-| `RegistrationPolicy` | `registrationPolicies` | `lib/db/schema.ts:493` |
-| `NewsArticle` | `newsArticles` | `lib/db/schema.ts:511` |
-| `PromoCode` | `promoCodes` | `lib/db/schema.ts:528` |
-| `PromoUsage` | `promoUsages` | `lib/db/schema.ts:552` |
-| `FooterWidgetSettings` | `footerWidgetSettings` | `lib/db/schema.ts:574` |
-| `FooterLink` | `footerLinks` | `lib/db/schema.ts:586` |
-| `NavItem` | `navItems` | `lib/db/schema.ts:603` |
-| `CurrencySettings` | `currencySettings` | `lib/db/schema.ts:619` |
-| `ChatConversation` | `chatConversations` | `lib/db/schema.ts:629` |
-| `ChatMessage` | `chatMessages` | `lib/db/schema.ts:657` |
-| `ChatQuickReply` | `chatQuickReplies` | `lib/db/schema.ts:675` |
-| `AnnouncementPopup` | `announcementPopups` | `lib/db/schema.ts:689` |
-| `Role` | `roles` | `lib/db/schema.ts:706` |
-| `GachaCategory` | `gachaCategories` | `lib/db/schema.ts:722` |
-| `GachaMachine` | `gachaMachines` | `lib/db/schema.ts:738` |
-| `GachaSettings` | `gachaSettings` | `lib/db/schema.ts:770` |
-| `GachaReward` | `gachaRewards` | `lib/db/schema.ts:785` |
-| `GachaRollLog` | `gachaRollLogs` | `lib/db/schema.ts:810` |
-| `DailyQuest` | `dailyQuests` | `lib/db/schema.ts:843` |
-| `DailyQuestClaim` | `dailyQuestClaims` | `lib/db/schema.ts:862` |
-| `GachaDailySpinCounter` | `gachaDailySpinCounters` | `lib/db/schema.ts:881` |
+| `InviteClickDaily` | `inviteClicksDaily` | `lib/db/schema.ts:281` |
+| `Order` | `orders` | `lib/db/schema.ts:293` |
+| `Topup` | `topups` | `lib/db/schema.ts:330` |
+| `SeasonPassPlan` | `seasonPassPlans` | `lib/db/schema.ts:357` |
+| `SeasonPassSubscription` | `seasonPassSubscriptions` | `lib/db/schema.ts:371` |
+| `SeasonPassClaim` | `seasonPassClaims` | `lib/db/schema.ts:391` |
+| `SeasonPassReward` | `seasonPassRewards` | `lib/db/schema.ts:407` |
+| `SiteSettings` | `siteSettings` | `lib/db/schema.ts:428` |
+| `HelpArticle` | `helpArticles` | `lib/db/schema.ts:464` |
+| `HelpVideo` | `helpVideos` | `lib/db/schema.ts:477` |
+| `RegistrationPolicy` | `registrationPolicies` | `lib/db/schema.ts:497` |
+| `NewsArticle` | `newsArticles` | `lib/db/schema.ts:515` |
+| `PromoCode` | `promoCodes` | `lib/db/schema.ts:532` |
+| `PromoUsage` | `promoUsages` | `lib/db/schema.ts:556` |
+| `FooterWidgetSettings` | `footerWidgetSettings` | `lib/db/schema.ts:578` |
+| `FooterLink` | `footerLinks` | `lib/db/schema.ts:590` |
+| `NavItem` | `navItems` | `lib/db/schema.ts:607` |
+| `CurrencySettings` | `currencySettings` | `lib/db/schema.ts:623` |
+| `ChatConversation` | `chatConversations` | `lib/db/schema.ts:633` |
+| `ChatMessage` | `chatMessages` | `lib/db/schema.ts:661` |
+| `ChatQuickReply` | `chatQuickReplies` | `lib/db/schema.ts:679` |
+| `AnnouncementPopup` | `announcementPopups` | `lib/db/schema.ts:693` |
+| `Role` | `roles` | `lib/db/schema.ts:710` |
+| `GachaCategory` | `gachaCategories` | `lib/db/schema.ts:726` |
+| `GachaMachine` | `gachaMachines` | `lib/db/schema.ts:742` |
+| `GachaSettings` | `gachaSettings` | `lib/db/schema.ts:774` |
+| `GachaReward` | `gachaRewards` | `lib/db/schema.ts:789` |
+| `GachaRollLog` | `gachaRollLogs` | `lib/db/schema.ts:814` |
+| `DailyQuest` | `dailyQuests` | `lib/db/schema.ts:847` |
+| `DailyQuestClaim` | `dailyQuestClaims` | `lib/db/schema.ts:866` |
+| `GachaDailySpinCounter` | `gachaDailySpinCounters` | `lib/db/schema.ts:885` |
 
 ### API routes (121)
 
@@ -536,7 +536,7 @@ The handler for each one lives at the matching `app/<url>/route.ts`.
 | `/api/admin/help-videos` | GET, POST |
 | `/api/admin/help/[id]` | PUT, DELETE |
 | `/api/admin/help` | GET, POST |
-| `/api/admin/invite-codes/[id]` | PATCH |
+| `/api/admin/invite-codes/[id]` | PATCH, DELETE |
 | `/api/admin/invite-codes` | GET, POST |
 | `/api/admin/nav-items/[id]` | PUT, DELETE |
 | `/api/admin/nav-items/reorder` | POST |
@@ -619,7 +619,7 @@ The handler for each one lives at the matching `app/<url>/route.ts`.
 | `/api/upload` | POST |
 | `/api/user/balance` | GET |
 
-### Files over 600 lines (30)
+### Files over 600 lines (31)
 
 Read a range, not the file. Landmarks are `name:line`.
 
@@ -633,15 +633,15 @@ Read a range, not the file. Landmarks are `name:line`.
 | `components/admin/ProductTable.tsx` | 1153 | useIsDesktop:91, formatAutoDelete:129, hasDiscountPrice:149, getActivePrice:157, getDisplayStockCount:161, getStockTone:165, getProductCardData:181, getPriceText:194 |
 | `app/(site)/dashboard/topup/page.tsx` | 1127 | BANK_INFO:41, getVerifyMethodLabel:96, getVerifyTargetLabel:112, TopupPage:116 |
 | `app/(site)/admin/gacha-machines/[id]/edit/page.tsx` | 1102 | validImageUrl:63, defaultAddForm:81, buildRewardPayload:101, sortRewards:123, getSimulationRewardName:152, isRewardEligibleForSimulation:158, validateReward:162, ProductPickerDropdown:181 |
-| `app/(site)/admin/audit-logs/page.tsx` | 1087 | getActionBadgeClass:271, getChangeValue:279, getExtraDetailsHtml:304, getResourceDetailsHtml:354, getVisibleCheckboxState:377, getDeleteConfirmText:389, AdminAuditLogsPage:406 |
+| `app/(site)/admin/audit-logs/page.tsx` | 1089 | getActionBadgeClass:273, getChangeValue:281, getExtraDetailsHtml:306, getResourceDetailsHtml:356, getVisibleCheckboxState:379, getDeleteConfirmText:391, AdminAuditLogsPage:408 |
 | `app/(site)/admin/footer-links/page.tsx` | 1081 | getDomainLabel:83, SortableRow:104, SortableCard:226, DragPreview:333, FooterColumnBoard:382, FooterLinksAdminPage:498 |
 | `components/cart/CartSheet.tsx` | 1011 | normalizeOptionalPrice:70, buildSyncedCartItem:74, hasCartItemChanged:91, hasCheckoutRelevantChange:102, CartSheetContent:109, CartSheet:984 |
 | `lib/seasonPass.ts` | 986 | normalizeSeasonPassRewardType:28, DEFAULT_PLAN:44, addDays:91, parseMySqlDateTime:97, dateKeyToUtcMs:101, diffDaysByDateKey:106, getEffectiveSeasonPassStartAt:110, normalizeRewardDefinition:125 |
 | `lib/rateLimit.ts` | 979 | config:25, checkLoginRateLimit:104, checkLoginIpRateLimit:113, checkLoginRateLimitWithConfig:122, recordFailedLogin:179, recordFailedLoginIp:183, recordFailedLoginWithConfig:187, clearLoginAttempts:214 |
 | `app/(site)/admin/news/page.tsx` | 943 | getExcerpt:75, AdminNewsPage:81 |
 | `components/DailyTopupSummary.tsx` | 920 | StatusBadge:78, DetailModal:106, AmountTooltip:207, TxnTooltip:227, HourlyTooltip:247, SortIcon:269, DailyTopupSummary:285 |
+| `lib/db/schema.ts` | 897 | now:19, updatedAt:20 |
 | `app/(site)/admin/gacha-machines/page.tsx` | 895 | validImageUrl:57, renderCostText:61, getFormFieldString:75, getCostAmountFieldCopy:85, GachaMachinesAdminPage:129, SortableRow:521, MachineTable:649 |
-| `lib/db/schema.ts` | 893 | now:19, updatedAt:20 |
 | `components/admin/RegistrationPolicyManager.tsx` | 893 | POLICY_COPY:82, emptyForm:103, excerpt:107, csvCell:113, usePolicySortable:117, DragHandle:130, PolicyTableRow:158, PolicyCard:228 |
 | `lib/chat.ts` | 827 | serializeMessage:101, serializeConversationTimestamps:130, getChatUser:144, getChatAssignee:162, getConversationMessagesWindow:185, hydrateConversation:242, getOrCreateUserConversation:273, getUserConversation:309 |
 | `app/(site)/admin/season-pass/edit/page.tsx` | 748 | getRewardTypeOptions:55, getRewardTypeDisplayName:63, getDefaultRewardImage:86, normalizeRewardType:90, fallbackRewards:106, AdminSeasonPassEditPage:117 |
@@ -650,6 +650,7 @@ Read a range, not the file. Landmarks are `name:line`.
 | `lib/features/orders/purchase.ts` | 692 | getActivePrice:102, serializeAcceptedChecks:114, processStock:123, getAutoDeleteTimestamp:143, buildCartThbPromoItems:151, buildDiscountedThbPriceMap:175, sumAppliedDiscount:241, validateAndSummarizeCartProducts:251 |
 | `components/admin/chat/useAdminChatInbox.ts` | 674 | sortConversations:26, mergeConversationPage:43, mergeMessages:53, useAdminChatInbox:69 |
 | `components/GachaRhombus.tsx` | 674 | getParticles:84, WinBurst:106, TileImage:128, getRouletteDelay:145, getRollingButtonLabel:157, getSelectorIndex:169, getPathIndices:173, getIntersectionIndex:179 |
+| `app/(site)/admin/invite-codes/page.tsx` | 650 | EMPTY_FORM:79, randomCode:87, AdminInviteCodesPage:97 |
 | `app/(site)/admin/nav-items/page.tsx` | 646 | useNavSortable:70, DragHandle:80, SortableCard:90, SortableRow:159, DragPreview:211, NavItemsAdminPage:223 |
 | `app/(site)/admin/products/new/page.tsx` | 641 | AddProductPage:44 |
 | `app/(site)/admin/roles/page.tsx` | 634 | normalizeRolePermissions:49, PERMISSION_GROUPS:53, AdminRolesPage:120 |

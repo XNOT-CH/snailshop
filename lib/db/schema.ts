@@ -265,10 +265,14 @@ export const inviteCodes = mysqlTable("InviteCode", {
     // a first-time visitor on / is bounced to /welcome by WelcomeRedirect.
     destination: varchar("destination", { length: 255 }).default("/shop").notNull(),
     isActive: boolean("isActive").default(true).notNull(),
+    // Removed from the admin table and dead as a link, but still here: the
+    // signups and top-ups counted against it point at this row, so the row
+    // cannot go without taking the history with it.
+    deletedAt: datetime("deletedAt", { mode: "string" }),
     createdAt: now(),
     updatedAt: updatedAt(),
 }, (t) => [
-    index("idx_invite_code_isActive").on(t.isActive),
+    index("idx_invite_code_isActive").on(t.isActive, t.deletedAt),
 ]);
 
 // Daily click counts per invite link, same shape as ProductViewDaily: one row
