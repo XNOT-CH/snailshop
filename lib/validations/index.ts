@@ -7,6 +7,7 @@ export * from "./topup";
 export * from "./user";
 export * from "./gacha";
 export * from "./promoCode";
+export * from "./inviteCode";
 export * from "./settings";
 export * from "./profile";
 export * from "./pin";

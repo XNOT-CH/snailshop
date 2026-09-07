@@ -70,11 +70,18 @@ export const users = mysqlTable("User", {
     // Stamped on each successful credential login. Powers the dashboard
     // "active users today" KPI. NULL = has not logged in since the column existed.
     lastLoginAt: datetime("lastLoginAt", { mode: "string" }),
+    // Which invite link the account signed up through, stamped once at
+    // registration and never changed - every later top-up counts towards that
+    // channel. RESTRICT because this row IS the attribution record: a code must
+    // be switched off, never deleted out from under the signups it brought in.
+    inviteCodeId: varchar("inviteCodeId", { length: 36 })
+        .references(() => inviteCodes.id, { onDelete: "restrict" }),
     createdAt: now(),
     updatedAt: updatedAt(),
 }, (t) => [
     index("idx_user_email").on(t.email),
     index("idx_user_lastLoginAt").on(t.lastLoginAt),
+    index("idx_user_inviteCodeId").on(t.inviteCodeId, t.createdAt),
 ]);
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -239,6 +246,44 @@ export const productViewsDaily = mysqlTable("ProductViewDaily", {
 }, (t) => [
     uniqueIndex("uq_product_view_daily").on(t.productId, t.viewDate),
     index("idx_product_view_daily_date").on(t.viewDate),
+]);
+
+// ─────────────────────────────────────────────
+// Invite links (marketing attribution)
+// ─────────────────────────────────────────────
+
+// One row per promotion channel. The shop hands a promoter /r/<code>; clicks,
+// signups and their lifetime top-ups are then attributable to that row. Codes
+// are switched off with isActive, never deleted - User.inviteCodeId points here.
+export const inviteCodes = mysqlTable("InviteCode", {
+    id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
+    // Stored uppercase; the /r/ handler uppercases before it looks a code up.
+    code: varchar("code", { length: 32 }).unique().notNull(),
+    label: varchar("label", { length: 120 }).notNull(),
+    note: varchar("note", { length: 500 }),
+    // Internal path the link lands on. Defaults to /shop rather than / because
+    // a first-time visitor on / is bounced to /welcome by WelcomeRedirect.
+    destination: varchar("destination", { length: 255 }).default("/shop").notNull(),
+    isActive: boolean("isActive").default(true).notNull(),
+    createdAt: now(),
+    updatedAt: updatedAt(),
+}, (t) => [
+    index("idx_invite_code_isActive").on(t.isActive),
+]);
+
+// Daily click counts per invite link, same shape as ProductViewDaily: one row
+// per code per day so the table cannot grow with traffic and a date range is a
+// plain BETWEEN. Clicks are deduped per IP per day before they reach here.
+export const inviteClicksDaily = mysqlTable("InviteClickDaily", {
+    id: int("id").autoincrement().primaryKey(),
+    inviteCodeId: varchar("inviteCodeId", { length: 36 })
+        .notNull()
+        .references(() => inviteCodes.id, { onDelete: "cascade" }),
+    clickDate: date("clickDate", { mode: "string" }).notNull(),
+    clicks: int("clicks").default(0).notNull(),
+}, (t) => [
+    uniqueIndex("uq_invite_click_daily").on(t.inviteCodeId, t.clickDate),
+    index("idx_invite_click_daily_date").on(t.clickDate),
 ]);
 
 export const orders = mysqlTable("Order", {

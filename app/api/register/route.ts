@@ -14,6 +14,8 @@ import { EmailVerificationEmail } from "@/components/emails/EmailVerificationEma
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { getRegistrationPolicies, hasRegistrationPolicies } from "@/lib/getRegistrationPolicies";
 import { resolveSiteName } from "@/lib/seo";
+import { resolveInviteCodeIdFromRequest } from "@/lib/features/invites/attribution";
+import { INVITE_COOKIE, INVITE_COOKIE_PATH } from "@/lib/features/invites/inviteCookie";
 
 export async function POST(request: NextRequest) {
     try {
@@ -74,6 +76,11 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Which invite link brought this person, if any. Resolved before the
+        // insert so attribution is part of the same row and cannot half-apply.
+        // Never throws — a marketing number is not worth a failed signup.
+        const inviteCodeId = await resolveInviteCodeIdFromRequest(request);
+
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -90,6 +97,7 @@ export async function POST(request: NextRequest) {
                 pinUpdatedAt: pin ? mysqlNow() : null,
                 role: "USER",
                 creditBalance: "0",
+                inviteCodeId,
                 createdAt: mysqlNow(),
                 updatedAt: mysqlNow(),
             });
@@ -122,6 +130,7 @@ export async function POST(request: NextRequest) {
                 resourceName: username,
                 // The record that this account accepted the published TOS/PP.
                 acceptedPolicies: policiesAccepted,
+                inviteCodeId,
             },
         });
 
@@ -147,13 +156,21 @@ export async function POST(request: NextRequest) {
             console.warn("[register] Email verification send failed", emailError);
         }
 
-        return NextResponse.json({
+        const response = NextResponse.json({
             success: true,
             message: verificationEmailSent
                 ? "สมัครสมาชิกสำเร็จ! กรุณาตรวจสอบอีเมลเพื่อยืนยันบัญชี"
                 : "สมัครสมาชิกสำเร็จ! เข้าสู่ระบบได้เลย และสามารถส่งอีเมลยืนยันจากหน้าข้อมูลติดต่อ",
             userId: user.id,
         });
+
+        // The invite is spent: attribution now lives on the user row. Clearing
+        // it here (and only here — a failed attempt will be retried and should
+        // keep its cookie) stops a second account made on the same machine from
+        // being credited to a promoter who only ever brought one person in.
+        response.cookies.delete({ name: INVITE_COOKIE, path: INVITE_COOKIE_PATH });
+
+        return response;
     } catch (error) {
         console.error("Register error:", error);
         return NextResponse.json(

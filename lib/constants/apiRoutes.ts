@@ -20,6 +20,8 @@ export const API_ROUTES = {
     adminProductCheckboxes: (productId: string) => `/api/admin/products/${productId}/checkboxes`,
     adminProductCheckbox: (productId: string, checkboxId: string) =>
         `/api/admin/products/${productId}/checkboxes/${checkboxId}`,
+    ADMIN_INVITE_CODES: "/api/admin/invite-codes",
+    adminInviteCode: (id: string) => `/api/admin/invite-codes/${id}`,
     ADMIN_GACHA_REWARDS: "/api/admin/gacha-rewards",
     ADMIN_GACHA_REWARDS_UPLOAD_IMAGE: "/api/admin/gacha-rewards/upload-image",
     adminGachaReward: (id: string) => `/api/admin/gacha-rewards/${id}`,

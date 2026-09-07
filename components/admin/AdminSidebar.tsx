@@ -25,6 +25,7 @@ import {
     Images,
     Layers,
     LayoutDashboard,
+    Link2,
     LinkIcon,
     ListChecks,
     LogOut,
@@ -87,6 +88,7 @@ const navigationSections: NavSection[] = [
         items: [
             { href: "/admin/products", label: "จัดการสินค้า", icon: Package, requiredPermission: PERMISSIONS.PRODUCT_VIEW },
             { href: "/admin/promo-codes", label: "โค้ดส่วนลด", icon: Ticket, requiredPermission: PERMISSIONS.PROMO_VIEW },
+            { href: "/admin/invite-codes", label: "ลิงก์คำเชิญ", icon: Link2, requiredPermission: PERMISSIONS.INVITE_VIEW },
             { href: "/admin/season-pass", label: "Season Pass", icon: Gift, requiredPermission: PERMISSIONS.SEASON_PASS_VIEW },
             { href: "/admin/quests", label: "ภารกิจรายวัน", icon: ListChecks, requiredPermission: PERMISSIONS.QUEST_VIEW },
             { href: "/admin/users", label: "จัดการผู้ใช้", icon: Users, requiredPermission: PERMISSIONS.USER_VIEW },
