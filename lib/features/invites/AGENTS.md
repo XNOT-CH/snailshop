@@ -19,5 +19,8 @@ the channel.
   namespaced by environment — keep the `dev:`/`prod:` prefix.
 - Stats are counted with one query per metric and merged in JS. A single join
   across users, top-ups and clicks multiplies the numbers.
-- Codes are switched off, never deleted: `User.inviteCodeId` is ON DELETE
-  RESTRICT and that column is the only record of where a signup came from.
+- Nothing here hard-deletes a code. "ลบ" in the admin table sets `deletedAt`,
+  which hides the row and kills the link; `User.inviteCodeId` is ON DELETE
+  RESTRICT and is the only record of where a signup came from.
+- `findInviteCodeByCode` deliberately still sees deleted rows — it is the
+  duplicate guard, and a retired code must not be handed to a new campaign.

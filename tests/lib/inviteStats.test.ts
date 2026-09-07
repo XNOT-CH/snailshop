@@ -36,7 +36,13 @@ vi.mock("@/lib/db", () => ({
             return makeBuilder();
         },
     },
-    inviteCodes: { id: "id", code: "code", isActive: "isActive", createdAt: "createdAt" },
+    inviteCodes: {
+        id: "id",
+        code: "code",
+        isActive: "isActive",
+        deletedAt: "deletedAt",
+        createdAt: "createdAt",
+    },
     inviteClicksDaily: { inviteCodeId: "inviteCodeId", clickDate: "clickDate", clicks: "clicks" },
     topups: { userId: "userId", amount: "amount", status: "status", createdAt: "createdAt" },
     users: { id: "id", inviteCodeId: "inviteCodeId", createdAt: "createdAt" },
@@ -49,6 +55,7 @@ vi.mock("drizzle-orm", () => ({
     eq: (a: unknown, b: unknown) => ({ eq: [a, b] }),
     gte: (a: unknown, b: unknown) => ({ gte: [a, b] }),
     isNotNull: (a: unknown) => ({ isNotNull: a }),
+    isNull: (a: unknown) => ({ isNull: a }),
     lte: (a: unknown, b: unknown) => ({ lte: [a, b] }),
     sql: (strings: TemplateStringsArray) => strings.join(""),
 }));

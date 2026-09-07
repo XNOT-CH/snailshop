@@ -13,7 +13,11 @@ const { requirePermission, requirePermissionWithCsrf } = vi.hoisted(() => ({
 vi.mock("@/lib/auth", () => ({ requirePermission, requirePermissionWithCsrf }));
 vi.mock("@/lib/auditLog", () => ({
     auditFromRequest: vi.fn(),
-    AUDIT_ACTIONS: { INVITE_CREATE: "INVITE_CREATE", INVITE_UPDATE: "INVITE_UPDATE" },
+    AUDIT_ACTIONS: {
+        INVITE_CREATE: "INVITE_CREATE",
+        INVITE_UPDATE: "INVITE_UPDATE",
+        INVITE_DELETE: "INVITE_DELETE",
+    },
 }));
 
 vi.mock("@/lib/features/invites/queries", () => ({
@@ -25,10 +29,19 @@ vi.mock("@/lib/features/invites/queries", () => ({
 vi.mock("@/lib/features/invites/mutations", () => ({
     createInviteCode: vi.fn().mockResolvedValue({ id: "invite-1", code: "TIKTOK1" }),
     updateInviteCode: vi.fn().mockResolvedValue({ id: "invite-1", code: "TIKTOK1" }),
+    softDeleteInviteCode: vi.fn(),
 }));
 
-import { findInviteCodeByCode, listInviteCodesWithStats } from "@/lib/features/invites/queries";
-import { createInviteCode, updateInviteCode } from "@/lib/features/invites/mutations";
+import {
+    findInviteCodeById,
+    findInviteCodeByCode,
+    listInviteCodesWithStats,
+} from "@/lib/features/invites/queries";
+import {
+    createInviteCode,
+    softDeleteInviteCode,
+    updateInviteCode,
+} from "@/lib/features/invites/mutations";
 
 const ALLOWED = { success: true, userId: "admin-1" };
 const DENIED = { success: false, error: "Forbidden" };
@@ -163,6 +176,11 @@ describe("API: /api/admin/invite-codes/[id]", () => {
     beforeEach(() => {
         vi.clearAllMocks();
         requirePermissionWithCsrf.mockResolvedValue(ALLOWED);
+        vi.mocked(findInviteCodeById).mockResolvedValue({
+            id: "invite-1",
+            code: "TIKTOK1",
+            deletedAt: null,
+        } as any);
     });
 
     it("refuses to edit without the edit permission (and CSRF)", async () => {
@@ -210,10 +228,51 @@ describe("API: /api/admin/invite-codes/[id]", () => {
         expect(updateInviteCode).toHaveBeenCalledWith("invite-1", { label: "ชื่อใหม่" });
     });
 
-    it("has no DELETE handler — codes are switched off, never removed", async () => {
-        const route = await import("@/app/api/admin/invite-codes/[id]/route");
+    it("refuses to delete without the edit permission (and CSRF)", async () => {
+        requirePermissionWithCsrf.mockResolvedValue(DENIED);
 
-        expect("DELETE" in route).toBe(false);
+        const { DELETE } = await import("@/app/api/admin/invite-codes/[id]/route");
+        const res = await DELETE(
+            new NextRequest("http://localhost/api/admin/invite-codes/invite-1", {
+                method: "DELETE",
+            }),
+            params,
+        );
+
+        expect(res.status).toBe(401);
+        expect(softDeleteInviteCode).not.toHaveBeenCalled();
+    });
+
+    it("deletes by hiding the row, so the signups attributed to it survive", async () => {
+        const { DELETE } = await import("@/app/api/admin/invite-codes/[id]/route");
+        const res = await DELETE(
+            new NextRequest("http://localhost/api/admin/invite-codes/invite-1", {
+                method: "DELETE",
+            }),
+            params,
+        );
+
+        expect(res.status).toBe(200);
+        expect(softDeleteInviteCode).toHaveBeenCalledWith("invite-1");
+    });
+
+    it("answers 404 for a code that is already deleted", async () => {
+        vi.mocked(findInviteCodeById).mockResolvedValue({
+            id: "invite-1",
+            code: "TIKTOK1",
+            deletedAt: "2026-09-07 10:00:00",
+        } as any);
+
+        const { DELETE } = await import("@/app/api/admin/invite-codes/[id]/route");
+        const res = await DELETE(
+            new NextRequest("http://localhost/api/admin/invite-codes/invite-1", {
+                method: "DELETE",
+            }),
+            params,
+        );
+
+        expect(res.status).toBe(404);
+        expect(softDeleteInviteCode).not.toHaveBeenCalled();
     });
 });
 

@@ -1,4 +1,4 @@
-import { and, asc, count, eq, gte, isNotNull, lte, sql } from "drizzle-orm";
+import { and, asc, count, eq, gte, isNotNull, isNull, lte, sql } from "drizzle-orm";
 import { db, inviteClicksDaily, inviteCodes, topups, users } from "@/lib/db";
 
 export type InviteStatsRange = {
@@ -24,6 +24,7 @@ export function findActiveInviteByCode(code: string) {
         where: and(
             eq(inviteCodes.code, code.trim().toUpperCase()),
             eq(inviteCodes.isActive, true),
+            isNull(inviteCodes.deletedAt),
         ),
     });
 }
@@ -34,6 +35,8 @@ export function findInviteCodeById(id: string) {
     });
 }
 
+// Deleted rows included on purpose: this is the duplicate guard, and handing a
+// retired promoter's code to a new campaign would merge two sets of numbers.
 export function findInviteCodeByCode(code: string) {
     return db.query.inviteCodes.findFirst({
         where: eq(inviteCodes.code, code.trim().toUpperCase()),
@@ -42,6 +45,7 @@ export function findInviteCodeByCode(code: string) {
 
 export function listInviteCodes() {
     return db.query.inviteCodes.findMany({
+        where: isNull(inviteCodes.deletedAt),
         orderBy: (table, helpers) => helpers.desc(table.createdAt),
     });
 }
