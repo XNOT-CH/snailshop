@@ -13,6 +13,7 @@ import {
   toAbsoluteAssetUrl,
 } from "@/lib/seo";
 import { getOptimizedUploadSrc } from "@/lib/imageUrl";
+import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
 const kanit = Kanit({
   subsets: ["latin", "thai"],
@@ -128,7 +129,13 @@ export default async function RootLayout({
           nonce={nonce}
           dangerouslySetInnerHTML={{ __html: SCROLL_AND_CONSOLE_WARNING }}
         />
-        {children}
+        {/* next-themes renders its own inline script to apply the stored theme
+            before first paint; without the nonce the CSP blocks it and dark mode
+            flashes white. It sits in the root layout rather than a route-group
+            layout so it hydrates once instead of re-mounting - and re-creating
+            that script client-side - when a navigation crosses from /welcome into
+            the site. */}
+        <ThemeProvider nonce={nonce}>{children}</ThemeProvider>
       </body>
     </html>
   );

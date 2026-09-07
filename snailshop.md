@@ -244,6 +244,15 @@ rebuild, or the index looks up to date while it is not.
   like `✨` are fine. Keep emoji out of anything uploaded there and read the file back
   before handing over the link.
 
+- **Providers that render a `<script>` belong in `app/layout.tsx`, not a route-group
+  layout.** `next-themes` always renders its inline theme script, so while `ThemeProvider`
+  lived in `app/(site)/layout.tsx` any navigation crossing route groups (`/welcome` or a
+  404 into the site) re-mounted it on the client and React logged "Encountered a script
+  tag while rendering React component". Harmless in itself, but the same remount meant
+  `/welcome` shipped no theme script at all, so dark-mode users flashed light on the way
+  in. It sits in the root layout since 2026-09-07, hydrated once, nonce still from
+  `x-nonce`.
+
 ---
 
 ## Decisions already made
