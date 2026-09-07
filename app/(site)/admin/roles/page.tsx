@@ -106,6 +106,10 @@ const PERMISSION_GROUPS = {
     { key: PERMISSIONS.QUEST_VIEW, label: "ดูภารกิจรายวัน" },
     { key: PERMISSIONS.QUEST_EDIT, label: "แก้ไขภารกิจรายวัน" },
   ],
+  "ลิงก์คำเชิญ": [
+    { key: PERMISSIONS.INVITE_VIEW, label: "ดูลิงก์คำเชิญและสถิติ" },
+    { key: PERMISSIONS.INVITE_EDIT, label: "สร้างและแก้ไขลิงก์คำเชิญ" },
+  ],
   "รายงาน/ส่งออก": [{ key: PERMISSIONS.EXPORT_DATA, label: "ส่งออกข้อมูล" }],
 } as const;
 

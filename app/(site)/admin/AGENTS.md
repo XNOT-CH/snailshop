@@ -21,6 +21,8 @@ This folder contains admin pages.
   `users/page.tsx`, `roles/page.tsx`
 - Topup code usage review:
   `slips/page.tsx`
+- Invite links (which channel brought signups and top-up baht):
+  `invite-codes/page.tsx` (see `lib/features/invites/AGENTS.md`)
 - Settings/content:
   `settings/page.tsx`, `news/page.tsx`, `popups/page.tsx`, `help/page.tsx`, `nav-items/page.tsx`, `footer-links/page.tsx`
 - Signup TOS / privacy policy:

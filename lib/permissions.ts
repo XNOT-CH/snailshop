@@ -65,6 +65,10 @@ export const PERMISSIONS = {
     QUEST_VIEW: "quest:view",
     QUEST_EDIT: "quest:edit",
 
+    // Invite link (marketing attribution) permissions
+    INVITE_VIEW: "invite:view",
+    INVITE_EDIT: "invite:edit",
+
     // Export permissions
     EXPORT_DATA: "export:data",
 } as const;
@@ -100,6 +104,8 @@ export const PERMISSION_DEPENDENCIES: Partial<Record<Permission, Permission[]>> 
     [PERMISSIONS.SEASON_PASS_EDIT]: [PERMISSIONS.SEASON_PASS_VIEW],
     [PERMISSIONS.QUEST_VIEW]: [PERMISSIONS.ADMIN_PANEL],
     [PERMISSIONS.QUEST_EDIT]: [PERMISSIONS.QUEST_VIEW],
+    [PERMISSIONS.INVITE_VIEW]: [PERMISSIONS.ADMIN_PANEL],
+    [PERMISSIONS.INVITE_EDIT]: [PERMISSIONS.INVITE_VIEW],
     [PERMISSIONS.EXPORT_DATA]: [PERMISSIONS.ADMIN_PANEL],
 };
 

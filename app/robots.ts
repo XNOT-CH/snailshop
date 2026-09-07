@@ -7,7 +7,9 @@ export default function robots(): MetadataRoute.Robots {
             {
                 userAgent: "*",
                 allow: "/",
-                disallow: ["/admin/", "/dashboard/", "/profile/", "/api/", "/login", "/register"],
+                // "/r/" is the invite-link handler: no content of its own, just a
+                // redirect that sets an attribution cookie. Nothing to index.
+                disallow: ["/admin/", "/dashboard/", "/profile/", "/api/", "/login", "/register", "/r/"],
             },
         ],
         sitemap: absoluteUrl("/sitemap.xml"),
