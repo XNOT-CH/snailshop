@@ -3,8 +3,6 @@ import { auth } from "@/auth";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { DynamicBackground } from "@/components/DynamicBackground";
-import { headers } from "next/headers";
-import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { CartProvider } from "@/components/providers/CartContext";
 import { ToastProvider } from "@/components/providers/ToastProvider";
 import { FloatingChatButtonWrapper } from "@/components/FloatingChatButtonWrapper";
@@ -28,9 +26,6 @@ export default async function SiteLayout({
   children: React.ReactNode;
 }>) {
   const session = await auth();
-  // next-themes renders its own inline script to apply the stored theme before
-  // first paint; without the nonce the CSP blocks it and dark mode flashes white.
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
   const settings = await getSiteSettings();
   const siteName = resolveSiteName(settings?.heroTitle);
   const logoUrl = toAbsoluteAssetUrl(settings?.logoUrl);
@@ -56,27 +51,25 @@ export default async function SiteLayout({
   return (
     <>
       <StructuredData data={structuredData} />
-      <ThemeProvider nonce={nonce}>
-        <ToastProvider>
-          <CartProvider initialAuthenticated={Boolean(session?.user)} userId={session?.user?.id}>
-            <DynamicBackground
-              backgroundImage={settings?.backgroundImage}
-              backgroundBlur={settings?.backgroundBlur}
-            />
-            <GlobalLoadingWrapper />
-            <RouteShell
-              navbar={<Navbar />}
-              mobileBottomNav={<MobileBottomNav />}
-              footer={<Footer />}
-              floatingChat={<FloatingChatButtonWrapper />}
-              floatingPromo={<FloatingPromoBanner />}
-              announcementPopup={<AnnouncementPopupWrapper enabled={Boolean(session?.user)} />}
-            >
-              {children}
-            </RouteShell>
-          </CartProvider>
-        </ToastProvider>
-      </ThemeProvider>
+      <ToastProvider>
+        <CartProvider initialAuthenticated={Boolean(session?.user)} userId={session?.user?.id}>
+          <DynamicBackground
+            backgroundImage={settings?.backgroundImage}
+            backgroundBlur={settings?.backgroundBlur}
+          />
+          <GlobalLoadingWrapper />
+          <RouteShell
+            navbar={<Navbar />}
+            mobileBottomNav={<MobileBottomNav />}
+            footer={<Footer />}
+            floatingChat={<FloatingChatButtonWrapper />}
+            floatingPromo={<FloatingPromoBanner />}
+            announcementPopup={<AnnouncementPopupWrapper enabled={Boolean(session?.user)} />}
+          >
+            {children}
+          </RouteShell>
+        </CartProvider>
+      </ToastProvider>
     </>
   );
 }
