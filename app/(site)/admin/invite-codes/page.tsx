@@ -6,11 +6,9 @@ import { th } from "date-fns/locale";
 import type { DateRange } from "react-day-picker";
 import {
     ArrowDownWideNarrow,
-    ChevronDown,
     Clock,
     Copy,
     CopyPlus,
-    Lightbulb,
     Link2,
     MoreVertical,
     Pencil,
@@ -109,7 +107,6 @@ export default function AdminInviteCodesPage() {
     const [sortKey, setSortKey] = useState<SortKey>("signups");
     const [page, setPage] = useState(1);
     const [selected, setSelected] = useState<Set<string>>(new Set());
-    const [helpOpen, setHelpOpen] = useState(false);
 
     const [editingId, setEditingId] = useState<string | null>(null);
     const [form, setForm] = useState({ ...EMPTY_FORM, code: "" });
@@ -394,29 +391,6 @@ export default function AdminInviteCodesPage() {
 
     return (
         <div className="admin-invite-codes-page space-y-4">
-            {/* วิธีใช้งาน */}
-            <div className="overflow-hidden rounded-2xl border border-border bg-card">
-                <button
-                    type="button"
-                    onClick={() => setHelpOpen((open) => !open)}
-                    className="flex w-full items-center gap-2 px-5 py-3 text-left text-sm font-medium text-foreground transition hover:bg-muted/60"
-                >
-                    <Lightbulb className="h-4 w-4 text-amber-500" />
-                    วิธีใช้งาน : คลิกที่นี่
-                    <ChevronDown
-                        className={cn("ml-auto h-4 w-4 transition-transform", helpOpen && "rotate-180")}
-                    />
-                </button>
-                {helpOpen ? (
-                    <div className="space-y-1.5 border-t border-border px-5 py-4 text-sm text-muted-foreground">
-                        <p>1. สร้างรหัสคำเชิญหนึ่งรหัสต่อหนึ่งช่องทาง แล้วส่งลิงก์ให้คนโปรโมทไปแปะ</p>
-                        <p>2. ตารางด้านล่างจะบอกว่าช่องทางไหนมีคนกดเข้ามา สมัครสมาชิก และเติมเงินเท่าไร</p>
-                        <p>3. คลิกนับคนไม่ซ้ำต่อวัน ส่วนยอดเติมเงินนับตลอดอายุบัญชีของคนที่สมัครผ่านลิงก์นั้น</p>
-                        <p>4. ปิดสวิตช์เมื่อเลิกจ้าง ลิงก์จะยังเข้าเว็บได้แต่จะไม่นับให้อีก</p>
-                    </div>
-                ) : null}
-            </div>
-
             {/* ฟอร์มสร้าง / แก้ไข */}
             <div className="overflow-hidden rounded-2xl border border-border bg-card">
                 <div className="flex items-center gap-3 border-b border-border px-5 py-4">
@@ -447,7 +421,7 @@ export default function AdminInviteCodesPage() {
                                 onChange={(event) =>
                                     setForm({ ...form, code: event.target.value.toUpperCase() })
                                 }
-                                placeholder="เช่น REXZYSTUDIO"
+                                placeholder="เช่น SNAILSHOP"
                                 className="font-mono"
                             />
                             <p className="text-xs text-muted-foreground">
