@@ -45,22 +45,11 @@ interface InviteCodeRow {
     note: string | null;
     destination: string;
     createdAt: string;
-    deletedAt: string | null;
     signups: number;
     topupTotal: number;
 }
 
 type SortKey = "signups" | "topupTotal" | "createdAt";
-
-// Stopped links stay in the table so their numbers can still be read; they are
-// just not what the page opens on.
-type StatusFilter = "live" | "stopped" | "all";
-
-const STATUS_OPTIONS: { key: StatusFilter; label: string }[] = [
-    { key: "live", label: "ใช้งาน" },
-    { key: "stopped", label: "ปิดแล้ว" },
-    { key: "all", label: "ทั้งหมด" },
-];
 
 const PAGE_SIZE = 10;
 
@@ -111,7 +100,6 @@ export default function AdminInviteCodesPage() {
     const [range, setRange] = useState<DateRange | undefined>();
     const [search, setSearch] = useState("");
     const [sortKey, setSortKey] = useState<SortKey>("signups");
-    const [statusFilter, setStatusFilter] = useState<StatusFilter>("live");
     const [page, setPage] = useState(1);
     const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -129,9 +117,6 @@ export default function AdminInviteCodesPage() {
             const query = new URLSearchParams();
             if (selectedRange?.from) query.set("startDate", format(selectedRange.from, "yyyy-MM-dd"));
             if (selectedRange?.to) query.set("endDate", format(selectedRange.to, "yyyy-MM-dd"));
-            // Both kinds come down in one request; the filter below is local so
-            // switching it does not cost a round trip.
-            query.set("includeDeleted", "1");
 
             const suffix = query.toString() ? `?${query.toString()}` : "";
             const response = await fetch(`${API_ROUTES.ADMIN_INVITE_CODES}${suffix}`);
@@ -156,24 +141,20 @@ export default function AdminInviteCodesPage() {
 
     const visibleRows = useMemo(() => {
         const keyword = search.trim().toLowerCase();
-        const byStatus = rows.filter((row) => {
-            if (statusFilter === "all") return true;
-            return statusFilter === "stopped" ? row.deletedAt !== null : row.deletedAt === null;
-        });
         const matched = keyword
-            ? byStatus.filter(
+            ? rows.filter(
                   (row) =>
                       row.code.toLowerCase().includes(keyword) ||
                       row.label.toLowerCase().includes(keyword) ||
                       (row.note ?? "").toLowerCase().includes(keyword),
               )
-            : byStatus;
+            : rows;
 
         return [...matched].sort((a, b) => {
             if (sortKey === "createdAt") return b.createdAt.localeCompare(a.createdAt);
             return b[sortKey] - a[sortKey] || b.signups - a.signups;
         });
-    }, [rows, search, sortKey, statusFilter]);
+    }, [rows, search, sortKey]);
 
     const totalPages = Math.max(1, Math.ceil(visibleRows.length / PAGE_SIZE));
     const currentPage = Math.min(page, totalPages);
@@ -305,7 +286,7 @@ export default function AdminInviteCodesPage() {
     const deleteRow = async (row: InviteCodeRow) => {
         const confirmed = await showConfirm(
             `ลบลิงก์ ${row.code}?`,
-            'ลิงก์นี้จะใช้ไม่ได้อีก และย้ายไปอยู่ในรายการ "ปิดแล้ว" ยอดสมัครและยอดเติมเงินที่นับไว้ยังดูได้ แต่โค้ดนี้จะเอากลับมาใช้ซ้ำไม่ได้',
+            "ลิงก์นี้จะใช้ไม่ได้อีกและหายไปจากตาราง แต่ยอดสมัครและยอดเติมเงินที่นับไว้แล้วยังอยู่ในระบบ และโค้ดนี้จะเอากลับมาใช้ซ้ำไม่ได้",
             "ลบเลย",
         );
         if (!confirmed) return;
@@ -328,7 +309,7 @@ export default function AdminInviteCodesPage() {
 
         const confirmed = await showConfirm(
             `ลบ ${ids.length} ลิงก์ที่เลือก?`,
-            'ลิงก์เหล่านี้จะใช้ไม่ได้อีก และย้ายไปอยู่ในรายการ "ปิดแล้ว" ยอดสมัครและยอดเติมเงินที่นับไว้ยังดูได้ แต่โค้ดเหล่านี้จะเอากลับมาใช้ซ้ำไม่ได้',
+            "ลิงก์เหล่านี้จะใช้ไม่ได้อีกและหายไปจากตาราง แต่ยอดสมัครและยอดเติมเงินที่นับไว้แล้วยังอยู่ในระบบ และโค้ดเหล่านี้จะเอากลับมาใช้ซ้ำไม่ได้",
             "ลบเลย",
         );
         if (!confirmed) return;
@@ -358,16 +339,13 @@ export default function AdminInviteCodesPage() {
         });
     };
 
-    // A stopped link has nothing left to delete, so it is never selectable.
-    const selectablePageRows = pageRows.filter((row) => row.deletedAt === null);
-    const allOnPageSelected =
-        selectablePageRows.length > 0 && selectablePageRows.every((row) => selected.has(row.id));
+    const allOnPageSelected = pageRows.length > 0 && pageRows.every((row) => selected.has(row.id));
 
     const toggleSelectPage = () => {
         setSelected((current) => {
             const next = new Set(current);
-            if (allOnPageSelected) selectablePageRows.forEach((row) => next.delete(row.id));
-            else selectablePageRows.forEach((row) => next.add(row.id));
+            if (allOnPageSelected) pageRows.forEach((row) => next.delete(row.id));
+            else pageRows.forEach((row) => next.add(row.id));
             return next;
         });
     };
@@ -509,27 +487,6 @@ export default function AdminInviteCodesPage() {
                         />
                     </div>
 
-                    <div className="flex items-center gap-1 rounded-xl border border-border bg-muted p-1">
-                        {STATUS_OPTIONS.map((option) => (
-                            <button
-                                key={option.key}
-                                type="button"
-                                onClick={() => {
-                                    setStatusFilter(option.key);
-                                    setPage(1);
-                                }}
-                                className={cn(
-                                    "h-7 rounded-lg px-3 text-sm transition",
-                                    statusFilter === option.key
-                                        ? "bg-card font-semibold text-[#145de7] shadow-xs dark:text-[#6ea2ff]"
-                                        : "text-muted-foreground hover:text-foreground",
-                                )}
-                            >
-                                {option.label}
-                            </button>
-                        ))}
-                    </div>
-
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
@@ -606,7 +563,6 @@ export default function AdminInviteCodesPage() {
                     <span className="flex-1">รหัสคำเชิญ</span>
                     <span className="w-24 text-center">ผู้สมัคร</span>
                     <span className="w-28 text-center">ยอดเติมเงิน</span>
-                    <span className="w-24 text-center">สถานะ</span>
                     <span className="w-9" />
                 </div>
 
@@ -614,11 +570,7 @@ export default function AdminInviteCodesPage() {
                     <div className="py-14 text-center text-muted-foreground">
                         <Link2 className="mx-auto mb-3 h-12 w-12 opacity-30" />
                         <p className="font-semibold text-foreground">
-                            {search
-                                ? "ไม่พบรหัสที่ค้นหา"
-                                : statusFilter === "stopped"
-                                  ? "ยังไม่มีลิงก์ที่ปิดไป"
-                                  : "ยังไม่มีรหัสคำเชิญ"}
+                            {search ? "ไม่พบรหัสที่ค้นหา" : "ยังไม่มีรหัสคำเชิญ"}
                         </p>
                         <p className="mt-1 text-sm">
                             {search ? "ลองคำค้นอื่น" : "สร้างรหัสแรกจากฟอร์มด้านบนเพื่อเริ่มวัดผลแต่ละช่องทาง"}
@@ -627,50 +579,31 @@ export default function AdminInviteCodesPage() {
                 ) : (
                     <div className="divide-y divide-border">
                         {pageRows.map((row) => (
-                            <div
-                                key={row.id}
-                                className={cn("px-5 py-3", row.deletedAt && "bg-muted/40")}
-                            >
+                            <div key={row.id} className="px-5 py-3">
                                 <div className="flex items-center gap-3">
                                     {canEdit ? (
-                                        row.deletedAt ? (
-                                            // Keeps the columns lined up with the live rows above.
-                                            <span className="w-4 shrink-0" />
-                                        ) : (
-                                            <Checkbox
-                                                checked={selected.has(row.id)}
-                                                onCheckedChange={() => toggleSelected(row.id)}
-                                                aria-label={`เลือก ${row.code}`}
-                                            />
-                                        )
+                                        <Checkbox
+                                            checked={selected.has(row.id)}
+                                            onCheckedChange={() => toggleSelected(row.id)}
+                                            aria-label={`เลือก ${row.code}`}
+                                        />
                                     ) : null}
 
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-2">
-                                            <span
-                                                className={cn(
-                                                    "truncate font-mono font-semibold",
-                                                    row.deletedAt
-                                                        ? "text-muted-foreground line-through"
-                                                        : "text-[#145de7] dark:text-[#6ea2ff]",
-                                                )}
-                                            >
+                                            <span className="truncate font-mono font-semibold text-[#145de7] dark:text-[#6ea2ff]">
                                                 {row.code}
                                             </span>
-                                            {row.deletedAt ? null : (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => copyLink(row.code)}
-                                                    aria-label={`คัดลอกลิงก์ของ ${row.code}`}
-                                                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border bg-muted text-muted-foreground transition hover:text-foreground"
-                                                >
-                                                    <Copy className="h-3 w-3" />
-                                                </button>
-                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={() => copyLink(row.code)}
+                                                aria-label={`คัดลอกลิงก์ของ ${row.code}`}
+                                                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border bg-muted text-muted-foreground transition hover:text-foreground"
+                                            >
+                                                <Copy className="h-3 w-3" />
+                                            </button>
                                         </div>
-                                        <p className="truncate text-sm text-muted-foreground">
-                                            {row.label}
-                                        </p>
+                                        <p className="truncate text-sm text-foreground">{row.label}</p>
                                     </div>
 
                                     <span className="w-24 text-center font-semibold tabular-nums text-foreground">
@@ -679,19 +612,6 @@ export default function AdminInviteCodesPage() {
                                     <span className="w-28 text-center font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">
                                         ฿{row.topupTotal.toLocaleString()}
                                     </span>
-                                    <span className="flex w-24 justify-center">
-                                        <span
-                                            className={cn(
-                                                "rounded-full px-2.5 py-0.5 text-xs font-medium",
-                                                row.deletedAt
-                                                    ? "bg-muted text-muted-foreground"
-                                                    : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
-                                            )}
-                                        >
-                                            {row.deletedAt ? "ปิดแล้ว" : "ใช้งาน"}
-                                        </span>
-                                    </span>
-
                                     <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
                                             <Button
@@ -705,7 +625,7 @@ export default function AdminInviteCodesPage() {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="w-48">
-                                            {canEdit && !row.deletedAt ? (
+                                            {canEdit ? (
                                                 <DropdownMenuItem
                                                     onClick={() => startEdit(row)}
                                                     className="flex items-center gap-2"
@@ -714,15 +634,13 @@ export default function AdminInviteCodesPage() {
                                                     แก้ไข
                                                 </DropdownMenuItem>
                                             ) : null}
-                                            {row.deletedAt ? null : (
-                                                <DropdownMenuItem
-                                                    onClick={() => copyLink(row.code)}
-                                                    className="flex items-center gap-2"
-                                                >
-                                                    <Copy className="h-4 w-4" />
-                                                    คัดลอกลิงก์
-                                                </DropdownMenuItem>
-                                            )}
+                                            <DropdownMenuItem
+                                                onClick={() => copyLink(row.code)}
+                                                className="flex items-center gap-2"
+                                            >
+                                                <Copy className="h-4 w-4" />
+                                                คัดลอกลิงก์
+                                            </DropdownMenuItem>
                                             {canEdit ? (
                                                 <DropdownMenuItem
                                                     onClick={() => duplicateRow(row)}
@@ -732,8 +650,8 @@ export default function AdminInviteCodesPage() {
                                                     ทำซ้ำ
                                                 </DropdownMenuItem>
                                             ) : null}
-                                            {canEdit && !row.deletedAt ? <DropdownMenuSeparator /> : null}
-                                            {canEdit && !row.deletedAt ? (
+                                            {canEdit ? <DropdownMenuSeparator /> : null}
+                                            {canEdit ? (
                                                 <DropdownMenuItem
                                                     onClick={() => deleteRow(row)}
                                                     className="flex items-center gap-2 text-rose-600 focus:text-rose-600 dark:text-rose-400 dark:focus:text-rose-400"

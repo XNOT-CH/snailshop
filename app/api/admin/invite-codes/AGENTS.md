@@ -19,5 +19,5 @@ Create and edit the marketing invite links, and read their per-code numbers
   `DELETE`; there is no second off-switch to keep in sync.
 - `PATCH` validates with `partialUpdateSchema`, never `.partial()`, or an
   omitted `destination` would arrive as its default and repoint a live link.
-- `GET ?includeDeleted=1` also returns stopped links, which is how the admin
-  table shows its "ปิดแล้ว" list.
+- `GET` never returns a stopped link. The admin table lists live links only;
+  a stopped one is read back with SQL, deliberately.
