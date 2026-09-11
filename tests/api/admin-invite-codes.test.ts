@@ -86,6 +86,7 @@ describe("API: /api/admin/invite-codes", () => {
         expect(listInviteCodesWithStats).toHaveBeenCalledWith({
             startDate: "2026-09-01",
             endDate: "2026-09-07",
+            includeDeleted: false,
         });
     });
 
@@ -98,6 +99,7 @@ describe("API: /api/admin/invite-codes", () => {
         expect(listInviteCodesWithStats).toHaveBeenCalledWith({
             startDate: undefined,
             endDate: undefined,
+            includeDeleted: false,
         });
     });
 
@@ -113,11 +115,11 @@ describe("API: /api/admin/invite-codes", () => {
         expect(createInviteCode).not.toHaveBeenCalled();
     });
 
-    it("rejects a code that already exists, even a switched-off one", async () => {
+    it("rejects a code that already exists, even a stopped one", async () => {
         vi.mocked(findInviteCodeByCode).mockResolvedValue({
             id: "old",
             code: "TIKTOK1",
-            isActive: false,
+            deletedAt: "2026-09-01 00:00:00",
         } as any);
 
         const { POST } = await import("@/app/api/admin/invite-codes/route");
@@ -189,7 +191,7 @@ describe("API: /api/admin/invite-codes/[id]", () => {
         const { PATCH } = await import("@/app/api/admin/invite-codes/[id]/route");
         const res = await PATCH(
             jsonRequest("http://localhost/api/admin/invite-codes/invite-1", "PATCH", {
-                isActive: false,
+                label: "ชื่อใหม่",
             }),
             params,
         );
@@ -214,9 +216,9 @@ describe("API: /api/admin/invite-codes/[id]", () => {
         );
     });
 
-    it("does not re-enable a switched-off code when isActive was not sent", async () => {
-        // The .partial() trap: a schema default would arrive here as
-        // isActive: true and quietly turn a stopped channel back on.
+    it("does not move the link's destination when only the label was sent", async () => {
+        // The .partial() trap: destination carries a schema default, which
+        // would arrive here as "/shop" and silently repoint a live link.
         const { PATCH } = await import("@/app/api/admin/invite-codes/[id]/route");
         await PATCH(
             jsonRequest("http://localhost/api/admin/invite-codes/invite-1", "PATCH", {

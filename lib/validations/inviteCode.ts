@@ -39,7 +39,6 @@ export const createInviteCodeSchema = z.object({
         .optional()
         .nullable(),
     destination: destinationSchema.default("/shop"),
-    isActive: z.boolean().default(true),
 });
 
 // `code` is left out on purpose: the link is already printed on someone else's

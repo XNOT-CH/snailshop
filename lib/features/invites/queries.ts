@@ -4,6 +4,9 @@ import { db, inviteCodes, topups, users } from "@/lib/db";
 export type InviteStatsRange = {
     startDate?: string; // yyyy-MM-dd
     endDate?: string; // yyyy-MM-dd
+    // Stopped links are hidden by default. The admin table asks for them so a
+    // channel's signups and baht stay readable after the link is stopped.
+    includeDeleted?: boolean;
 };
 
 export type InviteCodeWithStats = {
@@ -12,8 +15,9 @@ export type InviteCodeWithStats = {
     label: string;
     note: string | null;
     destination: string;
-    isActive: boolean;
     createdAt: string;
+    // null while the link works; a timestamp once it was stopped.
+    deletedAt: string | null;
     signups: number;
     topupTotal: number;
 };
@@ -42,9 +46,9 @@ export function findInviteCodeByCode(code: string) {
     });
 }
 
-export function listInviteCodes() {
+export function listInviteCodes({ includeDeleted = false } = {}) {
     return db.query.inviteCodes.findMany({
-        where: isNull(inviteCodes.deletedAt),
+        where: includeDeleted ? undefined : isNull(inviteCodes.deletedAt),
         orderBy: (table, helpers) => helpers.desc(table.createdAt),
     });
 }
@@ -64,7 +68,7 @@ export function listInviteCodes() {
 export async function listInviteCodesWithStats(
     range: InviteStatsRange = {},
 ): Promise<InviteCodeWithStats[]> {
-    const { startDate, endDate } = range;
+    const { startDate, endDate, includeDeleted } = range;
 
     // User.createdAt is a datetime, so the end of the range has to cover the
     // whole day rather than stopping at its midnight.
@@ -75,7 +79,7 @@ export async function listInviteCodesWithStats(
     ].filter(Boolean);
 
     const [codes, signupRows, topupRows] = await Promise.all([
-        listInviteCodes(),
+        listInviteCodes({ includeDeleted }),
         db
             .select({
                 inviteCodeId: users.inviteCodeId,
@@ -106,8 +110,8 @@ export async function listInviteCodesWithStats(
         label: code.label,
         note: code.note,
         destination: code.destination,
-        isActive: code.isActive,
         createdAt: code.createdAt,
+        deletedAt: code.deletedAt,
         signups: signupsById.get(code.id) ?? 0,
         topupTotal: topupById.get(code.id) ?? 0,
     }));

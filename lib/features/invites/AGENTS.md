@@ -17,8 +17,11 @@ the channel.
 - `attribution.ts` must never throw. Registration outranks analytics.
 - Stats are counted with one query per metric and merged in JS. A single join
   across users and top-ups multiplies the numbers.
-- Nothing here hard-deletes a code. "ลบ" in the admin table sets `deletedAt`,
-  which hides the row and kills the link; `User.inviteCodeId` is ON DELETE
-  RESTRICT and is the only record of where a signup came from.
+- Nothing here hard-deletes a code. "ลบ" in the admin table sets `deletedAt`
+  and `isActive: false`, which kills the link and files the row under "ปิดแล้ว"
+  rather than removing it; `User.inviteCodeId` is ON DELETE RESTRICT and is the
+  only record of where a signup came from.
+- `isActive` is internal now — only `softDeleteInviteCode` writes it, and
+  `/r/<code>` reads it. There is no admin switch for it.
 - `findInviteCodeByCode` deliberately still sees deleted rows — it is the
   duplicate guard, and a retired code must not be handed to a new campaign.
