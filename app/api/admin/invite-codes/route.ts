@@ -23,7 +23,6 @@ export async function GET(request: NextRequest) {
         const codes = await listInviteCodesWithStats({
             startDate: startDate && DATE_PATTERN.test(startDate) ? startDate : undefined,
             endDate: endDate && DATE_PATTERN.test(endDate) ? endDate : undefined,
-            includeDeleted: searchParams.get("includeDeleted") === "1",
         });
 
         return NextResponse.json({ success: true, data: codes });

@@ -67,7 +67,6 @@ const CODES = [
         note: null,
         destination: "/shop",
         createdAt: "2026-09-01 00:00:00",
-        deletedAt: null,
     },
     {
         id: "invite-2",
@@ -76,7 +75,6 @@ const CODES = [
         note: null,
         destination: "/shop",
         createdAt: "2026-09-02 00:00:00",
-        deletedAt: "2026-09-03 00:00:00",
     },
 ];
 
@@ -122,17 +120,14 @@ describe("listInviteCodesWithStats", () => {
         );
     });
 
-    it("hides stopped links unless they are asked for", async () => {
+    it("never lists a stopped link", async () => {
         selectResults.push([], []);
+
         await listInviteCodesWithStats();
+
         expect(findMany).toHaveBeenCalledWith(
             expect.objectContaining({ where: { isNull: "deletedAt" } }),
         );
-
-        findMany.mockClear();
-        selectResults.push([], []);
-        await listInviteCodesWithStats({ includeDeleted: true });
-        expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ where: undefined }));
     });
 
     it("filters signups by the date range but never the top-up total", async () => {

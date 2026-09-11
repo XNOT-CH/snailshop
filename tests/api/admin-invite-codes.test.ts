@@ -86,7 +86,6 @@ describe("API: /api/admin/invite-codes", () => {
         expect(listInviteCodesWithStats).toHaveBeenCalledWith({
             startDate: "2026-09-01",
             endDate: "2026-09-07",
-            includeDeleted: false,
         });
     });
 
@@ -99,7 +98,6 @@ describe("API: /api/admin/invite-codes", () => {
         expect(listInviteCodesWithStats).toHaveBeenCalledWith({
             startDate: undefined,
             endDate: undefined,
-            includeDeleted: false,
         });
     });
 
