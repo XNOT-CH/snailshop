@@ -253,8 +253,9 @@ export const productViewsDaily = mysqlTable("ProductViewDaily", {
 // ─────────────────────────────────────────────
 
 // One row per promotion channel. The shop hands a promoter /r/<code>; the
-// signups and their lifetime top-ups are then attributable to that row. Codes
-// are switched off with isActive, never deleted - User.inviteCodeId points here.
+// signups and their lifetime top-ups are then attributable to that row. A code
+// is stopped by setting deletedAt and isActive together, never deleted -
+// User.inviteCodeId points here.
 export const inviteCodes = mysqlTable("InviteCode", {
     id: varchar("id", { length: 36 }).primaryKey().$defaultFn(() => crypto.randomUUID()),
     // Stored uppercase; the /r/ handler uppercases before it looks a code up.
@@ -265,9 +266,9 @@ export const inviteCodes = mysqlTable("InviteCode", {
     // a first-time visitor on / is bounced to /welcome by WelcomeRedirect.
     destination: varchar("destination", { length: 255 }).default("/shop").notNull(),
     isActive: boolean("isActive").default(true).notNull(),
-    // Removed from the admin table and dead as a link, but still here: the
-    // signups and top-ups counted against it point at this row, so the row
-    // cannot go without taking the history with it.
+    // Dead as a link, but still here: the signups and top-ups counted against
+    // it point at this row, so the row cannot go without taking the history
+    // with it. The admin table lists these under "ปิดแล้ว".
     deletedAt: datetime("deletedAt", { mode: "string" }),
     createdAt: now(),
     updatedAt: updatedAt(),

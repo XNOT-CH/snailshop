@@ -11,14 +11,14 @@ export async function createInviteCode(input: CreateInviteCodeInput) {
         label: input.label,
         note: input.note ?? null,
         destination: input.destination,
-        isActive: input.isActive,
     });
     return findInviteCodeById(id);
 }
 
-// Hides the code from the admin table and kills the link, without touching the
-// signups attributed to it. There is no hard delete: User.inviteCodeId is the
-// attribution record and its foreign key is ON DELETE RESTRICT.
+// Stops the link — isActive is what /r/<code> checks — and stamps deletedAt so
+// the admin table files the row under "ปิดแล้ว" instead of listing it as live.
+// The signups attributed to it are untouched: there is no hard delete, because
+// User.inviteCodeId is the attribution record and is ON DELETE RESTRICT.
 export async function softDeleteInviteCode(id: string) {
     await db
         .update(inviteCodes)
@@ -32,7 +32,6 @@ export async function updateInviteCode(id: string, input: UpdateInviteCodeInput)
     if (input.label !== undefined) values.label = input.label;
     if (input.note !== undefined) values.note = input.note ?? null;
     if (input.destination !== undefined) values.destination = input.destination;
-    if (input.isActive !== undefined) values.isActive = input.isActive;
 
     if (Object.keys(values).length > 0) {
         await db.update(inviteCodes).set(values).where(eq(inviteCodes.id, id));

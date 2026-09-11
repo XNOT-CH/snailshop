@@ -39,7 +39,6 @@ vi.mock("@/lib/db", () => ({
     inviteCodes: {
         id: "id",
         code: "code",
-        isActive: "isActive",
         deletedAt: "deletedAt",
         createdAt: "createdAt",
     },
@@ -67,8 +66,8 @@ const CODES = [
         label: "TikTok",
         note: null,
         destination: "/shop",
-        isActive: true,
         createdAt: "2026-09-01 00:00:00",
+        deletedAt: null,
     },
     {
         id: "invite-2",
@@ -76,8 +75,8 @@ const CODES = [
         label: "ยังไม่ได้ใช้",
         note: null,
         destination: "/shop",
-        isActive: false,
         createdAt: "2026-09-02 00:00:00",
+        deletedAt: "2026-09-03 00:00:00",
     },
 ];
 
@@ -121,6 +120,19 @@ describe("listInviteCodesWithStats", () => {
         expect(rows[1]).toEqual(
             expect.objectContaining({ code: "QUIET", signups: 0, topupTotal: 0 }),
         );
+    });
+
+    it("hides stopped links unless they are asked for", async () => {
+        selectResults.push([], []);
+        await listInviteCodesWithStats();
+        expect(findMany).toHaveBeenCalledWith(
+            expect.objectContaining({ where: { isNull: "deletedAt" } }),
+        );
+
+        findMany.mockClear();
+        selectResults.push([], []);
+        await listInviteCodesWithStats({ includeDeleted: true });
+        expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ where: undefined }));
     });
 
     it("filters signups by the date range but never the top-up total", async () => {

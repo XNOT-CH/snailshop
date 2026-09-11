@@ -12,7 +12,12 @@ Create and edit the marketing invite links, and read their per-code numbers
 
 ## Rules
 
-- No `DELETE`. Codes are switched off with `isActive`; signups point at them.
+- `DELETE` is a soft delete: it stops the link (`isActive: false`) and stamps
+  `deletedAt`. The row stays, because signups point at it.
 - `code` is immutable after creation — the link is already published elsewhere.
+- `isActive` is not part of the request schemas. Stopping a link goes through
+  `DELETE`; there is no second off-switch to keep in sync.
 - `PATCH` validates with `partialUpdateSchema`, never `.partial()`, or an
-  omitted `isActive` would silently re-enable a switched-off code.
+  omitted `destination` would arrive as its default and repoint a live link.
+- `GET ?includeDeleted=1` also returns stopped links, which is how the admin
+  table shows its "ปิดแล้ว" list.

@@ -31,7 +31,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { useAdminPermissions } from "@/components/admin/AdminPermissionsProvider";
 import { PERMISSIONS } from "@/lib/permissions";
 import { API_ROUTES } from "@/lib/constants/apiRoutes";
@@ -45,13 +44,23 @@ interface InviteCodeRow {
     label: string;
     note: string | null;
     destination: string;
-    isActive: boolean;
     createdAt: string;
+    deletedAt: string | null;
     signups: number;
     topupTotal: number;
 }
 
 type SortKey = "signups" | "topupTotal" | "createdAt";
+
+// Stopped links stay in the table so their numbers can still be read; they are
+// just not what the page opens on.
+type StatusFilter = "live" | "stopped" | "all";
+
+const STATUS_OPTIONS: { key: StatusFilter; label: string }[] = [
+    { key: "live", label: "ใช้งาน" },
+    { key: "stopped", label: "ปิดแล้ว" },
+    { key: "all", label: "ทั้งหมด" },
+];
 
 const PAGE_SIZE = 10;
 
@@ -74,7 +83,6 @@ const EMPTY_FORM = {
     label: "",
     note: "",
     destination: "/shop",
-    isActive: true,
 };
 
 function randomCode() {
@@ -103,6 +111,7 @@ export default function AdminInviteCodesPage() {
     const [range, setRange] = useState<DateRange | undefined>();
     const [search, setSearch] = useState("");
     const [sortKey, setSortKey] = useState<SortKey>("signups");
+    const [statusFilter, setStatusFilter] = useState<StatusFilter>("live");
     const [page, setPage] = useState(1);
     const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -120,6 +129,9 @@ export default function AdminInviteCodesPage() {
             const query = new URLSearchParams();
             if (selectedRange?.from) query.set("startDate", format(selectedRange.from, "yyyy-MM-dd"));
             if (selectedRange?.to) query.set("endDate", format(selectedRange.to, "yyyy-MM-dd"));
+            // Both kinds come down in one request; the filter below is local so
+            // switching it does not cost a round trip.
+            query.set("includeDeleted", "1");
 
             const suffix = query.toString() ? `?${query.toString()}` : "";
             const response = await fetch(`${API_ROUTES.ADMIN_INVITE_CODES}${suffix}`);
@@ -144,20 +156,24 @@ export default function AdminInviteCodesPage() {
 
     const visibleRows = useMemo(() => {
         const keyword = search.trim().toLowerCase();
+        const byStatus = rows.filter((row) => {
+            if (statusFilter === "all") return true;
+            return statusFilter === "stopped" ? row.deletedAt !== null : row.deletedAt === null;
+        });
         const matched = keyword
-            ? rows.filter(
+            ? byStatus.filter(
                   (row) =>
                       row.code.toLowerCase().includes(keyword) ||
                       row.label.toLowerCase().includes(keyword) ||
                       (row.note ?? "").toLowerCase().includes(keyword),
               )
-            : rows;
+            : byStatus;
 
         return [...matched].sort((a, b) => {
             if (sortKey === "createdAt") return b.createdAt.localeCompare(a.createdAt);
             return b[sortKey] - a[sortKey] || b.signups - a.signups;
         });
-    }, [rows, search, sortKey]);
+    }, [rows, search, sortKey, statusFilter]);
 
     const totalPages = Math.max(1, Math.ceil(visibleRows.length / PAGE_SIZE));
     const currentPage = Math.min(page, totalPages);
@@ -206,7 +222,6 @@ export default function AdminInviteCodesPage() {
             label: row.label,
             note: row.note ?? "",
             destination: row.destination,
-            isActive: row.isActive,
         });
         // The form lives at the top of the page; scroll it into view so the
         // click does not look like it did nothing.
@@ -222,7 +237,6 @@ export default function AdminInviteCodesPage() {
             label: `${row.label} (สำเนา)`,
             note: row.note ?? "",
             destination: row.destination,
-            isActive: true,
         });
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
@@ -238,13 +252,12 @@ export default function AdminInviteCodesPage() {
             const isEditing = editingId !== null;
             const note = form.note.trim() ? form.note : null;
             const payload = isEditing
-                ? { label: form.label, note, destination: form.destination, isActive: form.isActive }
+                ? { label: form.label, note, destination: form.destination }
                 : {
                       code: form.code,
                       label: form.label,
                       note,
                       destination: form.destination,
-                      isActive: form.isActive,
                   };
 
             const response = await fetchWithCsrf(
@@ -273,32 +286,6 @@ export default function AdminInviteCodesPage() {
         }
     };
 
-    const toggleActive = async (row: InviteCodeRow, nextActive: boolean) => {
-        // Optimistic: the switch is the one control that gets used repeatedly,
-        // and waiting a round trip for it feels broken.
-        setRows((current) =>
-            current.map((item) => (item.id === row.id ? { ...item, isActive: nextActive } : item)),
-        );
-
-        try {
-            const response = await fetchWithCsrf(API_ROUTES.adminInviteCode(row.id), {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ isActive: nextActive }),
-            });
-            const data = await response.json();
-            if (!data.success) throw new Error(data.message);
-        } catch (error) {
-            console.error("[INVITE_CODE_TOGGLE]", error);
-            setRows((current) =>
-                current.map((item) =>
-                    item.id === row.id ? { ...item, isActive: row.isActive } : item,
-                ),
-            );
-            showError("เปลี่ยนสถานะไม่สำเร็จ");
-        }
-    };
-
     const removeIds = async (ids: string[]) => {
         let removed = 0;
         for (const id of ids) {
@@ -318,7 +305,7 @@ export default function AdminInviteCodesPage() {
     const deleteRow = async (row: InviteCodeRow) => {
         const confirmed = await showConfirm(
             `ลบลิงก์ ${row.code}?`,
-            "ลิงก์นี้จะใช้ไม่ได้อีกและหายไปจากตาราง แต่ยอดสมัครและยอดเติมเงินที่นับไว้แล้วยังอยู่ในระบบ และโค้ดนี้จะเอากลับมาใช้ซ้ำไม่ได้",
+            'ลิงก์นี้จะใช้ไม่ได้อีก และย้ายไปอยู่ในรายการ "ปิดแล้ว" ยอดสมัครและยอดเติมเงินที่นับไว้ยังดูได้ แต่โค้ดนี้จะเอากลับมาใช้ซ้ำไม่ได้',
             "ลบเลย",
         );
         if (!confirmed) return;
@@ -341,7 +328,7 @@ export default function AdminInviteCodesPage() {
 
         const confirmed = await showConfirm(
             `ลบ ${ids.length} ลิงก์ที่เลือก?`,
-            "ลิงก์เหล่านี้จะใช้ไม่ได้อีกและหายไปจากตาราง แต่ยอดสมัครและยอดเติมเงินที่นับไว้แล้วยังอยู่ในระบบ และโค้ดเหล่านี้จะเอากลับมาใช้ซ้ำไม่ได้",
+            'ลิงก์เหล่านี้จะใช้ไม่ได้อีก และย้ายไปอยู่ในรายการ "ปิดแล้ว" ยอดสมัครและยอดเติมเงินที่นับไว้ยังดูได้ แต่โค้ดเหล่านี้จะเอากลับมาใช้ซ้ำไม่ได้',
             "ลบเลย",
         );
         if (!confirmed) return;
@@ -371,13 +358,16 @@ export default function AdminInviteCodesPage() {
         });
     };
 
-    const allOnPageSelected = pageRows.length > 0 && pageRows.every((row) => selected.has(row.id));
+    // A stopped link has nothing left to delete, so it is never selectable.
+    const selectablePageRows = pageRows.filter((row) => row.deletedAt === null);
+    const allOnPageSelected =
+        selectablePageRows.length > 0 && selectablePageRows.every((row) => selected.has(row.id));
 
     const toggleSelectPage = () => {
         setSelected((current) => {
             const next = new Set(current);
-            if (allOnPageSelected) pageRows.forEach((row) => next.delete(row.id));
-            else pageRows.forEach((row) => next.add(row.id));
+            if (allOnPageSelected) selectablePageRows.forEach((row) => next.delete(row.id));
+            else selectablePageRows.forEach((row) => next.add(row.id));
             return next;
         });
     };
@@ -462,21 +452,6 @@ export default function AdminInviteCodesPage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center justify-between rounded-xl border border-border px-4 py-2.5">
-                        <div>
-                            <Label htmlFor="invite-active">เปิดใช้งาน</Label>
-                            <p className="text-xs text-muted-foreground">
-                                ปิดแล้วลิงก์ยังเข้าเว็บได้ แต่จะไม่ผูกคนสมัครให้อีก
-                            </p>
-                        </div>
-                        <Switch
-                            id="invite-active"
-                            checked={form.isActive}
-                            disabled={!canEdit}
-                            onCheckedChange={(next) => setForm({ ...form, isActive: next })}
-                        />
-                    </div>
-
                     <div className="flex flex-col gap-2 sm:flex-row">
                         <Button
                             onClick={saveForm}
@@ -532,6 +507,27 @@ export default function AdminInviteCodesPage() {
                             }}
                             className="h-9 w-full rounded-xl border border-border bg-muted pl-9 pr-3 text-sm text-foreground outline-none transition placeholder:text-muted-foreground/70 focus:border-blue-500 focus:bg-card focus:ring-4 focus:ring-blue-100 dark:focus:ring-blue-500/20 sm:w-60"
                         />
+                    </div>
+
+                    <div className="flex items-center gap-1 rounded-xl border border-border bg-muted p-1">
+                        {STATUS_OPTIONS.map((option) => (
+                            <button
+                                key={option.key}
+                                type="button"
+                                onClick={() => {
+                                    setStatusFilter(option.key);
+                                    setPage(1);
+                                }}
+                                className={cn(
+                                    "h-7 rounded-lg px-3 text-sm transition",
+                                    statusFilter === option.key
+                                        ? "bg-card font-semibold text-[#145de7] shadow-xs dark:text-[#6ea2ff]"
+                                        : "text-muted-foreground hover:text-foreground",
+                                )}
+                            >
+                                {option.label}
+                            </button>
+                        ))}
                     </div>
 
                     <DropdownMenu>
@@ -618,7 +614,11 @@ export default function AdminInviteCodesPage() {
                     <div className="py-14 text-center text-muted-foreground">
                         <Link2 className="mx-auto mb-3 h-12 w-12 opacity-30" />
                         <p className="font-semibold text-foreground">
-                            {search ? "ไม่พบรหัสที่ค้นหา" : "ยังไม่มีรหัสคำเชิญ"}
+                            {search
+                                ? "ไม่พบรหัสที่ค้นหา"
+                                : statusFilter === "stopped"
+                                  ? "ยังไม่มีลิงก์ที่ปิดไป"
+                                  : "ยังไม่มีรหัสคำเชิญ"}
                         </p>
                         <p className="mt-1 text-sm">
                             {search ? "ลองคำค้นอื่น" : "สร้างรหัสแรกจากฟอร์มด้านบนเพื่อเริ่มวัดผลแต่ละช่องทาง"}
@@ -627,31 +627,50 @@ export default function AdminInviteCodesPage() {
                 ) : (
                     <div className="divide-y divide-border">
                         {pageRows.map((row) => (
-                            <div key={row.id} className="px-5 py-3">
+                            <div
+                                key={row.id}
+                                className={cn("px-5 py-3", row.deletedAt && "bg-muted/40")}
+                            >
                                 <div className="flex items-center gap-3">
                                     {canEdit ? (
-                                        <Checkbox
-                                            checked={selected.has(row.id)}
-                                            onCheckedChange={() => toggleSelected(row.id)}
-                                            aria-label={`เลือก ${row.code}`}
-                                        />
+                                        row.deletedAt ? (
+                                            // Keeps the columns lined up with the live rows above.
+                                            <span className="w-4 shrink-0" />
+                                        ) : (
+                                            <Checkbox
+                                                checked={selected.has(row.id)}
+                                                onCheckedChange={() => toggleSelected(row.id)}
+                                                aria-label={`เลือก ${row.code}`}
+                                            />
+                                        )
                                     ) : null}
 
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-2">
-                                            <span className="truncate font-mono font-semibold text-[#145de7] dark:text-[#6ea2ff]">
+                                            <span
+                                                className={cn(
+                                                    "truncate font-mono font-semibold",
+                                                    row.deletedAt
+                                                        ? "text-muted-foreground line-through"
+                                                        : "text-[#145de7] dark:text-[#6ea2ff]",
+                                                )}
+                                            >
                                                 {row.code}
                                             </span>
-                                            <button
-                                                type="button"
-                                                onClick={() => copyLink(row.code)}
-                                                aria-label={`คัดลอกลิงก์ของ ${row.code}`}
-                                                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border bg-muted text-muted-foreground transition hover:text-foreground"
-                                            >
-                                                <Copy className="h-3 w-3" />
-                                            </button>
+                                            {row.deletedAt ? null : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => copyLink(row.code)}
+                                                    aria-label={`คัดลอกลิงก์ของ ${row.code}`}
+                                                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-border bg-muted text-muted-foreground transition hover:text-foreground"
+                                                >
+                                                    <Copy className="h-3 w-3" />
+                                                </button>
+                                            )}
                                         </div>
-                                        <p className="truncate text-sm text-foreground">{row.label}</p>
+                                        <p className="truncate text-sm text-muted-foreground">
+                                            {row.label}
+                                        </p>
                                     </div>
 
                                     <span className="w-24 text-center font-semibold tabular-nums text-foreground">
@@ -661,12 +680,16 @@ export default function AdminInviteCodesPage() {
                                         ฿{row.topupTotal.toLocaleString()}
                                     </span>
                                     <span className="flex w-24 justify-center">
-                                        <Switch
-                                            checked={row.isActive}
-                                            disabled={!canEdit}
-                                            onCheckedChange={(next) => toggleActive(row, next)}
-                                            aria-label={`เปิดใช้งานลิงก์ ${row.code}`}
-                                        />
+                                        <span
+                                            className={cn(
+                                                "rounded-full px-2.5 py-0.5 text-xs font-medium",
+                                                row.deletedAt
+                                                    ? "bg-muted text-muted-foreground"
+                                                    : "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+                                            )}
+                                        >
+                                            {row.deletedAt ? "ปิดแล้ว" : "ใช้งาน"}
+                                        </span>
                                     </span>
 
                                     <DropdownMenu>
@@ -682,7 +705,7 @@ export default function AdminInviteCodesPage() {
                                             </Button>
                                         </DropdownMenuTrigger>
                                         <DropdownMenuContent align="end" className="w-48">
-                                            {canEdit ? (
+                                            {canEdit && !row.deletedAt ? (
                                                 <DropdownMenuItem
                                                     onClick={() => startEdit(row)}
                                                     className="flex items-center gap-2"
@@ -691,13 +714,15 @@ export default function AdminInviteCodesPage() {
                                                     แก้ไข
                                                 </DropdownMenuItem>
                                             ) : null}
-                                            <DropdownMenuItem
-                                                onClick={() => copyLink(row.code)}
-                                                className="flex items-center gap-2"
-                                            >
-                                                <Copy className="h-4 w-4" />
-                                                คัดลอกลิงก์
-                                            </DropdownMenuItem>
+                                            {row.deletedAt ? null : (
+                                                <DropdownMenuItem
+                                                    onClick={() => copyLink(row.code)}
+                                                    className="flex items-center gap-2"
+                                                >
+                                                    <Copy className="h-4 w-4" />
+                                                    คัดลอกลิงก์
+                                                </DropdownMenuItem>
+                                            )}
                                             {canEdit ? (
                                                 <DropdownMenuItem
                                                     onClick={() => duplicateRow(row)}
@@ -707,8 +732,8 @@ export default function AdminInviteCodesPage() {
                                                     ทำซ้ำ
                                                 </DropdownMenuItem>
                                             ) : null}
-                                            {canEdit ? <DropdownMenuSeparator /> : null}
-                                            {canEdit ? (
+                                            {canEdit && !row.deletedAt ? <DropdownMenuSeparator /> : null}
+                                            {canEdit && !row.deletedAt ? (
                                                 <DropdownMenuItem
                                                     onClick={() => deleteRow(row)}
                                                     className="flex items-center gap-2 text-rose-600 focus:text-rose-600 dark:text-rose-400 dark:focus:text-rose-400"
