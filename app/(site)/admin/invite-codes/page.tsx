@@ -785,9 +785,6 @@ export default function AdminInviteCodesPage() {
                             ถัดไป
                         </Button>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                        คนหนึ่งคนถูกนับให้ลิงก์ล่าสุดที่กดก่อนสมัคร และยอดเติมเงินของเขาจะนับให้ลิงก์นั้นตลอดไป
-                    </p>
                 </div>
             </div>
         </div>
