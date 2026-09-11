@@ -47,19 +47,17 @@ interface InviteCodeRow {
     destination: string;
     isActive: boolean;
     createdAt: string;
-    clicks: number;
     signups: number;
     topupTotal: number;
 }
 
-type SortKey = "signups" | "topupTotal" | "clicks" | "createdAt";
+type SortKey = "signups" | "topupTotal" | "createdAt";
 
 const PAGE_SIZE = 10;
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
     { key: "signups", label: "สมัครมากสุด" },
     { key: "topupTotal", label: "ยอดเติมมากสุด" },
-    { key: "clicks", label: "คลิกมากสุด" },
     { key: "createdAt", label: "สร้างล่าสุด" },
 ];
 
@@ -171,11 +169,10 @@ export default function AdminInviteCodesPage() {
         () =>
             visibleRows.reduce(
                 (acc, row) => ({
-                    clicks: acc.clicks + row.clicks,
                     signups: acc.signups + row.signups,
                     topupTotal: acc.topupTotal + row.topupTotal,
                 }),
-                { clicks: 0, signups: 0, topupTotal: 0 },
+                { signups: 0, topupTotal: 0 },
             ),
         [visibleRows],
     );
@@ -469,7 +466,7 @@ export default function AdminInviteCodesPage() {
                         <div>
                             <Label htmlFor="invite-active">เปิดใช้งาน</Label>
                             <p className="text-xs text-muted-foreground">
-                                ปิดแล้วลิงก์ยังเข้าเว็บได้ แต่จะไม่นับคลิกและไม่ผูกคนสมัครให้อีก
+                                ปิดแล้วลิงก์ยังเข้าเว็บได้ แต่จะไม่ผูกคนสมัครให้อีก
                             </p>
                         </div>
                         <Switch
@@ -516,8 +513,8 @@ export default function AdminInviteCodesPage() {
                         <p className="text-sm text-muted-foreground">รายการรหัสที่สร้างไว้</p>
                     </div>
                     <p className="ml-auto hidden text-sm text-muted-foreground sm:block">
-                        รวม คลิก {totals.clicks.toLocaleString()} · สมัคร {totals.signups.toLocaleString()} ·
-                        ฿{totals.topupTotal.toLocaleString()}
+                        รวม สมัคร {totals.signups.toLocaleString()} · ฿
+                        {totals.topupTotal.toLocaleString()}
                     </p>
                 </div>
 
@@ -611,7 +608,6 @@ export default function AdminInviteCodesPage() {
                         />
                     ) : null}
                     <span className="flex-1">รหัสคำเชิญ</span>
-                    <span className="w-20 text-center">คลิก</span>
                     <span className="w-24 text-center">ผู้สมัคร</span>
                     <span className="w-28 text-center">ยอดเติมเงิน</span>
                     <span className="w-24 text-center">สถานะ</span>
@@ -658,9 +654,6 @@ export default function AdminInviteCodesPage() {
                                         <p className="truncate text-sm text-foreground">{row.label}</p>
                                     </div>
 
-                                    <span className="w-20 text-center tabular-nums text-foreground">
-                                        {row.clicks.toLocaleString()}
-                                    </span>
                                     <span className="w-24 text-center font-semibold tabular-nums text-foreground">
                                         {row.signups.toLocaleString()}
                                     </span>

@@ -1,7 +1,7 @@
 # Invite Link Feature Notes
 
 Marketing attribution for hired promoters: one `InviteCode` row per channel,
-`/r/<code>` sets a cookie and counts the click, `/api/register` stamps
+`/r/<code>` sets a cookie, `/api/register` stamps
 `User.inviteCodeId` once, and every later top-up by that account counts towards
 the channel.
 
@@ -15,10 +15,8 @@ the channel.
 ## Rules
 
 - `attribution.ts` must never throw. Registration outranks analytics.
-- `inviteClicks.ts` writes Redis keys through the raw client, which is **not**
-  namespaced by environment — keep the `dev:`/`prod:` prefix.
 - Stats are counted with one query per metric and merged in JS. A single join
-  across users, top-ups and clicks multiplies the numbers.
+  across users and top-ups multiplies the numbers.
 - Nothing here hard-deletes a code. "ลบ" in the admin table sets `deletedAt`,
   which hides the row and kills the link; `User.inviteCodeId` is ON DELETE
   RESTRICT and is the only record of where a signup came from.

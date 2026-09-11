@@ -1,8 +1,7 @@
-import { NextResponse, after } from "next/server";
+import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { CACHE_TTL, cacheOrFetch } from "@/lib/cache";
 import { findActiveInviteByCode } from "@/lib/features/invites/queries";
-import { recordInviteClick } from "@/lib/features/invites/inviteClicks";
 import {
     INVITE_COOKIE,
     INVITE_COOKIE_MAX_AGE_SECONDS,
@@ -13,8 +12,7 @@ import { INVITE_CODE_PATTERN } from "@/lib/validations/inviteCode";
 export const dynamic = "force-dynamic";
 
 // The shopper-facing side of an invite link. A promoter posts /r/THEIRCODE; this
-// remembers which link brought the visitor, counts the visit, and gets out of
-// the way.
+// remembers which link brought the visitor and gets out of the way.
 //
 // An unknown, misspelled or switched-off code still lands the visitor in the
 // shop rather than on a 404 — the link is printed in someone else's post and
@@ -41,7 +39,7 @@ export async function GET(
         new URL(invite?.destination ?? "/", request.nextUrl.origin),
         // 307, never a permanent redirect: browsers and CDNs cache those, and a
         // cached invite link would skip this handler entirely — no cookie for
-        // the visitor, no click for the promoter.
+        // the visitor, so nothing tied back to the promoter.
         307,
     );
     response.headers.set("Cache-Control", "no-store");
@@ -59,9 +57,6 @@ export async function GET(
         path: INVITE_COOKIE_PATH,
         maxAge: INVITE_COOKIE_MAX_AGE_SECONDS,
     });
-
-    // Counting happens after the redirect is already on its way out.
-    after(() => recordInviteClick(invite.id, request));
 
     return response;
 }

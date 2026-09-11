@@ -1,7 +1,7 @@
 # Admin Invite Codes API Notes
 
 Create and edit the marketing invite links, and read their per-code numbers
-(clicks, signups, lifetime top-up baht).
+(signups, lifetime top-up baht).
 
 ## Read with
 
