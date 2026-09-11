@@ -2,26 +2,10 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
 // The public half of an invite link: /r/<code>. A shopper must always land in
-// the shop, and the promoter's count must not be inflatable by a refresh.
-
-const afterCallbacks: (() => unknown)[] = [];
-
-vi.mock("next/server", async () => {
-    const actual = await vi.importActual<typeof import("next/server")>("next/server");
-    return {
-        ...actual,
-        after: (callback: () => unknown) => {
-            afterCallbacks.push(callback);
-        },
-    };
-});
+// the shop, whatever the code turns out to be.
 
 vi.mock("@/lib/features/invites/queries", () => ({
     findActiveInviteByCode: vi.fn(),
-}));
-
-vi.mock("@/lib/features/invites/inviteClicks", () => ({
-    recordInviteClick: vi.fn(),
 }));
 
 // cacheOrFetch is a pass-through here so the tests exercise the lookup itself.
@@ -31,7 +15,6 @@ vi.mock("@/lib/cache", () => ({
 }));
 
 import { findActiveInviteByCode } from "@/lib/features/invites/queries";
-import { recordInviteClick } from "@/lib/features/invites/inviteClicks";
 import { INVITE_COOKIE } from "@/lib/features/invites/inviteCookie";
 
 async function callRoute(code: string) {
@@ -43,7 +26,6 @@ async function callRoute(code: string) {
 describe("GET /r/[code]", () => {
     beforeEach(() => {
         vi.clearAllMocks();
-        afterCallbacks.length = 0;
     });
 
     it("redirects to the code's destination and remembers the code", async () => {
@@ -72,26 +54,13 @@ describe("GET /r/[code]", () => {
 
         const res = await callRoute("TIKTOK1");
 
-        // 301/308 would let a browser or CDN skip this route entirely: no
-        // cookie for the visitor, no click for the promoter.
+        // 301/308 would let a browser or CDN skip this route entirely, so the
+        // visitor would never get the cookie.
         expect(res.status).not.toBe(301);
         expect(res.status).not.toBe(308);
     });
 
-    it("counts the click after the redirect is already prepared", async () => {
-        vi.mocked(findActiveInviteByCode).mockResolvedValue({
-            id: "invite-1",
-            destination: "/shop",
-        } as any);
-
-        await callRoute("TIKTOK1");
-
-        expect(recordInviteClick).not.toHaveBeenCalled();
-        afterCallbacks.forEach((callback) => callback());
-        expect(recordInviteClick).toHaveBeenCalledWith("invite-1", expect.anything());
-    });
-
-    it("sends an unknown code to the homepage without a cookie or a click", async () => {
+    it("sends an unknown code to the homepage without a cookie", async () => {
         vi.mocked(findActiveInviteByCode).mockResolvedValue(undefined as any);
 
         const res = await callRoute("NOPE99");
@@ -99,7 +68,6 @@ describe("GET /r/[code]", () => {
         expect(res.status).toBe(307);
         expect(res.headers.get("location")).toBe("http://localhost/");
         expect(res.cookies.get(INVITE_COOKIE)).toBeUndefined();
-        expect(afterCallbacks).toHaveLength(0);
     });
 
     it("never touches the database for a malformed code", async () => {

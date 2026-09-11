@@ -252,7 +252,7 @@ export const productViewsDaily = mysqlTable("ProductViewDaily", {
 // Invite links (marketing attribution)
 // ─────────────────────────────────────────────
 
-// One row per promotion channel. The shop hands a promoter /r/<code>; clicks,
+// One row per promotion channel. The shop hands a promoter /r/<code>; the
 // signups and their lifetime top-ups are then attributable to that row. Codes
 // are switched off with isActive, never deleted - User.inviteCodeId points here.
 export const inviteCodes = mysqlTable("InviteCode", {
@@ -273,21 +273,6 @@ export const inviteCodes = mysqlTable("InviteCode", {
     updatedAt: updatedAt(),
 }, (t) => [
     index("idx_invite_code_isActive").on(t.isActive, t.deletedAt),
-]);
-
-// Daily click counts per invite link, same shape as ProductViewDaily: one row
-// per code per day so the table cannot grow with traffic and a date range is a
-// plain BETWEEN. Clicks are deduped per IP per day before they reach here.
-export const inviteClicksDaily = mysqlTable("InviteClickDaily", {
-    id: int("id").autoincrement().primaryKey(),
-    inviteCodeId: varchar("inviteCodeId", { length: 36 })
-        .notNull()
-        .references(() => inviteCodes.id, { onDelete: "cascade" }),
-    clickDate: date("clickDate", { mode: "string" }).notNull(),
-    clicks: int("clicks").default(0).notNull(),
-}, (t) => [
-    uniqueIndex("uq_invite_click_daily").on(t.inviteCodeId, t.clickDate),
-    index("idx_invite_click_daily_date").on(t.clickDate),
 ]);
 
 export const orders = mysqlTable("Order", {

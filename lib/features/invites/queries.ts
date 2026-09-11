@@ -1,5 +1,5 @@
-import { and, asc, count, eq, gte, isNotNull, isNull, lte, sql } from "drizzle-orm";
-import { db, inviteClicksDaily, inviteCodes, topups, users } from "@/lib/db";
+import { and, count, eq, gte, isNotNull, isNull, lte, sql } from "drizzle-orm";
+import { db, inviteCodes, topups, users } from "@/lib/db";
 
 export type InviteStatsRange = {
     startDate?: string; // yyyy-MM-dd
@@ -14,7 +14,6 @@ export type InviteCodeWithStats = {
     destination: string;
     isActive: boolean;
     createdAt: string;
-    clicks: number;
     signups: number;
     topupTotal: number;
 };
@@ -51,26 +50,21 @@ export function listInviteCodes() {
 }
 
 /**
- * listInviteCodesWithStats — one row per invite code with its three numbers.
+ * listInviteCodesWithStats — one row per invite code with its two numbers.
  *
- * Deliberately four separate queries merged in JS instead of one join. Joining
- * InviteCode → User → Topup → InviteClickDaily multiplies the rows: a promoter
- * with 5 signups and 30 click-days would report 30× the baht and 6× the
- * signups. Each metric is therefore counted in isolation, at its own grain.
+ * Deliberately three separate queries merged in JS instead of one join. Joining
+ * InviteCode → User → Topup multiplies the rows: a promoter with 5 signups and
+ * 30 top-ups would report 6× the signups. Each metric is therefore counted in
+ * isolation, at its own grain.
  *
- * Date range applies to clicks (clickDate) and signups (User.createdAt) only.
- * Top-up baht is lifetime by design: the question a channel is judged on is how
- * much money the people it sent have spent, whenever they spent it.
+ * Date range applies to signups (User.createdAt) only. Top-up baht is lifetime
+ * by design: the question a channel is judged on is how much money the people
+ * it sent have spent, whenever they spent it.
  */
 export async function listInviteCodesWithStats(
     range: InviteStatsRange = {},
 ): Promise<InviteCodeWithStats[]> {
     const { startDate, endDate } = range;
-
-    const clickFilters = [
-        startDate ? gte(inviteClicksDaily.clickDate, startDate) : undefined,
-        endDate ? lte(inviteClicksDaily.clickDate, endDate) : undefined,
-    ].filter(Boolean);
 
     // User.createdAt is a datetime, so the end of the range has to cover the
     // whole day rather than stopping at its midnight.
@@ -80,16 +74,8 @@ export async function listInviteCodesWithStats(
         endDate ? lte(users.createdAt, `${endDate} 23:59:59`) : undefined,
     ].filter(Boolean);
 
-    const [codes, clickRows, signupRows, topupRows] = await Promise.all([
+    const [codes, signupRows, topupRows] = await Promise.all([
         listInviteCodes(),
-        db
-            .select({
-                inviteCodeId: inviteClicksDaily.inviteCodeId,
-                clicks: sql<number>`coalesce(sum(${inviteClicksDaily.clicks}), 0)`,
-            })
-            .from(inviteClicksDaily)
-            .where(clickFilters.length ? and(...clickFilters) : undefined)
-            .groupBy(inviteClicksDaily.inviteCodeId),
         db
             .select({
                 inviteCodeId: users.inviteCodeId,
@@ -111,7 +97,6 @@ export async function listInviteCodesWithStats(
             .groupBy(users.inviteCodeId),
     ]);
 
-    const clicksById = new Map(clickRows.map((row) => [row.inviteCodeId, Number(row.clicks)]));
     const signupsById = new Map(signupRows.map((row) => [row.inviteCodeId, Number(row.signups)]));
     const topupById = new Map(topupRows.map((row) => [row.inviteCodeId, Number(row.total)]));
 
@@ -123,17 +108,7 @@ export async function listInviteCodesWithStats(
         destination: code.destination,
         isActive: code.isActive,
         createdAt: code.createdAt,
-        clicks: clicksById.get(code.id) ?? 0,
         signups: signupsById.get(code.id) ?? 0,
         topupTotal: topupById.get(code.id) ?? 0,
     }));
-}
-
-/** Daily click rows for one code, oldest first. Used by tests and future charts. */
-export function listInviteClicksByCode(inviteCodeId: string) {
-    return db
-        .select()
-        .from(inviteClicksDaily)
-        .where(eq(inviteClicksDaily.inviteCodeId, inviteCodeId))
-        .orderBy(asc(inviteClicksDaily.clickDate));
 }
