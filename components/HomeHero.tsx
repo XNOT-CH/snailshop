@@ -20,7 +20,7 @@ export function HomeHero({ siteName, description }: Readonly<HomeHeroProps>) {
   return (
     <section
       id="home-hero"
-      className="relative isolate flex min-h-[440px] flex-col justify-end bg-[var(--card)] py-8 shadow-[0_0_0_100vmax_var(--card)] [clip-path:inset(0_-100vmax)] md:h-[360px] md:min-h-0 md:justify-center"
+      className="relative isolate flex min-h-[440px] flex-col justify-end bg-[var(--hero-band)] py-8 shadow-[0_0_0_100vmax_var(--hero-band)] [--hero-band:var(--card)] dark:[--hero-band:#08203f] [clip-path:inset(0_-100vmax)] md:h-[360px] md:min-h-0 md:justify-center"
     >
       {/* The banner reaches the screen edge, past the page container; clip the
           sideways overflow so it never adds a horizontal scrollbar. */}
@@ -40,11 +40,12 @@ export function HomeHero({ siteName, description }: Readonly<HomeHeroProps>) {
       </div>
       {/* Where the banner runs under the title (narrower desktops), fade it out
           behind the text: solid band colour to just past the title, then 12rem
-          of fade. */}
+          of fade. In dark mode the band is a deep shade of the banner's own blue,
+          so the fade stays blue instead of turning a muddy grey. */}
       <div
         aria-hidden="true"
         className="absolute inset-y-0 left-[calc(50%-50vw)] -z-10 hidden w-[calc(50vw-50%+34rem)] md:block"
-        style={{ background: "linear-gradient(to right, var(--card) calc(100% - 12rem), transparent)" }}
+        style={{ background: "linear-gradient(to right, var(--hero-band) calc(100% - 12rem), transparent)" }}
       />
       <div className="max-w-md">
         <p className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:fill-mode-both inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
