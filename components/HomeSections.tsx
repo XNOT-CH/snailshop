@@ -73,7 +73,7 @@ export function HomeProductTile({
     <Link
       href={`/product/${product.id}`}
       prefetch={false}
-      className="group flex items-center gap-4 rounded-xl border border-border bg-[var(--card)] p-3 transition-[border-color,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 hover:border-primary/50"
+      className="group flex items-center gap-4 rounded-xl border border-border bg-[var(--card)] p-3 transition-[border-color,translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 hover:border-primary/50"
     >
       <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-muted sm:size-24">
         <ThumbImage src={product.imageUrl || "/placeholder.jpg"} alt={product.name} fill sizes="96px" loading="lazy" className="object-cover" />
