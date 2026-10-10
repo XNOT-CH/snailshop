@@ -1,32 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Package, ShoppingBag, Users } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { TOPUP_LABEL } from "@/lib/navigation";
 
-export interface HomeHeroStats {
-  availableProducts: number;
-  completedOrders: number;
-  members: number;
-}
-
 interface HomeHeroProps {
   siteName: string;
   description?: string | null;
-  stats: HomeHeroStats;
 }
 
 // Follows the light/dark theme so the hero reads as one piece with the navbar
 // above it. It runs edge to edge by painting its background out with a spread
 // shadow clipped to its own height, so it never widens the page.
-export function HomeHero({ siteName, description, stats }: Readonly<HomeHeroProps>) {
-  const statItems = [
-    { icon: Package, value: stats.availableProducts, label: "สินค้าพร้อมขาย" },
-    { icon: ShoppingBag, value: stats.completedOrders, label: "รายการที่ขายแล้ว" },
-    { icon: Users, value: stats.members, label: "สมาชิก" },
-  ];
-
+export function HomeHero({ siteName, description }: Readonly<HomeHeroProps>) {
   return (
     <section className="relative bg-[var(--card)] shadow-[0_0_0_100vmax_var(--card)] [clip-path:inset(0_-100vmax)]">
       <div className="grid items-center gap-8 py-10 sm:py-14 md:grid-cols-[1fr_auto] md:gap-12">
@@ -46,17 +33,6 @@ export function HomeHero({ siteName, description, stats }: Readonly<HomeHeroProp
             <Link href="/dashboard/topup" prefetch={false} className={cn(buttonVariants({ variant: "outline", size: "lg" }), "rounded-xl px-6")}>
               {TOPUP_LABEL}
             </Link>
-          </div>
-          <div className="mt-10 grid grid-cols-3 gap-3 sm:flex sm:flex-wrap sm:gap-x-10 sm:gap-y-4">
-            {statItems.map(({ icon: Icon, value, label }) => (
-              <div key={label} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
-                <Icon className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
-                <div className="flex flex-col-reverse">
-                  <p className="text-xs text-muted-foreground sm:text-sm">{label}</p>
-                  <p className="text-xl font-bold text-foreground sm:text-2xl">{value.toLocaleString("th-TH")}</p>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
         <div className="relative mx-auto w-52 sm:w-64 md:w-80">

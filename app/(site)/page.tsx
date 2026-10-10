@@ -20,7 +20,7 @@ import { getSiteSettings } from "@/lib/getSiteSettings";
 import { buildPageMetadata, DEFAULT_SITE_DESCRIPTION, resolveSiteName } from "@/lib/seo";
 import { cacheOrFetch, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
-import { products, newsArticles, orders, users, gachaMachines, helpArticles } from "@/lib/db";
+import { products, newsArticles, gachaMachines, helpArticles } from "@/lib/db";
 import { themeClasses } from "@/lib/theme";
 import { and, asc, count, desc, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
 
@@ -147,23 +147,7 @@ export default async function HomePage() {
     eq(products.isSold, false),
     or(gt(products.stockCount, 0), isNull(products.stockCount)),
   );
-  const [stats, games, machines, faqs, session] = await Promise.all([
-    cacheOrFetch(
-      "home_hero_stats",
-      async () => {
-        const [[available], [completed], [members]] = await Promise.all([
-          db.select({ value: count() }).from(products).where(availableProductFilter),
-          db.select({ value: count() }).from(orders).where(eq(orders.status, "COMPLETED")),
-          db.select({ value: count() }).from(users),
-        ]);
-        return {
-          availableProducts: available?.value ?? 0,
-          completedOrders: completed?.value ?? 0,
-          members: members?.value ?? 0,
-        };
-      },
-      CACHE_TTL.SHORT
-    ),
+  const [games, machines, faqs, session] = await Promise.all([
     cacheOrFetch(
       "home_games",
       async () =>
@@ -235,7 +219,7 @@ export default async function HomePage() {
   return (
     <div className="animate-page-enter">
       <WelcomeRedirect />
-      <HomeHero siteName={siteName} description={siteSettings?.heroDescription} stats={stats} />
+      <HomeHero siteName={siteName} description={siteSettings?.heroDescription} />
       {/* Solid page color edge to edge, so the site background image stays out of the home page. */}
       <div className="space-y-14 bg-background py-10 shadow-[0_0_0_100vmax_var(--background)] [clip-path:inset(0_-100vmax)]">
         {maintenance.purchase.enabled && (
