@@ -11,33 +11,32 @@ interface HomeHeroProps {
 }
 
 // The promo banner is the hero's backdrop and the site title sits in front of
-// it. On desktop the banner keeps its full height and is pinned to the right
-// edge of the screen, so its character and headline are never cropped; a scrim
-// in the theme's card colour fades its left side into the band behind the
-// title. On phones the banner fills the band and the scrim rises from the
+// it. On desktop the banner spans the full screen width and the band grows
+// with it (its 2.7:1 ratio, capped) so nothing is cropped; a scrim in the
+// theme's card colour sits only behind the title, leaving the character clear. On phones the banner fills the band and the scrim rises from the
 // bottom instead. The band runs edge to edge by painting its background out
 // with a spread shadow clipped to its own height.
 export function HomeHero({ siteName, description }: Readonly<HomeHeroProps>) {
   return (
     <section
       id="home-hero"
-      className="relative isolate flex min-h-[560px] flex-col justify-end bg-[var(--card)] py-8 shadow-[0_0_0_100vmax_var(--card)] [clip-path:inset(0_-100vmax)] md:min-h-[520px] md:justify-center"
+      className="relative isolate flex min-h-[560px] flex-col justify-end bg-[var(--card)] py-8 shadow-[0_0_0_100vmax_var(--card)] [clip-path:inset(0_-100vmax)] md:min-h-[min(37vw,720px)] md:justify-center"
     >
       {/* The banner reaches the screen edge, past the page container; clip the
           sideways overflow so it never adds a horizontal scrollbar. */}
       <style href="home-hero-clip" precedence="default">{"html:has(#home-hero){overflow-x:clip}"}</style>
-      <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-700 motion-safe:fill-mode-both absolute inset-y-0 right-[calc(50%-50vw)] -z-10 w-screen md:aspect-[1683/624] md:w-auto">
+      <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-700 motion-safe:fill-mode-both absolute inset-y-0 left-[calc(50%-50vw)] -z-10 w-screen">
         <Image
           src="/home-hero-banner.webp"
           alt=""
           fill
           priority
-          sizes="(max-width: 768px) 100vw, 1404px"
-          className="object-cover object-[46%_center]"
+          sizes="100vw"
+          className="object-cover object-[46%_center] md:object-right"
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 bg-linear-to-t from-[var(--card)] from-35% via-[var(--card)]/80 via-55% to-transparent md:bg-linear-to-r md:from-38% md:via-[var(--card)]/85 md:via-50% md:to-64%"
+          className="absolute inset-0 bg-linear-to-t from-[var(--card)] from-35% via-[var(--card)]/80 via-55% to-transparent md:bg-linear-to-r md:from-22% md:via-[var(--card)]/80 md:via-36% md:to-50%"
         />
       </div>
       <div className="max-w-md">
