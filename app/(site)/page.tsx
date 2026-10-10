@@ -231,7 +231,7 @@ export default async function HomePage() {
 
         {games.length > 0 && (
           <section>
-            <HomeSectionHeading title="เลือกตามเกม" subtitle="ตัวเลขคือจำนวนสินค้าที่พร้อมขาย" />
+            <HomeSectionHeading title="เลือกตามเกม" />
             <HomeGameChips games={games} />
           </section>
         )}

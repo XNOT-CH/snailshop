@@ -33,7 +33,7 @@ export function HomeSeeAllLink({ href }: Readonly<{ href: string }>) {
   );
 }
 
-export function HomeGameChips({ games }: Readonly<{ games: { name: string; count: number }[] }>) {
+export function HomeGameChips({ games }: Readonly<{ games: { name: string }[] }>) {
   return (
     <div className="flex flex-wrap gap-2">
       {games.map((game) => (
@@ -41,10 +41,9 @@ export function HomeGameChips({ games }: Readonly<{ games: { name: string; count
           key={game.name}
           href={`/shop?category=${encodeURIComponent(game.name)}`}
           prefetch={false}
-          className="inline-flex h-10 items-center gap-2 rounded-full border border-border bg-card px-4 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+          className="inline-flex h-10 items-center rounded-full border border-border bg-card px-4 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
         >
           {game.name}
-          <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{game.count.toLocaleString("th-TH")}</span>
         </Link>
       ))}
     </div>
