@@ -277,3 +277,67 @@ export function HomeFaq({ articles }: Readonly<{ articles: { id: string; questio
     </section>
   );
 }
+
+// Interactive card: at rest the phone art sits in a dark card; on hover the
+// card tips back in 3D and the character rises out over its top edge. Touch
+// screens have no hover, so there the character rests half-risen instead.
+// Both links go to the shop for now — there is no separate game top-up page.
+export function HomeTopupShowcase() {
+  const ease = "ease-[cubic-bezier(0.22,1,0.36,1)]";
+
+  return (
+    <section className="grid items-center gap-12 md:grid-cols-2 md:gap-16">
+      <div className="group relative mx-auto w-full max-w-sm pt-16 [perspective:1200px]">
+        <div
+          className={`relative aspect-[3/4] origin-bottom overflow-hidden rounded-2xl border border-white/10 bg-[#0a0e14] shadow-[0_24px_48px_-24px_rgba(10,14,20,0.6)] transition-transform duration-700 ${ease} motion-safe:group-hover:[transform:rotateX(14deg)]`}
+        >
+          <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(88,166,255,0.28),transparent_65%)]" />
+          <Image
+            src="/home-topup-phone.webp"
+            alt=""
+            fill
+            sizes="(max-width: 768px) 90vw, 384px"
+            loading="lazy"
+            className={`object-contain p-6 transition-[opacity,scale] duration-700 ${ease} group-hover:scale-95 group-hover:opacity-60`}
+          />
+        </div>
+        <Image
+          src="/home-topup-hero.webp"
+          alt=""
+          width={322}
+          height={359}
+          loading="lazy"
+          className={`pointer-events-none absolute bottom-[12%] left-1/2 w-[72%] -translate-x-1/2 drop-shadow-[0_16px_24px_rgba(0,0,0,0.45)] transition-[opacity,translate,scale] duration-700 ${ease} translate-y-[10%] scale-90 opacity-0 group-hover:-translate-y-[45%] group-hover:scale-100 group-hover:opacity-100 [@media(hover:none)]:-translate-y-[25%] [@media(hover:none)]:opacity-100`}
+        />
+      </div>
+
+      <div>
+        <p className="text-sm font-semibold text-primary">เติมเกมออนไลน์</p>
+        <h2 className="mt-2 text-3xl font-bold leading-tight text-foreground sm:text-4xl">
+          เติมเกม
+          <span className="block">และไอเทมเกม</span>
+        </h2>
+        <p className="mt-4 max-w-md text-base text-muted-foreground">
+          เลือกเกมที่ต้องการ แล้วชำระด้วยเครดิตในบัญชีของคุณ
+        </p>
+        <div className="mt-8 flex flex-wrap gap-3">
+          <Link
+            href="/shop"
+            prefetch={false}
+            className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground transition-opacity duration-300 ease-out hover:opacity-90"
+          >
+            เติมเกม
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+          <Link
+            href="/shop"
+            prefetch={false}
+            className="inline-flex h-11 items-center rounded-xl border border-border px-6 text-sm font-semibold text-foreground transition-colors duration-300 ease-out hover:border-primary hover:text-primary"
+          >
+            ไอเทมเกม
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}

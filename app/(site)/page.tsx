@@ -12,6 +12,7 @@ import {
   HomeProductTile,
   HomeSectionHeading,
   HomeSeeAllLink,
+  HomeTopupShowcase,
 } from "@/components/HomeSections";
 import { NewsSection } from "@/components/NewsSection";
 import { WelcomeRedirect } from "@/components/WelcomeRedirect";
@@ -246,6 +247,7 @@ export default async function HomePage() {
         </section>
       ),
     },
+    { key: "topup", node: <RevealOnScroll><HomeTopupShowcase /></RevealOnScroll> },
     machines.length > 0 && {
       key: "gacha",
       node: (
