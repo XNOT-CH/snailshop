@@ -40,9 +40,6 @@ async function getFooterData() {
 type PublicLink = { id: string; label: string; href: string; column: string; openInNewTab: boolean };
 
 function LinkList({ links }: Readonly<{ links: PublicLink[] }>) {
-    if (links.length === 0) {
-        return <p className="text-sm text-muted-foreground">ยังไม่มีลิงก์</p>;
-    }
     return (
         <ul className="space-y-2.5">
             {links.map((link) => {
@@ -133,16 +130,16 @@ export default async function Footer() {
                         )}
                     </div>
 
-                    {/* Services column */}
-                    {showLinkColumns && (
+                    {/* Services column — hidden until it has links */}
+                    {servicesLinks.length > 0 && (
                         <div>
                             <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-foreground">{servicesTitle}</h4>
                             <LinkList links={servicesLinks} />
                         </div>
                     )}
 
-                    {/* Cards column */}
-                    {showLinkColumns && (
+                    {/* Cards column — hidden until it has links */}
+                    {cardsLinks.length > 0 && (
                         <div>
                             <h4 className="mb-4 text-sm font-bold uppercase tracking-wider text-foreground">{cardsTitle}</h4>
                             <LinkList links={cardsLinks} />

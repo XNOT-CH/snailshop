@@ -197,8 +197,9 @@ export default async function HomePage() {
   return (
     <div className="animate-page-enter">
       <WelcomeRedirect />
-      <div className={`${themeClasses.shell} relative left-1/2 w-screen -translate-x-1/2 space-y-10 px-3 pb-6 pt-4 sm:left-auto sm:w-auto sm:translate-x-0 sm:px-5 sm:py-8 lg:px-8`}>
-        <HomeHero siteName={siteName} description={siteSettings?.heroDescription} stats={stats} />
+      <HomeHero siteName={siteName} description={siteSettings?.heroDescription} stats={stats} />
+      {/* Solid page color edge to edge, so the site background image stays out of the home page. */}
+      <div className="space-y-12 bg-background py-10 shadow-[0_0_0_100vmax_var(--background)] [clip-path:inset(0_-100vmax)]">
 
         {maintenance.purchase.enabled && (
           <div className={`${themeClasses.alert} rounded-2xl px-4 py-3 text-sm`}>

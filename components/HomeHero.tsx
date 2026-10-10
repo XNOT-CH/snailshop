@@ -19,6 +19,8 @@ interface HomeHeroProps {
 
 // The hero stays dark in both themes, as in the brand guide: it is the one
 // place the page carries the brand look rather than following light/dark.
+// It runs edge to edge by painting its background out with a spread shadow
+// clipped to its own height, so it never widens the page or adds a scrollbar.
 export function HomeHero({ siteName, description, stats }: Readonly<HomeHeroProps>) {
   const statItems = [
     { icon: Package, value: stats.availableProducts, label: "สินค้าพร้อมขาย" },
@@ -27,15 +29,17 @@ export function HomeHero({ siteName, description, stats }: Readonly<HomeHeroProp
   ];
 
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0a0e14] text-[#f5f7fa]">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,transparent_52%,rgba(88,166,255,0.10)_52%,rgba(88,166,255,0.10)_64%,transparent_64%,transparent_70%,rgba(88,166,255,0.06)_70%,rgba(88,166,255,0.06)_76%,transparent_76%)]" />
+    <section className="relative bg-[#0a0e14] text-[#f5f7fa] shadow-[0_0_0_100vmax_#0a0e14] [clip-path:inset(0_-100vmax)]">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,transparent_48%,rgba(88,166,255,0.10)_48%,rgba(88,166,255,0.10)_62%,transparent_62%,transparent_69%,rgba(88,166,255,0.06)_69%,rgba(88,166,255,0.06)_75%,transparent_75%)]" />
 
-      <div className="relative grid items-center gap-8 px-6 py-10 sm:px-10 sm:py-14 md:grid-cols-[1fr_auto] md:gap-12">
+      <div className="relative grid items-center gap-6 pb-8 pt-10 sm:pt-14 md:grid-cols-[1fr_auto] md:gap-10 md:pb-10">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-[#58a6ff]">ร้านขายไอดีเกม</p>
-          <h1 className="mt-3 text-4xl font-bold leading-tight sm:text-6xl">{siteName}</h1>
+          <h1 className="text-4xl font-bold leading-tight sm:text-6xl">
+            {siteName}
+            <span className="block">ร้านขายไอดีเกม</span>
+          </h1>
           {description?.trim() && (
-            <p className="mt-4 max-w-xl text-base text-[#9ca3af]">{description.trim()}</p>
+            <p className="mt-5 max-w-xl text-base text-[#9ca3af]">{description.trim()}</p>
           )}
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
@@ -55,14 +59,10 @@ export function HomeHero({ siteName, description, stats }: Readonly<HomeHeroProp
             </Link>
           </div>
         </div>
-        <Image
-          src="/home-mascot.webp"
-          alt=""
-          width={320}
-          height={320}
-          priority
-          className="mx-auto w-48 rounded-3xl sm:w-64 md:w-80"
-        />
+        <div className="relative mx-auto w-56 sm:w-72 md:w-96">
+          <div aria-hidden="true" className="absolute inset-0 rounded-full bg-[radial-gradient(circle,rgba(88,166,255,0.28)_0%,transparent_68%)]" />
+          <Image src="/home-mascot-transparent.webp" alt="" width={384} height={384} priority className="relative w-full" />
+        </div>
       </div>
 
       <div className="relative grid grid-cols-3 border-t border-white/10">
