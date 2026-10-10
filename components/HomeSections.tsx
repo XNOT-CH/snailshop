@@ -278,11 +278,10 @@ export function HomeFaq({ articles }: Readonly<{ articles: { id: string; questio
   );
 }
 
-// Interactive card: at rest the phone art fills a white card (the art is drawn
-// on white, and keeping it there keeps its soft glows intact); on hover the
-// card tips back in 3D and the character rises out over its top edge. Touch
-// screens have no hover, so there the character rests half-risen instead.
-// Both links go to the shop for now — there is no separate game top-up page.
+// Interactive art: at rest the phone artwork floats on the band; on hover it
+// tips back in 3D and the viking rises out over its top. Touch screens have no
+// hover, so there the viking rests half-risen instead. Both links go to the
+// shop for now — there is no separate game top-up page.
 export function HomeTopupShowcase() {
   const ease = "ease-[cubic-bezier(0.22,1,0.36,1)]";
 
@@ -290,16 +289,15 @@ export function HomeTopupShowcase() {
     <section className="grid items-center gap-12 md:grid-cols-2 md:gap-16">
       <div className="group relative mx-auto w-full max-w-sm pt-16 [perspective:1200px]">
         <div
-          className={`relative aspect-[2/3] origin-bottom overflow-hidden rounded-2xl border border-border bg-[#ffffff] shadow-[0_24px_48px_-24px_rgba(10,14,20,0.45)] transition-transform duration-700 ${ease} motion-safe:group-hover:[transform:rotateX(14deg)]`}
+          className={`relative aspect-[2/3] origin-bottom transition-transform duration-700 ${ease} motion-safe:group-hover:[transform:rotateX(14deg)]`}
         >
-          <div aria-hidden="true" className="absolute inset-0 bg-[radial-gradient(circle_at_50%_45%,rgba(88,166,255,0.18),transparent_70%)]" />
           <Image
-            src="/home-topup-phone-snailshop.webp"
+            src="/home-topup-phone-cutout.webp"
             alt=""
             fill
             sizes="(max-width: 768px) 90vw, 384px"
             loading="lazy"
-            className={`object-cover transition-[opacity,scale] duration-700 ${ease} group-hover:scale-95 group-hover:opacity-60`}
+            className={`object-contain transition-[opacity,scale] duration-700 ${ease} group-hover:scale-95 group-hover:opacity-60`}
           />
         </div>
         <Image
