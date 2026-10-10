@@ -4,6 +4,7 @@ import { HomeHero } from "@/components/HomeHero";
 import { HomeProductTabs } from "@/components/HomeProductTabs";
 import {
   HomeFaq,
+  HomeBand,
   HomeGachaMachines,
   HomeGameChips,
   HomeHowToBuy,
@@ -15,6 +16,7 @@ import {
 import { NewsSection } from "@/components/NewsSection";
 import { WelcomeRedirect } from "@/components/WelcomeRedirect";
 import { RevealOnScroll } from "@/components/RevealOnScroll";
+import type { ReactNode } from "react";
 import { db } from "@/lib/db";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getSiteSettings } from "@/lib/getSiteSettings";
@@ -219,26 +221,22 @@ export default async function HomePage() {
       ),
     }));
 
-  return (
-    <div className="animate-page-enter">
-      <WelcomeRedirect />
-      <HomeHero siteName={siteName} description={siteSettings?.heroDescription} />
-      {/* Solid page color edge to edge, so the site background image stays out of the home page. */}
-      <div className="space-y-14 bg-background py-10 shadow-[0_0_0_100vmax_var(--background)] [clip-path:inset(0_-100vmax)]">
-        {maintenance.purchase.enabled && (
-          <div className={`${themeClasses.alert} rounded-2xl px-4 py-3 text-sm`}>
-            <p className="font-semibold">ระบบสั่งซื้อกำลังปิดปรับปรุงชั่วคราว</p>
-            <p className="mt-1 text-xs">{maintenance.purchase.message}</p>
-          </div>
-        )}
-
-        {games.length > 0 && (
-          <section>
-            <HomeSectionHeading title="เลือกตามเกม" />
-            <HomeGameChips games={games} />
-          </section>
-        )}
-
+  // Each section gets its own full-width band, alternating with the hero's
+  // color, so scrolling reads as moving from one scene to the next. Tones are
+  // assigned after empty sections drop out, so the alternation never breaks.
+  const sectionCandidates: (false | { key: string; node: ReactNode })[] = [
+    games.length > 0 && {
+      key: "games",
+      node: (
+        <section>
+          <HomeSectionHeading title="เลือกตามเกม" />
+          <HomeGameChips games={games} />
+        </section>
+      ),
+    },
+    {
+      key: "products",
+      node: (
         <section>
           <HomeSectionHeading title="สินค้าแนะนำ" action={<HomeSeeAllLink href="/shop" />} />
           {productTabs.length === 0 ? (
@@ -249,40 +247,54 @@ export default async function HomePage() {
             <HomeProductTabs tabs={productTabs} />
           )}
         </section>
-
-        {machines.length > 0 && (
-          <section>
-            <HomeSectionHeading title="ตู้กาชา" subtitle="สุ่มรางวัลจากตู้ที่เปิดอยู่ตอนนี้" action={<HomeSeeAllLink href="/gachapons" />} />
-            <HomeGachaMachines
-              machines={machines.map((machine) => ({ ...machine, costAmount: Number(machine.costAmount) }))}
-              currencySettings={currencySettings}
-            />
-          </section>
-        )}
-
-        <RevealOnScroll>
-          <HomeHowToBuy />
-        </RevealOnScroll>
-
-        {faqs.length > 0 && (
-          <RevealOnScroll>
-            <HomeFaq articles={faqs} />
-          </RevealOnScroll>
-        )}
-
+      ),
+    },
+    machines.length > 0 && {
+      key: "gacha",
+      node: (
+        <section>
+          <HomeSectionHeading title="ตู้กาชา" subtitle="สุ่มรางวัลจากตู้ที่เปิดอยู่ตอนนี้" action={<HomeSeeAllLink href="/gachapons" />} />
+          <HomeGachaMachines
+            machines={machines.map((machine) => ({ ...machine, costAmount: Number(machine.costAmount) }))}
+            currencySettings={currencySettings}
+          />
+        </section>
+      ),
+    },
+    { key: "how-to-buy", node: <RevealOnScroll><HomeHowToBuy /></RevealOnScroll> },
+    faqs.length > 0 && { key: "faq", node: <RevealOnScroll><HomeFaq articles={faqs} /></RevealOnScroll> },
+    news.length > 0 && {
+      key: "news",
+      node: (
         <NewsSection
           initialNews={news.map((article) => ({
             ...article,
             createdAt: toSerializableDate(article.createdAt),
           }))}
         />
+      ),
+    },
+    !session?.user && { key: "join", node: <RevealOnScroll><HomeJoinCta siteName={siteName} /></RevealOnScroll> },
+  ];
+  const sections = sectionCandidates.filter((section) => section !== false);
 
-        {!session?.user && (
-          <RevealOnScroll>
-            <HomeJoinCta siteName={siteName} />
-          </RevealOnScroll>
-        )}
-      </div>
+  return (
+    <div className="animate-page-enter">
+      <WelcomeRedirect />
+      <HomeHero siteName={siteName} description={siteSettings?.heroDescription} />
+      {maintenance.purchase.enabled && (
+        <HomeBand tone="plain" className="pb-0 lg:pb-0">
+          <div className={`${themeClasses.alert} rounded-2xl px-4 py-3 text-sm`}>
+            <p className="font-semibold">ระบบสั่งซื้อกำลังปิดปรับปรุงชั่วคราว</p>
+            <p className="mt-1 text-xs">{maintenance.purchase.message}</p>
+          </div>
+        </HomeBand>
+      )}
+      {sections.map((section, index) => (
+        <HomeBand key={section.key} tone={index % 2 === 0 ? "plain" : "raised"}>
+          {section.node}
+        </HomeBand>
+      ))}
     </div>
   );
 }

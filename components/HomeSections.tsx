@@ -9,6 +9,25 @@ import { getGachaCostLabel, normalizeGachaCost } from "@/lib/gachaCost";
 import { TOPUP_LABEL } from "@/lib/navigation";
 import { themeClasses } from "@/lib/theme";
 
+// A full-width band in one of the two page tones. The color is painted past the
+// content column with a spread shadow clipped to the band's height, so it spans
+// the screen without widening the page. "raised" matches the hero.
+export function HomeBand({
+  tone,
+  className = "",
+  children,
+}: Readonly<{ tone: "plain" | "raised"; className?: string; children: ReactNode }>) {
+  const color = tone === "raised" ? "var(--card)" : "var(--background)";
+  return (
+    <div
+      className={`py-14 lg:py-24 ${className}`}
+      style={{ backgroundColor: color, boxShadow: `0 0 0 100vmax ${color}`, clipPath: "inset(0 -100vmax)" }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export function HomeSectionHeading({
   title,
   subtitle,
