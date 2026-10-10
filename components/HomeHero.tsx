@@ -28,7 +28,7 @@ export function HomeHero({ siteName, description, stats }: Readonly<HomeHeroProp
   ];
 
   return (
-    <section className="relative border-b border-border bg-[var(--card)] shadow-[0_0_0_100vmax_var(--card)] [clip-path:inset(0_-100vmax)]">
+    <section className="relative bg-[var(--card)] shadow-[0_0_0_100vmax_var(--card)] [clip-path:inset(0_-100vmax)]">
       <div className="grid items-center gap-6 pb-8 pt-10 sm:pt-14 md:grid-cols-[1fr_auto] md:gap-10 md:pb-12">
         <div className="min-w-0">
           <p className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
@@ -54,9 +54,9 @@ export function HomeHero({ siteName, description, stats }: Readonly<HomeHeroProp
         </div>
       </div>
 
-      <div className="grid grid-cols-3 border-t border-border">
+      <div className="grid grid-cols-3 gap-2 pb-6">
         {statItems.map(({ icon: Icon, value, label }) => (
-          <div key={label} className="flex flex-col items-center gap-1 px-2 py-5 text-center sm:flex-row sm:justify-center sm:gap-3 sm:text-left [&:not(:first-child)]:border-l [&:not(:first-child)]:border-border">
+          <div key={label} className="flex flex-col items-center gap-1 px-2 py-5 text-center sm:flex-row sm:justify-center sm:gap-3 sm:text-left">
             <Icon className="h-5 w-5 shrink-0 text-primary sm:h-6 sm:w-6" aria-hidden="true" />
             <div>
               <p className="text-xl font-bold text-foreground sm:text-2xl">{value.toLocaleString("th-TH")}</p>

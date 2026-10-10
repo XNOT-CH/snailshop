@@ -50,13 +50,13 @@ export function HomeServices() {
   ];
 
   return (
-    <nav aria-label="บริการ" className="grid grid-cols-2 border-y border-border lg:grid-cols-4">
+    <nav aria-label="บริการ" className="grid grid-cols-2 gap-x-4 gap-y-2 lg:grid-cols-4">
       {services.map(({ href, icon: Icon, title, text }) => (
         <Link
           key={href}
           href={href}
           prefetch={false}
-          className="group flex items-center gap-3 border-border px-3 py-5 sm:gap-4 sm:px-6 [&:nth-child(even)]:border-l [&:nth-child(n+3)]:border-t lg:[&:nth-child(n+3)]:border-t-0 lg:[&:not(:first-child)]:border-l"
+          className="group flex items-center gap-3 py-3 sm:gap-4"
         >
           <Icon className="h-6 w-6 shrink-0 text-primary" />
           <span className="min-w-0">
