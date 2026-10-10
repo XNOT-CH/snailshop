@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { ProductCard } from "@/components/ProductCard";
-import { HeroBanner } from "@/components/HeroBanner";
 import { HomeHero } from "@/components/HomeHero";
-import { FeaturedProducts } from "@/components/FeaturedProducts";
-import { SaleProducts } from "@/components/SaleProducts";
+import { HomeProductTabs } from "@/components/HomeProductTabs";
 import { NewsSection } from "@/components/NewsSection";
 import { WelcomeRedirect } from "@/components/WelcomeRedirect";
 import { db } from "@/lib/db";
@@ -14,14 +13,15 @@ import { buildPageMetadata, DEFAULT_SITE_DESCRIPTION, resolveSiteName } from "@/
 import { cacheOrFetch, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
 import { getSoldCountMap } from "@/lib/features/orders/queries";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
-import { products, newsArticles } from "@/lib/db";
+import { products, newsArticles, orders, users } from "@/lib/db";
 import { themeClasses } from "@/lib/theme";
-import { and, asc, desc, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
 const HOMEPAGE_PRODUCT_LIMIT = 12;
 const HOMEPAGE_CAROUSEL_PRODUCT_LIMIT = 12;
+const HOMEPAGE_GRID_PRODUCT_LIMIT = 10;
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
@@ -133,97 +133,96 @@ export default async function HomePage() {
     }
   }
 
-  const soldCountMap = await getSoldCountMap([
+  const availableProductFilter = and(
+    isNull(products.deletedAt),
+    eq(products.isSold, false),
+    or(gt(products.stockCount, 0), isNull(products.stockCount)),
+  );
+  const [stats, soldCountMap] = await Promise.all([
+    cacheOrFetch(
+      "home_hero_stats",
+      async () => {
+        const [[available], [completed], [members]] = await Promise.all([
+          db.select({ value: count() }).from(products).where(availableProductFilter),
+          db.select({ value: count() }).from(orders).where(eq(orders.status, "COMPLETED")),
+          db.select({ value: count() }).from(users),
+        ]);
+        return {
+          availableProducts: available?.value ?? 0,
+          completedOrders: completed?.value ?? 0,
+          members: members?.value ?? 0,
+        };
+      },
+      CACHE_TTL.SHORT
+    ),
+    getSoldCountMap([
     ...featuredProducts.map((product) => product.id),
     ...saleProducts.map((product) => product.id),
     ...productList.map((product) => product.id),
+    ]),
   ]);
+
+  const renderGrid = (
+    items: { id: string; name: string; price: unknown; discountPrice?: unknown; currency: string | null; imageUrl: string | null; category: string; isSold: boolean | null }[],
+  ) => (
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      {items.slice(0, HOMEPAGE_GRID_PRODUCT_LIMIT).map((product, index) => (
+        <ProductCard
+          key={product.id}
+          id={product.id}
+          image={product.imageUrl || "/placeholder.jpg"}
+          title={product.name}
+          price={Number(product.price)}
+          discountPrice={product.discountPrice === null || product.discountPrice === undefined ? null : Number(product.discountPrice)}
+          currency={product.currency}
+          category={product.category}
+          isSold={Boolean(product.isSold)}
+          soldCount={soldCountMap.get(product.id) ?? 0}
+          index={index}
+          currencySettings={currencySettings}
+          initialPurchaseMaintenance={maintenance.purchase}
+        />
+      ))}
+    </div>
+  );
+
+  const productTabs = [
+    { key: "featured", label: "แนะนำ", items: featuredProducts },
+    { key: "sale", label: "ลดราคา", items: saleProducts },
+    { key: "latest", label: "ใหม่ล่าสุด", items: showAllProducts ? productList : [] },
+  ]
+    .filter((tab) => tab.items.length > 0)
+    .map((tab) => ({ key: tab.key, label: tab.label, content: renderGrid(tab.items) }));
 
   return (
     <div className="animate-page-enter">
       <WelcomeRedirect />
       <div className={`${themeClasses.shell} relative left-1/2 w-screen -translate-x-1/2 space-y-10 px-3 pb-6 pt-4 sm:left-auto sm:w-auto sm:translate-x-0 sm:px-5 sm:py-8 lg:px-8`}>
-        <HomeHero siteName={siteName} description={siteSettings?.heroDescription} />
+        <HomeHero siteName={siteName} description={siteSettings?.heroDescription} stats={stats} />
 
-        <div className="relative left-1/2 w-screen -translate-x-1/2 px-2 sm:left-auto sm:w-auto sm:translate-x-0 sm:px-0">
-          <HeroBanner />
-        </div>
-
-        <FeaturedProducts
-          initialProducts={featuredProducts.slice(0, HOMEPAGE_CAROUSEL_PRODUCT_LIMIT).map((product) => ({
-            ...product,
-            price: Number(product.price),
-            discountPrice:
-              product.discountPrice === null || product.discountPrice === undefined
-                ? null
-                : Number(product.discountPrice),
-            soldCount: soldCountMap.get(product.id) ?? 0,
-          }))}
-          initialCurrencySettings={currencySettings}
-          initialMaintenance={maintenance}
-        />
-
-        <SaleProducts
-          initialProducts={saleProducts.slice(0, HOMEPAGE_CAROUSEL_PRODUCT_LIMIT).map((product) => ({
-            ...product,
-            price: Number(product.price),
-            discountPrice: Number(product.discountPrice),
-            soldCount: soldCountMap.get(product.id) ?? 0,
-          }))}
-          initialCurrencySettings={currencySettings}
-          initialMaintenance={maintenance}
-        />
-
-        {showAllProducts && (
-          <section>
-            <div>
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <h2 className="text-xl font-bold leading-tight text-foreground sm:text-2xl">
-                    สินค้าล่าสุด
-                  </h2>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    เลือกดูรายการใหม่ก่อน แล้วไปหน้าร้านค้าเพื่อค้นหาทั้งหมด
-                  </p>
-                </div>
-                <Link
-                  href="/shop"
-                  prefetch={false}
-                  className={`${themeClasses.actionMuted} inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold transition-colors hover:text-primary`}
-                >
-                  ดูสินค้าทั้งหมด
-                </Link>
-              </div>
-            </div>
-
-            {productList.length === 0 ? (
-              <div className={`${themeClasses.surfaceSoft} mt-4 rounded-2xl py-12 text-center`}>
-                <p className="text-muted-foreground text-lg">
-                  ยังไม่มีสินค้าในระบบ
-                </p>
-              </div>
-            ) : (
-              <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                {productList.map((product, index) => (
-                  <ProductCard
-                    key={product.id}
-                    id={product.id}
-                    image={product.imageUrl || "/placeholder.jpg"}
-                    title={product.name}
-                    price={Number(product.price)}
-                    currency={product.currency}
-                    category={product.category}
-                    isSold={Boolean(product.isSold)}
-                    soldCount={soldCountMap.get(product.id) ?? 0}
-                    index={index}
-                    currencySettings={currencySettings}
-                    initialPurchaseMaintenance={maintenance.purchase}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+        {maintenance.purchase.enabled && (
+          <div className={`${themeClasses.alert} rounded-2xl px-4 py-3 text-sm`}>
+            <p className="font-semibold">ระบบสั่งซื้อกำลังปิดปรับปรุงชั่วคราว</p>
+            <p className="mt-1 text-xs">{maintenance.purchase.message}</p>
+          </div>
         )}
+
+        <section>
+          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+            <h2 className="text-xl font-bold leading-tight text-foreground sm:text-2xl">สินค้าแนะนำ</h2>
+            <Link href="/shop" prefetch={false} className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+              ดูทั้งหมด
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          {productTabs.length === 0 ? (
+            <div className={`${themeClasses.surfaceSoft} rounded-2xl py-12 text-center`}>
+              <p className="text-muted-foreground text-lg">ยังไม่มีสินค้าในระบบ</p>
+            </div>
+          ) : (
+            <HomeProductTabs tabs={productTabs} />
+          )}
+        </section>
 
         <NewsSection
           initialNews={news.map((article) => ({
