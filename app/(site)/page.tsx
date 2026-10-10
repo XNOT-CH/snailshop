@@ -14,6 +14,7 @@ import {
 } from "@/components/HomeSections";
 import { NewsSection } from "@/components/NewsSection";
 import { WelcomeRedirect } from "@/components/WelcomeRedirect";
+import { RevealOnScroll } from "@/components/RevealOnScroll";
 import { db } from "@/lib/db";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getSiteSettings } from "@/lib/getSiteSettings";
@@ -209,8 +210,10 @@ export default async function HomePage() {
       label: tab.label,
       content: (
         <div className="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {tab.items.slice(0, HOMEPAGE_TILE_LIMIT).map((product) => (
-            <HomeProductTile key={product.id} product={toTile(product)} currencySettings={currencySettings} />
+          {tab.items.slice(0, HOMEPAGE_TILE_LIMIT).map((product, index) => (
+            <RevealOnScroll key={product.id} index={index}>
+              <HomeProductTile product={toTile(product)} currencySettings={currencySettings} />
+            </RevealOnScroll>
           ))}
         </div>
       ),
@@ -257,9 +260,15 @@ export default async function HomePage() {
           </section>
         )}
 
-        <HomeHowToBuy />
+        <RevealOnScroll>
+          <HomeHowToBuy />
+        </RevealOnScroll>
 
-        {faqs.length > 0 && <HomeFaq articles={faqs} />}
+        {faqs.length > 0 && (
+          <RevealOnScroll>
+            <HomeFaq articles={faqs} />
+          </RevealOnScroll>
+        )}
 
         <NewsSection
           initialNews={news.map((article) => ({
@@ -268,7 +277,11 @@ export default async function HomePage() {
           }))}
         />
 
-        {!session?.user && <HomeJoinCta siteName={siteName} />}
+        {!session?.user && (
+          <RevealOnScroll>
+            <HomeJoinCta siteName={siteName} />
+          </RevealOnScroll>
+        )}
       </div>
     </div>
   );

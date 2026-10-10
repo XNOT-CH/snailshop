@@ -49,7 +49,7 @@ export function HomeProductTabs({ tabs }: Readonly<HomeProductTabsProps>) {
           id={`home-panel-${tab.key}`}
           aria-labelledby={`home-tab-${tab.key}`}
           hidden={tab.key !== activeKey}
-          className="mt-5"
+          className="mt-5 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:duration-300"
         >
           {tab.content}
         </div>

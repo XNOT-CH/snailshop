@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import Image from "next/image";
 import { ArrowRight, ChevronDown, Dices, ListChecks, PackageCheck, ShoppingCart, Wallet } from "lucide-react";
+import { RevealOnScroll } from "@/components/RevealOnScroll";
 import { ThumbImage } from "@/components/ThumbImage";
 import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
 import { getGachaCostLabel, normalizeGachaCost } from "@/lib/gachaCost";
@@ -72,7 +73,7 @@ export function HomeProductTile({
     <Link
       href={`/product/${product.id}`}
       prefetch={false}
-      className="group flex items-center gap-4 rounded-xl border border-border bg-[var(--card)] p-3 transition-colors hover:border-primary/50"
+      className="group flex items-center gap-4 rounded-xl border border-border bg-[var(--card)] p-3 transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-primary/50"
     >
       <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-muted sm:size-24">
         <ThumbImage src={product.imageUrl || "/placeholder.jpg"} alt={product.name} fill sizes="96px" loading="lazy" className="object-cover" />
@@ -93,8 +94,8 @@ export function HomeProductTile({
           )}
         </div>
       </div>
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors group-hover:border-primary group-hover:text-primary">
-        <ArrowRight className="h-4 w-4" />
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground">
+        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
       </span>
     </Link>
   );
@@ -115,7 +116,7 @@ export function HomeGachaMachines({
 }: Readonly<{ machines: HomeGachaMachine[]; currencySettings?: PublicCurrencySettings }>) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-      {machines.map((machine) => {
+      {machines.map((machine, index) => {
         const cost = normalizeGachaCost(machine.costType, machine.costAmount);
         const costText = cost.costType === "FREE"
           ? "เล่นฟรี"
@@ -124,7 +125,8 @@ export function HomeGachaMachines({
         const href = machine.gameType === "GRID_3X3" ? `/gacha-grid/${machine.id}` : `/gacha/${machine.id}`;
 
         return (
-          <Link key={machine.id} href={href} prefetch={false} className="group">
+          <RevealOnScroll key={machine.id} index={index}>
+          <Link href={href} prefetch={false} className="group block">
             <div className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted">
               {machine.imageUrl ? (
                 <Image
@@ -144,6 +146,7 @@ export function HomeGachaMachines({
             <h3 className="mt-3 truncate font-semibold text-foreground group-hover:text-primary">{machine.name}</h3>
             <p className="text-sm text-muted-foreground">{costText}</p>
           </Link>
+          </RevealOnScroll>
         );
       })}
     </div>
