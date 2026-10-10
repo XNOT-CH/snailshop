@@ -96,8 +96,7 @@ export default async function Footer() {
     );
 
     return (
-        <footer className="relative border-t border-border/60 bg-card/55 backdrop-blur-xl">
-            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-primary/20 via-primary to-primary/20" />
+        <footer className="relative border-t border-border bg-card">
             <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                 <div className="grid grid-cols-1 gap-8 py-12 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
                     {/* Brand + disclaimer + social */}
@@ -106,7 +105,7 @@ export default async function Footer() {
                             {siteSettings?.logoUrl ? (
                                 <Image src={siteSettings.logoUrl} alt="Logo" width={48} height={48} className="h-12 w-12 rounded-xl object-contain" />
                             ) : (
-                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-primary/70">
+                                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
                                     <Gamepad2 className="h-6 w-6 text-primary-foreground" />
                                 </div>
                             )}
@@ -189,18 +188,18 @@ export default async function Footer() {
             </div>
 
             {/* Bottom bar */}
-            <div className="bg-gradient-to-r from-primary/90 via-primary to-blue-500 text-primary-foreground">
+            <div className="border-t border-border bg-muted text-muted-foreground">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div className="flex flex-col items-center justify-between gap-3 py-4 text-sm md:flex-row">
-                        <p className="text-center text-primary-foreground/90">
+                        <p className="text-center">
                             Copyright © {currentYear} {siteName} - All Rights Reserved.
-                            <span className="ml-2 text-xs text-primary-foreground/60">v{APP_VERSION}</span>
+                            <span className="ml-2 text-xs">v{APP_VERSION}</span>
                         </p>
                         <div className="flex items-center gap-5">
-                            <Link href="/privacy" prefetch={false} className="text-primary-foreground/85 transition-colors hover:text-primary-foreground">
+                            <Link href="/privacy" prefetch={false} className="transition-colors hover:text-foreground">
                                 นโยบายความเป็นส่วนตัว
                             </Link>
-                            <Link href="/terms" prefetch={false} className="text-primary-foreground/85 transition-colors hover:text-primary-foreground">
+                            <Link href="/terms" prefetch={false} className="transition-colors hover:text-foreground">
                                 ข้อกำหนดการใช้งาน
                             </Link>
                         </div>

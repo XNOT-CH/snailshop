@@ -1,7 +1,7 @@
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
-import { Kanit } from "next/font/google";
+import { Prompt } from "next/font/google";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import {
   DEFAULT_SITE_DESCRIPTION,
@@ -15,11 +15,11 @@ import {
 import { getOptimizedUploadSrc } from "@/lib/imageUrl";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
-const kanit = Kanit({
+const prompt = Prompt({
   subsets: ["latin", "thai"],
   weight: ["400", "500", "600", "700"],
   display: "swap",
-  variable: "--font-kanit",
+  variable: "--font-prompt",
 });
 
 // Runs before the browser restores scroll, so it has to be an inline script
@@ -122,7 +122,7 @@ export default async function RootLayout({
       lang="th"
       suppressHydrationWarning
       data-scroll-behavior="smooth"
-      className={kanit.variable}
+      className={prompt.variable}
     >
       <body className="font-sans antialiased min-h-screen bg-background flex flex-col">
         <script
