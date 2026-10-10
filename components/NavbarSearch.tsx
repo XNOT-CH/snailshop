@@ -37,6 +37,9 @@ export function NavbarSearch({ currencySettings }: NavbarSearchProps) {
     const [products, setProducts] = React.useState<SearchProduct[] | null>(null);
     const [loading, setLoading] = React.useState(false);
     const [error, setError] = React.useState(false);
+    // Most visitors are on Windows, so show Ctrl K and switch to ⌘K only on
+    // Apple devices. Detected after mount to keep SSR and hydration in sync.
+    const [shortcutLabel, setShortcutLabel] = React.useState("Ctrl K");
     // Guards against re-fetching once we already have a list. Reset on
     // failure so the next time the dialog opens we try again.
     const fetchedRef = React.useRef(false);
@@ -71,6 +74,10 @@ export function NavbarSearch({ currencySettings }: NavbarSearchProps) {
         fetchedRef.current = true;
         load();
     };
+
+    React.useEffect(() => {
+        if (/Mac|iPhone|iPad/.test(navigator.userAgent)) setShortcutLabel("⌘K");
+    }, []);
 
     // ⌘K / Ctrl+K to open from anywhere.
     React.useEffect(() => {
@@ -119,7 +126,7 @@ export function NavbarSearch({ currencySettings }: NavbarSearchProps) {
                 <Search className="h-5 w-5 flex-shrink-0 xl:h-4 xl:w-4" />
                 <span className="hidden flex-1 text-left text-sm xl:inline">ค้นหาสินค้า</span>
                 <kbd className="hidden rounded border border-border px-1.5 text-[10px] font-medium text-muted-foreground xl:inline">
-                    ⌘K
+                    {shortcutLabel}
                 </kbd>
             </button>
 
