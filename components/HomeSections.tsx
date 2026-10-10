@@ -1,18 +1,11 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import {
-  ArrowRight,
-  Dices,
-  Gift,
-  ListChecks,
-  PackageCheck,
-  ShoppingBag,
-  ShoppingCart,
-  Wallet,
-} from "lucide-react";
+import Image from "next/image";
+import { ArrowRight, ChevronDown, Dices, ListChecks, PackageCheck, ShoppingCart, Wallet } from "lucide-react";
 import { ThumbImage } from "@/components/ThumbImage";
 import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
-import { PRIMARY_NAV, TOPUP_LABEL } from "@/lib/navigation";
+import { getGachaCostLabel, normalizeGachaCost } from "@/lib/gachaCost";
+import { TOPUP_LABEL } from "@/lib/navigation";
 import { themeClasses } from "@/lib/theme";
 
 export function HomeSectionHeading({
@@ -37,35 +30,6 @@ export function HomeSeeAllLink({ href }: Readonly<{ href: string }>) {
       ดูทั้งหมด
       <ArrowRight className="h-4 w-4" />
     </Link>
-  );
-}
-
-// Shortcuts to the site's main areas — the brand guide's Learn / Improve / Play row.
-export function HomeServices() {
-  const services = [
-    { href: PRIMARY_NAV.shop.href, icon: ShoppingBag, title: PRIMARY_NAV.shop.label, text: "ไอดีและไอเทมเกม" },
-    { href: PRIMARY_NAV.gacha.href, icon: Dices, title: "กาชา", text: "สุ่มลุ้นรางวัล" },
-    { href: PRIMARY_NAV.seasonPass.href, icon: Gift, title: PRIMARY_NAV.seasonPass.label, text: "สะสมรางวัลตามเลเวล" },
-    { href: "/dashboard/topup", icon: Wallet, title: TOPUP_LABEL, text: "เติมเครดิตเข้าบัญชี" },
-  ];
-
-  return (
-    <nav aria-label="บริการ" className="grid grid-cols-2 gap-x-4 gap-y-2 lg:grid-cols-4">
-      {services.map(({ href, icon: Icon, title, text }) => (
-        <Link
-          key={href}
-          href={href}
-          prefetch={false}
-          className="group flex items-center gap-3 py-3 sm:gap-4"
-        >
-          <Icon className="h-6 w-6 shrink-0 text-primary" />
-          <span className="min-w-0">
-            <span className="block truncate font-semibold text-foreground group-hover:text-primary">{title}</span>
-            <span className="block truncate text-xs text-muted-foreground sm:text-sm">{text}</span>
-          </span>
-        </Link>
-      ))}
-    </nav>
   );
 }
 
@@ -134,6 +98,56 @@ export function HomeProductTile({
         <ArrowRight className="h-4 w-4" />
       </span>
     </Link>
+  );
+}
+
+export interface HomeGachaMachine {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+  gameType: string;
+  costType: string;
+  costAmount: number;
+}
+
+export function HomeGachaMachines({
+  machines,
+  currencySettings,
+}: Readonly<{ machines: HomeGachaMachine[]; currencySettings?: PublicCurrencySettings }>) {
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      {machines.map((machine) => {
+        const cost = normalizeGachaCost(machine.costType, machine.costAmount);
+        const costText = cost.costType === "FREE"
+          ? "เล่นฟรี"
+          : `ครั้งละ ${cost.costAmount.toLocaleString("th-TH")} ${getGachaCostLabel(cost.costType, currencySettings)}`;
+        // Same routing as the gacha hub: grid machines have their own page.
+        const href = machine.gameType === "GRID_3X3" ? `/gacha-grid/${machine.id}` : `/gacha/${machine.id}`;
+
+        return (
+          <Link key={machine.id} href={href} prefetch={false} className="group">
+            <div className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted">
+              {machine.imageUrl ? (
+                <Image
+                  src={machine.imageUrl}
+                  alt={machine.name}
+                  fill
+                  sizes="(max-width: 1024px) 50vw, 25vw"
+                  loading="lazy"
+                  className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                />
+              ) : (
+                <div className="flex h-full items-center justify-center text-muted-foreground">
+                  <Dices className="h-10 w-10" />
+                </div>
+              )}
+            </div>
+            <h3 className="mt-3 truncate font-semibold text-foreground group-hover:text-primary">{machine.name}</h3>
+            <p className="text-sm text-muted-foreground">{costText}</p>
+          </Link>
+        );
+      })}
+    </div>
   );
 }
 
@@ -209,6 +223,35 @@ export function HomeJoinCta({ siteName }: Readonly<{ siteName: string }>) {
         >
           เข้าสู่ระบบ
         </Link>
+      </div>
+    </section>
+  );
+}
+
+// Same two-column layout as the buying steps; answers come from the help
+// center's own articles, so the home page never says anything the help page
+// does not.
+export function HomeFaq({ articles }: Readonly<{ articles: { id: string; question: string; answer: string }[] }>) {
+  return (
+    <section className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12">
+      <div>
+        <p className="text-sm font-semibold text-primary">ช่วยเหลือ</p>
+        <h2 className="mt-2 text-3xl font-bold leading-tight text-foreground sm:text-4xl">คำถามที่พบบ่อย</h2>
+        <Link href="/help" prefetch={false} className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
+          ดูคำถามทั้งหมด
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+      </div>
+      <div className="divide-y divide-border border-y border-border">
+        {articles.map((article) => (
+          <details key={article.id} className="group py-5">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-foreground [&::-webkit-details-marker]:hidden">
+              {article.question}
+              <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+            </summary>
+            <p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">{article.answer}</p>
+          </details>
+        ))}
       </div>
     </section>
   );

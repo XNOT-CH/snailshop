@@ -3,13 +3,14 @@ import { auth } from "@/auth";
 import { HomeHero } from "@/components/HomeHero";
 import { HomeProductTabs } from "@/components/HomeProductTabs";
 import {
+  HomeFaq,
+  HomeGachaMachines,
   HomeGameChips,
   HomeHowToBuy,
   HomeJoinCta,
   HomeProductTile,
   HomeSectionHeading,
   HomeSeeAllLink,
-  HomeServices,
 } from "@/components/HomeSections";
 import { NewsSection } from "@/components/NewsSection";
 import { WelcomeRedirect } from "@/components/WelcomeRedirect";
@@ -19,7 +20,7 @@ import { getSiteSettings } from "@/lib/getSiteSettings";
 import { buildPageMetadata, DEFAULT_SITE_DESCRIPTION, resolveSiteName } from "@/lib/seo";
 import { cacheOrFetch, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
-import { products, newsArticles, orders, users } from "@/lib/db";
+import { products, newsArticles, orders, users, gachaMachines, helpArticles } from "@/lib/db";
 import { themeClasses } from "@/lib/theme";
 import { and, asc, count, desc, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
 
@@ -28,6 +29,8 @@ export const dynamic = "force-dynamic";
 const HOMEPAGE_PRODUCT_LIMIT = 12;
 const HOMEPAGE_CAROUSEL_PRODUCT_LIMIT = 12;
 const HOMEPAGE_TILE_LIMIT = 6;
+const HOMEPAGE_GACHA_LIMIT = 4;
+const HOMEPAGE_FAQ_LIMIT = 5;
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
@@ -144,7 +147,7 @@ export default async function HomePage() {
     eq(products.isSold, false),
     or(gt(products.stockCount, 0), isNull(products.stockCount)),
   );
-  const [stats, games, session] = await Promise.all([
+  const [stats, games, machines, faqs, session] = await Promise.all([
     cacheOrFetch(
       "home_hero_stats",
       async () => {
@@ -169,6 +172,33 @@ export default async function HomePage() {
           .where(availableProductFilter)
           .groupBy(products.category)
           .orderBy(desc(count())),
+      CACHE_TTL.SHORT
+    ),
+    cacheOrFetch(
+      "home_gacha_machines",
+      async () =>
+        db.select({
+          id: gachaMachines.id,
+          name: gachaMachines.name,
+          imageUrl: gachaMachines.imageUrl,
+          gameType: gachaMachines.gameType,
+          costType: gachaMachines.costType,
+          costAmount: gachaMachines.costAmount,
+        })
+          .from(gachaMachines)
+          .where(and(eq(gachaMachines.isActive, true), eq(gachaMachines.isEnabled, true)))
+          .orderBy(asc(gachaMachines.sortOrder))
+          .limit(HOMEPAGE_GACHA_LIMIT),
+      CACHE_TTL.SHORT
+    ),
+    cacheOrFetch(
+      "home_faq",
+      async () =>
+        db.select({ id: helpArticles.id, question: helpArticles.question, answer: helpArticles.answer })
+          .from(helpArticles)
+          .where(eq(helpArticles.isActive, true))
+          .orderBy(asc(helpArticles.category), asc(helpArticles.sortOrder))
+          .limit(HOMEPAGE_FAQ_LIMIT),
       CACHE_TTL.SHORT
     ),
     auth(),
@@ -215,11 +245,9 @@ export default async function HomePage() {
           </div>
         )}
 
-        <HomeServices />
-
         {games.length > 0 && (
           <section>
-            <HomeSectionHeading title="เลือกตามเกม" subtitle="ตัวเลขคือจำนวนสินค้าที่พร้อมขาย" action={<HomeSeeAllLink href="/shop" />} />
+            <HomeSectionHeading title="เลือกตามเกม" subtitle="ตัวเลขคือจำนวนสินค้าที่พร้อมขาย" />
             <HomeGameChips games={games} />
           </section>
         )}
@@ -235,7 +263,19 @@ export default async function HomePage() {
           )}
         </section>
 
+        {machines.length > 0 && (
+          <section>
+            <HomeSectionHeading title="ตู้กาชา" subtitle="สุ่มรางวัลจากตู้ที่เปิดอยู่ตอนนี้" action={<HomeSeeAllLink href="/gachapons" />} />
+            <HomeGachaMachines
+              machines={machines.map((machine) => ({ ...machine, costAmount: Number(machine.costAmount) }))}
+              currencySettings={currencySettings}
+            />
+          </section>
+        )}
+
         <HomeHowToBuy />
+
+        {faqs.length > 0 && <HomeFaq articles={faqs} />}
 
         <NewsSection
           initialNews={news.map((article) => ({

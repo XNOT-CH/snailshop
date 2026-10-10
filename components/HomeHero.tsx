@@ -29,7 +29,7 @@ export function HomeHero({ siteName, description, stats }: Readonly<HomeHeroProp
 
   return (
     <section className="relative bg-[var(--card)] shadow-[0_0_0_100vmax_var(--card)] [clip-path:inset(0_-100vmax)]">
-      <div className="grid items-center gap-6 pb-8 pt-10 sm:pt-14 md:grid-cols-[1fr_auto] md:gap-10 md:pb-12">
+      <div className="grid items-center gap-8 py-10 sm:py-14 md:grid-cols-[1fr_auto] md:gap-12">
         <div className="min-w-0">
           <p className="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
             ร้านขายไอดีเกม
@@ -47,23 +47,22 @@ export function HomeHero({ siteName, description, stats }: Readonly<HomeHeroProp
               {TOPUP_LABEL}
             </Link>
           </div>
+          <div className="mt-10 grid grid-cols-3 gap-3 sm:flex sm:flex-wrap sm:gap-x-10 sm:gap-y-4">
+            {statItems.map(({ icon: Icon, value, label }) => (
+              <div key={label} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+                <Icon className="h-6 w-6 shrink-0 text-primary" aria-hidden="true" />
+                <div className="flex flex-col-reverse">
+                  <p className="text-xs text-muted-foreground sm:text-sm">{label}</p>
+                  <p className="text-xl font-bold text-foreground sm:text-2xl">{value.toLocaleString("th-TH")}</p>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
         <div className="relative mx-auto w-52 sm:w-64 md:w-80">
           <div aria-hidden="true" className="absolute inset-[8%] rounded-full bg-primary/10" />
           <Image src="/home-mascot-transparent.webp" alt="" width={320} height={320} priority className="relative w-full" />
         </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 pb-6">
-        {statItems.map(({ icon: Icon, value, label }) => (
-          <div key={label} className="flex flex-col items-center gap-1 px-2 py-5 text-center sm:flex-row sm:justify-center sm:gap-3 sm:text-left">
-            <Icon className="h-5 w-5 shrink-0 text-primary sm:h-6 sm:w-6" aria-hidden="true" />
-            <div>
-              <p className="text-xl font-bold text-foreground sm:text-2xl">{value.toLocaleString("th-TH")}</p>
-              <p className="text-xs text-muted-foreground sm:text-sm">{label}</p>
-            </div>
-          </div>
-        ))}
       </div>
     </section>
   );
