@@ -16,7 +16,7 @@ interface HomeHeroProps {
 export function HomeHero({ siteName, description }: Readonly<HomeHeroProps>) {
   return (
     <section className="relative bg-[var(--card)] shadow-[0_0_0_100vmax_var(--card)] [clip-path:inset(0_-100vmax)]">
-      <div className="grid items-center gap-8 py-10 sm:py-14 md:grid-cols-[1fr_auto] md:gap-12">
+      <div className="grid items-center gap-8 py-10 sm:py-14 md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] md:gap-12">
         <div className="min-w-0">
           <p className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:fill-mode-both inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
             ร้านขายไอดีเกม
@@ -35,10 +35,21 @@ export function HomeHero({ siteName, description }: Readonly<HomeHeroProps>) {
             </Link>
           </div>
         </div>
-        <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-700 motion-safe:delay-200 motion-safe:fill-mode-both relative mx-auto w-52 sm:w-64 md:w-80">
-          <div aria-hidden="true" className="absolute inset-[8%] rounded-full bg-primary/10" />
-          <Image src="/home-mascot-transparent.webp" alt="" width={320} height={320} priority className="relative w-full motion-safe:animate-[float_4s_ease-in-out_infinite]" />
-        </div>
+        <Link
+          href="/shop"
+          prefetch={false}
+          className="motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-700 motion-safe:delay-200 motion-safe:fill-mode-both block overflow-hidden rounded-2xl transition-[translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1"
+        >
+          <Image
+            src="/home-hero-banner.webp"
+            alt="SnailShop Level Up ใช้โค้ด DKE1246"
+            width={1683}
+            height={624}
+            priority
+            sizes="(max-width: 768px) 100vw, 60vw"
+            className="h-auto w-full"
+          />
+        </Link>
       </div>
     </section>
   );
