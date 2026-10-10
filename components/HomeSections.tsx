@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import Image from "next/image";
 import { ArrowRight, ChevronDown, Dices, ListChecks, PackageCheck, ShoppingCart, Wallet } from "lucide-react";
+import { HomeTopupPeek } from "@/components/HomeTopupPeek";
 import { RevealOnScroll } from "@/components/RevealOnScroll";
 import { ThumbImage } from "@/components/ThumbImage";
 import { formatCurrencyAmount, type PublicCurrencySettings } from "@/lib/currencySettings";
@@ -280,16 +281,17 @@ export function HomeFaq({ articles }: Readonly<{ articles: { id: string; questio
 
 // Interactive art: at rest the phone artwork floats on the band; on hover it
 // tips back in 3D and the viking rises out over its top. Touch screens have no
-// hover, so there the viking rests half-risen instead. Both links go to the
+// hover, so there the viking rests half-risen instead. On desktop the pose also
+// plays once by itself when the card first scrolls into view. Both links go to the
 // shop for now — there is no separate game top-up page.
 export function HomeTopupShowcase() {
   const ease = "ease-[cubic-bezier(0.22,1,0.36,1)]";
 
   return (
     <section className="grid items-center gap-12 md:grid-cols-2 md:gap-16">
-      <div className="group relative mx-auto w-full max-w-sm pt-16 [perspective:1200px]">
+      <HomeTopupPeek className="group relative mx-auto w-full max-w-sm pt-16 [perspective:1200px]">
         <div
-          className={`relative aspect-[2/3] origin-bottom transition-transform duration-700 ${ease} motion-safe:group-hover:[transform:rotateX(14deg)]`}
+          className={`relative aspect-[2/3] origin-bottom transition-transform duration-700 ${ease} motion-safe:group-hover:[transform:rotateX(14deg)] motion-safe:group-data-[peek]:[transform:rotateX(14deg)]`}
         >
           <Image
             src="/home-topup-phone-cutout.webp"
@@ -297,7 +299,7 @@ export function HomeTopupShowcase() {
             fill
             sizes="(max-width: 768px) 90vw, 384px"
             loading="lazy"
-            className={`object-contain transition-[opacity,scale] duration-700 ${ease} group-hover:scale-95 group-hover:opacity-60`}
+            className={`object-contain transition-[opacity,scale] duration-700 ${ease} group-hover:scale-95 group-hover:opacity-60 group-data-[peek]:scale-95 group-data-[peek]:opacity-60`}
           />
         </div>
         <Image
@@ -306,9 +308,9 @@ export function HomeTopupShowcase() {
           width={800}
           height={729}
           loading="lazy"
-          className={`pointer-events-none absolute bottom-[14%] left-1/2 w-[92%] -translate-x-1/2 drop-shadow-[0_16px_24px_rgba(0,0,0,0.45)] transition-[opacity,translate,scale] duration-700 ${ease} translate-y-[10%] scale-90 opacity-0 group-hover:-translate-y-[45%] group-hover:scale-100 group-hover:opacity-100 [@media(hover:none)]:-translate-y-[25%] [@media(hover:none)]:opacity-100`}
+          className={`pointer-events-none absolute bottom-[14%] left-1/2 w-[92%] -translate-x-1/2 drop-shadow-[0_16px_24px_rgba(0,0,0,0.45)] transition-[opacity,translate,scale] duration-700 ${ease} translate-y-[10%] scale-90 opacity-0 group-hover:-translate-y-[45%] group-hover:scale-100 group-hover:opacity-100 group-data-[peek]:-translate-y-[45%] group-data-[peek]:scale-100 group-data-[peek]:opacity-100 [@media(hover:none)]:-translate-y-[25%] [@media(hover:none)]:opacity-100`}
         />
-      </div>
+      </HomeTopupPeek>
 
       <div>
         <p className="text-sm font-semibold text-primary">เติมเกมออนไลน์</p>
