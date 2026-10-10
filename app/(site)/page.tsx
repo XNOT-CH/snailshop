@@ -225,19 +225,16 @@ export default async function HomePage() {
   // color, so scrolling reads as moving from one scene to the next. Tones are
   // assigned after empty sections drop out, so the alternation never breaks.
   const sectionCandidates: (false | { key: string; node: ReactNode })[] = [
-    games.length > 0 && {
-      key: "games",
-      node: (
-        <section>
-          <HomeSectionHeading title="เลือกตามเกม" />
-          <HomeGameChips games={games} />
-        </section>
-      ),
-    },
     {
       key: "products",
       node: (
         <section>
+          {games.length > 0 && (
+            <div className="mb-12">
+              <HomeSectionHeading title="เลือกตามเกม" />
+              <HomeGameChips games={games} />
+            </div>
+          )}
           <HomeSectionHeading title="สินค้าแนะนำ" action={<HomeSeeAllLink href="/shop" />} />
           {productTabs.length === 0 ? (
             <div className={`${themeClasses.surfaceSoft} rounded-2xl py-12 text-center`}>
