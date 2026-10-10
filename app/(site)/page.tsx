@@ -1,9 +1,16 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ArrowRight } from "lucide-react";
-import { ProductCard } from "@/components/ProductCard";
+import { auth } from "@/auth";
 import { HomeHero } from "@/components/HomeHero";
 import { HomeProductTabs } from "@/components/HomeProductTabs";
+import {
+  HomeGameChips,
+  HomeHowToBuy,
+  HomeJoinCta,
+  HomeProductTile,
+  HomeSectionHeading,
+  HomeSeeAllLink,
+  HomeServices,
+} from "@/components/HomeSections";
 import { NewsSection } from "@/components/NewsSection";
 import { WelcomeRedirect } from "@/components/WelcomeRedirect";
 import { db } from "@/lib/db";
@@ -11,7 +18,6 @@ import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { buildPageMetadata, DEFAULT_SITE_DESCRIPTION, resolveSiteName } from "@/lib/seo";
 import { cacheOrFetch, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
-import { getSoldCountMap } from "@/lib/features/orders/queries";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { products, newsArticles, orders, users } from "@/lib/db";
 import { themeClasses } from "@/lib/theme";
@@ -21,7 +27,7 @@ export const dynamic = "force-dynamic";
 
 const HOMEPAGE_PRODUCT_LIMIT = 12;
 const HOMEPAGE_CAROUSEL_PRODUCT_LIMIT = 12;
-const HOMEPAGE_GRID_PRODUCT_LIMIT = 10;
+const HOMEPAGE_TILE_LIMIT = 6;
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
@@ -138,7 +144,7 @@ export default async function HomePage() {
     eq(products.isSold, false),
     or(gt(products.stockCount, 0), isNull(products.stockCount)),
   );
-  const [stats, soldCountMap] = await Promise.all([
+  const [stats, games, session] = await Promise.all([
     cacheOrFetch(
       "home_hero_stats",
       async () => {
@@ -155,36 +161,28 @@ export default async function HomePage() {
       },
       CACHE_TTL.SHORT
     ),
-    getSoldCountMap([
-    ...featuredProducts.map((product) => product.id),
-    ...saleProducts.map((product) => product.id),
-    ...productList.map((product) => product.id),
-    ]),
+    cacheOrFetch(
+      "home_games",
+      async () =>
+        db.select({ name: products.category, count: count() })
+          .from(products)
+          .where(availableProductFilter)
+          .groupBy(products.category)
+          .orderBy(desc(count())),
+      CACHE_TTL.SHORT
+    ),
+    auth(),
   ]);
 
-  const renderGrid = (
-    items: { id: string; name: string; price: unknown; discountPrice?: unknown; currency: string | null; imageUrl: string | null; category: string; isSold: boolean | null }[],
-  ) => (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-      {items.slice(0, HOMEPAGE_GRID_PRODUCT_LIMIT).map((product, index) => (
-        <ProductCard
-          key={product.id}
-          id={product.id}
-          image={product.imageUrl || "/placeholder.jpg"}
-          title={product.name}
-          price={Number(product.price)}
-          discountPrice={product.discountPrice === null || product.discountPrice === undefined ? null : Number(product.discountPrice)}
-          currency={product.currency}
-          category={product.category}
-          isSold={Boolean(product.isSold)}
-          soldCount={soldCountMap.get(product.id) ?? 0}
-          index={index}
-          currencySettings={currencySettings}
-          initialPurchaseMaintenance={maintenance.purchase}
-        />
-      ))}
-    </div>
-  );
+  const toTile = (product: { id: string; name: string; price: unknown; discountPrice?: unknown; currency: string | null; imageUrl: string | null; category: string }) => ({
+    id: product.id,
+    name: product.name,
+    price: Number(product.price),
+    discountPrice: product.discountPrice === null || product.discountPrice === undefined ? null : Number(product.discountPrice),
+    currency: product.currency,
+    imageUrl: product.imageUrl,
+    category: product.category,
+  });
 
   const productTabs = [
     { key: "featured", label: "แนะนำ", items: featuredProducts },
@@ -192,15 +190,24 @@ export default async function HomePage() {
     { key: "latest", label: "ใหม่ล่าสุด", items: showAllProducts ? productList : [] },
   ]
     .filter((tab) => tab.items.length > 0)
-    .map((tab) => ({ key: tab.key, label: tab.label, content: renderGrid(tab.items) }));
+    .map((tab) => ({
+      key: tab.key,
+      label: tab.label,
+      content: (
+        <div className="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {tab.items.slice(0, HOMEPAGE_TILE_LIMIT).map((product) => (
+            <HomeProductTile key={product.id} product={toTile(product)} currencySettings={currencySettings} />
+          ))}
+        </div>
+      ),
+    }));
 
   return (
     <div className="animate-page-enter">
       <WelcomeRedirect />
       <HomeHero siteName={siteName} description={siteSettings?.heroDescription} stats={stats} />
       {/* Solid page color edge to edge, so the site background image stays out of the home page. */}
-      <div className="space-y-12 bg-background py-10 shadow-[0_0_0_100vmax_var(--background)] [clip-path:inset(0_-100vmax)]">
-
+      <div className="space-y-14 bg-background py-10 shadow-[0_0_0_100vmax_var(--background)] [clip-path:inset(0_-100vmax)]">
         {maintenance.purchase.enabled && (
           <div className={`${themeClasses.alert} rounded-2xl px-4 py-3 text-sm`}>
             <p className="font-semibold">ระบบสั่งซื้อกำลังปิดปรับปรุงชั่วคราว</p>
@@ -208,14 +215,17 @@ export default async function HomePage() {
           </div>
         )}
 
+        <HomeServices />
+
+        {games.length > 0 && (
+          <section>
+            <HomeSectionHeading title="เลือกตามเกม" subtitle="ตัวเลขคือจำนวนสินค้าที่พร้อมขาย" action={<HomeSeeAllLink href="/shop" />} />
+            <HomeGameChips games={games} />
+          </section>
+        )}
+
         <section>
-          <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
-            <h2 className="text-xl font-bold leading-tight text-foreground sm:text-2xl">สินค้าแนะนำ</h2>
-            <Link href="/shop" prefetch={false} className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
-              ดูทั้งหมด
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
+          <HomeSectionHeading title="สินค้าแนะนำ" action={<HomeSeeAllLink href="/shop" />} />
           {productTabs.length === 0 ? (
             <div className={`${themeClasses.surfaceSoft} rounded-2xl py-12 text-center`}>
               <p className="text-muted-foreground text-lg">ยังไม่มีสินค้าในระบบ</p>
@@ -225,12 +235,16 @@ export default async function HomePage() {
           )}
         </section>
 
+        <HomeHowToBuy />
+
         <NewsSection
           initialNews={news.map((article) => ({
             ...article,
             createdAt: toSerializableDate(article.createdAt),
           }))}
         />
+
+        {!session?.user && <HomeJoinCta siteName={siteName} />}
       </div>
     </div>
   );
