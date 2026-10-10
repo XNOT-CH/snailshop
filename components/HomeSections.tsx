@@ -50,17 +50,15 @@ export function HomeServices() {
   ];
 
   return (
-    <nav aria-label="บริการ" className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+    <nav aria-label="บริการ" className="grid grid-cols-2 border-y border-border lg:grid-cols-4">
       {services.map(({ href, icon: Icon, title, text }) => (
         <Link
           key={href}
           href={href}
           prefetch={false}
-          className={`${themeClasses.surface} group flex items-center gap-3 rounded-2xl p-4 transition-colors hover:border-primary/40 sm:gap-4 sm:p-5`}
+          className="group flex items-center gap-3 border-border px-3 py-5 sm:gap-4 sm:px-6 [&:nth-child(even)]:border-l [&:nth-child(n+3)]:border-t lg:[&:nth-child(n+3)]:border-t-0 lg:[&:not(:first-child)]:border-l"
         >
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary sm:size-12">
-            <Icon className="h-5 w-5 sm:h-6 sm:w-6" />
-          </span>
+          <Icon className="h-6 w-6 shrink-0 text-primary" />
           <span className="min-w-0">
             <span className="block truncate font-semibold text-foreground group-hover:text-primary">{title}</span>
             <span className="block truncate text-xs text-muted-foreground sm:text-sm">{text}</span>
@@ -111,9 +109,9 @@ export function HomeProductTile({
     <Link
       href={`/product/${product.id}`}
       prefetch={false}
-      className={`${themeClasses.surface} group flex items-center gap-4 rounded-2xl p-3 transition-colors hover:border-primary/40`}
+      className="group flex items-center gap-4 rounded-xl border border-border bg-[var(--card)] p-3 transition-colors hover:border-primary/50"
     >
-      <div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-muted sm:size-24">
+      <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-muted sm:size-24">
         <ThumbImage src={product.imageUrl || "/placeholder.jpg"} alt={product.name} fill sizes="96px" loading="lazy" className="object-cover" />
       </div>
       <div className="min-w-0 flex-1">
@@ -150,7 +148,7 @@ export function HomeHowToBuy() {
   ];
 
   return (
-    <section className={`${themeClasses.surface} grid gap-8 rounded-2xl p-6 sm:p-10 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12`}>
+    <section className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12">
       <div>
         <p className="text-sm font-semibold text-primary">วิธีสั่งซื้อ</p>
         <h2 className="mt-2 text-3xl font-bold leading-tight text-foreground sm:text-4xl">
@@ -166,12 +164,10 @@ export function HomeHowToBuy() {
           <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
-      <ol className="divide-y divide-border">
+      <ol className="divide-y divide-border border-y border-border">
         {steps.map(({ icon: Icon, title, text }, index) => (
-          <li key={title} className="flex items-center gap-4 py-4 first:pt-0 last:pb-0">
-            <span className="flex size-12 shrink-0 items-center justify-center rounded-xl border border-border text-primary">
-              <Icon className="h-6 w-6" />
-            </span>
+          <li key={title} className="flex items-center gap-4 py-5">
+            <Icon className="h-6 w-6 shrink-0 text-primary" />
             <div className="min-w-0">
               <p className="font-semibold text-foreground">
                 <span className="mr-2 text-muted-foreground">{String(index + 1).padStart(2, "0")}</span>
@@ -189,7 +185,7 @@ export function HomeHowToBuy() {
 // Closing band, after the guide's last panel. Guests only — members are already in.
 export function HomeJoinCta({ siteName }: Readonly<{ siteName: string }>) {
   return (
-    <section className="flex flex-col items-start justify-between gap-6 rounded-2xl bg-primary px-6 py-10 text-primary-foreground sm:px-10 md:flex-row md:items-center">
+    <section className="flex flex-col items-start justify-between gap-6 rounded-xl bg-primary px-6 py-10 text-primary-foreground sm:px-10 md:flex-row md:items-center">
       <div>
         <h2 className="text-2xl font-bold sm:text-3xl">สมัครสมาชิก {siteName}</h2>
         <p className="mt-2 flex items-center gap-2 text-sm opacity-90">
