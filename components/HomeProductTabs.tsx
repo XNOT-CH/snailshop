@@ -31,7 +31,7 @@ export function HomeProductTabs({ tabs }: Readonly<HomeProductTabsProps>) {
               aria-selected={isActive}
               aria-controls={`home-panel-${tab.key}`}
               onClick={() => setActiveKey(tab.key)}
-              className={`h-9 rounded-full border px-4 text-sm font-medium transition-colors ${
+              className={`h-9 rounded-full border px-4 text-sm font-medium transition-colors duration-300 ease-out ${
                 isActive
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border text-muted-foreground hover:border-primary/40 hover:text-foreground"

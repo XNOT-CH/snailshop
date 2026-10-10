@@ -42,7 +42,7 @@ export function HomeGameChips({ games }: Readonly<{ games: { name: string }[] }>
           key={game.name}
           href={`/shop?category=${encodeURIComponent(game.name)}`}
           prefetch={false}
-          className="inline-flex h-10 items-center rounded-full border border-border bg-card px-4 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+          className="inline-flex h-10 items-center rounded-full border border-border bg-card px-4 text-sm font-medium text-foreground transition-colors duration-300 ease-out hover:border-primary hover:text-primary"
         >
           {game.name}
         </Link>
@@ -73,7 +73,7 @@ export function HomeProductTile({
     <Link
       href={`/product/${product.id}`}
       prefetch={false}
-      className="group flex items-center gap-4 rounded-xl border border-border bg-[var(--card)] p-3 transition-[border-color,transform] duration-200 hover:-translate-y-0.5 hover:border-primary/50"
+      className="group flex items-center gap-4 rounded-xl border border-border bg-[var(--card)] p-3 transition-[border-color,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 hover:border-primary/50"
     >
       <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-muted sm:size-24">
         <ThumbImage src={product.imageUrl || "/placeholder.jpg"} alt={product.name} fill sizes="96px" loading="lazy" className="object-cover" />
@@ -94,8 +94,8 @@ export function HomeProductTile({
           )}
         </div>
       </div>
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground">
-        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+      <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors duration-300 ease-out group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground">
+        <ArrowRight className="h-4 w-4 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-x-0.5" />
       </span>
     </Link>
   );
@@ -135,7 +135,7 @@ export function HomeGachaMachines({
                   fill
                   sizes="(max-width: 1024px) 50vw, 25vw"
                   loading="lazy"
-                  className="object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                  className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-muted-foreground">
@@ -143,7 +143,7 @@ export function HomeGachaMachines({
                 </div>
               )}
             </div>
-            <h3 className="mt-3 truncate font-semibold text-foreground group-hover:text-primary">{machine.name}</h3>
+            <h3 className="mt-3 truncate font-semibold text-foreground transition-colors duration-300 ease-out group-hover:text-primary">{machine.name}</h3>
             <p className="text-sm text-muted-foreground">{costText}</p>
           </Link>
           </RevealOnScroll>
@@ -213,7 +213,7 @@ export function HomeJoinCta({ siteName }: Readonly<{ siteName: string }>) {
         <Link
           href="/register"
           prefetch={false}
-          className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary-foreground px-6 text-sm font-semibold text-primary transition-opacity hover:opacity-90"
+          className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary-foreground px-6 text-sm font-semibold text-primary transition-opacity duration-300 ease-out hover:opacity-90"
         >
           สมัครสมาชิก
           <ArrowRight className="h-4 w-4" />
@@ -221,7 +221,7 @@ export function HomeJoinCta({ siteName }: Readonly<{ siteName: string }>) {
         <Link
           href="/login"
           prefetch={false}
-          className="inline-flex h-11 items-center rounded-xl border border-primary-foreground/40 px-6 text-sm font-semibold transition-colors hover:bg-primary-foreground/10"
+          className="inline-flex h-11 items-center rounded-xl border border-primary-foreground/40 px-6 text-sm font-semibold transition-colors duration-300 ease-out hover:bg-primary-foreground/10"
         >
           เข้าสู่ระบบ
         </Link>
@@ -249,7 +249,7 @@ export function HomeFaq({ articles }: Readonly<{ articles: { id: string; questio
           <details key={article.id} className="group py-5">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-foreground [&::-webkit-details-marker]:hidden">
               {article.question}
-              <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" />
+              <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180" />
             </summary>
             <p className="mt-3 whitespace-pre-wrap text-sm text-muted-foreground">{article.answer}</p>
           </details>
