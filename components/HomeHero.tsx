@@ -1,46 +1,64 @@
 import Image from "next/image";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { TOPUP_LABEL } from "@/lib/navigation";
 
 interface HomeHeroProps {
   siteName: string;
   description?: string | null;
 }
 
-// A short band with the promo banner centred on it, like a storefront banner
-// strip. The banner already carries its own headline and call to action, so the
-// site name is a screen-reader-only h1. Behind it, a blurred, faded copy of the
-// same banner fills the band edge to edge so the sides aren't bare.
+// A short band: site title on the left, the promo banner behind it on the
+// right. The banner keeps its full height (nothing cropped) pinned to the right
+// screen edge, and its left edge fades out through a mask into a blurred copy
+// of itself that fills the rest of the band, so the title sits on soft colour
+// rather than bare space. On phones the banner fills the band and fades towards
+// the title at the bottom instead.
 export function HomeHero({ siteName, description }: Readonly<HomeHeroProps>) {
   return (
     <section
       id="home-hero"
-      className="relative isolate bg-[var(--card)] py-5 shadow-[0_0_0_100vmax_var(--card)] [clip-path:inset(0_-100vmax)] sm:py-8"
+      className="relative isolate flex min-h-[440px] flex-col justify-end bg-[var(--card)] py-8 shadow-[0_0_0_100vmax_var(--card)] [clip-path:inset(0_-100vmax)] md:h-[360px] md:min-h-0 md:justify-center"
     >
-      {/* The backdrop reaches the screen edge, past the page container; clip the
+      {/* The banner reaches the screen edge, past the page container; clip the
           sideways overflow so it never adds a horizontal scrollbar. */}
       <style href="home-hero-clip" precedence="default">{"html:has(#home-hero){overflow-x:clip}"}</style>
-      <div aria-hidden="true" className="absolute inset-y-0 left-[calc(50%-50vw)] -z-10 w-screen overflow-hidden">
+      <div aria-hidden="true" className="absolute inset-y-0 left-[calc(50%-50vw)] -z-20 w-screen overflow-hidden">
         <Image src="/home-hero-banner.webp" alt="" fill sizes="10vw" className="scale-110 object-cover opacity-30 blur-2xl" />
       </div>
-      <h1 className="sr-only">{siteName}</h1>
-      <Link
-        href="/shop"
-        prefetch={false}
-        className="motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95 motion-safe:duration-700 motion-safe:fill-mode-both mx-auto block max-w-3xl overflow-hidden rounded-2xl shadow-[0_16px_40px_-16px_rgba(0,0,0,0.5)] transition-[translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1"
+      <div
+        aria-hidden="true"
+        className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-700 motion-safe:fill-mode-both absolute inset-y-0 right-[calc(50%-50vw)] -z-10 w-screen [mask-image:linear-gradient(to_top,transparent_30%,black_65%)] md:aspect-[1683/624] md:w-auto md:[mask-image:linear-gradient(to_right,transparent,black_35%)]"
       >
         <Image
           src="/home-hero-banner.webp"
-          alt={`${siteName} Level Up ใช้โค้ด DKE1246`}
-          width={1683}
-          height={624}
+          alt=""
+          fill
           priority
-          sizes="(max-width: 768px) 100vw, 768px"
-          className="h-auto w-full"
+          sizes="(max-width: 768px) 100vw, 980px"
+          className="object-cover object-[46%_center]"
         />
-      </Link>
-      {description?.trim() && (
-        <p className="mx-auto mt-5 max-w-3xl text-center text-base text-muted-foreground">{description.trim()}</p>
-      )}
+      </div>
+      <div className="max-w-md">
+        <p className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:fill-mode-both inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+          ร้านขายไอดีเกม
+        </p>
+        <h1 className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:fill-mode-both motion-safe:delay-100 mt-5 text-4xl font-bold leading-tight text-foreground sm:text-6xl">{siteName}</h1>
+        {description?.trim() && (
+          <p className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:fill-mode-both motion-safe:delay-200 mt-4 text-base text-muted-foreground">{description.trim()}</p>
+        )}
+        <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:fill-mode-both motion-safe:delay-300 mt-8 flex flex-wrap gap-3">
+          <Link href="/shop" prefetch={false} className={cn(buttonVariants({ size: "lg" }), "rounded-xl px-6 duration-300 ease-out")}>
+            ดูสินค้าทั้งหมด
+            <ArrowRight />
+          </Link>
+          <Link href="/dashboard/topup" prefetch={false} className={cn(buttonVariants({ variant: "outline", size: "lg" }), "rounded-xl px-6 duration-300 ease-out")}>
+            {TOPUP_LABEL}
+          </Link>
+        </div>
+      </div>
     </section>
   );
 }
