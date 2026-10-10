@@ -189,33 +189,30 @@ export function HomeHowToBuy() {
 // Closing band, after the guide's last panel. Guests only — members are already in.
 export function HomeJoinCta({ siteName }: Readonly<{ siteName: string }>) {
   return (
-    <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0a0e14] px-6 py-10 text-[#f5f7fa] sm:px-10">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-[linear-gradient(115deg,transparent_60%,rgba(88,166,255,0.12)_60%,rgba(88,166,255,0.12)_72%,transparent_72%)]" />
-      <div className="relative flex flex-col items-start justify-between gap-6 md:flex-row md:items-center">
-        <div>
-          <h2 className="text-2xl font-bold sm:text-3xl">สมัครสมาชิก {siteName}</h2>
-          <p className="mt-2 flex items-center gap-2 text-sm text-[#9ca3af]">
-            <ListChecks className="h-4 w-4 shrink-0 text-[#58a6ff]" />
-            สมาชิกซื้อสินค้า ทำภารกิจรายวัน และสะสมรางวัลได้
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/register"
-            prefetch={false}
-            className="inline-flex h-11 items-center gap-2 rounded-xl bg-[#58a6ff] px-6 text-sm font-semibold text-[#0a0e14] transition-colors hover:bg-[#7cc3ff]"
-          >
-            สมัครสมาชิก
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link
-            href="/login"
-            prefetch={false}
-            className="inline-flex h-11 items-center rounded-xl border border-white/25 px-6 text-sm font-semibold transition-colors hover:bg-white/10"
-          >
-            เข้าสู่ระบบ
-          </Link>
-        </div>
+    <section className="flex flex-col items-start justify-between gap-6 rounded-2xl bg-primary px-6 py-10 text-primary-foreground sm:px-10 md:flex-row md:items-center">
+      <div>
+        <h2 className="text-2xl font-bold sm:text-3xl">สมัครสมาชิก {siteName}</h2>
+        <p className="mt-2 flex items-center gap-2 text-sm opacity-90">
+          <ListChecks className="h-4 w-4 shrink-0" />
+          สมาชิกซื้อสินค้า ทำภารกิจรายวัน และสะสมรางวัลได้
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <Link
+          href="/register"
+          prefetch={false}
+          className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary-foreground px-6 text-sm font-semibold text-primary transition-opacity hover:opacity-90"
+        >
+          สมัครสมาชิก
+          <ArrowRight className="h-4 w-4" />
+        </Link>
+        <Link
+          href="/login"
+          prefetch={false}
+          className="inline-flex h-11 items-center rounded-xl border border-primary-foreground/40 px-6 text-sm font-semibold transition-colors hover:bg-primary-foreground/10"
+        >
+          เข้าสู่ระบบ
+        </Link>
       </div>
     </section>
   );
