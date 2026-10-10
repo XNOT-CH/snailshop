@@ -39,13 +39,13 @@ export function NewsSection({ initialNews }: Readonly<NewsSectionProps>) {
     }
 
     return (
-        <section className="mt-0 sm:mt-6">
+        <section>
             {/* Section Header */}
-            <div className="mb-5 text-center">
+            <div className="mb-4">
                 <h2 className="text-xl sm:text-2xl font-bold text-foreground">
                     ข่าวสารและโปรโมชั่น
                 </h2>
-                <p className="text-xs text-muted-foreground uppercase tracking-widest mt-1">
+                <p className="mt-1 text-sm text-muted-foreground">
                     NEWS AND PROMOTIONS
                 </p>
             </div>
@@ -57,7 +57,7 @@ export function NewsSection({ initialNews }: Readonly<NewsSectionProps>) {
                     return (
                         <article
                             key={article.id}
-                            className={`${themeClasses.surface} group flex flex-col overflow-hidden rounded-xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_20px_38px_-28px_rgba(39,71,121,0.18)] dark:hover:shadow-[0_24px_48px_-32px_rgba(0,0,0,0.9)]`}
+                            className={`${themeClasses.surface} group flex flex-col overflow-hidden rounded-xl transition-colors duration-200 hover:border-primary/40`}
                         >
                             <div className="relative w-full aspect-video overflow-hidden bg-muted">
                                 {article.imageUrl ? (

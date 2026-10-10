@@ -52,12 +52,12 @@ export function SaleProducts({
                 itemCount={products.length}
                 intervalMs={6000}
                 scrollLabel="เซกชันสินค้าโปรโมชัน"
-                containerClassName="-mt-3 flex gap-4 overflow-x-auto scrollbar-hide pb-10 pt-3 px-3 snap-x snap-mandatory"
+                containerClassName="-mt-3 flex gap-4 overflow-x-auto scrollbar-hide pb-2 pt-3 px-3 snap-x snap-mandatory"
                 header={(
                     <div className="flex min-w-0 items-center gap-2">
-                        <Tag className="h-6 w-6 text-primary" />
-                        <h2 className="text-2xl font-bold">สินค้าลดราคา</h2>
-                        <span className={`${themeClasses.sale} rounded-full px-2 py-1 text-xs font-bold text-primary-foreground animate-pulse`}>SALE</span>
+                        <Tag className="h-5 w-5 text-primary sm:h-6 sm:w-6" />
+                        <h2 className="text-xl font-bold leading-tight text-foreground sm:text-2xl">สินค้าลดราคา</h2>
+                        <span className={`${themeClasses.sale} rounded-full px-2 py-1 text-xs font-bold text-white`}>SALE</span>
                     </div>
                 )}
             >

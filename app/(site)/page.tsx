@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ProductCard } from "@/components/ProductCard";
 import { HeroBanner } from "@/components/HeroBanner";
+import { HomeHero } from "@/components/HomeHero";
 import { FeaturedProducts } from "@/components/FeaturedProducts";
 import { SaleProducts } from "@/components/SaleProducts";
 import { NewsSection } from "@/components/NewsSection";
@@ -107,7 +108,7 @@ export default async function HomePage() {
     ),
   ]);
   const showAllProducts = siteSettings?.showAllProducts ?? true;
-  const pageHeading = `${resolveSiteName(siteSettings?.heroTitle)} ร้านขายไอดีเกม`;
+  const siteName = resolveSiteName(siteSettings?.heroTitle);
   const maintenance = {
     gacha: getMaintenanceState("gacha"),
     purchase: getMaintenanceState("purchase"),
@@ -141,8 +142,8 @@ export default async function HomePage() {
   return (
     <div className="animate-page-enter">
       <WelcomeRedirect />
-      <div className={`${themeClasses.shell} relative left-1/2 w-screen -translate-x-1/2 space-y-6 px-3 pb-0 pt-4 sm:left-auto sm:w-auto sm:translate-x-0 sm:px-5 sm:py-6 lg:px-6`}>
-        <h1 className="sr-only">{pageHeading}</h1>
+      <div className={`${themeClasses.shell} relative left-1/2 w-screen -translate-x-1/2 space-y-10 px-3 pb-6 pt-4 sm:left-auto sm:w-auto sm:translate-x-0 sm:px-5 sm:py-8 lg:px-8`}>
+        <HomeHero siteName={siteName} description={siteSettings?.heroDescription} />
 
         <div className="relative left-1/2 w-screen -translate-x-1/2 px-2 sm:left-auto sm:w-auto sm:translate-x-0 sm:px-0">
           <HeroBanner />
@@ -174,14 +175,14 @@ export default async function HomePage() {
         />
 
         {showAllProducts && (
-          <>
+          <section>
             <div>
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
+                  <h2 className="text-xl font-bold leading-tight text-foreground sm:text-2xl">
                     สินค้าล่าสุด
                   </h2>
-                  <p className="text-muted-foreground mt-1">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     เลือกดูรายการใหม่ก่อน แล้วไปหน้าร้านค้าเพื่อค้นหาทั้งหมด
                   </p>
                 </div>
@@ -196,13 +197,13 @@ export default async function HomePage() {
             </div>
 
             {productList.length === 0 ? (
-              <div className={`${themeClasses.surfaceSoft} rounded-2xl py-12 text-center`}>
+              <div className={`${themeClasses.surfaceSoft} mt-4 rounded-2xl py-12 text-center`}>
                 <p className="text-muted-foreground text-lg">
                   ยังไม่มีสินค้าในระบบ
                 </p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                 {productList.map((product, index) => (
                   <ProductCard
                     key={product.id}
@@ -221,7 +222,7 @@ export default async function HomePage() {
                 ))}
               </div>
             )}
-          </>
+          </section>
         )}
 
         <NewsSection

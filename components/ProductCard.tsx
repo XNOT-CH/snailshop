@@ -48,13 +48,13 @@ export function ProductCard({
         <RevealOnScroll index={index}>
             <div
                 className={`
-                    ${themeClasses.surface} storefront-product-card group relative flex flex-col overflow-hidden rounded-2xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-[0_20px_40px_-12px_rgba(39,71,121,0.22)] dark:hover:shadow-[0_24px_48px_-16px_rgba(0,0,0,0.7)]
+                    ${themeClasses.surface} storefront-product-card group relative flex flex-col overflow-hidden rounded-2xl transition-colors duration-200 hover:border-primary/40
                 `}
             >
                 <div className={`${themeClasses.surfaceMedia} relative m-2 mb-0 aspect-square overflow-hidden rounded-xl sm:m-2.5 sm:mb-0`}>
                     {isUnavailable && (
                         <div className="absolute inset-0 z-10 flex items-center justify-center bg-black/40">
-                            <span className="px-4 py-2 bg-primary text-primary-foreground font-bold rounded-full transform -rotate-12">
+                            <span className="rounded-lg bg-background/90 px-4 py-2 text-sm font-bold text-foreground">
                                 {isSold ? "ขายแล้ว" : "สินค้าหมด"}
                             </span>
                         </div>
@@ -84,7 +84,7 @@ export function ProductCard({
                         </Link>
                     </h3>
                     <div className="flex flex-wrap items-baseline gap-x-2">
-                        <p className={`text-base font-bold leading-tight sm:text-lg ${hasDiscount ? "text-red-500 dark:text-red-400" : "text-primary"}`}>
+                        <p className={`text-base font-bold leading-tight sm:text-lg ${hasDiscount ? themeClasses.saleText : "text-foreground"}`}>
                             {formatCurrencyAmount(activePrice, currency, currencySettings)}
                         </p>
                         {hasDiscount && (
