@@ -54,15 +54,17 @@ export function HomeSeeAllLink({ href }: Readonly<{ href: string }>) {
   );
 }
 
+// On phones the chips sit in one row that swipes sideways, bleeding to the
+// screen edges, instead of wrapping into a tall stack.
 export function HomeGameChips({ games }: Readonly<{ games: { name: string }[] }>) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="-mx-[calc(50vw-50%)] flex gap-2 overflow-x-auto px-[calc(50vw-50%)] [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
       {games.map((game) => (
         <Link
           key={game.name}
           href={`/shop?category=${encodeURIComponent(game.name)}`}
           prefetch={false}
-          className="inline-flex h-10 items-center rounded-full border border-border bg-card px-4 text-sm font-medium text-foreground transition-colors duration-300 ease-out hover:border-primary hover:text-primary"
+          className="inline-flex h-10 shrink-0 items-center whitespace-nowrap rounded-full border border-border bg-card px-4 text-sm font-medium text-foreground transition-colors duration-300 ease-out hover:border-primary hover:text-primary"
         >
           {game.name}
         </Link>
@@ -134,8 +136,14 @@ export function HomeGachaMachines({
   machines,
   currencySettings,
 }: Readonly<{ machines: HomeGachaMachine[]; currencySettings?: PublicCurrencySettings }>) {
+  // Fewer machines get fewer, wider columns so the row never sits half empty.
+  const columns = ["grid-cols-1 max-w-3xl", "grid-cols-2", "grid-cols-2 lg:grid-cols-3", "grid-cols-2 lg:grid-cols-4"][
+    Math.min(machines.length, 4) - 1
+  ];
+  const imageAspect = machines.length < 4 ? "aspect-square sm:aspect-video" : "aspect-square";
+
   return (
-    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+    <div className={`grid gap-3 sm:gap-4 ${columns}`}>
       {machines.map((machine, index) => {
         const cost = normalizeGachaCost(machine.costType, machine.costAmount);
         const costText = cost.costType === "FREE"
@@ -147,7 +155,7 @@ export function HomeGachaMachines({
         return (
           <RevealOnScroll key={machine.id} index={index}>
           <Link href={href} prefetch={false} className="group block">
-            <div className="relative aspect-square overflow-hidden rounded-xl border border-border bg-muted">
+            <div className={`relative ${imageAspect} overflow-hidden rounded-xl border border-border bg-muted`}>
               {machine.imageUrl ? (
                 <Image
                   src={machine.imageUrl}
@@ -200,9 +208,9 @@ export function HomeHowToBuy() {
           <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
-      <ol className="divide-y divide-border border-y border-border">
+      <ol className="space-y-8">
         {steps.map(({ icon: Icon, title, text }, index) => (
-          <li key={title} className="flex items-center gap-4 py-5">
+          <li key={title} className="flex items-center gap-4">
             <Icon className="h-6 w-6 shrink-0 text-primary" />
             <div className="min-w-0">
               <p className="font-semibold text-foreground">
@@ -264,9 +272,9 @@ export function HomeFaq({ articles }: Readonly<{ articles: { id: string; questio
           <ArrowRight className="h-4 w-4" />
         </Link>
       </div>
-      <div className="divide-y divide-border border-y border-border">
+      <div className="space-y-6">
         {articles.map((article) => (
-          <details key={article.id} className="group py-5">
+          <details key={article.id} className="group">
             <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-foreground [&::-webkit-details-marker]:hidden">
               {article.question}
               <ChevronDown className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-open:rotate-180" />

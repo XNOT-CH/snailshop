@@ -14,20 +14,21 @@ interface HomeHeroProps {
 // right. The banner is pinned to the right screen edge and kept wide so it
 // dominates the band; at this height that crops its bottom strip (logos and
 // fine print). Its left edge fades out through a mask into the band colour
-// behind the title. On phones the banner fills the band and fades towards
-// the title at the bottom instead.
+// behind the title. On phones a background crop would lose the banner's text,
+// so there it sits above the title as a full-width strip at its own ratio,
+// minus the same bottom strip.
 export function HomeHero({ siteName, description }: Readonly<HomeHeroProps>) {
   return (
     <section
       id="home-hero"
-      className="relative isolate flex min-h-[440px] flex-col justify-end bg-[var(--hero-band)] py-8 shadow-[0_0_0_100vmax_var(--hero-band)] [--hero-band:var(--card)] dark:[--hero-band:#08203f] [clip-path:inset(0_-100vmax)] md:h-[360px] md:min-h-0 md:justify-center"
+      className="relative isolate flex flex-col bg-[var(--hero-band)] pb-8 shadow-[0_0_0_100vmax_var(--hero-band)] [--hero-band:var(--card)] dark:[--hero-band:#08203f] [clip-path:inset(0_-100vmax)] md:h-[360px] md:justify-center md:py-8"
     >
       {/* The banner reaches the screen edge, past the page container; clip the
           sideways overflow so it never adds a horizontal scrollbar. */}
       <style href="home-hero-clip" precedence="default">{"html:has(#home-hero){overflow-x:clip}"}</style>
       <div
         aria-hidden="true"
-        className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-700 motion-safe:fill-mode-both absolute inset-y-0 right-[calc(50%-50vw)] -z-10 w-screen [mask-image:linear-gradient(to_top,transparent_30%,black_65%)] md:w-[min(100vw,1450px)] md:[mask-image:linear-gradient(to_right,transparent,black_35%)]"
+        className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-700 motion-safe:fill-mode-both relative -z-10 ml-[calc(50%-50vw)] aspect-[1683/575] w-screen md:absolute md:inset-y-0 md:right-[calc(50%-50vw)] md:ml-0 md:aspect-auto md:w-[min(100vw,1450px)] md:[mask-image:linear-gradient(to_right,transparent,black_35%)]"
       >
         <Image
           src="/home-hero-banner.webp"
@@ -35,7 +36,7 @@ export function HomeHero({ siteName, description }: Readonly<HomeHeroProps>) {
           fill
           priority
           sizes="(max-width: 768px) 100vw, 1450px"
-          className="object-cover object-[46%_center] md:object-[center_19%]"
+          className="object-cover object-top md:object-[center_19%]"
         />
       </div>
       {/* Where the banner runs under the title (narrower desktops), fade it out
@@ -47,7 +48,7 @@ export function HomeHero({ siteName, description }: Readonly<HomeHeroProps>) {
         className="absolute inset-y-0 left-[calc(50%-50vw)] -z-10 hidden w-[calc(50vw-50%+34rem)] md:block"
         style={{ background: "linear-gradient(to right, var(--hero-band) calc(100% - 12rem), transparent)" }}
       />
-      <div className="max-w-md">
+      <div className="mt-6 max-w-md md:mt-0">
         <p className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:fill-mode-both inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
           ร้านขายไอดีเกม
         </p>
