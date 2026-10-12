@@ -54,9 +54,7 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
                 if (rotates && Math.abs(dx) >= SWIPE_MIN_PX) step(dx < 0 ? 1 : -1);
             }}
         >
-            {/* The outer edges fade into the band, so the neighbours trail off
-                toward the screen sides instead of ending in a hard cut. */}
-            <div className="relative h-[calc(var(--slide-w)*3/8)] overflow-hidden md:[mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
+            <div className="relative h-[calc(var(--slide-w)*3/8)] overflow-hidden">
                 {track.map((banner, index) => {
                     const rel = offset(index, active);
                     const jumped = Math.abs(rel - offset(index, from)) > 1;
@@ -68,7 +66,7 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
                             key={`${banner.id}-${index}`}
                             aria-hidden={!isActive}
                             onClick={() => !isActive && step(rel)}
-                            className={`group/slide absolute left-1/2 top-0 aspect-[8/3] w-[var(--slide-w)] overflow-hidden rounded-2xl bg-muted ${
+                            className={`group/slide absolute left-1/2 top-0 aspect-[8/3] w-[var(--slide-w)] overflow-hidden rounded-xl bg-muted ${
                                 jumped ? "" : "transition-[translate,scale] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
                             } ${isActive ? "cursor-default" : "scale-[0.92] cursor-pointer"}`}
                             style={{ translate: `calc(-50% + ${rel} * (var(--slide-w) + ${GAP_PX}px)) 0` }}
@@ -87,13 +85,17 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
                                     {banner.subtitle && <span className="mt-1 max-w-[75%] text-xs text-white/90 drop-shadow sm:mt-3 sm:text-lg">{banner.subtitle}</span>}
                                 </span>
                             )}
-                            {/* Neighbours are dimmed with a dark veil rather than
-                                transparency, which washed out on the light band. */}
+                            {/* Neighbours dissolve into the band from their outer side:
+                                solid band colour over the outer third, easing to a
+                                half veil at the edge next to the centre banner. */}
                             <span
                                 aria-hidden="true"
-                                className={`pointer-events-none absolute inset-0 bg-black transition-opacity duration-700 ease-out ${
-                                    isActive ? "opacity-0" : "opacity-[0.55] group-hover/slide:opacity-[0.35]"
+                                className={`pointer-events-none absolute inset-0 transition-opacity duration-700 ease-out ${
+                                    isActive ? "opacity-0" : "opacity-100 group-hover/slide:opacity-80"
                                 }`}
+                                style={{
+                                    background: `linear-gradient(${rel < 0 ? "to right" : "to left"}, var(--hero-band) 30%, color-mix(in srgb, var(--hero-band) 45%, transparent))`,
+                                }}
                             />
                         </div>
                     );
