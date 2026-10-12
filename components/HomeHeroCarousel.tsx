@@ -10,7 +10,6 @@ const SWIPE_MIN_PX = 40;
 // Slides sit this far either side of the centre one. Fewer than five would let
 // the slide that wraps from the far left to the far right cross the screen.
 const MIN_TRACK = 5;
-const GAP_PX = 16;
 
 // Centre banner whole at 8:3, its neighbours peeking in dimmed at both sides,
 // rotating on its own. Every slide is positioned by its distance from the
@@ -41,7 +40,7 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
 
     return (
         <div
-            className="group relative ml-[calc(50%-50vw)] w-screen [--slide-w:88vw] md:[--slide-w:min(72vw,720px)]"
+            className="group relative ml-[calc(50%-50vw)] w-screen [--slide-w:88vw] md:[--slide-w:min(50vw,692px)]"
             onMouseEnter={() => setPaused(true)}
             onMouseLeave={() => setPaused(false)}
             onFocus={() => setPaused(true)}
@@ -71,8 +70,8 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
                             onClick={() => !isActive && step(rel)}
                             className={`group/slide absolute left-1/2 top-0 aspect-[8/3] w-[var(--slide-w)] overflow-hidden rounded-xl bg-muted ${
                                 jumped ? "" : "transition-[translate,scale] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                            } ${isActive ? "cursor-default" : "scale-[0.92] cursor-pointer"}`}
-                            style={{ translate: `calc(-50% + ${rel} * (var(--slide-w) + ${GAP_PX}px)) 0` }}
+                            } ${isActive ? "cursor-default" : "scale-[0.94] cursor-pointer"}`}
+                            style={{ translate: `calc(-50% + ${rel} * var(--slide-w)) 0` }}
                         >
                             <Image
                                 src={banner.image}
