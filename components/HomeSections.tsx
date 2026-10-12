@@ -79,12 +79,11 @@ export function HomeGameChips({ games }: Readonly<{ games: { name: string }[] }>
 // give that app. Drop a square logo into public/home-apps/ and set `image`;
 // entries without one show their first letter. Empty the list to hide the strip.
 export const HOME_PREMIUM_APPS: { name: string; image?: string }[] = [
-  { name: "Netflix" },
-  { name: "YouTube Premium" },
-  { name: "Spotify" },
-  { name: "Disney+" },
-  { name: "Canva Pro" },
-  { name: "ChatGPT Plus" },
+  { name: "Netflix", image: "/home-apps/netflix.webp" },
+  { name: "YouTube Premium", image: "/home-apps/youtube-premium.webp" },
+  { name: "Spotify", image: "/home-apps/spotify.webp" },
+  { name: "Canva Pro", image: "/home-apps/canva-pro.webp" },
+  { name: "ChatGPT Plus", image: "/home-apps/chatgpt-plus.webp" },
 ];
 
 export function HomePremiumApps({ apps }: Readonly<{ apps: { name: string; image?: string }[] }>) {
@@ -99,7 +98,7 @@ export function HomePremiumApps({ apps }: Readonly<{ apps: { name: string; image
             prefetch={false}
             className="group flex w-20 shrink-0 flex-col items-center gap-2 sm:w-24"
           >
-            <span className="relative flex size-16 items-center justify-center overflow-hidden rounded-2xl bg-muted text-2xl font-bold text-muted-foreground transition-[translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 sm:size-20">
+            <span className="relative flex size-16 items-center justify-center overflow-hidden rounded-2xl bg-muted ring-1 ring-border text-2xl font-bold text-muted-foreground transition-[translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 sm:size-20">
               {app.image ? (
                 <Image src={app.image} alt={app.name} fill sizes="80px" loading="lazy" className="object-cover" />
               ) : (
