@@ -54,7 +54,10 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
                 if (rotates && Math.abs(dx) >= SWIPE_MIN_PX) step(dx < 0 ? 1 : -1);
             }}
         >
-            <div className="relative h-[calc(var(--slide-w)*3/8)] overflow-hidden">
+            {/* Past the centre banner the neighbours stay lit for about three
+                quarters of a slide, then fade into the band by one slide width
+                out: the distances measured off the reference storefront. */}
+            <div className="relative h-[calc(var(--slide-w)*3/8)] overflow-hidden md:[mask-image:linear-gradient(to_right,transparent_calc(50%-var(--slide-w)),black_calc(50%-var(--slide-w)*0.76),black_calc(50%+var(--slide-w)*0.76),transparent_calc(50%+var(--slide-w)))]">
                 {track.map((banner, index) => {
                     const rel = offset(index, active);
                     const jumped = Math.abs(rel - offset(index, from)) > 1;
@@ -85,17 +88,13 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
                                     {banner.subtitle && <span className="mt-1 max-w-[75%] text-xs text-white/90 drop-shadow sm:mt-3 sm:text-lg">{banner.subtitle}</span>}
                                 </span>
                             )}
-                            {/* Neighbours dissolve into the band from their outer side:
-                                solid band colour over the outer third, easing to a
-                                half veil at the edge next to the centre banner. */}
+                            {/* Neighbours sit at half brightness under a veil of the
+                                band colour; the band mask above does the fading. */}
                             <span
                                 aria-hidden="true"
-                                className={`pointer-events-none absolute inset-0 transition-opacity duration-700 ease-out ${
-                                    isActive ? "opacity-0" : "opacity-100 group-hover/slide:opacity-80"
+                                className={`pointer-events-none absolute inset-0 bg-[var(--hero-band)] transition-opacity duration-700 ease-out ${
+                                    isActive ? "opacity-0" : "opacity-50 group-hover/slide:opacity-30"
                                 }`}
-                                style={{
-                                    background: `linear-gradient(${rel < 0 ? "to right" : "to left"}, var(--hero-band) 30%, color-mix(in srgb, var(--hero-band) 45%, transparent))`,
-                                }}
                             />
                         </div>
                     );
