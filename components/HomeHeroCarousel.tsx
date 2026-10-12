@@ -25,9 +25,9 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
     const rotates = count > 1;
 
     // Restarted on every change of slide, so a manual pick gets a full interval.
-    // Reduced motion still rotates: Windows reports it whenever its animation
-    // effects are off, which left the banners stuck on the first one. Those
-    // visitors get an instant swap instead of the slide (motion-reduce below).
+    // Reduced motion still rotates, and still slides: Windows reports it
+    // whenever its animation effects are off, which left the banners stuck on
+    // the first one, and the owner wants the slide the same everywhere.
     useEffect(() => {
         if (!rotates || paused) return;
         const timer = setTimeout(() => setSlide((s) => ({ active: (s.active + 1) % track.length, from: s.active })), ROTATE_MS);
@@ -72,7 +72,7 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
                             aria-hidden={!isActive}
                             onClick={() => !isActive && step(rel)}
                             className={`group/slide absolute left-1/2 top-0 aspect-[8/3] w-[var(--slide-w)] overflow-hidden rounded-xl bg-[var(--hero-band)] ${
-                                jumped ? "" : "transition-[translate,scale] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
+                                jumped ? "" : "transition-[translate,scale] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
                             } ${isActive ? "cursor-default" : "scale-[0.94] cursor-pointer"}`}
                             style={{ translate: `calc(-50% + ${rel} * var(--slide-w)) 0` }}
                         >
