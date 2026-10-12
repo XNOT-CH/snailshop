@@ -41,7 +41,7 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
 
     return (
         <div
-            className="group relative ml-[calc(50%-50vw)] w-screen [--slide-w:88vw] md:[--slide-w:min(72vw,960px)]"
+            className="group relative ml-[calc(50%-50vw)] w-screen [--slide-w:88vw] md:[--slide-w:min(72vw,720px)]"
             onMouseEnter={() => setPaused(true)}
             onMouseLeave={() => setPaused(false)}
             onFocus={() => setPaused(true)}
@@ -69,15 +69,15 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
                             aria-hidden={!isActive}
                             onClick={() => !isActive && step(rel)}
                             className={`group/slide absolute left-1/2 top-0 aspect-[8/3] w-[var(--slide-w)] overflow-hidden rounded-2xl bg-muted ${
-                                jumped ? "" : "transition-[translate] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                            } ${isActive ? "cursor-default" : "cursor-pointer"}`}
+                                jumped ? "" : "transition-[translate,scale] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                            } ${isActive ? "cursor-default" : "scale-[0.92] cursor-pointer"}`}
                             style={{ translate: `calc(-50% + ${rel} * (var(--slide-w) + ${GAP_PX}px)) 0` }}
                         >
                             <Image
                                 src={banner.image}
                                 alt={banner.title}
                                 fill
-                                sizes="(max-width: 768px) 88vw, 960px"
+                                sizes="(max-width: 768px) 88vw, 720px"
                                 priority={index === 0}
                                 className="object-cover"
                             />
@@ -117,33 +117,32 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
                         >
                             <ChevronRight className="h-5 w-5" />
                         </button>
+                        {/* Dots sit on the centre banner's bottom edge. */}
+                        <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1 sm:bottom-3">
+                            {banners.map((banner, index) => {
+                                const isCurrent = active % count === index;
+                                return (
+                                    <button
+                                        key={banner.id}
+                                        type="button"
+                                        onClick={() => {
+                                            // Shortest way round to the picked banner.
+                                            const ahead = (index - (active % count) + count) % count;
+                                            step(ahead > count / 2 ? ahead - count : ahead);
+                                        }}
+                                        aria-label={`ป้ายที่ ${index + 1}`}
+                                        aria-current={isCurrent}
+                                        className="flex size-4 items-center justify-center"
+                                    >
+                                        <span className={`block size-2 rounded-full shadow-[0_0_2px_rgba(0,0,0,0.5)] transition-colors duration-500 ${isCurrent ? "bg-primary" : "bg-white/70"}`} />
+                                    </button>
+                                );
+                            })}
+                        </div>
                     </>
                 )}
             </div>
 
-            {rotates && (
-                <div className="mt-4 flex justify-center gap-1.5">
-                    {banners.map((banner, index) => {
-                        const isCurrent = active % count === index;
-                        return (
-                            <button
-                                key={banner.id}
-                                type="button"
-                                onClick={() => {
-                                    // Shortest way round to the picked banner.
-                                    const ahead = (index - (active % count) + count) % count;
-                                    step(ahead > count / 2 ? ahead - count : ahead);
-                                }}
-                                aria-label={`ป้ายที่ ${index + 1}`}
-                                aria-current={isCurrent}
-                                className="flex h-6 items-center"
-                            >
-                                <span className={`block h-1.5 rounded-full transition-[width,background-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${isCurrent ? "w-6 bg-primary" : "w-1.5 bg-muted-foreground/30"}`} />
-                            </button>
-                        );
-                    })}
-                </div>
-            )}
         </div>
     );
 }
