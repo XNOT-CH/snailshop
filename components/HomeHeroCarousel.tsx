@@ -41,7 +41,7 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
 
     return (
         <div
-            className="relative ml-[calc(50%-50vw)] w-screen [--slide-w:88vw] md:[--slide-w:min(72vw,960px)]"
+            className="group relative ml-[calc(50%-50vw)] w-screen [--slide-w:88vw] md:[--slide-w:min(72vw,960px)]"
             onMouseEnter={() => setPaused(true)}
             onMouseLeave={() => setPaused(false)}
             onFocus={() => setPaused(true)}
@@ -54,7 +54,9 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
                 if (rotates && Math.abs(dx) >= SWIPE_MIN_PX) step(dx < 0 ? 1 : -1);
             }}
         >
-            <div className="relative h-[calc(var(--slide-w)*3/8)] overflow-hidden">
+            {/* The outer edges fade into the band, so the neighbours trail off
+                toward the screen sides instead of ending in a hard cut. */}
+            <div className="relative h-[calc(var(--slide-w)*3/8)] overflow-hidden md:[mask-image:linear-gradient(to_right,transparent,black_12%,black_88%,transparent)]">
                 {track.map((banner, index) => {
                     const rel = offset(index, active);
                     const jumped = Math.abs(rel - offset(index, from)) > 1;
@@ -66,9 +68,9 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
                             key={`${banner.id}-${index}`}
                             aria-hidden={!isActive}
                             onClick={() => !isActive && step(rel)}
-                            className={`absolute left-1/2 top-0 aspect-[8/3] w-[var(--slide-w)] overflow-hidden rounded-2xl bg-muted ${
-                                jumped ? "" : "transition-[translate,opacity] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
-                            } ${isActive ? "cursor-default opacity-100" : "cursor-pointer opacity-40 hover:opacity-60"}`}
+                            className={`group/slide absolute left-1/2 top-0 aspect-[8/3] w-[var(--slide-w)] overflow-hidden rounded-2xl bg-muted ${
+                                jumped ? "" : "transition-[translate] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
+                            } ${isActive ? "cursor-default" : "cursor-pointer"}`}
                             style={{ translate: `calc(-50% + ${rel} * (var(--slide-w) + ${GAP_PX}px)) 0` }}
                         >
                             <Image
@@ -85,6 +87,14 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
                                     {banner.subtitle && <span className="mt-1 max-w-[75%] text-xs text-white/90 drop-shadow sm:mt-3 sm:text-lg">{banner.subtitle}</span>}
                                 </span>
                             )}
+                            {/* Neighbours are dimmed with a dark veil rather than
+                                transparency, which washed out on the light band. */}
+                            <span
+                                aria-hidden="true"
+                                className={`pointer-events-none absolute inset-0 bg-black transition-opacity duration-700 ease-out ${
+                                    isActive ? "opacity-0" : "opacity-[0.55] group-hover/slide:opacity-[0.35]"
+                                }`}
+                            />
                         </div>
                     );
                 })}
@@ -95,7 +105,7 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
                             type="button"
                             onClick={() => step(-1)}
                             aria-label="ป้ายก่อนหน้า"
-                            className="absolute left-[calc(50%-var(--slide-w)/2+12px)] top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors duration-300 hover:bg-black/60 md:flex"
+                            className="absolute left-[calc(50%-var(--slide-w)/2+12px)] top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white opacity-0 backdrop-blur-sm transition-[opacity,background-color] duration-300 hover:bg-black/60 focus-visible:opacity-100 group-hover:opacity-100 md:flex"
                         >
                             <ChevronLeft className="h-5 w-5" />
                         </button>
@@ -103,7 +113,7 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
                             type="button"
                             onClick={() => step(1)}
                             aria-label="ป้ายถัดไป"
-                            className="absolute right-[calc(50%-var(--slide-w)/2+12px)] top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white backdrop-blur-sm transition-colors duration-300 hover:bg-black/60 md:flex"
+                            className="absolute right-[calc(50%-var(--slide-w)/2+12px)] top-1/2 hidden size-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/40 text-white opacity-0 backdrop-blur-sm transition-[opacity,background-color] duration-300 hover:bg-black/60 focus-visible:opacity-100 group-hover:opacity-100 md:flex"
                         >
                             <ChevronRight className="h-5 w-5" />
                         </button>
