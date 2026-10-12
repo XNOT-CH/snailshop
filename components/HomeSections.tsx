@@ -391,7 +391,7 @@ export function HomeTopupShowcase() {
   const ease = "ease-[cubic-bezier(0.22,1,0.36,1)]";
 
   return (
-    <section className="grid items-center gap-12 md:grid-cols-2 md:gap-16">
+    <section className="mx-auto grid max-w-4xl items-center gap-12 md:grid-cols-2 md:gap-10">
       <HomeTopupPeek className="group relative mx-auto w-full max-w-xs pt-16 [perspective:1200px]">
         <div
           className={`relative aspect-[2/3] origin-bottom transition-transform duration-700 ${ease} motion-safe:group-hover:[transform:rotateX(14deg)] motion-safe:group-data-[peek]:[transform:rotateX(14deg)]`}

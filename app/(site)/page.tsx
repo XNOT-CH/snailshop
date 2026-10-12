@@ -273,7 +273,7 @@ export default async function HomePage() {
         </RevealOnScroll>
       ),
     },
-    { key: "topup", node: <RevealOnScroll><HomeTopupShowcase /></RevealOnScroll> },
+    { key: "topup", node: <RevealOnScroll><HomeTopupShowcase /></RevealOnScroll>, className: "lg:pt-10 lg:pb-12" },
     machines.length > 0 && {
       key: "gacha",
       node: (
