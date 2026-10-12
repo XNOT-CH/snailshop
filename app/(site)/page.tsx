@@ -238,7 +238,7 @@ export default async function HomePage() {
               <HomeGameChips games={games} />
             </div>
           )}
-          <HomeSectionHeading title="สินค้าแนะนำ" action={<HomeSeeAllLink href="/shop" />} />
+          <HomeSectionHeading title="สินค้า" action={<HomeSeeAllLink href="/shop" />} />
           {productTabs.length === 0 ? (
             <div className={`${themeClasses.surfaceSoft} rounded-2xl py-12 text-center`}>
               <p className="text-muted-foreground text-lg">ยังไม่มีสินค้าในระบบ</p>
