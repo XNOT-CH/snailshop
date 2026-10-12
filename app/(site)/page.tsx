@@ -9,6 +9,8 @@ import {
   HomeGameChips,
   HomeHowToBuy,
   HomeJoinCta,
+  HOME_PREMIUM_APPS,
+  HomePremiumApps,
   HomeProductTile,
   HomeSectionHeading,
   HomeSeeAllLink,
@@ -246,6 +248,10 @@ export default async function HomePage() {
           )}
         </section>
       ),
+    },
+    HOME_PREMIUM_APPS.length > 0 && {
+      key: "premium-apps",
+      node: <RevealOnScroll><HomePremiumApps apps={HOME_PREMIUM_APPS} /></RevealOnScroll>,
     },
     news.length > 0 && {
       key: "news",

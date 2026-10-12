@@ -73,6 +73,49 @@ export function HomeGameChips({ games }: Readonly<{ games: { name: string }[] }>
   );
 }
 
+// Premium apps are not sold yet; this list is a preview of where they will sit.
+// Products have no game/app type, so the strip cannot be built from the
+// catalogue — each entry links to /shop by the category name an admin would
+// give that app. Drop a square logo into public/home-apps/ and set `image`;
+// entries without one show their first letter. Empty the list to hide the strip.
+export const HOME_PREMIUM_APPS: { name: string; image?: string }[] = [
+  { name: "Netflix" },
+  { name: "YouTube Premium" },
+  { name: "Spotify" },
+  { name: "Disney+" },
+  { name: "Canva Pro" },
+  { name: "ChatGPT Plus" },
+];
+
+export function HomePremiumApps({ apps }: Readonly<{ apps: { name: string; image?: string }[] }>) {
+  return (
+    <section>
+      <HomeSectionHeading title="แอปพรีเมียม" />
+      <div className="-mx-[calc(50vw-50%)] flex gap-5 overflow-x-auto px-[calc(50vw-50%)] [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:gap-8 sm:overflow-visible sm:px-0">
+        {apps.map((app) => (
+          <Link
+            key={app.name}
+            href={`/shop?category=${encodeURIComponent(app.name)}`}
+            prefetch={false}
+            className="group flex w-20 shrink-0 flex-col items-center gap-2 sm:w-24"
+          >
+            <span className="relative flex size-16 items-center justify-center overflow-hidden rounded-2xl bg-muted text-2xl font-bold text-muted-foreground transition-[translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 sm:size-20">
+              {app.image ? (
+                <Image src={app.image} alt={app.name} fill sizes="80px" loading="lazy" className="object-cover" />
+              ) : (
+                app.name.charAt(0)
+              )}
+            </span>
+            <span className="line-clamp-2 text-center text-xs font-medium leading-snug text-foreground transition-colors duration-300 ease-out group-hover:text-primary sm:text-sm">
+              {app.name}
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export interface HomeProductTileData {
   id: string;
   name: string;
