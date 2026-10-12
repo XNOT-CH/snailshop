@@ -68,7 +68,7 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
                             key={`${banner.id}-${index}`}
                             aria-hidden={!isActive}
                             onClick={() => !isActive && step(rel)}
-                            className={`group/slide absolute left-1/2 top-0 aspect-[8/3] w-[var(--slide-w)] overflow-hidden rounded-xl bg-muted ${
+                            className={`group/slide absolute left-1/2 top-0 aspect-[8/3] w-[var(--slide-w)] overflow-hidden rounded-xl bg-[var(--hero-band)] ${
                                 jumped ? "" : "transition-[translate,scale] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)]"
                             } ${isActive ? "cursor-default" : "scale-[0.94] cursor-pointer"}`}
                             style={{ translate: `calc(-50% + ${rel} * var(--slide-w)) 0` }}
