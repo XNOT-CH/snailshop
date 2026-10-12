@@ -232,7 +232,7 @@ export default async function HomePage() {
   // assigned after empty sections drop out, so the alternation never breaks.
   const sectionCandidates: (false | { key: string; node: ReactNode; className?: string })[] = [
     // Sits close under the hero, like the game picker on the reference storefront.
-    { key: "categories", node: <HomeCategories categories={HOME_CATEGORIES} />, className: "pt-6 lg:pt-8" },
+    { key: "categories", node: <HomeCategories categories={HOME_CATEGORIES} />, className: "pt-4 pb-6 lg:pt-6 lg:pb-8" },
     {
       key: "products",
       node: (
