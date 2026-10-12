@@ -77,30 +77,30 @@ export function HomeGameChips({ games }: Readonly<{ games: { name: string }[] }>
 // into public/home-categories/ and set `image`; entries without one show an
 // empty tile. Entries without `href` have no page yet and stay unclickable.
 export const HOME_CATEGORIES: { name: string; href?: string; image?: string }[] = [
-  { name: "ร้านค้า", href: "/shop", image: "/home-categories/shop-coins.webp" },
-  { name: "เติมเกม" },
-  { name: "แอปพรีเมียม" },
-  { name: "กาชา", href: "/gachapons" },
-  { name: "Season Pass", href: "/season-pass" },
+  { name: "ร้านค้า", href: "/shop", image: "/home-categories/shop-icon.webp" },
+  { name: "เติมเกม", image: "/home-categories/topup-icon.webp" },
+  { name: "แอปพรีเมียม", image: "/home-categories/premium-icon.webp" },
+  { name: "กาชา", href: "/gachapons", image: "/home-categories/gacha-icon.webp" },
+  { name: "Season Pass", href: "/season-pass", image: "/home-categories/season-pass-icon.webp" },
 ];
 
 export function HomeCategories({ categories }: Readonly<{ categories: { name: string; href?: string; image?: string }[] }>) {
   return (
     <section>
-      <HomeSectionHeading title="หมวดหมู่" />
-      <div className="-mx-[calc(50vw-50%)] flex gap-5 overflow-x-auto px-[calc(50vw-50%)] [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0">
+      <h2 className="sr-only">หมวดหมู่</h2>
+      <div className="-mx-[calc(50vw-50%)] flex gap-5 overflow-x-auto px-[calc(50vw-50%)] [scrollbar-width:none] sm:mx-0 sm:justify-center sm:gap-10 sm:overflow-visible sm:px-0">
         {categories.map((category) => {
           const tile = (
             <>
-              <span className="relative block size-16 overflow-hidden rounded-2xl bg-muted ring-1 ring-border transition-[translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 sm:size-20">
-                {category.image && <Image src={category.image} alt="" fill sizes="80px" className="object-cover" />}
+              <span className={`relative block size-14 overflow-hidden rounded-full ${category.image ? "" : "bg-muted"} transition-[translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 sm:size-18`}>
+                {category.image && <Image src={category.image} alt="" fill sizes="72px" className="object-cover" />}
               </span>
               <span className="line-clamp-2 text-center text-sm font-medium leading-snug text-foreground transition-colors duration-300 ease-out group-hover:text-primary">
                 {category.name}
               </span>
             </>
           );
-          const className = "flex w-20 shrink-0 flex-col items-center gap-2 sm:w-auto";
+          const className = "flex w-20 shrink-0 flex-col items-center gap-2 sm:w-22";
           return category.href ? (
             <Link key={category.name} href={category.href} prefetch={false} className={`group ${className}`}>
               {tile}
