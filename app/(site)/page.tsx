@@ -6,6 +6,8 @@ import { HomeProductTabs } from "@/components/HomeProductTabs";
 import {
   HomeFaq,
   HomeBand,
+  HOME_CATEGORIES,
+  HomeCategories,
   HomeGachaMachines,
   HomeGameChips,
   HomeHowToBuy,
@@ -229,6 +231,7 @@ export default async function HomePage() {
   // color, so scrolling reads as moving from one scene to the next. Tones are
   // assigned after empty sections drop out, so the alternation never breaks.
   const sectionCandidates: (false | { key: string; node: ReactNode })[] = [
+    { key: "categories", node: <HomeCategories categories={HOME_CATEGORIES} /> },
     {
       key: "products",
       node: (

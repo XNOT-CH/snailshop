@@ -73,6 +73,49 @@ export function HomeGameChips({ games }: Readonly<{ games: { name: string }[] }>
   );
 }
 
+// The way into each part of the site, right under the hero. Drop a square icon
+// into public/home-categories/ and set `image`; entries without one show an
+// empty tile. Entries without `href` have no page yet and stay unclickable.
+export const HOME_CATEGORIES: { name: string; href?: string; image?: string }[] = [
+  { name: "ร้านค้า", href: "/shop" },
+  { name: "เติมเกม" },
+  { name: "แอปพรีเมียม" },
+  { name: "กาชา", href: "/gachapons" },
+  { name: "Season Pass", href: "/season-pass" },
+];
+
+export function HomeCategories({ categories }: Readonly<{ categories: { name: string; href?: string; image?: string }[] }>) {
+  return (
+    <section>
+      <HomeSectionHeading title="หมวดหมู่" />
+      <div className="-mx-[calc(50vw-50%)] flex gap-5 overflow-x-auto px-[calc(50vw-50%)] [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-5 sm:overflow-visible sm:px-0">
+        {categories.map((category) => {
+          const tile = (
+            <>
+              <span className="relative block size-16 overflow-hidden rounded-2xl bg-muted ring-1 ring-border transition-[translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 sm:size-20">
+                {category.image && <Image src={category.image} alt="" fill sizes="80px" className="object-cover" />}
+              </span>
+              <span className="line-clamp-2 text-center text-sm font-medium leading-snug text-foreground transition-colors duration-300 ease-out group-hover:text-primary">
+                {category.name}
+              </span>
+            </>
+          );
+          const className = "flex w-20 shrink-0 flex-col items-center gap-2 sm:w-auto";
+          return category.href ? (
+            <Link key={category.name} href={category.href} prefetch={false} className={`group ${className}`}>
+              {tile}
+            </Link>
+          ) : (
+            <span key={category.name} aria-disabled="true" className={`${className} cursor-default`}>
+              {tile}
+            </span>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 // Premium apps are not sold yet; this list is a preview of where they will sit.
 // Products have no game/app type, so the strip cannot be built from the
 // catalogue — each entry links to /shop by the category name an admin would
