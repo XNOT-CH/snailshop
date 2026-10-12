@@ -235,6 +235,8 @@ export default async function HomePage() {
     { key: "categories", node: <HomeCategories categories={HOME_CATEGORIES} />, className: "pt-4 pb-6 lg:pt-6 lg:pb-8" },
     {
       key: "products",
+      // The category row above already sits close, so a full band gap would leave a hole.
+      className: "pt-8 lg:pt-10",
       node: (
         <section>
           {games.length > 0 && (
@@ -308,7 +310,7 @@ export default async function HomePage() {
         </HomeBand>
       )}
       {sections.map((section, index) => (
-        <HomeBand key={section.key} tone={index % 2 === 0 ? "plain" : "raised"} className={section.className}>
+        <HomeBand key={section.key} id={section.key} tone={index % 2 === 0 ? "plain" : "raised"} className={section.className}>
           {section.node}
         </HomeBand>
       ))}

@@ -14,13 +14,15 @@ import { themeClasses } from "@/lib/theme";
 // content column with a spread shadow clipped to the band's height, so it spans
 // the screen without widening the page. "raised" matches the hero.
 export function HomeBand({
+  id,
   tone,
   className = "",
   children,
-}: Readonly<{ tone: "plain" | "raised"; className?: string; children: ReactNode }>) {
+}: Readonly<{ id?: string; tone: "plain" | "raised"; className?: string; children: ReactNode }>) {
   const color = tone === "raised" ? "var(--card)" : "var(--background)";
   return (
     <div
+      id={id}
       className={`py-14 lg:py-24 ${className}`}
       style={{ backgroundColor: color, boxShadow: `0 0 0 100vmax ${color}`, clipPath: "inset(0 -100vmax)" }}
     >
@@ -76,10 +78,12 @@ export function HomeGameChips({ games }: Readonly<{ games: { name: string }[] }>
 // The way into each part of the site, right under the hero. Drop a square icon
 // into public/home-categories/ and set `image`; entries without one show an
 // empty tile. Entries without `href` have no page yet and stay unclickable.
+// Top-up and premium apps have no page of their own, so they jump to their
+// band further down the home page, whose id is its section key.
 export const HOME_CATEGORIES: { name: string; href?: string; image?: string }[] = [
   { name: "ร้านค้า", href: "/shop", image: "/home-categories/shop-icon.webp" },
-  { name: "เติมเกม", image: "/home-categories/topup-icon.webp" },
-  { name: "แอปพรีเมียม", image: "/home-categories/premium-icon.webp" },
+  { name: "เติมเกม", href: "#topup", image: "/home-categories/topup-icon.webp" },
+  { name: "แอปพรีเมียม", href: "#premium-apps", image: "/home-categories/premium-icon.webp" },
   { name: "กาชา", href: "/gachapons", image: "/home-categories/gacha-icon.webp" },
   { name: "Season Pass", href: "/season-pass", image: "/home-categories/season-pass-icon.webp" },
 ];
@@ -139,13 +143,13 @@ export function HomePremiumApps({ apps }: Readonly<{ apps: { name: string; image
   return (
     <section>
       <HomeSectionHeading title="แอปพรีเมียม" />
-      <div className="-mx-[calc(50vw-50%)] flex gap-5 overflow-x-auto px-[calc(50vw-50%)] [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:gap-x-6 sm:gap-y-6 lg:gap-x-4 sm:overflow-visible sm:px-0">
+      <div className="-mx-[calc(50vw-50%)] flex gap-5 overflow-x-auto px-[calc(50vw-50%)] [scrollbar-width:none] sm:mx-0 sm:grid sm:grid-cols-6 sm:gap-y-6 sm:overflow-visible sm:px-0 lg:flex lg:justify-between lg:gap-0">
         {apps.map((app) => (
           <Link
             key={app.name}
             href={`/shop?category=${encodeURIComponent(app.name)}`}
             prefetch={false}
-            className="group flex w-20 shrink-0 flex-col items-center gap-2 sm:w-24"
+            className="group flex w-20 shrink-0 flex-col items-center gap-2 sm:w-auto lg:w-24"
           >
             <span className="relative flex size-16 items-center justify-center overflow-hidden rounded-2xl bg-muted ring-1 ring-border text-2xl font-bold text-muted-foreground transition-[translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 sm:size-20">
               {app.image ? (
@@ -388,7 +392,7 @@ export function HomeTopupShowcase() {
 
   return (
     <section className="grid items-center gap-12 md:grid-cols-2 md:gap-16">
-      <HomeTopupPeek className="group relative mx-auto w-full max-w-sm pt-16 [perspective:1200px]">
+      <HomeTopupPeek className="group relative mx-auto w-full max-w-xs pt-16 [perspective:1200px]">
         <div
           className={`relative aspect-[2/3] origin-bottom transition-transform duration-700 ${ease} motion-safe:group-hover:[transform:rotateX(14deg)] motion-safe:group-data-[peek]:[transform:rotateX(14deg)]`}
         >
@@ -396,7 +400,7 @@ export function HomeTopupShowcase() {
             src="/home-topup-phone-cutout.webp"
             alt=""
             fill
-            sizes="(max-width: 768px) 90vw, 384px"
+            sizes="320px"
             loading="lazy"
             className={`object-contain transition-[opacity,scale] duration-700 ${ease} group-hover:scale-95 group-hover:opacity-60 group-data-[peek]:scale-95 group-data-[peek]:opacity-60`}
           />
