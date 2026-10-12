@@ -230,8 +230,9 @@ export default async function HomePage() {
   // Each section gets its own full-width band, alternating with the hero's
   // color, so scrolling reads as moving from one scene to the next. Tones are
   // assigned after empty sections drop out, so the alternation never breaks.
-  const sectionCandidates: (false | { key: string; node: ReactNode })[] = [
-    { key: "categories", node: <HomeCategories categories={HOME_CATEGORIES} /> },
+  const sectionCandidates: (false | { key: string; node: ReactNode; className?: string })[] = [
+    // Sits close under the hero, like the game picker on the reference storefront.
+    { key: "categories", node: <HomeCategories categories={HOME_CATEGORIES} />, className: "pt-6 lg:pt-8" },
     {
       key: "products",
       node: (
@@ -307,7 +308,7 @@ export default async function HomePage() {
         </HomeBand>
       )}
       {sections.map((section, index) => (
-        <HomeBand key={section.key} tone={index % 2 === 0 ? "plain" : "raised"}>
+        <HomeBand key={section.key} tone={index % 2 === 0 ? "plain" : "raised"} className={section.className}>
           {section.node}
         </HomeBand>
       ))}
