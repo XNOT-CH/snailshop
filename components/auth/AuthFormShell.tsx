@@ -1,74 +1,39 @@
 import Image from "next/image";
 import { Gamepad2 } from "lucide-react";
 import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
 
 interface AuthFormShellProps {
     readonly logoUrl: string | null;
     readonly title: string;
     readonly subtitle: string;
     readonly children: ReactNode;
-    readonly fullHeight?: boolean;
-    readonly variant?: "default" | "separated";
 }
 
-export function AuthFormShell({
-    logoUrl,
-    title,
-    subtitle,
-    children,
-    fullHeight = true,
-    variant = "default",
-}: AuthFormShellProps) {
-    const isSeparated = variant === "separated";
-
+// The sign-in family of pages in the home page's language: a near-black band
+// like the hero carries the logo and title, and the form card rises over its
+// lower edge onto a plain band. Both bands are painted past the content column
+// with a spread shadow clipped to their own height, as the home bands are, and
+// together they cover the site background image.
+export function AuthFormShell({ logoUrl, title, subtitle, children }: AuthFormShellProps) {
     return (
         <div
-            className={cn(
-                "flex items-center justify-center px-4 py-12",
-                fullHeight && "min-h-screen",
-                isSeparated && "-mx-3 min-h-[calc(100dvh-5rem)] bg-[#f4f6f8] px-3 py-8 sm:-mx-4 sm:px-6 lg:-mx-6 xl:-mx-8 dark:bg-[#0b1420]"
-            )}
+            className="min-h-[calc(100dvh-4rem)] pb-16 sm:pb-24"
+            style={{ backgroundColor: "var(--background)", boxShadow: "0 0 0 100vmax var(--background)", clipPath: "inset(0 -100vmax)" }}
         >
-            <div className={cn("w-full max-w-md", isSeparated && "max-w-[720px]")}>
-                <div
-                    className={cn(
-                        "bg-card rounded-2xl shadow-xl shadow-primary/10 p-8",
-                        isSeparated && "relative overflow-hidden rounded-[6px] border border-[#d9dee5] bg-white p-4 shadow-[0_12px_34px_rgba(15,23,42,0.12)] sm:p-6 dark:border-[#26384f] dark:bg-[#101a2b]"
-                    )}
-                >
-                    <div
-                        className={cn(
-                            "flex items-start justify-between mb-8",
-                            isSeparated && "mb-6 flex-col items-center justify-center gap-3 text-center"
-                        )}
-                    >
-                        <div className={cn(isSeparated && "order-2")}>
-                            <h1 className={cn("text-2xl font-bold text-primary", isSeparated && "text-xl")}>{title}</h1>
-                            <p className="text-muted-foreground text-sm">{subtitle}</p>
-                        </div>
-                        {logoUrl ? (
-                            <Image
-                                src={logoUrl}
-                                alt="Logo"
-                                width={64}
-                                height={64}
-                                className={cn(
-                                    "h-16 w-16 rounded-xl object-contain",
-                                    isSeparated && "order-1 h-20 w-auto max-w-[180px] rounded-none"
-                                )}
-                                priority
-                            />
-                        ) : (
-                            <div className={cn("h-16 w-16 rounded-xl bg-primary flex items-center justify-center", isSeparated && "order-1")}>
-                                <Gamepad2 className="h-8 w-8 text-white" />
-                            </div>
-                        )}
-                    </div>
+            <div className="relative isolate bg-[var(--hero-band)] px-4 pb-28 pt-10 text-center shadow-[0_0_0_100vmax_var(--hero-band)] [--hero-band:#151515] [clip-path:inset(0_-100vmax)] sm:pb-32 sm:pt-14">
+                {logoUrl ? (
+                    <Image src={logoUrl} alt="" width={160} height={64} className="mx-auto h-16 w-auto max-w-[160px] object-contain" priority />
+                ) : (
+                    <span className="mx-auto flex size-16 items-center justify-center rounded-2xl bg-primary">
+                        <Gamepad2 className="h-8 w-8 text-white" />
+                    </span>
+                )}
+                <h1 className="mt-4 text-2xl font-bold text-white sm:text-3xl">{title}</h1>
+                <p className="mx-auto mt-2 max-w-sm text-sm text-white/70">{subtitle}</p>
+            </div>
 
-                    {children}
-                    {isSeparated ? <div className="absolute inset-x-0 bottom-0 h-[3px] bg-[#145de7]" aria-hidden="true" /> : null}
-                </div>
+            <div className="relative mx-auto -mt-20 w-full max-w-md px-1 motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:fill-mode-both">
+                <div className="rounded-2xl bg-card p-5 shadow-xl shadow-black/10 sm:p-8">{children}</div>
             </div>
         </div>
     );
