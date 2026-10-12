@@ -247,6 +247,19 @@ export default async function HomePage() {
         </section>
       ),
     },
+    news.length > 0 && {
+      key: "news",
+      node: (
+        <RevealOnScroll>
+          <NewsSection
+            initialNews={news.map((article) => ({
+              ...article,
+              createdAt: toSerializableDate(article.createdAt),
+            }))}
+          />
+        </RevealOnScroll>
+      ),
+    },
     { key: "topup", node: <RevealOnScroll><HomeTopupShowcase /></RevealOnScroll> },
     machines.length > 0 && {
       key: "gacha",
@@ -262,17 +275,6 @@ export default async function HomePage() {
     },
     { key: "how-to-buy", node: <RevealOnScroll><HomeHowToBuy /></RevealOnScroll> },
     faqs.length > 0 && { key: "faq", node: <RevealOnScroll><HomeFaq articles={faqs} /></RevealOnScroll> },
-    news.length > 0 && {
-      key: "news",
-      node: (
-        <NewsSection
-          initialNews={news.map((article) => ({
-            ...article,
-            createdAt: toSerializableDate(article.createdAt),
-          }))}
-        />
-      ),
-    },
     !session?.user && { key: "join", node: <RevealOnScroll><HomeJoinCta siteName={siteName} /></RevealOnScroll> },
   ];
   const sections = sectionCandidates.filter((section) => section !== false);

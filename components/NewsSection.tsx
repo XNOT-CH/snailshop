@@ -1,7 +1,7 @@
 import Image from "next/image";
-import Link from "next/link";
-import { Calendar, ArrowRight, Newspaper } from "lucide-react";
-import { themeClasses } from "@/lib/theme";
+import type { ReactNode } from "react";
+import { Calendar, Newspaper } from "lucide-react";
+import { HomeSectionHeading } from "@/components/HomeSections";
 import { toSafePublicHref } from "@/lib/sanitize";
 import { IMAGE_UPLOAD_RECOMMENDATIONS } from "@/lib/imageUploadRecommendations";
 
@@ -18,98 +18,113 @@ interface NewsSectionProps {
     initialNews?: NewsArticle[];
 }
 
+// Format date to Thai format
+const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const thaiMonths = [
+        "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
+        "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."
+    ];
+    const day = date.getDate();
+    const month = thaiMonths[date.getMonth()];
+    const year = date.getFullYear() + 543;
+    return `${day} ${month} ${year}`;
+};
+
+// Articles without a usable link still render, just not as a link.
+function ArticleLink({ article, className, children }: Readonly<{ article: NewsArticle; className: string; children: ReactNode }>) {
+    const href = toSafePublicHref(article.link, "");
+    if (!href) return <div className={className}>{children}</div>;
+    return (
+        <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+            {children}
+        </a>
+    );
+}
+
+function ArticleDate({ createdAt }: Readonly<{ createdAt: string }>) {
+    return (
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            <Calendar className="h-3.5 w-3.5" />
+            {formatDate(createdAt)}
+        </span>
+    );
+}
+
+const IMAGE_HOVER = "object-cover transition-[scale] duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:scale-[1.04]";
+const TITLE_HOVER = "font-semibold text-foreground transition-colors duration-300 ease-out group-hover:text-primary";
+
+// The newest article leads with a large image; the rest sit beside it as a
+// compact list. No card boxes or dividers — spacing does the separating.
 export function NewsSection({ initialNews }: Readonly<NewsSectionProps>) {
     const news = initialNews ?? [];
-
-    // Format date to Thai format
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
-        const thaiMonths = [
-            "ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.",
-            "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."
-        ];
-        const day = date.getDate();
-        const month = thaiMonths[date.getMonth()];
-        const year = date.getFullYear() + 543;
-        return `${day} ${month} ${year}`;
-    };
 
     if (news.length === 0) {
         return null;
     }
 
+    const [lead, ...rest] = news;
+
     return (
         <section>
-            {/* Section Header */}
-            <div className="mb-4">
-                <h2 className="text-xl sm:text-2xl font-bold text-foreground">
-                    ข่าวสารและโปรโมชั่น
-                </h2>
-                <p className="mt-1 text-sm text-muted-foreground">
-                    NEWS AND PROMOTIONS
-                </p>
-            </div>
+            <HomeSectionHeading title="ข่าวสารและโปรโมชั่น" />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
-                {news.map((article) => {
-                    const safeArticleLink = toSafePublicHref(article.link, "");
-
-                    return (
-                        <article
-                            key={article.id}
-                            className={`${themeClasses.surface} group flex flex-col overflow-hidden rounded-xl transition-colors duration-200 hover:border-primary/40`}
-                        >
-                            <div className="relative w-full aspect-video overflow-hidden bg-muted">
-                                {article.imageUrl ? (
-                                    <Image
-                                        src={article.imageUrl}
-                                        alt={article.title}
-                                        fill
-                                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                                        loading="lazy"
-                                        fetchPriority="low"
-                                        className="object-cover"
-                                    />
-                                ) : (
-                                    <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-muted text-muted-foreground/40">
-                                        <Newspaper className="h-10 w-10" />
-                                        <span className="text-xs">{IMAGE_UPLOAD_RECOMMENDATIONS.newsCover}</span>
-                                    </div>
-                                )}
+            <div className={rest.length > 0 ? "grid gap-8 lg:grid-cols-[3fr_2fr] lg:gap-10" : "max-w-3xl"}>
+                <ArticleLink article={lead} className="group block">
+                    <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-muted">
+                        {lead.imageUrl ? (
+                            <Image
+                                src={lead.imageUrl}
+                                alt={lead.title}
+                                fill
+                                sizes="(max-width: 1024px) 100vw, 60vw"
+                                loading="lazy"
+                                className={IMAGE_HOVER}
+                            />
+                        ) : (
+                            <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 text-muted-foreground/40">
+                                <Newspaper className="h-10 w-10" />
+                                <span className="text-xs">{IMAGE_UPLOAD_RECOMMENDATIONS.newsCover}</span>
                             </div>
+                        )}
+                    </div>
+                    <h3 className={`${TITLE_HOVER} mt-4 line-clamp-2 text-lg leading-snug sm:text-xl`}>{lead.title}</h3>
+                    <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{lead.description}</p>
+                    <div className="mt-3">
+                        <ArticleDate createdAt={lead.createdAt} />
+                    </div>
+                </ArticleLink>
 
-                            <div className="flex flex-col flex-1 p-4 sm:p-5">
-                                <h3 className="font-semibold text-foreground text-base leading-snug mb-2 group-hover:text-primary transition-colors line-clamp-2">
-                                    {article.title}
-                                </h3>
-
-                                <p className="text-muted-foreground text-sm line-clamp-2 flex-1 mb-4">
-                                    {article.description}
-                                </p>
-
-                                <div className="flex items-center justify-between border-t border-border/80 pt-3">
-                                    <div className="flex items-center gap-1.5 text-muted-foreground text-xs">
-                                        <Calendar className="w-3.5 h-3.5" />
-                                        <span>{formatDate(article.createdAt)}</span>
-                                    </div>
-
-                                    {safeArticleLink && (
-                                        <Link
-                                            href={safeArticleLink}
-                                            prefetch={false}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className={`${themeClasses.link} group/link flex items-center gap-1 text-xs font-medium transition-colors`}
-                                        >
-                                            <span>อ่านเพิ่มเติม</span>
-                                            <ArrowRight className="w-3.5 h-3.5 group-hover/link:translate-x-0.5 transition-transform" />
-                                        </Link>
+                {rest.length > 0 && (
+                    <div className="flex flex-col gap-5">
+                        {rest.map((article) => (
+                            <ArticleLink key={article.id} article={article} className="group flex items-start gap-4">
+                                <div className="relative aspect-video w-32 shrink-0 overflow-hidden rounded-xl bg-muted sm:w-40">
+                                    {article.imageUrl ? (
+                                        <Image
+                                            src={article.imageUrl}
+                                            alt={article.title}
+                                            fill
+                                            sizes="160px"
+                                            loading="lazy"
+                                            className={IMAGE_HOVER}
+                                        />
+                                    ) : (
+                                        <div className="flex h-full w-full items-center justify-center text-muted-foreground/40">
+                                            <Newspaper className="h-6 w-6" />
+                                        </div>
                                     )}
                                 </div>
-                            </div>
-                        </article>
-                    );
-                })}
+                                <div className="min-w-0 flex-1">
+                                    <h3 className={`${TITLE_HOVER} line-clamp-2 text-sm leading-snug sm:text-base`}>{article.title}</h3>
+                                    <div className="mt-2">
+                                        <ArticleDate createdAt={article.createdAt} />
+                                    </div>
+                                </div>
+                            </ArticleLink>
+                        ))}
+                    </div>
+                )}
             </div>
         </section>
     );
