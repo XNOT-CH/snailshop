@@ -49,10 +49,10 @@ export function HomeHero({ siteName, description }: Readonly<HomeHeroProps>) {
         style={{ background: "linear-gradient(to right, var(--hero-band) calc(100% - 10rem), transparent)" }}
       />
       <div className="mt-6 max-w-md md:mt-0">
-        <p className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:fill-mode-both inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
+        <p className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:fill-mode-both text-sm font-semibold text-primary">
           ร้านขายไอดีเกม
         </p>
-        <h1 className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:fill-mode-both motion-safe:delay-100 mt-5 text-4xl font-bold leading-tight text-foreground sm:text-6xl">{siteName}</h1>
+        <h1 className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:fill-mode-both motion-safe:delay-100 mt-2text-4xl font-bold leading-tight text-foreground sm:text-6xl">{siteName}</h1>
         {description?.trim() && (
           <p className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:fill-mode-both motion-safe:delay-200 mt-4 text-pretty text-base text-muted-foreground">{description.trim()}</p>
         )}
