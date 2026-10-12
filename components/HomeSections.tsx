@@ -80,17 +80,23 @@ export function HomeGameChips({ games }: Readonly<{ games: { name: string }[] }>
 // entries without one show their first letter. Empty the list to hide the strip.
 export const HOME_PREMIUM_APPS: { name: string; image?: string }[] = [
   { name: "Netflix", image: "/home-apps/netflix.webp" },
+  { name: "Prime Video", image: "/home-apps/prime-video.webp" },
   { name: "YouTube Premium", image: "/home-apps/youtube-premium.webp" },
+  { name: "YouTube Music", image: "/home-apps/youtube-music.webp" },
   { name: "Spotify", image: "/home-apps/spotify.webp" },
+  { name: "Apple Music", image: "/home-apps/apple-music.webp" },
   { name: "Canva Pro", image: "/home-apps/canva-pro.webp" },
+  { name: "Adobe Creative Cloud", image: "/home-apps/adobe-creative-cloud.webp" },
   { name: "ChatGPT Plus", image: "/home-apps/chatgpt-plus.webp" },
+  { name: "Discord Nitro", image: "/home-apps/discord-nitro.webp" },
+  { name: "Duolingo Super", image: "/home-apps/duolingo-super.webp" },
 ];
 
 export function HomePremiumApps({ apps }: Readonly<{ apps: { name: string; image?: string }[] }>) {
   return (
     <section>
       <HomeSectionHeading title="แอปพรีเมียม" />
-      <div className="-mx-[calc(50vw-50%)] flex gap-5 overflow-x-auto px-[calc(50vw-50%)] [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:gap-8 sm:overflow-visible sm:px-0">
+      <div className="-mx-[calc(50vw-50%)] flex gap-5 overflow-x-auto px-[calc(50vw-50%)] [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:gap-x-6 sm:gap-y-6 lg:gap-x-4 sm:overflow-visible sm:px-0">
         {apps.map((app) => (
           <Link
             key={app.name}
@@ -105,7 +111,7 @@ export function HomePremiumApps({ apps }: Readonly<{ apps: { name: string; image
                 app.name.charAt(0)
               )}
             </span>
-            <span className="line-clamp-2 text-center text-xs font-medium leading-snug text-foreground transition-colors duration-300 ease-out group-hover:text-primary sm:text-sm">
+            <span className="line-clamp-2 text-center text-xs font-medium leading-snug text-foreground transition-colors duration-300 ease-out group-hover:text-primary">
               {app.name}
             </span>
           </Link>
