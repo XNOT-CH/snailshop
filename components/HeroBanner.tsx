@@ -3,9 +3,15 @@ import ReactDOM from "react-dom";
 import { getImageProps } from "next/image";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 
-export async function HeroBanner() {
-    const settings = await getSiteSettings();
+export interface HeroBannerItem {
+    id: number;
+    image: string;
+    title: string;
+    subtitle: string;
+}
 
+// The admin's banner slots (three fixed ones plus bannersJson), empty ones dropped.
+export function getHeroBanners(settings: Awaited<ReturnType<typeof getSiteSettings>>): HeroBannerItem[] {
     // No placeholder image per slot: a slot the admin cleared has to fall out of
     // the list, and a hardcoded fallback made `filter` below unreachable — every
     // slot always had an image, so the hero was permanently three slides wide
@@ -52,6 +58,13 @@ export async function HeroBanner() {
             // invalid JSON — ignore
         }
     }
+
+    return banners;
+}
+
+export async function HeroBanner() {
+    const settings = await getSiteSettings();
+    const banners = getHeroBanners(settings);
 
     // Preload the first (LCP) banner image so fetchpriority=high is set in the HTML head
     // This makes the LCP image discoverable from the initial document even though

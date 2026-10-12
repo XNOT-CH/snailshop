@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { auth } from "@/auth";
 import { HomeHero } from "@/components/HomeHero";
+import { getHeroBanners } from "@/components/HeroBanner";
 import { HomeProductTabs } from "@/components/HomeProductTabs";
 import {
   HomeFaq,
@@ -284,11 +285,16 @@ export default async function HomePage() {
     !session?.user && { key: "join", node: <RevealOnScroll><HomeJoinCta siteName={siteName} /></RevealOnScroll> },
   ];
   const sections = sectionCandidates.filter((section) => section !== false);
+  // Until the admin sets any banners, the owner's Level Up banner fills the hero.
+  const adminBanners = getHeroBanners(siteSettings);
+  const heroBanners = adminBanners.length > 0
+    ? adminBanners
+    : [{ id: 0, image: "/home-hero-banner.webp", title: "", subtitle: "" }];
 
   return (
     <div className="animate-page-enter">
       <WelcomeRedirect />
-      <HomeHero siteName={siteName} description={siteSettings?.heroDescription} />
+      <HomeHero siteName={siteName} banners={heroBanners} />
       {maintenance.purchase.enabled && (
         <HomeBand tone="plain" className="pb-0 lg:pb-0">
           <div className={`${themeClasses.alert} rounded-2xl px-4 py-3 text-sm`}>
