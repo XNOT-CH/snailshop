@@ -77,7 +77,7 @@ export function HomeGameChips({ games }: Readonly<{ games: { name: string }[] }>
 // into public/home-categories/ and set `image`; entries without one show an
 // empty tile. Entries without `href` have no page yet and stay unclickable.
 export const HOME_CATEGORIES: { name: string; href?: string; image?: string }[] = [
-  { name: "ร้านค้า", href: "/shop" },
+  { name: "ร้านค้า", href: "/shop", image: "/home-categories/shop-coins.webp" },
   { name: "เติมเกม" },
   { name: "แอปพรีเมียม" },
   { name: "กาชา", href: "/gachapons" },
