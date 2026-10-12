@@ -65,8 +65,10 @@ export function NewsShowcase({ news }: Readonly<{ news: NewsArticle[] }>) {
     const rotates = news.length > 1;
 
     // Restarted on every change of slide, so a manual pick gets a full interval.
+    // Reduced motion still rotates, as in the hero: Windows reports it whenever
+    // its animation effects are off, and a crossfade is not motion anyway.
     useEffect(() => {
-        if (!rotates || paused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        if (!rotates || paused) return;
         const timer = setTimeout(() => setActive((current) => (current + 1) % news.length), ROTATE_MS);
         return () => clearTimeout(timer);
     }, [active, paused, rotates, news.length]);
