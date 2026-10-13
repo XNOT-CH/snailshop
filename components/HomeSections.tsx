@@ -23,7 +23,7 @@ export function HomeBand({
   return (
     <div
       id={id}
-      className={`py-14 lg:py-24 ${className}`}
+      className={`py-14 lg:py-16 ${className}`}
       style={{ backgroundColor: color, boxShadow: `0 0 0 100vmax ${color}`, clipPath: "inset(0 -100vmax)" }}
     >
       {children}
