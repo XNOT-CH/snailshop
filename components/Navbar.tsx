@@ -122,14 +122,14 @@ export default async function Navbar() {
                             width={160}
                             height={56}
                             priority
-                            className="h-9 w-auto max-w-[110px] object-contain lg:h-8 xl:h-9"
+                            className="h-[34px] w-auto max-w-[110px] object-contain lg:h-8 xl:h-[34px]"
                         />
                     ) : (
                         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary sm:h-14 sm:w-14">
                             <Gamepad2 className="h-6 w-6 text-white sm:h-7 sm:w-7" />
                         </div>
                     )}
-                    <BrandWordmark alt={siteName} className="hidden h-[18px] sm:block lg:h-4 xl:h-5" />
+                    <BrandWordmark alt={siteName} className="hidden h-4 sm:block lg:h-[15px] xl:h-[17px]" />
                 </Link>
 
                 <nav className="hidden min-w-0 items-center justify-center gap-0.5 lg:flex">
