@@ -45,10 +45,10 @@ export function ProductCard({
     const isUnavailable = isSold || stockCount === 0;
 
     return (
-        <RevealOnScroll index={index}>
+        <RevealOnScroll index={index} className="h-full">
             <div
                 className={`
-                    ${themeClasses.surface} storefront-product-card group relative flex flex-col overflow-hidden rounded-2xl transition-colors duration-200 hover:border-primary/40
+                    ${themeClasses.surface} storefront-product-card group relative flex h-full flex-col overflow-hidden rounded-2xl transition-colors duration-200 hover:border-primary/40
                 `}
             >
                 <div className={`${themeClasses.surfaceMedia} relative m-2 mb-0 aspect-square overflow-hidden rounded-xl sm:m-2.5 sm:mb-0`}>

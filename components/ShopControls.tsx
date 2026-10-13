@@ -40,10 +40,10 @@ export function ShopControls({ currentSort }: Readonly<ShopControlsProps>) {
                                 key={opt.value}
                                 type="button"
                                 onClick={() => handleSortChange(opt.value)}
-                                className={`inline-flex items-center h-8 px-3 rounded-full text-xs font-medium transition-all duration-150 whitespace-nowrap flex-shrink-0 ${
+                                className={`inline-flex items-center h-8 px-3 rounded-full border text-xs font-medium transition-colors duration-300 ease-out whitespace-nowrap flex-shrink-0 ${
                                     isActive
-                                        ? "bg-primary text-primary-foreground shadow-sm"
-                                        : "bg-muted hover:bg-muted/80 text-muted-foreground hover:text-foreground"
+                                        ? "border-primary bg-primary text-primary-foreground"
+                                        : "border-border bg-card text-muted-foreground hover:border-primary hover:text-primary"
                                 }`}
                             >
                                 {opt.label}
