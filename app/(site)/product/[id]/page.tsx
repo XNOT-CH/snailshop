@@ -4,6 +4,7 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductActions } from "@/components/ProductActions";
+import { ProductStickyBuyBar } from "@/components/ProductStickyBuyBar";
 import { ProductCard } from "@/components/ProductCard";
 import { PageBand } from "@/components/PageBand";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
@@ -244,7 +245,7 @@ export default async function ProductDetailPage({
                             </p>
                         </div>
 
-                        <div className="mt-6">
+                        <div id="product-purchase" className="mt-6 scroll-mt-24">
                             <ProductActions
                                 product={{
                                     id: product.id,
@@ -276,6 +277,13 @@ export default async function ProductDetailPage({
                     </div>
                 </div>
             </PageBand>
+
+            {isAvailable && (
+                <ProductStickyBuyBar
+                    priceLabel={formatCurrencyAmount(displayPrice, product.currency, currencySettings)}
+                    targetId="product-purchase"
+                />
+            )}
 
             {relatedProducts.length > 0 && (
                 <PageBand tone="plain" className="flex-1 pt-10 lg:pt-12">
