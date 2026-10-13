@@ -437,7 +437,7 @@ export function GachaGridMachine({
                 <div className="flex flex-col gap-3 sm:gap-5">
                     <div className="space-y-1 text-center">
                         <p className="text-xl font-bold tracking-tight text-[#145de7] sm:text-2xl">
-                            สุ่มรางวัลครั้งละ {normalizedCost.costAmount.toLocaleString()} {currencyWord}
+                            {normalizedCost.costType === "FREE" ? "สุ่มฟรี" : `สุ่มรางวัลครั้งละ ${normalizedCost.costAmount.toLocaleString()} ${currencyWord}`}
                         </p>
                         {normalizedCost.costType !== "FREE" && (
                             <p className="text-xs font-medium text-slate-600 dark:text-slate-300">กดสุ่มแล้วไม่สามารถขอคืน{currencyWord}ได้</p>
@@ -452,12 +452,12 @@ export function GachaGridMachine({
                         </div>
                     )}
 
-                    <label className="flex w-fit cursor-pointer items-center gap-3 rounded-full border border-[#bfe5ce] bg-[#f8fffb] px-4 py-2 text-sm font-medium text-[#1c9751] dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-300">
+                    <label className="flex w-fit cursor-pointer items-center gap-3 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground">
                         <input
                             type="checkbox"
                             checked={skipAnimationEnabled}
                             onChange={(event) => handleSkipToggle(event.target.checked)}
-                            className="h-4 w-4 rounded border-[#1c9751]/40 text-[#1c9751] focus:ring-[#1c9751]"
+                            className="h-4 w-4 rounded border-border accent-primary"
                         />
                         ข้ามอนิเมชั่นอัตโนมัติ
                     </label>
@@ -466,7 +466,7 @@ export function GachaGridMachine({
                         {spinning ? (
                             <button
                                 disabled
-                                className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl bg-[#1c9751]/60 h-12 px-4 text-base font-bold text-white/85 sm:h-14"
+                                className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl bg-primary/60 h-12 px-4 text-base font-bold text-primary-foreground/85 sm:h-14"
                             >
                                 <Loader2 className="h-5 w-5 animate-spin" />
                                 กำลังสุ่ม...
@@ -475,7 +475,7 @@ export function GachaGridMachine({
                             <button
                                 onClick={() => { handleSpin().catch(() => undefined); }}
                                 disabled={loading || isBlocked || actualRewards.length === 0}
-                                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1c9751] h-12 px-4 text-base font-bold text-white shadow-[0_14px_28px_-20px_rgba(15,23,42,0.28)] transition-all hover:bg-[#167c42] active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-50 sm:h-14"
+                                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary h-12 px-4 text-base font-bold text-primary-foreground shadow-[0_14px_28px_-20px_rgba(15,23,42,0.28)] transition-all hover:bg-primary/90 active:scale-[0.985] disabled:cursor-not-allowed disabled:opacity-50 sm:h-14"
                             >
                                 <Gamepad2 className="h-5 w-5" />
                                 {getSpinButtonLabel(maintenance?.enabled)}
