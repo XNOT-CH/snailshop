@@ -106,8 +106,10 @@
 
 
   --background: #f5f7fa;
-  /* Home page's tinted band; --background alone sat too close to the white bands to read as alternating. */
-  --home-band: #e9eef6;
+  /* Home page bands: base, the tinted band it fades into, and the glow under the hero. */
+  --home-base: #ffffff;
+  --home-band: #e6eefb;
+  --home-glow: #d8e6fc;
   --foreground: #0a0e14;
   --card: #ffffff;
   --card-foreground: #0a0e14;
@@ -287,7 +289,9 @@ body.swal2-shown [class*="backdrop-blur"] {
 
 .dark {
   --background: #0a0e14;
-  --home-band: var(--background);
+  --home-base: var(--background);
+  --home-band: #0e1626;
+  --home-glow: #12203a;
   --foreground: #f5f7fa;
   --card: #12171e;
   --card-foreground: #f5f7fa;

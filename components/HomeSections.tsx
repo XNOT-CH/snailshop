@@ -10,21 +10,29 @@ import { getGachaCostLabel, normalizeGachaCost } from "@/lib/gachaCost";
 import { TOPUP_LABEL } from "@/lib/navigation";
 import { themeClasses } from "@/lib/theme";
 
-// A full-width band in one of the two page tones. The color is painted past the
-// content column with a spread shadow clipped to the band's height, so it spans
-// the screen without widening the page. "raised" matches the hero.
+// The tinted band fades in and out of the base instead of meeting it at a hard
+// edge, so the alternation reads without drawing a line across the page.
+const HOME_BAND_BACKGROUNDS = {
+  raised: "linear-gradient(var(--home-base), var(--home-base))",
+  plain: "linear-gradient(var(--home-base), var(--home-band) 120px, var(--home-band) calc(100% - 120px), var(--home-base))",
+  // First band under the hero: a soft glow that settles into the base.
+  lead: "linear-gradient(var(--home-glow), var(--home-base))",
+};
+
+// A full-width band in one of the page tones. The background is painted past the
+// content column as an outset border-image, so it spans the screen without
+// widening the page, and unlike a spread shadow it can carry a gradient.
 export function HomeBand({
   id,
   tone,
   className = "",
   children,
-}: Readonly<{ id?: string; tone: "plain" | "raised"; className?: string; children: ReactNode }>) {
-  const color = tone === "raised" ? "var(--card)" : "var(--home-band)";
+}: Readonly<{ id?: string; tone: keyof typeof HOME_BAND_BACKGROUNDS; className?: string; children: ReactNode }>) {
   return (
     <div
       id={id}
       className={`py-14 lg:py-16 ${className}`}
-      style={{ backgroundColor: color, boxShadow: `0 0 0 100vmax ${color}`, clipPath: "inset(0 -100vmax)" }}
+      style={{ borderImage: `${HOME_BAND_BACKGROUNDS[tone]} fill 0 / 0 / 0 100vmax` }}
     >
       {children}
     </div>

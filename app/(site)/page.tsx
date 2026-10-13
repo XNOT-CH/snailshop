@@ -310,7 +310,7 @@ export default async function HomePage() {
         </HomeBand>
       )}
       {sections.map((section, index) => (
-        <HomeBand key={section.key} id={section.key} tone={index % 2 === 0 ? "raised" : "plain"} className={section.className}>
+        <HomeBand key={section.key} id={section.key} tone={index === 0 ? "lead" : index % 2 === 0 ? "raised" : "plain"} className={section.className}>
           {section.node}
         </HomeBand>
       ))}
