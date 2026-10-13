@@ -586,7 +586,7 @@ export default function AdminSettingsPage() {
                             <div className={assetPanelClass}>
                                 <div className="space-y-1">
                                     <Label>โลโก้</Label>
-                                    <p className="text-xs text-muted-foreground">อัปโหลดหรือวาง URL เพื่อใช้เป็นโลโก้หลักของเว็บไซต์ • {IMAGE_UPLOAD_RECOMMENDATIONS.logoSquare}</p>
+                                    <p className="text-xs text-muted-foreground">อัปโหลดหรือวาง URL เพื่อใช้เป็นโลโก้หลักของเว็บไซต์ • {IMAGE_UPLOAD_RECOMMENDATIONS.logoWide}</p>
                                 </div>
                                 <div className="space-y-4">
                                     <div className="space-y-2">
