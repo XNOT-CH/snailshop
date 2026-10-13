@@ -109,7 +109,7 @@ export function FloatingPromoBanner() {
     return (
         <div
             className={cn(
-                "fixed right-3 z-40 w-28 transition-[translate,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none md:hidden",
+                "fixed right-3 z-40 w-24 transition-[translate,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none md:hidden",
                 MOBILE_STACK_OFFSET,
                 tucked && "translate-x-[75%] opacity-60"
             )}
@@ -148,7 +148,7 @@ export function FloatingPromoBanner() {
                                 alt={banner.alt}
                                 width={banner.width}
                                 height={banner.height}
-                                sizes="112px"
+                                sizes="96px"
                                 className="max-h-full w-auto max-w-full drop-shadow-lg"
                             />
                         </Link>
