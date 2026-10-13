@@ -19,7 +19,7 @@ export function HomeBand({
   className = "",
   children,
 }: Readonly<{ id?: string; tone: "plain" | "raised"; className?: string; children: ReactNode }>) {
-  const color = tone === "raised" ? "var(--card)" : "var(--background)";
+  const color = tone === "raised" ? "var(--card)" : "var(--home-band)";
   return (
     <div
       id={id}
