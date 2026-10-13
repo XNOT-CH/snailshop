@@ -240,8 +240,10 @@ export default async function ShopPage(props: ShopPageProps) {
                 : "border-border bg-card text-foreground hover:border-primary hover:text-primary"
         }`;
 
+    // The column fills the screen and the product band takes what's left, so a
+    // short listing never ends mid-screen with the old site background below it.
     return (
-        <>
+        <div className="flex min-h-[calc(100dvh-4rem)] flex-col">
         {/* No back button here: the shop is a top-level menu destination. */}
         <PageBand tone="lead" className="pt-10 pb-4 lg:pt-12 lg:pb-6">
             <h1 className="text-3xl font-bold leading-tight text-[var(--page-heading)] sm:text-4xl">ร้านค้า</h1>
@@ -250,7 +252,7 @@ export default async function ShopPage(props: ShopPageProps) {
             </p>
         </PageBand>
 
-        <PageBand tone="plain" className="pt-6 lg:pt-8">
+        <PageBand tone="plain" className="flex-1 pt-6 lg:pt-8">
             {/* One swipeable row on phones, like the home game picker; wraps from sm up. */}
             <div className="-mx-[calc(50vw-50%)] mb-4 flex gap-2 overflow-x-auto px-[calc(50vw-50%)] [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
                 <Link
@@ -341,15 +343,22 @@ export default async function ShopPage(props: ShopPageProps) {
                 </nav>
             )}
         </PageBand>
-        </>
+        </div>
     );
 }
 
 function EmptyState() {
     return (
-        <div className="text-center py-20 rounded-2xl bg-card border border-border">
-            <Package className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground text-lg">ไม่มีสินค้าในหมวดนี้</p>
+        <div className="flex flex-col items-center py-20 text-center">
+            <Package className="mb-4 h-12 w-12 text-muted-foreground/40" />
+            <p className="text-lg text-muted-foreground">ไม่มีสินค้าในหมวดนี้</p>
+            <Link
+                href="/shop?category=all"
+                prefetch={false}
+                className="mt-5 inline-flex h-10 items-center rounded-full border border-border bg-card px-5 text-sm font-medium text-foreground transition-colors duration-300 ease-out hover:border-primary hover:text-primary"
+            >
+                ดูสินค้าทั้งหมด
+            </Link>
         </div>
     );
 }
