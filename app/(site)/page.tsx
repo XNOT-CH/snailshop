@@ -5,7 +5,6 @@ import { getHeroBanners } from "@/components/HeroBanner";
 import { HomeProductTabs } from "@/components/HomeProductTabs";
 import {
   HomeFaq,
-  HomeBand,
   HOME_CATEGORIES,
   HomeCategories,
   HomeGachaMachines,
@@ -30,6 +29,7 @@ import { buildPageMetadata, DEFAULT_SITE_DESCRIPTION, resolveSiteName } from "@/
 import { cacheOrFetch, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { products, newsArticles, gachaMachines, helpArticles } from "@/lib/db";
+import { PageBand } from "@/components/PageBand";
 import { themeClasses } from "@/lib/theme";
 import { and, asc, count, desc, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
 
@@ -302,17 +302,17 @@ export default async function HomePage() {
       <WelcomeRedirect />
       <HomeHero siteName={siteName} banners={heroBanners} />
       {maintenance.purchase.enabled && (
-        <HomeBand tone="plain" className="pb-0 lg:pb-0">
+        <PageBand tone="plain" className="pb-0 lg:pb-0">
           <div className={`${themeClasses.alert} rounded-2xl px-4 py-3 text-sm`}>
             <p className="font-semibold">ระบบสั่งซื้อกำลังปิดปรับปรุงชั่วคราว</p>
             <p className="mt-1 text-xs">{maintenance.purchase.message}</p>
           </div>
-        </HomeBand>
+        </PageBand>
       )}
       {sections.map((section, index) => (
-        <HomeBand key={section.key} id={section.key} tone={index === 0 ? "lead" : index % 2 === 0 ? "raised" : "plain"} className={section.className}>
+        <PageBand key={section.key} id={section.key} tone={index === 0 ? "lead" : index % 2 === 0 ? "raised" : "plain"} className={section.className}>
           {section.node}
-        </HomeBand>
+        </PageBand>
       ))}
     </div>
   );

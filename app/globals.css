@@ -106,12 +106,12 @@
 
 
   --background: #f5f7fa;
-  /* Home page bands: base, the tinted band it fades into, and the glow under the hero. */
-  --home-base: #ffffff;
-  --home-band: #e6eefb;
-  --home-glow: #d8e6fc;
-  /* Section headings: a deep navy, after the fastwork.co reference, instead of near-black. */
-  --home-heading: #133a7c;
+  /* Page bands (home and the redesigned pages): base, the tinted band it fades into, and the glow under the page top. */
+  --page-base: #ffffff;
+  --page-band: #e6eefb;
+  --page-glow: #d8e6fc;
+  /* Page and section headings: a deep navy, after the fastwork.co reference, instead of near-black. */
+  --page-heading: #133a7c;
   --foreground: #0a0e14;
   --card: #ffffff;
   --card-foreground: #0a0e14;
@@ -291,10 +291,10 @@ body.swal2-shown [class*="backdrop-blur"] {
 
 .dark {
   --background: #0a0e14;
-  --home-base: var(--background);
-  --home-band: #0e1626;
-  --home-glow: #12203a;
-  --home-heading: var(--foreground);
+  --page-base: var(--background);
+  --page-band: #0e1626;
+  --page-glow: #12203a;
+  --page-heading: var(--foreground);
   --foreground: #f5f7fa;
   --card: #12171e;
   --card-foreground: #f5f7fa;
