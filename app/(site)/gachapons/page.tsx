@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { and, eq } from "drizzle-orm";
 import { db, gachaMachines } from "@/lib/db";
 import { GachaHubClient } from "@/components/GachaHubClient";
+import { PageBand } from "@/components/PageBand";
 import { StructuredData } from "@/components/StructuredData";
 import { buildPageMetadata, absoluteUrl } from "@/lib/seo";
 
@@ -43,35 +43,24 @@ export default async function GachaHubPage() {
             url: absoluteUrl(machine.gameType === "GRID_3X3" ? `/gacha-grid/${machine.id}` : `/gacha/${machine.id}`),
         })),
     };
+    // Same frame as the shop: a glow behind the title, the machines on the tinted
+    // band, and the column filling the screen so the old background stays hidden.
     return (
-        <div className="animate-page-enter">
+        <div className="animate-page-enter flex min-h-[calc(100dvh-4rem)] flex-col">
             <StructuredData data={structuredData} />
-            <div className="relative left-1/2 w-screen -translate-x-1/2 border-y border-border/50 bg-card/90 px-3 pb-8 pt-4 shadow-xl shadow-primary/10 backdrop-blur-sm sm:left-auto sm:w-auto sm:translate-x-0 sm:border sm:bg-card/90 sm:px-5 sm:py-7 sm:backdrop-blur-sm lg:px-6">
-                <div className="relative left-1/2 mb-4 w-screen -translate-x-1/2 sm:left-auto sm:mb-6 sm:w-auto sm:translate-x-0">
-                    <div className="relative overflow-hidden bg-gradient-to-br from-[#145de7] via-[#1f4fc2] to-[#10284d] px-5 py-6 text-center sm:px-6 sm:py-8">
-                        <div
-                            className="absolute inset-0 opacity-10"
-                            style={{
-                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='52' viewBox='0 0 60 52'%3E%3Cpolygon points='30,0 60,17 60,35 30,52 0,35 0,17' fill='none' stroke='white' stroke-width='1'/%3E%3C/svg%3E")`,
-                                backgroundSize: "60px 52px",
-                            }}
-                        />
-                        <h1 className="relative z-10 mb-1.5 text-2xl font-bold tracking-wide text-white sm:text-3xl">หมวดหมู่กาชา</h1>
-                        <p className="relative z-10 flex flex-wrap items-center justify-center gap-1 text-xs font-medium text-blue-200 sm:gap-1.5 sm:text-sm">
-                            <Link href="/" prefetch={false} className="transition-colors hover:text-white">หน้าหลัก</Link>
-                            <span className="opacity-60">&gt;</span>
-                            <span className="font-semibold text-white">หมวดหมู่กาชา</span>
-                        </p>
-                    </div>
-                </div>
+            <PageBand tone="lead" className="pt-10 pb-4 lg:pt-12 lg:pb-6">
+                <h1 className="text-3xl font-bold leading-tight text-[var(--page-heading)] sm:text-4xl">ตู้กาชา</h1>
+                <p className="mt-2 text-muted-foreground">สุ่มรางวัลจากตู้ที่เปิดอยู่ตอนนี้</p>
+            </PageBand>
 
+            <PageBand tone="plain" className="flex-1 pt-6 lg:pt-8">
                 <GachaHubClient
                     machines={machines.map((machine) => ({
                         ...machine,
                         costAmount: Number(machine.costAmount),
                     }))}
                 />
-            </div>
+            </PageBand>
         </div>
     );
 }
