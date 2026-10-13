@@ -17,8 +17,12 @@ export function HomeHero({ siteName, banners }: Readonly<HomeHeroProps>) {
       className="relative isolate bg-[var(--hero-band)] py-3 shadow-[0_0_0_100vmax_var(--hero-band)] [--hero-band:#0a0e14] [clip-path:inset(0_-100vmax)] md:py-4"
     >
       {/* The carousel reaches the screen edges, past the page container; clip
-          the sideways overflow so it never adds a scrollbar. */}
-      <style href="home-hero-clip" precedence="default">{"html:has(#home-hero){overflow-x:clip}"}</style>
+          the sideways overflow so it never adds a scrollbar. Dropped while a
+          Radix sheet or menu holds the scroll lock: its overflow:hidden on
+          <body> only reaches the viewport when <html> is overflow:visible, so
+          under the clip <body> turned into its own scroller, unsticking the
+          header and shifting the page sideways. */}
+      <style href="home-hero-clip" precedence="default">{"html:has(#home-hero):not(:has(body[data-scroll-locked])){overflow-x:clip}"}</style>
       <h1 className="sr-only">{siteName}</h1>
       <div className="motion-safe:animate-in motion-safe:fade-in motion-safe:duration-700 motion-safe:fill-mode-both">
         <HomeHeroCarousel banners={banners} />

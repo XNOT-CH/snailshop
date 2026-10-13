@@ -8,7 +8,9 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // /product: the sticky buy bar takes this corner on product pages.
-const HIDDEN_PATH_PREFIXES = ["/login", "/register", "/admin", "/product/"];
+// /dashboard: account pages are forms and purchased items, and the banner sat
+// over their fields and buttons there.
+const HIDDEN_PATH_PREFIXES = ["/login", "/register", "/admin", "/product/", "/dashboard"];
 
 // Clears the mobile bottom nav; nothing else floats in this corner since
 // the chat FAB was removed (chat now opens from the navbar icon).
@@ -107,7 +109,7 @@ export function FloatingPromoBanner() {
     return (
         <div
             className={cn(
-                "fixed right-3 z-40 w-28 transition-[translate,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none md:hidden",
+                "fixed right-3 z-40 w-24 transition-[translate,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none md:hidden",
                 MOBILE_STACK_OFFSET,
                 tucked && "translate-x-[75%] opacity-60"
             )}
@@ -146,7 +148,7 @@ export function FloatingPromoBanner() {
                                 alt={banner.alt}
                                 width={banner.width}
                                 height={banner.height}
-                                sizes="112px"
+                                sizes="96px"
                                 className="max-h-full w-auto max-w-full drop-shadow-lg"
                             />
                         </Link>
