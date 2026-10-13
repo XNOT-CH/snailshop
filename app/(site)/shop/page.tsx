@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
 import { and, asc, count, desc, eq, gt, isNull, sql } from "drizzle-orm";
 import Link from "next/link";
-import { ShoppingBag, Package, TrendingUp } from "lucide-react";
+import { Package } from "lucide-react";
 import { ProductCard } from "@/components/ProductCard";
-import { PageBreadcrumb } from "@/components/PageBreadcrumb";
+import { PageBand } from "@/components/PageBand";
 import { ShopControls } from "@/components/ShopControls";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { db, products } from "@/lib/db";
 import { getSoldCountMap } from "@/lib/features/orders/queries";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
@@ -136,12 +134,10 @@ export default async function ShopPage(props: ShopPageProps) {
     })();
 
     const [
-        [{ count: totalProductCount }],
         dbCategoryCounts,
         legacyProductsForCounts,
         [{ count: dbSellableProductCount }],
     ] = await Promise.all([
-        db.select({ count: count() }).from(products).where(notDeleted),
         db.select({
             category: products.category,
             categoryCount: count(),
@@ -187,7 +183,6 @@ export default async function ShopPage(props: ShopPageProps) {
         }
     }
 
-    const availableProductCount = Array.from(categoryCountMap.values()).reduce((sum, value) => sum + value, 0);
     const categoryCounts = Array.from(categoryCountMap, ([category, categoryCount]) => ({
         category,
         count: categoryCount,
@@ -237,61 +232,48 @@ export default async function ShopPage(props: ShopPageProps) {
         return `/shop?${params.toString()}`;
     };
 
+    // Same chip as the home page's game picker; counts left out, as on home.
+    const chipClass = (active: boolean) =>
+        `inline-flex h-10 shrink-0 items-center whitespace-nowrap rounded-full border px-4 text-sm font-medium transition-colors duration-300 ease-out ${
+            active
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card text-foreground hover:border-primary hover:text-primary"
+        }`;
+
+    // The column fills the screen and the product band takes what's left, so a
+    // short listing never ends mid-screen with the old site background below it.
     return (
-        <div className="relative left-1/2 w-screen -translate-x-1/2 border-y border-border/50 bg-card/95 px-3 pb-0 pt-4 shadow-xl shadow-primary/10 sm:left-auto sm:w-auto sm:translate-x-0 sm:border sm:px-5 sm:py-7 lg:px-6">
-            <PageBreadcrumb items={[{ label: "ร้านค้า" }]} className="mb-4" />
+        <div className="flex min-h-[calc(100dvh-4rem)] flex-col">
+        {/* No back button here: the shop is a top-level menu destination. */}
+        <PageBand tone="lead" className="pt-10 pb-4 lg:pt-12 lg:pb-6">
+            <h1 className="text-3xl font-bold leading-tight text-[var(--page-heading)] sm:text-4xl">ร้านค้า</h1>
+            <p className="mt-2 text-muted-foreground">
+                ค้นหาและซื้อไอดีเกมที่คุณต้องการ
+            </p>
+        </PageBand>
 
-            <div className="mb-7 sm:mb-8">
-                <div className="flex items-center gap-3 mb-2">
-                    <ShoppingBag className="h-8 w-8 text-primary" />
-                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground">ร้านค้า</h1>
-                </div>
-                <p className="text-muted-foreground">
-                    ค้นหาและซื้อไอดีเกมที่คุณต้องการ
-                </p>
-
-                <div className="mt-4 flex flex-wrap items-center gap-3">
-                    <Badge variant="secondary" className="gap-1">
-                        <Package className="h-3 w-3" />
-                        ทั้งหมด {Number(totalProductCount)} รายการ
-                    </Badge>
-                    <Badge variant="default" className="gap-1 bg-green-600">
-                        <TrendingUp className="h-3 w-3" />
-                        พร้อมขาย {Number(availableProductCount)} รายการ
-                    </Badge>
-                </div>
-            </div>
-
-            <Separator className="mb-6 sm:mb-8" />
-
-            <div className="mb-4 px-1 pb-1 sm:pb-2">
-                <div className="flex flex-wrap gap-2">
+        <PageBand tone="plain" className="flex-1 pt-6 lg:pt-8">
+            {/* One swipeable row on phones, like the home game picker; wraps from sm up. */}
+            <div className="-mx-[calc(50vw-50%)] mb-4 flex gap-2 overflow-x-auto px-[calc(50vw-50%)] [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+                <Link
+                    href={`/shop?category=all&sort=${currentSort}`}
+                    prefetch={false}
+                    scroll={false}
+                    className={chipClass(currentCategory === "all")}
+                >
+                    ทั้งหมด
+                </Link>
+                {categoryCounts.map((category) => (
                     <Link
-                        href={`/shop?category=all&sort=${currentSort}`}
+                        key={category.category}
+                        href={`/shop?category=${encodeURIComponent(category.category)}&sort=${currentSort}`}
                         prefetch={false}
                         scroll={false}
-                            className={`inline-flex h-8 items-center justify-center whitespace-nowrap rounded-full px-4 text-sm font-medium transition-all duration-150 ${currentCategory === "all"
-                            ? "bg-primary text-primary-foreground shadow-sm"
-                            : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
-                            }`}
+                        className={chipClass(currentCategory === category.category)}
                     >
-                        ทั้งหมด ({Number(availableProductCount)})
+                        {category.category}
                     </Link>
-                    {categoryCounts.map((category) => (
-                        <Link
-                            key={category.category}
-                            href={`/shop?category=${encodeURIComponent(category.category)}&sort=${currentSort}`}
-                            prefetch={false}
-                            scroll={false}
-                            className={`inline-flex h-8 items-center justify-center whitespace-nowrap rounded-full px-4 text-sm font-medium transition-all duration-150 ${currentCategory === category.category
-                                ? "bg-primary text-primary-foreground shadow-sm"
-                                : "bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
-                                }`}
-                        >
-                            {category.category} ({Number(category.count)})
-                        </Link>
-                    ))}
-                </div>
+                ))}
             </div>
 
             <div className="mb-6 w-full">
@@ -337,7 +319,7 @@ export default async function ShopPage(props: ShopPageProps) {
                         className={`inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold transition-colors ${
                             currentPage === 1
                                 ? "pointer-events-none bg-muted/60 text-muted-foreground/50"
-                                : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                                : "border border-border bg-card text-foreground hover:border-primary hover:text-primary"
                         }`}
                     >
                         ก่อนหน้า
@@ -360,15 +342,23 @@ export default async function ShopPage(props: ShopPageProps) {
                     </Link>
                 </nav>
             )}
+        </PageBand>
         </div>
     );
 }
 
 function EmptyState() {
     return (
-        <div className="text-center py-20 rounded-2xl bg-card border border-border">
-            <Package className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-            <p className="text-muted-foreground text-lg">ไม่มีสินค้าในหมวดนี้</p>
+        <div className="flex flex-col items-center py-20 text-center">
+            <Package className="mb-4 h-12 w-12 text-muted-foreground/40" />
+            <p className="text-lg text-muted-foreground">ไม่มีสินค้าในหมวดนี้</p>
+            <Link
+                href="/shop?category=all"
+                prefetch={false}
+                className="mt-5 inline-flex h-10 items-center rounded-full border border-border bg-card px-5 text-sm font-medium text-foreground transition-colors duration-300 ease-out hover:border-primary hover:text-primary"
+            >
+                ดูสินค้าทั้งหมด
+            </Link>
         </div>
     );
 }

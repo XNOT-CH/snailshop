@@ -45,10 +45,10 @@ export function ProductCard({
     const isUnavailable = isSold || stockCount === 0;
 
     return (
-        <RevealOnScroll index={index}>
+        <RevealOnScroll index={index} className="h-full">
             <div
                 className={`
-                    ${themeClasses.surface} storefront-product-card group relative flex flex-col overflow-hidden rounded-2xl transition-colors duration-200 hover:border-primary/40
+                    ${themeClasses.surface} storefront-product-card group relative flex h-full flex-col overflow-hidden rounded-2xl transition-colors duration-200 hover:border-primary/40
                 `}
             >
                 <div className={`${themeClasses.surfaceMedia} relative m-2 mb-0 aspect-square overflow-hidden rounded-xl sm:m-2.5 sm:mb-0`}>
@@ -78,7 +78,13 @@ export function ProductCard({
                     />
                 </div>
                 <div className="flex flex-1 flex-col p-3 sm:p-4">
-                    <h3 className="mb-1 truncate text-sm font-semibold leading-tight text-foreground sm:text-base">
+                    {/* Text block grows so the actions sit level across a grid row,
+                        whether a name takes one line or two. */}
+                    <div className="flex-1">
+                    <span className="mb-1.5 inline-block max-w-full truncate rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                        {category}
+                    </span>
+                    <h3 className="mb-1 line-clamp-2 text-sm font-semibold leading-snug text-foreground sm:text-base">
                         <Link href={`/product/${id}`} prefetch={false} className="transition-colors hover:text-primary">
                             {title}
                         </Link>
@@ -92,6 +98,14 @@ export function ProductCard({
                                 {formatCurrencyAmount(price, currency, currencySettings)}
                             </p>
                         )}
+                    </div>
+                    {/* "Sold 0" reads as nobody buys here, so the line waits for a first sale. */}
+                    {(soldCount ?? 0) > 0 && (
+                        <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Package className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">ขายไปแล้ว {(soldCount ?? 0).toLocaleString("th-TH")} ชิ้น</span>
+                        </div>
+                    )}
                     </div>
                     <ProductCardActions
                         id={id}
@@ -107,13 +121,6 @@ export function ProductCard({
                         currencySettings={currencySettings}
                         initialPurchaseMaintenance={initialPurchaseMaintenance}
                     />
-                    {/* "Sold 0" reads as nobody buys here, so the line waits for a first sale. */}
-                    {(soldCount ?? 0) > 0 && (
-                        <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                            <Package className="h-3.5 w-3.5 shrink-0" />
-                            <span className="truncate">ขายไปแล้ว {(soldCount ?? 0).toLocaleString("th-TH")} ชิ้น</span>
-                        </div>
-                    )}
                 </div>
             </div>
         </RevealOnScroll>

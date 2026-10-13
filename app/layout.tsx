@@ -12,7 +12,6 @@ import {
   resolveSiteName,
   toAbsoluteAssetUrl,
 } from "@/lib/seo";
-import { getOptimizedUploadSrc } from "@/lib/imageUrl";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
 const prompt = Prompt({
@@ -50,11 +49,6 @@ export async function generateMetadata(): Promise<Metadata> {
   const siteName = resolveSiteName(settings?.heroTitle);
   const siteDescription = settings?.heroDescription?.trim() || DEFAULT_SITE_DESCRIPTION;
   const siteTitle = `${siteName} - Game ID Marketplace`;
-  // The stored logo is a full-size upload (can be 100KB+); browsers fetch the
-  // favicon on every cold page view, so serve a 128px optimizer variant.
-  const faviconUrl = toAbsoluteAssetUrl(
-    settings?.logoUrl ? getOptimizedUploadSrc(settings.logoUrl, 128, 75) : settings?.logoUrl,
-  );
   const socialImage =
     toAbsoluteAssetUrl(settings?.ogImageUrl || settings?.bannerImage1 || settings?.logoUrl) ||
     absoluteUrl(DEFAULT_OG_IMAGE_PATH);
@@ -88,15 +82,8 @@ export async function generateMetadata(): Promise<Metadata> {
       description: siteDescription,
       images: [socialImage],
     },
-    ...(faviconUrl
-      ? {
-          icons: {
-            icon: faviconUrl,
-            shortcut: faviconUrl,
-            apple: faviconUrl,
-          },
-        }
-      : {}),
+    // Tab and home-screen icons come from app/icon.png, app/apple-icon.png and
+    // app/favicon.ico: a square mark, separate from the header logo, which is wide.
     robots: {
       index: true,
       follow: true,

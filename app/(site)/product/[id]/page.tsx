@@ -4,8 +4,11 @@ import { cache } from "react";
 import type { Metadata } from "next";
 import { ProductGallery } from "@/components/ProductGallery";
 import { ProductActions } from "@/components/ProductActions";
+import { ProductStickyBuyBar } from "@/components/ProductStickyBuyBar";
 import { ProductCard } from "@/components/ProductCard";
+import { PageBand } from "@/components/PageBand";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
+import { HomeSectionHeading, HomeSeeAllLink } from "@/components/HomeSections";
 import { ShareButtons } from "@/components/ShareButtons";
 import { StructuredData } from "@/components/StructuredData";
 import { Info } from "lucide-react";
@@ -17,7 +20,6 @@ import { absoluteUrl, buildPageMetadata, resolveSiteName, toAbsoluteAssetUrl } f
 import { formatCurrencyAmount } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getSiteSettings } from "@/lib/getSiteSettings";
-import { themeClasses } from "@/lib/theme";
 import { getPrimaryProductImage, normalizeProductImageUrls } from "@/lib/productImages";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
 import { recordProductView } from "@/lib/features/products/productViews";
@@ -196,92 +198,96 @@ export default async function ProductDetailPage({
         },
     ];
 
+    // No boxes: the lead band carries the product, the tinted band the related
+    // items, and the column fills the screen so the old background never shows.
     return (
-        <div className="animate-page-enter relative left-1/2 w-screen -translate-x-1/2 bg-gradient-to-b from-background via-muted/25 to-background pt-6 pb-0 sm:left-auto sm:w-auto sm:translate-x-0 sm:py-10">
+        <div className="animate-page-enter flex min-h-[calc(100dvh-4rem)] flex-col">
             <StructuredData data={structuredData} />
 
-            <div
-                className={`${themeClasses.shell} relative mx-auto max-w-screen-2xl overflow-hidden rounded-3xl backdrop-blur-xl`}
-            >
-                <div className="border-b border-border/60 bg-gradient-to-r from-card/92 via-card to-card/92 p-6 sm:p-8">
-                    <PageBreadcrumb
-                        items={[
-                            { label: "ร้านค้า", href: "/shop" },
-                            { label: product.name },
-                        ]}
-                        className="mb-6"
-                    />
+            <PageBand tone="lead" className={`pt-6 pb-4 lg:pt-8 lg:pb-6 ${relatedProducts.length === 0 ? "flex-1" : ""}`}>
+                <PageBreadcrumb
+                    items={[
+                        { label: "ร้านค้า", href: "/shop" },
+                        { label: product.name },
+                    ]}
+                    className="mb-6 justify-start"
+                />
 
-                    <div className="mt-2 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)] xl:gap-8">
-                        <div className={`${themeClasses.panelSoft} w-full rounded-3xl px-4 py-6 sm:px-6`}>
-                            <ProductGallery images={productImages} />
-                            <div className="mt-5 border-t border-border/60 pt-4">
-                                <ShareButtons title={product.name} />
-                            </div>
-                        </div>
-
-                        <div className={`${themeClasses.panel} min-w-0 rounded-3xl px-4 py-6 sm:px-6`}>
-                            <div className="border-b border-border/60 pb-5">
-                                <h1 className="text-2xl font-bold leading-snug text-foreground">
-                                    {product.name}
-                                </h1>
-
-                                <div className="mt-3">
-                                    <div className="flex flex-wrap items-baseline gap-2">
-                                        <span className="text-2xl font-bold text-primary">
-                                            {formatCurrencyAmount(displayPrice, product.currency, currencySettings)} ต่อชิ้น
-                                        </span>
-                                        {discountPrice && (
-                                            <span className="text-base text-muted-foreground line-through">
-                                                {formatCurrencyAmount(price, product.currency, currencySettings)}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <p className="mt-1 text-sm text-muted-foreground">
-                                        มีสินค้าทั้งหมด {stockCount} ชิ้น
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div className="mt-5">
-                                <ProductActions
-                                    product={{
-                                        id: product.id,
-                                        name: product.name,
-                                        price,
-                                        discountPrice,
-                                        currency: product.currency,
-                                        imageUrl: product.imageUrl,
-                                        category: product.category,
-                                    }}
-                                    disabled={!isAvailable}
-                                    maxQuantity={stockCount}
-                                    currencySettings={currencySettings}
-                                    checkboxes={checkboxes}
-                                />
-                            </div>
-
-                            {product.description && (
-                                <div className="mt-5 space-y-2 border-t border-border/60 pt-5">
-                                    <p className="text-sm text-muted-foreground flex items-center gap-1.5">
-                                        <Info className="h-3.5 w-3.5" />
-                                        รายละเอียดสินค้า
-                                    </p>
-                                    <div className={`${themeClasses.surfaceSoft} min-h-[60px] w-full rounded-3xl px-6 py-5 text-sm leading-loose text-foreground whitespace-pre-line`}>
-                                        {product.description}
-                                    </div>
-                                </div>
-                            )}
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)] xl:grid-cols-[minmax(0,420px)_minmax(0,1fr)] xl:gap-12">
+                    <div className="w-full">
+                        <ProductGallery images={productImages} />
+                        <div className="mt-5">
+                            <ShareButtons title={product.name} />
                         </div>
                     </div>
+
+                    <div className="min-w-0">
+                        <span className="inline-block max-w-full truncate rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                            {product.category}
+                        </span>
+                        <h1 className="mt-2 text-2xl font-bold leading-snug text-[var(--page-heading)] sm:text-3xl">
+                            {product.name}
+                        </h1>
+
+                        <div className="mt-3">
+                            <div className="flex flex-wrap items-baseline gap-2">
+                                <span className="text-2xl font-bold text-primary">
+                                    {formatCurrencyAmount(displayPrice, product.currency, currencySettings)} ต่อชิ้น
+                                </span>
+                                {discountPrice && (
+                                    <span className="text-base text-muted-foreground line-through">
+                                        {formatCurrencyAmount(price, product.currency, currencySettings)}
+                                    </span>
+                                )}
+                            </div>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                                มีสินค้าทั้งหมด {stockCount} ชิ้น
+                            </p>
+                        </div>
+
+                        <div id="product-purchase" className="mt-6 scroll-mt-24">
+                            <ProductActions
+                                product={{
+                                    id: product.id,
+                                    name: product.name,
+                                    price,
+                                    discountPrice,
+                                    currency: product.currency,
+                                    imageUrl: product.imageUrl,
+                                    category: product.category,
+                                }}
+                                disabled={!isAvailable}
+                                maxQuantity={stockCount}
+                                currencySettings={currencySettings}
+                                checkboxes={checkboxes}
+                            />
+                        </div>
+
+                        {product.description && (
+                            <div className="mt-8">
+                                <h2 className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground">
+                                    <Info className="h-3.5 w-3.5" />
+                                    รายละเอียดสินค้า
+                                </h2>
+                                <p className="mt-2 whitespace-pre-line text-sm leading-loose text-foreground">
+                                    {product.description}
+                                </p>
+                            </div>
+                        )}
+                    </div>
                 </div>
-            </div>
+            </PageBand>
+
+            {isAvailable && (
+                <ProductStickyBuyBar
+                    priceLabel={formatCurrencyAmount(displayPrice, product.currency, currencySettings)}
+                    targetId="product-purchase"
+                />
+            )}
 
             {relatedProducts.length > 0 && (
-                <div className={`${themeClasses.shell} mx-auto mt-10 mb-2 max-w-screen-2xl rounded-3xl p-4 sm:mt-16 sm:mb-8 sm:p-6`}>
-                    <h2 className="text-xl font-bold text-foreground mb-6 flex items-center gap-2">
-                        รายการสินค้าอื่น ๆ
-                    </h2>
+                <PageBand tone="plain" className="flex-1 pt-10 lg:pt-12">
+                    <HomeSectionHeading title="รายการสินค้าอื่น ๆ" action={<HomeSeeAllLink href="/shop" />} />
 
                     <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
                         {relatedProducts.map((related, index) => {
@@ -315,7 +321,7 @@ export default async function ProductDetailPage({
                             );
                         })}
                     </div>
-                </div>
+                </PageBand>
             )}
         </div>
     );

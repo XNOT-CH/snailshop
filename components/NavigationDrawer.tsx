@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
+import { BrandWordmark } from "@/components/BrandWordmark";
 import { usePathname } from "next/navigation";
 import {
     X, Home, Wallet, User, ChevronRight, Gamepad2,
@@ -175,13 +176,13 @@ export function NavigationDrawer({
                         className="flex items-center gap-2.5"
                     >
                         {logoUrl ? (
-                            <Image src={logoUrl} alt={siteName} width={32} height={32} className="object-contain" />
+                            <Image src={logoUrl} alt={siteName} width={96} height={32} className="h-7 w-auto max-w-[84px] object-contain" />
                         ) : (
                             <div className="h-8 w-8 rounded-lg bg-accent flex items-center justify-center">
                                 <Gamepad2 className="h-4 w-4 text-foreground" />
                             </div>
                         )}
-                        <span className="font-bold text-sm tracking-widest uppercase text-foreground">{siteName}</span>
+                        <BrandWordmark alt={siteName} className="h-4" />
                     </Link>
                     <button
                         onClick={() => setIsOpen(false)}

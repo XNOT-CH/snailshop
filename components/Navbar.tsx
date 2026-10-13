@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { BrandWordmark } from "@/components/BrandWordmark";
 import { auth } from "@/auth";
 import { db, users, navItems, products } from "@/lib/db";
 import { and, asc, count, eq, isNull } from "drizzle-orm";
@@ -110,25 +111,25 @@ export default async function Navbar() {
                 <Link
                     href="/"
                     prefetch={false}
-                    className="flex shrink-0 items-center gap-3.5 text-lg font-semibold text-primary xl:min-w-0"
+                    className="flex shrink-0 items-center gap-2.5 text-lg font-semibold text-primary xl:min-w-0"
                 >
                     {siteSettings?.logoUrl ? (
                         <Image
                             src={siteSettings.logoUrl}
                             alt="Logo"
-                            width={60}
-                            height={60}
+                            // Height-locked, width follows the art, so a wide logo reads at full
+                            // size instead of shrinking into a square box.
+                            width={160}
+                            height={56}
                             priority
-                            className="h-12 w-12 object-contain sm:h-14 sm:w-14"
+                            className="h-[34px] w-auto max-w-[110px] object-contain lg:h-8 xl:h-[34px]"
                         />
                     ) : (
                         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary sm:h-14 sm:w-14">
                             <Gamepad2 className="h-6 w-6 text-white sm:h-7 sm:w-7" />
                         </div>
                     )}
-                    <span className="hidden whitespace-nowrap pr-1 font-bold leading-none tracking-tight text-foreground sm:inline sm:text-lg lg:text-xl">
-                        {siteName}
-                    </span>
+                    <BrandWordmark alt={siteName} className="hidden h-4 sm:block lg:h-[15px] xl:h-[17px]" />
                 </Link>
 
                 <nav className="hidden min-w-0 items-center justify-center gap-0.5 lg:flex">

@@ -7,7 +7,8 @@ import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const HIDDEN_PATH_PREFIXES = ["/login", "/register", "/admin"];
+// /product: the sticky buy bar takes this corner on product pages.
+const HIDDEN_PATH_PREFIXES = ["/login", "/register", "/admin", "/product/"];
 
 // Clears the mobile bottom nav; nothing else floats in this corner since
 // the chat FAB was removed (chat now opens from the navbar icon).

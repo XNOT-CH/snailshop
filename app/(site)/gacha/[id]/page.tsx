@@ -3,12 +3,13 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { db, users, gachaMachines, gachaRewards } from "@/lib/db";
 import { eq, and } from "drizzle-orm";
-import { Lock } from "lucide-react";
+import { ArrowLeft, Lock } from "lucide-react";
 import { auth } from "@/auth";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { GachaRhombus } from "@/components/GachaRhombus";
 import { GachaGridMachine } from "@/components/GachaGridMachine";
+import { PageBand } from "@/components/PageBand";
 import { type GachaProductLite } from "@/lib/gachaGrid";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { normalizeGachaCost } from "@/lib/gachaCost";
@@ -126,70 +127,57 @@ export default async function GachaPage({ params }: Readonly<{ params: Promise<{
         dailySpinLimit: machine.dailySpinLimit,
     };
 
+    // Same frame as the shop and the machine list: a glow behind the title with a
+    // way back to the list, and the board on the tinted band below it.
     return (
-        <div className="relative left-1/2 min-h-screen w-screen -translate-x-1/2 bg-background sm:left-auto sm:w-auto sm:translate-x-0">
-            <div className="relative overflow-hidden bg-gradient-to-br from-[#145de7] via-[#1f4fc2] to-[#10284d] px-5 py-6 text-center sm:px-6 sm:py-8">
-                <div
-                    className="absolute inset-0 opacity-[0.06]"
-                    style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='52' viewBox='0 0 60 52'%3E%3Cpolygon points='30,0 60,17 60,35 30,52 0,35 0,17' fill='none' stroke='white' stroke-width='1'/%3E%3C/svg%3E")`,
-                        backgroundSize: "60px 52px",
-                    }}
-                />
-                <h1 className="relative z-10 mb-1.5 text-2xl font-bold tracking-wide text-white sm:text-3xl">{machine.name}</h1>
-                <div className="relative z-10 md:hidden">
-                    <Link
-                        href="/gachapons"
-                        prefetch={false}
-                        className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-medium text-blue-100 transition-colors hover:bg-white/15 hover:text-white"
-                    >
-                        หมวดหมู่กาชา
-                    </Link>
-                </div>
-                <p className="relative z-10 hidden flex-wrap items-center justify-center gap-1 text-xs font-medium text-blue-200 md:flex md:text-sm">
-                    <Link href="/" prefetch={false} className="transition-colors hover:text-white">หน้าหลัก</Link>
-                    <span className="opacity-60">&gt;</span>
-                    <Link href="/gachapons" prefetch={false} className="transition-colors hover:text-white">หมวดหมู่กาชา</Link>
-                    <span className="opacity-60">&gt;</span>
-                    <span className="font-semibold text-white">{machine.name}</span>
-                </p>
-            </div>
+        <div className="flex min-h-[calc(100dvh-4rem)] flex-col">
+            <PageBand tone="lead" className="pt-8 pb-2 lg:pt-10 lg:pb-4">
+                <Link
+                    href="/gachapons"
+                    prefetch={false}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors duration-300 ease-out hover:text-primary"
+                >
+                    <ArrowLeft className="h-4 w-4" />
+                    ตู้กาชา
+                </Link>
+                <h1 className="mt-3 text-3xl font-bold leading-tight text-[var(--page-heading)] sm:text-4xl">{machine.name}</h1>
+            </PageBand>
 
-            <div className="mx-auto max-w-4xl px-4 pb-8 pt-3 sm:py-8">
-                <div className="overflow-x-hidden bg-card/90 px-4 pb-6 pt-2 backdrop-blur-sm sm:rounded-3xl sm:border sm:border-border/80 sm:bg-card/95 sm:shadow-[0_28px_70px_-40px_rgba(15,23,42,0.45)] sm:backdrop-blur-sm sm:px-6 sm:py-6 md:px-10">
-                    <div className="flex flex-col items-center gap-6">
-                        {settings.dailySpinLimit > 0 && (
-                            <div className="flex w-full justify-end">
-                                <span className="rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1 text-sm font-medium text-orange-500 shadow-sm">
-                                    สุ่มได้ {settings.dailySpinLimit} ครั้ง/วัน
-                                </span>
-                            </div>
-                        )}
-
-                        <div className="flex w-full justify-center">
-                            {machine.gameType === "GRID_3X3" ? (
-                                <GachaGridMachine
-                                    machineId={machine.id}
-                                    machineName={machine.name}
-                                    costType={normalizedCost.costType}
-                                    costAmount={normalizedCost.costAmount}
-                                    initialBalances={initialBalances}
-                                    maintenance={maintenance}
-                                />
-                            ) : (
-                                <GachaRhombus
-                                    products={products}
-                                    settings={settings}
-                                    initialBalances={initialBalances}
-                                    machineId={machine.id}
-                                    maintenance={maintenance}
-                                    shouldRestorePendingSpin={shouldRestorePendingSpin}
-                                />
-                            )}
+            <PageBand tone="plain" className="flex-1 pt-6 lg:pt-8">
+                <div className="mx-auto max-w-4xl">
+                <div className="flex flex-col items-center gap-6">
+                    {settings.dailySpinLimit > 0 && (
+                        <div className="flex w-full justify-end">
+                            <span className="rounded-full border border-orange-500/20 bg-orange-500/10 px-3 py-1 text-sm font-medium text-orange-500 shadow-sm">
+                                สุ่มได้ {settings.dailySpinLimit} ครั้ง/วัน
+                            </span>
                         </div>
+                    )}
+
+                    <div className="flex w-full justify-center">
+                        {machine.gameType === "GRID_3X3" ? (
+                            <GachaGridMachine
+                                machineId={machine.id}
+                                machineName={machine.name}
+                                costType={normalizedCost.costType}
+                                costAmount={normalizedCost.costAmount}
+                                initialBalances={initialBalances}
+                                maintenance={maintenance}
+                            />
+                        ) : (
+                            <GachaRhombus
+                                products={products}
+                                settings={settings}
+                                initialBalances={initialBalances}
+                                machineId={machine.id}
+                                maintenance={maintenance}
+                                shouldRestorePendingSpin={shouldRestorePendingSpin}
+                            />
+                        )}
                     </div>
                 </div>
-            </div>
+                </div>
+            </PageBand>
         </div>
     );
 }

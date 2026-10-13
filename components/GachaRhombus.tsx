@@ -626,7 +626,7 @@ export function GachaRhombus({
         <div className={`${themeClasses.surface} rounded-3xl p-4 sm:p-5`}>
           <div className="flex flex-col gap-3 sm:gap-5">
             <div className="space-y-1 text-center">
-              <h2 className="text-lg font-bold text-[#145de7] md:text-2xl">สุ่มรางวัลครั้งละ {normalizedCost.costAmount.toLocaleString()} {currencyWord}</h2>
+              <h2 className="text-lg font-bold text-[#145de7] md:text-2xl">{normalizedCost.costType === "FREE" ? "สุ่มฟรี" : `สุ่มรางวัลครั้งละ ${normalizedCost.costAmount.toLocaleString()} ${currencyWord}`}</h2>
               {normalizedCost.costType !== "FREE" && (
                 <p className="text-xs font-medium text-slate-600 dark:text-slate-300">กดสุ่มแล้วไม่สามารถขอคืน{currencyWord}ได้</p>
               )}
@@ -638,20 +638,20 @@ export function GachaRhombus({
               </div>
             )}
 
-            <label className="flex w-fit cursor-pointer items-center gap-3 rounded-full border border-[#bfe5ce] bg-[#f8fffb] px-4 py-2 text-sm font-medium text-[#1c9751] dark:border-emerald-400/40 dark:bg-emerald-500/10 dark:text-emerald-300">
+            <label className="flex w-fit cursor-pointer items-center gap-3 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium text-foreground">
               <input
                 type="checkbox"
                 checked={skipAnimationEnabled}
                 onChange={(event) => handleSkipToggle(event.target.checked)}
-                className="h-4 w-4 rounded border-[#1c9751]/40 text-[#1c9751] focus:ring-[#1c9751]"
+                className="h-4 w-4 rounded border-border accent-primary"
               />
               ข้ามอนิเมชั่นอัตโนมัติ
             </label>
 
             <div className="pt-1">
-              {phase === "idle" && <button onClick={() => { handleFirstSpin().catch(() => undefined); }} disabled={isBlocked} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1c9751] h-12 text-base font-bold text-white shadow-[0_14px_28px_-20px_rgba(15,23,42,0.28)] transition-all active:scale-[0.985] hover:bg-[#167c42] disabled:cursor-not-allowed disabled:opacity-50 sm:h-14"><Gamepad2 className="h-5 w-5" /> {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : "สุ่ม"}</button>}
-              {(phase === "rolling1" || phase === "rolling2" || phase === "revealing") && <button disabled className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl bg-[#1c9751]/60 h-12 text-base font-bold text-white/85 sm:h-14"><Loader2 className="h-5 w-5 animate-spin" /> {getRollingButtonLabel(phase)}</button>}
-              {phase === "waitSpin2" && <button onClick={() => { handleSecondSpin().catch(() => undefined); }} disabled={isBlocked} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#1c9751] h-12 text-base font-bold text-white shadow-[0_14px_28px_-20px_rgba(15,23,42,0.28)] transition-all active:scale-[0.985] hover:bg-[#167c42] disabled:cursor-not-allowed disabled:opacity-50 sm:h-14"><Gamepad2 className="h-5 w-5" /> สุ่มครั้งที่ 2</button>}
+              {phase === "idle" && <button onClick={() => { handleFirstSpin().catch(() => undefined); }} disabled={isBlocked} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary h-12 text-base font-bold text-primary-foreground shadow-[0_14px_28px_-20px_rgba(15,23,42,0.28)] transition-all active:scale-[0.985] hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:h-14"><Gamepad2 className="h-5 w-5" /> {maintenance?.enabled ? "ปิดปรับปรุงชั่วคราว" : "สุ่ม"}</button>}
+              {(phase === "rolling1" || phase === "rolling2" || phase === "revealing") && <button disabled className="flex w-full cursor-not-allowed items-center justify-center gap-2 rounded-2xl bg-primary/60 h-12 text-base font-bold text-primary-foreground/85 sm:h-14"><Loader2 className="h-5 w-5 animate-spin" /> {getRollingButtonLabel(phase)}</button>}
+              {phase === "waitSpin2" && <button onClick={() => { handleSecondSpin().catch(() => undefined); }} disabled={isBlocked} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary h-12 text-base font-bold text-primary-foreground shadow-[0_14px_28px_-20px_rgba(15,23,42,0.28)] transition-all active:scale-[0.985] hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:h-14"><Gamepad2 className="h-5 w-5" /> สุ่มครั้งที่ 2</button>}
             </div>
 
             <div className="min-h-[20px]">
