@@ -98,8 +98,8 @@ export function PurchasedItem({
     };
 
     return (
-        <Card className={`${themeClasses.surface} min-w-0 overflow-hidden rounded-3xl border border-border/80 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg card-tilt touch-feedback`}>
-            <div className="relative aspect-[4/3] border-b border-border/80 bg-muted">
+        <Card className={`${themeClasses.surface} min-w-0 overflow-hidden rounded-2xl transition-colors duration-300 ease-out hover:border-primary/40 touch-feedback`}>
+            <div className="relative aspect-[4/3] bg-muted">
                 <Image
                     src={image}
                     alt={title}
@@ -146,11 +146,11 @@ export function PurchasedItem({
                     </div>
                 </div>
                 <div className="grid min-w-0 grid-cols-1 gap-2 xl:grid-cols-2">
-                    <span className="inline-flex min-h-8 w-full min-w-0 items-center justify-center gap-1 rounded-full border border-primary bg-primary px-3 py-1.5 text-center text-xs font-semibold leading-snug text-primary-foreground shadow-sm">
+                    <span className="inline-flex min-h-8 w-full min-w-0 items-center justify-center gap-1 rounded-full bg-primary/10 px-3 py-1.5 text-center text-xs font-semibold leading-snug text-primary">
                         <ShieldCheck className="h-3 w-3 text-current" />
                         ข้อมูลพร้อมใช้งาน
                     </span>
-                    <span className="inline-flex min-h-8 w-full min-w-0 items-center justify-center rounded-full border border-foreground bg-foreground px-3 py-1.5 text-center text-xs font-semibold leading-snug text-background shadow-sm">
+                    <span className="inline-flex min-h-8 w-full min-w-0 items-center justify-center rounded-full bg-muted px-3 py-1.5 text-center text-xs font-semibold leading-snug text-muted-foreground">
                         เปิดดูได้ตลอด
                     </span>
                 </div>

@@ -4,11 +4,9 @@ import { auth } from "@/auth";
 import { db, users, orders } from "@/lib/db";
 import { and, eq, isNull } from "drizzle-orm";
 import { decrypt } from "@/lib/encryption";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { PurchasedItem } from "@/components/PurchasedItem";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
-import { Package, ShoppingBag } from "lucide-react";
+import { ShoppingBag } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -47,33 +45,31 @@ export default async function InventoryPage() {
             />
 
             <div>
-                <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                    <Package className="h-6 w-6 text-primary" />
+                <h1 className="text-3xl font-bold leading-tight text-[var(--page-heading)] sm:text-4xl">
                     คลังสินค้าของฉัน
                 </h1>
-                <p className="text-muted-foreground mt-1">
-                    รายการสินค้าที่คุณซื้อไปแล้ว ({orderList.length} รายการ)
+                <p className="mt-2 text-muted-foreground">
+                    รายการสินค้าที่คุณซื้อไปแล้ว
                 </p>
             </div>
 
             {orderList.length === 0 ? (
-                <Card className="py-12">
-                    <CardContent className="text-center">
-                        <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground/30 mb-4" />
-                        <h3 className="text-lg font-semibold text-foreground mb-2">
-                            ยังไม่มีสินค้าในคลัง
-                        </h3>
-                        <p className="text-muted-foreground mb-4">
-                            คุณยังไม่ได้ซื้อสินค้าใดๆ ลองไปเลือกดูสินค้าก่อนนะ
-                        </p>
-                        <Link href="/shop">
-                            <Button className="gap-2">
-                                <ShoppingBag className="h-4 w-4" />
-                                ไปช้อปปิ้งเลย
-                            </Button>
-                        </Link>
-                    </CardContent>
-                </Card>
+                <div className="flex flex-col items-center py-20 text-center">
+                    <ShoppingBag className="mb-4 h-12 w-12 text-muted-foreground/40" />
+                    <h3 className="mb-2 text-lg font-semibold text-foreground">
+                        ยังไม่มีสินค้าในคลัง
+                    </h3>
+                    <p className="text-muted-foreground">
+                        คุณยังไม่ได้ซื้อสินค้าใดๆ ลองไปเลือกดูสินค้าก่อนนะ
+                    </p>
+                    <Link
+                        href="/shop"
+                        className="mt-5 inline-flex h-10 items-center gap-2 rounded-full border border-border bg-card px-5 text-sm font-medium text-foreground transition-colors duration-300 ease-out hover:border-primary hover:text-primary"
+                    >
+                        <ShoppingBag className="h-4 w-4" />
+                        ไปช้อปปิ้งเลย
+                    </Link>
+                </div>
             ) : (
                 <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-1 min-[900px]:grid-cols-2 xl:grid-cols-3 items-start">
                     {orderList.map((order) => (
