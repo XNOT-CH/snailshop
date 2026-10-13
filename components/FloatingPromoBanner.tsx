@@ -14,6 +14,7 @@ const HIDDEN_PATH_PREFIXES = ["/login", "/register", "/admin"];
 const MOBILE_STACK_OFFSET = "bottom-[calc(env(safe-area-inset-bottom)+5.5rem)]";
 
 const ROTATE_INTERVAL_MS = 4000;
+const TUCK_SETTLE_MS = 700;
 
 // Bump the ?v= querystring whenever the artwork file is replaced in-place —
 // the image optimizer caches per-URL, so a same-name swap keeps serving the
@@ -76,13 +77,39 @@ export function FloatingPromoBanner() {
         };
     }, [dismissed, shouldHide]);
 
+    // Tuck the banner aside while the page scrolls so it doesn't sit over the
+    // content being read, and slide it back once scrolling settles.
+    const [tucked, setTucked] = useState(false);
+    useEffect(() => {
+        if (dismissed || shouldHide) {
+            return;
+        }
+
+        let settle: ReturnType<typeof setTimeout> | undefined;
+        const handleScroll = () => {
+            setTucked(true);
+            clearTimeout(settle);
+            settle = setTimeout(() => setTucked(false), TUCK_SETTLE_MS);
+        };
+
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        return () => {
+            clearTimeout(settle);
+            window.removeEventListener("scroll", handleScroll);
+        };
+    }, [dismissed, shouldHide]);
+
     if (dismissed || shouldHide) {
         return null;
     }
 
     return (
         <div
-            className={`fixed right-3 z-40 w-28 md:hidden ${MOBILE_STACK_OFFSET}`}
+            className={cn(
+                "fixed right-3 z-40 w-28 transition-[translate,opacity] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none md:hidden",
+                MOBILE_STACK_OFFSET,
+                tucked && "translate-x-[75%] opacity-60"
+            )}
             role="complementary"
             aria-label="โปรโมชันแนะนำ"
         >

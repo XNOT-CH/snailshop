@@ -5,7 +5,6 @@ import {
     HelpCircle,
     Home,
     LayoutDashboard,
-    Settings,
     ShoppingBag,
     User,
     Wallet,
@@ -19,24 +18,6 @@ import {
 // reads icons, active-state matching, and labels from here so the same
 // destination always looks and behaves the same across breakpoints.
 // ─────────────────────────────────────────────────────────────
-
-/** Map a DB-configured `NavItem.icon` string → lucide icon. */
-export const NAV_ICON_BY_NAME: Record<string, LucideIcon> = {
-    home: Home,
-    shop: ShoppingBag,
-    dashboard: LayoutDashboard,
-    help: HelpCircle,
-    wallet: Wallet,
-    user: User,
-    settings: Settings,
-    dices: Dices,
-    gacha: Dices,
-    gift: Gift,
-    season: Gift,
-    "season-pass": Gift,
-    quests: CalendarCheck,
-    quest: CalendarCheck,
-};
 
 /** Map a known href → lucide icon (for hardcoded surfaces like the drawer). */
 export const NAV_ICON_BY_HREF: Record<string, LucideIcon> = {
@@ -52,14 +33,6 @@ export const NAV_ICON_BY_HREF: Record<string, LucideIcon> = {
     "/profile": User,
     "/profile/settings": User,
 };
-
-export function navIconByName(name?: string | null): LucideIcon {
-    return NAV_ICON_BY_NAME[name?.toLowerCase() ?? ""] ?? Home;
-}
-
-export function navIconByHref(href: string): LucideIcon {
-    return NAV_ICON_BY_HREF[href] ?? Home;
-}
 
 // ─── Active-state matching ────────────────────────────────────
 // Per-destination rules so e.g. a product page lights up "ร้านค้า"

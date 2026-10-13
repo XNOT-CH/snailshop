@@ -11,7 +11,7 @@ import { normalizeCallbackUrl } from "@/lib/authRedirect";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AuthFormShell } from "@/components/auth/AuthFormShell";
 import { TurnstileField } from "@/components/auth/TurnstileField";
-import { Loader2, Eye, EyeOff, LogIn } from "lucide-react";
+import { Loader2, Eye, EyeOff, LogIn, Lock, User } from "lucide-react";
 
 const E2E_TURNSTILE_BYPASS_TOKEN = "__e2e_turnstile_bypass__";
 
@@ -118,27 +118,31 @@ export function LoginForm({ logoUrl, turnstileConfigError = null }: Readonly<Log
                         {/* Username */}
                         <div className="space-y-2">
                             <label htmlFor="username" className="text-sm text-muted-foreground">ชื่อผู้ใช้งาน หรืออีเมล <span className="text-red-500" aria-hidden="true">*</span></label>
-                            <Input
-                                id="username"
-                                placeholder="ชื่อผู้ใช้งาน หรืออีเมล"
-                                autoComplete="username"
-                                className="h-12 bg-muted/50 border-border rounded-xl transition-colors"
-                                value={formData.username}
-                                onChange={(e) => setFormData((prev) => ({ ...prev, username: e.target.value }))}
-                                required
-                            />
+                            <div className="relative">
+                                <User className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                                <Input
+                                    id="username"
+                                    placeholder="ชื่อผู้ใช้งาน หรืออีเมล"
+                                    autoComplete="username"
+                                    className="h-12 bg-muted/50 border-border rounded-xl pl-11 transition-colors"
+                                    value={formData.username}
+                                    onChange={(e) => setFormData((prev) => ({ ...prev, username: e.target.value }))}
+                                    required
+                                />
+                            </div>
                         </div>
 
                         {/* Password */}
                         <div className="space-y-2">
                             <label htmlFor="password" className="text-sm text-muted-foreground">รหัสผ่าน <span className="text-red-500" aria-hidden="true">*</span></label>
                             <div className="relative">
+                                <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                                 <Input
                                     id="password"
                                     type={showPassword ? "text" : "password"}
                                     placeholder="••••••••"
                                     autoComplete="current-password"
-                                    className="h-12 bg-muted/50 border-border rounded-xl pr-12 transition-colors"
+                                    className="h-12 bg-muted/50 border-border rounded-xl pl-11 pr-12 transition-colors"
                                     value={formData.password}
                                     onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
                                     required

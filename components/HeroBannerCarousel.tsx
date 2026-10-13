@@ -134,11 +134,10 @@ export function HeroBannerCarousel({ banners }: Readonly<HeroBannerCarouselProps
                         className={`
                             absolute left-2 sm:left-4 top-1/2 z-10
                             hidden h-9 w-9 -translate-y-1/2 items-center justify-center sm:flex sm:h-12 sm:w-12
-                            bg-white/30 hover:bg-white/50 active:bg-white/60
+                            bg-black/50 hover:bg-black/70 active:bg-black/80
                             rounded-full
                             text-white
-                            transition-[opacity,transform,background-color,backdrop-filter] duration-300 ease-out
-                            group-hover:backdrop-blur-sm
+                            transition-[opacity,transform,background-color] duration-300 ease-out
                             opacity-0 group-hover:opacity-100
                             sm:${isHovered ? "opacity-100 translate-x-0" : "-translate-x-4"}
                             focus:outline-none focus:ring-2 focus:ring-white/50
@@ -154,11 +153,10 @@ export function HeroBannerCarousel({ banners }: Readonly<HeroBannerCarouselProps
                         className={`
                             absolute right-2 sm:right-4 top-1/2 z-10
                             hidden h-9 w-9 -translate-y-1/2 items-center justify-center sm:flex sm:h-12 sm:w-12
-                            bg-white/30 hover:bg-white/50 active:bg-white/60
+                            bg-black/50 hover:bg-black/70 active:bg-black/80
                             rounded-full
                             text-white
-                            transition-[opacity,transform,background-color,backdrop-filter] duration-300 ease-out
-                            group-hover:backdrop-blur-sm
+                            transition-[opacity,transform,background-color] duration-300 ease-out
                             opacity-0 group-hover:opacity-100
                             sm:${isHovered ? "opacity-100 translate-x-0" : "translate-x-4"}
                             focus:outline-none focus:ring-2 focus:ring-white/50

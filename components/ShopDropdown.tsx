@@ -44,15 +44,16 @@ export function ShopDropdown({ categories }: Readonly<ShopDropdownProps>) {
             <button
                 onClick={() => setOpen((v) => !v)}
                 className={cn(
-                    "flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-2 text-sm font-medium transition-all duration-200",
+                    "relative flex items-center gap-1 whitespace-nowrap px-2.5 py-2 text-sm font-medium transition-colors duration-200",
+                    // Same underline active state as NavLink.
+                    "after:absolute after:inset-x-2.5 after:bottom-0 after:h-0.5 after:rounded-full after:bg-primary after:transition-opacity",
                     isActive || open
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-primary hover:text-primary-foreground"
+                        ? "text-foreground after:opacity-100"
+                        : "text-muted-foreground after:opacity-0 hover:text-foreground"
                 )}
                 aria-expanded={open}
                 aria-haspopup="true"
             >
-                <ShoppingBag className="h-4 w-4 flex-shrink-0" />
                 ร้านค้า
                 <ChevronDown
                     className={`h-3.5 w-3.5 flex-shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}

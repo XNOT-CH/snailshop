@@ -31,7 +31,7 @@ vi.mock("@/components/TurnstileWidget", () => ({
 
 describe("components/auth shared components", () => {
     it("renders the shared auth shell with the same title, subtitle, logo, and content slots", () => {
-        render(
+        const { container } = render(
             <AuthFormShell logoUrl="/logo.png" title="เข้าสู่ระบบ" subtitle="Login">
                 <form aria-label="login form">content</form>
             </AuthFormShell>
@@ -39,40 +39,20 @@ describe("components/auth shared components", () => {
 
         expect(screen.getByRole("heading", { name: "เข้าสู่ระบบ" })).toBeInTheDocument();
         expect(screen.getByText("Login")).toBeInTheDocument();
-        expect(screen.getByAltText("Logo")).toHaveAttribute("src", "/logo.png");
+        // The logo is decorative (alt="") since the heading names the page.
+        expect(container.querySelector('img[src*="logo.png"]')).not.toBeNull();
         expect(screen.getByRole("form", { name: "login form" })).toBeInTheDocument();
     });
 
     it("renders the fallback icon container when no logo is configured", () => {
-        render(
+        const { container } = render(
             <AuthFormShell logoUrl={null} title="สมัครสมาชิก" subtitle="Register">
                 <div>content</div>
             </AuthFormShell>
         );
 
         expect(screen.getByRole("heading", { name: "สมัครสมาชิก" })).toBeInTheDocument();
-        expect(screen.queryByAltText("Logo")).not.toBeInTheDocument();
-    });
-
-    it("can render without the full-height auth frame", () => {
-        const { container } = render(
-            <AuthFormShell logoUrl={null} title="สมัครสมาชิก" subtitle="Register" fullHeight={false}>
-                <div>content</div>
-            </AuthFormShell>
-        );
-
-        expect(container.firstElementChild).not.toHaveClass("min-h-screen");
-    });
-
-    it("can render the separated card treatment for register-style pages", () => {
-        const { container } = render(
-            <AuthFormShell logoUrl={null} title="สมัครสมาชิก" subtitle="Register" fullHeight={false} variant="separated">
-                <div>content</div>
-            </AuthFormShell>
-        );
-
-        expect(container.firstElementChild).toHaveClass("bg-[#f4f6f8]");
-        expect(screen.getByRole("heading", { name: "สมัครสมาชิก" })).toHaveClass("text-xl");
+        expect(container.querySelector("img")).toBeNull();
     });
 
     it("renders Turnstile with error copy only when enabled and forwards token changes", () => {

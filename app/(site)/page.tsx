@@ -1,26 +1,45 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { ProductCard } from "@/components/ProductCard";
-import { HeroBanner } from "@/components/HeroBanner";
-import { FeaturedProducts } from "@/components/FeaturedProducts";
-import { SaleProducts } from "@/components/SaleProducts";
+import { auth } from "@/auth";
+import { HomeHero } from "@/components/HomeHero";
+import { getHeroBanners } from "@/components/HeroBanner";
+import { HomeProductTabs } from "@/components/HomeProductTabs";
+import {
+  HomeFaq,
+  HomeBand,
+  HOME_CATEGORIES,
+  HomeCategories,
+  HomeGachaMachines,
+  HomeGameChips,
+  HomeHowToBuy,
+  HomeJoinCta,
+  HOME_PREMIUM_APPS,
+  HomePremiumApps,
+  HomeProductTile,
+  HomeSectionHeading,
+  HomeSeeAllLink,
+  HomeTopupShowcase,
+} from "@/components/HomeSections";
 import { NewsSection } from "@/components/NewsSection";
 import { WelcomeRedirect } from "@/components/WelcomeRedirect";
+import { RevealOnScroll } from "@/components/RevealOnScroll";
+import type { ReactNode } from "react";
 import { db } from "@/lib/db";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { buildPageMetadata, DEFAULT_SITE_DESCRIPTION, resolveSiteName } from "@/lib/seo";
 import { cacheOrFetch, CACHE_KEYS, CACHE_TTL } from "@/lib/cache";
-import { getSoldCountMap } from "@/lib/features/orders/queries";
 import { getMaintenanceState } from "@/lib/maintenanceMode";
-import { products, newsArticles } from "@/lib/db";
+import { products, newsArticles, gachaMachines, helpArticles } from "@/lib/db";
 import { themeClasses } from "@/lib/theme";
-import { and, asc, desc, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, isNotNull, isNull, or } from "drizzle-orm";
 
 export const dynamic = "force-dynamic";
 
 const HOMEPAGE_PRODUCT_LIMIT = 12;
 const HOMEPAGE_CAROUSEL_PRODUCT_LIMIT = 12;
+const HOMEPAGE_TILE_LIMIT = 6;
+const HOMEPAGE_GACHA_LIMIT = 4;
+const HOMEPAGE_FAQ_LIMIT = 5;
 
 export async function generateMetadata(): Promise<Metadata> {
   const settings = await getSiteSettings();
@@ -107,7 +126,7 @@ export default async function HomePage() {
     ),
   ]);
   const showAllProducts = siteSettings?.showAllProducts ?? true;
-  const pageHeading = `${resolveSiteName(siteSettings?.heroTitle)} ร้านขายไอดีเกม`;
+  const siteName = resolveSiteName(siteSettings?.heroTitle);
   const maintenance = {
     gacha: getMaintenanceState("gacha"),
     purchase: getMaintenanceState("purchase"),
@@ -132,105 +151,169 @@ export default async function HomePage() {
     }
   }
 
-  const soldCountMap = await getSoldCountMap([
-    ...featuredProducts.map((product) => product.id),
-    ...saleProducts.map((product) => product.id),
-    ...productList.map((product) => product.id),
+  const availableProductFilter = and(
+    isNull(products.deletedAt),
+    eq(products.isSold, false),
+    or(gt(products.stockCount, 0), isNull(products.stockCount)),
+  );
+  const [games, machines, faqs, session] = await Promise.all([
+    cacheOrFetch(
+      "home_games",
+      async () =>
+        db.select({ name: products.category, count: count() })
+          .from(products)
+          .where(availableProductFilter)
+          .groupBy(products.category)
+          .orderBy(desc(count())),
+      CACHE_TTL.SHORT
+    ),
+    cacheOrFetch(
+      "home_gacha_machines",
+      async () =>
+        db.select({
+          id: gachaMachines.id,
+          name: gachaMachines.name,
+          imageUrl: gachaMachines.imageUrl,
+          gameType: gachaMachines.gameType,
+          costType: gachaMachines.costType,
+          costAmount: gachaMachines.costAmount,
+        })
+          .from(gachaMachines)
+          .where(and(eq(gachaMachines.isActive, true), eq(gachaMachines.isEnabled, true)))
+          .orderBy(asc(gachaMachines.sortOrder))
+          .limit(HOMEPAGE_GACHA_LIMIT),
+      CACHE_TTL.SHORT
+    ),
+    cacheOrFetch(
+      "home_faq",
+      async () =>
+        db.select({ id: helpArticles.id, question: helpArticles.question, answer: helpArticles.answer })
+          .from(helpArticles)
+          .where(eq(helpArticles.isActive, true))
+          .orderBy(asc(helpArticles.category), asc(helpArticles.sortOrder))
+          .limit(HOMEPAGE_FAQ_LIMIT),
+      CACHE_TTL.SHORT
+    ),
+    auth(),
   ]);
+
+  const toTile = (product: { id: string; name: string; price: unknown; discountPrice?: unknown; currency: string | null; imageUrl: string | null; category: string }) => ({
+    id: product.id,
+    name: product.name,
+    price: Number(product.price),
+    discountPrice: product.discountPrice === null || product.discountPrice === undefined ? null : Number(product.discountPrice),
+    currency: product.currency,
+    imageUrl: product.imageUrl,
+    category: product.category,
+  });
+
+  const productTabs = [
+    { key: "featured", label: "แนะนำ", items: featuredProducts },
+    { key: "sale", label: "ลดราคา", items: saleProducts },
+    { key: "latest", label: "ใหม่ล่าสุด", items: showAllProducts ? productList : [] },
+  ]
+    .filter((tab) => tab.items.length > 0)
+    .map((tab) => ({
+      key: tab.key,
+      label: tab.label,
+      content: (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
+          {tab.items.slice(0, HOMEPAGE_TILE_LIMIT).map((product, index) => (
+            <RevealOnScroll key={product.id} index={index}>
+              <HomeProductTile product={toTile(product)} currencySettings={currencySettings} />
+            </RevealOnScroll>
+          ))}
+        </div>
+      ),
+    }));
+
+  // Each section gets its own full-width band, alternating with the hero's
+  // color, so scrolling reads as moving from one scene to the next. Tones are
+  // assigned after empty sections drop out, so the alternation never breaks.
+  const sectionCandidates: (false | { key: string; node: ReactNode; className?: string })[] = [
+    // Sits close under the hero, like the game picker on the reference storefront.
+    { key: "categories", node: <HomeCategories categories={HOME_CATEGORIES} />, className: "pt-4 pb-6 lg:pt-6 lg:pb-8" },
+    {
+      key: "products",
+      // The category row above already sits close, so a full band gap would leave a hole.
+      className: "pt-8 lg:pt-10",
+      node: (
+        <section>
+          {games.length > 0 && (
+            <div className="mb-12">
+              <HomeSectionHeading title="เลือกตามเกม" />
+              <HomeGameChips games={games} />
+            </div>
+          )}
+          <HomeSectionHeading title="สินค้า" action={<HomeSeeAllLink href="/shop" />} />
+          {productTabs.length === 0 ? (
+            <div className={`${themeClasses.surfaceSoft} rounded-2xl py-12 text-center`}>
+              <p className="text-muted-foreground text-lg">ยังไม่มีสินค้าในระบบ</p>
+            </div>
+          ) : (
+            <HomeProductTabs tabs={productTabs} />
+          )}
+        </section>
+      ),
+    },
+    HOME_PREMIUM_APPS.length > 0 && {
+      key: "premium-apps",
+      node: <RevealOnScroll><HomePremiumApps apps={HOME_PREMIUM_APPS} /></RevealOnScroll>,
+    },
+    news.length > 0 && {
+      key: "news",
+      node: (
+        <RevealOnScroll>
+          <NewsSection
+            initialNews={news.map((article) => ({
+              ...article,
+              createdAt: toSerializableDate(article.createdAt),
+            }))}
+          />
+        </RevealOnScroll>
+      ),
+    },
+    { key: "topup", node: <RevealOnScroll><HomeTopupShowcase /></RevealOnScroll>, className: "lg:pt-10 lg:pb-12" },
+    machines.length > 0 && {
+      key: "gacha",
+      node: (
+        <section>
+          <HomeSectionHeading title="ตู้กาชา" subtitle="สุ่มรางวัลจากตู้ที่เปิดอยู่ตอนนี้" action={<HomeSeeAllLink href="/gachapons" />} />
+          <HomeGachaMachines
+            machines={machines.map((machine) => ({ ...machine, costAmount: Number(machine.costAmount) }))}
+            currencySettings={currencySettings}
+          />
+        </section>
+      ),
+    },
+    { key: "how-to-buy", node: <RevealOnScroll><HomeHowToBuy /></RevealOnScroll> },
+    faqs.length > 0 && { key: "faq", node: <RevealOnScroll><HomeFaq articles={faqs} /></RevealOnScroll> },
+    !session?.user && { key: "join", node: <RevealOnScroll><HomeJoinCta siteName={siteName} /></RevealOnScroll> },
+  ];
+  const sections = sectionCandidates.filter((section) => section !== false);
+  // Until the admin sets any banners, the owner's Level Up banner fills the hero.
+  const adminBanners = getHeroBanners(siteSettings);
+  const heroBanners = adminBanners.length > 0
+    ? adminBanners
+    : [{ id: 0, image: "/home-hero-banner.webp", title: "", subtitle: "" }];
 
   return (
     <div className="animate-page-enter">
       <WelcomeRedirect />
-      <div className={`${themeClasses.shell} relative left-1/2 w-screen -translate-x-1/2 space-y-6 px-3 pb-0 pt-4 sm:left-auto sm:w-auto sm:translate-x-0 sm:px-5 sm:py-6 lg:px-6`}>
-        <h1 className="sr-only">{pageHeading}</h1>
-
-        <div className="relative left-1/2 w-screen -translate-x-1/2 px-2 sm:left-auto sm:w-auto sm:translate-x-0 sm:px-0">
-          <HeroBanner />
-        </div>
-
-        <FeaturedProducts
-          initialProducts={featuredProducts.slice(0, HOMEPAGE_CAROUSEL_PRODUCT_LIMIT).map((product) => ({
-            ...product,
-            price: Number(product.price),
-            discountPrice:
-              product.discountPrice === null || product.discountPrice === undefined
-                ? null
-                : Number(product.discountPrice),
-            soldCount: soldCountMap.get(product.id) ?? 0,
-          }))}
-          initialCurrencySettings={currencySettings}
-          initialMaintenance={maintenance}
-        />
-
-        <SaleProducts
-          initialProducts={saleProducts.slice(0, HOMEPAGE_CAROUSEL_PRODUCT_LIMIT).map((product) => ({
-            ...product,
-            price: Number(product.price),
-            discountPrice: Number(product.discountPrice),
-            soldCount: soldCountMap.get(product.id) ?? 0,
-          }))}
-          initialCurrencySettings={currencySettings}
-          initialMaintenance={maintenance}
-        />
-
-        {showAllProducts && (
-          <>
-            <div>
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <h2 className="text-2xl sm:text-3xl font-bold text-foreground">
-                    สินค้าล่าสุด
-                  </h2>
-                  <p className="text-muted-foreground mt-1">
-                    เลือกดูรายการใหม่ก่อน แล้วไปหน้าร้านค้าเพื่อค้นหาทั้งหมด
-                  </p>
-                </div>
-                <Link
-                  href="/shop"
-                  prefetch={false}
-                  className={`${themeClasses.actionMuted} inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-semibold transition-colors hover:text-primary`}
-                >
-                  ดูสินค้าทั้งหมด
-                </Link>
-              </div>
-            </div>
-
-            {productList.length === 0 ? (
-              <div className={`${themeClasses.surfaceSoft} rounded-2xl py-12 text-center`}>
-                <p className="text-muted-foreground text-lg">
-                  ยังไม่มีสินค้าในระบบ
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                {productList.map((product, index) => (
-                  <ProductCard
-                    key={product.id}
-                    id={product.id}
-                    image={product.imageUrl || "/placeholder.jpg"}
-                    title={product.name}
-                    price={Number(product.price)}
-                    currency={product.currency}
-                    category={product.category}
-                    isSold={Boolean(product.isSold)}
-                    soldCount={soldCountMap.get(product.id) ?? 0}
-                    index={index}
-                    currencySettings={currencySettings}
-                    initialPurchaseMaintenance={maintenance.purchase}
-                  />
-                ))}
-              </div>
-            )}
-          </>
-        )}
-
-        <NewsSection
-          initialNews={news.map((article) => ({
-            ...article,
-            createdAt: toSerializableDate(article.createdAt),
-          }))}
-        />
-      </div>
+      <HomeHero siteName={siteName} banners={heroBanners} />
+      {maintenance.purchase.enabled && (
+        <HomeBand tone="plain" className="pb-0 lg:pb-0">
+          <div className={`${themeClasses.alert} rounded-2xl px-4 py-3 text-sm`}>
+            <p className="font-semibold">ระบบสั่งซื้อกำลังปิดปรับปรุงชั่วคราว</p>
+            <p className="mt-1 text-xs">{maintenance.purchase.message}</p>
+          </div>
+        </HomeBand>
+      )}
+      {sections.map((section, index) => (
+        <HomeBand key={section.key} id={section.key} tone={index === 0 ? "lead" : index % 2 === 0 ? "raised" : "plain"} className={section.className}>
+          {section.node}
+        </HomeBand>
+      ))}
     </div>
   );
 }

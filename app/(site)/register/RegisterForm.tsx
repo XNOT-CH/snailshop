@@ -11,7 +11,7 @@ import { showSuccess, showError } from "@/lib/swal";
 import { normalizeCallbackUrl } from "@/lib/authRedirect";
 import { AuthFormShell } from "@/components/auth/AuthFormShell";
 import { TurnstileField } from "@/components/auth/TurnstileField";
-import { Loader2, Eye, EyeOff, UserPlus } from "lucide-react";
+import { Loader2, Eye, EyeOff, UserPlus, User, Mail, Lock, KeyRound } from "lucide-react";
 import type { RegistrationPolicies } from "@/lib/getRegistrationPolicies";
 
 interface RegisterFormProps {
@@ -128,48 +128,55 @@ export function RegisterForm({ logoUrl, hasTurnstile, policies }: Readonly<Regis
     };
 
     return (
-        <AuthFormShell logoUrl={logoUrl} title="สมัครสมาชิก" subtitle="สร้างบัญชีใหม่ ใช้เวลาไม่ถึงนาที" fullHeight={false} variant="separated">
+        <AuthFormShell logoUrl={logoUrl} title="สมัครสมาชิก" subtitle="สร้างบัญชีใหม่ ใช้เวลาไม่ถึงนาที">
                     <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
                         {/* Username */}
                         <div className="space-y-2">
-                            <label htmlFor="reg-username" className="text-sm text-[#5f6f82] dark:text-muted-foreground">ชื่อผู้ใช้งาน <span className="text-red-500" aria-hidden="true">*</span></label>
-                            <Input
-                                id="reg-username"
-                                placeholder="ตั้งชื่อผู้ใช้งาน (อย่างน้อย 3 ตัวอักษร)"
-                                autoComplete="username"
-                                className="h-12 rounded-xl border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 transition-colors placeholder:text-[#7a8796] focus-visible:ring-[#145de7] dark:border-border dark:bg-muted/50 dark:text-foreground"
-                                minLength={3}
-                                value={formData.username}
-                                onChange={(e) => setFormData((prev) => ({ ...prev, username: e.target.value }))}
-                                required
-                            />
+                            <label htmlFor="reg-username" className="text-sm text-muted-foreground">ชื่อผู้ใช้งาน <span className="text-red-500" aria-hidden="true">*</span></label>
+                            <div className="relative">
+                                <User className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                                <Input
+                                    id="reg-username"
+                                    placeholder="ตั้งชื่อผู้ใช้งาน (อย่างน้อย 3 ตัวอักษร)"
+                                    autoComplete="username"
+                                    className="h-12 rounded-xl border-border bg-muted/50 pl-11 transition-colors"
+                                    minLength={3}
+                                    value={formData.username}
+                                    onChange={(e) => setFormData((prev) => ({ ...prev, username: e.target.value }))}
+                                    required
+                                />
+                            </div>
                         </div>
 
                         {/* Email */}
                         <div className="space-y-2">
-                            <label htmlFor="reg-email" className="text-sm text-[#5f6f82] dark:text-muted-foreground">อีเมล <span className="text-red-500" aria-hidden="true">*</span></label>
-                            <Input
-                                id="reg-email"
-                                type="email"
-                                placeholder="กรอกอีเมลของคุณ"
-                                autoComplete="email"
-                                className="h-12 rounded-xl border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 transition-colors placeholder:text-[#7a8796] focus-visible:ring-[#145de7] dark:border-border dark:bg-muted/50 dark:text-foreground"
-                                value={formData.email}
-                                onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
-                                required
-                            />
+                            <label htmlFor="reg-email" className="text-sm text-muted-foreground">อีเมล <span className="text-red-500" aria-hidden="true">*</span></label>
+                            <div className="relative">
+                                <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                                <Input
+                                    id="reg-email"
+                                    type="email"
+                                    placeholder="กรอกอีเมลของคุณ"
+                                    autoComplete="email"
+                                    className="h-12 rounded-xl border-border bg-muted/50 pl-11 transition-colors"
+                                    value={formData.email}
+                                    onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))}
+                                    required
+                                />
+                            </div>
                         </div>
 
                         {/* Password */}
                         <div className="space-y-2">
-                            <label htmlFor="reg-password" className="text-sm text-[#5f6f82] dark:text-muted-foreground">รหัสผ่าน <span className="text-red-500" aria-hidden="true">*</span></label>
+                            <label htmlFor="reg-password" className="text-sm text-muted-foreground">รหัสผ่าน <span className="text-red-500" aria-hidden="true">*</span></label>
                             <div className="relative">
+                                <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
                                 <Input
                                     id="reg-password"
                                     type={showPassword ? "text" : "password"}
                                     placeholder="••••••••"
                                     autoComplete="new-password"
-                                    className="h-12 rounded-xl border-[#cfd6df] bg-white pr-12 text-[#102033] shadow-inner shadow-slate-100 transition-colors placeholder:text-[#7a8796] focus-visible:ring-[#145de7] dark:border-border dark:bg-muted/50 dark:text-foreground"
+                                    className="h-12 rounded-xl border-border bg-muted/50 pl-11 pr-12 transition-colors"
                                     minLength={6}
                                     value={formData.password}
                                     onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))}
@@ -209,18 +216,21 @@ export function RegisterForm({ logoUrl, hasTurnstile, policies }: Readonly<Regis
 
                         {/* Confirm Password */}
                         <div className="space-y-2">
-                            <label htmlFor="reg-confirm-password" className="text-sm text-[#5f6f82] dark:text-muted-foreground">ยืนยันรหัสผ่าน <span className="text-red-500" aria-hidden="true">*</span></label>
-                            <Input
-                                id="reg-confirm-password"
-                                type="password"
-                                placeholder="ยืนยันรหัสผ่านอีกครั้ง"
-                                autoComplete="new-password"
-                                aria-invalid={Boolean(formData.confirmPassword && !passwordsMatch)}
-                                className="h-12 rounded-xl border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 placeholder:text-[#7a8796] focus-visible:ring-[#145de7] dark:border-border dark:bg-muted/50 dark:text-foreground"
-                                value={formData.confirmPassword}
-                                onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                                required
-                            />
+                            <label htmlFor="reg-confirm-password" className="text-sm text-muted-foreground">ยืนยันรหัสผ่าน <span className="text-red-500" aria-hidden="true">*</span></label>
+                            <div className="relative">
+                                <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                                <Input
+                                    id="reg-confirm-password"
+                                    type="password"
+                                    placeholder="ยืนยันรหัสผ่านอีกครั้ง"
+                                    autoComplete="new-password"
+                                    aria-invalid={Boolean(formData.confirmPassword && !passwordsMatch)}
+                                    className="h-12 rounded-xl border-border bg-muted/50 pl-11"
+                                    value={formData.confirmPassword}
+                                    onChange={(e) => setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                                    required
+                                />
+                            </div>
                             {formData.confirmPassword && !passwordsMatch ? (
                                 <p className="text-xs text-red-500">รหัสผ่านไม่ตรงกัน</p>
                             ) : null}
@@ -228,27 +238,30 @@ export function RegisterForm({ logoUrl, hasTurnstile, policies }: Readonly<Regis
 
                         {/* PIN (optional) */}
                         <div className="space-y-2">
-                            <label htmlFor="reg-pin" className="text-sm text-[#5f6f82] dark:text-muted-foreground">
+                            <label htmlFor="reg-pin" className="text-sm text-muted-foreground">
                                 PIN 6 หลัก <span className="text-muted-foreground/60">(ไม่บังคับ ตั้งภายหลังได้)</span>
                             </label>
-                            <Input
-                                id="reg-pin"
-                                placeholder="ตัวเลข 6 หลัก"
-                                autoComplete="off"
-                                inputMode="numeric"
-                                className="h-12 rounded-xl border-[#cfd6df] bg-white text-[#102033] shadow-inner shadow-slate-100 placeholder:text-[#7a8796] focus-visible:ring-[#145de7] dark:border-border dark:bg-muted/50 dark:text-foreground"
-                                maxLength={6}
-                                pattern="[0-9]*"
-                                value={formData.pin}
-                                onChange={(e) => setFormData((prev) => ({ ...prev, pin: e.target.value.replaceAll(/\D/g, "") }))}
-                            />
+                            <div className="relative">
+                                <KeyRound className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                                <Input
+                                    id="reg-pin"
+                                    placeholder="ตัวเลข 6 หลัก"
+                                    autoComplete="off"
+                                    inputMode="numeric"
+                                    className="h-12 rounded-xl border-border bg-muted/50 pl-11"
+                                    maxLength={6}
+                                    pattern="[0-9]*"
+                                    value={formData.pin}
+                                    onChange={(e) => setFormData((prev) => ({ ...prev, pin: e.target.value.replaceAll(/\D/g, "") }))}
+                                />
+                            </div>
                         </div>
 
                         {/* เงื่อนไขการใช้งาน / นโยบายความเป็นส่วนตัว — อ่านใน modal ไม่ยืดฟอร์ม */}
                         {hasPolicies ? (
                             <label
                                 htmlFor="reg-accept-policies"
-                                className="flex cursor-pointer items-start gap-2 text-xs text-[#5f6f82] dark:text-muted-foreground"
+                                className="flex cursor-pointer items-start gap-2 text-xs text-muted-foreground"
                             >
                                 <Checkbox
                                     id="reg-accept-policies"

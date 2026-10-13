@@ -16,7 +16,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { resolveSiteName } from "@/lib/seo";
 import { MobileAutoHideHeader } from "@/components/MobileAutoHideHeader";
 import { themeClasses } from "@/lib/theme";
-import { PRIMARY_NAV, navIconByHref, navIconByName } from "@/lib/navigation";
+import { PRIMARY_NAV } from "@/lib/navigation";
 import { NavbarSearch } from "@/components/NavbarSearch";
 import { NavbarChatButton } from "@/components/NavbarChatButton";
 
@@ -83,7 +83,6 @@ export default async function Navbar() {
             ? dbNavItems.map((item) => ({
                   href: normalizeNavHref(item.href),
                   label: item.label,
-                  icon: navIconByName(item.icon),
               }))
             : [
                   PRIMARY_NAV.home,
@@ -96,7 +95,6 @@ export default async function Navbar() {
               ].map((item) => ({
                   href: item.href,
                   label: item.label,
-                  icon: navIconByHref(item.href),
               }))
     // Daily quests are a logged-in feature; hide the entry from guests
     // (the /quests page itself also redirects them to /login).
@@ -135,15 +133,12 @@ export default async function Navbar() {
 
                 <nav className="hidden min-w-0 items-center justify-center gap-0.5 lg:flex">
                     {navLinks.map((link) => {
-                        const Icon = link.icon;
-
                         if (link.href === "/shop") {
                             return <ShopDropdown key={link.href} categories={shopCategories} />;
                         }
 
                         return (
                             <NavLink key={link.href} href={link.href}>
-                                <Icon className="h-4 w-4 flex-shrink-0" />
                                 {link.label}
                             </NavLink>
                         );
@@ -197,7 +192,7 @@ export default async function Navbar() {
                     )}
 
                     <NavigationDrawer
-                        navLinks={navLinks.map(({ href, label }) => ({ href, label }))}
+                        navLinks={navLinks}
                         user={user ? {
                             name: user.name,
                             username: user.username,

@@ -1,73 +1,72 @@
 import Image from "next/image";
-import { Gamepad2 } from "lucide-react";
+import { Dices, Gamepad2, ListChecks, ShoppingBag, Ticket } from "lucide-react";
 import type { ReactNode } from "react";
-import { cn } from "@/lib/utils";
 
 interface AuthFormShellProps {
     readonly logoUrl: string | null;
     readonly title: string;
     readonly subtitle: string;
     readonly children: ReactNode;
-    readonly fullHeight?: boolean;
-    readonly variant?: "default" | "separated";
 }
 
-export function AuthFormShell({
-    logoUrl,
-    title,
-    subtitle,
-    children,
-    fullHeight = true,
-    variant = "default",
-}: AuthFormShellProps) {
-    const isSeparated = variant === "separated";
+// What the shop actually offers; the reference layout's trust claims
+// (100%, 24 hours) are left out because nothing here backs them.
+const FEATURES = [
+    { icon: ShoppingBag, label: "ร้านค้า" },
+    { icon: Dices, label: "ตู้กาชา" },
+    { icon: ListChecks, label: "ภารกิจรายวัน" },
+    { icon: Ticket, label: "Season Pass" },
+];
 
+// The sign-in family of pages on one near-black band, the hero's colour, lit
+// by soft glows and streaks in the site's primary blue. Wide screens add a
+// welcome column beside the form card; phones get the card alone. The band is
+// painted past the content column with a spread shadow clipped to its own
+// height, as the home bands are, which also covers the site background image.
+export function AuthFormShell({ logoUrl, title, subtitle, children }: AuthFormShellProps) {
     return (
-        <div
-            className={cn(
-                "flex items-center justify-center px-4 py-12",
-                fullHeight && "min-h-screen",
-                isSeparated && "-mx-3 min-h-[calc(100dvh-5rem)] bg-[#f4f6f8] px-3 py-8 sm:-mx-4 sm:px-6 lg:-mx-6 xl:-mx-8 dark:bg-[#0b1420]"
-            )}
-        >
-            <div className={cn("w-full max-w-md", isSeparated && "max-w-[720px]")}>
-                <div
-                    className={cn(
-                        "bg-card rounded-2xl shadow-xl shadow-primary/10 p-8",
-                        isSeparated && "relative overflow-hidden rounded-[6px] border border-[#d9dee5] bg-white p-4 shadow-[0_12px_34px_rgba(15,23,42,0.12)] sm:p-6 dark:border-[#26384f] dark:bg-[#101a2b]"
-                    )}
-                >
-                    <div
-                        className={cn(
-                            "flex items-start justify-between mb-8",
-                            isSeparated && "mb-6 flex-col items-center justify-center gap-3 text-center"
-                        )}
-                    >
-                        <div className={cn(isSeparated && "order-2")}>
-                            <h1 className={cn("text-2xl font-bold text-primary", isSeparated && "text-xl")}>{title}</h1>
-                            <p className="text-muted-foreground text-sm">{subtitle}</p>
-                        </div>
-                        {logoUrl ? (
-                            <Image
-                                src={logoUrl}
-                                alt="Logo"
-                                width={64}
-                                height={64}
-                                className={cn(
-                                    "h-16 w-16 rounded-xl object-contain",
-                                    isSeparated && "order-1 h-20 w-auto max-w-[180px] rounded-none"
-                                )}
-                                priority
-                            />
-                        ) : (
-                            <div className={cn("h-16 w-16 rounded-xl bg-primary flex items-center justify-center", isSeparated && "order-1")}>
-                                <Gamepad2 className="h-8 w-8 text-white" />
-                            </div>
-                        )}
-                    </div>
+        <div className="relative isolate flex min-h-[calc(100dvh-4rem)] items-center bg-[var(--hero-band)] py-10 shadow-[0_0_0_100vmax_var(--hero-band)] [--hero-band:#0a0e14] [clip-path:inset(0_-100vmax)] sm:py-16">
+            <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-1/2 -z-10 w-screen -translate-x-1/2 overflow-hidden">
+                <div className="absolute -left-40 top-0 size-[36rem] rounded-full bg-primary/20 blur-[120px]" />
+                <div className="absolute -right-40 bottom-0 size-[32rem] rounded-full bg-primary/15 blur-[120px]" />
+                <div className="absolute -right-24 top-1/4 h-px w-[40rem] -rotate-[35deg] bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+                <div className="absolute -left-24 bottom-1/4 h-px w-[32rem] -rotate-[35deg] bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+            </div>
 
-                    {children}
-                    {isSeparated ? <div className="absolute inset-x-0 bottom-0 h-[3px] bg-[#145de7]" aria-hidden="true" /> : null}
+            <div className="mx-auto grid w-full max-w-6xl items-center gap-16 lg:grid-cols-[1fr_minmax(0,28rem)]">
+                <div className="hidden text-white lg:block motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-left-4 motion-safe:duration-700 motion-safe:fill-mode-both">
+                    <h2 className="text-4xl font-bold leading-tight">
+                        ไอดีเกม ไอเทม และกาชา
+                        <span className="block text-primary">ครบในที่เดียว</span>
+                    </h2>
+                    <p className="mt-5 max-w-md text-base text-white/70">
+                        เลือกซื้อไอดีเกมและไอเทม สุ่มตู้กาชา ทำภารกิจรายวัน และสะสมรางวัลจาก Season Pass ได้ในบัญชีเดียว
+                    </p>
+                    <ul className="mt-10 flex gap-10">
+                        {FEATURES.map(({ icon: Icon, label }) => (
+                            <li key={label} className="flex flex-col items-center gap-2 text-sm font-medium text-white/90">
+                                <Icon className="size-7 text-primary" strokeWidth={1.75} />
+                                {label}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+
+                <div className="w-full motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-4 motion-safe:duration-700 motion-safe:fill-mode-both">
+                    <div className="rounded-2xl bg-card p-5 shadow-[0_24px_64px_-16px] shadow-primary/30 ring-1 ring-primary/25 sm:p-8">
+                        <div className="mb-7 text-center">
+                            {logoUrl ? (
+                                <Image src={logoUrl} alt="" width={160} height={64} className="mx-auto h-14 w-auto max-w-[160px] object-contain" priority />
+                            ) : (
+                                <span className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-primary">
+                                    <Gamepad2 className="h-7 w-7 text-white" />
+                                </span>
+                            )}
+                            <h1 className="mt-4 text-2xl font-bold text-foreground">{title}</h1>
+                            <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>
+                        </div>
+                        {children}
+                    </div>
                 </div>
             </div>
         </div>

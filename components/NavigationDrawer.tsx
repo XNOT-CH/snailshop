@@ -89,9 +89,12 @@ export function NavigationDrawer({
 
     useEffect(() => { setMounted(true); }, []);
     useEffect(() => { setIsOpen(false); }, [pathname]);
+    // Lock <html>, not <body>: the home hero sets overflow-x:clip on <html>, which
+    // stops a body lock from reaching the viewport and turns <body> into the
+    // scroll container, so the sticky header snapped back to the page top.
     useEffect(() => {
-        document.body.style.overflow = isOpen ? "hidden" : "";
-        return () => { document.body.style.overflow = ""; };
+        document.documentElement.style.overflow = isOpen ? "hidden" : "";
+        return () => { document.documentElement.style.overflow = ""; };
     }, [isOpen]);
 
     // Esc to close + keep keyboard focus inside the drawer while open.

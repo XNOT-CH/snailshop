@@ -17,7 +17,7 @@
   /* Type scale: text-xs (12) / text-sm (14) / text-base (16) / text-xl (20) / text-2xl+ for headings.
      No arbitrary text-[Npx] sizes — readable content is 12px minimum (Thai vowel marks collapse below that);
      sub-12px is reserved for fixed-size counter badges, kbd hints, and dense axis labels. */
-  --font-sans: var(--font-kanit), "Noto Sans Thai", "Leelawadee UI", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  --font-sans: var(--font-prompt), "Noto Sans Thai", "Leelawadee UI", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 
   --font-mono: var(--font-geist-mono);
 
@@ -105,24 +105,30 @@
 
 
 
-  --background: #f6f7f9;
-  --foreground: #102033;
+  --background: #f5f7fa;
+  /* Home page bands: base, the tinted band it fades into, and the glow under the hero. */
+  --home-base: #ffffff;
+  --home-band: #e6eefb;
+  --home-glow: #d8e6fc;
+  /* Section headings: a deep navy, after the fastwork.co reference, instead of near-black. */
+  --home-heading: #133a7c;
+  --foreground: #0a0e14;
   --card: #ffffff;
-  --card-foreground: #102033;
+  --card-foreground: #0a0e14;
   --popover: #ffffff;
-  --popover-foreground: #102033;
-  --primary: #145de7;
+  --popover-foreground: #0a0e14;
+  --primary: #1f6feb;
   --primary-foreground: #ffffff;
-  --secondary: #edeef1;
-  --secondary-foreground: #1d3552;
-  --muted: #eef0f2;
-  --muted-foreground: #66707d;
-  --accent: #e8eaee;
-  --accent-foreground: #1b3655;
+  --secondary: #eef0f3;
+  --secondary-foreground: #1a1f26;
+  --muted: #eef0f3;
+  --muted-foreground: #5b6470;
+  --accent: #e8ebef;
+  --accent-foreground: #1a1f26;
   --destructive: #e45d72;
-  --border: #dde0e6;
-  --input: #d8dce2;
-  --ring: #77b7ff;
+  --border: #dfe2e7;
+  --input: #d5d9df;
+  --ring: #58a6ff;
   --chart-1: #145de7;
   --chart-2: #53b8ff;
   --chart-3: #6a9dff;
@@ -140,39 +146,39 @@
   --chart-area-label: #3e8dff;
   --chart-area-gradient-from: #8bc5ff;
   --chart-dot-fill: #145de7;
-  --sidebar: #f1f2f4;
-  --sidebar-foreground: #18314c;
-  --sidebar-primary: #145de7;
+  --sidebar: #eff1f4;
+  --sidebar-foreground: #1a1f26;
+  --sidebar-primary: #1f6feb;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e7e9ed;
-  --sidebar-accent-foreground: #1b3655;
-  --sidebar-border: #dde0e6;
-  --sidebar-ring: #77b7ff;
+  --sidebar-accent: #e5e8ec;
+  --sidebar-accent-foreground: #1a1f26;
+  --sidebar-border: #dfe2e7;
+  --sidebar-ring: #58a6ff;
   --surface-1: rgba(255, 255, 255, 0.99);
-  --surface-2: rgba(248, 250, 255, 1);
+  --surface-2: rgba(250, 251, 252, 1);
   --surface-soft-1: rgba(255, 255, 255, 0.8);
-  --surface-soft-2: rgba(245, 249, 255, 0.9);
-  --surface-media-1: rgba(236, 243, 252, 0.88);
-  --surface-media-2: rgba(228, 236, 248, 0.92);
+  --surface-soft-2: rgba(247, 248, 250, 0.9);
+  --surface-media-1: rgba(238, 240, 243, 0.88);
+  --surface-media-2: rgba(232, 235, 239, 0.92);
   --surface-shell-1: rgba(255, 255, 255, 0.88);
-  --surface-shell-2: rgba(248, 251, 255, 0.94);
+  --surface-shell-2: rgba(250, 251, 252, 0.94);
   --surface-header: rgba(255, 255, 255, 0.7);
   --surface-pill: rgba(255, 255, 255, 0.7);
   --surface-mobile-nav: rgba(255, 255, 255, 0.92);
-  --surface-action: rgba(242, 247, 255, 0.92);
-  --surface-action-hover: rgba(229, 239, 252, 0.98);
-  --surface-overlay: rgba(10, 25, 45, 0.18);
+  --surface-action: rgba(243, 245, 247, 0.92);
+  --surface-action-hover: rgba(232, 235, 239, 0.98);
+  --surface-overlay: rgba(10, 14, 20, 0.18);
   --surface-sale: #ff2f45;
   --surface-sale-hover: #ff233a;
-  --surface-shadow: rgba(39, 71, 121, 0.22);
-  --surface-shadow-soft: rgba(39, 71, 121, 0.18);
-  --surface-stroke-strong: rgba(209, 220, 236, 0.92);
-  --surface-stroke: rgba(199, 213, 230, 0.72);
-  --surface-stroke-soft: rgba(210, 221, 236, 0.56);
-  --surface-action-stroke: rgba(210, 221, 236, 0.9);
-  --surface-header-stroke: rgba(199, 213, 230, 0.74);
-  --surface-pill-stroke: rgba(205, 217, 233, 0.76);
-  --surface-mobile-nav-stroke: rgba(199, 213, 230, 0.8);
+  --surface-shadow: rgba(10, 14, 20, 0.14);
+  --surface-shadow-soft: rgba(10, 14, 20, 0.1);
+  --surface-stroke-strong: rgba(213, 217, 223, 0.92);
+  --surface-stroke: rgba(213, 217, 223, 0.72);
+  --surface-stroke-soft: rgba(223, 226, 231, 0.56);
+  --surface-action-stroke: rgba(213, 217, 223, 0.9);
+  --surface-header-stroke: rgba(213, 217, 223, 0.74);
+  --surface-pill-stroke: rgba(213, 217, 223, 0.76);
+  --surface-mobile-nav-stroke: rgba(213, 217, 223, 0.8);
 
 }
 
@@ -284,24 +290,28 @@ body.swal2-shown [class*="backdrop-blur"] {
 }
 
 .dark {
-  --background: #0a1220;
-  --foreground: #f4f8ff;
-  --card: #142033;
-  --card-foreground: #f4f8ff;
-  --popover: #132032;
-  --popover-foreground: #f4f8ff;
-  --primary: #58a6ff;
-  --primary-foreground: #08111f;
-  --secondary: #101a2c;
-  --secondary-foreground: #d8e6fb;
-  --muted: #101a2b;
-  --muted-foreground: #92a8c4;
-  --accent: #1a2940;
-  --accent-foreground: #e7f1ff;
+  --background: #0a0e14;
+  --home-base: var(--background);
+  --home-band: #0e1626;
+  --home-glow: #12203a;
+  --home-heading: var(--foreground);
+  --foreground: #f5f7fa;
+  --card: #12171e;
+  --card-foreground: #f5f7fa;
+  --popover: #1a1f26;
+  --popover-foreground: #f5f7fa;
+  --primary: #4493f8;
+  --primary-foreground: #0a0e14;
+  --secondary: #1a1f26;
+  --secondary-foreground: #e5e7eb;
+  --muted: #1a1f26;
+  --muted-foreground: #9ca3af;
+  --accent: #232932;
+  --accent-foreground: #f5f7fa;
   --destructive: #ff6f7f;
-  --border: #233754;
-  --input: #18263b;
-  --ring: #8fe7ff;
+  --border: #2e343d;
+  --input: #2e343d;
+  --ring: #7cc3ff;
   --chart-1: #58a6ff;
   --chart-2: #8fe7ff;
   --chart-3: #6ac6ff;
@@ -318,39 +328,39 @@ body.swal2-shown [class*="backdrop-blur"] {
   --chart-area-label: #8fe7ff;
   --chart-area-gradient-from: #7ec7ff;
   --chart-dot-fill: #58a6ff;
-  --sidebar: #0d1728;
-  --sidebar-foreground: #e7eef8;
+  --sidebar: #0f1319;
+  --sidebar-foreground: #e5e7eb;
   --sidebar-primary: #58a6ff;
-  --sidebar-primary-foreground: #08111f;
-  --sidebar-accent: #16253b;
-  --sidebar-accent-foreground: #d7e7fb;
-  --sidebar-border: #233754;
-  --sidebar-ring: #8fe7ff;
-  --surface-1: rgba(24, 37, 57, 0.98);
-  --surface-2: rgba(19, 31, 49, 1);
-  --surface-soft-1: rgba(18, 30, 47, 0.86);
-  --surface-soft-2: rgba(15, 25, 39, 0.92);
-  --surface-media-1: rgba(18, 31, 48, 0.96);
-  --surface-media-2: rgba(14, 25, 39, 0.98);
-  --surface-shell-1: rgba(12, 22, 37, 0.92);
-  --surface-shell-2: rgba(15, 26, 42, 0.96);
-  --surface-header: rgba(10, 18, 30, 0.82);
-  --surface-pill: rgba(12, 22, 37, 0.76);
-  --surface-mobile-nav: rgba(10, 18, 30, 0.94);
-  --surface-action: rgba(20, 33, 51, 0.9);
-  --surface-action-hover: rgba(26, 42, 64, 0.96);
-  --surface-overlay: rgba(6, 15, 26, 0.56);
+  --sidebar-primary-foreground: #0a0e14;
+  --sidebar-accent: #1a1f26;
+  --sidebar-accent-foreground: #f5f7fa;
+  --sidebar-border: #2e343d;
+  --sidebar-ring: #7cc3ff;
+  --surface-1: rgba(26, 31, 38, 0.98);
+  --surface-2: rgba(18, 23, 30, 1);
+  --surface-soft-1: rgba(20, 25, 32, 0.86);
+  --surface-soft-2: rgba(15, 19, 25, 0.92);
+  --surface-media-1: rgba(22, 27, 34, 0.96);
+  --surface-media-2: rgba(17, 21, 27, 0.98);
+  --surface-shell-1: rgba(14, 18, 24, 0.92);
+  --surface-shell-2: rgba(18, 23, 30, 0.96);
+  --surface-header: rgba(10, 14, 20, 0.82);
+  --surface-pill: rgba(14, 18, 24, 0.76);
+  --surface-mobile-nav: rgba(10, 14, 20, 0.94);
+  --surface-action: rgba(26, 31, 38, 0.9);
+  --surface-action-hover: rgba(35, 41, 50, 0.96);
+  --surface-overlay: rgba(5, 7, 10, 0.56);
   --surface-sale: #ff4960;
   --surface-sale-hover: #ff3853;
   --surface-shadow: rgba(0, 0, 0, 0.72);
   --surface-shadow-soft: rgba(0, 0, 0, 0.7);
-  --surface-stroke-strong: rgba(49, 71, 105, 0.86);
-  --surface-stroke: rgba(41, 60, 90, 0.82);
-  --surface-stroke-soft: rgba(39, 58, 87, 0.72);
-  --surface-action-stroke: rgba(54, 76, 108, 0.92);
-  --surface-header-stroke: rgba(41, 60, 90, 0.86);
-  --surface-pill-stroke: rgba(41, 60, 90, 0.84);
-  --surface-mobile-nav-stroke: rgba(41, 60, 90, 0.88);
+  --surface-stroke-strong: rgba(46, 52, 61, 0.86);
+  --surface-stroke: rgba(46, 52, 61, 0.82);
+  --surface-stroke-soft: rgba(46, 52, 61, 0.72);
+  --surface-action-stroke: rgba(58, 65, 76, 0.92);
+  --surface-header-stroke: rgba(46, 52, 61, 0.86);
+  --surface-pill-stroke: rgba(46, 52, 61, 0.84);
+  --surface-mobile-nav-stroke: rgba(46, 52, 61, 0.88);
 }
 
 
@@ -409,101 +419,56 @@ body.swal2-shown [class*="backdrop-blur"] {
 
 
 
-/* Glass effect cards in dark mode */
-
+/* Flat surfaces: one solid fill and a plain border — no glass, gradients or glow */
 html.dark .bg-card {
-
-  border: 1px solid rgba(148, 184, 255, 0.08);
-
-  box-shadow:
-    0 24px 48px -30px rgba(1, 5, 12, 0.92),
-    0 0 0 1px rgba(255, 255, 255, 0.015),
-    inset 0 1px 0 rgba(255, 255, 255, 0.045);
-
-}
-
-
-
-/* Subtle glow on card hover in dark mode */
-
-html.dark .bg-card:hover {
-
-  border-color: rgba(120, 165, 240, 0.14);
-
-  box-shadow:
-    0 28px 56px -32px rgba(1, 5, 12, 0.98),
-    0 0 0 1px rgba(100, 160, 255, 0.05);
-
-}
-
-.luxury-panel {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96) 0%, rgba(249, 252, 255, 0.98) 100%);
-  border: 1px solid rgba(199, 213, 230, 0.95);
-  box-shadow:
-    0 16px 34px -24px rgba(39, 71, 121, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
-.luxury-panel-soft {
-  background: linear-gradient(180deg, rgba(250, 252, 255, 0.94) 0%, rgba(243, 248, 254, 0.98) 100%);
-  border: 1px solid rgba(207, 220, 236, 0.9);
-  box-shadow:
-    0 16px 34px -24px rgba(39, 71, 121, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--border);
 }
 
 .luxury-badge {
-  background: rgba(20, 93, 231, 0.12);
-  border: 1px solid rgba(20, 93, 231, 0.16);
-  color: #145de7;
-  box-shadow: 0 10px 24px -22px rgba(15, 23, 42, 0.18);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 24%, transparent);
+  color: var(--primary);
 }
 
 .luxury-alert {
-  background: linear-gradient(180deg, rgba(255, 248, 235, 0.96) 0%, rgba(255, 244, 223, 0.98) 100%);
+  background: #fff8eb;
   border: 1px solid rgba(240, 178, 90, 0.32);
   color: #7c5a1d;
 }
 
 .luxury-link {
-  color: #145de7;
+  color: var(--primary);
 }
 
 .luxury-link:hover {
-  color: #114fc4;
+  text-decoration: underline;
 }
 
 .theme-shell,
 .storefront-shell {
-  background:
-    linear-gradient(180deg, var(--surface-shell-1) 0%, var(--surface-shell-2) 100%);
+  background: var(--surface-shell-1);
   border: 1px solid var(--surface-stroke);
-  box-shadow:
-    0 24px 54px -34px var(--surface-shadow-soft),
-    inset 0 1px 0 rgba(255, 255, 255, 0.92);
 }
 
 .theme-surface-soft,
-.storefront-section-surface {
-  background:
-    linear-gradient(180deg, var(--surface-soft-1) 0%, var(--surface-soft-2) 100%);
+.storefront-section-surface,
+.luxury-panel-soft {
+  background: var(--surface-soft-1);
   border: 1px solid var(--surface-stroke-soft);
 }
 
 .theme-surface,
 .storefront-card,
-.luxury-panel {
-  background: linear-gradient(180deg, var(--surface-1) 0%, var(--surface-2) 100%);
-  border: 1px solid var(--surface-stroke);
-  box-shadow:
-    0 12px 28px -10px var(--surface-shadow-soft),
-    0 4px 10px -6px var(--surface-shadow-soft),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85);
+.luxury-panel,
+.storefront-product-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 2px var(--surface-shadow-soft);
 }
 
 .theme-surface-media,
 .storefront-card-media {
-  background: linear-gradient(180deg, var(--surface-media-1) 0%, var(--surface-media-2) 100%);
+  background: var(--surface-media-1);
 }
 
 .theme-action-muted,
@@ -525,25 +490,26 @@ html.dark .bg-card:hover {
 
 .theme-header,
 .storefront-header {
-  background: var(--surface-header);
-  border-bottom: 1px solid var(--surface-header-stroke);
-  box-shadow: 0 16px 36px -28px var(--surface-shadow-soft);
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+}
+
+/* Navbar.tsx still carries md:backdrop-blur-xl; the header is opaque now, so the blur only costs paint */
+#main-navbar {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .theme-nav-pill,
 .storefront-nav-pill {
   background: var(--surface-pill);
   border: 1px solid var(--surface-pill-stroke);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.88),
-    0 12px 28px -26px var(--surface-shadow-soft);
 }
 
 .theme-mobile-nav,
 .storefront-mobile-nav {
   background: var(--surface-mobile-nav);
   border-top: 1px solid var(--surface-mobile-nav-stroke);
-  box-shadow: 0 -18px 36px -32px var(--surface-shadow);
 }
 
 .theme-sale,
@@ -561,96 +527,45 @@ html.dark .bg-card:hover {
   background: var(--surface-sale-hover);
 }
 
-.storefront-product-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98) 0%, rgba(248, 251, 255, 0.98) 100%);
-  border: 1px solid rgba(206, 218, 234, 0.7);
-  box-shadow:
-    0 12px 28px -10px rgba(39, 71, 121, 0.16),
-    0 4px 10px -4px rgba(39, 71, 121, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-}
-
 .progressive-image-placeholder {
-  background:
-    radial-gradient(circle at 24% 20%, rgba(88, 166, 255, 0.18), transparent 34%),
-    linear-gradient(135deg, rgba(231, 238, 247, 0.96), rgba(210, 224, 241, 0.88));
-}
-
-html.dark .progressive-image-placeholder {
-  background:
-    radial-gradient(circle at 24% 20%, rgba(88, 166, 255, 0.18), transparent 34%),
-    linear-gradient(135deg, rgba(20, 33, 51, 0.96), rgba(12, 22, 37, 0.92));
+  background: var(--muted);
 }
 
 .storefront-product-action {
-  background: linear-gradient(180deg, rgba(245, 249, 255, 0.98) 0%, rgba(236, 243, 252, 0.98) 100%);
-  border: 1px solid rgba(201, 214, 232, 0.92);
-  color: #1d3552;
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  color: var(--secondary-foreground);
 }
 
 .storefront-product-action:hover {
-  background: linear-gradient(180deg, rgba(237, 244, 253, 1) 0%, rgba(228, 237, 249, 1) 100%);
-  border-color: rgba(170, 194, 227, 0.96);
+  background: var(--accent);
+  border-color: var(--input);
 }
 
 .storefront-product-sale,
 .storefront-product-sale.theme-sale {
-  background: linear-gradient(180deg, #ff445d 0%, #ff304a 100%);
+  background: var(--surface-sale);
 }
 
 .storefront-product-sale:hover,
 .storefront-product-sale.theme-sale:hover {
-  background: linear-gradient(180deg, #ff304a 0%, #ff1f3d 100%);
+  background: var(--surface-sale-hover);
 }
 
 .storefront-product-sale-text {
-  color: #ff304a;
+  color: var(--surface-sale);
 }
 
 .storefront-product-category {
-  background: linear-gradient(180deg, #3f80f0 0%, #145de7 100%);
-  border: 1px solid #114fc4;
-  color: #ffffff;
-  box-shadow:
-    0 10px 20px -18px rgba(15, 23, 42, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.24);
-}
-
-html.dark .luxury-panel {
-  background: linear-gradient(180deg, rgba(26, 41, 64, 0.96) 0%, rgba(20, 32, 51, 0.98) 100%);
-  border: 1px solid rgba(143, 231, 255, 0.1);
-  box-shadow:
-    0 18px 40px -28px rgba(1, 6, 16, 0.9),
-    inset 0 1px 0 rgba(255, 255, 255, 0.03);
-}
-
-html.dark .luxury-panel-soft {
-  background: linear-gradient(180deg, rgba(18, 29, 46, 0.94) 0%, rgba(15, 24, 38, 0.98) 100%);
-  border: 1px solid rgba(88, 166, 255, 0.1);
-  box-shadow:
-    0 18px 40px -28px rgba(1, 6, 16, 0.7),
-    inset 0 1px 0 rgba(255, 255, 255, 0.03);
-}
-
-html.dark .luxury-badge {
-  background: rgba(26, 48, 78, 0.82);
-  border: 1px solid rgba(143, 231, 255, 0.16);
-  color: #e8f4ff;
-  box-shadow: 0 10px 24px -20px rgba(88, 166, 255, 0.6);
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  color: var(--primary-foreground);
 }
 
 html.dark .luxury-alert {
-  background: linear-gradient(180deg, rgba(33, 51, 75, 0.88) 0%, rgba(21, 35, 55, 0.95) 100%);
+  background: #2a2214;
   border: 1px solid rgba(244, 191, 103, 0.22);
-  color: #e9f3ff;
-}
-
-html.dark .luxury-link {
-  color: #8fe7ff;
-}
-
-html.dark .luxury-link:hover {
-  color: #bdefff;
+  color: #f5e6c8;
 }
 
 html.dark .theme-shell,
@@ -677,161 +592,17 @@ html.dark .sale-badge {
   color: inherit;
 }
 
-html.dark .theme-shell,
-html.dark .storefront-shell {
-  border-color: rgba(32, 49, 73, 0.9);
-  box-shadow:
-    0 24px 54px -34px rgba(0, 0, 0, 0.76),
-    inset 0 1px 0 rgba(120, 158, 214, 0.05);
-}
-
-html.dark .theme-surface,
-html.dark .storefront-card,
-html.dark .luxury-panel {
-  border-color: rgba(40, 60, 89, 0.8);
-  box-shadow:
-    0 14px 32px -14px rgba(0, 0, 0, 0.6),
-    0 4px 10px -6px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(122, 165, 228, 0.04);
-}
-
-html.dark .theme-surface-soft,
-html.dark .storefront-section-surface {
-  border-color: rgba(38, 57, 84, 0.82);
-  box-shadow:
-    0 18px 34px -30px rgba(0, 0, 0, 0.46),
-    inset 0 1px 0 rgba(118, 156, 213, 0.035);
-}
-
-html.dark .theme-surface-media,
-html.dark .storefront-card-media {
-  border-color: rgba(36, 54, 79, 0.72);
-  box-shadow: inset 0 1px 0 rgba(116, 151, 206, 0.03);
-}
-
-html.dark .theme-action-muted,
-html.dark .storefront-card-action {
-  border-color: rgba(46, 68, 99, 0.84);
-  box-shadow:
-    0 10px 20px -18px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(122, 163, 224, 0.035);
-}
-
-html.dark .theme-header,
-html.dark .storefront-header {
-  border-bottom-color: rgba(33, 50, 73, 0.9);
-  box-shadow:
-    0 16px 36px -28px rgba(0, 0, 0, 0.7),
-    inset 0 1px 0 rgba(122, 163, 224, 0.045);
-}
-
-/* Desktop dark mode: ให้ navbar เป็นกระจกใสกลืนกับพื้นหลัง (อาศัย backdrop-blur)
-   แทนแผงทึบที่ลอยเป็นสี่เหลี่ยมตัดกับ background gradient */
-@media (min-width: 768px) {
-  html.dark .theme-header,
-  html.dark .storefront-header {
-    background: transparent;
-    box-shadow: none;
-  }
-}
-
-html.dark .theme-nav-pill,
-html.dark .storefront-nav-pill {
-  border-color: rgba(38, 57, 84, 0.88);
-  box-shadow:
-    inset 0 1px 0 rgba(122, 163, 224, 0.045),
-    0 12px 28px -26px rgba(0, 0, 0, 0.68);
-}
-
-html.dark .theme-mobile-nav,
-html.dark .storefront-mobile-nav {
-  border-top-color: rgba(38, 57, 84, 0.88);
-  box-shadow:
-    0 -18px 36px -32px rgba(0, 0, 0, 0.82),
-    inset 0 1px 0 rgba(122, 163, 224, 0.04);
-}
-
-html.dark .storefront-product-card {
-  background: linear-gradient(180deg, rgba(20, 32, 50, 0.98) 0%, rgba(16, 27, 42, 0.98) 100%);
-  border-color: rgba(40, 60, 89, 0.8);
-  box-shadow:
-    0 14px 32px -12px rgba(0, 0, 0, 0.6),
-    0 4px 10px -6px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(122, 165, 228, 0.04);
-}
-
-html.dark .storefront-product-action {
-  background: linear-gradient(180deg, rgba(20, 33, 51, 0.94) 0%, rgba(16, 27, 42, 0.96) 100%);
-  border-color: rgba(46, 68, 99, 0.84);
-  color: #e7f1ff;
-}
-
-html.dark .storefront-product-action:hover {
-  background: linear-gradient(180deg, rgba(27, 42, 64, 0.98) 0%, rgba(20, 33, 51, 0.98) 100%);
-  border-color: rgba(68, 96, 135, 0.88);
-}
-
-html.dark .storefront-product-sale,
-html.dark .storefront-product-sale.theme-sale {
-  background: linear-gradient(180deg, #ff536a 0%, #ff3853 100%);
-}
-
-html.dark .storefront-product-sale:hover,
-html.dark .storefront-product-sale.theme-sale:hover {
-  background: linear-gradient(180deg, #ff4860 0%, #ff2945 100%);
-}
-
-html.dark .storefront-product-sale-text {
-  color: #ff7387;
-}
-
-
-
-/* Input focus glow */
-
+/* Input focus ring */
 html.dark input:focus,
-
 html.dark textarea:focus,
-
 html.dark select:focus {
-
-  box-shadow: 0 0 0 2px rgba(116, 173, 255, 0.18);
-
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ring) 30%, transparent);
 }
 
-
-
-/* Primary button glow in dark mode */
-
-html.dark .bg-primary {
-
-  box-shadow:
-    0 16px 34px -24px rgba(32, 93, 188, 0.5),
-    0 10px 20px -18px rgba(1, 5, 12, 0.78);
-
-}
-
-
-
-html.dark .bg-primary:hover {
-
-  box-shadow:
-    0 18px 38px -24px rgba(46, 109, 210, 0.58),
-    0 12px 24px -18px rgba(1, 5, 12, 0.82);
-
-}
-
-html.dark #main-navbar,
 html.dark #main-mobile-nav {
-
-  background: linear-gradient(180deg, rgba(9, 16, 25, 0.9), rgba(10, 19, 30, 0.84)) !important;
-
-  border-color: rgba(124, 152, 194, 0.16) !important;
-
-  box-shadow:
-    0 18px 40px -32px rgba(0, 0, 0, 0.9),
-    inset 0 1px 0 rgba(255, 255, 255, 0.045);
-
+  background: var(--surface-mobile-nav) !important;
+  border-color: var(--surface-mobile-nav-stroke) !important;
+  box-shadow: none;
 }
 
 #main-mobile-nav[data-scrolling="true"] {
@@ -1119,21 +890,7 @@ html.dark tbody tr:hover {
 
 
 
-/* Navbar glass effect — header เท่านั้น ห้ามใส่ backdrop-filter ที่ nav ซึ่งเป็นลูก
-   ของ header: มันจะเบลอพื้นหลังซ้อนอีกชั้นเฉพาะกรอบสี่เหลี่ยมของ nav เอง
-   ทำให้เห็นเป็นแถบสี่เหลี่ยมเฉดต่างลอยอยู่กลางแถบเมนูใน dark mode */
 
-@media (min-width: 768px) {
-  html.dark header {
-    backdrop-filter: blur(10px);
-  }
-}
-
-@media (max-width: 767px) {
-  html.dark header {
-    backdrop-filter: none;
-  }
-}
 
 
 
@@ -1754,7 +1511,7 @@ body {
 
 
 
-/* Dark mode scrollbar - Glowing effect */
+/* Dark mode scrollbar */
 
 html.dark ::-webkit-scrollbar-track {
 
@@ -1766,7 +1523,7 @@ html.dark ::-webkit-scrollbar-track {
 
 html.dark ::-webkit-scrollbar-thumb {
 
-  background: linear-gradient(180deg, #356fd3 0%, #4a76ce 100%);
+  background: var(--border);
 
   border-radius: 6px;
 
@@ -1780,9 +1537,7 @@ html.dark ::-webkit-scrollbar-thumb {
 
 html.dark ::-webkit-scrollbar-thumb:hover {
 
-  background: linear-gradient(180deg, #4d8dff 0%, #6c8fff 100%);
-
-  box-shadow: 0 0 0 1px rgba(90, 152, 255, 0.18);
+  background: #5b6470;
 
   border: 1px solid transparent;
 
@@ -3546,7 +3301,7 @@ svg {
 }
 
 .snail-welcome-page {
-  font-family: var(--font-kanit), "Noto Sans Thai", "Leelawadee UI", sans-serif;
+  font-family: var(--font-prompt), "Noto Sans Thai", "Leelawadee UI", sans-serif;
   padding: clamp(1.5rem, 4vw, 3rem) clamp(1.5rem, 4vw, 3rem) clamp(7.25rem, 13vh, 8.75rem);
 }
 
