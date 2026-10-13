@@ -4,7 +4,6 @@ import Link from "next/link";
 import { Package } from "lucide-react";
 import { ProductCard } from "@/components/ProductCard";
 import { PageBand } from "@/components/PageBand";
-import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { ShopControls } from "@/components/ShopControls";
 import { db, products } from "@/lib/db";
 import { getSoldCountMap } from "@/lib/features/orders/queries";
@@ -243,9 +242,9 @@ export default async function ShopPage(props: ShopPageProps) {
 
     return (
         <>
-        <PageBand tone="lead" className="pt-6 pb-4 lg:pt-8 lg:pb-6">
-            <PageBreadcrumb items={[{ label: "ร้านค้า" }]} />
-            <h1 className="mt-4 text-3xl font-bold leading-tight text-[var(--page-heading)] sm:text-4xl">ร้านค้า</h1>
+        {/* No back button here: the shop is a top-level menu destination. */}
+        <PageBand tone="lead" className="pt-10 pb-4 lg:pt-12 lg:pb-6">
+            <h1 className="text-3xl font-bold leading-tight text-[var(--page-heading)] sm:text-4xl">ร้านค้า</h1>
             <p className="mt-2 text-muted-foreground">
                 ค้นหาและซื้อไอดีเกมที่คุณต้องการ
             </p>

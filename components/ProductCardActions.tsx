@@ -117,7 +117,9 @@ export const ProductCardActions = memo(function ProductCardActions({
             ) : (
                 <>
                     <Button
-                        className="h-9 flex-1 rounded-xl text-sm font-semibold sm:h-10 sm:text-sm"
+                        // Tinted, not solid: twenty solid buttons per page outshone the product art.
+                        // Navy text in light mode, since primary on this tint misses 4.5:1.
+                        className="h-9 flex-1 rounded-xl bg-primary/10 text-sm font-semibold text-[var(--page-heading)] shadow-none transition-colors duration-300 ease-out hover:bg-primary hover:text-primary-foreground sm:h-10 sm:text-sm dark:bg-primary/15 dark:text-primary dark:hover:text-primary-foreground"
                         onClick={() => void handleBuy()}
                         disabled={isLoading || maintenance?.enabled}
                     >
