@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { BrandWordmark } from "@/components/BrandWordmark";
 import { getSiteSettings } from "@/lib/getSiteSettings";
 import { db, footerLinks } from "@/lib/db";
 import { eq } from "drizzle-orm";
@@ -100,13 +101,13 @@ export default async function Footer() {
                     <div className="sm:col-span-2 lg:col-span-1">
                         <Link href="/" prefetch={false} className="mb-4 inline-flex items-center gap-3">
                             {siteSettings?.logoUrl ? (
-                                <Image src={siteSettings.logoUrl} alt="Logo" width={192} height={48} className="h-12 w-auto max-w-[160px] object-contain" />
+                                <Image src={siteSettings.logoUrl} alt="Logo" width={192} height={48} className="h-10 w-auto max-w-[130px] object-contain" />
                             ) : (
                                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
                                     <Gamepad2 className="h-6 w-6 text-primary-foreground" />
                                 </div>
                             )}
-                            <span className="text-xl font-bold text-foreground">{siteName}</span>
+                            <BrandWordmark alt={siteName} className="h-[22px]" />
                         </Link>
                         <p className="mb-5 text-sm leading-relaxed text-muted-foreground">
                             {siteSettings?.footerDescription ||
