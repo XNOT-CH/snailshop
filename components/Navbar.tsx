@@ -116,10 +116,12 @@ export default async function Navbar() {
                         <Image
                             src={siteSettings.logoUrl}
                             alt="Logo"
-                            width={60}
-                            height={60}
+                            // Height-locked, width follows the art, so a wide logo reads at full
+                            // size instead of shrinking into a square box.
+                            width={160}
+                            height={56}
                             priority
-                            className="h-12 w-12 object-contain sm:h-14 sm:w-14"
+                            className="h-10 w-auto max-w-[120px] object-contain sm:h-11 sm:max-w-[150px]"
                         />
                     ) : (
                         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary sm:h-14 sm:w-14">

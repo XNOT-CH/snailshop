@@ -100,7 +100,7 @@ export default async function Footer() {
                     <div className="sm:col-span-2 lg:col-span-1">
                         <Link href="/" prefetch={false} className="mb-4 inline-flex items-center gap-3">
                             {siteSettings?.logoUrl ? (
-                                <Image src={siteSettings.logoUrl} alt="Logo" width={48} height={48} className="h-12 w-12 rounded-xl object-contain" />
+                                <Image src={siteSettings.logoUrl} alt="Logo" width={192} height={48} className="h-12 w-auto max-w-[160px] object-contain" />
                             ) : (
                                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
                                     <Gamepad2 className="h-6 w-6 text-primary-foreground" />
