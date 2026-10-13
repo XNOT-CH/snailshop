@@ -96,10 +96,12 @@ export default function AnnouncementPopup({
         if (!isVisible || isClosing) {
             return;
         }
-        const previousOverflow = document.body.style.overflow;
-        document.body.style.overflow = "hidden";
+        // <html>, not <body>, for the same reason as NavigationDrawer: a body lock
+        // under the home hero's overflow-x:clip unsticks the header.
+        const previousOverflow = document.documentElement.style.overflow;
+        document.documentElement.style.overflow = "hidden";
         return () => {
-            document.body.style.overflow = previousOverflow;
+            document.documentElement.style.overflow = previousOverflow;
         };
     }, [isVisible, isClosing]);
 

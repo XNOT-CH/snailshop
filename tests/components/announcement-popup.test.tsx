@@ -101,18 +101,18 @@ describe("AnnouncementPopup timing dismissal", () => {
     expect(localStorage.getItem("popup_dismissed_until")).toBeNull();
   }, 10000);
 
-  it("locks body scroll while visible and restores it on close", async () => {
+  it("locks page scroll on <html> while visible and restores it on close", async () => {
     render(<AnnouncementPopup />);
 
     await flushPopupCycle();
     await flushPopupCycle(500);
 
     expect(screen.getByRole("button", { name: "ปิด" })).toBeInTheDocument();
-    expect(document.body.style.overflow).toBe("hidden");
+    expect(document.documentElement.style.overflow).toBe("hidden");
 
     fireEvent.click(screen.getByRole("button", { name: "ปิด" }));
 
-    expect(document.body.style.overflow).toBe("");
+    expect(document.documentElement.style.overflow).toBe("");
   });
 
   it("keeps the page quiet when popup fetch fails", async () => {
