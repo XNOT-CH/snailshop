@@ -217,7 +217,7 @@ export default async function HomePage() {
       key: tab.key,
       label: tab.label,
       content: (
-        <div className="grid gap-3 sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-6">
           {tab.items.slice(0, HOMEPAGE_TILE_LIMIT).map((product, index) => (
             <RevealOnScroll key={product.id} index={index}>
               <HomeProductTile product={toTile(product)} currencySettings={currencySettings} />

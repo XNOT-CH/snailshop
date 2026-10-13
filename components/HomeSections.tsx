@@ -186,7 +186,9 @@ export interface HomeProductTileData {
   category: string;
 }
 
-// Horizontal content card from the brand guide: image, tag, title, price, arrow.
+// Vertical card shaped like the /shop ProductCard, minus the buy buttons: the
+// product art carries text (level, gems, delivery time) that only reads when the
+// image is this size.
 export function HomeProductTile({
   product,
   currencySettings,
@@ -198,17 +200,24 @@ export function HomeProductTile({
     <Link
       href={`/product/${product.id}`}
       prefetch={false}
-      className="group flex items-center gap-4 rounded-xl border border-border bg-[var(--card)] p-3 transition-[border-color,translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 hover:border-primary/50"
+      className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-[var(--card)] transition-[border-color,translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 hover:border-primary/50"
     >
-      <div className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-muted sm:size-24">
-        <ThumbImage src={product.imageUrl || "/placeholder.jpg"} alt={product.name} fill sizes="96px" loading="lazy" className="object-cover" />
+      <div className="relative m-2 mb-0 aspect-square overflow-hidden rounded-xl bg-muted sm:m-2.5 sm:mb-0">
+        <ThumbImage
+          src={product.imageUrl || "/placeholder.jpg"}
+          alt={product.name}
+          fill
+          sizes="(max-width: 640px) calc(50vw - 24px), (max-width: 1024px) calc(33vw - 32px), 200px"
+          loading="lazy"
+          className="object-cover"
+        />
       </div>
-      <div className="min-w-0 flex-1">
-        <span className="inline-block max-w-full truncate rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+      <div className="flex min-w-0 flex-1 flex-col p-3">
+        <span className="self-start max-w-full truncate rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
           {product.category}
         </span>
-        <h3 className="mt-1.5 truncate text-sm font-semibold text-foreground sm:text-base">{product.name}</h3>
-        <div className="mt-1 flex flex-wrap items-baseline gap-x-2">
+        <h3 className="mt-1.5 line-clamp-2 text-sm font-semibold leading-snug text-foreground">{product.name}</h3>
+        <div className="mt-auto flex flex-wrap items-baseline gap-x-2 pt-1.5">
           <span className={`font-bold ${hasDiscount ? themeClasses.saleText : "text-foreground"}`}>
             {formatCurrencyAmount(activePrice, product.currency, currencySettings)}
           </span>
@@ -219,9 +228,6 @@ export function HomeProductTile({
           )}
         </div>
       </div>
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-full border border-border text-muted-foreground transition-colors duration-300 ease-out group-hover:border-primary group-hover:bg-primary group-hover:text-primary-foreground">
-        <ArrowRight className="h-4 w-4 transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-x-0.5" />
-      </span>
     </Link>
   );
 }

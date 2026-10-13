@@ -107,10 +107,13 @@ export function ProductCard({
                         currencySettings={currencySettings}
                         initialPurchaseMaintenance={initialPurchaseMaintenance}
                     />
-                    <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
-                        <Package className="h-3.5 w-3.5 shrink-0" />
-                        <span className="truncate">ขายไปแล้ว {(soldCount ?? 0).toLocaleString("th-TH")} ชิ้น</span>
-                    </div>
+                    {/* "Sold 0" reads as nobody buys here, so the line waits for a first sale. */}
+                    {(soldCount ?? 0) > 0 && (
+                        <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-muted-foreground">
+                            <Package className="h-3.5 w-3.5 shrink-0" />
+                            <span className="truncate">ขายไปแล้ว {(soldCount ?? 0).toLocaleString("th-TH")} ชิ้น</span>
+                        </div>
+                    )}
                 </div>
             </div>
         </RevealOnScroll>
