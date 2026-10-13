@@ -110,6 +110,8 @@
   --home-base: #ffffff;
   --home-band: #e6eefb;
   --home-glow: #d8e6fc;
+  /* Section headings: a deep navy, after the fastwork.co reference, instead of near-black. */
+  --home-heading: #133a7c;
   --foreground: #0a0e14;
   --card: #ffffff;
   --card-foreground: #0a0e14;
@@ -292,6 +294,7 @@ body.swal2-shown [class*="backdrop-blur"] {
   --home-base: var(--background);
   --home-band: #0e1626;
   --home-glow: #12203a;
+  --home-heading: var(--foreground);
   --foreground: #f5f7fa;
   --card: #12171e;
   --card-foreground: #f5f7fa;

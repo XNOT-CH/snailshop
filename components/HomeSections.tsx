@@ -47,7 +47,7 @@ export function HomeSectionHeading({
   return (
     <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 className="text-xl font-bold leading-tight text-foreground sm:text-2xl">{title}</h2>
+        <h2 className="text-xl font-bold leading-tight text-[var(--home-heading)] sm:text-2xl">{title}</h2>
         {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
       </div>
       {action}
@@ -298,7 +298,7 @@ export function HomeHowToBuy() {
     <section className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12">
       <div>
         <p className="text-sm font-semibold text-primary">วิธีสั่งซื้อ</p>
-        <h2 className="mt-2 text-3xl font-bold leading-tight text-foreground sm:text-4xl">
+        <h2 className="mt-2 text-3xl font-bold leading-tight text-[var(--home-heading)] sm:text-4xl">
           ซื้อง่าย
           <span className="block">ใน 3 ขั้นตอน</span>
         </h2>
@@ -371,7 +371,7 @@ export function HomeFaq({ articles }: Readonly<{ articles: { id: string; questio
     <section className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:gap-12">
       <div>
         <p className="text-sm font-semibold text-primary">ช่วยเหลือ</p>
-        <h2 className="mt-2 text-3xl font-bold leading-tight text-foreground sm:text-4xl">คำถามที่พบบ่อย</h2>
+        <h2 className="mt-2 text-3xl font-bold leading-tight text-[var(--home-heading)] sm:text-4xl">คำถามที่พบบ่อย</h2>
         <Link href="/help" prefetch={false} className="mt-6 inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline">
           ดูคำถามทั้งหมด
           <ArrowRight className="h-4 w-4" />
@@ -427,7 +427,7 @@ export function HomeTopupShowcase() {
 
       <div>
         <p className="text-sm font-semibold text-primary">เติมเกมออนไลน์</p>
-        <h2 className="mt-2 text-3xl font-bold leading-tight text-foreground sm:text-4xl">
+        <h2 className="mt-2 text-3xl font-bold leading-tight text-[var(--home-heading)] sm:text-4xl">
           เติมเกม
           <span className="block">และไอเทมเกม</span>
         </h2>
