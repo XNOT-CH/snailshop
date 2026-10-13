@@ -14,7 +14,7 @@ export function HomeHero({ siteName, banners }: Readonly<HomeHeroProps>) {
   return (
     <section
       id="home-hero"
-      className="relative isolate bg-[var(--hero-band)] py-3 shadow-[0_0_0_100vmax_var(--hero-band)] [--hero-band:#151515] [clip-path:inset(0_-100vmax)] md:py-4"
+      className="relative isolate bg-[var(--hero-band)] py-3 shadow-[0_0_0_100vmax_var(--hero-band)] [--hero-band:#0a0e14] [clip-path:inset(0_-100vmax)] md:py-4"
     >
       {/* The carousel reaches the screen edges, past the page container; clip
           the sideways overflow so it never adds a scrollbar. */}

@@ -97,7 +97,7 @@ export function HomeCategories({ categories }: Readonly<{ categories: { name: st
           const tile = (
             <>
               <span className={`relative block size-14 overflow-hidden rounded-full ${category.image ? "" : "bg-muted"} transition-[translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 sm:size-18`}>
-                {category.image && <Image src={category.image} alt="" fill sizes="72px" className="object-cover" />}
+                {category.image && <Image src={category.image} alt="" fill sizes="72px" className="object-cover dark:invert dark:hue-rotate-180" />}
               </span>
               <span className="line-clamp-2 text-center text-sm font-medium leading-snug text-foreground transition-colors duration-300 ease-out group-hover:text-primary">
                 {category.name}

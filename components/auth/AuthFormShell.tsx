@@ -25,7 +25,7 @@ const FEATURES = [
 // height, as the home bands are, which also covers the site background image.
 export function AuthFormShell({ logoUrl, title, subtitle, children }: AuthFormShellProps) {
     return (
-        <div className="relative isolate flex min-h-[calc(100dvh-4rem)] items-center bg-[var(--hero-band)] py-10 shadow-[0_0_0_100vmax_var(--hero-band)] [--hero-band:#151515] [clip-path:inset(0_-100vmax)] sm:py-16">
+        <div className="relative isolate flex min-h-[calc(100dvh-4rem)] items-center bg-[var(--hero-band)] py-10 shadow-[0_0_0_100vmax_var(--hero-band)] [--hero-band:#0a0e14] [clip-path:inset(0_-100vmax)] sm:py-16">
             <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-1/2 -z-10 w-screen -translate-x-1/2 overflow-hidden">
                 <div className="absolute -left-40 top-0 size-[36rem] rounded-full bg-primary/20 blur-[120px]" />
                 <div className="absolute -right-40 bottom-0 size-[32rem] rounded-full bg-primary/15 blur-[120px]" />
