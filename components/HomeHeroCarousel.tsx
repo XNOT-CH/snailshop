@@ -81,6 +81,7 @@ export function HomeHeroCarousel({ banners }: Readonly<{ banners: HeroBannerItem
                                 alt={banner.title}
                                 fill
                                 sizes="(max-width: 768px) 88vw, 720px"
+                                quality={100}
                                 priority={index === 0}
                                 className="object-cover"
                             />
