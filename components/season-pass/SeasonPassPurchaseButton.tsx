@@ -22,33 +22,15 @@ type SeasonPassLinkButtonProps = {
     children: ReactNode;
 };
 
+// The site's single blue button, the same as the dashboard's Season Pass actions.
 export const seasonPassButtonShellClass =
-    "group relative h-[58px] w-fit overflow-hidden rounded-full border border-[#d7b96f] bg-transparent px-[5px] py-[5px] text-sm font-semibold text-white shadow-[0_18px_36px_-22px_rgba(15,23,42,0.42)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_44px_-22px_rgba(15,23,42,0.18)] disabled:border-slate-200 disabled:bg-transparent disabled:text-slate-400 disabled:shadow-none";
-
-export const seasonPassButtonTextClass =
-    "relative z-10 flex h-full items-center justify-center gap-2 px-7 pt-[4px] text-center text-base font-semibold tracking-[0.01em] text-white drop-shadow-[0_2px_8px_rgba(15,23,42,0.25)]";
-
-function SeasonPassButtonFrame() {
-    return (
-        <>
-            <span className="absolute inset-0 rounded-full bg-[linear-gradient(180deg,#f7e7a7_0%,#c99634_45%,#f4de97_100%)] opacity-95 transition-opacity duration-300 group-hover:opacity-100 group-disabled:opacity-100" />
-            <span className="absolute inset-[4px] rounded-full bg-[linear-gradient(180deg,#fff8d7_0%,#ddb96a_22%,#b77d1f_100%)]" />
-            <span className="absolute inset-[8px] rounded-full bg-[linear-gradient(180deg,#487cf1_0%,#2a57cf_46%,#1a3faa_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.28),inset_0_-8px_16px_rgba(10,29,93,0.24)]" />
-            <span className="absolute inset-x-[18px] top-[10px] h-4.5 rounded-full bg-[linear-gradient(180deg,rgba(255,255,255,0.42),rgba(255,255,255,0))] blur-[1px]" />
-        </>
-    );
-}
+    "h-11 w-full rounded-xl px-6 text-sm font-semibold transition-colors duration-300 ease-out";
 
 export function SeasonPassLinkButton({ href, children }: Readonly<SeasonPassLinkButtonProps>) {
     return (
         <Button asChild className={seasonPassButtonShellClass}>
-            <Link
-                href={href}
-                prefetch={false}
-                className="relative inline-flex h-full items-center justify-center overflow-hidden rounded-full"
-            >
-                <SeasonPassButtonFrame />
-                <span className={seasonPassButtonTextClass}>{children}</span>
+            <Link href={href} prefetch={false}>
+                {children}
             </Link>
         </Button>
     );
@@ -130,11 +112,8 @@ export function SeasonPassPurchaseButton({
             disabled={disabled || isLoading || !hasEnoughBalance}
             className={seasonPassButtonShellClass}
         >
-            <SeasonPassButtonFrame />
-            <span className={seasonPassButtonTextClass}>
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-                {isLoading ? "กำลังดำเนินการ" : buttonText}
-            </span>
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            {isLoading ? "กำลังดำเนินการ" : buttonText}
         </Button>
     );
 }

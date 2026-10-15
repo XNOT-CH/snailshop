@@ -1,14 +1,13 @@
 import { redirect } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { auth } from "@/auth";
 import { db, users } from "@/lib/db";
 import { eq } from "drizzle-orm";
-import { CalendarDays, Eye, Gift } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { ArrowRight } from "lucide-react";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { formatCurrencyAmount } from "@/lib/currencySettings";
 import { getCurrencySettings } from "@/lib/getCurrencySettings";
-import { themeClasses } from "@/lib/theme";
 
 export const dynamic = "force-dynamic";
 
@@ -36,21 +35,30 @@ export default async function DashboardWalletPage() {
         redirect("/login");
     }
 
+    // One card per balance, each with the next step it leads to where there is one.
     const balances = [
         {
             title: "เครดิต",
-            value: Number(user.creditBalance).toLocaleString(),
+            value: `฿${Number(user.creditBalance).toLocaleString()}`,
             detail: "ใช้ซื้อสินค้าและบริการภายในเว็บ",
             image: "/season-pass-credit-icon.webp",
+            action: { href: "/dashboard/topup", label: "เติมเงิน" },
         },
         {
             title: currencySettings.name,
             value: formatCurrencyAmount(Number(user.pointBalance ?? 0), "POINT", currencySettings),
             detail: "แต้มสะสมจากกิจกรรมและรางวัลต่างๆ",
             image: "/season-pass-points-icon.webp",
+            action: null,
         },
-    ] as const;
-    const ticketBalance = Number(user.ticketBalance ?? 0);
+        {
+            title: "ตั๋วสุ่ม",
+            value: `${Number(user.ticketBalance ?? 0).toLocaleString()} ใบ`,
+            detail: "ตั๋วสุ่มที่ได้รับจาก Season Pass จะถูกบันทึกเข้ากระเป๋าอัตโนมัติทันทีเมื่อกดรับของวันนั้น",
+            image: "/season-pass-ticket-card.webp",
+            action: { href: "/dashboard/season-pass", label: "ดู Season Pass" },
+        },
+    ];
 
     return (
         <div className="dashboard-wallet-page space-y-6">
@@ -61,103 +69,49 @@ export default async function DashboardWalletPage() {
                 ]}
             />
 
-            <section className={`${themeClasses.surface} rounded-3xl px-5 py-6 shadow-sm sm:px-6`}>
-                <div className="space-y-2">
-                    <h1 className="text-2xl font-semibold tracking-tight text-foreground">กระเป๋าของฉัน</h1>
-                    <p className="text-sm leading-6 text-muted-foreground">
-                        รวมยอดคงเหลือของเครดิต {currencySettings.name} และตั๋วสุ่มในบัญชีนี้
-                    </p>
-                </div>
+            <div>
+                <h1 className="text-3xl font-bold leading-tight text-[var(--page-heading)] sm:text-4xl">
+                    กระเป๋าของฉัน
+                </h1>
+                <p className="mt-2 text-muted-foreground">
+                    รวมยอดคงเหลือของเครดิต {currencySettings.name} และตั๋วสุ่มในบัญชีนี้
+                </p>
+            </div>
 
-                <div className="mt-6 grid gap-4 md:grid-cols-2">
-                    {balances.map((item) => {
-                        return (
-                            <Card key={item.title} className={`${themeClasses.surfaceSoft} rounded-3xl border border-border/70 shadow-none`}>
-                                <CardContent className="p-5">
-                                    <div className="relative h-16 w-16 overflow-hidden rounded-2xl border border-border/70 bg-background/70 shadow-sm">
-                                        <Image
-                                            src={item.image}
-                                            alt={item.title}
-                                            width={64}
-                                            height={64}
-                                            className="h-full w-full object-contain p-2"
-                                        />
-                                    </div>
-                                    <p className="mt-4 text-sm font-medium text-muted-foreground">{item.title}</p>
-                                    <p className="mt-2 text-3xl font-semibold tracking-tight text-foreground">{item.value}</p>
-                                    <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.detail}</p>
-                                </CardContent>
-                            </Card>
-                        );
-                    })}
-                </div>
-
-                {ticketBalance > 0 ? (
-                    <div className="mt-8 space-y-4">
-                        <div className="space-y-1">
-                            <h2 className="flex items-center gap-2 text-xl font-semibold tracking-tight text-foreground">
-                                <Gift className="h-5 w-5 text-blue-600" />
-                                ตั๋วสุ่มของฉัน
-                            </h2>
-                            <p className="text-sm leading-6 text-muted-foreground">
-                                แสดงตั๋วสุ่มที่ถืออยู่ในกระเป๋าแบบการ์ดไอเทมเพื่อดูง่ายขึ้น
-                            </p>
+            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+                {balances.map((item) => (
+                    <section
+                        key={item.title}
+                        className="flex flex-col rounded-2xl border border-border bg-card p-5 transition-colors duration-300 ease-out hover:border-primary/40 sm:p-6"
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary/5">
+                                <Image
+                                    src={item.image}
+                                    alt=""
+                                    width={48}
+                                    height={48}
+                                    className="h-full w-full object-contain p-1.5"
+                                />
+                            </div>
+                            <h2 className="font-semibold text-foreground">{item.title}</h2>
                         </div>
-
-                        <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
-                            <Card className={`${themeClasses.surfaceSoft} overflow-hidden rounded-3xl border border-border/70 shadow-sm`}>
-                                <div className="relative h-[280px] overflow-hidden border-b border-border/60 bg-[radial-gradient(circle_at_top,rgba(37,99,235,0.14),transparent_35%),linear-gradient(180deg,#fffdfa_0%,#f8fafc_100%)]">
-                                    <div className="absolute left-4 top-4 z-10 inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-700 shadow-sm dark:bg-emerald-500/15 dark:text-emerald-200 dark:shadow-none">
-                                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                                        พร้อมใช้งาน
-                                    </div>
-                                    <div className="absolute inset-0 flex items-center justify-center p-8">
-                                        <div className="relative h-full w-full max-w-[320px]">
-                                            <Image
-                                                src="/season-pass-ticket-card.webp"
-                                                alt="Season Pass ticket"
-                                                fill
-                                                sizes="(max-width: 768px) 280px, 320px"
-                                                className="h-full w-full object-contain drop-shadow-[0_28px_30px_rgba(15,23,42,0.2)]"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <CardContent className="space-y-4 p-5">
-                                    <div>
-                                        <h3 className="text-2xl font-semibold tracking-tight text-foreground">ตั๋วสุ่ม Season Pass</h3>
-                                        <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-                                            <CalendarDays className="h-4 w-4" />
-                                            อัปเดตจากการกดรับรางวัลล่าสุด
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2">
-                                        <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-500/15 dark:text-blue-200">
-                                            จำนวนคงเหลือ {ticketBalance.toLocaleString()}
-                                        </span>
-                                        <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
-                                            รับได้จาก Season Pass
-                                        </span>
-                                    </div>
-
-                                    <div className="rounded-full bg-primary px-4 py-3 text-center text-sm font-semibold text-primary-foreground shadow-[0_18px_30px_-18px_rgba(15,23,42,0.28)]">
-                                        <span className="inline-flex items-center gap-2">
-                                            <Eye className="h-4 w-4" />
-                                            ตั๋วพร้อมใช้งาน
-                                        </span>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    </div>
-                ) : null}
-
-                <div className={`${themeClasses.alert} mt-6 rounded-2xl p-4 text-sm leading-7`}>
-                    ตั๋วสุ่มที่ได้รับจาก Season Pass จะถูกบันทึกเข้ากระเป๋าอัตโนมัติทันทีเมื่อกดรับของวันนั้น
-                </div>
-            </section>
+                        <p className="mt-5 text-3xl font-bold tracking-tight text-[var(--page-heading)] sm:text-4xl">
+                            {item.value}
+                        </p>
+                        <p className="mt-2 flex-1 text-sm leading-6 text-muted-foreground">{item.detail}</p>
+                        {item.action ? (
+                            <Link
+                                href={item.action.href}
+                                className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary/10 px-5 text-sm font-semibold text-primary transition-colors duration-300 ease-out hover:bg-primary hover:text-primary-foreground"
+                            >
+                                {item.action.label}
+                                <ArrowRight className="h-4 w-4" />
+                            </Link>
+                        ) : null}
+                    </section>
+                ))}
+            </div>
         </div>
     );
 }

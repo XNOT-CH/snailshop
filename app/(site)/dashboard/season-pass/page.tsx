@@ -1,7 +1,8 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
-import { Gift, Lock } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, Gift, Lock } from "lucide-react";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import {
     calculateSeasonPassDailyResetWindow,
@@ -9,10 +10,8 @@ import {
     getSeasonPassDashboardState,
 } from "@/lib/seasonPass";
 import { buildPageMetadata } from "@/lib/seo";
-import { SeasonPassLinkButton } from "@/components/season-pass/SeasonPassPurchaseButton";
 import { SeasonPassDashboardContent } from "@/components/season-pass/SeasonPassDashboardContent";
 import { buildThaiDateAtCurrentTime, parseMockDateKey } from "@/lib/utils/date";
-import { themeClasses } from "@/lib/theme";
 
 export const metadata = buildPageMetadata({
     title: "Season Pass",
@@ -20,7 +19,21 @@ export const metadata = buildPageMetadata({
     noIndex: true,
 });
 
-function LockedSeasonPassPage(props: Readonly<{ latestEndAtText: string | null; canPurchase: boolean }>) {
+// The site's single blue button, in place of the gold sales-page pill.
+const seasonPassActionClass =
+    "inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary px-6 text-sm font-semibold text-primary-foreground transition-colors duration-300 ease-out hover:bg-primary/90";
+
+type RewardPreview = Awaited<ReturnType<typeof getSeasonPassDashboardState>> extends infer State
+    ? State extends { rewardPreview: infer Preview } ? Preview : never
+    : never;
+
+function LockedSeasonPassPage(props: Readonly<{
+    latestEndAtText: string | null;
+    canPurchase: boolean;
+    price: number;
+    durationDays: number;
+    rewardPreview: RewardPreview;
+}>) {
     return (
         <div className="season-pass-dashboard space-y-6">
             <PageBreadcrumb
@@ -30,69 +43,69 @@ function LockedSeasonPassPage(props: Readonly<{ latestEndAtText: string | null; 
                 ]}
             />
 
-            <section className={`${themeClasses.shell} relative overflow-hidden rounded-3xl px-5 py-8 sm:px-7 sm:py-10`}>
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(26,86,219,0.12),transparent_30%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.96))]" />
-                <div className="relative grid gap-8 xl:grid-cols-[1.08fr_0.92fr] xl:items-center">
-                    <div className="space-y-6 xl:max-w-[540px] xl:pl-2">
-                        <Badge className="rounded-full border border-primary/20 bg-background px-3 py-1 text-xs font-medium text-primary shadow-sm">
-                            ปลดล็อกด้วย Season Pass
-                        </Badge>
-                        <div className="space-y-4">
-                            <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
-                                ปลดล็อก Season Pass เพื่อเข้าถึงรางวัลของคุณ
-                            </h1>
-                            <p className="max-w-[34rem] text-sm leading-7 text-slate-600 sm:text-base">
-                                เมื่อซื้อ Season Pass คุณจะสามารถเข้าถึงกระดานรางวัล 30 วัน
-                                พร้อมทั้งกดรับรางวัลรายวัน ตรวจสอบสถานะการรับรางวัลย้อนหลัง
-                                และดูประวัติการเคลมได้ทันทีที่นี่
-                            </p>
-                        </div>
+            <div>
+                <h1 className="text-3xl font-bold leading-tight text-[var(--page-heading)] sm:text-4xl">Season Pass</h1>
+                <p className="mt-2 text-muted-foreground">
+                    {props.price.toLocaleString()} บาท · {props.durationDays} วัน
+                </p>
+            </div>
 
-                        <div>
-                            {props.canPurchase ? (
-                                <SeasonPassLinkButton href="/season-pass">ซื้อ Season Pass</SeasonPassLinkButton>
-                            ) : (
-                                <Badge variant="secondary" className="rounded-full px-4 py-2 text-sm">
-                                    ปิดขายชั่วคราว
-                                </Badge>
-                            )}
-                        </div>
+            <section className="grid items-center gap-8 rounded-2xl border border-border bg-card p-5 sm:p-7 xl:grid-cols-[1fr_1fr]">
+                <div className="space-y-5">
+                    <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                        ปลดล็อกด้วย Season Pass
+                    </span>
+                    <h2 className="text-2xl font-bold leading-tight text-[var(--page-heading)] sm:text-3xl">
+                        ปลดล็อก Season Pass เพื่อเข้าถึงรางวัลของคุณ
+                    </h2>
+                    <p className="max-w-[34rem] leading-7 text-muted-foreground">
+                        เมื่อซื้อ Season Pass คุณจะสามารถเข้าถึงกระดานรางวัล {props.durationDays} วัน
+                        พร้อมทั้งกดรับรางวัลรายวัน ตรวจสอบสถานะการรับรางวัลย้อนหลัง
+                        และดูประวัติการเคลมได้ทันทีที่นี่
+                    </p>
+                    {props.canPurchase ? (
+                        <Link href="/season-pass" prefetch={false} className={seasonPassActionClass}>
+                            ซื้อ Season Pass
+                            <ArrowRight className="h-4 w-4" />
+                        </Link>
+                    ) : (
+                        <span className="inline-flex rounded-full bg-muted px-4 py-2 text-sm font-semibold text-muted-foreground">
+                            ปิดขายชั่วคราว
+                        </span>
+                    )}
+                    {props.latestEndAtText ? (
+                        <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm leading-6 text-amber-900 dark:text-amber-100">
+                            สิทธิ์ Season Pass ล่าสุดของคุณหมดอายุเมื่อ {props.latestEndAtText}
+                        </p>
+                    ) : null}
+                </div>
 
-                        {props.latestEndAtText ? (
-                            <div className={`${themeClasses.alert} rounded-2xl p-4 text-sm leading-6`}>
-                                สิทธิ์ Season Pass ล่าสุดของคุณหมดอายุเมื่อ {props.latestEndAtText}
-                            </div>
-                        ) : null}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <p className="font-semibold text-foreground">ตัวอย่างรางวัล</p>
+                        <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                            <Lock className="h-4 w-4" />
+                        </span>
                     </div>
-
-                    <div className={`${themeClasses.surface} rounded-3xl p-4 backdrop-blur sm:p-5`}>
-                        <div className="rounded-3xl border border-[#eadfce] bg-[linear-gradient(180deg,#fffdfa_0%,#f9f6ef_100%)] p-4 sm:p-5">
-                            <div className="mb-4 flex items-center justify-between">
-                                <p className="text-sm font-semibold tracking-[0.18em] text-slate-700">LOCKED REWARD BOARD</p>
-                                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-                                    <Lock className="h-4 w-4" />
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                        {props.rewardPreview.map((reward) => (
+                            <div key={reward.day} className="rounded-xl border border-border bg-muted/30 p-3">
+                                <p className="text-xs font-semibold text-muted-foreground">วันที่ {reward.day}</p>
+                                <div className="relative mt-3 flex h-11 w-11 items-center justify-center overflow-hidden rounded-xl bg-card text-primary">
+                                    {reward.imageUrl ? (
+                                        <Image src={reward.imageUrl} alt={reward.label} fill sizes="44px" className="object-contain p-1.5" />
+                                    ) : (
+                                        <Gift className="h-5 w-5" />
+                                    )}
                                 </div>
+                                <p className="mt-3 text-sm font-semibold text-foreground">{reward.label}</p>
+                                <p className="text-xs text-muted-foreground">จำนวน {reward.amount}</p>
                             </div>
-
-                            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4">
-                                {[1, 2, 3, 4, 5, 6].map((day) => (
-                                    <div key={day} className="rounded-2xl border border-border/70 bg-white/80 p-3 opacity-80">
-                                        <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500">
-                                            Day {String(day).padStart(2, "0")}
-                                        </span>
-                                        <div className="mt-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-50 text-blue-700">
-                                            <Gift className="h-4 w-4" />
-                                        </div>
-                                        <p className="mt-3 text-sm font-medium text-slate-900">Reward Slot</p>
-                                    </div>
-                                ))}
-                            </div>
-
-                            <div className={`${themeClasses.alert} mt-5 rounded-2xl p-4 text-sm leading-7`}>
-                                ซื้อ Season Pass เพื่อปลดล็อกและเริ่มรับรางวัล Day 1 ได้ทันที
-                            </div>
-                        </div>
+                        ))}
                     </div>
+                    <p className="text-sm text-muted-foreground">
+                        ซื้อ Season Pass เพื่อปลดล็อกและเริ่มรับรางวัล Day 1 ได้ทันที
+                    </p>
                 </div>
             </section>
         </div>
@@ -115,7 +128,15 @@ export default async function SeasonPassPage(props: Readonly<{ searchParams?: Pr
     const state = await getSeasonPassDashboardState(userId, now);
 
     if (!state.unlocked) {
-        return <LockedSeasonPassPage latestEndAtText={state.latestEndAtText} canPurchase={state.plan.isActive} />;
+        return (
+            <LockedSeasonPassPage
+                latestEndAtText={state.latestEndAtText}
+                canPurchase={state.plan.isActive}
+                price={Number(state.plan.price)}
+                durationDays={state.plan.durationDays}
+                rewardPreview={state.rewardPreview}
+            />
+        );
     }
 
     const { plan, subscription, boardState, history, endAtText } = state;
@@ -124,22 +145,22 @@ export default async function SeasonPassPage(props: Readonly<{ searchParams?: Pr
 
     return (
         <div className="season-pass-dashboard space-y-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-                <PageBreadcrumb
-                    items={[
-                        { label: "แดชบอร์ด", href: "/dashboard" },
-                        { label: "Season Pass 30 วัน" },
-                    ]}
-                />
-                {/* /season-pass redirects active holders here, so the renew
-                    entry needs ?renew=1 to reach the sales page. */}
-                {plan.isActive ? (
-                    <SeasonPassLinkButton href="/season-pass?renew=1">
-                        ต่ออายุ Season Pass
-                    </SeasonPassLinkButton>
-                ) : null}
-            </div>
+            <PageBreadcrumb
+                items={[
+                    { label: "แดชบอร์ด", href: "/dashboard" },
+                    { label: "Season Pass 30 วัน" },
+                ]}
+            />
             <SeasonPassDashboardContent
+                headerAction={
+                    // /season-pass redirects active holders here, so the renew
+                    // entry needs ?renew=1 to reach the sales page.
+                    plan.isActive ? (
+                        <Link href="/season-pass?renew=1" prefetch={false} className={seasonPassActionClass}>
+                            ต่ออายุ Season Pass
+                        </Link>
+                    ) : null
+                }
                 durationDays={plan.durationDays}
                 price={Number(plan.price)}
                 currentDay={boardState.currentDay}
