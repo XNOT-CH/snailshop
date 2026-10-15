@@ -260,6 +260,7 @@ function ProfileSettingsContent() {
     const [cropFileName, setCropFileName] = useState("");
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [showImageUrlField, setShowImageUrlField] = useState(false);
     const [formData, setFormData] = useState({
         name: "",
         email: "",
@@ -295,8 +296,7 @@ function ProfileSettingsContent() {
     const sectionHeadClass = "space-y-1 px-5 pt-5 sm:px-6 sm:pt-6";
     const sectionTitleClass = "text-lg font-semibold text-[var(--page-heading)]";
     const sectionBodyClass = "space-y-5 p-5 sm:p-6";
-    const sectionFootClass =
-        "flex flex-col-reverse gap-2 border-t border-border bg-muted/40 px-5 py-4 sm:flex-row sm:justify-end sm:px-6";
+    const sectionFootClass = "flex flex-col-reverse gap-2 px-5 pb-5 sm:flex-row sm:justify-end sm:px-6 sm:pb-6";
     const saveButtonClass =
         "h-11 w-full gap-2 rounded-2xl bg-blue-600 px-6 text-white shadow-[0_16px_30px_-18px_rgba(15,23,42,0.28)] transition hover:bg-blue-700 hover:shadow-[0_18px_36px_-18px_rgba(15,23,42,0.28)] sm:w-auto sm:min-w-[148px]";
     const emailChanged = (formData.email || "").trim().toLowerCase() !== (profile?.email || "").trim().toLowerCase();
@@ -1360,7 +1360,7 @@ function ProfileSettingsContent() {
                     <p className="text-sm text-muted-foreground">ชื่อและนามสกุล (ภาษาไทยและภาษาอังกฤษ)</p>
                 </div>
                 <div className={sectionBodyClass}>
-                    <div className="grid grid-cols-1 gap-5 @xl:grid-cols-2">
+                    <div className="grid grid-cols-1 gap-5 @xl:grid-cols-2 @6xl:grid-cols-4">
                         <div className="space-y-2">
                             <Label htmlFor="firstName">ชื่อ (ภาษาไทย)</Label>
                             <Input
@@ -1443,25 +1443,36 @@ function ProfileSettingsContent() {
                         </div>
                     </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="image">URL รูปโปรไฟล์ (ถ้าต้องการใช้ลิงก์ภายนอก)</Label>
-                        <Input
-                            id="image"
-                            type="text"
-                            placeholder="https://example.com/your-photo.jpg หรือ /uploads/profiles/..."
-                            value={formData.image}
-                            onChange={(e) =>
-                                setFormData((prev) => ({
-                                    ...prev,
-                                    image: e.target.value,
-                                }))
-                            }
-                            className="bg-muted/50 border-border"
-                        />
-                        {errors.image && (
-                            <p className="text-sm text-red-500">{errors.image[0]}</p>
-                        )}
-                    </div>
+                    {showImageUrlField || errors.image ? (
+                        <div className="space-y-2">
+                            <Label htmlFor="image">URL รูปโปรไฟล์ (ถ้าต้องการใช้ลิงก์ภายนอก)</Label>
+                            <Input
+                                id="image"
+                                type="text"
+                                placeholder="https://example.com/your-photo.jpg หรือ /uploads/profiles/..."
+                                value={formData.image}
+                                onChange={(e) =>
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        image: e.target.value,
+                                    }))
+                                }
+                                className="bg-muted/50 border-border"
+                            />
+                            {errors.image && (
+                                <p className="text-sm text-red-500">{errors.image[0]}</p>
+                            )}
+                        </div>
+                    ) : (
+                        // Photos change through the camera button; the raw URL field stays one click away.
+                        <button
+                            type="button"
+                            className="text-sm font-medium text-primary transition-colors hover:text-primary/80"
+                            onClick={() => setShowImageUrlField(true)}
+                        >
+                            ใช้ลิงก์รูปจากภายนอก
+                        </button>
+                    )}
                 </div>
                 <div className={sectionFootClass}>
                     {renderSaveButton(() => handleSubmit("personal"), isLoading, isLoading)}
@@ -1474,7 +1485,7 @@ function ProfileSettingsContent() {
                     <h2 className={sectionTitleClass}>ข้อมูลติดต่อ</h2>
                     <p className="text-sm text-muted-foreground">เบอร์มือถือและอีเมลสำหรับการติดต่อ</p>
                 </div>
-                <div className="grid grid-cols-1 gap-5 p-5 sm:p-6 @xl:grid-cols-2">
+                <div className="grid grid-cols-1 gap-5 p-5 sm:p-6 @xl:grid-cols-2 @6xl:grid-cols-4">
                     {/* Username (read-only) */}
                     <div className="space-y-2">
                         <Label className="text-muted-foreground">Username</Label>
@@ -1641,8 +1652,10 @@ function ProfileSettingsContent() {
         ),
         address: (
             <>
-                {renderAddressSection("ship")}
-                {renderAddressSection("tax")}
+                <div className="grid grid-cols-1 items-start gap-5 @4xl:grid-cols-2">
+                    {renderAddressSection("ship")}
+                    {renderAddressSection("tax")}
+                </div>
             </>
         ),
         security: (
@@ -1817,7 +1830,7 @@ function ProfileSettingsContent() {
                     : "profile-settings-page min-h-screen bg-[linear-gradient(var(--page-glow),var(--page-base)_320px)] px-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:py-8"
             }
         >
-            <div className={`@container w-full max-w-5xl space-y-6 ${inDashboard ? "" : "mx-auto"}`}>
+            <div className={`@container w-full space-y-6 ${inDashboard ? "" : "mx-auto max-w-7xl"}`}>
                 <PageBreadcrumb
                     items={[
                         { label: "แดชบอร์ด", href: "/dashboard" },
@@ -1825,15 +1838,9 @@ function ProfileSettingsContent() {
                     ]}
                 />
 
-                {/* Phones hide the title and the profile card inside a section so the form starts near the top. */}
-                <div className={activeTab ? "hidden @3xl:block" : ""}>
-                    <h1 className="text-3xl font-bold leading-tight text-[var(--page-heading)] sm:text-4xl">ตั้งค่าบัญชี</h1>
-                    <p className="mt-2 text-muted-foreground">จัดการข้อมูลส่วนตัวและการตั้งค่าบัญชีของคุณ</p>
-                </div>
-
-                {/* Profile card: avatar, name, completeness */}
-                <section
-                    className={`${sectionCardClass} ${activeTab ? "hidden @3xl:flex" : "flex"} flex-col items-center gap-4 p-5 text-center @xl:flex-row @xl:flex-wrap @xl:gap-5 @xl:px-6 @xl:py-4 @xl:text-left`}
+                {/* Header: avatar, title, completeness — no box of its own. Phones hide it inside a section so the form starts near the top. */}
+                <header
+                    className={`${activeTab ? "hidden @3xl:flex" : "flex"} flex-col items-center gap-4 text-center @xl:flex-row @xl:gap-5 @xl:text-left`}
                 >
                     <div className="relative shrink-0">
                         {hasProfileImage ? (
@@ -1841,11 +1848,11 @@ function ProfileSettingsContent() {
                             <img
                                 src={formData.image}
                                 alt="Profile preview"
-                                className="h-14 w-14 rounded-full object-cover"
+                                className="h-16 w-16 rounded-full object-cover ring-4 ring-card"
                                 onError={handleProfileImagePreviewError}
                             />
                         ) : (
-                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-xl font-semibold text-primary">
+                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-2xl font-semibold text-primary ring-4 ring-card">
                                 {profileInitial}
                             </div>
                         )}
@@ -1902,11 +1909,13 @@ function ProfileSettingsContent() {
                             onChange={handleProfileImageUpload}
                         />
                     </div>
-                    <div className="w-full min-w-0 @xl:w-auto @xl:flex-[1_1_220px]">
-                        <p className="font-semibold text-foreground">{shownName}</p>
-                        {profile.email ? <p className="break-words text-sm text-muted-foreground">{profile.email}</p> : null}
+                    <div className="w-full min-w-0 @xl:w-auto @xl:flex-1">
+                        <h1 className="text-3xl font-bold leading-tight text-[var(--page-heading)] sm:text-4xl">ตั้งค่าบัญชี</h1>
+                        <p className="mt-1.5 break-words text-muted-foreground">
+                            {[shownName, profile.email].filter(Boolean).join(" · ")}
+                        </p>
                     </div>
-                    <div className="w-full space-y-2 @xl:w-56">
+                    <div className="w-full max-w-xs space-y-2 @xl:w-56">
                         <p className="text-sm text-muted-foreground">
                             ข้อมูลบัญชีครบแล้ว{" "}
                             <strong className="font-semibold text-foreground">{completeCount} จาก {SETTINGS_TABS.length} หมวด</strong>
@@ -1920,7 +1929,7 @@ function ProfileSettingsContent() {
                             ))}
                         </div>
                     </div>
-                </section>
+                </header>
 
                 {/* Phones without a ?tab: the section list */}
                 {activeTab ? null : (

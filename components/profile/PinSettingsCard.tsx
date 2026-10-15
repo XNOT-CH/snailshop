@@ -264,7 +264,7 @@ export function PinSettingsCard({
             </div>
 
             {(hasPin || isSetupMode) ? (
-                <div className="flex flex-col-reverse gap-2 border-t border-border bg-muted/40 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+                <div className="flex flex-col-reverse gap-2 px-5 pb-5 sm:flex-row sm:justify-end sm:px-6 sm:pb-6">
                     {!hasPin && isSetupMode ? (
                         <Button
                             type="button"
