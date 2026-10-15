@@ -32,7 +32,7 @@ This folder contains admin pages.
 - Quests:
   `quests/page.tsx`
 - Other operations:
-  `chat/page.tsx`, `audit-logs/page.tsx`, `currency-settings/page.tsx`, `export/page.tsx`, `season-pass/page.tsx`, `welcome-strip/page.tsx`, `promo-codes/page.tsx`
+  `chat/page.tsx`, `audit-logs/page.tsx`, `currency-settings/page.tsx`, `export/page.tsx`, `season-pass/page.tsx`, `promo-codes/page.tsx`
 
 ## Read first by task
 
