@@ -74,7 +74,9 @@ const nextConfig: NextConfig = {
     contentSecurityPolicy: "default-src 'none'; script-src 'none'; sandbox;",
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 3600,
-    qualities: [65, 70, 75],
+    // 100 is for the home hero only: Next scales AVIF quality by 50/80, so 75
+    // lands at 47 and blurs the lettering most banners carry.
+    qualities: [65, 70, 75, 100],
     deviceSizes: [640, 750, 828, 1080, 1200, 1920],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     // Allow ?v= cache-busting on local images (e.g. /promo/*) — without an
