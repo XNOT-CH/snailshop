@@ -13,17 +13,12 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 
 // ข้อมูล raw structure จาก thailand-geography-data
+// public/data/thai-geography.json is thailand-geography-json (MIT, licence
+// beside it) cut down to the four fields this selector reads.
 interface RawGeography {
-    id: number;
-    provinceCode: number;
     provinceNameTh: string;
-    provinceNameEn: string;
-    districtCode: number;
     districtNameTh: string;
-    districtNameEn: string;
-    subdistrictCode: number;
     subdistrictNameTh: string;
-    subdistrictNameEn: string;
     postalCode: number;
 }
 
@@ -66,9 +61,9 @@ export function ThaiAddressSelector({
             setError(null);
 
             try {
-                const res = await fetch(
-                    "https://raw.githubusercontent.com/thailand-geography-data/thailand-geography-json/main/src/geography.json"
-                );
+                // Served from our own origin: the CSP's connect-src only allows
+                // 'self', so the GitHub copy this used to fetch was blocked.
+                const res = await fetch("/data/thai-geography.json");
                 if (!res.ok) throw new Error("Failed to fetch");
                 const json = await res.json();
                 cachedData = json;
