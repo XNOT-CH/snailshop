@@ -19,7 +19,6 @@ import {
   HomeTopupShowcase,
 } from "@/components/HomeSections";
 import { NewsSection } from "@/components/NewsSection";
-import { WelcomeRedirect } from "@/components/WelcomeRedirect";
 import { RevealOnScroll } from "@/components/RevealOnScroll";
 import type { ReactNode } from "react";
 import { db } from "@/lib/db";
@@ -299,7 +298,6 @@ export default async function HomePage() {
 
   return (
     <div className="animate-page-enter">
-      <WelcomeRedirect />
       <HomeHero siteName={siteName} banners={heroBanners} />
       {maintenance.purchase.enabled && (
         <PageBand tone="plain" className="pb-0 lg:pb-0">
