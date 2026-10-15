@@ -109,6 +109,12 @@ const nextConfig: NextConfig = {
         destination: "/gachapons",
         permanent: true,
       },
+      // หน้า /welcome (splash ครั้งแรกที่เข้าเว็บ) ถูกเลิกใช้แล้ว ส่งลิงก์เก่าไปหน้าแรก
+      {
+        source: "/welcome",
+        destination: "/",
+        permanent: true,
+      },
     ];
   },
   async headers() {
