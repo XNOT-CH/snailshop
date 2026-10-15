@@ -263,6 +263,20 @@ rebuild, or the index looks up to date while it is not.
   in. It sits in the root layout since 2026-09-07, hydrated once, nonce still from
   `x-nonce`.
 
+- **A browser `fetch` to any other origin is blocked by the CSP.** `connect-src` in
+  `proxy.ts` allows only `'self'` and Cloudflare, so a client component that fetches a
+  third-party URL fails silently in every environment. `ThaiAddressSelector` did exactly
+  that against raw.githubusercontent.com and every address form showed "ไม่สามารถโหลด
+  ข้อมูลที่อยู่ได้" on production until 2026-10-15. Serve the data from `public/` (it now
+  reads `/data/thai-geography.json`) rather than widening the CSP.
+
+- **Colour tokens are hex now — never wrap them in `hsl()`.** The redesign set `--muted`,
+  `--primary` and friends to hex values, so old CSS like `hsl(var(--muted))` is invalid and
+  the declaration is dropped without an error. That made every `.skeleton-wave` blank until
+  2026-10-15. Use `var(--token)` directly and `color-mix(in srgb, var(--token) 50%,
+  transparent)` for a lighter shade. `.spinner-trail` in `globals.css` still has the old
+  form but nothing uses it.
+
 ---
 
 ## Decisions already made
