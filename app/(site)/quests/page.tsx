@@ -1,13 +1,12 @@
 import { redirect } from "next/navigation";
 import { CalendarCheck, CheckCircle2, Coins, Dices, Gift, ShoppingBag, Sparkles, Wallet, type LucideIcon } from "lucide-react";
 import { auth } from "@/auth";
-import { PageBreadcrumb } from "@/components/PageBreadcrumb";
+import { PageBand } from "@/components/PageBand";
 import { QuestClaimButton } from "@/components/quests/QuestClaimButton";
 import { QuestResetCountdown } from "@/components/quests/QuestResetCountdown";
 import { getDailyQuestBoard, type QuestGoalType } from "@/lib/features/quests/dailyQuests";
 import { getQuestGoalUnit } from "@/lib/features/quests/questGoalTypes";
 import { buildPageMetadata } from "@/lib/seo";
-import { themeClasses } from "@/lib/theme";
 
 export const dynamic = "force-dynamic";
 
@@ -40,35 +39,34 @@ export default async function QuestsPage() {
     const board = await getDailyQuestBoard(userId);
 
     return (
-        <div className="animate-page-enter">
-            <div className="relative left-1/2 min-h-[calc(100dvh-4rem)] w-screen -translate-x-1/2 border-y border-border/50 bg-card/95 px-3 pb-8 pt-4 shadow-xl shadow-primary/10 sm:left-auto sm:w-auto sm:translate-x-0 sm:border sm:px-5 sm:py-7 lg:px-6">
-                <PageBreadcrumb items={[{ label: "ภารกิจรายวัน" }]} className="mb-4" />
-
-                <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="animate-page-enter flex min-h-[calc(100dvh-4rem)] flex-col">
+            <PageBand tone="lead" className="pt-10 pb-4 lg:pt-12 lg:pb-6">
+                <div className="flex flex-wrap items-end justify-between gap-4">
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground sm:text-3xl">ภารกิจรายวัน</h1>
-                        <p className="mt-1 text-muted-foreground">
+                        <h1 className="text-3xl font-bold leading-tight text-[var(--page-heading)] sm:text-4xl">ภารกิจรายวัน</h1>
+                        <p className="mt-2 text-muted-foreground">
                             ทำภารกิจง่าย ๆ รับแต้มฟรีทุกวัน แต้มใช้แลกส่วนลดและของรางวัลในร้าน
                         </p>
                     </div>
-                    <QuestResetCountdown resetAtIso={board.resetAtIso} />
+                    <div className="flex flex-wrap items-center gap-3">
+                        {board.totalCount > 0 && (
+                            <span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
+                                <CheckCircle2 className="h-4 w-4 text-primary" />
+                                วันนี้รับแล้ว {board.claimedCount} จาก {board.totalCount} ภารกิจ
+                            </span>
+                        )}
+                        <QuestResetCountdown resetAtIso={board.resetAtIso} />
+                    </div>
                 </div>
+            </PageBand>
 
-                {board.totalCount > 0 && (
-                    <div className={`${themeClasses.surfaceSoft} mb-6 flex items-center gap-3 rounded-2xl px-4 py-3`}>
-                        <CheckCircle2 className="h-5 w-5 shrink-0 text-primary" />
-                        <p className="text-sm font-medium text-foreground">
-                            วันนี้รับรางวัลแล้ว {board.claimedCount} จาก {board.totalCount} ภารกิจ
-                        </p>
-                    </div>
-                )}
-
+            <PageBand tone="plain" className="flex-1 pt-6 lg:pt-8">
                 {board.totalCount === 0 ? (
-                    <div className={`${themeClasses.surfaceSoft} rounded-2xl py-12 text-center`}>
-                        <p className="text-lg text-muted-foreground">ยังไม่มีภารกิจในตอนนี้ กลับมาดูใหม่เร็ว ๆ นี้</p>
-                    </div>
+                    <p className="rounded-2xl border border-border bg-card px-5 py-12 text-center text-muted-foreground">
+                        ยังไม่มีภารกิจในตอนนี้ กลับมาดูใหม่เร็ว ๆ นี้
+                    </p>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="grid gap-4 lg:grid-cols-2">
                         {board.quests.map((quest) => {
                             const Icon = QUEST_ICONS[quest.goalType] ?? Sparkles;
                             const isDone = quest.claimed || quest.claimable;
@@ -76,35 +74,36 @@ export default async function QuestsPage() {
                             return (
                                 <div
                                     key={quest.id}
-                                    className={`${themeClasses.surface} flex flex-col gap-3 rounded-2xl p-4 transition-colors sm:flex-row sm:items-center sm:gap-4 ${quest.claimed ? "opacity-70" : ""}`}
+                                    className={`flex flex-col gap-4 rounded-2xl border border-border bg-card p-5 transition-colors duration-300 ease-out ${quest.claimed ? "opacity-70" : "hover:border-primary/50"}`}
                                 >
-                                    <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${isDone ? "bg-primary/15 text-primary" : "bg-accent/60 text-muted-foreground"}`}>
-                                        <Icon className="h-5 w-5" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <div className="flex flex-wrap items-center gap-2">
-                                            <h2 className="text-sm font-semibold text-foreground sm:text-base">{quest.title}</h2>
-                                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                                                <Coins className="h-3 w-3" />
-                                                +{quest.rewardPoints.toLocaleString("th-TH")} แต้ม
-                                            </span>
+                                    <div className="flex items-start gap-4">
+                                        <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${isDone ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
+                                            <Icon className="h-5 w-5" />
+                                        </span>
+                                        <div className="min-w-0 flex-1">
+                                            <h2 className="font-semibold text-foreground">{quest.title}</h2>
+                                            {quest.description && (
+                                                <p className="mt-1 text-sm text-muted-foreground">{quest.description}</p>
+                                            )}
                                         </div>
-                                        {quest.description && (
-                                            <p className="mt-0.5 text-xs text-muted-foreground sm:text-sm">{quest.description}</p>
-                                        )}
-                                        <div className="mt-2 flex items-center gap-2">
-                                            <div className="h-1.5 w-full max-w-48 overflow-hidden rounded-full bg-accent/70">
+                                        <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary">
+                                            <Coins className="h-3.5 w-3.5" />
+                                            +{quest.rewardPoints.toLocaleString("th-TH")} แต้ม
+                                        </span>
+                                    </div>
+
+                                    <div className="mt-auto flex items-center gap-4">
+                                        <div className="min-w-0 flex-1">
+                                            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                                                 <div
                                                     className="h-full rounded-full bg-primary transition-[width]"
-                                                    style={{ width: `${quest.goalValue > 0 ? Math.round((quest.progress / quest.goalValue) * 100) : 0}%` }}
+                                                    style={{ width: `${quest.goalValue > 0 ? Math.min(100, Math.round((quest.progress / quest.goalValue) * 100)) : 0}%` }}
                                                 />
                                             </div>
-                                            <span className="shrink-0 text-xs text-muted-foreground">
+                                            <p className="mt-1.5 text-xs text-muted-foreground">
                                                 {progressText(quest.goalType, quest.progress, quest.goalValue)}
-                                            </span>
+                                            </p>
                                         </div>
-                                    </div>
-                                    <div className="shrink-0 sm:self-center">
                                         <QuestClaimButton
                                             questId={quest.id}
                                             claimed={quest.claimed}
@@ -117,8 +116,7 @@ export default async function QuestsPage() {
                         })}
                     </div>
                 )}
-
-            </div>
+            </PageBand>
         </div>
     );
 }
