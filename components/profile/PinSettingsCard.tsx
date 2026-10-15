@@ -78,9 +78,9 @@ export function PinSettingsCard({
     }, [pinLockedUntil]);
 
     const cardClass =
-        "overflow-hidden rounded-[20px] border border-border bg-card shadow-[0_18px_45px_-34px_rgba(15,23,42,0.28)]";
+        "overflow-hidden rounded-2xl border border-border bg-card";
     const saveButtonClass =
-        "h-11 w-full gap-2 rounded-2xl bg-blue-600 px-6 text-white shadow-[0_16px_30px_-18px_rgba(15,23,42,0.28)] transition hover:bg-blue-700 hover:shadow-[0_18px_36px_-18px_rgba(15,23,42,0.28)] sm:w-auto sm:min-w-[148px]";
+        "h-11 w-full gap-2 rounded-xl bg-primary px-6 font-semibold text-primary-foreground transition-colors duration-300 ease-out hover:bg-primary/90 sm:w-auto sm:min-w-[148px]";
 
     const resetForm = () => {
         setFormData({
@@ -156,7 +156,7 @@ export function PinSettingsCard({
                         </p>
                         <Button
                             type="button"
-                            className="rounded-xl bg-blue-600 text-white hover:bg-blue-700"
+                            className="h-10 rounded-xl bg-primary font-semibold text-primary-foreground hover:bg-primary/90"
                             onClick={() => {
                                 setErrors({});
                                 setIsSetupMode(true);
@@ -188,7 +188,7 @@ export function PinSettingsCard({
                                 placeholder="กรอก PIN ปัจจุบัน 6 หลัก"
                                 value={formData.currentPin}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, currentPin: getDigitsOnly(e.target.value) }))}
-                                className="bg-muted/50 border-border"
+                                className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                             />
                             {errors.currentPin ? <p className="text-sm text-red-500">{errors.currentPin[0]}</p> : null}
                         </div>
@@ -201,7 +201,7 @@ export function PinSettingsCard({
                                 placeholder="กรอกรหัสผ่านเพื่อยืนยันตัวตน"
                                 value={formData.currentPassword}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, currentPassword: e.target.value }))}
-                                className="bg-muted/50 border-border"
+                                className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                             />
                             {errors.currentPassword ? <p className="text-sm text-red-500">{errors.currentPassword[0]}</p> : null}
                         </div>
@@ -216,7 +216,7 @@ export function PinSettingsCard({
                         <Button
                             type="button"
                             variant="outline"
-                            className="rounded-xl"
+                            className="h-10 rounded-xl border-border"
                             onClick={() => {
                                 setErrors({});
                                 setIsResetMode((prev) => !prev);
@@ -241,7 +241,7 @@ export function PinSettingsCard({
                                 placeholder="PIN 6 หลัก"
                                 value={formData.newPin}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, newPin: getDigitsOnly(e.target.value) }))}
-                                className="bg-muted/50 border-border"
+                                className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                             />
                             {errors.newPin ? <p className="text-sm text-red-500">{errors.newPin[0]}</p> : null}
                         </div>
@@ -255,7 +255,7 @@ export function PinSettingsCard({
                                 placeholder="กรอก PIN อีกครั้ง"
                                 value={formData.confirmPin}
                                 onChange={(e) => setFormData((prev) => ({ ...prev, confirmPin: getDigitsOnly(e.target.value) }))}
-                                className="bg-muted/50 border-border"
+                                className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                             />
                             {errors.confirmPin ? <p className="text-sm text-red-500">{errors.confirmPin[0]}</p> : null}
                         </div>
@@ -269,7 +269,7 @@ export function PinSettingsCard({
                         <Button
                             type="button"
                             variant="outline"
-                            className="rounded-2xl"
+                            className="h-11 rounded-xl"
                             onClick={() => {
                                 setErrors({});
                                 setIsSetupMode(false);

@@ -299,13 +299,13 @@ function ProfileSettingsContent() {
     const hasProfileImage = Boolean(formData.image?.trim());
     const profileInitial = (formData.name || profile?.username || "U").trim().charAt(0).toUpperCase();
     const sectionCardClass =
-        "overflow-hidden rounded-[20px] border border-border bg-card shadow-[0_18px_45px_-34px_rgba(15,23,42,0.28)]";
+        "overflow-hidden rounded-2xl border border-border bg-card";
     const sectionHeadClass = "space-y-1 px-5 pt-5 sm:px-6 sm:pt-6";
     const sectionTitleClass = "text-lg font-semibold text-[var(--page-heading)]";
     const sectionBodyClass = "space-y-5 p-5 sm:p-6";
     const sectionFootClass = "flex flex-col-reverse gap-2 px-5 pb-5 sm:flex-row sm:justify-end sm:px-6 sm:pb-6";
     const saveButtonClass =
-        "h-11 w-full gap-2 rounded-2xl bg-blue-600 px-6 text-white shadow-[0_16px_30px_-18px_rgba(15,23,42,0.28)] transition hover:bg-blue-700 hover:shadow-[0_18px_36px_-18px_rgba(15,23,42,0.28)] sm:w-auto sm:min-w-[148px]";
+        "h-11 w-full gap-2 rounded-xl bg-primary px-6 font-semibold text-primary-foreground transition-colors duration-300 ease-out hover:bg-primary/90 sm:w-auto sm:min-w-[148px]";
     const emailChanged = (formData.email || "").trim().toLowerCase() !== (profile?.email || "").trim().toLowerCase();
     const isEmailVerified = Boolean(profile?.emailVerified) && !emailChanged;
     const shouldLockVerifiedEmail = isEmailVerified && !isEditingVerifiedEmail;
@@ -910,7 +910,7 @@ function ProfileSettingsContent() {
         const hasSavedOptions = savedAddressOptions.length > 0;
 
         return (
-            <div className="space-y-3 rounded-2xl border border-slate-200 bg-white/80 p-4">
+            <div className="space-y-3 rounded-2xl border border-border bg-muted/30 p-4">
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     <div
                         role="button"
@@ -918,8 +918,8 @@ function ProfileSettingsContent() {
                         aria-disabled={!hasSavedOptions}
                         className={`flex min-h-16 items-start gap-3 rounded-2xl border p-4 text-left transition ${
                             mode === "saved"
-                                ? "border-blue-300 bg-blue-50 text-blue-950 shadow-[0_14px_30px_-24px_rgba(15,23,42,0.28)] dark:border-blue-400/45 dark:bg-blue-500/15 dark:text-blue-100 dark:shadow-none"
-                                : "border-slate-200 bg-white text-foreground hover:border-blue-200 hover:bg-blue-50/40"
+                                ? "border-primary/50 bg-primary/5 text-foreground"
+                                : "border-border bg-card text-foreground hover:border-primary/40"
                         } ${!hasSavedOptions ? "cursor-not-allowed opacity-60" : ""}`}
                         onClick={() => {
                             if (hasSavedOptions) applyFirstSavedAddress(setAddr, setMode, setSelectedId, setLabel);
@@ -951,8 +951,8 @@ function ProfileSettingsContent() {
                         tabIndex={0}
                         className={`flex min-h-16 items-start gap-3 rounded-2xl border p-4 text-left transition ${
                             mode === "new"
-                                ? "border-blue-300 bg-blue-50 text-blue-950 shadow-[0_14px_30px_-24px_rgba(15,23,42,0.28)] dark:border-blue-400/45 dark:bg-blue-500/15 dark:text-blue-100 dark:shadow-none"
-                                : "border-slate-200 bg-white text-foreground hover:border-blue-200 hover:bg-blue-50/40"
+                                ? "border-primary/50 bg-primary/5 text-foreground"
+                                : "border-border bg-card text-foreground hover:border-primary/40"
                         }`}
                         onClick={() => startNewAddress(setAddr, setMode, setSelectedId, setLabel, fallbackLabel)}
                         onKeyDown={(event) => {
@@ -980,7 +980,7 @@ function ProfileSettingsContent() {
                                 value={selectedAddressId || savedAddressOptions[0]?.id || ""}
                                 onValueChange={(value) => applySavedAddress(value, setAddr, setSelectedId, setLabel)}
                             >
-                                <SelectTrigger className="h-11 w-full rounded-2xl border-slate-200 bg-slate-50/80">
+                                <SelectTrigger className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11">
                                     <SelectValue placeholder="เลือกข้อมูลที่ต้องการใช้" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -1005,7 +1005,7 @@ function ProfileSettingsContent() {
                         value={label}
                         onChange={(e) => setLabel(e.target.value)}
                         placeholder="เช่น บ้าน, ที่ทำงาน, บริษัท"
-                        className="border-slate-200 bg-white"
+                        className="h-11 rounded-xl border-border bg-card"
                     />
                     {errors.label ? <p className="text-sm text-red-500">{errors.label[0]}</p> : null}
                 </div>
@@ -1053,7 +1053,7 @@ function ProfileSettingsContent() {
                         placeholder="กรอกเลขประจำตัวผู้เสียภาษี 13 หลัก"
                         value={addr.taxId}
                         onChange={(e) => setAddr(prev => ({ ...prev, taxId: sanitizeTaxId(e.target.value) }))}
-                        className="bg-muted/60 border-border"
+                        className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                     />
                     <p className="text-xs text-muted-foreground">กรอกเฉพาะตัวเลข 13 หลัก ถ้าต้องการออกใบกำกับภาษี</p>
                     {errors.taxId ? <p className="text-sm text-red-500">{errors.taxId[0]}</p> : null}
@@ -1067,7 +1067,7 @@ function ProfileSettingsContent() {
                         placeholder="ชื่อ - สกุล"
                         value={addr.fullName}
                         onChange={(e) => setAddr(prev => ({ ...prev, fullName: sanitizeThaiName(e.target.value) }))}
-                        className="bg-muted/60 border-border"
+                        className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                     />
                     <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาไทย</p>
                 </div>
@@ -1082,7 +1082,7 @@ function ProfileSettingsContent() {
                         placeholder="0XXXXXXXXX"
                         value={addr.phone}
                         onChange={(e) => setAddr(prev => ({ ...prev, phone: sanitizePhone(e.target.value) }))}
-                        className="bg-muted/60 border-border"
+                        className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                     />
                     <p className="text-xs text-muted-foreground">กรอกเฉพาะตัวเลข 10 หลัก</p>
                 </div>
@@ -1094,7 +1094,7 @@ function ProfileSettingsContent() {
                     placeholder="บ้านเลขที่ ซอย ถนน"
                     value={addr.address}
                     onChange={(e) => setAddr(prev => ({ ...prev, address: e.target.value }))}
-                    className="bg-muted/60 border-border"
+                    className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                 />
             </div>
             {/* Dependent Address Dropdowns */}
@@ -1199,10 +1199,37 @@ function ProfileSettingsContent() {
     const passwordStrength = getPasswordStrength(formData.password);
     const selectTab = (tab: SettingsTab) => router.replace(`${pathname}?tab=${tab}`, { scroll: false });
 
-    const renderIncompletePill = () => (
-        <span className="shrink-0 rounded-full bg-amber-500/12 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
-            ยังไม่ครบ
-        </span>
+    // Switching sections keeps whatever was typed, so flag the ones that still
+    // need their save button pressed.
+    const unsavedTabs: Record<SettingsTab, boolean> = {
+        profile:
+            formData.firstName !== (profile.firstName ?? "")
+            || formData.lastName !== (profile.lastName ?? "")
+            || formData.firstNameEn !== (profile.firstNameEn ?? "")
+            || formData.lastNameEn !== (profile.lastNameEn ?? "")
+            || formData.image !== (profile.image ?? ""),
+        contact:
+            formData.name !== (profile.name ?? "")
+            || formData.email !== (profile.email ?? "")
+            || formData.phone !== (profile.phone ?? ""),
+        address: editingShip || editingTax,
+        security: Boolean(formData.currentPassword || formData.password || formData.confirmPassword),
+    };
+
+    const renderTabMarkers = (tab: SettingsTab) => (
+        <>
+            {unsavedTabs[tab] ? (
+                <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-primary">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
+                    ยังไม่บันทึก
+                </span>
+            ) : null}
+            {tabStatus[tab].complete ? null : (
+                <span className="shrink-0 rounded-full bg-amber-500/12 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+                    ยังไม่ครบ
+                </span>
+            )}
+        </>
     );
 
     const renderSaveButton = (onClick: () => void, disabled: boolean, busy: boolean) => (
@@ -1262,7 +1289,7 @@ function ProfileSettingsContent() {
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    className="rounded-2xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
                                     onClick={() => handleDeleteAddressProfile(selectedId.replace("profile-", ""), section)}
                                     disabled={isSavingAddressProfile}
                                 >
@@ -1275,7 +1302,7 @@ function ProfileSettingsContent() {
                             <Button
                                 type="button"
                                 variant="ghost"
-                                className="h-11 rounded-2xl text-muted-foreground"
+                                className="h-11 rounded-xl text-muted-foreground"
                                 onClick={() => setEditing(false)}
                                 disabled={isLoading || isSavingAddressProfile}
                             >
@@ -1284,7 +1311,7 @@ function ProfileSettingsContent() {
                             <Button
                                 type="button"
                                 variant="outline"
-                                className="h-11 gap-2 rounded-2xl border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                                className="h-11 gap-2 rounded-xl border-border text-muted-foreground hover:bg-muted hover:text-foreground"
                                 onClick={() => clearAddressFields(setAddress, setMode, setSelectedId)}
                                 disabled={isLoading || isSavingAddressProfile}
                             >
@@ -1387,7 +1414,7 @@ function ProfileSettingsContent() {
                                         firstName: sanitizeThaiName(e.target.value),
                                     }))
                                 }
-                                className="bg-muted/50 border-border"
+                                className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                             />
                             <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาไทย</p>
                             {errors.firstName && (
@@ -1407,7 +1434,7 @@ function ProfileSettingsContent() {
                                         lastName: sanitizeThaiName(e.target.value),
                                     }))
                                 }
-                                className="bg-muted/50 border-border"
+                                className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                             />
                             <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาไทย</p>
                             {errors.lastName && (
@@ -1427,7 +1454,7 @@ function ProfileSettingsContent() {
                                         firstNameEn: sanitizeEnglishName(e.target.value),
                                     }))
                                 }
-                                className="bg-muted/50 border-border"
+                                className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                             />
                             <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาอังกฤษ</p>
                             {errors.firstNameEn && (
@@ -1447,7 +1474,7 @@ function ProfileSettingsContent() {
                                         lastNameEn: sanitizeEnglishName(e.target.value),
                                     }))
                                 }
-                                className="bg-muted/50 border-border"
+                                className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                             />
                             <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาอังกฤษ</p>
                             {errors.lastNameEn && (
@@ -1470,7 +1497,7 @@ function ProfileSettingsContent() {
                                         image: e.target.value,
                                     }))
                                 }
-                                className="bg-muted/50 border-border"
+                                className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                             />
                             {errors.image && (
                                 <p className="text-sm text-red-500">{errors.image[0]}</p>
@@ -1505,7 +1532,7 @@ function ProfileSettingsContent() {
                         <Input
                             value={profile.username}
                             disabled
-                            className="bg-muted text-muted-foreground border-border"
+                            className="h-11 rounded-xl border-border bg-muted text-muted-foreground"
                         />
                         <p className="text-xs text-muted-foreground">Username ไม่สามารถเปลี่ยนได้</p>
                     </div>
@@ -1527,7 +1554,7 @@ function ProfileSettingsContent() {
                                 }))
                             }
                             required
-                            className="bg-muted/50 border-border"
+                            className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                         />
                         {errors.name && (
                             <p className="text-sm text-red-500">{errors.name[0]}</p>
@@ -1553,7 +1580,7 @@ function ProfileSettingsContent() {
                                     phone: sanitizePhone(e.target.value),
                                 }))
                             }
-                            className="bg-muted/50 border-border"
+                            className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                         />
                         <p className="text-xs text-muted-foreground">กรอกเฉพาะตัวเลข 10 หลัก</p>
                         {errors.phone && (
@@ -1609,8 +1636,8 @@ function ProfileSettingsContent() {
                             }
                             className={
                                 shouldLockVerifiedEmail
-                                    ? "bg-muted text-muted-foreground border-border"
-                                    : "bg-muted/50 border-border"
+                                    ? "h-11 rounded-xl border-border bg-muted text-muted-foreground"
+                                    : "h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                             }
                         />
                         {errors.email && (
@@ -1694,7 +1721,7 @@ function ProfileSettingsContent() {
                                         currentPassword: e.target.value,
                                     }))
                                 }
-                                className="bg-muted/50 border-border"
+                                className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                             />
                             {errors.currentPassword && (
                                 <p className="text-sm text-red-500">{errors.currentPassword[0]}</p>
@@ -1717,7 +1744,7 @@ function ProfileSettingsContent() {
                                             password: e.target.value,
                                         }))
                                     }
-                                    className="bg-muted/50 border-border pr-12"
+                                    className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11 pr-12"
                                 />
                                 <button
                                     type="button"
@@ -1770,7 +1797,7 @@ function ProfileSettingsContent() {
                                             confirmPassword: e.target.value,
                                         }))
                                     }
-                                    className="bg-muted/50 border-border pr-12"
+                                    className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11 pr-12"
                                 />
                                 <button
                                     type="button"
@@ -1835,7 +1862,7 @@ function ProfileSettingsContent() {
         <div className={pageShellClass}>
             <div className={`@container w-full space-y-6 ${pageColumnClass}`}>
                 {/* Inside a section on phones, "หมวดการตั้งค่า" is the way back; two back buttons would compete. */}
-                <div className={activeTab ? "hidden @3xl:block" : ""}>
+                <div className={activeTab ? "hidden @xl:block" : ""}>
                     <PageBreadcrumb
                         items={[
                             { label: "แดชบอร์ด", href: "/dashboard" },
@@ -1846,7 +1873,7 @@ function ProfileSettingsContent() {
 
                 {/* Header: avatar, title, completeness — no box of its own. Phones hide it inside a section so the form starts near the top. */}
                 <header
-                    className={`${activeTab ? "hidden @3xl:flex" : "flex"} flex-col items-center gap-4 text-center @xl:flex-row @xl:gap-5 @xl:text-left`}
+                    className={`${activeTab ? "hidden @xl:flex" : "flex"} flex-col items-center gap-4 text-center @xl:flex-row @xl:gap-5 @xl:text-left`}
                 >
                     <div className="relative shrink-0">
                         {hasProfileImage ? (
@@ -1939,7 +1966,7 @@ function ProfileSettingsContent() {
 
                 {/* Phones without a ?tab: the section list */}
                 {activeTab ? null : (
-                    <div className="space-y-4 @3xl:hidden">
+                    <div className="space-y-4 @xl:hidden">
                         {profile.email && !profile.emailVerified ? (
                             <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
                                 <Mail className="h-5 w-5 shrink-0 text-amber-700 dark:text-amber-300" />
@@ -1971,7 +1998,7 @@ function ProfileSettingsContent() {
                                             <span className="block font-medium text-foreground">{tab.label}</span>
                                             <span className="line-clamp-2 block text-sm text-muted-foreground">{tabStatus[tab.id].summary}</span>
                                         </span>
-                                        {tabStatus[tab.id].complete ? null : renderIncompletePill()}
+                                        <span className="flex shrink-0 flex-col items-end gap-1">{renderTabMarkers(tab.id)}</span>
                                         <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
                                     </Link>
                                 );
@@ -1980,7 +2007,7 @@ function ProfileSettingsContent() {
                         <Button
                             type="button"
                             variant="outline"
-                            className="h-12 w-full gap-2 rounded-2xl border-red-200 bg-card text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-500/30 dark:hover:bg-red-500/10"
+                            className="h-12 w-full gap-2 rounded-xl border-red-200 bg-card text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-500/30 dark:hover:bg-red-500/10"
                             onClick={() => void logout()}
                         >
                             <LogOut className="h-4 w-4" />
@@ -1989,9 +2016,13 @@ function ProfileSettingsContent() {
                     </div>
                 )}
 
-                {/* Wider screens: section tabs. A second side menu would sit against the dashboard's own. */}
-                <div className="hidden items-center gap-6 border-b border-border @3xl:flex">
-                    <nav aria-label="หมวดการตั้งค่า" className="-mb-px flex flex-wrap gap-7">
+                {/* Wider screens: section tabs. A second side menu would sit against the dashboard's own.
+                    They scroll sideways when the dashboard menu leaves too little room. */}
+                <div className="hidden items-center gap-4 border-b border-border @xl:flex">
+                    <nav
+                        aria-label="หมวดการตั้งค่า"
+                        className="-mb-px flex min-w-0 flex-1 gap-7 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+                    >
                         {SETTINGS_TABS.map((tab) => {
                             const isActive = tab.id === shownTab;
                             return (
@@ -2000,35 +2031,34 @@ function ProfileSettingsContent() {
                                     type="button"
                                     aria-current={isActive ? "page" : undefined}
                                     onClick={() => selectTab(tab.id)}
-                                    className={`inline-flex min-h-12 items-center gap-2 border-b-2 px-1 transition-colors duration-300 ease-out ${
+                                    className={`inline-flex min-h-12 shrink-0 items-center gap-2 whitespace-nowrap border-b-2 px-1 transition-colors duration-300 ease-out ${
                                         isActive
                                             ? "border-primary font-semibold text-[var(--page-heading)]"
                                             : "border-transparent text-muted-foreground hover:text-foreground"
                                     }`}
                                 >
                                     {tab.label}
-                                    {tabStatus[tab.id].complete ? null : renderIncompletePill()}
+                                    {renderTabMarkers(tab.id)}
                                 </button>
                             );
                         })}
                     </nav>
-                    <span className="flex-1" />
                     <button
                         type="button"
                         onClick={() => void logout()}
-                        className="inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+                        className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
                     >
                         <LogOut className="h-4 w-4" />
                         ออกจากระบบ
                     </button>
                 </div>
 
-                <div className={activeTab ? "" : "hidden @3xl:block"}>
+                <div className={activeTab ? "" : "hidden @xl:block"}>
                     <div className="space-y-5">
                         <Link
                             href={pathname}
                             replace
-                            className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground @3xl:hidden"
+                            className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground @xl:hidden"
                         >
                             <ChevronLeft className="h-4 w-4" />
                             หมวดการตั้งค่า

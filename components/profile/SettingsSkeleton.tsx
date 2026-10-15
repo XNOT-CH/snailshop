@@ -26,7 +26,7 @@ export function SettingsSkeleton() {
                 <div className="h-5 w-32 skeleton-wave rounded" />
             </div>
 
-            <div className="space-y-5 rounded-[20px] border border-border bg-card p-5 sm:p-6">
+            <div className="space-y-5 rounded-2xl border border-border bg-card p-5 sm:p-6">
                 <div className="space-y-2">
                     <div className="h-5 w-32 skeleton-wave rounded" />
                     <div className="h-4 w-56 max-w-full skeleton-wave rounded" />
@@ -40,7 +40,7 @@ export function SettingsSkeleton() {
                     ))}
                 </div>
                 <div className="flex justify-end">
-                    <div className="h-11 w-36 skeleton-wave rounded-2xl" />
+                    <div className="h-11 w-36 skeleton-wave rounded-xl" />
                 </div>
             </div>
         </div>

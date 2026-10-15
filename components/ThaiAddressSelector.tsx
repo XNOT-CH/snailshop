@@ -171,7 +171,7 @@ export function ThaiAddressSelector({
                             value={value.province}
                             onChange={(e) => onChange({ ...value, province: e.target.value })}
                             disabled={disabled}
-                            className="bg-muted/60 border-border"
+                            className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                         />
                     </div>
                     <div className="space-y-2">
@@ -182,7 +182,7 @@ export function ThaiAddressSelector({
                             value={value.district}
                             onChange={(e) => onChange({ ...value, district: e.target.value })}
                             disabled={disabled}
-                            className="bg-muted/60 border-border"
+                            className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                         />
                     </div>
                     <div className="space-y-2">
@@ -193,7 +193,7 @@ export function ThaiAddressSelector({
                             value={value.subdistrict}
                             onChange={(e) => onChange({ ...value, subdistrict: e.target.value })}
                             disabled={disabled}
-                            className="bg-muted/60 border-border"
+                            className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                         />
                     </div>
                     <div className="space-y-2">
@@ -204,7 +204,7 @@ export function ThaiAddressSelector({
                             value={value.postalCode}
                             onChange={(e) => onChange({ ...value, postalCode: e.target.value })}
                             disabled={disabled}
-                            className="bg-muted/60 border-border"
+                            className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                         />
                     </div>
                 </div>
@@ -218,7 +218,7 @@ export function ThaiAddressSelector({
             <div className="space-y-2">
                 <Label htmlFor={`${idPrefix}-province`}>จังหวัด</Label>
                 {isLoading ? (
-                    <div className="flex h-10 items-center gap-2 rounded-md border border-border bg-muted/60 px-3 text-muted-foreground">
+                    <div className="flex h-11 items-center gap-2 rounded-xl border border-border bg-muted/40 px-3 text-muted-foreground">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         <span className="text-sm">กำลังโหลด...</span>
                     </div>
@@ -230,7 +230,7 @@ export function ThaiAddressSelector({
                     >
                         <SelectTrigger
                             id={`${idPrefix}-province`}
-                            className="bg-muted/60 border-border"
+                            className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                         >
                             <SelectValue placeholder="เลือกจังหวัด" />
                         </SelectTrigger>
@@ -255,7 +255,7 @@ export function ThaiAddressSelector({
                 >
                     <SelectTrigger
                         id={`${idPrefix}-district`}
-                        className="bg-muted/60 border-border"
+                        className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                     >
                         <SelectValue placeholder={value.province ? "เลือกอำเภอ/เขต" : "เลือกจังหวัดก่อน"} />
                     </SelectTrigger>
@@ -279,7 +279,7 @@ export function ThaiAddressSelector({
                 >
                     <SelectTrigger
                         id={`${idPrefix}-subdistrict`}
-                        className="bg-muted/60 border-border"
+                        className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                     >
                         <SelectValue placeholder={value.district ? "เลือกตำบล/แขวง" : "เลือกอำเภอก่อน"} />
                     </SelectTrigger>
@@ -302,7 +302,7 @@ export function ThaiAddressSelector({
                     value={value.postalCode}
                     onChange={(e) => onChange({ ...value, postalCode: e.target.value })}
                     disabled={disabled}
-                    className="bg-muted/60 border-border"
+                    className="h-11 w-full rounded-xl border-border bg-muted/40 data-[size=default]:h-11"
                     readOnly={Boolean(value.subdistrict)}
                 />
                 {value.subdistrict && (
