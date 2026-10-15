@@ -1646,7 +1646,7 @@ function ProfileSettingsContent() {
             </>
         ),
         security: (
-            <>
+            <div className="grid grid-cols-1 items-start gap-5 @4xl:grid-cols-2">
                 <section className={sectionCardClass}>
                     <div className={sectionHeadClass}>
                         <h2 className={sectionTitleClass}>เปลี่ยนรหัสผ่าน</h2>
@@ -1801,13 +1801,23 @@ function ProfileSettingsContent() {
                     pinUpdatedAt={profile?.pinUpdatedAt ?? null}
                     onUpdated={refreshProfile}
                 />
-            </>
+            </div>
         ),
     };
 
+    // The dashboard shell already paints the page background and padding; on its
+    // own route the page brings the same glow the other redesigned pages open with.
+    const inDashboard = pathname.startsWith("/dashboard");
+
     return (
-        <div className="profile-settings-page min-h-screen bg-background px-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-4 sm:py-8">
-            <div className="@container mx-auto w-full max-w-[72rem] space-y-5 px-3 sm:px-0">
+        <div
+            className={
+                inDashboard
+                    ? "profile-settings-page"
+                    : "profile-settings-page min-h-screen bg-[linear-gradient(var(--page-glow),var(--page-base)_320px)] px-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:py-8"
+            }
+        >
+            <div className={`@container w-full max-w-5xl space-y-6 ${inDashboard ? "" : "mx-auto"}`}>
                 <PageBreadcrumb
                     items={[
                         { label: "แดชบอร์ด", href: "/dashboard" },
@@ -1815,9 +1825,15 @@ function ProfileSettingsContent() {
                     ]}
                 />
 
-                {/* Header: avatar, name, completeness. Phones hide it inside a section so the form starts near the top. */}
+                {/* Phones hide the title and the profile card inside a section so the form starts near the top. */}
+                <div className={activeTab ? "hidden @3xl:block" : ""}>
+                    <h1 className="text-3xl font-bold leading-tight text-[var(--page-heading)] sm:text-4xl">ตั้งค่าบัญชี</h1>
+                    <p className="mt-2 text-muted-foreground">จัดการข้อมูลส่วนตัวและการตั้งค่าบัญชีของคุณ</p>
+                </div>
+
+                {/* Profile card: avatar, name, completeness */}
                 <section
-                    className={`${sectionCardClass} ${activeTab ? "hidden @3xl:flex" : "flex"} flex-col items-center gap-4 p-5 text-center sm:p-6 @xl:flex-row @xl:flex-wrap @xl:gap-5 @xl:text-left`}
+                    className={`${sectionCardClass} ${activeTab ? "hidden @3xl:flex" : "flex"} flex-col items-center gap-4 p-5 text-center @xl:flex-row @xl:flex-wrap @xl:gap-5 @xl:px-6 @xl:py-4 @xl:text-left`}
                 >
                     <div className="relative shrink-0">
                         {hasProfileImage ? (
@@ -1825,11 +1841,11 @@ function ProfileSettingsContent() {
                             <img
                                 src={formData.image}
                                 alt="Profile preview"
-                                className="h-[72px] w-[72px] rounded-full object-cover"
+                                className="h-14 w-14 rounded-full object-cover"
                                 onError={handleProfileImagePreviewError}
                             />
                         ) : (
-                            <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-primary/10 text-2xl font-semibold text-primary">
+                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary/10 text-xl font-semibold text-primary">
                                 {profileInitial}
                             </div>
                         )}
@@ -1842,11 +1858,11 @@ function ProfileSettingsContent() {
                             <DropdownMenuTrigger asChild>
                                 <button
                                     type="button"
-                                    className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                                    className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
                                     disabled={isUploadingImage}
                                     aria-label="เปลี่ยนรูปโปรไฟล์"
                                 >
-                                    <Camera className="h-4 w-4" />
+                                    <Camera className="h-3.5 w-3.5" />
                                 </button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="w-56 rounded-2xl p-2">
@@ -1886,11 +1902,9 @@ function ProfileSettingsContent() {
                             onChange={handleProfileImageUpload}
                         />
                     </div>
-                    <div className="w-full min-w-0 space-y-1 @xl:w-auto @xl:flex-[1_1_220px]">
-                        <h1 className="text-2xl font-bold text-[var(--page-heading)]">ตั้งค่าบัญชี</h1>
-                        <p className="break-words text-muted-foreground">
-                            {[shownName, profile.email].filter(Boolean).join(" · ")}
-                        </p>
+                    <div className="w-full min-w-0 @xl:w-auto @xl:flex-[1_1_220px]">
+                        <p className="font-semibold text-foreground">{shownName}</p>
+                        {profile.email ? <p className="break-words text-sm text-muted-foreground">{profile.email}</p> : null}
                     </div>
                     <div className="w-full space-y-2 @xl:w-56">
                         <p className="text-sm text-muted-foreground">
@@ -1960,12 +1974,9 @@ function ProfileSettingsContent() {
                     </div>
                 )}
 
-                <div className={`${activeTab ? "flex" : "hidden @3xl:flex"} items-start gap-6`}>
-                    {/* Wider screens: the section menu */}
-                    <nav
-                        aria-label="หมวดการตั้งค่า"
-                        className={`${sectionCardClass} sticky top-6 hidden w-60 shrink-0 flex-col gap-0.5 p-2.5 @3xl:flex`}
-                    >
+                {/* Wider screens: section tabs. A second side menu would sit against the dashboard's own. */}
+                <div className="hidden items-center gap-6 border-b border-border @3xl:flex">
+                    <nav aria-label="หมวดการตั้งค่า" className="-mb-px flex flex-wrap gap-7">
                         {SETTINGS_TABS.map((tab) => {
                             const isActive = tab.id === shownTab;
                             return (
@@ -1974,29 +1985,31 @@ function ProfileSettingsContent() {
                                     type="button"
                                     aria-current={isActive ? "page" : undefined}
                                     onClick={() => selectTab(tab.id)}
-                                    className={`flex min-h-12 w-full items-center gap-2 rounded-xl px-3.5 py-2.5 text-left transition-colors ${
+                                    className={`inline-flex min-h-12 items-center gap-2 border-b-2 px-1 transition-colors duration-300 ease-out ${
                                         isActive
-                                            ? "bg-primary/10 font-semibold text-primary"
-                                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                            ? "border-primary font-semibold text-[var(--page-heading)]"
+                                            : "border-transparent text-muted-foreground hover:text-foreground"
                                     }`}
                                 >
-                                    <span className="flex-1">{tab.label}</span>
+                                    {tab.label}
                                     {tabStatus[tab.id].complete ? null : renderIncompletePill()}
                                 </button>
                             );
                         })}
-                        <div className="mx-1.5 my-2 h-px bg-border" />
-                        <button
-                            type="button"
-                            onClick={() => void logout()}
-                            className="flex min-h-12 w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
-                        >
-                            <LogOut className="h-4 w-4" />
-                            ออกจากระบบ
-                        </button>
                     </nav>
+                    <span className="flex-1" />
+                    <button
+                        type="button"
+                        onClick={() => void logout()}
+                        className="inline-flex min-h-10 items-center gap-2 rounded-xl px-3 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+                    >
+                        <LogOut className="h-4 w-4" />
+                        ออกจากระบบ
+                    </button>
+                </div>
 
-                    <div className="min-w-0 flex-1 space-y-5">
+                <div className={activeTab ? "" : "hidden @3xl:block"}>
+                    <div className="space-y-5">
                         <Link
                             href={pathname}
                             replace
