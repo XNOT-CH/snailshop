@@ -17,7 +17,7 @@ export function SeasonPassClaimButton({
     return (
         <Button
             type="button"
-            className="mt-5 w-full rounded-full"
+            className="mt-4 h-11 w-full rounded-xl font-semibold"
             onClick={() => void onClaim()}
             disabled={!canClaim || isLoading}
         >
