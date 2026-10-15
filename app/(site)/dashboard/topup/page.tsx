@@ -30,6 +30,7 @@ import {
     Upload,
     User,
     Wallet,
+    ArrowRight,
     X,
 } from "lucide-react";
 import { useMaintenanceStatus } from "@/hooks/useMaintenanceStatus";
@@ -433,63 +434,91 @@ export default function TopupPage() {
         }
     };
 
+    // Shared look for the three channel dialogs, after the home page's cards and fields.
+    const dialogCardClass = "mx-auto w-full min-w-0 overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-[0_24px_60px_-30px_rgba(15,23,42,0.45)] sm:p-5";
+    const fieldClass = "h-11 w-full min-w-0 rounded-xl border-border bg-muted/40 px-3 text-sm";
+    const primaryActionClass = "mt-4 h-11 w-full rounded-xl bg-primary text-sm font-semibold text-primary-foreground transition-colors duration-300 ease-out hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60";
+
+    const renderDialogHeader = (Icon: typeof Wallet, title: string, subtitle: string) => (
+        <div className="flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                    <Icon className="h-5 w-5" />
+                </div>
+                <div>
+                    <p className="text-lg font-bold text-[var(--page-heading)]">{title}</p>
+                    <p className="text-sm text-muted-foreground">{subtitle}</p>
+                </div>
+            </div>
+            <button
+                type="button"
+                onClick={() => setSelectedChannel(null)}
+                className="rounded-full p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                aria-label="ปิด"
+            >
+                <X className="h-5 w-5" />
+            </button>
+        </div>
+    );
+
     return (
-        <div className="dashboard-topup-page rounded-3xl bg-[radial-gradient(circle_at_top,rgba(255,247,237,0.95),rgba(255,255,255,0.98)_42%,rgba(248,250,252,1)_100%)] px-4 py-6 shadow-[0_30px_80px_rgba(15,23,42,0.08)] sm:px-6 sm:py-8">
+        <div className="dashboard-topup-page space-y-6">
             <PageBreadcrumb
                 items={[
                     { label: "แดชบอร์ด", href: "/dashboard" },
                     { label: "เติมเงิน" },
                 ]}
-                className="mb-6"
             />
 
-            <div className="mb-8 text-center">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-blue-700 sm:text-sm sm:tracking-[0.32em]">
-                    ช่องทางการชำระเงิน
-                </p>
-                <h1 className="mt-2 text-2xl font-bold text-slate-900 sm:text-3xl">เติมเงิน</h1>
-                <p className="mt-2 text-xs text-slate-500 sm:text-sm">
+            <div>
+                <h1 className="text-3xl font-bold leading-tight text-[var(--page-heading)] sm:text-4xl">เติมเงิน</h1>
+                <p className="mt-2 text-muted-foreground">
                     เลือกช่องทางที่ต้องการ แล้วดำเนินการชำระเงินตามรูปแบบของแต่ละวิธีได้ทันที
                 </p>
             </div>
 
-            <div className="mx-auto grid w-full max-w-[1120px] gap-5 md:grid-cols-2">
-                {PAYMENT_CHANNELS.map((channel) => {
-                    const Icon = channel.icon;
-                    const active = selectedChannel === channel.value;
+            <section className="space-y-4">
+                <h2 className="text-xl font-bold text-[var(--page-heading)]">ช่องทางการชำระเงิน</h2>
+                <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                    {PAYMENT_CHANNELS.map((channel) => {
+                        const Icon = channel.icon;
+                        const active = selectedChannel === channel.value;
 
-                    return (
-                        <button
-                            key={channel.value}
-                            type="button"
-                            onClick={() => handleSelectChannel(channel.value)}
-                            className={[
-                                "group flex min-h-[240px] flex-col items-center justify-center rounded-3xl border bg-white px-5 py-6 text-center shadow-[0_18px_38px_rgba(15,23,42,0.05)] transition duration-200 sm:min-h-[290px] sm:px-6 sm:py-7",
-                                active
-                                    ? "border-blue-400 ring-2 ring-blue-100"
-                                    : "border-slate-200 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_24px_48px_rgba(15,23,42,0.09)]",
-                            ].join(" ")}
-                        >
-                            <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-50 to-slate-100 text-slate-700 sm:h-20 sm:w-20 sm:rounded-3xl">
-                                {channel.imageSrc ? (
-                                    <Image
-                                        src={channel.imageSrc}
-                                        alt={channel.imageAlt ?? channel.title}
-                                        width={160}
-                                        height={96}
-                                        className="h-12 w-auto max-w-[7rem] object-contain sm:h-16 sm:max-w-[9rem]"
-                                    />
-                                ) : (
-                                    <Icon className="h-8 w-8 sm:h-10 sm:w-10" />
-                                )}
-                            </div>
-                            <p className="mt-4 text-lg font-bold text-slate-900 sm:mt-5 sm:text-xl">{channel.title}</p>
-                            <p className="mt-1 text-base text-slate-500 sm:text-lg">{channel.subtitle}</p>
-                            <p className="mt-4 text-xs text-slate-400">{channel.description}</p>
-                        </button>
-                    );
-                })}
-            </div>
+                        return (
+                            <button
+                                key={channel.value}
+                                type="button"
+                                onClick={() => handleSelectChannel(channel.value)}
+                                className={[
+                                    "group flex flex-col rounded-2xl border bg-card p-5 text-left transition-[border-color,translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 sm:p-6",
+                                    active ? "border-primary" : "border-border hover:border-primary/50",
+                                ].join(" ")}
+                            >
+                                <div className="flex h-20 items-center justify-center rounded-xl bg-muted/40">
+                                    {channel.imageSrc ? (
+                                        <Image
+                                            src={channel.imageSrc}
+                                            alt={channel.imageAlt ?? channel.title}
+                                            width={160}
+                                            height={96}
+                                            className="h-14 w-auto max-w-[8rem] object-contain"
+                                        />
+                                    ) : (
+                                        <Icon className="h-9 w-9 text-primary" />
+                                    )}
+                                </div>
+                                <p className="mt-5 text-lg font-bold text-foreground">{channel.title}</p>
+                                <p className="text-sm text-muted-foreground">{channel.subtitle}</p>
+                                <p className="mt-3 flex-1 text-sm leading-6 text-muted-foreground">{channel.description}</p>
+                                <span className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-primary/10 text-sm font-semibold text-primary transition-colors duration-300 ease-out group-hover:bg-primary group-hover:text-primary-foreground">
+                                    เลือกช่องทางนี้
+                                    <ArrowRight className="h-4 w-4" />
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            </section>
 
             {selectedChannel && isClient
                 ? createPortal(
@@ -500,121 +529,74 @@ export default function TopupPage() {
                     aria-hidden="true"
                 />
                 <div className="relative flex min-h-dvh w-full items-center justify-center p-2 sm:p-4">
-                <Card className="relative z-10 my-auto min-w-0 w-[min(calc(100vw-1rem),22rem)] max-w-[22rem] border-0 bg-transparent shadow-none sm:w-full sm:max-w-[26rem]">
+                <Card className="relative z-10 my-auto min-w-0 w-[min(calc(100vw-1rem),24rem)] max-w-[24rem] border-0 bg-transparent shadow-none sm:w-full sm:max-w-[28rem]">
                     <CardContent className="space-y-3 overflow-x-hidden overflow-y-auto p-0 max-h-[calc(100dvh-1rem)] overscroll-contain sm:max-h-[calc(100svh-1.5rem)]">
                         {maintenance?.enabled && (
-                            <div className="rounded-2xl border border-amber-300/70 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-100">
                                 <p className="font-semibold">ระบบเติมเงินกำลังปิดปรับปรุงชั่วคราว</p>
-                                <p className="mt-1 text-xs text-amber-800/90">{maintenance.message}</p>
+                                <p className="mt-1 text-xs opacity-90">{maintenance.message}</p>
                             </div>
                         )}
 
                         {isGiftChannel ? (
-                            <div className="mx-auto w-full min-w-0 max-w-none overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)] sm:rounded-3xl sm:p-4">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex items-start gap-3">
-                                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 sm:h-10 sm:w-10">
-                                            <Gift className="h-4 w-4 text-slate-700 sm:h-5 sm:w-5" />
-                                        </div>
-                                        <div>
-                                            <p className="text-lg font-bold text-blue-700 sm:text-xl">ซองอั่งเปา</p>
-                                            <p className="text-xs text-slate-500 sm:text-sm">True Money Wallet</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedChannel(null)}
-                                        className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                                        aria-label="ปิด"
-                                    >
-                                        <X className="h-5 w-5" />
-                                    </button>
+                            <div className={dialogCardClass}>
+                                {renderDialogHeader(Gift, "ซองอั่งเปา", "True Money Wallet")}
+
+                                <div className="mt-4 flex justify-center rounded-xl bg-muted/40 p-3">
+                                    <Image
+                                        src="/TU1.png"
+                                        alt="ตัวอย่างซองอั่งเปา TrueMoney"
+                                        width={560}
+                                        height={260}
+                                        className="h-24 w-auto object-contain sm:h-28"
+                                    />
                                 </div>
 
-                                <div className="mt-3 rounded-lg border-[3px] border-[#5b4a1e] bg-[linear-gradient(180deg,#fff8d8_0%,#d3c083_100%)] p-1.5 shadow-inner sm:mt-4 sm:rounded-2xl sm:p-2">
-                                    <div className="rounded-lg bg-[#8b7441]/15 p-1.5 sm:rounded-lg sm:p-2">
-                                        <div className="flex justify-center">
-                                            <Image
-                                                src="/TU1.png"
-                                                alt="ตัวอย่างซองอั่งเปา TrueMoney"
-                                                width={560}
-                                                height={260}
-                                                className="h-auto w-full max-w-[13rem] object-contain sm:max-w-[18rem]"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="mt-3 space-y-2 sm:mt-4">
-                                    <label className="text-sm font-semibold text-slate-700" htmlFor="gift-link-input">ลิงก์ซองอั่งเปา</label>
+                                <div className="mt-4 space-y-2">
+                                    <label className="text-sm font-semibold text-foreground" htmlFor="gift-link-input">ลิงก์ซองอั่งเปา</label>
                                     <Input
                                         id="gift-link-input"
                                         value={giftLink}
                                         onChange={(e) => setGiftLink(e.target.value)}
                                         placeholder="https://gift.truemoney.com/campaign/?v=xxxxxxxxxx"
-                                        className="h-10 w-full min-w-0 rounded-xl border-violet-300 px-3 text-sm sm:h-11 sm:rounded-2xl"
+                                        className={fieldClass}
                                     />
                                 </div>
 
-                                <Button
-                                    type="button"
-                                    onClick={handleGiftRedeem}
-                                    className="mt-3 h-10 w-full rounded-xl bg-violet-100 text-sm font-bold text-violet-700 hover:bg-violet-200 dark:bg-violet-500/15 dark:text-violet-200 dark:hover:bg-violet-500/25 sm:mt-4 sm:h-11 sm:rounded-2xl"
-                                >
+                                <Button type="button" onClick={handleGiftRedeem} className={primaryActionClass}>
                                     <Gift className="mr-2 h-4 w-4" />
                                     เติมเงิน
                                 </Button>
                             </div>
                         ) : isVoucherChannel ? (
-                            <div className="mx-auto w-full min-w-0 max-w-none overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)] sm:max-w-md sm:rounded-3xl sm:p-4">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex items-start gap-3">
-                                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 sm:h-10 sm:w-10">
-                                            <TicketPercent className="h-4 w-4 text-slate-700 sm:h-5 sm:w-5" />
-                                        </div>
-                                        <div>
-                                            <p className="text-lg font-bold text-blue-700 sm:text-xl">โค้ด</p>
-                                            <p className="text-xs text-slate-500 sm:text-sm">Code</p>
-                                        </div>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedChannel(null)}
-                                        className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                                        aria-label="ปิด"
-                                    >
-                                        <X className="h-5 w-5" />
-                                    </button>
-                                </div>
+                            <div className={dialogCardClass}>
+                                {renderDialogHeader(TicketPercent, "โค้ด", "Code")}
 
-                                <div className="mt-3 flex justify-center sm:mt-5">
+                                <div className="mt-4 flex flex-col items-center gap-3 rounded-xl bg-muted/40 p-4">
                                     <Image
                                         src="/voucher-ticket-new-card.webp"
                                         alt="Voucher ticket"
                                         width={260}
                                         height={220}
-                                        className="h-auto w-full max-w-[8rem] object-contain sm:max-w-[13rem]"
+                                        className="h-20 w-auto object-contain sm:h-24"
                                     />
-                                </div>
-
-                                <div className="mt-3 flex justify-center sm:mt-3">
-                                    <span className="rounded-full border border-violet-300 bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700 dark:border-violet-500/35 dark:bg-violet-500/15 dark:text-violet-200">
+                                    <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
                                         พิเศษ
                                     </span>
                                 </div>
 
-                                <p className="mt-3 text-center text-xs font-bold text-rose-500 sm:mt-4 sm:text-base">
+                                <p className="mt-4 text-center text-sm font-semibold text-red-600 dark:text-red-400">
                                     แต่ละโค้ดสามารถใช้งานได้หนึ่งครั้งต่อหนึ่งบัญชี!
                                 </p>
 
-                                <div className="mt-3 space-y-2 sm:mt-5 sm:space-y-2">
-                                    <label className="text-sm font-semibold text-slate-700" htmlFor="voucher-code-input">โค้ด</label>
+                                <div className="mt-4 space-y-2">
+                                    <label className="text-sm font-semibold text-foreground" htmlFor="voucher-code-input">โค้ด</label>
                                     <Input
                                         id="voucher-code-input"
                                         value={voucherCode}
                                         onChange={(e) => setVoucherCode(e.target.value)}
                                         placeholder="กรอกโค้ดที่นี่"
-                                        className="h-10 w-full min-w-0 rounded-xl border-violet-300 px-3 text-sm sm:h-12 sm:rounded-2xl sm:text-base"
+                                        className={fieldClass}
                                     />
                                 </div>
 
@@ -622,7 +604,7 @@ export default function TopupPage() {
                                     type="button"
                                     onClick={handleVoucherRedeem}
                                     disabled={isRedeemingVoucher}
-                                    className="mt-3 h-10 w-full rounded-xl bg-violet-100 text-sm font-bold text-violet-700 hover:bg-violet-200 dark:bg-violet-500/15 dark:text-violet-200 dark:hover:bg-violet-500/25 disabled:cursor-not-allowed disabled:opacity-70 sm:mt-4 sm:h-11 sm:rounded-2xl sm:text-sm"
+                                    className={primaryActionClass}
                                 >
                                     {isRedeemingVoucher ? (
                                         <>
@@ -638,69 +620,45 @@ export default function TopupPage() {
                                 </Button>
                             </div>
                         ) : isBankSlipChannel ? (
-                            <div className="mx-auto w-full min-w-0 max-w-none overflow-hidden rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_18px_40px_rgba(15,23,42,0.08)] sm:max-w-[30rem] sm:p-3.5">
-                                <div className="flex items-start justify-between gap-4">
-                                    <div className="flex items-start gap-3">
-                                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 sm:h-9 sm:w-9">
-                                            <Wallet className="h-4 w-4 text-slate-700 sm:h-4 sm:w-4" />
+                            <div className={dialogCardClass}>
+                                {renderDialogHeader(Wallet, "แนบสลิป", "Mobile Banking")}
+
+                                <div className="mt-4 space-y-3 rounded-xl bg-muted/40 p-4">
+                                    <div className="flex justify-center">
+                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/12 px-3 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                            <CheckCircle className="h-3.5 w-3.5" />
+                                            ไม่มีค่าธรรมเนียม 0%
+                                        </span>
+                                    </div>
+                                    <div className="grid gap-3 text-center sm:grid-cols-2">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">ชื่อบัญชี</p>
+                                            <p className="mt-1 text-sm font-semibold text-foreground">{BANK_INFO.accountName}</p>
                                         </div>
                                         <div>
-                                            <p className="text-lg font-bold text-blue-700 sm:text-lg">แนบสลิป</p>
-                                            <p className="text-xs text-slate-500 sm:text-sm">Mobile Banking</p>
+                                            <p className="text-xs text-muted-foreground">ธนาคาร</p>
+                                            <p className="mt-1 text-sm font-semibold text-foreground">{BANK_INFO.bankName}</p>
                                         </div>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedChannel(null)}
-                                        className="rounded-full p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                                        aria-label="ปิด"
-                                    >
-                                        <X className="h-5 w-5" />
-                                    </button>
-                                </div>
-
-                                <div className="mt-3 flex flex-col items-center justify-center gap-1 sm:mt-2.5">
-                                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                                        <CheckCircle className="h-3 w-3" />
-                                    </div>
-                                    <p className="rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-600">
-                                        ไม่มีค่าธรรมเนียม <span className="ml-1 rounded-full border border-emerald-400 px-2 py-0.5 text-xs">0%</span>
-                                    </p>
-                                </div>
-
-                                <div className="mt-3 grid gap-2 text-center sm:mt-4 sm:grid-cols-2">
-                                    <div>
-                                        <p className="text-xs text-slate-400">ชื่อบัญชี</p>
-                                        <p className="mt-1 text-sm font-bold leading-tight text-blue-700 sm:mt-1.5 sm:text-base">
-                                            {BANK_INFO.accountName}
-                                        </p>
-                                    </div>
-                                    <div>
-                                        <p className="text-xs text-slate-400">ธนาคาร</p>
-                                        <p className="mt-1 text-sm font-bold leading-tight text-blue-700 sm:mt-1.5 sm:text-base">
-                                            {BANK_INFO.bankName}
-                                        </p>
+                                    <div className="text-center">
+                                        <p className="text-xs text-muted-foreground">เลขบัญชี</p>
+                                        <div className="mt-1 flex flex-wrap items-center justify-center gap-1">
+                                            <span className="break-all text-2xl font-bold tracking-wide text-[var(--page-heading)]">
+                                                {BANK_INFO.accountNumber.replaceAll("-", "")}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => copyToClipboard(BANK_INFO.accountNumber.replaceAll("-", ""))}
+                                                className="rounded-lg p-2 text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
+                                                aria-label="คัดลอกเลขบัญชี"
+                                            >
+                                                {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5" />}
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="mt-3 text-center sm:mt-3.5">
-                                    <p className="text-xs text-slate-400">เลขบัญชี</p>
-                                    <div className="mt-1.5 flex flex-wrap items-center justify-center gap-2">
-                                        <span className="break-all text-sm font-black leading-none text-blue-700 sm:text-3xl">
-                                            {BANK_INFO.accountNumber.replaceAll("-", "")}
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => copyToClipboard(BANK_INFO.accountNumber.replaceAll("-", ""))}
-                                            className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-                                            aria-label="คัดลอกเลขบัญชี"
-                                        >
-                                            {copied ? <Check className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5" />}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="mt-3 space-y-1.5 sm:mt-4">
+                                <div className="mt-4">
                                     <input
                                         ref={fileInputRef}
                                         type="file"
@@ -711,11 +669,12 @@ export default function TopupPage() {
                                     />
 
                                     {slipPreview ? (
-                                        <div className="relative rounded-2xl border border-slate-200 p-2">
+                                        <div className="relative rounded-xl border border-border p-2">
                                             <button
                                                 type="button"
                                                 onClick={removeSlip}
                                                 className="absolute right-0 top-0 z-10 -translate-y-1/2 translate-x-1/2 rounded-full bg-red-500 p-1 text-white transition-colors hover:bg-red-600"
+                                                aria-label="ลบสลิป"
                                             >
                                                 <X className="h-4 w-4" />
                                             </button>
@@ -723,9 +682,9 @@ export default function TopupPage() {
                                             <img
                                                 src={slipPreview}
                                                 alt="สลิปการโอนเงิน"
-                                                className="max-h-28 w-full rounded-lg object-contain sm:max-h-56"
+                                                className="max-h-40 w-full rounded-lg object-contain sm:max-h-56"
                                             />
-                                            <div className="mt-3 flex items-center justify-between gap-3 text-xs text-slate-500">
+                                            <div className="mt-2 flex items-center justify-between gap-3 text-xs text-muted-foreground">
                                                 <span className="truncate">{slipFile?.name}</span>
                                                 <span>{slipFile ? `${(slipFile.size / 1024 / 1024).toFixed(2)} MB` : ""}</span>
                                             </div>
@@ -744,22 +703,22 @@ export default function TopupPage() {
                                                 }
                                             }}
                                             className={[
-                                                "w-full rounded-lg border-2 border-dashed border-slate-400 px-3 py-3 text-center transition-all duration-200 sm:rounded-2xl sm:px-5 sm:py-5",
-                                                isDragging ? "bg-slate-50" : "hover:bg-slate-50/80",
+                                                "w-full rounded-xl border-2 border-dashed px-4 py-5 text-center transition-colors duration-300 ease-out",
+                                                isDragging ? "border-primary bg-primary/5" : "border-border hover:border-primary/50 hover:bg-primary/5",
                                             ].join(" ")}
                                         >
-                                            <Upload className="mx-auto mb-1 h-6 w-6 text-slate-500 sm:mb-2.5 sm:h-9 sm:w-9" />
-                                            <p className="text-sm font-bold leading-tight text-slate-600 sm:text-3xl sm:leading-none">ลาก & วาง เพื่ออัปโหลด</p>
-                                            <p className="mt-1 text-xs text-slate-500 sm:mt-2 sm:text-base">หรือ</p>
-                                            <span className="mt-2 inline-flex rounded-lg bg-slate-600 px-4 py-1.5 text-xs font-bold text-white sm:mt-3 sm:rounded-xl sm:px-5 sm:py-3 sm:text-sm">
+                                            <Upload className="mx-auto mb-2 h-7 w-7 text-muted-foreground" />
+                                            <p className="font-semibold text-foreground">ลาก & วาง เพื่ออัปโหลด</p>
+                                            <p className="mt-1 text-xs text-muted-foreground">หรือ</p>
+                                            <span className="mt-2 inline-flex rounded-xl bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
                                                 อัปโหลดไฟล์
                                             </span>
                                         </button>
                                     )}
                                 </div>
 
-                                <div className="mt-2.5 space-y-1 sm:mt-4">
-                                    <label className="text-sm font-medium text-slate-900" htmlFor="bank-topup-amount">
+                                <div className="mt-4 space-y-2">
+                                    <label className="text-sm font-semibold text-foreground" htmlFor="bank-topup-amount">
                                         จำนวนเงินที่โอน
                                     </label>
                                     <Input
@@ -768,24 +727,20 @@ export default function TopupPage() {
                                         placeholder="เช่น 300 หรือ 1000"
                                         value={topupAmount}
                                         onChange={(e) => setTopupAmount(e.target.value.replaceAll(/[^\d.]/g, ""))}
-                                        className="h-11 rounded-2xl"
+                                        className={fieldClass}
                                     />
                                     {hasValidAmount && (
-                                        <p className="text-xs font-semibold text-blue-600">
+                                        <p className="text-xs font-semibold text-primary">
                                             ยอดที่ส่งตรวจ: ฿{formatCurrency(topupAmount)}
                                         </p>
                                     )}
                                 </div>
 
-                                <p className="mt-2 text-center text-xs font-bold leading-snug text-red-500 sm:text-sm">
+                                <p className="mt-3 text-center text-xs font-semibold leading-snug text-red-600 dark:text-red-400 sm:text-sm">
                                     กรุณาโอนผ่านแอปธนาคารเท่านั้น ระบบไม่รองรับการโอนด้วยการยืนยันนี้
                                 </p>
 
-                                <Button
-                                    onClick={handleSubmit}
-                                    className="mt-2.5 h-8 w-full rounded-lg bg-blue-100 text-xs font-bold text-blue-700 hover:bg-blue-200 sm:h-10.5 sm:rounded-2xl sm:text-sm"
-                                    disabled={!canSubmit}
-                                >
+                                <Button onClick={handleSubmit} className={primaryActionClass} disabled={!canSubmit}>
                                     {isSubmitting ? (
                                         <>
                                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
