@@ -10,7 +10,7 @@ interface HomeTopupPeekProps {
 // Plays the hover pose once the first time the art scrolls into view, so
 // visitors see there is something behind the card. It sets data-peek for the
 // rise plus a short hold, then clears it and the art eases back. Skipped on
-// touch screens (the viking already rests half-risen there) and for reduced motion.
+// touch screens (they already show the hover frame) and for reduced motion.
 export function HomeTopupPeek({ children, className }: Readonly<HomeTopupPeekProps>) {
   const ref = useRef<HTMLDivElement>(null);
   const [peek, setPeek] = useState(false);
