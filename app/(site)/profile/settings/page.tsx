@@ -2,10 +2,10 @@
 
 import { SpinnerScreen } from "@/components/SpinnerScreen";
 
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
+import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +22,7 @@ import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
+    DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -40,11 +41,15 @@ import {
     Pencil,
     Upload,
     X,
-    Image as ImageIcon,
     Eye,
     EyeOff,
     Eraser,
     Send,
+    Camera,
+    ChevronLeft,
+    ChevronRight,
+    LogOut,
+    type LucideIcon,
 } from "lucide-react";
 import { PageBreadcrumb } from "@/components/PageBreadcrumb";
 import { updateProfile } from "@/lib/actions/user";
@@ -76,6 +81,31 @@ interface AddressData {
 }
 
 type AddressMode = "saved" | "new";
+
+type SettingsTab = "profile" | "contact" | "address" | "security";
+
+const SETTINGS_TABS: { id: SettingsTab; label: string; icon: LucideIcon }[] = [
+    { id: "profile", label: "ข้อมูลส่วนตัว", icon: User },
+    { id: "contact", label: "ข้อมูลติดต่อ", icon: Phone },
+    { id: "address", label: "ที่อยู่", icon: MapPin },
+    { id: "security", label: "รหัสผ่านและ PIN", icon: Lock },
+];
+
+function parseSettingsTab(value: string | null): SettingsTab | null {
+    return SETTINGS_TABS.some((tab) => tab.id === value) ? (value as SettingsTab) : null;
+}
+
+// A hint for the person typing, not a rule: the server's password validation is
+// unchanged and still decides what is accepted.
+function getPasswordStrength(password: string) {
+    if (!password) return null;
+    let score = 0;
+    if (password.length >= 8) score++;
+    if (/[A-Za-z]/.test(password) && /\d/.test(password)) score++;
+    if (password.length >= 12 || /[^A-Za-z0-9]/.test(password) || (/[a-z]/.test(password) && /[A-Z]/.test(password))) score++;
+    const level = Math.max(score, 1);
+    return { level, label: ["อ่อน", "ปานกลาง", "แข็งแรง"][level - 1] };
+}
 
 interface SavedAddressOption {
     id: string;
@@ -196,9 +226,24 @@ function toAddressData(profile: AddressProfileData): AddressData {
     };
 }
 
+// useSearchParams needs a Suspense boundary, or the route cannot be prerendered.
 export default function ProfileSettingsPage() {
+    return (
+        <Suspense fallback={<SpinnerScreen label="กำลังโหลดข้อมูล..." />}>
+            <ProfileSettingsContent />
+        </Suspense>
+    );
+}
+
+function ProfileSettingsContent() {
     const router = useRouter();
+    const pathname = usePathname();
+    const searchParams = useSearchParams();
     const logout = useLogout();
+    // The open section lives in ?tab= so a link can land on it. With no tab,
+    // phones show the section list and wider screens open the first section.
+    const activeTab = parseSettingsTab(searchParams.get("tab"));
+    const shownTab = activeTab ?? "profile";
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -245,10 +290,13 @@ export default function ProfileSettingsPage() {
 
     const hasProfileImage = Boolean(formData.image?.trim());
     const profileInitial = (formData.name || profile?.username || "U").trim().charAt(0).toUpperCase();
-    const elevatedCardClass =
-        "border border-slate-200/80 bg-white/95 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.28)]";
-    const addressCardClass =
-        "border border-slate-200/80 bg-gradient-to-b from-white to-slate-50/80 shadow-[0_18px_45px_-32px_rgba(15,23,42,0.22)]";
+    const sectionCardClass =
+        "overflow-hidden rounded-[20px] border border-border bg-card shadow-[0_18px_45px_-34px_rgba(15,23,42,0.28)]";
+    const sectionHeadClass = "space-y-1 px-5 pt-5 sm:px-6 sm:pt-6";
+    const sectionTitleClass = "text-lg font-semibold text-[var(--page-heading)]";
+    const sectionBodyClass = "space-y-5 p-5 sm:p-6";
+    const sectionFootClass =
+        "flex flex-col-reverse gap-2 border-t border-border bg-muted/40 px-5 py-4 sm:flex-row sm:justify-end sm:px-6";
     const saveButtonClass =
         "h-11 w-full gap-2 rounded-2xl bg-blue-600 px-6 text-white shadow-[0_16px_30px_-18px_rgba(15,23,42,0.28)] transition hover:bg-blue-700 hover:shadow-[0_18px_36px_-18px_rgba(15,23,42,0.28)] sm:w-auto sm:min-w-[148px]";
     const emailChanged = (formData.email || "").trim().toLowerCase() !== (profile?.email || "").trim().toLowerCase();
@@ -1097,674 +1145,514 @@ export default function ProfileSettingsPage() {
         );
     }
 
-    return (
-        <div className="profile-settings-page min-h-screen bg-background px-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-4 sm:py-8">
-            <div className="mx-auto w-full max-w-[84rem] space-y-4 sm:space-y-5">
-                {/* Breadcrumb */}
-                <PageBreadcrumb
-                    items={[
-                        { label: "แดชบอร์ด", href: "/dashboard" },
-                        { label: "ตั้งค่าบัญชี" },
-                    ]}
-                    className="px-3 sm:px-0"
-                />
+    // Completeness reads the saved profile, not what is being typed, so a
+    // section only counts once it has actually been saved.
+    const missingNameLabel = (
+        [
+            [profile.firstName, "ชื่อ (ภาษาไทย)"],
+            [profile.lastName, "นามสกุล (ภาษาไทย)"],
+            [profile.firstNameEn, "ชื่อ (ภาษาอังกฤษ)"],
+            [profile.lastNameEn, "นามสกุล (ภาษาอังกฤษ)"],
+        ] as const
+    ).find(([value]) => !value?.trim())?.[1];
+    const hasSavedShipAddress = hasAddressData(savedShipAddress);
+    const tabStatus: Record<SettingsTab, { complete: boolean; summary: string }> = {
+        profile: {
+            complete: !missingNameLabel,
+            summary: missingNameLabel
+                ? `ยังไม่กรอก${missingNameLabel}`
+                : [profile.firstName, profile.lastName].join(" "),
+        },
+        contact: {
+            complete: Boolean(profile.phone && profile.email && profile.emailVerified),
+            summary: [
+                profile.phone || "ยังไม่กรอกเบอร์มือถือ",
+                profile.email ? `อีเมล${profile.emailVerified ? "ยืนยันแล้ว" : "ยังไม่ยืนยัน"}` : "ยังไม่กรอกอีเมล",
+            ].join(" · "),
+        },
+        address: {
+            complete: hasSavedShipAddress,
+            summary: `จัดส่ง: ${hasSavedShipAddress ? "มีแล้ว" : "ยังไม่มี"} · ใบกำกับภาษี: ${
+                hasAddressData(savedTaxAddress) ? "มีแล้ว" : "ยังไม่มี"
+            }`,
+        },
+        security: {
+            complete: profile.hasPin,
+            summary: profile.hasPin ? "PIN เปิดใช้งานแล้ว" : "ยังไม่ได้ตั้ง PIN",
+        },
+    };
+    const completeCount = SETTINGS_TABS.filter((tab) => tabStatus[tab.id].complete).length;
+    const shownName = profile.name?.trim() || profile.username;
+    const passwordStrength = getPasswordStrength(formData.password);
+    const selectTab = (tab: SettingsTab) => router.replace(`${pathname}?tab=${tab}`, { scroll: false });
 
-                {/* Page Header */}
-                <div className="flex items-center gap-4 px-3 sm:px-0">
-                    <div className="rounded-2xl border border-primary/15 bg-primary/10 p-3 shadow-sm">
-                        <User className="h-8 w-8 text-primary" />
-                    </div>
-                    <div>
-                        <h1 className="text-2xl font-bold text-foreground">ตั้งค่าบัญชี</h1>
-                        <p className="text-muted-foreground">จัดการข้อมูลส่วนตัวและการตั้งค่าบัญชีของคุณ</p>
-                    </div>
+    const renderIncompletePill = () => (
+        <span className="shrink-0 rounded-full bg-amber-500/12 px-2 py-0.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+            ยังไม่ครบ
+        </span>
+    );
+
+    const renderSaveButton = (onClick: () => void, disabled: boolean, busy: boolean) => (
+        <Button type="button" onClick={onClick} className={saveButtonClass} disabled={disabled}>
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            บันทึก
+        </Button>
+    );
+
+    const renderAddressSection = (section: "tax" | "ship") => {
+        const isTax = section === "tax";
+        const title = isTax ? "ที่อยู่ออกใบกำกับภาษี" : "ที่อยู่จัดส่งของรางวัล";
+        const address = isTax ? taxAddress : shipAddress;
+        const setAddress = isTax ? setTaxAddress : setShipAddress;
+        const editing = isTax ? editingTax : editingShip;
+        const setEditing = isTax ? setEditingTax : setEditingShip;
+        const mode = isTax ? taxAddressMode : shipAddressMode;
+        const setMode = isTax ? setTaxAddressMode : setShipAddressMode;
+        const selectedId = isTax ? selectedTaxAddressId : selectedShipAddressId;
+        const setSelectedId = isTax ? setSelectedTaxAddressId : setSelectedShipAddressId;
+        const label = isTax ? taxAddressLabel : shipAddressLabel;
+        const setLabel = isTax ? setTaxAddressLabel : setShipAddressLabel;
+        const fallbackLabel = isTax ? "ใบกำกับภาษี" : "จัดส่งของรางวัล";
+
+        const startEditing = () => {
+            setEditing(true);
+            if (savedAddressOptions.length > 0 && !selectedId) {
+                applyFirstSavedAddress(setAddress, setMode, setSelectedId, setLabel);
+            }
+        };
+
+        return (
+            <section className={sectionCardClass}>
+                <div className={sectionHeadClass}>
+                    <h2 className={sectionTitleClass}>{title}</h2>
+                    <p className="text-sm text-muted-foreground">
+                        {isTax
+                            ? "ที่อยู่สำหรับออกใบกำกับภาษี (ไม่จำเป็นต้องกรอก)"
+                            : "ที่อยู่สำหรับจัดส่งของรางวัล (ไม่จำเป็นต้องกรอก)"}
+                    </p>
                 </div>
-
-                {/* Row 1: Contact Info + Personal Info */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                    {/* Contact Info Card */}
-                    <Card className={elevatedCardClass}>
-                        <CardHeader className="pb-4">
-                            <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
-                                <Phone className="h-5 w-5" />
-                                ข้อมูลติดต่อ
-                            </CardTitle>
-                            <CardDescription>เบอร์มือถือและอีเมลสำหรับการติดต่อ</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {/* Username (read-only) */}
-                            <div className="space-y-2">
-                                <Label className="flex items-center gap-2 text-muted-foreground">
-                                    <User className="h-4 w-4" />
-                                    Username
-                                </Label>
-                                <Input
-                                    value={profile.username}
-                                    disabled
-                                    className="bg-muted text-muted-foreground border-border"
-                                />
-                                <p className="text-xs text-muted-foreground">Username ไม่สามารถเปลี่ยนได้</p>
-                            </div>
-
-                            {/* Display Name */}
-                            <div className="space-y-2">
-                                <Label htmlFor="name" className="flex items-center gap-2 text-muted-foreground">
-                                    <User className="h-4 w-4" />
-                                    ชื่อที่แสดง <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                    id="name"
-                                    type="text"
-                                    placeholder="กรอกชื่อของคุณ"
-                                    value={formData.name}
-                                    onChange={(e) =>
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            name: e.target.value,
-                                        }))
-                                    }
-                                    required
-                                    className="bg-muted/50 border-border"
-                                />
-                                {errors.name && (
-                                    <p className="text-sm text-red-500">{errors.name[0]}</p>
-                                )}
-                            </div>
-
-                            {/* Phone */}
-                            <div className="space-y-2">
-                                <Label htmlFor="phone" className="flex items-center gap-2 text-muted-foreground">
-                                    <Phone className="h-4 w-4" />
-                                    เบอร์มือถือ <span className="text-red-500">*</span>
-                                </Label>
-                                <Input
-                                    id="phone"
-                                    type="tel"
-                                    inputMode="numeric"
-                                    pattern="[0-9]*"
-                                    maxLength={10}
-                                    placeholder="0XXXXXXXXX"
-                                    value={formData.phone}
-                                    onChange={(e) =>
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            phone: sanitizePhone(e.target.value),
-                                        }))
-                                    }
-                                    className="bg-muted/50 border-border"
-                                />
-                                <p className="text-xs text-muted-foreground">กรอกเฉพาะตัวเลข 10 หลัก</p>
-                                {errors.phone && (
-                                    <p className="text-sm text-red-500">{errors.phone[0]}</p>
-                                )}
-                            </div>
-
-                            {/* Email */}
-                            <div className="space-y-2">
-                                <div className="flex flex-wrap items-center justify-between gap-2">
-                                    <Label htmlFor="email" className="flex items-center gap-2 text-muted-foreground">
-                                        <Mail className="h-4 w-4" />
-                                        อีเมล
-                                    </Label>
-                                    <div className="flex flex-wrap items-center gap-3">
-                                        {formData.email ? (
-                                            <span
-                                                className={`inline-flex items-center gap-1.5 text-xs font-medium ${
-                                                    isEmailVerified ? "text-emerald-700" : "text-amber-700"
-                                                }`}
-                                            >
-                                                {isEmailVerified ? (
-                                                    <CheckCircle className="h-3.5 w-3.5 stroke-[1.8]" />
-                                                ) : (
-                                                    <AlertTriangle className="h-3.5 w-3.5 stroke-[1.8]" />
-                                                )}
-                                                {emailStatusLabel}
+                {editing ? (
+                    <>
+                        <div className={sectionBodyClass}>
+                            {renderAddressSourceControls(
+                                mode,
+                                selectedId,
+                                label,
+                                setAddress,
+                                setMode,
+                                setSelectedId,
+                                setLabel,
+                                fallbackLabel,
+                            )}
+                            {renderAddressForm(address, setAddress, section, isTax)}
+                            {selectedId.startsWith("profile-") ? (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="rounded-2xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    onClick={() => handleDeleteAddressProfile(selectedId.replace("profile-", ""), section)}
+                                    disabled={isSavingAddressProfile}
+                                >
+                                    <X className="h-4 w-4" />
+                                    ลบข้อมูลชุดนี้
+                                </Button>
+                            ) : null}
+                        </div>
+                        <div className={sectionFootClass}>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                className="h-11 rounded-2xl text-muted-foreground"
+                                onClick={() => setEditing(false)}
+                                disabled={isLoading || isSavingAddressProfile}
+                            >
+                                ยกเลิก
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="h-11 gap-2 rounded-2xl border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+                                onClick={() => clearAddressFields(setAddress, setMode, setSelectedId)}
+                                disabled={isLoading || isSavingAddressProfile}
+                            >
+                                <Eraser className="h-4 w-4" />
+                                ล้างข้อมูล
+                            </Button>
+                            {renderSaveButton(
+                                () => handleSubmit(section),
+                                isLoading || isSavingAddressProfile,
+                                isLoading || isSavingAddressProfile,
+                            )}
+                        </div>
+                    </>
+                ) : (
+                    <div className={sectionBodyClass}>
+                        {hasAddressData(address) ? (
+                            <div className="flex flex-wrap items-start gap-3 rounded-2xl border-2 border-primary/70 bg-primary/5 p-4">
+                                <div className="min-w-0 flex-1 space-y-2">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <p className="font-semibold text-foreground">{label}</p>
+                                        {isTax ? null : (
+                                            <span className="rounded-full bg-primary/12 px-2 py-0.5 text-xs font-medium text-primary">
+                                                ค่าเริ่มต้น
                                             </span>
-                                        ) : null}
+                                        )}
+                                    </div>
+                                    {renderAddressDisplay(address)}
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="gap-1.5 rounded-xl border-border"
+                                    onClick={startEditing}
+                                >
+                                    <Pencil className="h-3.5 w-3.5" />
+                                    แก้ไข
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center gap-3 rounded-2xl border-[1.5px] border-dashed border-border px-5 py-7 text-center">
+                                {isTax ? (
+                                    <FileText className="h-7 w-7 text-muted-foreground" />
+                                ) : (
+                                    <Truck className="h-7 w-7 text-muted-foreground" />
+                                )}
+                                <p className="text-sm text-muted-foreground">ยังไม่มี{title}</p>
+                                <div className="flex flex-wrap justify-center gap-2">
+                                    {savedAddressOptions.length > 0 ? (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="h-10 rounded-xl border-border"
+                                            onClick={() => {
+                                                setEditing(true);
+                                                applyFirstSavedAddress(setAddress, setMode, setSelectedId, setLabel);
+                                            }}
+                                        >
+                                            ใช้ที่อยู่เดิม
+                                        </Button>
+                                    ) : null}
+                                    <Button
+                                        type="button"
+                                        className="h-10 rounded-xl"
+                                        onClick={() => {
+                                            setEditing(true);
+                                            startNewAddress(setAddress, setMode, setSelectedId, setLabel, fallbackLabel);
+                                        }}
+                                    >
+                                        กรอกที่อยู่ใหม่
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </section>
+        );
+    };
+
+    const sections: Record<SettingsTab, React.ReactNode> = {
+        profile: (
+            <section className={sectionCardClass}>
+                <div className={sectionHeadClass}>
+                    <h2 className={sectionTitleClass}>ข้อมูลส่วนตัว</h2>
+                    <p className="text-sm text-muted-foreground">ชื่อและนามสกุล (ภาษาไทยและภาษาอังกฤษ)</p>
+                </div>
+                <div className={sectionBodyClass}>
+                    <div className="grid grid-cols-1 gap-5 @xl:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="firstName">ชื่อ (ภาษาไทย)</Label>
+                            <Input
+                                id="firstName"
+                                type="text"
+                                placeholder="ชื่อ"
+                                value={formData.firstName}
+                                onChange={(e) =>
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        firstName: sanitizeThaiName(e.target.value),
+                                    }))
+                                }
+                                className="bg-muted/50 border-border"
+                            />
+                            <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาไทย</p>
+                            {errors.firstName && (
+                                <p className="text-sm text-red-500">{errors.firstName[0]}</p>
+                            )}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="lastName">นามสกุล (ภาษาไทย)</Label>
+                            <Input
+                                id="lastName"
+                                type="text"
+                                placeholder="นามสกุล"
+                                value={formData.lastName}
+                                onChange={(e) =>
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        lastName: sanitizeThaiName(e.target.value),
+                                    }))
+                                }
+                                className="bg-muted/50 border-border"
+                            />
+                            <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาไทย</p>
+                            {errors.lastName && (
+                                <p className="text-sm text-red-500">{errors.lastName[0]}</p>
+                            )}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="firstNameEn">ชื่อ (ภาษาอังกฤษ)</Label>
+                            <Input
+                                id="firstNameEn"
+                                type="text"
+                                placeholder="First name"
+                                value={formData.firstNameEn}
+                                onChange={(e) =>
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        firstNameEn: sanitizeEnglishName(e.target.value),
+                                    }))
+                                }
+                                className="bg-muted/50 border-border"
+                            />
+                            <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาอังกฤษ</p>
+                            {errors.firstNameEn && (
+                                <p className="text-sm text-red-500">{errors.firstNameEn[0]}</p>
+                            )}
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="lastNameEn">นามสกุล (ภาษาอังกฤษ)</Label>
+                            <Input
+                                id="lastNameEn"
+                                type="text"
+                                placeholder="Last name"
+                                value={formData.lastNameEn}
+                                onChange={(e) =>
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        lastNameEn: sanitizeEnglishName(e.target.value),
+                                    }))
+                                }
+                                className="bg-muted/50 border-border"
+                            />
+                            <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาอังกฤษ</p>
+                            {errors.lastNameEn && (
+                                <p className="text-sm text-red-500">{errors.lastNameEn[0]}</p>
+                            )}
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <Label htmlFor="image">URL รูปโปรไฟล์ (ถ้าต้องการใช้ลิงก์ภายนอก)</Label>
+                        <Input
+                            id="image"
+                            type="text"
+                            placeholder="https://example.com/your-photo.jpg หรือ /uploads/profiles/..."
+                            value={formData.image}
+                            onChange={(e) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    image: e.target.value,
+                                }))
+                            }
+                            className="bg-muted/50 border-border"
+                        />
+                        {errors.image && (
+                            <p className="text-sm text-red-500">{errors.image[0]}</p>
+                        )}
+                    </div>
+                </div>
+                <div className={sectionFootClass}>
+                    {renderSaveButton(() => handleSubmit("personal"), isLoading, isLoading)}
+                </div>
+            </section>
+        ),
+        contact: (
+            <section className={sectionCardClass}>
+                <div className={sectionHeadClass}>
+                    <h2 className={sectionTitleClass}>ข้อมูลติดต่อ</h2>
+                    <p className="text-sm text-muted-foreground">เบอร์มือถือและอีเมลสำหรับการติดต่อ</p>
+                </div>
+                <div className="grid grid-cols-1 gap-5 p-5 sm:p-6 @xl:grid-cols-2">
+                    {/* Username (read-only) */}
+                    <div className="space-y-2">
+                        <Label className="text-muted-foreground">Username</Label>
+                        <Input
+                            value={profile.username}
+                            disabled
+                            className="bg-muted text-muted-foreground border-border"
+                        />
+                        <p className="text-xs text-muted-foreground">Username ไม่สามารถเปลี่ยนได้</p>
+                    </div>
+
+                    {/* Display Name */}
+                    <div className="space-y-2">
+                        <Label htmlFor="name">
+                            ชื่อที่แสดง <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                            id="name"
+                            type="text"
+                            placeholder="กรอกชื่อของคุณ"
+                            value={formData.name}
+                            onChange={(e) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    name: e.target.value,
+                                }))
+                            }
+                            required
+                            className="bg-muted/50 border-border"
+                        />
+                        {errors.name && (
+                            <p className="text-sm text-red-500">{errors.name[0]}</p>
+                        )}
+                    </div>
+
+                    {/* Phone */}
+                    <div className="space-y-2">
+                        <Label htmlFor="phone">
+                            เบอร์มือถือ <span className="text-red-500">*</span>
+                        </Label>
+                        <Input
+                            id="phone"
+                            type="tel"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            maxLength={10}
+                            placeholder="0XXXXXXXXX"
+                            value={formData.phone}
+                            onChange={(e) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    phone: sanitizePhone(e.target.value),
+                                }))
+                            }
+                            className="bg-muted/50 border-border"
+                        />
+                        <p className="text-xs text-muted-foreground">กรอกเฉพาะตัวเลข 10 หลัก</p>
+                        {errors.phone && (
+                            <p className="text-sm text-red-500">{errors.phone[0]}</p>
+                        )}
+                    </div>
+
+                    {/* Email */}
+                    <div className="space-y-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <Label htmlFor="email">อีเมล</Label>
+                                {formData.email ? (
+                                    <span
+                                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                                            isEmailVerified
+                                                ? "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300"
+                                                : "bg-amber-500/12 text-amber-700 dark:text-amber-300"
+                                        }`}
+                                    >
                                         {isEmailVerified ? (
-                                            <button
-                                                type="button"
-                                                className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 transition-colors hover:text-slate-950 disabled:pointer-events-none disabled:opacity-50"
-                                                onClick={() => setIsEditingVerifiedEmail(true)}
-                                                disabled={isEditingVerifiedEmail || isLoading}
-                                            >
-                                                <Pencil className="h-3.5 w-3.5" />
-                                                เปลี่ยนอีเมล
-                                            </button>
-                                        ) : null}
-                                    </div>
-                                </div>
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    placeholder="ระบุอีเมลของคุณที่นี่"
-                                    value={formData.email}
-                                    readOnly={shouldLockVerifiedEmail}
-                                    onChange={(e) =>
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            email: e.target.value,
-                                        }))
-                                    }
-                                    className={
-                                        shouldLockVerifiedEmail
-                                            ? "border-slate-200 bg-white text-slate-700 shadow-none focus-visible:ring-slate-200"
-                                            : "border-slate-200 bg-white shadow-none focus-visible:ring-slate-200"
-                                    }
-                                />
-                                {errors.email && (
-                                    <p className="text-sm text-red-500">{errors.email[0]}</p>
-                                )}
-                                {shouldLockVerifiedEmail ? (
-                                    <p className="text-xs text-slate-500">
-                                        อีเมลนี้ยืนยันแล้ว กดเปลี่ยนอีเมลก่อนหากต้องการแก้ไข
-                                    </p>
-                                ) : null}
-                                {emailChanged ? (
-                                    <p className="text-xs text-amber-600">
-                                        หลังบันทึกอีเมลใหม่แล้ว ระบบจะให้ยืนยันอีเมลอีกครั้ง
-                                    </p>
-                                ) : null}
-                                {isEditingVerifiedEmail ? (
-                                    <div className="flex justify-end pt-1">
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            className="h-8 rounded-lg px-2.5 text-sm text-muted-foreground hover:bg-slate-100"
-                                            onClick={handleCancelEmailEdit}
-                                            disabled={isLoading}
-                                        >
-                                            <X className="h-4 w-4" />
-                                            ยกเลิกเปลี่ยนอีเมล
-                                        </Button>
-                                    </div>
-                                ) : null}
-                                {!isEmailVerified && profile?.email ? (
-                                    <div className="flex justify-end pt-1">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="h-9 gap-2 rounded-lg border-slate-200 px-3 text-sm text-slate-700 shadow-none hover:bg-slate-50 hover:text-slate-900"
-                                            onClick={handleSendVerificationEmail}
-                                            disabled={isSendingVerification || isLoading || emailChanged}
-                                        >
-                                            {isSendingVerification ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <Send className="h-4 w-4" />
-                                            )}
-                                            ยืนยันอีเมล
-                                        </Button>
-                                    </div>
+                                            <CheckCircle className="h-3.5 w-3.5 stroke-[1.8]" />
+                                        ) : (
+                                            <AlertTriangle className="h-3.5 w-3.5 stroke-[1.8]" />
+                                        )}
+                                        {emailStatusLabel}
+                                    </span>
                                 ) : null}
                             </div>
-
-                            {/* Save Button */}
-                            <div className="flex justify-end pt-3">
-                                <Button
+                            {isEmailVerified ? (
+                                <button
                                     type="button"
-                                    onClick={() => handleSubmit("contact")}
-                                    className={saveButtonClass}
-                                    disabled={isLoading}
+                                    className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-50"
+                                    onClick={() => setIsEditingVerifiedEmail(true)}
+                                    disabled={isEditingVerifiedEmail || isLoading}
                                 >
-                                    {isLoading ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Save className="h-4 w-4" />
-                                    )}
-                                    บันทึก
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Personal Info Card */}
-                    <Card className={elevatedCardClass}>
-                        <CardHeader className="pb-4">
-                            <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
-                                <User className="h-5 w-5" />
-                                ข้อมูลส่วนตัว
-                            </CardTitle>
-                            <CardDescription>ชื่อและนามสกุล (ภาษาไทยและภาษาอังกฤษ)</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {/* Thai Name */}
-                            <div className="space-y-2">
-                                <Label htmlFor="firstName">ชื่อ (ภาษาไทย)</Label>
-                                <Input
-                                    id="firstName"
-                                    type="text"
-                                    placeholder="ชื่อ"
-                                    value={formData.firstName}
-                                    onChange={(e) =>
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            firstName: sanitizeThaiName(e.target.value),
-                                        }))
-                                    }
-                                    className="bg-muted/50 border-border"
-                                />
-                                <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาไทย</p>
-                                {errors.firstName && (
-                                    <p className="text-sm text-red-500">{errors.firstName[0]}</p>
-                                )}
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="lastName">นามสกุล (ภาษาไทย)</Label>
-                                <Input
-                                    id="lastName"
-                                    type="text"
-                                    placeholder="นามสกุล"
-                                    value={formData.lastName}
-                                    onChange={(e) =>
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            lastName: sanitizeThaiName(e.target.value),
-                                        }))
-                                    }
-                                    className="bg-muted/50 border-border"
-                                />
-                                <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาไทย</p>
-                                {errors.lastName && (
-                                    <p className="text-sm text-red-500">{errors.lastName[0]}</p>
-                                )}
-                            </div>
-
-                            {/* English Name */}
-                            <div className="space-y-2">
-                                <Label htmlFor="firstNameEn">ชื่อ (ภาษาอังกฤษ)</Label>
-                                <Input
-                                    id="firstNameEn"
-                                    type="text"
-                                    placeholder="First name"
-                                    value={formData.firstNameEn}
-                                    onChange={(e) =>
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            firstNameEn: sanitizeEnglishName(e.target.value),
-                                        }))
-                                    }
-                                    className="bg-muted/50 border-border"
-                                />
-                                <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาอังกฤษ</p>
-                                {errors.firstNameEn && (
-                                    <p className="text-sm text-red-500">{errors.firstNameEn[0]}</p>
-                                )}
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="lastNameEn">นามสกุล (ภาษาอังกฤษ)</Label>
-                                <Input
-                                    id="lastNameEn"
-                                    type="text"
-                                    placeholder="Last name"
-                                    value={formData.lastNameEn}
-                                    onChange={(e) =>
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            lastNameEn: sanitizeEnglishName(e.target.value),
-                                        }))
-                                    }
-                                    className="bg-muted/50 border-border"
-                                />
-                                <p className="text-xs text-muted-foreground">กรอกได้เฉพาะภาษาอังกฤษ</p>
-                                {errors.lastNameEn && (
-                                    <p className="text-sm text-red-500">{errors.lastNameEn[0]}</p>
-                                )}
-                            </div>
-
-                            {/* Profile Image */}
-                            <div className="space-y-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
-                                <Label className="flex items-center gap-2 text-muted-foreground">
-                                    <ImageIcon className="h-4 w-4" />
-                                    รูปโปรไฟล์
-                                </Label>
-                                <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-sky-50/50 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]">
-                                    <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <button
-                                                        type="button"
-                                                        className="group relative shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed"
-                                                        disabled={isUploadingImage}
-                                                        aria-label="Open profile image menu"
-                                                    >
-                                                        {hasProfileImage ? (
-                                                            // eslint-disable-next-line @next/next/no-img-element
-                                                            <img
-                                                                src={formData.image}
-                                                                alt="Profile preview"
-                                                                className="h-20 w-20 rounded-full border-4 border-white object-cover shadow-[0_16px_30px_-18px_rgba(15,23,42,0.45)] transition group-hover:scale-[1.02] group-hover:shadow-[0_18px_34px_-18px_rgba(15,23,42,0.22)]"
-                                                                onError={handleProfileImagePreviewError}
-                                                            />
-                                                        ) : (
-                                                            <div className="flex h-20 w-20 items-center justify-center rounded-full border border-dashed border-blue-200 bg-white text-2xl font-semibold text-primary shadow-[0_12px_24px_-16px_rgba(15,23,42,0.18)] transition group-hover:scale-[1.02] group-hover:border-blue-300 group-hover:shadow-[0_18px_34px_-18px_rgba(15,23,42,0.22)]">
-                                                                {profileInitial}
-                                                            </div>
-                                                        )}
-                                                    </button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="start" className="w-48 rounded-2xl border-slate-200 p-2">
-                                                    <DropdownMenuItem
-                                                        className="rounded-xl py-2"
-                                                        onClick={() => profileImageInputRef.current?.click()}
-                                                        disabled={isUploadingImage}
-                                                    >
-                                                        <Upload className="h-4 w-4" />
-                                                        อัปโหลดรูปใหม่
-                                                    </DropdownMenuItem>
-                                                    {hasProfileImage && (
-                                                        <>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem
-                                                                className="rounded-xl py-2"
-                                                                variant="destructive"
-                                                                onClick={clearProfileImage}
-                                                                disabled={isUploadingImage}
-                                                            >
-                                                                <X className="h-4 w-4" />
-                                                                ล้างรูป
-                                                            </DropdownMenuItem>
-                                                        </>
-                                                    )}
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
-                                            <div className="space-y-1.5">
-                                                <p className="text-sm font-medium text-foreground">อัปโหลดรูปจากเครื่องได้</p>
-                                                <p className="text-xs leading-5 text-muted-foreground">
-                                                    รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2 lg:justify-end">
-                                            <input
-                                                ref={profileImageInputRef}
-                                                id="profile-image-upload"
-                                                type="file"
-                                                accept="image/jpeg,image/png,image/webp,image/gif"
-                                                className="hidden"
-                                                onChange={handleProfileImageUpload}
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                className="h-11 gap-2 rounded-2xl border-slate-200 bg-white px-4 shadow-sm hover:bg-slate-50"
-                                                onClick={() => profileImageInputRef.current?.click()}
-                                                disabled={isUploadingImage}
-                                            >
-                                                {isUploadingImage ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : (
-                                                    <Upload className="h-4 w-4" />
-                                                )}
-                                                {isUploadingImage ? "กำลังอัปโหลด..." : "อัปโหลดรูป"}
-                                            </Button>
-                                            {hasProfileImage && (
-                                                <Button
-                                                    type="button"
-                                                    variant="ghost"
-                                                    className="h-11 gap-2 rounded-2xl text-red-500 hover:bg-red-50 hover:text-red-600"
-                                                    onClick={clearProfileImage}
-                                                    disabled={isUploadingImage}
-                                                >
-                                                    <X className="h-4 w-4" />
-                                                    ล้างรูป
-                                                </Button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Profile Image URL */}
-                            <div className="space-y-2">
-                                <Label htmlFor="image" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-                                    URL รูปโปรไฟล์ (ถ้าต้องการใช้ลิงก์ภายนอก)
-                                </Label>
-                                <Input
-                                    id="image"
-                                    type="text"
-                                    placeholder="https://example.com/your-photo.jpg หรือ /uploads/profiles/..."
-                                    value={formData.image}
-                                    onChange={(e) =>
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            image: e.target.value,
-                                        }))
-                                    }
-                                    className="border-slate-200 bg-white"
-                                />
-                                {errors.image && (
-                                    <p className="text-sm text-red-500">{errors.image[0]}</p>
-                                )}
-                            </div>
-
-                            {/* Save Button */}
-                            <div className="flex justify-end pt-3">
-                                <Button
-                                    type="button"
-                                    onClick={() => handleSubmit("personal")}
-                                    className={saveButtonClass}
-                                    disabled={isLoading}
-                                >
-                                    {isLoading ? (
-                                        <Loader2 className="h-4 w-4 animate-spin" />
-                                    ) : (
-                                        <Save className="h-4 w-4" />
-                                    )}
-                                    บันทึก
-                                </Button>
-                            </div>
-                        </CardContent>
-                    </Card>
-                </div>
-
-                {/* Row 2: Tax Address + Shipping Address */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                    {/* Tax Invoice Address Card */}
-                    <Card className={addressCardClass}>
-                        <CardHeader className="pb-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
-                                        <FileText className="h-5 w-5" />
-                                        ที่อยู่ออกใบกำกับภาษี
-                                    </CardTitle>
-                                    <CardDescription className="mt-1">
-                                        ที่อยู่สำหรับออกใบกำกับภาษี (ไม่จำเป็นต้องกรอก)
-                                    </CardDescription>
-                                </div>
+                                    <Pencil className="h-3.5 w-3.5" />
+                                    เปลี่ยนอีเมล
+                                </button>
+                            ) : null}
+                        </div>
+                        <Input
+                            id="email"
+                            type="email"
+                            placeholder="ระบุอีเมลของคุณที่นี่"
+                            value={formData.email}
+                            readOnly={shouldLockVerifiedEmail}
+                            onChange={(e) =>
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    email: e.target.value,
+                                }))
+                            }
+                            className={
+                                shouldLockVerifiedEmail
+                                    ? "bg-muted text-muted-foreground border-border"
+                                    : "bg-muted/50 border-border"
+                            }
+                        />
+                        {errors.email && (
+                            <p className="text-sm text-red-500">{errors.email[0]}</p>
+                        )}
+                        {shouldLockVerifiedEmail ? (
+                            <p className="text-xs text-muted-foreground">
+                                อีเมลนี้ยืนยันแล้ว กดเปลี่ยนอีเมลก่อนหากต้องการแก้ไข
+                            </p>
+                        ) : null}
+                        {emailChanged ? (
+                            <p className="text-xs text-amber-600">
+                                หลังบันทึกอีเมลใหม่แล้ว ระบบจะให้ยืนยันอีเมลอีกครั้ง
+                            </p>
+                        ) : null}
+                        <div className="flex flex-wrap gap-2 pt-1">
+                            {!isEmailVerified && profile.email ? (
                                 <Button
                                     type="button"
                                     variant="outline"
-                                    size="sm"
-                                    className="gap-1.5 border-border text-muted-foreground hover:bg-muted rounded-full"
-                                    onClick={() => {
-                                        const nextEditing = !editingTax;
-                                        setEditingTax(nextEditing);
-                                        if (nextEditing && savedAddressOptions.length > 0 && !selectedTaxAddressId) {
-                                            applyFirstSavedAddress(setTaxAddress, setTaxAddressMode, setSelectedTaxAddressId, setTaxAddressLabel);
-                                        }
-                                    }}
+                                    className="h-9 gap-2 rounded-xl border-border px-3 text-sm"
+                                    onClick={handleSendVerificationEmail}
+                                    disabled={isSendingVerification || isLoading || emailChanged}
                                 >
-                                    <Pencil className="h-3.5 w-3.5" />
-                                    {editingTax ? "ยกเลิก" : "แก้ไข"}
-                                </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            {editingTax ? (
-                                <div className="space-y-4">
-                                    {renderAddressSourceControls(
-                                        taxAddressMode,
-                                        selectedTaxAddressId,
-                                        taxAddressLabel,
-                                        setTaxAddress,
-                                        setTaxAddressMode,
-                                        setSelectedTaxAddressId,
-                                        setTaxAddressLabel,
-                                        "ใบกำกับภาษี",
+                                    {isSendingVerification ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Send className="h-4 w-4" />
                                     )}
-                                    {renderAddressForm(taxAddress, setTaxAddress, "tax", true)}
-                                    {selectedTaxAddressId.startsWith("profile-") ? (
-                                        <div className="flex justify-start pt-1">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                className="rounded-2xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                onClick={() => handleDeleteAddressProfile(selectedTaxAddressId.replace("profile-", ""), "tax")}
-                                                disabled={isSavingAddressProfile}
-                                            >
-                                                <X className="h-4 w-4" />
-                                                ลบข้อมูลชุดนี้
-                                            </Button>
-                                        </div>
-                                    ) : null}
-                                    <div className="flex flex-col-reverse gap-2 pt-3 sm:flex-row sm:justify-end">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="h-11 gap-2 rounded-2xl border-slate-200 text-muted-foreground hover:bg-slate-50 hover:text-slate-900"
-                                            onClick={() => clearAddressFields(setTaxAddress, setTaxAddressMode, setSelectedTaxAddressId)}
-                                            disabled={isLoading || isSavingAddressProfile}
-                                        >
-                                            <Eraser className="h-4 w-4" />
-                                            ล้างข้อมูล
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            onClick={() => handleSubmit("tax")}
-                                            className={saveButtonClass}
-                                            disabled={isLoading || isSavingAddressProfile}
-                                        >
-                                            {isLoading || isSavingAddressProfile ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <Save className="h-4 w-4" />
-                                            )}
-                                            บันทึก
-                                        </Button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
-                                    <div className="flex items-start gap-3">
-                                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                                        {renderAddressDisplay(taxAddress)}
-                                    </div>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
-
-                    {/* Shipping Address Card */}
-                    <Card className={addressCardClass}>
-                        <CardHeader className="pb-4">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
-                                        <Truck className="h-5 w-5" />
-                                        ที่อยู่จัดส่งของรางวัล
-                                    </CardTitle>
-                                    <CardDescription className="mt-1">
-                                        ที่อยู่สำหรับจัดส่งของรางวัล (ไม่จำเป็นต้องกรอก)
-                                    </CardDescription>
-                                </div>
+                                    ยืนยันอีเมล
+                                </Button>
+                            ) : null}
+                            {isEditingVerifiedEmail ? (
                                 <Button
                                     type="button"
-                                    variant="outline"
-                                    size="sm"
-                                    className="gap-1.5 border-border text-muted-foreground hover:bg-muted rounded-full"
-                                    onClick={() => {
-                                        const nextEditing = !editingShip;
-                                        setEditingShip(nextEditing);
-                                        if (nextEditing && savedAddressOptions.length > 0 && !selectedShipAddressId) {
-                                            applyFirstSavedAddress(setShipAddress, setShipAddressMode, setSelectedShipAddressId, setShipAddressLabel);
-                                        }
-                                    }}
+                                    variant="ghost"
+                                    className="h-9 rounded-xl px-3 text-sm text-muted-foreground"
+                                    onClick={handleCancelEmailEdit}
+                                    disabled={isLoading}
                                 >
-                                    <Pencil className="h-3.5 w-3.5" />
-                                    {editingShip ? "ยกเลิก" : "แก้ไข"}
+                                    <X className="h-4 w-4" />
+                                    ยกเลิกเปลี่ยนอีเมล
                                 </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent>
-                            {editingShip ? (
-                                <div className="space-y-4">
-                                    {renderAddressSourceControls(
-                                        shipAddressMode,
-                                        selectedShipAddressId,
-                                        shipAddressLabel,
-                                        setShipAddress,
-                                        setShipAddressMode,
-                                        setSelectedShipAddressId,
-                                        setShipAddressLabel,
-                                        "จัดส่งของรางวัล",
-                                    )}
-                                    {renderAddressForm(shipAddress, setShipAddress, "ship")}
-                                    {selectedShipAddressId.startsWith("profile-") ? (
-                                        <div className="flex justify-start pt-1">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                className="rounded-2xl border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                                                onClick={() => handleDeleteAddressProfile(selectedShipAddressId.replace("profile-", ""), "ship")}
-                                                disabled={isSavingAddressProfile}
-                                            >
-                                                <X className="h-4 w-4" />
-                                                ลบข้อมูลชุดนี้
-                                            </Button>
-                                        </div>
-                                    ) : null}
-                                    <div className="flex flex-col-reverse gap-2 pt-3 sm:flex-row sm:justify-end">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            className="h-11 gap-2 rounded-2xl border-slate-200 text-muted-foreground hover:bg-slate-50 hover:text-slate-900"
-                                            onClick={() => clearAddressFields(setShipAddress, setShipAddressMode, setSelectedShipAddressId)}
-                                            disabled={isLoading || isSavingAddressProfile}
-                                        >
-                                            <Eraser className="h-4 w-4" />
-                                            ล้างข้อมูล
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            onClick={() => handleSubmit("ship")}
-                                            className={saveButtonClass}
-                                            disabled={isLoading || isSavingAddressProfile}
-                                        >
-                                            {isLoading || isSavingAddressProfile ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <Save className="h-4 w-4" />
-                                            )}
-                                            บันทึก
-                                        </Button>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="rounded-2xl border border-slate-200 bg-white/80 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
-                                    <div className="flex items-start gap-3">
-                                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
-                                        {renderAddressDisplay(shipAddress)}
-                                    </div>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                            ) : null}
+                        </div>
+                    </div>
                 </div>
-
-                {/* Row 3: Password + PIN */}
-                <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
-                <Card className={elevatedCardClass}>
-                    <CardHeader className="pb-4">
-                        <CardTitle className="text-lg flex items-center gap-2 text-blue-600">
-                            <Lock className="h-5 w-5" />
-                            เปลี่ยนรหัสผ่าน
-                        </CardTitle>
-                        <CardDescription>ปล่อยว่างไว้ถ้าไม่ต้องการเปลี่ยนรหัสผ่าน</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
+                <div className={sectionFootClass}>
+                    {renderSaveButton(() => handleSubmit("contact"), isLoading, isLoading)}
+                </div>
+            </section>
+        ),
+        address: (
+            <>
+                {renderAddressSection("ship")}
+                {renderAddressSection("tax")}
+            </>
+        ),
+        security: (
+            <>
+                <section className={sectionCardClass}>
+                    <div className={sectionHeadClass}>
+                        <h2 className={sectionTitleClass}>เปลี่ยนรหัสผ่าน</h2>
+                        <p className="text-sm text-muted-foreground">ปล่อยว่างไว้ถ้าไม่ต้องการเปลี่ยนรหัสผ่าน</p>
+                    </div>
+                    <div className={`${sectionBodyClass} max-w-md`}>
                         {/* Current Password */}
                         <div className="space-y-2">
                             <Label htmlFor="currentPassword">รหัสผ่านปัจจุบัน</Label>
@@ -1787,70 +1675,89 @@ export default function ProfileSettingsPage() {
                             )}
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {/* New Password */}
-                            <div className="space-y-2">
-                                <Label htmlFor="password">รหัสผ่านใหม่</Label>
-                                <div className="relative">
-                                    <Input
-                                        id="password"
-                                        type={showNewPassword ? "text" : "password"}
-                                        autoComplete="new-password"
-                                        placeholder="อย่างน้อย 8 ตัวอักษร"
-                                        value={formData.password}
-                                        onChange={(e) =>
-                                            setFormData((prev) => ({
-                                                ...prev,
-                                                password: e.target.value,
-                                            }))
-                                        }
-                                        className="bg-muted/50 border-border pr-12"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowNewPassword((prev) => !prev)}
-                                        aria-label={showNewPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
-                                    >
-                                        {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                                    </button>
-                                </div>
-                                {errors.password && (
-                                    <p className="text-sm text-red-500">{errors.password[0]}</p>
-                                )}
+                        {/* New Password */}
+                        <div className="space-y-2">
+                            <Label htmlFor="password">รหัสผ่านใหม่</Label>
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    type={showNewPassword ? "text" : "password"}
+                                    autoComplete="new-password"
+                                    placeholder="อย่างน้อย 8 ตัวอักษร"
+                                    value={formData.password}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            password: e.target.value,
+                                        }))
+                                    }
+                                    className="bg-muted/50 border-border pr-12"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowNewPassword((prev) => !prev)}
+                                    aria-label={showNewPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
+                                >
+                                    {showNewPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                </button>
                             </div>
+                            {passwordStrength ? (
+                                <div className="space-y-1.5 pt-0.5">
+                                    <div className="flex gap-1" aria-hidden="true">
+                                        {[1, 2, 3].map((step) => (
+                                            <span
+                                                key={step}
+                                                className={`h-1 flex-1 rounded-full ${
+                                                    step > passwordStrength.level
+                                                        ? "bg-muted"
+                                                        : passwordStrength.level === 1
+                                                            ? "bg-red-500"
+                                                            : passwordStrength.level === 2
+                                                                ? "bg-amber-500"
+                                                                : "bg-emerald-500"
+                                                }`}
+                                            />
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">ความแข็งแรง: {passwordStrength.label}</p>
+                                </div>
+                            ) : null}
+                            {errors.password && (
+                                <p className="text-sm text-red-500">{errors.password[0]}</p>
+                            )}
+                        </div>
 
-                            {/* Confirm Password */}
-                            <div className="space-y-2">
-                                <Label htmlFor="confirmPassword">ยืนยันรหัสผ่าน</Label>
-                                <div className="relative">
-                                    <Input
-                                        id="confirmPassword"
-                                        type={showConfirmPassword ? "text" : "password"}
-                                        autoComplete="new-password"
-                                        placeholder="กรอกรหัสผ่านอีกครั้ง"
-                                        value={formData.confirmPassword}
-                                        onChange={(e) =>
-                                            setFormData((prev) => ({
-                                                ...prev,
-                                                confirmPassword: e.target.value,
-                                            }))
-                                        }
-                                        className="bg-muted/50 border-border pr-12"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowConfirmPassword((prev) => !prev)}
-                                        aria-label={showConfirmPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
-                                    >
-                                        {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                                    </button>
-                                </div>
-                                {errors.confirmPassword && (
-                                    <p className="text-sm text-red-500">{errors.confirmPassword[0]}</p>
-                                )}
+                        {/* Confirm Password */}
+                        <div className="space-y-2">
+                            <Label htmlFor="confirmPassword">ยืนยันรหัสผ่าน</Label>
+                            <div className="relative">
+                                <Input
+                                    id="confirmPassword"
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    autoComplete="new-password"
+                                    placeholder="กรอกรหัสผ่านอีกครั้ง"
+                                    value={formData.confirmPassword}
+                                    onChange={(e) =>
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            confirmPassword: e.target.value,
+                                        }))
+                                    }
+                                    className="bg-muted/50 border-border pr-12"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword((prev) => !prev)}
+                                    aria-label={showConfirmPassword ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-primary"
+                                >
+                                    {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                                </button>
                             </div>
+                            {errors.confirmPassword && (
+                                <p className="text-sm text-red-500">{errors.confirmPassword[0]}</p>
+                            )}
                         </div>
 
                         {/* Password Match Indicator */}
@@ -1879,40 +1786,235 @@ export default function ProfileSettingsPage() {
                                 )}
                             </Alert>
                         )}
-
-                        {/* Save Button */}
-                        <div className="flex justify-end pt-3">
-                            <Button
-                                type="button"
-                                onClick={() => handleSubmit("password")}
-                                className={saveButtonClass}
-                                disabled={isLoading || !passwordsMatch || !formData.password || !formData.currentPassword}
-                            >
-                                {isLoading ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <Save className="h-4 w-4" />
-                                )}
-                                บันทึก
-                            </Button>
-                        </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                    <div className={sectionFootClass}>
+                        {renderSaveButton(
+                            () => handleSubmit("password"),
+                            isLoading || !passwordsMatch || !formData.password || !formData.currentPassword,
+                            isLoading,
+                        )}
+                    </div>
+                </section>
                 <PinSettingsCard
                     hasPin={Boolean(profile?.hasPin)}
                     pinLockedUntil={profile?.pinLockedUntil ?? null}
                     pinUpdatedAt={profile?.pinUpdatedAt ?? null}
                     onUpdated={refreshProfile}
                 />
+            </>
+        ),
+    };
+
+    return (
+        <div className="profile-settings-page min-h-screen bg-background px-0 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-4 sm:py-8">
+            <div className="@container mx-auto w-full max-w-[72rem] space-y-5 px-3 sm:px-0">
+                <PageBreadcrumb
+                    items={[
+                        { label: "แดชบอร์ด", href: "/dashboard" },
+                        { label: "ตั้งค่าบัญชี" },
+                    ]}
+                />
+
+                {/* Header: avatar, name, completeness. Phones hide it inside a section so the form starts near the top. */}
+                <section
+                    className={`${sectionCardClass} ${activeTab ? "hidden @3xl:flex" : "flex"} flex-col items-center gap-4 p-5 text-center sm:p-6 @xl:flex-row @xl:flex-wrap @xl:gap-5 @xl:text-left`}
+                >
+                    <div className="relative shrink-0">
+                        {hasProfileImage ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                                src={formData.image}
+                                alt="Profile preview"
+                                className="h-[72px] w-[72px] rounded-full object-cover"
+                                onError={handleProfileImagePreviewError}
+                            />
+                        ) : (
+                            <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-primary/10 text-2xl font-semibold text-primary">
+                                {profileInitial}
+                            </div>
+                        )}
+                        {isUploadingImage ? (
+                            <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40">
+                                <Loader2 className="h-6 w-6 animate-spin text-white" />
+                            </div>
+                        ) : null}
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <button
+                                    type="button"
+                                    className="absolute -bottom-1 -right-1 flex h-8 w-8 items-center justify-center rounded-full border-2 border-card bg-primary text-primary-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                                    disabled={isUploadingImage}
+                                    aria-label="เปลี่ยนรูปโปรไฟล์"
+                                >
+                                    <Camera className="h-4 w-4" />
+                                </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="w-56 rounded-2xl p-2">
+                                <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
+                                    รองรับ JPG, PNG, WebP, GIF สูงสุด 5MB
+                                </DropdownMenuLabel>
+                                <DropdownMenuItem
+                                    className="rounded-xl py-2"
+                                    onClick={() => profileImageInputRef.current?.click()}
+                                    disabled={isUploadingImage}
+                                >
+                                    <Upload className="h-4 w-4" />
+                                    อัปโหลดรูปใหม่
+                                </DropdownMenuItem>
+                                {hasProfileImage && (
+                                    <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            className="rounded-xl py-2"
+                                            variant="destructive"
+                                            onClick={clearProfileImage}
+                                            disabled={isUploadingImage}
+                                        >
+                                            <X className="h-4 w-4" />
+                                            ล้างรูป
+                                        </DropdownMenuItem>
+                                    </>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                        <input
+                            ref={profileImageInputRef}
+                            id="profile-image-upload"
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp,image/gif"
+                            className="hidden"
+                            onChange={handleProfileImageUpload}
+                        />
+                    </div>
+                    <div className="w-full min-w-0 space-y-1 @xl:w-auto @xl:flex-[1_1_220px]">
+                        <h1 className="text-2xl font-bold text-[var(--page-heading)]">ตั้งค่าบัญชี</h1>
+                        <p className="break-words text-muted-foreground">
+                            {[shownName, profile.email].filter(Boolean).join(" · ")}
+                        </p>
+                    </div>
+                    <div className="w-full space-y-2 @xl:w-56">
+                        <p className="text-sm text-muted-foreground">
+                            ข้อมูลบัญชีครบแล้ว{" "}
+                            <strong className="font-semibold text-foreground">{completeCount} จาก {SETTINGS_TABS.length} หมวด</strong>
+                        </p>
+                        <div className="flex gap-1" aria-hidden="true">
+                            {SETTINGS_TABS.map((tab, index) => (
+                                <span
+                                    key={tab.id}
+                                    className={`h-1.5 flex-1 rounded-full ${index < completeCount ? "bg-primary" : "bg-muted"}`}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* Phones without a ?tab: the section list */}
+                {activeTab ? null : (
+                    <div className="space-y-4 @3xl:hidden">
+                        {profile.email && !profile.emailVerified ? (
+                            <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+                                <Mail className="h-5 w-5 shrink-0 text-amber-700 dark:text-amber-300" />
+                                <p className="flex-1 text-sm font-medium text-amber-800 dark:text-amber-200">อีเมลยังไม่ยืนยัน</p>
+                                <Button
+                                    type="button"
+                                    className="h-9 gap-2 rounded-xl bg-amber-700 px-3 text-sm text-white hover:bg-amber-800"
+                                    onClick={handleSendVerificationEmail}
+                                    disabled={isSendingVerification || isLoading || emailChanged}
+                                >
+                                    {isSendingVerification ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                                    ยืนยันอีเมล
+                                </Button>
+                            </div>
+                        ) : null}
+                        <nav aria-label="หมวดการตั้งค่า" className={`${sectionCardClass} divide-y divide-border`}>
+                            {SETTINGS_TABS.map((tab) => {
+                                const Icon = tab.icon;
+                                return (
+                                    <Link
+                                        key={tab.id}
+                                        href={`${pathname}?tab=${tab.id}`}
+                                        className="flex min-h-16 items-center gap-3.5 px-4 py-3 transition-colors hover:bg-muted/50"
+                                    >
+                                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                                            <Icon className="h-5 w-5" />
+                                        </span>
+                                        <span className="min-w-0 flex-1">
+                                            <span className="block font-medium text-foreground">{tab.label}</span>
+                                            <span className="line-clamp-2 block text-sm text-muted-foreground">{tabStatus[tab.id].summary}</span>
+                                        </span>
+                                        {tabStatus[tab.id].complete ? null : renderIncompletePill()}
+                                        <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+                                    </Link>
+                                );
+                            })}
+                        </nav>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="h-12 w-full gap-2 rounded-2xl border-red-200 bg-card text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-500/30 dark:hover:bg-red-500/10"
+                            onClick={() => void logout()}
+                        >
+                            <LogOut className="h-4 w-4" />
+                            ออกจากระบบ
+                        </Button>
+                    </div>
+                )}
+
+                <div className={`${activeTab ? "flex" : "hidden @3xl:flex"} items-start gap-6`}>
+                    {/* Wider screens: the section menu */}
+                    <nav
+                        aria-label="หมวดการตั้งค่า"
+                        className={`${sectionCardClass} sticky top-6 hidden w-60 shrink-0 flex-col gap-0.5 p-2.5 @3xl:flex`}
+                    >
+                        {SETTINGS_TABS.map((tab) => {
+                            const isActive = tab.id === shownTab;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    aria-current={isActive ? "page" : undefined}
+                                    onClick={() => selectTab(tab.id)}
+                                    className={`flex min-h-12 w-full items-center gap-2 rounded-xl px-3.5 py-2.5 text-left transition-colors ${
+                                        isActive
+                                            ? "bg-primary/10 font-semibold text-primary"
+                                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                    }`}
+                                >
+                                    <span className="flex-1">{tab.label}</span>
+                                    {tabStatus[tab.id].complete ? null : renderIncompletePill()}
+                                </button>
+                            );
+                        })}
+                        <div className="mx-1.5 my-2 h-px bg-border" />
+                        <button
+                            type="button"
+                            onClick={() => void logout()}
+                            className="flex min-h-12 w-full items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-left text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
+                        >
+                            <LogOut className="h-4 w-4" />
+                            ออกจากระบบ
+                        </button>
+                    </nav>
+
+                    <div className="min-w-0 flex-1 space-y-5">
+                        <Link
+                            href={pathname}
+                            replace
+                            className="inline-flex min-h-11 items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground @3xl:hidden"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                            หมวดการตั้งค่า
+                        </Link>
+                        {sections[shownTab]}
+                    </div>
                 </div>
             </div>
-
-                <FreeCropDialog
-                    open={cropDialogOpen}
-                    imageSrc={cropImageSrc}
-                    fileName={cropFileName}
-                    onClose={clearCropDialog}
-                    onConfirm={handleCropConfirm}
+            <FreeCropDialog
+                open={cropDialogOpen}
+                imageSrc={cropImageSrc}
+                fileName={cropFileName}
+                onClose={clearCropDialog}
+                onConfirm={handleCropConfirm}
             />
         </div>
     );

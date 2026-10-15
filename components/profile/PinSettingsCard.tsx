@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { KeyRound, Loader2, LockKeyhole, RotateCcw, ShieldCheck } from "lucide-react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { KeyRound, Loader2, RotateCcw, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -78,7 +77,8 @@ export function PinSettingsCard({
         return new Date(pinLockedUntil).getTime() > Date.now();
     }, [pinLockedUntil]);
 
-    const cardClass = "border border-slate-200/80 bg-white/95 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.28)]";
+    const cardClass =
+        "overflow-hidden rounded-[20px] border border-border bg-card shadow-[0_18px_45px_-34px_rgba(15,23,42,0.28)]";
     const saveButtonClass =
         "h-11 w-full gap-2 rounded-2xl bg-blue-600 px-6 text-white shadow-[0_16px_30px_-18px_rgba(15,23,42,0.28)] transition hover:bg-blue-700 hover:shadow-[0_18px_36px_-18px_rgba(15,23,42,0.28)] sm:w-auto sm:min-w-[148px]";
 
@@ -121,20 +121,17 @@ export function PinSettingsCard({
     };
 
     return (
-        <Card className={cardClass}>
-            <CardHeader className="pb-4">
-                <CardTitle className="flex items-center gap-2 text-lg text-blue-600">
-                    <LockKeyhole className="h-5 w-5" />
-                    ความปลอดภัยด้วย PIN
-                </CardTitle>
-                <CardDescription>
+        <section className={cardClass}>
+            <div className="space-y-1 px-5 pt-5 sm:px-6 sm:pt-6">
+                <h2 className="text-lg font-semibold text-[var(--page-heading)]">ความปลอดภัยด้วย PIN</h2>
+                <p className="text-sm text-muted-foreground">
                     PIN 6 หลักใช้ยืนยันตอนเปลี่ยนรหัสผ่านและตอนหมุนกาชา
-                </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                </p>
+            </div>
+            <div className="space-y-5 p-5 sm:p-6">
+                <div className="rounded-2xl border border-border bg-muted/40 p-4">
                     <div className="flex items-start gap-3">
-                        <ShieldCheck className="mt-0.5 h-5 w-5 text-blue-600" />
+                        <ShieldCheck className={`mt-0.5 h-5 w-5 ${hasPin ? "text-emerald-600" : "text-muted-foreground"}`} />
                         <div className="space-y-1 text-sm">
                             <p className="font-medium text-foreground">
                                 สถานะ PIN: {hasPin ? "เปิดใช้งานแล้ว" : "ยังไม่ได้ตั้งค่า"}
@@ -153,7 +150,7 @@ export function PinSettingsCard({
                 </div>
 
                 {!hasPin && !isSetupMode ? (
-                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-dashed border-border px-4 py-3 text-sm">
                         <p className="text-muted-foreground">
                             บัญชีนี้ยังไม่ได้ตั้ง PIN คุณสามารถเพิ่ม PIN 6 หลักเพื่อใช้ยืนยันรายการสำคัญได้
                         </p>
@@ -212,7 +209,7 @@ export function PinSettingsCard({
                 ) : null}
 
                 {hasPin ? (
-                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200 bg-slate-50/70 px-4 py-3 text-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-border bg-muted/40 px-4 py-3 text-sm">
                         <p className="text-muted-foreground">
                             ลืม PIN หรือ PIN ถูกล็อก? คุณสามารถรีเซ็ตด้วยรหัสผ่านบัญชีได้
                         </p>
@@ -233,71 +230,71 @@ export function PinSettingsCard({
                 ) : null}
 
                 {(hasPin || isSetupMode) ? (
-                    <>
-                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            <div className="space-y-2">
-                                <Label htmlFor="newPin">PIN ใหม่</Label>
-                                <Input
-                                    id="newPin"
-                                    type="password"
-                                    inputMode="numeric"
-                                    maxLength={6}
-                                    placeholder="PIN 6 หลัก"
-                                    value={formData.newPin}
-                                    onChange={(e) => setFormData((prev) => ({ ...prev, newPin: getDigitsOnly(e.target.value) }))}
-                                    className="bg-muted/50 border-border"
-                                />
-                                {errors.newPin ? <p className="text-sm text-red-500">{errors.newPin[0]}</p> : null}
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="confirmPin">ยืนยัน PIN</Label>
-                                <Input
-                                    id="confirmPin"
-                                    type="password"
-                                    inputMode="numeric"
-                                    maxLength={6}
-                                    placeholder="กรอก PIN อีกครั้ง"
-                                    value={formData.confirmPin}
-                                    onChange={(e) => setFormData((prev) => ({ ...prev, confirmPin: getDigitsOnly(e.target.value) }))}
-                                    className="bg-muted/50 border-border"
-                                />
-                                {errors.confirmPin ? <p className="text-sm text-red-500">{errors.confirmPin[0]}</p> : null}
-                            </div>
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div className="space-y-2">
+                            <Label htmlFor="newPin">PIN ใหม่</Label>
+                            <Input
+                                id="newPin"
+                                type="password"
+                                inputMode="numeric"
+                                maxLength={6}
+                                placeholder="PIN 6 หลัก"
+                                value={formData.newPin}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, newPin: getDigitsOnly(e.target.value) }))}
+                                className="bg-muted/50 border-border"
+                            />
+                            {errors.newPin ? <p className="text-sm text-red-500">{errors.newPin[0]}</p> : null}
                         </div>
-
-                        <div className="flex justify-end gap-2 pt-3">
-                            {!hasPin && isSetupMode ? (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    className="rounded-2xl"
-                                    onClick={() => {
-                                        setErrors({});
-                                        setIsSetupMode(false);
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            currentPassword: "",
-                                            newPin: "",
-                                            confirmPin: "",
-                                        }));
-                                    }}
-                                >
-                                    ยกเลิก
-                                </Button>
-                            ) : null}
-                            <Button
-                                type="button"
-                                onClick={handleSubmit}
-                                className={saveButtonClass}
-                                disabled={isSaving || (isLocked && !isResetMode)}
-                            >
-                                {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
-                                {hasPin ? getPinSubmitLabel(isResetMode, hasPin) : "บันทึก PIN"}
-                            </Button>
+                        <div className="space-y-2">
+                            <Label htmlFor="confirmPin">ยืนยัน PIN</Label>
+                            <Input
+                                id="confirmPin"
+                                type="password"
+                                inputMode="numeric"
+                                maxLength={6}
+                                placeholder="กรอก PIN อีกครั้ง"
+                                value={formData.confirmPin}
+                                onChange={(e) => setFormData((prev) => ({ ...prev, confirmPin: getDigitsOnly(e.target.value) }))}
+                                className="bg-muted/50 border-border"
+                            />
+                            {errors.confirmPin ? <p className="text-sm text-red-500">{errors.confirmPin[0]}</p> : null}
                         </div>
-                    </>
+                    </div>
                 ) : null}
-            </CardContent>
-        </Card>
+            </div>
+
+            {(hasPin || isSetupMode) ? (
+                <div className="flex flex-col-reverse gap-2 border-t border-border bg-muted/40 px-5 py-4 sm:flex-row sm:justify-end sm:px-6">
+                    {!hasPin && isSetupMode ? (
+                        <Button
+                            type="button"
+                            variant="outline"
+                            className="rounded-2xl"
+                            onClick={() => {
+                                setErrors({});
+                                setIsSetupMode(false);
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    currentPassword: "",
+                                    newPin: "",
+                                    confirmPin: "",
+                                }));
+                            }}
+                        >
+                            ยกเลิก
+                        </Button>
+                    ) : null}
+                    <Button
+                        type="button"
+                        onClick={handleSubmit}
+                        className={saveButtonClass}
+                        disabled={isSaving || (isLocked && !isResetMode)}
+                    >
+                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <KeyRound className="h-4 w-4" />}
+                        {hasPin ? getPinSubmitLabel(isResetMode, hasPin) : "บันทึก PIN"}
+                    </Button>
+                </div>
+            ) : null}
+        </section>
     );
 }
