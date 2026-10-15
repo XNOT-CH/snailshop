@@ -1,6 +1,6 @@
 "use client";
 
-import { SpinnerScreen } from "@/components/SpinnerScreen";
+import { SettingsSkeleton } from "@/components/profile/SettingsSkeleton";
 
 import { useState, useEffect, useRef, useCallback, useMemo, Suspense } from "react";
 import Link from "next/link";
@@ -229,7 +229,7 @@ function toAddressData(profile: AddressProfileData): AddressData {
 // useSearchParams needs a Suspense boundary, or the route cannot be prerendered.
 export default function ProfileSettingsPage() {
     return (
-        <Suspense fallback={<SpinnerScreen label="กำลังโหลดข้อมูล..." />}>
+        <Suspense fallback={<SettingsSkeleton />}>
             <ProfileSettingsContent />
         </Suspense>
     );
@@ -244,6 +244,13 @@ function ProfileSettingsContent() {
     // phones show the section list and wider screens open the first section.
     const activeTab = parseSettingsTab(searchParams.get("tab"));
     const shownTab = activeTab ?? "profile";
+    // The dashboard shell already paints the page background and padding; on its
+    // own route the page brings the same glow the other redesigned pages open with.
+    const inDashboard = pathname.startsWith("/dashboard");
+    const pageShellClass = inDashboard
+        ? "profile-settings-page"
+        : "profile-settings-page min-h-screen bg-[linear-gradient(var(--page-glow),var(--page-base)_320px)] px-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:py-8";
+    const pageColumnClass = inDashboard ? "" : "mx-auto max-w-7xl";
     const [isLoading, setIsLoading] = useState(false);
     const [isFetching, setIsFetching] = useState(true);
     const [isUploadingImage, setIsUploadingImage] = useState(false);
@@ -1113,7 +1120,13 @@ function ProfileSettingsContent() {
     );
 
     if (isFetching) {
-        return <SpinnerScreen label="กำลังโหลดข้อมูล..." />;
+        return (
+            <div className={pageShellClass}>
+                <div className={pageColumnClass}>
+                    <SettingsSkeleton />
+                </div>
+            </div>
+        );
     }
 
     if (!profile && loadError) {
@@ -1818,25 +1831,18 @@ function ProfileSettingsContent() {
         ),
     };
 
-    // The dashboard shell already paints the page background and padding; on its
-    // own route the page brings the same glow the other redesigned pages open with.
-    const inDashboard = pathname.startsWith("/dashboard");
-
     return (
-        <div
-            className={
-                inDashboard
-                    ? "profile-settings-page"
-                    : "profile-settings-page min-h-screen bg-[linear-gradient(var(--page-glow),var(--page-base)_320px)] px-3 pb-[calc(6.5rem+env(safe-area-inset-bottom))] pt-4 sm:px-6 sm:py-8"
-            }
-        >
-            <div className={`@container w-full space-y-6 ${inDashboard ? "" : "mx-auto max-w-7xl"}`}>
-                <PageBreadcrumb
-                    items={[
-                        { label: "แดชบอร์ด", href: "/dashboard" },
-                        { label: "ตั้งค่าบัญชี" },
-                    ]}
-                />
+        <div className={pageShellClass}>
+            <div className={`@container w-full space-y-6 ${pageColumnClass}`}>
+                {/* Inside a section on phones, "หมวดการตั้งค่า" is the way back; two back buttons would compete. */}
+                <div className={activeTab ? "hidden @3xl:block" : ""}>
+                    <PageBreadcrumb
+                        items={[
+                            { label: "แดชบอร์ด", href: "/dashboard" },
+                            { label: "ตั้งค่าบัญชี" },
+                        ]}
+                    />
+                </div>
 
                 {/* Header: avatar, title, completeness — no box of its own. Phones hide it inside a section so the form starts near the top. */}
                 <header
