@@ -5,9 +5,7 @@ import { usePathname } from "next/navigation";
 import { ArrowLeft, CreditCard, Dices, Gift, Package, Settings, Wallet } from "lucide-react";
 import { PRIMARY_NAV } from "@/lib/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import {
     Tooltip,
     TooltipContent,
@@ -40,7 +38,7 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
 
     return (
         <TooltipProvider>
-            <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 flex-col border-r border-border bg-card md:flex">
+            <aside className="fixed left-0 top-0 z-40 hidden h-screen w-64 flex-col border-r border-border/60 bg-card md:flex">
                 <div className="p-4">
                     <div className="flex items-center gap-3 rounded-xl bg-muted/50 p-3">
                         <Avatar>
@@ -54,14 +52,12 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
                             {user?.username ? (
                                 <p className="mt-0.5 text-xs text-muted-foreground">@{user.username}</p>
                             ) : null}
-                            <Badge variant="secondary" className="mt-1 text-xs">
+                            <p className="mt-1 text-sm font-semibold text-[var(--page-heading)]">
                                 ฿{user?.creditBalance ? Number(user.creditBalance).toLocaleString() : "0"}
-                            </Badge>
+                            </p>
                         </div>
                     </div>
                 </div>
-
-                <Separator />
 
                 <ScrollArea className="flex-1 px-3 py-4">
                     <nav className="flex flex-col gap-1">
@@ -76,10 +72,10 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
                                     <TooltipTrigger asChild>
                                         <Link
                                             href={link.href}
-                                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 btn-press touch-feedback ${
+                                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors duration-300 ease-out touch-feedback ${
                                                 isActive
-                                                    ? "bg-primary text-primary-foreground shadow-md shadow-primary/30"
-                                                    : "text-muted-foreground hover:translate-x-1 hover:bg-accent hover:text-foreground"
+                                                    ? "bg-primary/10 font-semibold text-primary"
+                                                    : "text-muted-foreground hover:bg-primary/5 hover:text-primary"
                                             }`}
                                         >
                                             <Icon className="h-5 w-5" />
@@ -93,12 +89,10 @@ export function DashboardSidebar({ user }: Readonly<DashboardSidebarProps>) {
                     </nav>
                 </ScrollArea>
 
-                <Separator />
-
                 <div className="p-3">
                     <Link
                         href="/"
-                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition-colors duration-300 ease-out hover:bg-primary/5 hover:text-primary"
                     >
                         <ArrowLeft className="h-5 w-5" />
                         กลับหน้าร้าน

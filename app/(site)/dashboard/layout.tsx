@@ -40,13 +40,14 @@ export default async function DashboardLayout({
     }
 
     return (
-        <div className="flex min-h-screen bg-muted">
+        <div className="flex min-h-screen bg-[var(--page-base)]">
             <HideMainLayout />
             <DashboardSidebar user={user} />
 
-            <main className="ml-0 min-h-screen flex-1 bg-muted px-0 pb-24 pt-0 sm:px-4 sm:pt-2 md:ml-64 md:px-6 md:pb-8 md:pt-6 lg:px-8">
+            {/* Same soft glow the storefront pages open with, settling into the base. */}
+            <main className="ml-0 min-h-screen flex-1 bg-[linear-gradient(var(--page-glow),var(--page-base)_320px)] px-3 pb-24 pt-0 sm:px-4 sm:pt-2 md:ml-64 md:px-6 md:pb-8 md:pt-6 lg:px-8">
                 <ScrollArea className="h-full w-full">
-                    <div className="page-transition mx-auto w-full max-w-screen-2xl rounded-none border-y border-border/60 bg-card p-3 shadow-sm sm:rounded-2xl sm:border sm:p-5 md:p-7">
+                    <div className="page-transition mx-auto w-full max-w-screen-2xl py-4 md:py-2">
                         {children}
                     </div>
                 </ScrollArea>
