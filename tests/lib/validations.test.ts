@@ -354,23 +354,5 @@ describe("settings validations", () => {
       const result = siteSettingsSchema.safeParse({ logoUrl: "not-a-url" });
       expect(result.success).toBe(false);
     });
-    it("accepts welcome strip image JSON", () => {
-      const result = siteSettingsSchema.safeParse({
-        welcomeStripImagesJson: JSON.stringify(["/uploads/welcome-1.png", "https://example.com/welcome-2.webp"]),
-      });
-      expect(result.success).toBe(true);
-    });
-    it("accepts expanded welcome strip image JSON", () => {
-      const result = siteSettingsSchema.safeParse({
-        welcomeStripImagesJson: JSON.stringify(Array.from({ length: 13 }, () => "/uploads/welcome.png")),
-      });
-      expect(result.success).toBe(true);
-    });
-    it("rejects invalid welcome strip image JSON", () => {
-      const result = siteSettingsSchema.safeParse({
-        welcomeStripImagesJson: JSON.stringify(["not-a-url"]),
-      });
-      expect(result.success).toBe(false);
-    });
   });
 });

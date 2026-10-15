@@ -19,7 +19,6 @@ import {
   HomeTopupShowcase,
 } from "@/components/HomeSections";
 import { NewsSection } from "@/components/NewsSection";
-import { WelcomeRedirect } from "@/components/WelcomeRedirect";
 import { RevealOnScroll } from "@/components/RevealOnScroll";
 import type { ReactNode } from "react";
 import { db } from "@/lib/db";
@@ -227,9 +226,9 @@ export default async function HomePage() {
       ),
     }));
 
-  // Each section gets its own full-width band, alternating with the hero's
-  // color, so scrolling reads as moving from one scene to the next. Tones are
-  // assigned after empty sections drop out, so the alternation never breaks.
+  // Each section gets its own full-width band. Only two are tinted — the glow
+  // under the hero and the top-up showcase — so the page reads as a few calm
+  // zones instead of a stripe per section.
   const sectionCandidates: (false | { key: string; node: ReactNode; className?: string })[] = [
     // Sits close under the hero, like the game picker on the reference storefront.
     { key: "categories", node: <HomeCategories categories={HOME_CATEGORIES} />, className: "pt-4 pb-6 lg:pt-6 lg:pb-8" },
@@ -299,7 +298,6 @@ export default async function HomePage() {
 
   return (
     <div className="animate-page-enter">
-      <WelcomeRedirect />
       <HomeHero siteName={siteName} banners={heroBanners} />
       {maintenance.purchase.enabled && (
         <PageBand tone="plain" className="pb-0 lg:pb-0">
@@ -310,7 +308,7 @@ export default async function HomePage() {
         </PageBand>
       )}
       {sections.map((section, index) => (
-        <PageBand key={section.key} id={section.key} tone={index === 0 ? "lead" : index % 2 === 0 ? "raised" : "plain"} className={section.className}>
+        <PageBand key={section.key} id={section.key} tone={index === 0 ? "lead" : section.key === "topup" ? "close" : "plain"} className={section.className}>
           {section.node}
         </PageBand>
       ))}
