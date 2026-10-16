@@ -163,6 +163,38 @@ export function CartProvider({
         }
     }, [items, isAuthenticated, isCartHydrated, storageKey]);
 
+    // The stock stored with an item is a snapshot from when it was added; a
+    // purchase elsewhere (product page, another tab) does not touch it. Re-read
+    // it each time the cart opens so a sold-out item stops showing "เหลือ 1".
+    useEffect(() => {
+        if (!isCartOpen || itemsRef.current.length === 0) return;
+
+        let active = true;
+        Promise.all(itemsRef.current.map(async (item) => {
+            try {
+                const response = await fetch(`/api/products/${item.id}/availability`, { cache: "no-store" });
+                if (!response.ok) return null;
+                const data = await response.json();
+                if (!data.found || data.isSold) return { id: item.id, stock: 0 };
+                const stockCount = Number(data.stockCount);
+                return Number.isFinite(stockCount) ? { id: item.id, stock: stockCount } : null;
+            } catch {
+                return null;
+            }
+        })).then((results) => {
+            if (!active) return;
+            const stockById = new Map(results.flatMap((result) => (result ? [[result.id, result.stock] as const] : [])));
+            if (stockById.size === 0) return;
+            setItems((prev) => prev.map((item) => (
+                stockById.has(item.id) ? { ...item, stock: stockById.get(item.id) } : item
+            )));
+        });
+
+        return () => {
+            active = false;
+        };
+    }, [isCartOpen]);
+
     // Update item quantity
     const updateQuantity = useCallback((productId: string, quantity: number) => {
         if (quantity < 1) return;

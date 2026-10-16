@@ -75,7 +75,9 @@ export function CartItem({ item, onRemove, onUpdateQuantity, currencySettings }:
                                 ? `เหลือ ${formatCurrencyAmount(subtotal, item.currency, currencySettings)}`
                                 : formatCurrencyAmount(subtotal, item.currency, currencySettings)}
                         </p>
-                        {item.stock != null && (
+                        {item.stock === 0 ? (
+                            <p className="text-xs font-semibold text-red-600 dark:text-red-400">สินค้าหมดแล้ว</p>
+                        ) : item.stock != null && (
                             <p className="flex items-center justify-end gap-0.5 text-xs text-muted-foreground">
                                 <Package className="h-2.5 w-2.5" />
                                 เหลือ {item.stock}
