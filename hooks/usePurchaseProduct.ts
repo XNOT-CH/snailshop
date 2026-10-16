@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation";
 import { API_ROUTES } from "@/lib/constants/apiRoutes";
 import { fetchWithCsrf } from "@/lib/csrf-client";
 import type { PublicCurrencySettings } from "@/lib/currencySettings";
-import { preparePurchase } from "@/lib/prepare-purchase";
+import { OPEN_CHAT_EVENT } from "@/components/FloatingChatButtonWrapper";
+import {
+    fetchPurchaseBalance,
+    loadPurchaseBalance,
+    summarizePurchaseBalance,
+} from "@/lib/prepare-purchase";
+import { requirePinForAction } from "@/lib/require-pin-for-action";
 import {
     showPurchaseConfirm,
     showPurchaseFailedModal,
@@ -15,6 +21,7 @@ import {
 
 export interface PurchaseProductResponse {
     success?: boolean;
+    orderId?: string;
     productName?: string;
     message?: string;
     /** 409 from /api/purchase: the product has consent boxes that were not ticked. */
@@ -39,6 +46,11 @@ export interface PurchaseProductOptions {
     pinActionLabel?: string;
     onSuccess?: (data: PurchaseProductResponse) => void | Promise<void>;
     onError?: (error: unknown) => void | Promise<void>;
+}
+
+/** Short, readable order reference: the first block of the order UUID. */
+export function formatOrderNumber(orderId: string) {
+    return `#${orderId.slice(0, 8).toUpperCase()}`;
 }
 
 export function usePurchaseProduct() {
@@ -67,23 +79,34 @@ export function usePurchaseProduct() {
         onSuccess,
         onError,
     }: PurchaseProductOptions) => {
+        const balanceCheck = await loadPurchaseBalance({ router, currency });
+        if (!balanceCheck.allowed) return false;
+
+        const balance = summarizePurchaseBalance(balanceCheck.balance, amount, currency, currencySettings);
+        if (balance.insufficient && !balance.canTopup) {
+            await showPurchaseFailedModal({
+                message: `${balance.balanceLabel}ไม่พอ ขาดอีก ${balance.shortfallText}`,
+                showTopupButton: false,
+            });
+            return false;
+        }
+
         const confirmed = await showPurchaseConfirm({
             productName,
             priceText,
             extraHtml,
             helperText,
             confirmButtonColor,
+            balance,
         });
         if (!confirmed) return false;
+        if (balance.insufficient) {
+            router.push("/dashboard/topup");
+            return false;
+        }
 
-        const purchaseCheck = await preparePurchase({
-            router,
-            amount,
-            currency,
-            currencySettings,
-            pinActionLabel,
-        });
-        if (!purchaseCheck.allowed) return false;
+        const pinCheck = await requirePinForAction(pinActionLabel);
+        if (!pinCheck.allowed) return false;
 
         setPurchasingId(productId);
 
@@ -96,22 +119,38 @@ export function usePurchaseProduct() {
                     quantity,
                     promoCode,
                     acceptedCheckIds,
-                    pin: purchaseCheck.pin,
+                    pin: pinCheck.pin ?? undefined,
                 }),
             });
 
             const data = await response.json() as PurchaseProductResponse;
 
             if (data.success) {
+                // Refresh before the modal, not after it closes: the page behind
+                // the modal kept showing the pre-purchase stock until then.
+                router.refresh();
+                const remaining = await fetchPurchaseBalance(currency);
+                const details = [
+                    ...(data.orderId ? [{ label: "เลขออเดอร์", value: formatOrderNumber(data.orderId) }] : []),
+                    ...(remaining === null
+                        ? []
+                        : [{
+                            label: `${balance.balanceLabel}คงเหลือ`,
+                            value: summarizePurchaseBalance(remaining, 0, currency, currencySettings).remainingText,
+                        }]),
+                ];
                 const result = await showPurchaseSuccessModal({
                     productName: data.productName,
                     title: "ซื้อสำเร็จ",
-                    text: "ต้องการเข้าไปดูสินค้าที่ซื้อเลยไหม",
+                    details,
                     confirmText: "ไปดูสินค้าเลย",
+                    contactText: "ทักแอดมิน",
                     cancelText: "อยู่หน้านี้",
                     showCancelButton: true,
                 });
-                router.refresh();
+                if (result.isDenied) {
+                    globalThis.dispatchEvent(new Event(OPEN_CHAT_EVENT));
+                }
                 if (result.isConfirmed) {
                     router.push("/dashboard/inventory");
                 }

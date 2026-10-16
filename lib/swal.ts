@@ -159,11 +159,29 @@ export const showPurchaseConfirm = async (params: {
     confirmText?: string;
     cancelText?: string;
     confirmButtonColor?: string;
+    balance?: {
+        balanceLabel: string;
+        deductText: string;
+        remainingText: string;
+        shortfallText: string;
+        insufficient: boolean;
+    };
 }): Promise<boolean> => {
     const Swal = await loadSwal();
     const escapedProductName = params.productName ? escapeHtml(params.productName) : "";
     const escapedPriceText = escapeHtml(params.priceText);
     const escapedHelperText = params.helperText ? escapeHtml(params.helperText) : "";
+    const balance = params.balance;
+    const balanceHtml = balance
+        ? `
+                    <dl class="mt-3 space-y-1.5 border-t border-gray-200 pt-3 text-sm">
+                        <div class="flex justify-between gap-3"><dt class="text-gray-500">หักจาก${escapeHtml(balance.balanceLabel)}</dt><dd class="font-semibold text-gray-900">${escapeHtml(balance.deductText)}</dd></div>
+                        ${balance.insufficient
+                            ? `<div class="flex justify-between gap-3"><dt class="text-gray-500">${escapeHtml(balance.balanceLabel)}ที่มี</dt><dd class="font-semibold text-gray-900">${escapeHtml(balance.remainingText)}</dd></div>
+                        <p class="rounded-lg bg-red-50 px-3 py-2 text-left font-medium text-red-700">${escapeHtml(balance.balanceLabel)}ไม่พอ ขาดอีก ${escapeHtml(balance.shortfallText)}</p>`
+                            : `<div class="flex justify-between gap-3"><dt class="text-gray-500">${escapeHtml(balance.balanceLabel)}คงเหลือหลังซื้อ</dt><dd class="font-semibold text-gray-900">${escapeHtml(balance.remainingText)}</dd></div>`}
+                    </dl>`
+        : "";
     const result = await Swal.fire({
         ...modalDefaults,
         title: "ยืนยันการสั่งซื้อ",
@@ -183,6 +201,7 @@ export const showPurchaseConfirm = async (params: {
                     <div class="font-semibold text-blue-500 text-xl mt-2">
                         ${escapedPriceText}
                     </div>
+                    ${balanceHtml}
                     ${params.extraHtml ? `<div class="mt-3 text-sm text-gray-500 border-t border-gray-200 pt-3">${params.extraHtml}</div>` : ""}
                     ${escapedHelperText ? `<p class="mt-3 rounded-lg bg-blue-50 px-3 py-2 text-xs font-medium text-blue-700">${escapedHelperText}</p>` : ""}
                 </div>
@@ -192,7 +211,7 @@ export const showPurchaseConfirm = async (params: {
         showCancelButton: true,
         confirmButtonColor: params.confirmButtonColor || "#145de7", // blue-500
         cancelButtonColor: "#e5e7eb", // gray-200
-        confirmButtonText: params.confirmText || "ยืนยันการสั่งซื้อ",
+        confirmButtonText: params.confirmText || (balance?.insufficient ? "เติมเงิน" : "ยืนยันการสั่งซื้อ"),
         cancelButtonText: params.cancelText || "ยกเลิก",
         reverseButtons: true,
         customClass: {
@@ -217,23 +236,34 @@ export const showPurchaseSuccessModal = async (params: {
     confirmText?: string;
     cancelText?: string;
     showCancelButton?: boolean;
+    /** Rows under the message, e.g. order number and balance left. */
+    details?: { label: string; value: string }[];
+    /** Adds a "ทักแอดมิน" button; the result's isDenied is true when it is picked. */
+    contactText?: string;
 }) => {
     const Swal = await loadSwal();
     const escapedProductName = params.productName ? escapeHtml(params.productName) : "";
+    const detailsHtml = params.details?.length
+        ? `<dl class="mx-auto mt-4 max-w-xs space-y-1.5 rounded-xl bg-gray-100 px-4 py-3 text-left text-sm">${params.details
+            .map((row) => `<div class="flex justify-between gap-3"><dt class="text-gray-500">${escapeHtml(row.label)}</dt><dd class="font-semibold text-gray-900">${escapeHtml(row.value)}</dd></div>`)
+            .join("")}</dl>`
+        : "";
+    const messageHtml = escapedProductName
+        ? `ซื้อ <strong>${escapedProductName}</strong> เรียบร้อยแล้ว<br><small>ดูข้อมูลสินค้าได้ที่หน้าคลังสินค้า</small>`
+        : params.text ? escapeHtml(params.text) : "";
     return Swal.fire({
         ...modalDefaults,
         icon: "success",
         title: params.title || "ซื้อสำเร็จ",
         text: params.text,
-        html:
-            params.html ||
-            (escapedProductName
-                ? `ซื้อ <strong>${escapedProductName}</strong> เรียบร้อยแล้ว<br><small>ดูข้อมูลสินค้าได้ที่หน้าคลังสินค้า</small>`
-                : undefined),
+        html: params.html || (detailsHtml || escapedProductName ? `${messageHtml}${detailsHtml}` : undefined),
         width: "min(92vw, 36rem)",
         showCancelButton: params.showCancelButton ?? false,
+        showDenyButton: Boolean(params.contactText),
         confirmButtonColor: "#145de7",
+        denyButtonColor: "#16a34a",
         confirmButtonText: params.confirmText || "ตกลง",
+        denyButtonText: params.contactText,
         cancelButtonText: params.cancelText || "อยู่หน้านี้",
         reverseButtons: true,
         customClass: {
@@ -242,6 +272,7 @@ export const showPurchaseSuccessModal = async (params: {
             htmlContainer: "!text-lg",
             actions: "flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-center",
             confirmButton: "w-full sm:w-auto rounded-xl px-8 py-2 !text-base",
+            denyButton: "w-full sm:w-auto rounded-xl px-8 py-2 !text-base",
             cancelButton: "w-full sm:w-auto rounded-xl px-8 py-2 !text-base",
         },
     });

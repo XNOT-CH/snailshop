@@ -38,6 +38,9 @@ import {
 import { requestProfile } from "@/lib/client/accountClient";
 import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
 import { requirePinForAction } from "@/lib/require-pin-for-action";
+import { fetchPurchaseBalance } from "@/lib/prepare-purchase";
+import { formatOrderNumber } from "@/hooks/usePurchaseProduct";
+import { OPEN_CHAT_EVENT } from "@/components/FloatingChatButtonWrapper";
 import {
     buildCartCheckoutPayload,
     buildCartCheckoutSuccessLabel,
@@ -501,14 +504,29 @@ function CartSheetContent() {
                     currencySettings,
                 );
                 const label = buildCartCheckoutSuccessLabel(data, totalDisplay);
+                const orderIds: string[] = Array.isArray(data.orders)
+                    ? data.orders.map((order: { orderId: string }) => order.orderId)
+                    : [];
+                const remainingCredit = await fetchPurchaseBalance("THB");
                 const result = await showPurchaseSuccessModal({
                     productName: label,
                     title: "ซื้อสำเร็จ",
-                    text: "ต้องการเข้าไปดูสินค้าที่ซื้อเลยไหม",
+                    details: [
+                        ...(orderIds.length > 0
+                            ? [{ label: "เลขออเดอร์", value: orderIds.map(formatOrderNumber).join(", ") }]
+                            : []),
+                        ...(remainingCredit === null
+                            ? []
+                            : [{ label: "เครดิตคงเหลือ", value: formatCurrencyAmount(remainingCredit, "THB", currencySettings) }]),
+                    ],
                     confirmText: "ไปดูสินค้าเลย",
+                    contactText: "ทักแอดมิน",
                     cancelText: "อยู่หน้านี้",
                     showCancelButton: true,
                 });
+                if (result.isDenied) {
+                    globalThis.dispatchEvent(new Event(OPEN_CHAT_EVENT));
+                }
                 if (result.isConfirmed) {
                     router.push("/dashboard/inventory");
                 }
