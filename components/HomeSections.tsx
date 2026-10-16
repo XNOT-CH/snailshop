@@ -39,7 +39,9 @@ export function HomeSeeAllLink({ href }: Readonly<{ href: string }>) {
 // screen edges, instead of wrapping into a tall stack.
 export function HomeGameChips({ games }: Readonly<{ games: { name: string }[] }>) {
   return (
-    <div className="-mx-[calc(50vw-50%)] flex gap-2 overflow-x-auto px-[calc(50vw-50%)] [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
+    // Wraps on phones too: a swipe row cut at the screen edge gave no hint
+    // that more games were hidden off to the right.
+    <div className="flex flex-wrap gap-2">
       {games.map((game) => (
         <Link
           key={game.name}
@@ -78,12 +80,12 @@ export function HomeCategories({ categories }: Readonly<{ categories: { name: st
               <span className={`relative block size-14 overflow-hidden rounded-full ${category.image ? "" : "bg-muted"} transition-[translate] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:-translate-y-1 sm:size-18`}>
                 {category.image && <Image src={category.image} alt="" fill sizes="72px" className="object-cover dark:invert dark:hue-rotate-180" />}
               </span>
-              <span className="line-clamp-2 text-center text-sm font-medium leading-snug text-foreground transition-colors duration-300 ease-out group-hover:text-primary">
+              <span className="whitespace-nowrap text-center text-sm font-medium leading-snug text-foreground transition-colors duration-300 ease-out group-hover:text-primary">
                 {category.name}
               </span>
             </>
           );
-          const className = "flex w-20 shrink-0 flex-col items-center gap-2 sm:w-22";
+          const className = "flex min-w-20 shrink-0 flex-col items-center gap-2 sm:min-w-22";
           return category.href ? (
             <Link key={category.name} href={category.href} prefetch={false} className={`group ${className}`}>
               {tile}

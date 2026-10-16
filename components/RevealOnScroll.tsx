@@ -28,7 +28,7 @@ export function RevealOnScroll({ children, index = 0, className }: Readonly<Reve
                     observer.disconnect();
                 }
             },
-            { rootMargin: "0px 0px -120px 0px" },
+            { rootMargin: "0px 0px -40px 0px" },
         );
 
         observer.observe(element);

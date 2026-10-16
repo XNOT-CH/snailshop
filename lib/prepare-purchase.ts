@@ -2,7 +2,6 @@
 
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { requireAuthBeforePurchase } from "@/lib/require-auth-before-purchase";
-import { requirePinForAction } from "@/lib/require-pin-for-action";
 import {
     formatCurrencyAmount,
     normalizeCurrencyCode,
@@ -16,14 +15,6 @@ type PurchaseProfile = {
     pointBalance?: number | string | null;
 };
 
-interface PreparePurchaseParams {
-    router: AppRouterInstance;
-    amount: number;
-    currency?: string | null;
-    currencySettings?: PublicCurrencySettings | null;
-    pinActionLabel: string;
-}
-
 function getAvailableBalance(profile: PurchaseProfile, normalizedCurrency: string) {
     if (normalizedCurrency === "POINT") {
         return Number(profile.pointBalance ?? 0);
@@ -32,60 +23,75 @@ function getAvailableBalance(profile: PurchaseProfile, normalizedCurrency: strin
     return Number(profile.creditBalance ?? 0);
 }
 
-export async function preparePurchase({
-    router,
-    amount,
-    currency,
-    currencySettings,
-    pinActionLabel,
-}: PreparePurchaseParams) {
-    const authCheck = await requireAuthBeforePurchase(router);
-    if (!authCheck.allowed) {
-        return { allowed: false, pin: null } as const;
-    }
-
-    const normalizedCurrency = normalizeCurrencyCode(currency);
-
+/** Reads the shopper's balance in the product's currency, or null when it cannot. */
+export async function fetchPurchaseBalance(currency?: string | null): Promise<number | null> {
     try {
         const { response, data } = await requestProfile<PurchaseProfile>({
             init: { cache: "no-store" },
         });
-
-        if (!response.ok || !data.success || !data.data) {
-            await showPurchaseFailedModal({
-                message: data.message || "ไม่สามารถตรวจสอบข้อมูลบัญชีได้",
-                showTopupButton: false,
-            });
-            return { allowed: false, pin: null } as const;
-        }
-
-        const availableBalance = getAvailableBalance(data.data as PurchaseProfile, normalizedCurrency);
-        if (availableBalance < amount) {
-            const requiredAmount = formatCurrencyAmount(amount, normalizedCurrency, currencySettings ?? null);
-            const currentAmount = formatCurrencyAmount(availableBalance, normalizedCurrency, currencySettings ?? null);
-            const balanceLabel = normalizedCurrency === "POINT" ? "พอยท์" : "ยอดเงิน";
-
-            const { goTopup } = await showPurchaseFailedModal({
-                message: `${balanceLabel}ไม่เพียงพอ (ต้องการ ${requiredAmount} แต่มี ${currentAmount})`,
-                showTopupButton: normalizedCurrency !== "POINT",
-            });
-            if (goTopup) {
-                router.push("/dashboard/topup");
-            }
-            return { allowed: false, pin: null } as const;
-        }
-
-        const pinCheck = await requirePinForAction(pinActionLabel);
-        if (!pinCheck.allowed) {
-            return { allowed: false, pin: null } as const;
-        }
-
-        return { allowed: true, pin: pinCheck.pin ?? undefined } as const;
+        if (!response.ok || !data.success || !data.data) return null;
+        return getAvailableBalance(data.data as PurchaseProfile, normalizeCurrencyCode(currency));
     } catch {
+        return null;
+    }
+}
+
+export interface PurchaseBalanceSummary {
+    /** "เครดิต" or "พอยท์" — what the price is paid from. */
+    balanceLabel: string;
+    deductText: string;
+    remainingText: string;
+    shortfallText: string;
+    insufficient: boolean;
+    /** Points cannot be topped up, so there is no top-up route for them. */
+    canTopup: boolean;
+}
+
+export function summarizePurchaseBalance(
+    balance: number,
+    amount: number,
+    currency?: string | null,
+    currencySettings?: PublicCurrencySettings | null,
+): PurchaseBalanceSummary {
+    const normalizedCurrency = normalizeCurrencyCode(currency);
+    const format = (value: number) => formatCurrencyAmount(value, normalizedCurrency, currencySettings ?? null);
+    const insufficient = balance < amount;
+
+    return {
+        balanceLabel: normalizedCurrency === "POINT" ? "พอยท์" : "เครดิต",
+        deductText: format(amount),
+        remainingText: format(insufficient ? balance : balance - amount),
+        shortfallText: format(insufficient ? amount - balance : 0),
+        insufficient,
+        canTopup: normalizedCurrency !== "POINT",
+    };
+}
+
+/**
+ * Signs-in check plus the balance the confirm dialog shows. Runs before the
+ * confirm dialog so the shopper sees what is deducted and what is left before
+ * they commit; the server still re-checks the balance inside the purchase.
+ */
+export async function loadPurchaseBalance({
+    router,
+    currency,
+}: {
+    router: AppRouterInstance;
+    currency?: string | null;
+}) {
+    const authCheck = await requireAuthBeforePurchase(router);
+    if (!authCheck.allowed) {
+        return { allowed: false } as const;
+    }
+
+    const balance = await fetchPurchaseBalance(currency);
+    if (balance === null) {
         await showPurchaseFailedModal({
             message: "ไม่สามารถตรวจสอบยอดคงเหลือได้ กรุณาลองใหม่",
             showTopupButton: false,
         });
-        return { allowed: false, pin: null } as const;
+        return { allowed: false } as const;
     }
+
+    return { allowed: true, balance } as const;
 }

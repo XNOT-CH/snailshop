@@ -93,6 +93,7 @@ export function ForgotPasswordForm({ logoUrl }: Readonly<ForgotPasswordFormProps
 
                         <TurnstileField
                             enabled={hasTurnstile}
+                            verified={Boolean(turnstileToken)}
                             onTokenChange={handleTurnstileChange}
                             resetSignal={turnstileResetSignal}
                             error={turnstileError}

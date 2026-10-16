@@ -45,7 +45,7 @@ function LinkList({ links }: Readonly<{ links: PublicLink[] }>) {
         <ul className="space-y-2.5">
             {links.map((link) => {
                 const className =
-                    "group flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-primary";
+                    "group flex items-center gap-2 text-sm text-foreground/75 transition-colors hover:text-primary";
                 const inner = (
                     <>
                         <ChevronRight className="h-3.5 w-3.5 flex-shrink-0 text-primary transition-transform duration-200 group-hover:translate-x-0.5" />
@@ -109,7 +109,7 @@ export default async function Footer() {
                             )}
                             <BrandWordmark alt={siteName} className="h-[22px]" />
                         </Link>
-                        <p className="mb-5 text-sm leading-relaxed text-muted-foreground">
+                        <p className="mb-5 text-sm leading-relaxed text-foreground/75">
                             {siteSettings?.footerDescription ||
                                 "แพลตฟอร์มซื้อขายสินค้าดิจิทัลที่น่าเชื่อถือ พร้อมระบบรักษาความปลอดภัยมาตรฐานสากล"}
                         </p>
@@ -122,7 +122,7 @@ export default async function Footer() {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         aria-label={label}
-                                        className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-muted-foreground transition-colors hover:bg-primary hover:text-primary-foreground"
+                                        className="flex h-10 w-10 items-center justify-center rounded-full bg-accent text-foreground/75 transition-colors hover:bg-primary hover:text-primary-foreground"
                                     >
                                         <Icon className="h-[18px] w-[18px]" />
                                     </a>
@@ -157,7 +157,7 @@ export default async function Footer() {
                                         <Phone className="h-5 w-5" />
                                     </span>
                                     <div className="min-w-0">
-                                        <p className="text-xs text-muted-foreground">โทรศัพท์</p>
+                                        <p className="text-sm text-foreground/75">โทรศัพท์</p>
                                         <a href={`tel:${siteSettings.contactPhone}`} className="font-semibold text-foreground hover:text-primary">
                                             {siteSettings.contactPhone}
                                         </a>
@@ -170,7 +170,7 @@ export default async function Footer() {
                                         <Mail className="h-5 w-5" />
                                     </span>
                                     <div className="min-w-0">
-                                        <p className="text-xs text-muted-foreground">อีเมล</p>
+                                        <p className="text-sm text-foreground/75">อีเมล</p>
                                         <a href={`mailto:${siteSettings.contactEmail}`} className="truncate font-semibold text-foreground hover:text-primary">
                                             {siteSettings.contactEmail}
                                         </a>
@@ -178,7 +178,7 @@ export default async function Footer() {
                                 </li>
                             )}
                             {!siteSettings?.contactPhone && !siteSettings?.contactEmail && (
-                                <li className="text-sm text-muted-foreground">ยังไม่ได้ตั้งค่าช่องทางติดต่อ</li>
+                                <li className="text-sm text-foreground/75">ยังไม่ได้ตั้งค่าช่องทางติดต่อ</li>
                             )}
                         </ul>
                     </div>
@@ -186,12 +186,12 @@ export default async function Footer() {
             </div>
 
             {/* Bottom bar */}
-            <div className="border-t border-border bg-muted text-muted-foreground">
+            <div className="border-t border-border bg-muted text-foreground/75">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex flex-col items-center justify-between gap-3 py-4 text-sm md:flex-row">
+                    <div className="flex flex-col items-center justify-between gap-3 py-4 text-base md:flex-row md:text-sm">
                         <p className="text-center">
                             Copyright © {currentYear} {siteName} - All Rights Reserved.
-                            <span className="ml-2 text-xs">v{APP_VERSION}</span>
+                            <span className="ml-2 text-sm">v{APP_VERSION}</span>
                         </p>
                         <div className="flex items-center gap-5">
                             <Link href="/privacy" prefetch={false} className="transition-colors hover:text-foreground">

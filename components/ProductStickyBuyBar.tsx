@@ -40,6 +40,7 @@ export function ProductStickyBuyBar({ priceLabel, targetId }: ProductStickyBuyBa
     if (!mounted) return null;
     return createPortal(
         <div
+            id="product-sticky-buy-bar"
             aria-hidden={!visible}
             className={`fixed inset-x-0 bottom-[var(--mobile-bottom-nav-height)] z-40 border-t border-border bg-card/95 px-4 py-2.5 backdrop-blur-xl transition-[translate,opacity] duration-300 ease-out motion-reduce:transition-none md:hidden ${
                 visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"

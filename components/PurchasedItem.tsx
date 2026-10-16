@@ -116,24 +116,6 @@ export function PurchasedItem({
                         <PackageCheck className="h-3 w-3" />
                         รับแล้ว
                     </Badge>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        className="h-8 rounded-full border-border/80 bg-background/95 px-2.5 font-medium text-foreground shadow-sm backdrop-blur hover:border-destructive/40 hover:bg-destructive/10 hover:text-destructive dark:bg-slate-950/80 dark:hover:bg-destructive/15"
-                        onClick={handleDelete}
-                        disabled={isDeleting}
-                        aria-label="ลบรายการนี้ออกจากคลัง"
-                        title="ลบรายการนี้ออกจากคลัง"
-                    >
-                        {isDeleting ? (
-                            <Check className="h-4 w-4 animate-pulse" />
-                        ) : (
-                            <>
-                                <Trash2 className="h-4 w-4" />
-                                <span className="ml-1 hidden sm:inline">ลบออก</span>
-                            </>
-                        )}
-                    </Button>
                 </div>
             </div>
 
@@ -262,6 +244,20 @@ export function PurchasedItem({
                         </div>
                     </CollapsibleContent>
                 </Collapsible>
+
+                {/* Kept well away from "ดูข้อมูลลับ" so a tap meant for one never hits the other. */}
+                <div className="mt-5 flex justify-end border-t border-border/60 pt-3">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-9 gap-1 rounded-full px-3 text-xs text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                        onClick={handleDelete}
+                        disabled={isDeleting}
+                    >
+                        {isDeleting ? <Check className="h-4 w-4 animate-pulse" /> : <Trash2 className="h-4 w-4" />}
+                        ลบออกจากคลัง
+                    </Button>
+                </div>
             </CardContent>
         </Card>
     );

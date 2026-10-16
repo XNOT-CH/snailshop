@@ -17,6 +17,9 @@ interface AnnouncementPopupWrapperProps {
 }
 
 const HIDDEN_PATH_PREFIXES = ["/login", "/register"];
+// Give a visitor time to see the page before an announcement covers it; one
+// that pops up on arrival reads as an ad and gets closed unread.
+const POPUP_DELAY_MS = 8000;
 
 export function AnnouncementPopupWrapper({
     enabled = true,
@@ -76,7 +79,7 @@ export function AnnouncementPopupWrapper({
             }
 
             void fetchVisiblePopups();
-        }, 1800);
+        }, POPUP_DELAY_MS);
 
         return () => {
             cancelled = true;

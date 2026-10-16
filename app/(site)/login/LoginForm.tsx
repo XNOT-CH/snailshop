@@ -166,6 +166,7 @@ export function LoginForm({ logoUrl, turnstileConfigError = null }: Readonly<Log
 
                         <TurnstileField
                             enabled={hasTurnstile}
+                            verified={Boolean(turnstileToken)}
                             onTokenChange={handleTurnstileChange}
                             resetSignal={turnstileResetSignal}
                             error={turnstileError}
@@ -181,7 +182,7 @@ export function LoginForm({ logoUrl, turnstileConfigError = null }: Readonly<Log
                         <Button
                             type="submit"
                             className="w-full h-12 rounded-xl font-semibold shadow-none transition-colors"
-                            disabled={isLoading || Boolean(turnstileConfigError)}
+                            disabled={isLoading || Boolean(turnstileConfigError) || (hasTurnstile && !turnstileToken)}
                         >
                             {isLoading ? (
                                 <>

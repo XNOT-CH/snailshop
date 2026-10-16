@@ -309,6 +309,7 @@ export function RegisterForm({ logoUrl, hasTurnstile, policies }: Readonly<Regis
 
                         <TurnstileField
                             enabled={hasTurnstile}
+                            verified={Boolean(turnstileToken)}
                             onTokenChange={handleTurnstileChange}
                             resetSignal={turnstileResetSignal}
                             error={turnstileError}
