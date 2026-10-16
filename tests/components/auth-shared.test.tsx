@@ -64,6 +64,7 @@ describe("components/auth shared components", () => {
                 error="กรุณายืนยันว่าไม่ใช่บอทก่อนเข้าสู่ระบบ"
                 resetSignal={2}
                 onTokenChange={onTokenChange}
+                verified={false}
             />
         );
 
@@ -82,10 +83,21 @@ describe("components/auth shared components", () => {
                 error="hidden error"
                 resetSignal={0}
                 onTokenChange={vi.fn()}
+                verified={false}
             />
         );
 
         expect(screen.queryByRole("button", { name: "turnstile-widget" })).not.toBeInTheDocument();
         expect(screen.queryByText("hidden error")).not.toBeInTheDocument();
+    });
+
+    it("says it is checking until Cloudflare has verified", () => {
+        const props = { enabled: true, error: null, resetSignal: 0, onTokenChange: vi.fn() };
+        const { rerender } = render(<TurnstileField {...props} verified={false} />);
+
+        expect(screen.getByText("กำลังตรวจสอบ รอแป๊บนึง")).toBeInTheDocument();
+
+        rerender(<TurnstileField {...props} verified />);
+        expect(screen.queryByText("กำลังตรวจสอบ รอแป๊บนึง")).not.toBeInTheDocument();
     });
 });

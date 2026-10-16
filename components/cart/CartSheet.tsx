@@ -504,9 +504,7 @@ function CartSheetContent() {
                     currencySettings,
                 );
                 const label = buildCartCheckoutSuccessLabel(data, totalDisplay);
-                const orderIds: string[] = Array.isArray(data.orders)
-                    ? data.orders.map((order: { orderId: string }) => order.orderId)
-                    : [];
+                const orderIds = (data.orders ?? []).flatMap((order) => (order.orderId ? [order.orderId] : []));
                 const remainingCredit = await fetchPurchaseBalance("THB");
                 const result = await showPurchaseSuccessModal({
                     productName: label,

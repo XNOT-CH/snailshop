@@ -18,6 +18,7 @@ export interface CartCheckoutPayload {
 }
 
 export interface CartCheckoutOrder {
+    orderId?: string;
     productName?: string;
     [key: string]: unknown;
 }
