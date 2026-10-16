@@ -964,8 +964,10 @@ html.dark tbody tr:hover {
 
 /* RevealOnScroll: hidden until the IntersectionObserver marks it visible.
    Stagger delay comes from an inline transition-delay set per card index. */
+/* Starts faint rather than invisible, so a section not yet scrolled to reads as
+   a placeholder instead of an empty gap in the page. */
 .reveal-on-scroll {
-  opacity: 0;
+  opacity: 0.25;
   transform: translateY(32px) scale(0.97);
   transition:
     opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1),
@@ -3297,6 +3299,11 @@ svg {
 @media (max-width: 767px) {
   body:has(#main-mobile-nav) #main-footer {
     padding-bottom: var(--mobile-bottom-nav-height);
+  }
+
+  /* The product page stacks its buy bar (~61px) on top of the nav. */
+  body:has(#main-mobile-nav):has(#product-sticky-buy-bar) #main-footer {
+    padding-bottom: calc(var(--mobile-bottom-nav-height) + 61px);
   }
 }
 

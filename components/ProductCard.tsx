@@ -75,6 +75,7 @@ export function ProductCard({
                         fetchPriority={priorityImage ? "high" : "low"}
                         preload={priorityImage}
                         className="object-cover"
+                        skeleton
                     />
                 </div>
                 <div className="flex flex-1 flex-col p-3 sm:p-4">

@@ -26,9 +26,9 @@ export function PageBreadcrumb({ className, showBackButton = true }: Readonly<Pa
                     variant="ghost"
                     size="sm"
                     onClick={() => router.back()}
-                    className="w-fit gap-1.5 rounded-full border border-border/70 bg-background/70 text-xs text-muted-foreground transition-colors duration-200 hover:bg-accent/70 hover:text-primary sm:text-sm"
+                    className="h-10 w-fit gap-1.5 rounded-full border border-border bg-background/70 px-4 text-sm font-medium text-foreground transition-colors duration-200 hover:bg-accent/70 hover:text-primary sm:text-base"
                 >
-                    <ArrowLeft className="h-3.5 w-3.5" />
+                    <ArrowLeft className="h-4 w-4" />
                     ย้อนกลับ
                 </Button>
             )}

@@ -8,6 +8,8 @@ type ThumbImageProps = Omit<ImageProps, "src" | "onError"> & {
     src: string;
     /** Called when both the thumb and the full image fail to load. */
     onFinalError?: () => void;
+    /** Pulses a grey box in the image's place until it has loaded (fill images only). */
+    skeleton?: boolean;
 };
 
 /**
@@ -15,27 +17,37 @@ type ThumbImageProps = Omit<ImageProps, "src" | "onError"> & {
  * full image for uploads that predate thumbnails (or when the thumb is
  * missing). Non-upload URLs pass through unchanged.
  */
-export function ThumbImage({ src, alt, onFinalError, ...props }: Readonly<ThumbImageProps>) {
+export function ThumbImage({ src, alt, onFinalError, skeleton = false, ...props }: Readonly<ThumbImageProps>) {
     const [activeSrc, setActiveSrc] = useState(() => getThumbImageUrl(src) ?? src);
     const [prevSrc, setPrevSrc] = useState(src);
+    const [loaded, setLoaded] = useState(false);
 
     if (prevSrc !== src) {
         setPrevSrc(src);
         setActiveSrc(getThumbImageUrl(src) ?? src);
+        setLoaded(false);
     }
 
     return (
-        <Image
-            {...props}
-            src={activeSrc}
-            alt={alt}
-            onError={() => {
-                if (activeSrc !== src) {
-                    setActiveSrc(src);
-                } else {
-                    onFinalError?.();
-                }
-            }}
-        />
+        <>
+            {skeleton && !loaded ? <span aria-hidden="true" className="absolute inset-0 animate-pulse bg-muted" /> : null}
+            <Image
+                {...props}
+                src={activeSrc}
+                alt={alt}
+                onLoad={(event) => {
+                    setLoaded(true);
+                    props.onLoad?.(event);
+                }}
+                onError={() => {
+                    if (activeSrc !== src) {
+                        setActiveSrc(src);
+                    } else {
+                        setLoaded(true);
+                        onFinalError?.();
+                    }
+                }}
+            />
+        </>
     );
 }

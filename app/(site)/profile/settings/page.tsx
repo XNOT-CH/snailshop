@@ -1961,6 +1961,9 @@ function ProfileSettingsContent() {
                                 />
                             ))}
                         </div>
+                        <p className="text-sm text-muted-foreground">
+                            ไม่ต้องกรอกครบก็ซื้อของได้ เบอร์กับอีเมลใช้ติดต่อเรื่องออเดอร์ ที่อยู่ใช้ตอนส่งของรางวัล PIN ช่วยกันคนอื่นใช้เครดิตของคุณ
+                        </p>
                     </div>
                 </header>
 
